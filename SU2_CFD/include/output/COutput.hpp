@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,16 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+
+/*--- AD workaround for a cmath function not defined in CoDi. ---*/
+namespace mel {
+namespace internal {
+inline su2double hypot(const su2double& a, const su2double& b) {
+  return sqrt(a*a + b*b);
+}
+}
+}
+#include "mel.hpp"
 
 class CGeometry;
 class CSolver;
@@ -79,8 +89,7 @@ protected:
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
   string historyFilename;   /*!< \brief The history filename*/
-  char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
-  ofstream histFile;        /*! \brief Output file stream for the history */
+  ofstream histFile;        /*!< \brief Output file stream for the history */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
@@ -146,6 +155,10 @@ protected:
   /*! \brief Number of requested screen field names in the config file. */
   unsigned short nRequestedScreenFields;
 
+  /*! \brief Caches to avoid hashing the output maps to retrieve field values. */
+  std::vector<const su2double*> requestedHistoryFieldCache;
+  std::vector<const HistoryOutputField*> requestedScreenFieldCache;
+
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
   PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
@@ -159,17 +172,76 @@ protected:
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
 
-   /*----------------------------- Volume output ----------------------------*/
+  /*! \brief Struct to hold a parsed user-defined expression. */
+  struct CustomHistoryOutput {
+    mel::ExpressionTree<passivedouble> expression;
+    /*--- Pointers to values in the history output maps, to avoid key lookup every time. ---*/
+    std::vector<const su2double*> symbolValues;
+    bool ready = false;
 
-   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+    su2double eval() const {
+      return mel::Eval<su2double>(expression, [&](int i) {return *symbolValues[i];});
+    }
+  };
 
-   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-   unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */
+  CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
-   string volumeFilename,               //!< Volume output filename
-   surfaceFilename,                     //!< Surface output filename
-   restartFilename;                     //!< Restart output filename
+  /*! \brief Type of operation for custom outputs. */
+  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+
+  /*! \brief Struct to hold a parsed custom output function. */
+  struct CustomOutput {
+    /*--- First level of parsing the syntax "name : type{func}[markers];". ---*/
+    std::string name;
+    OperationType type;
+    std::string func;
+    std::vector<std::string> markers;
+
+    /*--- Second level, func into expression, and acceleration structures. ---*/
+    mel::ExpressionTree<passivedouble> expression;
+    std::vector<std::string> varSymbols;
+    std::vector<unsigned short> markerIndices;
+
+    /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
+     is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
+     and needs to be generated on-the-fly for each point. The functor approach is more generic than a pointer, for
+     example it allows wrapping the access to multiple solvers. The interpretation of these indices is dictated by
+     the functor used in eval, for example indices may be established as 32 * solver_idx + variable_idx.
+     The parts of the code that assign and interpret indices need to be in sync. ---*/
+    std::vector<unsigned long> varIndices;
+
+    /*--- Offset between varIndices of different solvers (see above). Power of 2 to make decoding faster. ---*/
+    static constexpr unsigned long MAX_VARS_PER_SOLVER = 32;
+
+    /*--- Arbitrary number to indicate that a string did not match a variable. ---*/
+    static constexpr unsigned long NOT_A_VARIABLE = MAX_SOLS * MAX_VARS_PER_SOLVER;
+
+    /*--- Other outputs can be referenced in expressions, e.g. to compute variance.
+     We store pointers to the required outputs to speed-up access. ---*/
+    std::vector<const su2double*> otherOutputs;
+
+    /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
+     point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
+     with primitive indices. ---*/
+    template <class Variables>
+    su2double eval(const Variables& vars) const {
+      return mel::Eval<su2double>(expression, [&](int iSymbol) {return vars(varIndices[iSymbol]);});
+    }
+  };
+
+  std::vector<CustomOutput> customOutputs;  /*!< \brief User-defined outputs. */
+
+  /*----------------------------- Volume output ----------------------------*/
+
+  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+
+  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+  unsigned short nVolumeFields;        //!< Number of fields in the volume output
+
+  string volumeFilename,               //!< Volume output filename
+  surfaceFilename,                     //!< Surface output filename
+  restartFilename;                     //!< Restart output filename
 
   /** \brief Structure to store information for a volume output field.
    *
@@ -263,8 +335,8 @@ public:
   /*!
    * \brief Load the data from the solvers into the data sorters and sort it for the linear partitioning.
    *
-   * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - The container holding all solution data.
    */
   void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
@@ -280,6 +352,7 @@ public:
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] driver_config - Base definition of the particular problem.
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
   void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, bool wrt = true);
@@ -309,7 +382,6 @@ public:
    *  monitors the convergence and writes to screen and history file.
 
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
    * \param[in] TimeIter - Value of the time iteration index
@@ -371,11 +443,17 @@ public:
    * \param[in] field - Name of the field
    * \return Value of the field
    */
-  su2double GetHistoryFieldValue(string field){
+  su2double GetHistoryFieldValue(const string& field) const {
     return historyOutput_Map.at(field).value;
   }
 
-  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+ /*!
+  * \brief Get the value of particular surface history output field
+  * \param[in] field - Name of the field
+  * \param[in] iMarker - Index of the surface marker
+  * \return Value of the field
+  */
+  su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
     return historyOutputPerSurface_Map.at(field)[iMarker].value;
   }
 
@@ -398,16 +476,32 @@ public:
    * \brief Get the list of all output fields
    * \return Vector container all output fields
    */
-  vector<string> GetHistoryOutput_List(){
+  const vector<string>& GetHistoryOutput_List() const {
     return historyOutput_List;
+  }
+
+  /*!
+   * \brief Get the list of all per-surface fields
+   * \return Vector container all output per-surface fields
+   */
+  const vector<string>& GetHistoryOutputPerSurface_List() const {
+    return historyOutputPerSurface_List;
   }
 
   /*!
    * \brief Get the map containing all output fields
    * \return Map containing all output fields
    */
-  map<string, HistoryOutputField> GetHistoryFields(){
+  const map<string, HistoryOutputField>& GetHistoryFields() const {
     return historyOutput_Map;
+  }
+
+  /*!
+   * \brief Get the map containing all output per-surface fields
+   * \return Map containing all output per-surface fields
+   */
+  const map<string, vector<HistoryOutputField>>& GetHistoryPerSurfaceFields() const {
+    return historyOutputPerSurface_Map;
   }
 
   /*!
@@ -436,18 +530,17 @@ public:
   void SetConvergence(const bool conv) {convergence = conv;}
 
   /*!
-     * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] Iteration - Index of the current iteration.
-     * \return Boolean indicating whether the problem is converged.
-     */
+   * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iteration - Index of the current iteration.
+   * \return Boolean indicating whether the problem is converged.
+   */
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
-
 
   /*!
    * \brief Print a list of all history output fields to screen.
    */
-  void PrintHistoryFields();
+  void PrintHistoryFields() const;
 
   /*!
    * \brief Print a list of all volume output fields to screen.
@@ -482,7 +575,7 @@ public:
    * \param[in] format - The output format.
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
-  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
+  void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
 
 protected:
 
@@ -576,9 +669,39 @@ protected:
     if (it != historyOutputPerSurface_Map.end()) {
       it->second[iMarker].value = value;
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   }
+
+  /*!
+   * \brief Returns a pointer to the value of an history output.
+   * \note For per-surface outputs the marker index is specified as "name[index]".
+   */
+  inline const su2double* GetPtrToHistoryOutput(const string& name) const {
+    /*--- Decide if it should be per surface. ---*/
+    const auto pos = name.find('[');
+    const su2double* ptr = nullptr;
+    if (pos == std::string::npos) {
+      const auto it = historyOutput_Map.find(name);
+      if (it != historyOutput_Map.end()) {
+        ptr = &(it->second.value);
+      }
+    } else {
+      const auto idx = std::stoi(std::string(name.begin()+pos+1, name.end()-1));
+      const auto it = historyOutputPerSurface_Map.find(std::string(name, 0, pos));
+      if (it != historyOutputPerSurface_Map.end()) {
+        ptr = &(it->second[idx].value);
+      }
+    }
+    return ptr;
+  }
+
+  /*!
+   * \brief Setup a custom history output object for a given expression.
+   * \param[in] expression - Some user-defined math with the history field names as variables.
+   * \param[out] output - Custom output ready to evaluate.
+   */
+  void SetupCustomHistoryOutput(const string& expression, CustomHistoryOutput& output) const;
 
   /*!
    * \brief Add a new field to the volume output.
@@ -596,13 +719,14 @@ protected:
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
-   * \param[in] value - The new value of this field.
+   * \param[in] iPoint - The point location in the field.
    */
   su2double GetVolumeOutputValue(string name, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
+   * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
@@ -610,6 +734,7 @@ protected:
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
+   * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
   void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
@@ -666,15 +791,19 @@ protected:
 
   /*!
    * \brief Set the history fields common for all solvers.
-   * \param[in] config - Definition of the particular problem.
    */
-  void SetCommonHistoryFields(CConfig *config);
+  void SetCommonHistoryFields();
+
+  /*!
+   * \brief Parses user-defined outputs.
+   */
+  void SetCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadCommonHistoryData(CConfig *config);
+  void LoadCommonHistoryData(const CConfig *config);
 
   /*!
    * \brief Allocates the data sorters if necessary.
@@ -682,6 +811,15 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void AllocateDataSorters(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Computes the custom and combo objectives.
+   * \note To be called after all other history outputs are set.
+   * \param[in] idxSol - Index of the main solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver);
 
   /*--------------------------------- Virtual functions ---------------------------------------- */
 public:
@@ -716,8 +854,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing);
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
 
   /*!
    * \brief Set the values of the volume output fields for a point.
@@ -769,6 +908,8 @@ protected:
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
    */
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 
@@ -777,7 +918,7 @@ protected:
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadMultizoneHistoryData(COutput **output, CConfig **config) {}
+  inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Set the available history output fields
@@ -788,9 +929,8 @@ protected:
   /*!
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem per zone.
    */
-  inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
+  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Write any additional files defined for the current solver.

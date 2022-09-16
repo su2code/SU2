@@ -2,14 +2,14 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,14 +65,16 @@ private:
                      const CConfig *config,
                      unsigned short val_marker);
 
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
+
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSASolver();
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -113,6 +115,19 @@ public:
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh) override;
+
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, CConfig* config) override;
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -284,34 +299,6 @@ public:
                          CNumerics *visc_numerics,
                          CConfig *config,
                          unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.

@@ -2,14 +2,14 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -357,7 +357,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() );
   unsigned short iInst = config->GetiInst();
   bool steady_restart = config->GetSteadyRestart();
-  unsigned short turb_model = config->GetKind_Turb_Model();
+  TURB_MODEL turb_model = config->GetKind_Turb_Model();
 
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -421,9 +421,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
 
-        if (turb_model == SA || turb_model == SA_NEG) {
+        if (turb_model == TURB_MODEL::SA) {
           index++;
-        } else if (turb_model == SST) {
+        } else if (turb_model == TURB_MODEL::SST) {
           index+=2;
         }
 

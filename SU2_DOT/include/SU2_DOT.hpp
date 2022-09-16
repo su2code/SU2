@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,9 @@
 #include "../../Common/include/geometry/fem_grid/CMeshFEM_DG.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
+
+#include "../../SU2_CFD/include/solvers/CGradientSmoothingSolver.hpp"
+#include "../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 
 using namespace std;
 
@@ -87,3 +90,23 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
  */
 
 void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+
+/*!
+ * \brief Treatment of derivatives with the Sobolev smoothing solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] grid_movement - Volumetric movement class of the problem.
+ */
+
+void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, CVolumetricMovement *grid_movement);
+
+/*!
+ * \brief Treatment of derivatives with the Sobolev smoothing solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] grid_movement - Volumetric movement class of the problem.
+ * \param[in] surface_movement - Surface movement class of the problem.
+ * \param[in] Gradient - Output array to store the gradient data.
+ */
+
+void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumetricMovement *grid_movement, CSurfaceMovement *surface_movement, su2double **Gradient);

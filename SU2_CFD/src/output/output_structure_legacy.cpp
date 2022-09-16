@@ -2,14 +2,14 @@
  * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -350,9 +350,9 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool buffet = (config->GetViscous() || config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-                    (config->GetKind_Solver() == INC_RANS));
+  bool turbulent = ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
+                    (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
+                    (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS));
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
@@ -372,15 +372,15 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   bool radiation            = config->AddRadiation();
 
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES ||
-      config->GetKind_Solver() == INC_RANS || config->GetKind_Solver()  == INC_NAVIER_STOKES) {
+  if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver()  == MAIN_SOLVER::NAVIER_STOKES ||
+      config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver()  == MAIN_SOLVER::INC_NAVIER_STOKES) {
     thermal = true;
   }
 
   /*--- Write file name with extension ---*/
   string filename = config->GetConv_FileName();
   string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
 
   if(config->GetnZone() > 1){
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone, hist_ext);
@@ -476,20 +476,22 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
-    case SST:case SST_SUST:
+    case TURB_MODEL::SST:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
       break;
+    default: break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
-    case SST:case SST_SUST:
+    case TURB_MODEL::SST:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
       break;
+    default: break;
   }
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
@@ -500,8 +502,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
 
-  if ((config->GetTabular_FileFormat() == TECPLOT) ||
-      (config->GetTabular_FileFormat() == TECPLOT_BINARY)) {
+  if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT)) {
     ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
     ConvHist_file[0] << "VARIABLES = ";
   }
@@ -510,9 +511,9 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
 
   switch (config->GetKind_Solver()) {
 
-    case EULER : case NAVIER_STOKES: case RANS :
-    case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :
-    case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS : case FEM_LES:
+    case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS :
+    case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS :
+    case MAIN_SOLVER::FEM_EULER : case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_RANS : case MAIN_SOLVER::FEM_LES:
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
       if (buffet) ConvHist_file[0] << buffet_coeff;
@@ -545,9 +546,9 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
 
       break;
 
-    case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::ADJ_EULER      : case MAIN_SOLVER::ADJ_NAVIER_STOKES      : case MAIN_SOLVER::ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       if (!turbo) {
         if (compressible) {
           ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
@@ -561,26 +562,27 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       ConvHist_file[0] << end;
       break;
 
-    case HEAT_EQUATION:
+    case MAIN_SOLVER::HEAT_EQUATION:
       ConvHist_file[0] << begin << heat_coeff;
       ConvHist_file[0] << heat_resid << end;
       break;
 
-    case FEM_ELASTICITY:
+    case MAIN_SOLVER::FEM_ELASTICITY:
       ConvHist_file[0] << begin << fem_coeff;
       if (incload) ConvHist_file[0] << fem_incload;
       ConvHist_file[0] << fem_resid << endfea;
       break;
 
-    case DISC_ADJ_FEM:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
       ConvHist_file[0] << begin << fem_coeff;
       ConvHist_file[0] << fem_resid << endfea;
       break;
 
+    default:
+      break;
   }
 
-  if (config->GetTabular_FileFormat() == TECPLOT ||
-      config->GetTabular_FileFormat() == TECPLOT_BINARY) {
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
     ConvHist_file[0] << "ZONE T= \"Convergence history\"" << endl;
   }
 
@@ -600,7 +602,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
   bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
-  bool fea                  = ((config[val_iZone]->GetKind_Solver()== FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== DISC_ADJ_FEM));
+  bool fea                  = ((config[val_iZone]->GetKind_Solver()== MAIN_SOLVER::FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== MAIN_SOLVER::DISC_ADJ_FEM));
   unsigned long iIntIter    = config[val_iZone]->GetInnerIter();
   unsigned long iExtIter    = config[val_iZone]->GetInnerIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
@@ -630,7 +632,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
 
-    if (((iExtIter % (config[val_iZone]->GetVolume_Wrt_Freq())) == 0) ||
+    if (((iExtIter % (config[val_iZone]->GetVolumeOutputFrequency(0) )) == 0) ||
         (!fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
         (fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2) ||
@@ -642,8 +644,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
       switch (config[val_iZone]->GetKind_Solver()) {
 
-        case EULER: case NAVIER_STOKES: case RANS:
-        case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+        case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+        case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
@@ -658,13 +660,6 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                                      geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
-          /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-
-          if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-            SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
-          }
-
           /*--- For specific applications, evaluate and plot the cp coefficent at different stations. ---*/
 
           if (config[val_iZone]->GetPlot_Section_Forces()) {
@@ -672,6 +667,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
+          break;
+
+        default:
           break;
       }
 
@@ -704,11 +702,13 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*-- Compute the total objective if a "combo" objective is used ---*/
 
     if (output_comboObj) {
-      solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case INC_EULER:               case INC_NAVIER_STOKES:               case INC_RANS:
-        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+      case MAIN_SOLVER::EULER:                   case MAIN_SOLVER::NAVIER_STOKES:                   case MAIN_SOLVER::RANS:
+      case MAIN_SOLVER::INC_EULER:               case MAIN_SOLVER::INC_NAVIER_STOKES:               case MAIN_SOLVER::INC_RANS:
+        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone],
+                                                                                       solver_container[val_iZone][val_iInst][FinestMesh]);
+        break;
+      default:
         break;
       }
     }
@@ -744,31 +744,31 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
-    bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
-    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES ||
-                    config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES || config[val_iZone]->GetKind_Solver() == INC_RANS );
-    bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) || config[val_iZone]->GetKind_Solver()  == INC_RANS ||
-                      config[val_iZone]->GetKind_Solver()  == DISC_ADJ_INC_RANS);
+    bool transition = (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+    bool thermal = (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver()  == MAIN_SOLVER::NAVIER_STOKES ||
+                    config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS );
+    bool turbulent = ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
+                      (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) || config[val_iZone]->GetKind_Solver()  == MAIN_SOLVER::INC_RANS ||
+                      config[val_iZone]->GetKind_Solver()  == MAIN_SOLVER::DISC_ADJ_INC_RANS);
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
-    bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
+    bool heat =  ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
     bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-    bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) ||
-                (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) ||
-                (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
-                (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                (config[val_iZone]->GetKind_Solver() == INC_EULER) || (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                (config[val_iZone]->GetKind_Solver() == INC_RANS);
+    bool flow = (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_EULER) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_RANS) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_EULER) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS);
     bool buffet = (config[val_iZone]->GetViscous() || config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
-    bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
-                (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+    bool fem = ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_ELASTICITY) ||          // FEM structural solver.
+                (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM));
     bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
     bool fsi = (config[val_iZone]->GetFSI_Simulation());
-    bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
+    bool discadj_fem = (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
 
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
 
@@ -788,7 +788,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       if (ExtraHeatOutputZone > nZone) {
         SU2_MPI::Error("Error in output routine: Extra output zone number exceeds total number of zones.", CURRENT_FUNCTION);
       }
-      else if ((config[ExtraHeatOutputZone]->GetKind_Solver() != HEAT_EQUATION)) {
+      else if ((config[ExtraHeatOutputZone]->GetKind_Solver() != MAIN_SOLVER::HEAT_EQUATION)) {
         SU2_MPI::Error("Error in output routine: No heat solver in extra output zone.", CURRENT_FUNCTION);
       }
       else {
@@ -862,8 +862,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
-        case SST: case SST_SUST: nVar_Turb = 2; break;
+        case TURB_MODEL::SA: nVar_Turb = 1; break;
+        case TURB_MODEL::SST: nVar_Turb = 2; break;
+        default: break;
       }
     }
     if (transition) nVar_Trans = 2;
@@ -873,7 +874,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       if (linear_analysis) nVar_FEM = nDim;
       if (nonlinear_analysis) nVar_FEM = 3;
 
-      if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) nVar_FEM = nDim;
+      if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM) nVar_FEM = nDim;
 
     }
 
@@ -883,8 +884,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
-        case SST: case SST_SUST: nVar_AdjTurb = 2; break;
+        case TURB_MODEL::SA: nVar_AdjTurb = 1; break;
+        case TURB_MODEL::SST: nVar_AdjTurb = 2; break;
+        default: break;
       }
     }
     if (weakly_coupled_heat) nVar_AdjHeat = 1;
@@ -919,12 +921,12 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     switch (config[val_iZone]->GetKind_Solver()) {
 
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case INC_EULER:               case INC_NAVIER_STOKES:               case INC_RANS:
-      case FEM_EULER:               case FEM_NAVIER_STOKES:               case FEM_RANS:      case FEM_LES:
-      case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
+      case MAIN_SOLVER::EULER:                   case MAIN_SOLVER::NAVIER_STOKES:                   case MAIN_SOLVER::RANS:
+      case MAIN_SOLVER::INC_EULER:               case MAIN_SOLVER::INC_NAVIER_STOKES:               case MAIN_SOLVER::INC_RANS:
+      case MAIN_SOLVER::FEM_EULER:               case MAIN_SOLVER::FEM_NAVIER_STOKES:               case MAIN_SOLVER::FEM_RANS:      case MAIN_SOLVER::FEM_LES:
+      case MAIN_SOLVER::ADJ_EULER:               case MAIN_SOLVER::ADJ_NAVIER_STOKES:               case MAIN_SOLVER::ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER:          case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER:      case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
         /*--- Flow solution coefficients ---*/
 
@@ -940,7 +942,6 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_CFz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFz();
         Total_ComboObj       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         Total_AoA            = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset();
-        Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (thermal) {
           Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
@@ -1164,7 +1165,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
 
 
-      case HEAT_EQUATION:
+      case MAIN_SOLVER::HEAT_EQUATION:
 
         /*--- Heat coefficients  ---*/
 
@@ -1180,7 +1181,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
         break;
 
-      case FEM_ELASTICITY:
+      case MAIN_SOLVER::FEM_ELASTICITY:
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
@@ -1209,7 +1210,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
         break;
 
-      case DISC_ADJ_FEM:
+      case MAIN_SOLVER::DISC_ADJ_FEM:
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
@@ -1224,6 +1225,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
         break;
 
+      default:
+        break;
 
     }
 
@@ -1296,12 +1299,12 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Write the solution and residual of the history file ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
 
-          case EULER : case NAVIER_STOKES: case RANS:
-          case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
-          case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-          case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER:
-          case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+          case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+          case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
+          case MAIN_SOLVER::FEM_EULER : case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_RANS: case MAIN_SOLVER::FEM_LES:
+          case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_EULER:
+          case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+          case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
             /*--- Direct coefficients ---*/
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
@@ -1419,7 +1422,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][nSpanWiseSections][1]*MachOut[iMarker_Monitoring][nSpanWiseSections][1] + MachOut[iMarker_Monitoring][nSpanWiseSections][0]*MachOut[iMarker_Monitoring][nSpanWiseSections][0]));
                 strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
                 strcat(turbo_coeff, surface_coeff);
 
@@ -1517,14 +1520,14 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-          case HEAT_EQUATION:
+          case MAIN_SOLVER::HEAT_EQUATION:
 
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Total_Temperature);
             SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
 
             break;
 
-          case FEM_ELASTICITY:
+          case MAIN_SOLVER::FEM_ELASTICITY:
 
             SPRINTF (begin_fem, ", %14.8e", 0.0);
 
@@ -1542,7 +1545,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-          case DISC_ADJ_FEM:
+          case MAIN_SOLVER::DISC_ADJ_FEM:
 
             SPRINTF (direct_coeff, ", %12.10f", Total_VMStress);
             if (nDim == 2) {
@@ -1553,7 +1556,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             }
 
             break;
-
+          default:
+            break;
         }
       }
       if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
@@ -1565,10 +1569,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           if (!fem) {
             if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::TIME_STEPPING)) {
               switch (config[val_iZone]->GetKind_Solver()) {
-              case EULER : case NAVIER_STOKES: case RANS:
-              case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
-              case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-              case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+              case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+              case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
+              case MAIN_SOLVER::FEM_EULER : case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_RANS: case MAIN_SOLVER::FEM_LES:
+              case MAIN_SOLVER::ADJ_EULER : case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
 
                 cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
 
@@ -1633,18 +1637,19 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 break;
 
-              case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-              case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+              case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+              case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
-                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetVolume_Wrt_Freq() << " iterations): ";
+                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetVolumeOutputFrequency(0) << " iterations): ";
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
                 cout << Total_Sens_Geo;
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 break;
-
+              default:
+                break;
               }
             }
             else {
@@ -1669,9 +1674,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           switch (config[val_iZone]->GetKind_Solver()) {
-          case EULER :                  case NAVIER_STOKES:
-          case INC_EULER :              case INC_NAVIER_STOKES:
-          case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
+          case MAIN_SOLVER::EULER :                  case MAIN_SOLVER::NAVIER_STOKES:
+          case MAIN_SOLVER::INC_EULER :              case MAIN_SOLVER::INC_NAVIER_STOKES:
+          case MAIN_SOLVER::FEM_EULER : case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_LES:
 
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -1742,7 +1747,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-          case RANS : case INC_RANS:
+          case MAIN_SOLVER::RANS : case MAIN_SOLVER::INC_RANS:
 
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -1777,8 +1782,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-              case SST:	case SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              case TURB_MODEL::SA: cout << "       Res[nu]"; break;
+              case TURB_MODEL::SST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              default: break;
             }
 
             if (weakly_coupled_heat) {
@@ -1817,14 +1823,14 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-            case HEAT_EQUATION :
+            case MAIN_SOLVER::HEAT_EQUATION :
               if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << "  ExtIter";
 
               cout <<  "      Res[Heat]" << "   HFlux(Total)";
               break;
 
-            case FEM_ELASTICITY :
+            case MAIN_SOLVER::FEM_ELASTICITY :
               if (!nonlinear_analysis) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << " ExtIter";
 
@@ -1833,23 +1839,13 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "      VMS(Max)"<<  endl;
               }
               else if (nonlinear_analysis) {
-                switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
-                  case RESFEM_RELATIVE:
-                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-                    break;
-                  case RESFEM_ABSOLUTE:
-                    cout << "   Res[UTOL-A]" << "   Res[RTOL-A]" << "   Res[ETOL-A]"  << "      VMS(Max)"<<  endl;
-                    break;
-                  default:
-                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-                    break;
-                }
-            }
-           break;
+                cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
+              }
+            break;
 
-            case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-            case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
-            case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:
+            case MAIN_SOLVER::ADJ_EULER :              case MAIN_SOLVER::ADJ_NAVIER_STOKES :
+            case MAIN_SOLVER::DISC_ADJ_EULER:          case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+            case MAIN_SOLVER::DISC_ADJ_INC_EULER:      case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
 
               /*--- Visualize the maximum residual ---*/
               iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
@@ -1902,7 +1898,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
-            case ADJ_RANS : case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
+            case MAIN_SOLVER::ADJ_RANS : case MAIN_SOLVER::DISC_ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
               /*--- Visualize the maximum residual ---*/
               iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
@@ -1958,7 +1954,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
-            case DISC_ADJ_FEM :
+            case MAIN_SOLVER::DISC_ADJ_FEM :
               cout << endl << " IntIter" << " ExtIter";
 
               if (nDim == 2) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
@@ -1966,8 +1962,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
            break;
 
+          default:
+            break;
           }
-
         }
       }
 
@@ -2005,9 +2002,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       switch (config[val_iZone]->GetKind_Solver()) {
-        case EULER : case NAVIER_STOKES:
-        case INC_EULER : case INC_NAVIER_STOKES:
-        case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
+        case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES:
+        case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES:
+        case MAIN_SOLVER::FEM_EULER : case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_LES:
 
           /*--- Write history file ---*/
 
@@ -2103,7 +2100,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
-        case RANS : case INC_RANS:
+        case MAIN_SOLVER::RANS : case MAIN_SOLVER::INC_RANS:
 
           /*--- Write history file ---*/
 
@@ -2205,7 +2202,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           break;
 
 
-        case HEAT_EQUATION:
+        case MAIN_SOLVER::HEAT_EQUATION:
 
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << direct_coeff << heat_resid << end;
@@ -2213,7 +2210,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
-        case FEM_ELASTICITY:
+        case MAIN_SOLVER::FEM_ELASTICITY:
 
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << fem_coeff << fem_resid << end_fem;
@@ -2239,7 +2236,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
-        case DISC_ADJ_FEM:
+        case MAIN_SOLVER::DISC_ADJ_FEM:
 
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
@@ -2273,9 +2270,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           cout << endl;
           break;
 
-        case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
-        case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:
+        case MAIN_SOLVER::ADJ_EULER :              case MAIN_SOLVER::ADJ_NAVIER_STOKES :
+        case MAIN_SOLVER::DISC_ADJ_EULER:          case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+        case MAIN_SOLVER::DISC_ADJ_INC_EULER:      case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
 
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
@@ -2329,7 +2326,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
-        case ADJ_RANS : case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
+        case MAIN_SOLVER::ADJ_RANS : case MAIN_SOLVER::DISC_ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
@@ -2391,6 +2388,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
+        default:
+          break;
       }
       cout.unsetf(ios::fixed);
 
@@ -2436,20 +2435,20 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   bool viscous            = config[val_iZone]->GetViscous();
   bool dynamic_grid       = config[val_iZone]->GetDynamic_Grid();
   bool gravity            = config[val_iZone]->GetGravityForce();
-  bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
+  bool turbulent          = config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS;
   bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
-  unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-  unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
+  MAIN_SOLVER Kind_Solver = config[val_iZone]->GetKind_Solver();
+  TURB_MODEL Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nDim = geometry[val_iZone][INST_0][FinestMesh]->GetnDim();
-  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) ||
-               (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == RANS) ||
-               (config[val_iZone]->GetKind_Solver() == INC_EULER) ||
-               (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == INC_RANS));
+  bool flow = ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) ||
+               (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
+               (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) ||
+               (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS));
 
   /*--- Output the mean flow solution using only the master node ---*/
 
@@ -2776,27 +2775,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.8  \"Blackbird\"                        |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.4.0  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
-    Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
-    Breakdown_file << "| with selected contributions from the open-source community            |" << "\n";
+    Breakdown_file << "| SU2 Project Website: https://su2code.github.io                        |" << "\n";
+    Breakdown_file << "|                                                                       |" << "\n";
+    Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
+    Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The main research teams contributing to the current release are:      |" << "\n";
-    Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
-    Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << "\n";
-    Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
-    Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
-    Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
-    Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
-    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
-    Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
-    Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
+    Breakdown_file << "| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -2817,27 +2806,25 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     Breakdown_file << "\n" << "\n" << "Problem definition:" << "\n" << "\n";
 
     switch (Kind_Solver) {
-      case EULER: case INC_EULER:
+      case MAIN_SOLVER::EULER: case MAIN_SOLVER::INC_EULER:
         if (compressible) Breakdown_file << "Compressible Euler equations." << "\n";
         if (incompressible) Breakdown_file << "Incompressible Euler equations." << "\n";
         break;
-      case NAVIER_STOKES: case INC_NAVIER_STOKES:
+      case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::INC_NAVIER_STOKES:
         if (compressible) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
         if (incompressible) Breakdown_file << "Incompressible Laminar Navier-Stokes' equations." << "\n";
         break;
-      case RANS: case INC_RANS:
+      case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
         if (compressible) Breakdown_file << "Compressible RANS equations." << "\n";
         if (incompressible) Breakdown_file << "Incompressible RANS equations." << "\n";
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
-          case SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
-          case SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
-          case SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
-          case SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
-          case SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
-          case SST_SUST:  Breakdown_file << "Menter's SST with sustaining terms" << "\n"; break;
+          case TURB_MODEL::SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
+          default: break;
         }
+        break;
+      default:
         break;
     }
 
@@ -2847,11 +2834,11 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     if (compressible) {
 
 
-    if ((compressible) && (Kind_Solver != FEM_ELASTICITY)) {
+    if ((compressible) && (Kind_Solver != MAIN_SOLVER::FEM_ELASTICITY)) {
       Breakdown_file << "Mach number: " << config[val_iZone]->GetMach() <<"."<< "\n";
       Breakdown_file << "Angle of attack (AoA): " << config[val_iZone]->GetAoA() <<" deg, and angle of sideslip (AoS): " << config[val_iZone]->GetAoS() <<" deg."<< "\n";
-      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
+      if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) ||
+          (Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS))
         Breakdown_file << "Reynolds number: " << config[val_iZone]->GetReynolds() <<"."<< "\n";
     }
 
@@ -3000,7 +2987,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
         }
 
-        if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+        if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
           switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
             case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
               Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
@@ -3129,7 +3116,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
       if (compressible){
-        Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
+        Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetThermal_Conductivity_Ref();
         if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
         else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
       }
@@ -3378,7 +3365,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
           }
 
-          if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+          if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
             switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
               case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
                 Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
@@ -4635,7 +4622,7 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
           ofstream Load_File;
           if (iSection == 0) {
 
-            if ((config->GetTabular_FileFormat() == TAB_CSV)) {
+            if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) {
               Load_File.open("load_distribution.csv", ios::out);
               Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
             }
@@ -4646,14 +4633,14 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
               Load_File << "ZONE T=\"Wing load distribution\"" << endl;
             }
           } else {
-            if ((config->GetTabular_FileFormat() == TAB_CSV)) Load_File.open("load_distribution.csv", ios::app);
+            if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) Load_File.open("load_distribution.csv", ios::app);
             else Load_File.open("load_distribution.dat", ios::app);
           }
 
 
           /*--- CL and spanload ---*/
 
-          if ((config->GetTabular_FileFormat() == TAB_CSV))
+          if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV))
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
           else
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
@@ -4981,633 +4968,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
 }
 
-void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
-  ofstream EquivArea_file, FuncGrad_file;
-  unsigned short iMarker = 0, iDim;
-  short *AzimuthalAngle = nullptr;
-  su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
-  *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
-  ModVelocity_Inf, Velocity_Inf[3], factor, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr,
-  *Pressure = nullptr, *FaceArea = nullptr, *EquivArea = nullptr, *TargetArea = nullptr, *NearFieldWeight = nullptr,
-  *Weight = nullptr, jFunction, jp1Function;
-  unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
-  *IdPoint = nullptr, *IdDomain = nullptr, auxDomain;
-  unsigned short iPhiAngle;
-  ofstream NearFieldEA_file; ifstream TargetEA_file;
-
-  su2double XCoordBegin_OF = config->GetEA_IntLimit(0);
-  su2double XCoordEnd_OF = config->GetEA_IntLimit(1);
-
-  unsigned short nDim = geometry->GetnDim();
-  su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
-  su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
-
-  Mach  = config->GetMach();
-  Gamma = config->GetGamma();
-  Beta = sqrt(Mach*Mach-1.0);
-  R_Plane = fabs(config->GetEA_IntLimit(2));
-  Pressure_Inf = config->GetPressure_FreeStreamND();
-  Velocity_Inf[0] = config->GetVelocity_FreeStreamND()[0];
-  Velocity_Inf[1] = config->GetVelocity_FreeStreamND()[1];
-  Velocity_Inf[2] = config->GetVelocity_FreeStreamND()[2];
-  ModVelocity_Inf = 0;
-  for (iDim = 0; iDim < 3; iDim++)
-    ModVelocity_Inf += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-
-  factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
-
-  if (rank == MASTER_NODE) cout << endl << "Writing Equivalent Area files.";
-
-#ifndef HAVE_MPI
-
-  /*--- Compute the total number of points on the near-field ---*/
-
-  nVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        /*--- Using Face_Normal(z), and Coord(z) we identify only a surface,
-         note that there are 2 NEARFIELD_BOUNDARY surfaces ---*/
-
-        if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) nVertex_NearField ++;
-      }
-
-  /*--- Create an array with all the coordinates, points, pressures, face area,
-   equivalent area, and nearfield weight ---*/
-
-  Xcoord = new su2double[nVertex_NearField];
-  Ycoord = new su2double[nVertex_NearField];
-  Zcoord = new su2double[nVertex_NearField];
-  AzimuthalAngle = new short[nVertex_NearField];
-  IdPoint = new unsigned long[nVertex_NearField];
-  IdDomain = new unsigned long[nVertex_NearField];
-  Pressure = new su2double[nVertex_NearField];
-  FaceArea = new su2double[nVertex_NearField];
-  EquivArea = new su2double[nVertex_NearField];
-  TargetArea = new su2double[nVertex_NearField];
-  NearFieldWeight = new su2double[nVertex_NearField];
-  Weight = new su2double[nVertex_NearField];
-
-  /*--- Copy the boundary information to an array ---*/
-
-  nVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) {
-
-          IdPoint[nVertex_NearField] = iPoint;
-          Xcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
-          Ycoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
-
-          if (nDim ==2) {
-            AzimuthalAngle[nVertex_NearField] = 0;
-          }
-
-          if (nDim == 3) {
-            Zcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
-
-            /*--- Rotate the nearfield cylinder (AoA) only 3D ---*/
-
-            su2double YcoordRot = Ycoord[nVertex_NearField];
-            su2double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
-
-            /*--- Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
-
-            su2double AngleDouble; short AngleInt;
-            AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
-
-            /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
-
-            su2double FixAzimuthalLine = config->GetFixAzimuthalLine();
-
-            if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
-
-            AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
-            if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
-            else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
-          }
-
-          if (AzimuthalAngle[nVertex_NearField] <= 60) {
-            Pressure[nVertex_NearField] = solver->GetNodes()->GetPressure(iPoint);
-            FaceArea[nVertex_NearField] = fabs(Face_Normal[nDim-1]);
-            nVertex_NearField ++;
-          }
-
-        }
-      }
-
-#else
-
-  int nProcessor;
-  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &nProcessor);
-
-  unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-  int iProcessor;
-
-  unsigned long *Buffer_Receive_nVertex = NULL;
-  if (rank == MASTER_NODE) {
-    Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  }
-
-  /*--- Compute the total number of points of the near-field ghost nodes ---*/
-
-  nLocalVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        if (geometry->nodes->GetDomain(iPoint))
-          if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0))
-            nLocalVertex_NearField ++;
-      }
-
-  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Send_nVertex[0] = nLocalVertex_NearField;
-
-  /*--- Send Near-Field vertex information --*/
-
-  SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-  delete [] Buffer_Send_nVertex;
-
-  su2double *Buffer_Send_Xcoord = new su2double[MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Ycoord = new su2double[MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Zcoord = new su2double[MaxLocalVertex_NearField];
-  unsigned long *Buffer_Send_IdPoint = new unsigned long [MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Pressure = new su2double [MaxLocalVertex_NearField];
-  su2double *Buffer_Send_FaceArea = new su2double[MaxLocalVertex_NearField];
-
-  su2double *Buffer_Receive_Xcoord = NULL;
-  su2double *Buffer_Receive_Ycoord = NULL;
-  su2double *Buffer_Receive_Zcoord = NULL;
-  unsigned long *Buffer_Receive_IdPoint = NULL;
-  su2double *Buffer_Receive_Pressure = NULL;
-  su2double *Buffer_Receive_FaceArea = NULL;
-
-  if (rank == MASTER_NODE) {
-    Buffer_Receive_Xcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Ycoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Zcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Pressure = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_FaceArea = new su2double[nProcessor*MaxLocalVertex_NearField];
-  }
-
-  unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Ycoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Zcoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_IdPoint = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Pressure = MaxLocalVertex_NearField;
-  unsigned long nBuffer_FaceArea = MaxLocalVertex_NearField;
-
-  for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
-    Buffer_Send_IdPoint[iVertex] = 0; Buffer_Send_Pressure[iVertex] = 0.0;
-    Buffer_Send_FaceArea[iVertex] = 0.0; Buffer_Send_Xcoord[iVertex] = 0.0;
-    Buffer_Send_Ycoord[iVertex] = 0.0; Buffer_Send_Zcoord[iVertex] = 0.0;
-  }
-
-  /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
-
-  nLocalVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        if (geometry->nodes->GetDomain(iPoint))
-          if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) {
-            Buffer_Send_IdPoint[nLocalVertex_NearField] = iPoint;
-            Buffer_Send_Xcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
-            Buffer_Send_Ycoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
-            Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
-            Buffer_Send_Pressure[nLocalVertex_NearField] = solver->GetNodes()->GetPressure(iPoint);
-            Buffer_Send_FaceArea[nLocalVertex_NearField] = fabs(Face_Normal[nDim-1]);
-            nLocalVertex_NearField++;
-          }
-      }
-
-  /*--- Send all the information --*/
-
-  SU2_MPI::Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  delete [] Buffer_Send_Xcoord;
-  delete [] Buffer_Send_Ycoord;
-  delete [] Buffer_Send_Zcoord;
-  delete [] Buffer_Send_IdPoint;
-  delete [] Buffer_Send_Pressure;
-  delete [] Buffer_Send_FaceArea;
-
-  if (rank == MASTER_NODE) {
-
-    Xcoord = new su2double[nVertex_NearField];
-    Ycoord = new su2double[nVertex_NearField];
-    Zcoord = new su2double[nVertex_NearField];
-    AzimuthalAngle = new short[nVertex_NearField];
-    IdPoint = new unsigned long[nVertex_NearField];
-    IdDomain = new unsigned long[nVertex_NearField];
-    Pressure = new su2double[nVertex_NearField];
-    FaceArea = new su2double[nVertex_NearField];
-    EquivArea = new su2double[nVertex_NearField];
-    TargetArea = new su2double[nVertex_NearField];
-    NearFieldWeight = new su2double[nVertex_NearField];
-    Weight = new su2double[nVertex_NearField];
-
-    nVertex_NearField = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord[nVertex_NearField] = Buffer_Receive_Xcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
-        Ycoord[nVertex_NearField] = Buffer_Receive_Ycoord[iProcessor*MaxLocalVertex_NearField+iVertex];
-
-        if (nDim == 2) {
-          AzimuthalAngle[nVertex_NearField] = 0;
-        }
-
-        if (nDim == 3) {
-          Zcoord[nVertex_NearField] = Buffer_Receive_Zcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
-
-          /*--- Rotate the nearfield cylinder  ---*/
-
-          su2double YcoordRot = Ycoord[nVertex_NearField];
-          su2double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
-
-          /*--- Compute the Azimuthal angle ---*/
-
-          su2double AngleDouble; short AngleInt;
-          AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
-
-          /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
-
-          su2double FixAzimuthalLine = config->GetFixAzimuthalLine();
-
-          if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1))
-            AngleDouble = FixAzimuthalLine - 0.1;
-
-          AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
-
-          if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
-          else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
-        }
-
-        if (AzimuthalAngle[nVertex_NearField] <= 60) {
-          IdPoint[nVertex_NearField] = Buffer_Receive_IdPoint[iProcessor*MaxLocalVertex_NearField+iVertex];
-          Pressure[nVertex_NearField] = Buffer_Receive_Pressure[iProcessor*MaxLocalVertex_NearField+iVertex];
-          FaceArea[nVertex_NearField] = Buffer_Receive_FaceArea[iProcessor*MaxLocalVertex_NearField+iVertex];
-          IdDomain[nVertex_NearField] = iProcessor;
-          nVertex_NearField++;
-        }
-
-      }
-
-    delete [] Buffer_Receive_nVertex;
-
-    delete [] Buffer_Receive_Xcoord;
-    delete [] Buffer_Receive_Ycoord;
-    delete [] Buffer_Receive_Zcoord;
-    delete [] Buffer_Receive_IdPoint;
-    delete [] Buffer_Receive_Pressure;
-    delete [] Buffer_Receive_FaceArea;
-
-  }
-
-#endif
-
-  if (rank == MASTER_NODE) {
-
-    vector<short> PhiAngleList;
-    vector<short>::iterator IterPhiAngleList;
-
-    for (iVertex = 0; iVertex < nVertex_NearField; iVertex++)
-      PhiAngleList.push_back(AzimuthalAngle[iVertex]);
-
-    sort( PhiAngleList.begin(), PhiAngleList.end());
-    IterPhiAngleList = unique( PhiAngleList.begin(), PhiAngleList.end());
-    PhiAngleList.resize( IterPhiAngleList - PhiAngleList.begin() );
-
-    /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
-
-    vector<vector<su2double> > Xcoord_PhiAngle; Xcoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Ycoord_PhiAngle; Ycoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Zcoord_PhiAngle; Zcoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<unsigned long> > IdPoint_PhiAngle; IdPoint_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<unsigned long> > IdDomain_PhiAngle; IdDomain_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Pressure_PhiAngle; Pressure_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > FaceArea_PhiAngle; FaceArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > EquivArea_PhiAngle; EquivArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > TargetArea_PhiAngle; TargetArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > NearFieldWeight_PhiAngle; NearFieldWeight_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Weight_PhiAngle; Weight_PhiAngle.resize(PhiAngleList.size());
-
-    /*--- Distribute the values among the different PhiAngles ---*/
-
-    for (iVertex = 0; iVertex < nVertex_NearField; iVertex++)
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        if (AzimuthalAngle[iVertex] == PhiAngleList[iPhiAngle]) {
-          Xcoord_PhiAngle[iPhiAngle].push_back(Xcoord[iVertex]);
-          Ycoord_PhiAngle[iPhiAngle].push_back(Ycoord[iVertex]);
-          Zcoord_PhiAngle[iPhiAngle].push_back(Zcoord[iVertex]);
-          IdPoint_PhiAngle[iPhiAngle].push_back(IdPoint[iVertex]);
-          IdDomain_PhiAngle[iPhiAngle].push_back(IdDomain[iVertex]);
-          Pressure_PhiAngle[iPhiAngle].push_back(Pressure[iVertex]);
-          FaceArea_PhiAngle[iPhiAngle].push_back(FaceArea[iVertex]);
-          EquivArea_PhiAngle[iPhiAngle].push_back(EquivArea[iVertex]);
-          TargetArea_PhiAngle[iPhiAngle].push_back(TargetArea[iVertex]);
-          NearFieldWeight_PhiAngle[iPhiAngle].push_back(NearFieldWeight[iVertex]);
-          Weight_PhiAngle[iPhiAngle].push_back(Weight[iVertex]);
-        }
-
-    /*--- Order the arrays (x Coordinate, Pressure, Point, and Domain) ---*/
-
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
-        for (jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
-          if (Xcoord_PhiAngle[iPhiAngle][jVertex] > Xcoord_PhiAngle[iPhiAngle][jVertex+1]) {
-            auxXCoord = Xcoord_PhiAngle[iPhiAngle][jVertex]; Xcoord_PhiAngle[iPhiAngle][jVertex] = Xcoord_PhiAngle[iPhiAngle][jVertex+1]; Xcoord_PhiAngle[iPhiAngle][jVertex+1] = auxXCoord;
-            auxYCoord = Ycoord_PhiAngle[iPhiAngle][jVertex]; Ycoord_PhiAngle[iPhiAngle][jVertex] = Ycoord_PhiAngle[iPhiAngle][jVertex+1]; Ycoord_PhiAngle[iPhiAngle][jVertex+1] = auxYCoord;
-            auxZCoord = Zcoord_PhiAngle[iPhiAngle][jVertex]; Zcoord_PhiAngle[iPhiAngle][jVertex] = Zcoord_PhiAngle[iPhiAngle][jVertex+1]; Zcoord_PhiAngle[iPhiAngle][jVertex+1] = auxZCoord;
-            auxPress = Pressure_PhiAngle[iPhiAngle][jVertex]; Pressure_PhiAngle[iPhiAngle][jVertex] = Pressure_PhiAngle[iPhiAngle][jVertex+1]; Pressure_PhiAngle[iPhiAngle][jVertex+1] = auxPress;
-            auxArea = FaceArea_PhiAngle[iPhiAngle][jVertex]; FaceArea_PhiAngle[iPhiAngle][jVertex] = FaceArea_PhiAngle[iPhiAngle][jVertex+1]; FaceArea_PhiAngle[iPhiAngle][jVertex+1] = auxArea;
-            auxPoint = IdPoint_PhiAngle[iPhiAngle][jVertex]; IdPoint_PhiAngle[iPhiAngle][jVertex] = IdPoint_PhiAngle[iPhiAngle][jVertex+1]; IdPoint_PhiAngle[iPhiAngle][jVertex+1] = auxPoint;
-            auxDomain = IdDomain_PhiAngle[iPhiAngle][jVertex]; IdDomain_PhiAngle[iPhiAngle][jVertex] = IdDomain_PhiAngle[iPhiAngle][jVertex+1]; IdDomain_PhiAngle[iPhiAngle][jVertex+1] = auxDomain;
-          }
-
-
-    /*--- Check that all the azimuth lists have the same size ---*/
-
-    unsigned short nVertex = Xcoord_PhiAngle[0].size();
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      unsigned short nVertex_aux = Xcoord_PhiAngle[iPhiAngle].size();
-      if (nVertex_aux != nVertex) cout <<"Be careful!!! one azimuth list is shorter than the other"<< endl;
-      nVertex = min(nVertex, nVertex_aux);
-    }
-
-    /*--- Compute equivalent area distribution at each azimuth angle ---*/
-
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      EquivArea_PhiAngle[iPhiAngle][0] = 0.0;
-      for (iVertex = 1; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
-        EquivArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
-
-        Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][iVertex]*sin(AoA);
-
-        for (jVertex = 0; jVertex < iVertex-1; jVertex++) {
-
-          Coord_j = Xcoord_PhiAngle[iPhiAngle][jVertex]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][jVertex]*sin(AoA);
-          jp1Coord = Xcoord_PhiAngle[iPhiAngle][jVertex+1]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][jVertex+1]*sin(AoA);
-
-          jFunction = factor*(Pressure_PhiAngle[iPhiAngle][jVertex] - Pressure_Inf)*sqrt(Coord_i-Coord_j);
-          jp1Function = factor*(Pressure_PhiAngle[iPhiAngle][jVertex+1] - Pressure_Inf)*sqrt(Coord_i-jp1Coord);
-
-          DeltaX = (jp1Coord-Coord_j);
-          MeanFuntion = 0.5*(jp1Function + jFunction);
-          EquivArea_PhiAngle[iPhiAngle][iVertex] += DeltaX * MeanFuntion;
-        }
-      }
-    }
-
-    /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
-
-    NearFieldEA_file.precision(15);
-
-    if (output) {
-
-      NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
-      NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
-
-      if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
-      else
-        NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
-
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        if (config->GetSystemMeasurements() == US)
-          NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
-        else
-          NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
-      }
-
-      NearFieldEA_file << "\n";
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
-
-        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-
-        if (config->GetSystemMeasurements() == US)
-          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
-        else
-          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
-
-        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
-        }
-
-        NearFieldEA_file << "\n";
-
-      }
-      NearFieldEA_file.close();
-
-    }
-
-    /*--- Read target equivalent area from the configuration file,
-     this first implementation requires a complete table (same as the original
-     EA table). so... no interpolation. ---*/
-
-    vector<vector<su2double> > TargetArea_PhiAngle_Trans;
-    TargetEA_file.open("TargetEA.dat", ios::in);
-
-    if (TargetEA_file.fail()) {
-      /*--- Set the table to 0 ---*/
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        for (iVertex = 0; iVertex < TargetArea_PhiAngle[iPhiAngle].size(); iVertex++)
-          TargetArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
-    }
-    else {
-
-      /*--- skip header lines ---*/
-
-      string line;
-      getline(TargetEA_file, line);
-      getline(TargetEA_file, line);
-
-      while (TargetEA_file) {
-
-        string line;
-        getline(TargetEA_file, line);
-        istringstream is(line);
-        vector<su2double> row;
-        unsigned short iter = 0;
-
-        while (is.good()) {
-          string token;
-          getline(is, token,',');
-
-          istringstream js(token);
-
-          su2double data;
-          js >> data;
-
-          /*--- The first element in the table is the coordinate (in or m)---*/
-
-          if (iter != 0) row.push_back(data);
-          iter++;
-
-        }
-        TargetArea_PhiAngle_Trans.push_back(row);
-      }
-
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
-          TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
-
-    }
-
-    /*--- Divide by the number of Phi angles in the nearfield ---*/
-
-    su2double PhiFactor = 1.0/su2double(PhiAngleList.size());
-
-    /*--- Evaluate the objective function ---*/
-
-    InverseDesign = 0;
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
-        Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
-        Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
-
-        su2double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
-        su2double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
-
-        if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
-
-        InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
-
-      }
-
-    /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
-
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
-        Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
-        NearFieldWeight_PhiAngle[iPhiAngle][iVertex] = 0.0;
-        for (jVertex = iVertex; jVertex < EquivArea_PhiAngle[iPhiAngle].size(); jVertex++) {
-          Coord_j = Xcoord_PhiAngle[iPhiAngle][jVertex];
-          Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
-
-          su2double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
-          su2double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
-
-          if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
-
-          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
-        }
-      }
-
-    /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
-
-    EquivArea_file.precision(15);
-
-    if (output) {
-
-      EquivArea_file.open("nearfield_flow.dat", ios::out);
-      EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
-
-      if (config->GetSystemMeasurements() == US)
-        EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << "\n";
-      else
-        EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
-
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
-        for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
-
-          su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-          su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-
-          if (config->GetSystemMeasurements() == US)
-            EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
-          else
-            EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
-
-          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << "\n";
-        }
-      }
-
-      EquivArea_file.close();
-
-    }
-
-    /*--- Write Weight file for adjoint computation ---*/
-
-    FuncGrad_file.precision(15);
-
-    if (output) {
-
-      FuncGrad_file.open("WeightNF.dat", ios::out);
-
-      FuncGrad_file << scientific << "-1.0";
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
-      FuncGrad_file << "\n";
-
-      for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
-        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        FuncGrad_file << scientific << XcoordRot;
-        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-          FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
-        FuncGrad_file << "\n";
-      }
-      FuncGrad_file.close();
-
-    }
-
-    /*--- Delete structures ---*/
-
-    delete [] Xcoord; delete [] Ycoord; delete [] Zcoord;
-    delete [] AzimuthalAngle; delete [] IdPoint; delete [] IdDomain;
-    delete [] Pressure; delete [] FaceArea;
-    delete [] EquivArea; delete [] TargetArea;
-    delete [] NearFieldWeight; delete [] Weight;
-
-  }
-
-#ifndef HAVE_MPI
-
-  /*--- Store the value of the NearField coefficient ---*/
-
-  solver->SetTotal_CEquivArea(InverseDesign);
-
-#else
-
-  /*--- Send the value of the NearField coefficient to all the processors ---*/
-
-  SU2_MPI::Bcast(&InverseDesign, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-
-  /*--- Store the value of the NearField coefficient ---*/
-
-  solver->SetTotal_CEquivArea(InverseDesign);
-
-#endif
-
-}
 
 void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
@@ -5650,14 +5011,14 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
   if (output && (rank == MASTER_NODE)) {
 
-    if ((config->GetTabular_FileFormat() == TAB_CSV)) strcpy (cstr, "surface_analysis.vtk");
+    if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) strcpy (cstr, "surface_analysis.vtk");
     else strcpy (cstr, "surface_analysis.dat");
 
     SurfFlow_file.precision(15);
 
     SurfFlow_file.open(cstr, ios::out);
 
-    if ((config->GetTabular_FileFormat() == TAB_CSV)) {
+    if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) {
       SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
       SurfFlow_file << "vtk output" << endl;
       SurfFlow_file << "ASCII" << endl;
@@ -6475,7 +5836,7 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
       if (output) {
 
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
 
           SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
           SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
@@ -6717,8 +6078,8 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
   unsigned short iMarker_Monitoring;
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool menter_sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool turbulent = ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS));
+  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;

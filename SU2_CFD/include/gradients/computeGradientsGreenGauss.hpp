@@ -4,14 +4,14 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -135,6 +135,7 @@ void computeGradientsGreenGauss(CSolver* solver,
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
   {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
       /*--- Work is shared in inner loop as two markers

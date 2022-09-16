@@ -2,14 +2,14 @@
  * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,6 +55,7 @@ private:
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Tcb_b,                          /*!< \brief Rate controlling temperature exponent (bkw) */
+  taus,                           /*!< \brief Relaxtion time scales */
   Diss,                           /*!< \brief Dissociation potential. */
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
@@ -62,6 +63,13 @@ private:
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
   A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
+
+  std::array<su2double,1> mu_ref; /*!< \brief Vector containing reference viscosity for Sutherland's law */
+  std::array<su2double,1> k_ref;  /*!< \brief Vector containing reference thermal conducivities for Sutherland's law */
+  std::array<su2double,1> Sm_ref; /*!< \brief Vector containing Sutherland's constant for viscosity */
+  std::array<su2double,1> Sk_ref; /*!< \brief Vector containing Sutherland's constant for thermal conductivities */
+
+  const su2double T_ref_suth = 273.15; /*!<\brief Reference temperature for Sutherland's model [K] */
 
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
@@ -71,6 +79,25 @@ private:
 
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
+
+  /*--- Implicit variables ---*/
+  su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
+  *dPdU, *dTdU, *dTvedU;
+
+  su2double fwdRxn, bkwRxn,
+  kf,kfb,kb,
+  coeff, eta, epsilon, T_min,
+  Trxnf, Trxnb,
+  Thf, Thb, dThf, dThb,
+  theta, af, bf, ab, bb;
+
+  vector<su2double>
+  dkf, dkb,
+  dRfok, dRbok,
+  eve, eve_eq, cvve, cvve_eq;
+
+  vector<int>
+  alphak, betak;
 
 public:
 
@@ -105,7 +132,7 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  vector<su2double>& ComputeSpeciesCvVibEle() final;
+  vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) final;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
@@ -120,12 +147,28 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian) final;
+
+  /*!
+   * \brief Compute chemical source term jacobian.
+   */
+  void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
+                         const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                         su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
+
+  /*!
+   * \brief Compute relaxation source term jacobian.
+   */
+  void GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve,
+                                const su2double *dTdU, const su2double* dTvedU,
+                                su2double **val_jacobian) final;
 
   /*!
    * \brief Compute species enthalpies.
@@ -150,7 +193,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel, su2double Tve_old) final;
 
   private:
 
@@ -167,34 +210,44 @@ public:
   void ComputeKeqConstants(unsigned short val_Reaction);
 
   /*!
-   * \brief Get species diffusion coefficients with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate species diffusion coefficients with Wilke/Blottner/Eucken transport model.
    */
   void DiffusionCoeffWBE();
 
   /*!
-   * \brief Get viscosity with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate viscosity with Wilke/Blottner/Eucken transport model.
    */
   void ViscosityWBE();
 
   /*!
-   * \brief Get T-R and V-E thermal conductivities vector with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate T-R and V-E thermal conductivities vector with Wilke/Blottner/Eucken transport model.
    */
   void ThermalConductivitiesWBE();
 
   /*!
-   * \brief Get species diffusion coefficients with Gupta-Yos transport model.
+   * \brief Calculate species diffusion coefficients with Gupta-Yos transport model.
    */
   void DiffusionCoeffGY();
 
   /*!
-   * \brief Get viscosity with Gupta-Yos transport model.
+   * \brief Calculate viscosity with Gupta-Yos transport model.
    */
   void ViscosityGY();
 
   /*!
-   * \brief Get T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
+   * \brief Calculate T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
    */
   void ThermalConductivitiesGY();
+
+  /*!
+   * \brief Calculate viscosity with Sutherland's transport model.
+   */
+  void ViscositySuth();
+
+  /*!
+   * \brief Calculate T-R and V-E thermal conductivities vector with Sutherland's transport model.
+   */
+  void ThermalConductivitiesSuth();
 
   /*!
    * \brief Get reference temperature.

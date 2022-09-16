@@ -2,14 +2,14 @@
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -192,45 +192,48 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Loop over the vertices on the target marker, define one row of the transpose matrix. ---*/
 
-    SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget, 2*omp_get_max_threads())))
-    for (auto iVertex = 0ul; iVertex < nVertexTarget; ++iVertex) {
+    SU2_OMP_PARALLEL
+    {
+      SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget, 2*omp_get_max_threads()))
+      for (auto iVertex = 0ul; iVertex < nVertexTarget; ++iVertex) {
 
-      auto& target_vertex = targetVertices[markTarget][iVertex];
-      const auto iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+        auto& target_vertex = targetVertices[markTarget][iVertex];
+        const auto iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
+        if (!target_geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Any point of the donor geometry, that has this target point as a donor, becomes a donor. ---*/
-      const long targetGlobalIndex = target_geometry->nodes->GetGlobalIndex(iPoint);
+        /*--- Any point of the donor geometry, that has this target point as a donor, becomes a donor. ---*/
+        const long targetGlobalIndex = target_geometry->nodes->GetGlobalIndex(iPoint);
 
-      /*--- Count donors and safe the binary search results (this is why we sorted the matrix). ---*/
-      auto nDonor = 0ul;
-      vector<pair<long*,long*> > ranges(nSend);
-      for (int iSend = 0; iSend < nSend; ++iSend) {
-        const auto iProcessor = iSendProcessor[iSend];
-        const auto numCoeff = allNumNodeDonor[iProcessor];
-        auto p = equal_range(DonorIndex[iSend], DonorIndex[iSend]+numCoeff, targetGlobalIndex);
-        nDonor += (p.second - p.first);
-        ranges[iSend] = p;
-      }
+        /*--- Count donors and safe the binary search results (this is why we sorted the matrix). ---*/
+        auto nDonor = 0ul;
+        vector<pair<long*,long*> > ranges(nSend);
+        for (int iSend = 0; iSend < nSend; ++iSend) {
+          const auto iProcessor = iSendProcessor[iSend];
+          const auto numCoeff = allNumNodeDonor[iProcessor];
+          auto p = equal_range(DonorIndex[iSend], DonorIndex[iSend]+numCoeff, targetGlobalIndex);
+          nDonor += (p.second - p.first);
+          ranges[iSend] = p;
+        }
 
-      target_vertex.resize(nDonor);
+        target_vertex.resize(nDonor);
 
-      /*--- Use the search results to set the interpolation coefficients. ---*/
-      for (int iSend = 0, iDonor = 0; iSend < nSend; ++iSend) {
-        const auto iProcessor = iSendProcessor[iSend];
+        /*--- Use the search results to set the interpolation coefficients. ---*/
+        for (int iSend = 0, iDonor = 0; iSend < nSend; ++iSend) {
+          const auto iProcessor = iSendProcessor[iSend];
 
-        const auto first = ranges[iSend].first - DonorIndex[iSend];
-        const auto last = ranges[iSend].second - DonorIndex[iSend];
+          const auto first = ranges[iSend].first - DonorIndex[iSend];
+          const auto last = ranges[iSend].second - DonorIndex[iSend];
 
-        for (auto iCoeff = first; iCoeff < last; ++iCoeff) {
-          target_vertex.processor[iDonor] = iProcessor;
-          target_vertex.coefficient[iDonor] = DonorCoeff[iSend][iCoeff];
-          target_vertex.globalPoint[iDonor] = GlobalIndex[iSend][iCoeff];
-          ++iDonor;
+          for (auto iCoeff = first; iCoeff < last; ++iCoeff) {
+            target_vertex.processor[iDonor] = iProcessor;
+            target_vertex.coefficient[iDonor] = DonorCoeff[iSend][iCoeff];
+            target_vertex.globalPoint[iDonor] = GlobalIndex[iSend][iCoeff];
+            ++iDonor;
+          }
         }
       }
-
+      END_SU2_OMP_FOR
     }
     END_SU2_OMP_PARALLEL
 

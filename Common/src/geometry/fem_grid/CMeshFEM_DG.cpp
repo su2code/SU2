@@ -2182,11 +2182,11 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
   /*--- Check if an incompressible solver is used. ---*/
-  const unsigned short Kind_Solver = config->GetKind_Solver();
-  const bool incompressible = (Kind_Solver == FEM_INC_EULER) ||
-                              (Kind_Solver == FEM_INC_NAVIER_STOKES) ||
-                              (Kind_Solver == FEM_INC_RANS) ||
-                              (Kind_Solver == FEM_INC_LES);
+  MAIN_SOLVER Kind_Solver = config->GetKind_Solver();
+  const bool incompressible = (Kind_Solver == MAIN_SOLVER::FEM_INC_EULER) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_NAVIER_STOKES) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_RANS) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_LES);
 
   /*--- Define the number of variables per DOF to be solved, depending on
         the situation. If MKL is used this number must be known, such that
@@ -2669,8 +2669,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
      (config->GetKind_TimeIntScheme_Flow() == ADER_DG)) {
 
     /*--- Check for a compressible Navier-Stokes simulation. ---*/
-    const unsigned short solver = config->GetKind_Solver();
-    if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
+    MAIN_SOLVER solver = config->GetKind_Solver();
+    if(solver == MAIN_SOLVER::FEM_NAVIER_STOKES || solver == MAIN_SOLVER::FEM_RANS || solver == MAIN_SOLVER::FEM_LES) {
 
       /*--- The derivatives of the metric terms are needed when a non-aliased
             predictor is used for ADER. ---*/
@@ -3243,11 +3243,11 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
   const bool useLGL = config->GetKind_FEM_GridDOFsLocation() == LGL;
 
   /*--- Check if an incompressible solver is used. ---*/
-  const unsigned short Kind_Solver = config->GetKind_Solver();
-  const bool incompressible = (Kind_Solver == FEM_INC_EULER) ||
-                              (Kind_Solver == FEM_INC_NAVIER_STOKES) ||
-                              (Kind_Solver == FEM_INC_RANS) ||
-                              (Kind_Solver == FEM_INC_LES);
+  MAIN_SOLVER Kind_Solver = config->GetKind_Solver();
+  const bool incompressible = (Kind_Solver == MAIN_SOLVER::FEM_INC_EULER) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_NAVIER_STOKES) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_RANS) ||
+                              (Kind_Solver == MAIN_SOLVER::FEM_INC_LES);
 
   /*--- Define the number of variables for each type of solve,
         depending on the situation. If MKL is used the actual number

@@ -2,14 +2,14 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,17 +65,17 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(EULER, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config_container[iZone]);
           break;
-        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(INC_EULER, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::INC_EULER, config_container[iZone]);
           break;
-        case DISC_ADJ_HEAT:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(HEAT_EQUATION, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_HEAT:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::HEAT_EQUATION, config_container[iZone]);
           break;
-        case DISC_ADJ_FEM:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(FEM_ELASTICITY, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_FEM:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_ELASTICITY, config_container[iZone]);
           break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",
@@ -87,17 +87,17 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        direct_output[iZone] = COutputFactory::CreateOutput(EULER, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::EULER, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        direct_output[iZone] = COutputFactory::CreateOutput(INC_EULER, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::INC_EULER, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_HEAT:
-        direct_output[iZone] = COutputFactory::CreateOutput(HEAT_EQUATION, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_HEAT:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::HEAT_EQUATION, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_FEM:
-        direct_output[iZone] = COutputFactory::CreateOutput(FEM_ELASTICITY, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_FEM:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_ELASTICITY, config_container[iZone], nDim);
         break;
       default:
         direct_output[iZone] = nullptr;
@@ -176,7 +176,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   /*--- General setup. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolumeOutputFrequency(0));
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
      * correctly as the first OF gradient will overwrite the solution. ---*/
@@ -430,7 +431,7 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
-
+      Set_BGSSolution_k_To_Solution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
@@ -569,13 +570,13 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   AD::Reset();
 
-  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+  /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
 
   for(iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint()) {
-        for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
+      for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+        auto solver = solver_container[iZone][INST_0][iMesh][iSol];
+        if (solver && solver->GetAdjoint()) {
           solver->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
         }
       }
@@ -665,6 +666,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
                                                          config_container, iZone, INST_0);
       AD::Push_TapePosition(); /// leave_zone
     }
+    Print_DirectResidual(kind_recording);
   }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
@@ -700,58 +702,6 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  /*--- Print residuals in the first iteration ---*/
-
-  if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
-
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->AddRadiation()) {
-
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
-        }
-        break;
-
-      case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
-
-        if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-
-          cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
-               << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
-        }
-        if (config_container[iZone]->AddRadiation()) {
-
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
-        }
-        break;
-
-      case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat)       - log10[Heat(0)] : "
-             << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
-        break;
-
-      case DISC_ADJ_FEM:
-        cout << " Zone " << iZone << " (structure)  - ";
-        if(config_container[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE)
-          cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
-        else
-          cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
-        break;
-
-      default:
-        break;
-    }
-  }
 }
 
 void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
@@ -768,8 +718,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
     switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER:     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:     case MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
         solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
@@ -780,65 +730,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-
-        solvers[FLOW_SOL]->Evaluate_ObjFunc(config);
+        ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
-      case DISC_ADJ_HEAT:
+      case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
-      case DISC_ADJ_FEM:
+      case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
+        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
-    }
-  }
 
-  /*--- Extract objective function values. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    auto config = config_container[iZone];
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
-
-    const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-
-    switch (config->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      {
-        auto val = solvers[FLOW_SOL]->GetTotal_ComboObj();
-
-        if (config->GetWeakly_Coupled_Heat()) {
-          if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-            val += solvers[HEAT_SOL]->GetTotal_HeatFlux();
-          }
-          else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
-            val += solvers[HEAT_SOL]->GetTotal_AvgTemperature();
-          }
-        }
-        ObjFunc += val*Weight_ObjFunc;
-        break;
-      }
-      case DISC_ADJ_HEAT:
-      {
-        switch(config->GetKind_ObjFunc()) {
-          case TOTAL_HEATFLUX:
-            ObjFunc += solvers[HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
-            break;
-          case AVG_TEMPERATURE:
-            ObjFunc += solvers[HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
-            break;
-        }
-        break;
-      }
-      case DISC_ADJ_FEM:
-      {
-        solvers[FEA_SOL]->Evaluate_ObjFunc(config);
-        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj()*Weight_ObjFunc;
-        break;
-      }
       default:
         break;
     }

@@ -38,14 +38,14 @@
 #include "../../include/fem/CFEMStandardHexPartition.hpp"
 #include "../../include/fem/CFEMStandardLinePartition.hpp"
 
-void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh) {
+void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReaderFVM *mesh) {
 
   /*--- Get the partitioned coordinates and their global IDs from the mesh object. ---*/
   const auto &gridCoords     = mesh->GetLocalPointCoordinates();
   const auto &globalPointIDs = mesh->GetGlobalPointIDs();
 
   /*--- Initialize point counts and the grid node data structure. ---*/
-  nPointNode = nPoint;
+
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the points and set the coordinates and global index. ---*/
@@ -56,7 +56,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshR
   }
 }
 
-void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config, CMeshReader *mesh) {
+void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config, CMeshReaderFVM *mesh) {
 
   /*--- Reset the global to local element mapping. ---*/
   Global_to_Local_Elem.clear();
@@ -84,7 +84,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config
   }
 }
 
-void CPhysicalGeometry::LoadLinearlyPartitionedSurfaceElementsFEM(CConfig *config, CMeshReader *mesh) {
+void CPhysicalGeometry::LoadLinearlyPartitionedSurfaceElementsFEM(CConfig *config, CMeshReaderFVM *mesh) {
 
   /*--- Store the number of markers and print to the screen. ---*/
   nMarker = mesh->GetNumberOfMarkers();

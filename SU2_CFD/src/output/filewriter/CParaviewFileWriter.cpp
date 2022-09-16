@@ -2,14 +2,14 @@
  * \file CParaviewFileWriter.cpp
  * \brief Filewriter class for Paraview ASCII format.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,13 +29,16 @@
 
 const string CParaviewFileWriter::fileExt = ".vtk";
 
-CParaviewFileWriter::CParaviewFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
+CParaviewFileWriter::CParaviewFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
 
-void CParaviewFileWriter::Write_Data(){
+void CParaviewFileWriter::Write_Data(string val_filename){
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -60,7 +63,8 @@ void CParaviewFileWriter::Write_Data(){
   /*--- Open Paraview ASCII file and write the header. ---*/
 
   if (rank == MASTER_NODE) {
-    Paraview_File.open(fileName.c_str(), ios::out);
+
+    Paraview_File.open(val_filename.c_str(), ios::out);
     Paraview_File.precision(6);
     Paraview_File << "# vtk DataFile Version 3.0\n";
     Paraview_File << "vtk output\n";
@@ -80,7 +84,7 @@ void CParaviewFileWriter::Write_Data(){
 
   /*--- Each processor opens the file. ---*/
 
-  Paraview_File.open(fileName.c_str(), ios::out | ios::app);
+  Paraview_File.open(val_filename.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric point coordinates. ---*/
 
@@ -358,7 +362,7 @@ void CParaviewFileWriter::Write_Data(){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

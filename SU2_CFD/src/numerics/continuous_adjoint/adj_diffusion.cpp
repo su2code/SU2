@@ -2,14 +2,14 @@
  * \file adj_diffusion.cpp
  * \brief Implementation of adjoint diffusion numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -323,7 +323,7 @@ void CAvgGrad_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Compute mean effective viscosity ---*/
   nu_i = Laminar_Viscosity_i/U_i[0];
   nu_j = Laminar_Viscosity_j/U_j[0];
-  nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0])/sigma;
+  nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0])/sigma;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -370,8 +370,8 @@ void CAvgGrad_AdjTurb::ComputeResidual(su2double *val_residual_i, su2double *val
   /*--- Compute mean effective viscosity ---*/
   nu_i = Laminar_Viscosity_i/U_i[0];
   nu_j = Laminar_Viscosity_j/U_j[0];
-  nu_e_i = (nu_i+TurbVar_i[0])/sigma;
-  nu_e_j = (nu_j+TurbVar_j[0])/sigma;
+  nu_e_i = (nu_i+ScalarVar_i[0])/sigma;
+  nu_e_j = (nu_j+ScalarVar_j[0])/sigma;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -444,7 +444,7 @@ void CAvgGradCorrected_AdjTurb::ComputeResidual(su2double *val_residual, su2doub
   /*--- Compute mean effective viscosity ---*/
   nu_i = Laminar_Viscosity_i/U_i[0];
   nu_j = Laminar_Viscosity_j/U_j[0];
-  nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0])/sigma;
+  nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0])/sigma;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -495,8 +495,8 @@ void CAvgGradCorrected_AdjTurb::ComputeResidual(su2double *val_residual_i, su2do
   /*--- Compute mean effective viscosity ---*/
   nu_i = Laminar_Viscosity_i/U_i[0];
   nu_j = Laminar_Viscosity_j/U_j[0];
-  nu_e_i = (nu_i+TurbVar_i[0])/sigma;
-  nu_e_j = (nu_j+TurbVar_j[0])/sigma;
+  nu_e_i = (nu_i+ScalarVar_i[0])/sigma;
+  nu_e_j = (nu_j+ScalarVar_j[0])/sigma;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   for (iDim = 0; iDim < nDim; iDim++) {

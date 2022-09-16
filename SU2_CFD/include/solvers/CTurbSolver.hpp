@@ -2,14 +2,14 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CSolver.hpp"
+#include "CScalarSolver.hpp"
 #include "../variables/CTurbVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
@@ -37,149 +37,30 @@
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbSolver : public CSolver {
+class CTurbSolver : public CScalarSolver<CTurbVariable> {
 protected:
-  enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {MAXNVAR = 2};         /*!< \brief Max number of variables, used in some static arrays. */
-  enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
 
-  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
-  enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
-
-  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
-
-  su2double
-  lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
-  upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
-  Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
-
-  su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 
   /*--- Sliding meshes variables. ---*/
 
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
   vector<vector<int> > SlidingStateNodes;
 
-  /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
-
-#ifdef HAVE_OMP
-  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
-  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
-#else
-  array<DummyGridColor<>,1> EdgeColoring;
-  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
-  static constexpr bool ReducerStrategy = false;
-#endif
-
-  /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
-  CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
-
-  /*!
-   * \brief The highest level in the variable hierarchy this solver can safely use.
-   */
-  CTurbVariable* nodes = nullptr;
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
-
-private:
-
-  /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Viscous_Residual(unsigned long iEdge,
-                        CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics *numerics,
-                        CConfig *config);
-  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
-
-  /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
-   * a nonlinear iteration for stability.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeUnderRelaxationFactor(const CConfig *config);
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSolver(void);
-
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSolver(void) override;
+  ~CTurbSolver() override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config);
+  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
-  /*!
-   * \brief Compute the spatial integration using a upwind scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) override;
-
-  /*!
-   * \brief Impose the Symmetry Plane boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Sym_Plane(CGeometry      *geometry,
-                    CSolver        **solver_container,
-                    CNumerics      *conv_numerics,
-                    CNumerics      *visc_numerics,
-                    CConfig        *config,
-                    unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Euler_Wall(CGeometry      *geometry,
-                     CSolver        **solver_container,
-                     CNumerics      *conv_numerics,
-                     CNumerics      *visc_numerics,
-                     CConfig        *config,
-                     unsigned short val_marker) override;
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -226,18 +107,6 @@ public:
                 unsigned short val_marker) final;
 
   /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Periodic(CGeometry *geometry,
-                   CSolver **solver_container,
-                   CNumerics *numerics,
-                   CConfig *config) final;
-
-  /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -252,67 +121,6 @@ public:
                           CConfig *config) final;
 
   /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetFreeStream_Solution(const CConfig *config) final {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-      nodes->SetSolution(iPoint, Solution_Inf);
-    }
-    END_SU2_OMP_FOR
-  }
-
-  /*!
-   * \brief Impose fixed values to turbulence quantities.
-   * \details Turbulence quantities are set to far-field values in an upstream half-plane
-   * in order to keep them from decaying.
-   */
-  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Prepare an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
-
-  /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
-
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
-
-  /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-   * \param[in] geometry - Geometric definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void SetResidual_DualTime(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep,
-                            unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -320,11 +128,14 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo) final;
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
+
+  /*!
+   * \brief Impose fixed values to turbulence quantities.
+   * \details Turbulence quantities are set to far-field values in an upstream half-plane
+   * in order to keep them from decaying.
+   */
+  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
 
  /*!
   * \brief Get the outer state for fluid interface nodes.
@@ -416,10 +227,5 @@ public:
     else
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
-
-  /*!
-   * \brief SA and SST support OpenMP+MPI.
-   */
-  inline bool GetHasHybridParallel() const override { return true; }
 
 };

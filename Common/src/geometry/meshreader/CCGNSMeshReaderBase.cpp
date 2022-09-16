@@ -31,7 +31,7 @@
 CCGNSMeshReaderBase::CCGNSMeshReaderBase(CConfig        *val_config,
                                          unsigned short val_iZone,
                                          unsigned short val_nZone)
-: CMeshReader(val_config, val_iZone, val_nZone) {
+: CMeshReaderFVM(val_config, val_iZone, val_nZone) {
 
 #ifdef HAVE_CGNS
   /*--- We use val_iZone with +1 for the 1-based indexing in CGNS. ---*/

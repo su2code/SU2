@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -75,6 +75,17 @@ def main():
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
     
+    # Equivalent area NACA64-206
+    ea_naca64206              = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file     = "NACA64206.cfg"
+    ea_naca64206.test_iter    = 10
+    ea_naca64206.test_vals    = [3.181093, 2.471539, -5487700.0, 8.3604]
+    ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
+    ea_naca64206.timeout      = 1600
+    ea_naca64206.tol          = 0.00001
+    test_list.append(ea_naca64206)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -84,7 +95,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.696567, 0.181590, -0.000018]
+    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.645001, 0.181590, -0.000018, 5.000000, -3.421214, 5.000000, -6.769609]
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -95,7 +106,8 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221792, -0.491538, 0.182010, -0.000018]
+    discadj_rans_naca0012_sst.test_vals         = [-2.221792, -0.491538, 0.182010, -0.000018]
+    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.221795, -0.491538, 0.182010, -0.000018]
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -140,7 +152,8 @@ def main():
     discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
     discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals = [10.000000, -3.846018, -1.031079, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals         = [10.000000, -3.846018, -1.031079, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals_aarch64 = [10.000000, -3.846020, -1.031078, 0.000000]
     discadj_incomp_turb_NACA0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012_sa.timeout   = 1600
     discadj_incomp_turb_NACA0012_sa.tol       = 0.00001
@@ -151,11 +164,28 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845593, -2.413098, -8.419991, 0.000000]
+    discadj_incomp_turb_NACA0012_sst.test_vals         = [-3.845593, -2.413098, -8.419991, 0.000000]
+    discadj_incomp_turb_NACA0012_sst.test_vals_aarch64 = [-3.845595, -2.413099, -8.419992, 0.000000]
     discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
     test_list.append(discadj_incomp_turb_NACA0012_sst)
+
+    ####################################################################
+    ###  Disc. Adj. Axisymmetric RANS                                ###
+    ####################################################################
+
+    # Adjoint Axisymmetric RANS
+    discadj_axisymmetric_rans_nozzle            = TestCase('discadj_axisymmetric_rans')
+    discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
+    discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle.cfg"
+    discadj_axisymmetric_rans_nozzle.test_iter  = 10
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.524674, 5.022532, 9.430247, 2.549328, 0.0, -2.4614e+23]
+    discadj_axisymmetric_rans_nozzle.su2_exec   = "mpirun -n 2 SU2_CFD_AD"
+    discadj_axisymmetric_rans_nozzle.timeout    = 1600
+    discadj_axisymmetric_rans_nozzle.tol        = 0.00001
+    discadj_axisymmetric_rans_nozzle.no_restart = True
+    test_list.append(discadj_axisymmetric_rans_nozzle)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
@@ -261,7 +291,8 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals = [-2.849774, -3.238669, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals         = [-2.849774, -3.238669, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals_aarch64 = [-2.849726, -3.238594, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -276,7 +307,8 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.280433, 0.714828, -0.743730, -6.767300]
+    discadj_heat.test_vals         = [-2.280433, 0.714828, -0.743730, -6.767300]
+    discadj_heat.test_vals_aarch64 = [-2.280428, 0.714835, -0.743730, -6.767300]
     discadj_heat.su2_exec  = "parallel_computation.py -f"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
@@ -302,7 +334,8 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-5.318452, -2.4380e-13]
+    discadj_fsi2.test_vals         = [-3.479486, 0.122216, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -317,7 +350,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.364405, -3.085549, -3.085516, -3.085511]
+    discadj_cht.test_vals = [-2.364408, -3.085549, -3.085516, -3.085511]
     discadj_cht.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
@@ -328,19 +361,32 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800529, -4.065499, -4.137153] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800597, -4.065541, -4.137339]
     da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
+    # 2D DA cht streamwise periodic case, 2 zones, PressureDrop objective, additional pressure drop adjoint equation
+    da_sp_pinArray_cht_2d_mf           = TestCase('da_sp_pinArray_cht_2d_mf')
+    da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
+    da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
+    da_sp_pinArray_cht_2d_mf.test_iter = 100
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.609357, -1.273838, -1.502734, -18.503852, -0.834358, -5.813324, -19.074376, -48.287655]
+    da_sp_pinArray_cht_2d_mf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    da_sp_pinArray_cht_2d_mf.timeout   = 1600
+    da_sp_pinArray_cht_2d_mf.tol       = 0.00001
+    da_sp_pinArray_cht_2d_mf.multizone = True
+    test_list.append(da_sp_pinArray_cht_2d_mf)
+
     # 2D unsteady CHT vortex shedding at RE=200. TAVG_Temperature OF
     da_unsteadyCHT_cylinder           = TestCase('da_unsteadyCHT_cylinder')
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.0000e+00, 3.6840e+00, 2.9483e-01]
+    da_unsteadyCHT_cylinder.test_vals         = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.000000, 3.684000, 2.9483e-01]
+    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.000000, 3.684000, 2.9483e-01]
     da_unsteadyCHT_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_unsteadyCHT_cylinder.timeout   = 1600
     da_unsteadyCHT_cylinder.tol       = 0.00001
@@ -365,7 +411,8 @@ def main():
     discadj_topol_optim.test_iter = 0
     discadj_topol_optim.su2_exec  = "parallel_computation.py -f"
     discadj_topol_optim.timeout   = 1600
-    discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
+    discadj_topol_optim.reference_file         = "grad_ref_node.dat.ref"
+    discadj_topol_optim.reference_file_aarch64 = "grad_ref_node_aarch64.dat.ref"
     discadj_topol_optim.test_file = "grad_ref_node.dat"
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
@@ -413,7 +460,7 @@ def main():
     naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
     naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
     naca_restart_shape_opt.test_iter  = 1
-    naca_restart_shape_opt.test_vals = [1.000000, 1.000000, 0.007046, 0.196671]
+    naca_restart_shape_opt.test_vals  = [1.000000, 1.000000, 0.007046, 0.196671]
     naca_restart_shape_opt.su2_exec   = "shape_optimization.py -f"
     naca_restart_shape_opt.timeout    = 1600
     naca_restart_shape_opt.tol       = 0.00001
@@ -432,10 +479,29 @@ def main():
     dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     dyn_discadj_fsi.timeout   = 1600
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
+    dyn_discadj_fsi.reference_file_aarch64 = "grad_dv_aarch64.opt.ref"
     dyn_discadj_fsi.test_file = "grad_young.opt"
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)
+
+    ####################################################################
+    ###  Sobolev Gradient Smoothing                                  ###
+    ####################################################################
+
+    # Sobolev gradient smoothing solver
+    grad_smooth_oneram6           = TestCase('grad_smooth_sob')
+    grad_smooth_oneram6.cfg_dir   = "grad_smooth/oneram6"
+    grad_smooth_oneram6.cfg_file  = "ONERAM6_gradsmooth.cfg"
+    grad_smooth_oneram6.test_iter = 2
+    grad_smooth_oneram6.su2_exec  = "mpirun -n 2 SU2_DOT_AD"
+    grad_smooth_oneram6.timeout   = 1600
+    grad_smooth_oneram6.reference_file = "of_hess.dat.ref"
+    grad_smooth_oneram6.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
+    grad_smooth_oneram6.test_file = "of_hess.dat"
+    pass_list.append(grad_smooth_oneram6.run_filediff())
+    test_list.append(grad_smooth_oneram6)
+
 
     # Tests summary
     print('==================================================================')

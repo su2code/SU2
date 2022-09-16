@@ -2,14 +2,14 @@
  * \file CGaussVariable.hpp
  * \brief Light-weight class to store Gaussian point information.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 /*!
  * \class CGaussVariable
  * \brief Main class for defining the gaussian points.
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CGaussVariable {
 protected:
@@ -59,7 +59,11 @@ public:
   CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes)
     : J_X(0.0), J_x(0.0), iGaussPoint(val_iGauss)
   {
-    GradNi_Xj.resize(val_nNodes,val_nDim) = su2double(0.0);
+
+    /* --- For the structural mechanics solver the dimensions (nNodes x nDim) are sufficient.
+     * For the Sobolev smoothing solver dimensions (nNodes x (nDim+1)) are necessary
+     * when working on a curved design surface embedded in 3D. ---*/
+    GradNi_Xj.resize(val_nNodes,val_nDim+1) = su2double(0.0);
     GradNi_xj = GradNi_Xj;
 
     Ni.resize(val_nNodes) = su2double(0.0);

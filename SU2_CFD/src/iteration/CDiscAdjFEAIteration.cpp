@@ -2,14 +2,14 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -148,14 +148,6 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
                                                                     CrossTerm);
 
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
-}
-
-void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                        unsigned short iZone, unsigned short iInst,
-                                        RECORDING kind_recording) {
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
@@ -345,7 +337,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     myfile_res << config[iZone]->GetTimeIter() << "\t";
 
-    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone]);
+    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone], solvers0);
     myfile_res << scientific << solvers0[FEA_SOL]->GetTotal_ComboObj() << "\t";
 
     for (iVar = 0; iVar < config[iZone]->GetnElasticityMod(); iVar++)

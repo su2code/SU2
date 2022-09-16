@@ -1,16 +1,16 @@
 ﻿/*!
  * \file adj_convection.hpp
- * \brief Delarations of numerics classes for continuous adjoint
+ * \brief Declarations of numerics classes for continuous adjoint
  *        convective discretization. Implemented in adj_convection.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -2,14 +2,14 @@
  * \file special_vectorization.hpp
  * \brief Code generator header to create specializations of simd::Array.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -138,24 +138,24 @@ MAKE_BINARY_FUN(min, min_p)
 
 /*--- Functions of one (array) argument. ---*/
 
-#define MAKE_UNARY_FUN(NAME,IMPL)                         \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) {              \
-  ARRAY_T res; FOREACH res[k] = IMPL(x[k]); return res;   \
+#define MAKE_UNARY_FUN(NAME,IMPL)                             \
+FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) {                  \
+  ARRAY_T res; FOREACH { res[k] = IMPL(x[k]); } return res;   \
 }
 
 #undef MAKE_UNARY_FUN
 
 /*--- Functions of two arguments, with arrays and scalars. ---*/
 
-#define MAKE_BINARY_FUN(NAME,IMPL)                                \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, const ARRAY_T& b) {    \
-  ARRAY_T res; FOREACH res[k] = IMPL(a[k], b[k]); return res;     \
-}                                                                 \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, SCALAR_T b) {          \
-  ARRAY_T res; FOREACH res[k] = IMPL(a[k], b); return res;        \
-}                                                                 \
-FORCEINLINE ARRAY_T NAME(SCALAR_T b, const ARRAY_T& a) {          \
-  ARRAY_T res; FOREACH res[k] = IMPL(b, a[k]); return res;        \
+#define MAKE_BINARY_FUN(NAME,IMPL)                                    \
+FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, const ARRAY_T& b) {        \
+  ARRAY_T res; FOREACH { res[k] = IMPL(a[k], b[k]); } return res;     \
+}                                                                     \
+FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, SCALAR_T b) {              \
+  ARRAY_T res; FOREACH { res[k] = IMPL(a[k], b); } return res;        \
+}                                                                     \
+FORCEINLINE ARRAY_T NAME(SCALAR_T b, const ARRAY_T& a) {              \
+  ARRAY_T res; FOREACH { res[k] = IMPL(b, a[k]); } return res;        \
 }
 
 MAKE_BINARY_FUN(pow, ::pow)

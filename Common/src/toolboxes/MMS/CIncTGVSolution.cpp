@@ -2,14 +2,14 @@
  * \file CIncTGVSolution.cpp
  * \brief Implementations of the member functions of CIncTGVSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,11 +70,11 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Unsteady mode must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_NAVIER_STOKES)
+  if(Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES)
     SU2_MPI::Error("Navier Stokes equations must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 

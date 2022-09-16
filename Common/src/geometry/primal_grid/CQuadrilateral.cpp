@@ -2,14 +2,14 @@
  * \file CQuadrilateral.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,50 +26,24 @@
  */
 
 #include "../../../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../../../include/option_structure.hpp"
 
-unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
-
-unsigned short CQuadrilateral::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
-
-unsigned short CQuadrilateral::nNodesFace[4] = {2,2,2,2};
-
-unsigned short CQuadrilateral::nNeighbor_Nodes[4] = {2,2,2,2};
-
-unsigned short CQuadrilateral::nFaces = 4;
-
-unsigned short CQuadrilateral::nNodes = 4;
-
-unsigned short CQuadrilateral::nNeighbor_Elements = 4;
-
-unsigned short CQuadrilateral::VTK_Type = 9;
-
-unsigned short CQuadrilateral::maxNodesFace = 2;
+constexpr unsigned short CQuadrilateralConnectivity::nNodesFace[4];
+constexpr unsigned short CQuadrilateralConnectivity::Faces[4][2];
+constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Nodes[4];
+constexpr unsigned short CQuadrilateralConnectivity::Neighbor_Nodes[4][2];
 
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
-             unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim)
-: CPrimalGrid() {
-  unsigned short iNeighbor_Elements;
-
-  nDim = val_nDim;
-
-  /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+             unsigned long val_point_2, unsigned long val_point_3):
+  CPrimalGridWithConnectivity<CQuadrilateralConnectivity>(false)
+{
+  /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
-
-
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
-    Neighbor_Elements[iNeighbor_Elements]=-1;
-  }
-
 }
 
-CQuadrilateral::~CQuadrilateral() {}
-
-void CQuadrilateral::Change_Orientation(void) {
-  swap(Nodes[1], Nodes[3]);
+void CQuadrilateral::Change_Orientation() {
+  std::swap(Nodes[1], Nodes[3]);
 }

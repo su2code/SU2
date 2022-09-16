@@ -28,28 +28,69 @@
 
 #pragma once
 
-#include "CMeshReader.hpp"
+#include "CMeshReaderFVM.hpp"
 
 /*!
  * \class CSU2ASCIIMeshReaderBase
  * \brief Base class for the reading of a native SU2 ASCII grid.
  * \author: T. Economon
  */
-class CSU2ASCIIMeshReaderBase: public CMeshReader {
+class CSU2ASCIIMeshReaderBase: public CMeshReaderFVM {
   
 protected:
-  
+
+  enum class FileSection { POINTS, ELEMENTS, MARKERS }; /*!< \brief Different sections of the file. */
+  std::array<FileSection, 3> SectionOrder{};            /*!< \brief Order of the sections in the file. */
+
   unsigned short myZone; /*!< \brief Current SU2 zone index. */
   unsigned short nZones; /*!< \brief Total number of zones in the SU2 file. */
-  
+
   string meshFilename; /*!< \brief Name of the SU2 ASCII mesh file being read. */
   ifstream mesh_file;  /*!< \brief File object for the SU2 ASCII mesh file. */
+
+  bool actuator_disk; /*!< \brief Boolean for whether we have an actuator disk to split. */
+  unsigned long ActDiskNewPoints = 0; /*!< \brief Total number of new grid points to add due to actuator disk splitting. */
+
+  su2double Xloc = 0.0; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
+  su2double Yloc = 0.0; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
+  su2double Zloc = 0.0; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
+
+  vector<bool> ActDisk_Bool; /*!< \brief Flag to identify the grid points on the actuator disk. */
+
+  vector<unsigned long> ActDiskPoint_Back; /*!< \brief Vector containing the global index for the new grid points added to the back of the actuator disk. */
+  vector<unsigned long> VolumePoint_Inv; /*!< \brief Vector containing the inverse mapping from the global index to the added point index for the actuator disk. */
+
+  vector<su2double> CoordXActDisk; /*!< \brief X-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
+  vector<su2double> CoordYActDisk; /*!< \brief Y-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
+  vector<su2double> CoordZActDisk; /*!< \brief Z-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
+
+  vector<su2double> CoordXVolumePoint; /*!< \brief X-coordinates of the volume elements touching the actuator disk. */
+  vector<su2double> CoordYVolumePoint; /*!< \brief Y-coordinates of the volume elements touching the actuator disk. */
+  vector<su2double> CoordZVolumePoint; /*!< \brief Z-coordinates of the volume elements touching the actuator disk. */
   
   /*!
    * \brief Reads all SU2 ASCII mesh metadata and checks for errors.
+   * \param[in] single_pass - Try to read the contents together with the metadata if the order allows (points before elements).
+   * \param[in,out] config - Problem configuration where some metadata is updated (e.g. AoA).
+   * \returns True if single_pass was successful.
    */
-  void ReadMetadata();
+  bool ReadMetadata(const bool single_pass, CConfig *config);
   
+  /*!
+   * \brief Reads the grid points from an SU2 zone into linear partitions across all ranks.
+   */
+  void ReadPointCoordinates(const bool single_pass = false);
+
+  /*!
+   * \brief Reads the interior volume elements from one section of an SU2 zone into linear partitions across all ranks.
+   */
+  void ReadVolumeElementConnectivity(const bool single_pass = false);
+
+  /*!
+   * \brief Reads the surface (boundary) elements from the SU2 zone.
+   */
+  void ReadSurfaceElementConnectivity(const bool single_pass = false);
+
   /*!
    * \brief Helper function to find the current zone in an SU2 ASCII mesh object.
    */
@@ -60,7 +101,7 @@ public:
   /*!
    * \brief Constructor of the CSU2ASCIIMeshReaderBase class.
    */
-  CSU2ASCIIMeshReaderBase(CConfig        *val_config,
+  CSU2ASCIIMeshReaderBase(CConfig *val_config,
                           unsigned short val_iZone,
                           unsigned short val_nZone);
   

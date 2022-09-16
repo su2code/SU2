@@ -3,14 +3,14 @@
 ## \file pysu2_nastran.py
 #  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 7.1.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -29,11 +29,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os
-import shutil
-import copy
 import numpy as np
-import scipy as sp
 import scipy.linalg as linalg
 from math import *
 
@@ -49,18 +45,21 @@ class ImposedMotionClass:
     self.typeOfMotion = typeOfMotion
     self.mode = mode
 
+    self.amplitude = parameters["AMPLITUDE"]
+    self.timeStart = parameters["TIME_START"]
+    if "TIME_STOP" in parameters.keys():
+      self.timeStop  = parameters["TIME_STOP"]
+    else:
+      self.timeStop = inf
+
     if self.typeOfMotion == "SINUSOIDAL":
       self.bias = parameters["BIAS"]
-      self.amplitude = parameters["AMPLITUDE"]
       self.frequency = parameters["FREQUENCY"]
-      self.timeStart = parameters["TIME_0"]
 
     elif self.typeOfMotion == "BLENDED_STEP":
       self.kmax = parameters["K_MAX"]
       self.vinf = parameters["V_INF"]
       self.lref = parameters["L_REF"]
-      self.amplitude = parameters["AMPLITUDE"]
-      self.timeStart = parameters["TIME_0"]
       self.tmax = 2*pi/self.kmax*self.lref/self.vinf
       self.omega0 = 1/2*self.kmax
 
@@ -71,12 +70,14 @@ class ImposedMotionClass:
   def GetDispl(self,time):
     time = time - self.time0 - self.timeStart
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
       return self.amplitude
 
@@ -85,12 +86,14 @@ class ImposedMotionClass:
     time = time - self.time0 - self.timeStart
 
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
       return 0.0
 
@@ -98,12 +101,14 @@ class ImposedMotionClass:
     time = time - self.time0 - self.timeStart
 
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
       return 0.0
 
@@ -284,7 +289,6 @@ class Solver:
     self.deltaT = self.Config['DELTA_T']
     self.rhoAlphaGen = self.Config['RHO']
 
-    self.nElem = int()
     self.nPoint = int()
     self.nMarker = int()
     self.nRefSys = int()
@@ -317,8 +321,7 @@ class Solver:
       histFile.write(header)
       histFile.close()
     else:
-      self.__setRestart('nM1')
-      self.__setRestart('n')
+      self.__setRestart()
 
   def __readConfig(self):
     """
@@ -389,7 +392,7 @@ class Solver:
             s = s[1:]
         return float(s)
 
-      self.nMarker = 1
+      self.nMarker = 0
       self.nPoint = 0
       self.nRefSys = 0
 
@@ -406,7 +409,7 @@ class Solver:
             self.node.append(Point())
             line = line[30:]
             ID = int(line[8:16])
-            CP = int(line[16:24])
+            CP = self.__checkBlankField(line[16:24])
             x = nastran_float(line[24:32])
             y = nastran_float(line[32:40])
             z = nastran_float(line[40:48])
@@ -421,14 +424,14 @@ class Solver:
               x = RotatedPos[0]+DeltaPos[0]
               y = RotatedPos[1]+DeltaPos[1]
               z = RotatedPos[2]+DeltaPos[2]
-            CD = int(line[48:56])
+            CD = self.__checkBlankField(line[48:56])
             self.node[self.nPoint].SetCoord((x,y,z))
             self.node[self.nPoint].SetID(ID)
             self.node[self.nPoint].SetCP(CP)
             self.node[self.nPoint].SetCD(CD)
             self.node[self.nPoint].SetCoord0((x,y,z))
             self.node[self.nPoint].SetCoord_n((x,y,z))
-            self.nPoint = self.nPoint+1
+            self.nPoint += 1
             continue
 
           pos = line.find('CORD2R')
@@ -462,17 +465,17 @@ class Solver:
             x_direction = x_direction/linalg.norm(x_direction)
             self.refsystems[self.nRefSys].SetRotMatrix(x_direction,y_direction,z_direction)
             self.refsystems[self.nRefSys].SetOrigin((AX,AY,AZ))
-            self.nRefSys = self.nRefSys+1
+            self.nRefSys += 1
             continue
 
           pos = line.find("SET1")
-          markerTag = self.FSI_marker
           if pos == 30:
-              self.markers[markerTag] = []
               line = line.strip('\r\n')
-              line = line[46:]
+              line = line[37:]
               line = line.split()
               existValue = True
+              markerTag = line.pop(0)
+              self.markers[markerTag] = []
               while existValue:
                   if line[0] == "+":
                       line = meshfile.readline()
@@ -483,19 +486,33 @@ class Solver:
                   for iPoint in range(self.nPoint):
                       if self.node[iPoint].GetID() == ID:
                           break
+                  if (iPoint == (self.nPoint-1)) and (self.node[iPoint].GetID() != ID):
+                      raise Exception("Point {} in the set {} was not found in the mesh".format(ID,markerTag))
                   self.markers[markerTag].append(iPoint)
                   existValue = len(line)>=1
+              self.nMarker += 1
               continue
 
+      if not any(self.FSI_marker in key for key in self.markers.keys()):
+          raise Exception("The FSI marker was not found in the available sets")
+
       self.markers[self.FSI_marker].sort()
-      print("Number of elements: {}".format(self.nElem))
-      print("Number of point: {}".format(self.nPoint))
+
+      print("Number of points: {}".format(self.nPoint))
       print("Number of markers: {}".format(self.nMarker))
       print("Number of reference systems: {}".format(self.nRefSys))
-      if len(self.markers) > 0:
-        print("Moving marker(s):")
-        for mark in self.markers.keys():
-          print(mark)
+      print("Moving marker: {}".format(self.FSI_marker))
+      print("Number of points in the moving marker".format(len(self.markers[self.FSI_marker])))
+
+  def __checkBlankField(self, string):
+    """
+    This method considers that Nastran apply 0 when the reference system is not specified
+    """
+
+    if string == ' '*8:
+      return int(0)
+    return int(string)
+
 
   def __setStructuralMatrices(self):
     """
@@ -731,6 +748,70 @@ class Solver:
         self.node[iPoint].SetCoord_n((X_disp[iPoint]+coord0[0],Y_disp[iPoint]+coord0[1],Z_disp[iPoint]+coord0[2]))
         self.node[iPoint].SetVel_n((X_vel[iPoint],Y_vel[iPoint],Z_vel[iPoint]))
 
+  def __setRestart(self):
+    """
+    This method sets all the variables needed for the correct restart.
+    """
+
+    #read the Structhistory to obtain the mode amplitudes
+    nM1Set = False
+    nSet = False
+    firstLineRead = False
+    couplingLineRead = False
+
+    with open('StructHistoryModal.dat','r') as file:
+      print('Opened history file StructHistoryModal.dat.')
+      line = file.readline()
+      while 1:
+        line = file.readline()
+        if not line:
+          break
+        line = line.strip('\r\n').split()
+
+        # The old time_0 for imposed motion can either be the first line of the StructHistoryModal, if TimeIterTreshold was -1 (immediate coupling), or the second line. In the former case, time_0 is 0.0, so it is easy to recognize it
+        if not firstLineRead:
+          firstLineRead = True
+          if float(line[0])==0.0:
+            couplingLineRead = True
+            self.timeStartCoupling = 0.0
+        else:
+          if couplingLineRead:
+            pass
+          else:
+            self.timeStartCoupling = float(line[0])
+            couplingLineRead = True
+
+        if int(line[1])==(self.Config["RESTART_ITER"]-2):
+          index = 0
+          for index_mode in range(self.nDof):
+            self.q[index_mode] = float(line[index+3])
+            self.qdot[index_mode] = float(line[index+4])
+            self.qddot[index_mode] = float(line[index+5])
+            index += 3
+          del index
+          #push back the mode amplitudes velocities and accelerations
+          self.__computeInterfacePosVel(True)
+          self.q_n = np.copy(self.q)
+          self.qdot_n = np.copy(self.qdot)
+          self.qddot_n = np.copy(self.qddot)
+          self.a_n = np.copy(self.a)
+          nM1Set = True
+        if int(line[1])==(self.Config["RESTART_ITER"]-1):
+          index = 0
+          for index_mode in range(self.nDof):
+            self.q[index_mode] = float(line[index+3])
+            self.qdot[index_mode] = float(line[index+4])
+            self.qddot[index_mode] = float(line[index+5])
+            index += 3
+          del index
+          self.__computeInterfacePosVel(False)
+          nSet = True
+          break
+
+    if (not nM1Set) or (not nSet):
+      raise Exception('The restart iteration was not found in the structural history')
+
+
   def __temporalIteration(self,time):
     """
     This method integrates in time the solution.
@@ -774,12 +855,15 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       if self.ImposedMotionToSet:
+        if self.Config["RESTART_SOL"] == "NO":
+          # If yes we already set it in the __setRestart function
+          self.timeStartCoupling = time
         iImposedFunc = 0
         for imode in self.Config["IMPOSED_MODES"].keys():
           for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
             typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
             parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
-            self.ImposedMotionFunction.append(ImposedMotionClass(time, typeOfMotion, parameters, imode))
+            self.ImposedMotionFunction.append(ImposedMotionClass(self.timeStartCoupling, typeOfMotion, parameters, imode))
             iImposedFunc += 1
         self.ImposedMotionToSet = False
       for iImposedFunc in range(len(self.ImposedMotionFunction)):
@@ -794,9 +878,7 @@ class Solver:
     """
     This method uses the nodal forces and the mode shapes to obtain the modal forces.
     """
-    makerID = list(self.markers.keys())
-    makerID = makerID[0]
-    nodeList = self.markers[makerID]
+    nodeList = self.markers[self.FSI_marker]
     FX = np.zeros((self.nPoint, 1))
     FY = np.zeros((self.nPoint, 1))
     FZ = np.zeros((self.nPoint, 1))
@@ -850,6 +932,15 @@ class Solver:
     print(line)
     self.__computeInterfacePosVel(False)
 
+  def activateMode(self, iMode):
+    """
+    This method is used to artificially set only one mode activated, thus
+    with non zero amplitude.
+    """
+    self.__reset(self.q)
+    self.q[iMode] = 1.0
+    self.__computeInterfacePosVel(True)
+
   def setInitialDisplacements(self):
     """
     This method provides public access to the method __computeInterfacePosVel and
@@ -857,55 +948,6 @@ class Solver:
     """
 
     self.__computeInterfacePosVel(True)
-
-  def __setRestart(self, timeIter):
-    if timeIter == 'nM1':
-      #read the Structhistory to obtain the mode amplitudes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
-        line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-2):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      #push back the mode amplitudes velocities and accelerations
-      self.__computeInterfacePosVel(True)
-      self.q_n = np.copy(self.q)
-      self.qdot_n = np.copy(self.qdot)
-      self.qddot_n = np.copy(self.qddot)
-      self.a_n = np.copy(self.a)
-    if timeIter == 'n':
-      #read the Structhistory to obtain the modes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
-        line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-1):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      self.__computeInterfacePosVel(False)
 
   def writeSolution(self, time, timeIter, FSIIter):
     """
@@ -943,25 +985,29 @@ class Solver:
     """
     This method can be accessed from outside to set the nodal forces.
     """
-
-    makerID = list(self.markers.keys())
-    makerID = makerID[0]
-    iPoint = self.getInterfaceNodeGlobalIndex(makerID, iVertex)
+    iPoint = self.getVertexGlobalIndex(self.FSI_marker, iVertex)
     self.node[iPoint].SetForce((fx,fy,fz))
+
+  def getNumberOfModes(self):
+    """
+    This method provides the number of degrees of freedom used in
+    the structural solver.
+    """
+    return self.nDof
 
   def getFSIMarkerID(self):
     """
     This method provides the ID of the interface marker
     """
-    L = list(self.markers)
-    return L[0]
+    return self.FSI_marker
 
   def getNumberOfSolidInterfaceNodes(self, markerID):
 
     return len(self.markers[markerID])
 
-  def getInterfaceNodeGlobalIndex(self, markerID, iVertex):
+  def getVertexGlobalIndex(self, markerID, iVertex):
 
+    # This solver is serial, thus global=local
     return self.markers[markerID][iVertex]
 
   def getInterfaceNodePosInit(self, markerID, iVertex):
@@ -988,3 +1034,10 @@ class Solver:
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel_n()
     return Vel
+
+  def IsAHaloNode(self, markerID, iVertex):
+
+    # There are no halo nodes in this solver as it is serial
+    iPoint = self.markers[markerID][iVertex]
+    halo = False
+    return halo

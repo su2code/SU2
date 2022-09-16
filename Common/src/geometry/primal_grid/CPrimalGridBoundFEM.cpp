@@ -2,14 +2,14 @@
  * \file CPrimalGridBoundFEM.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,18 +27,19 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long *dataElem) {
+CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long *dataElem) 
+  :CPrimalGrid(true, dataElem[2], 1)
+{
 
   /*--- Store the meta data for this element. ---*/
   VTK_Type          = (unsigned short) dataElem[0];
   nPolyGrid         = (unsigned short) dataElem[1];
   nDOFsGrid         = (unsigned short) dataElem[2];
   boundElemIDGlobal = dataElem[3];
-  DomainElement     = dataElem[4];
+  GlobalIndex_DomainElement     = dataElem[4];
 
   /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and copy them from val_nodes. ---*/
-  Nodes = new unsigned long[nDOFsGrid];
+        the geometry and copy them from val_nodes.                        ---*/
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = dataElem[i+5];
 
@@ -92,4 +93,14 @@ void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
   /*--- Convert the local values of thisFaceConn to global values. ---*/
   for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
     faceConn[0][j] = Nodes[thisFaceConn[j]];
+}
+
+void CPrimalGridBoundFEM::RemoveMultipleDonorsWallFunctions(void) {
+
+  /* Sort donorElementsWallFunctions in increasing order and remove the
+     the double entities. */
+  std::sort(donorElementsWallFunctions.begin(), donorElementsWallFunctions.end());
+  auto lastEntry = std::unique(donorElementsWallFunctions.begin(),
+                               donorElementsWallFunctions.end());
+  donorElementsWallFunctions.erase(lastEntry, donorElementsWallFunctions.end());
 }

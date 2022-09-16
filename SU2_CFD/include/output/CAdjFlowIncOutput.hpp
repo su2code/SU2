@@ -2,14 +2,14 @@
  * \file CAdjFlowIncOutput.hpp
  * \brief Headers of the adjoint incompressible flow output.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,17 +27,16 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CAdjFlowOutput.hpp"
 
 /*! \class CAdjFlowIncOutput
  *  \brief Output class for incompressible flow discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CAdjFlowIncOutput final: public COutput {
+class CAdjFlowIncOutput final: public CAdjFlowOutput {
 private:
 
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
   RADIATION_MODEL rad_model; /*!< \brief The kind of radiation model */
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/

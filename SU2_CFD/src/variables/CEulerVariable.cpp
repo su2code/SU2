@@ -2,14 +2,14 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,49 +29,16 @@
 #include "../../include/fluid/CFluidModel.hpp"
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
-                               unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
-                               Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+                               unsigned long ndim, unsigned long nvar, const CConfig *config)
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+    indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool viscous   = config->GetViscous();
-  const bool windgust  = config->GetWind_Gust();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
-  /*--- Allocate and initialize the primitive variables and gradients ---*/
-
-  nPrimVar          = nDim+9;
-  nPrimVarGrad      = nDim+4;
-  nSecondaryVar     = viscous? 8 : 2;
+  nSecondaryVar = config->GetViscous() ? 8 : 2,
   nSecondaryVarGrad = 2;
-
-  /*--- Allocate residual structures ---*/
-
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-
-  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
-      break;
-    }
-  }
-
-  /*--- Allocate undivided laplacian (centered) ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint,nVar);
-
-  /*--- Allocate the slope limiter (MUSCL upwind) ---*/
-
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
-      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
-    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  }
 
   /*--- Solution initialization ---*/
 
@@ -84,8 +51,6 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   Solution_Old = Solution;
 
-  /*--- New solution initialization for Classical RK4 ---*/
-
   if (classical_rk4) Solution_New = Solution;
 
   /*--- Allocate and initializate solution for dual time strategy ---*/
@@ -95,33 +60,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     Solution_time_n1 = Solution;
   }
 
-  /*--- Allocate space for the harmonic balance source terms ---*/
-
-  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
-    HB_Source.resize(nPoint,nVar) = su2double(0.0);
-
-  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-
-  if (windgust) {
-    WindGust.resize(nPoint,nDim);
-    WindGustDer.resize(nPoint,nDim+1);
-  }
-
-  /*--- Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, mu, mut, k, Cp) ---*/
-
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nSecondaryVar) = su2double(0.0);
-
-  /*--- Compressible flow, gradients primitive variables (T, vx, vy, vz, P, rho, h) ---*/
-
-  if (config->GetMUSCL_Flow() || viscous) {
-    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  }
-
-  if (config->GetReconstructionGradientRequired() &&
-      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
-    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  }
 
   if (config->GetAxisymmetric()){
     nAuxVar = 3;
@@ -129,27 +68,10 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
   }
 
-  if (config->GetLeastSquaresRequired()) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  if (config->GetWind_Gust()) {
+    WindGust.resize(nPoint,nDim);
+    WindGustDer.resize(nPoint,nDim+1);
   }
-
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
-
-  Velocity2.resize(nPoint) = su2double(0.0);
-  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
-  Delta_Time.resize(nPoint) = su2double(0.0);
-  Lambda.resize(nPoint) = su2double(0.0);
-  Sensor.resize(nPoint) = su2double(0.0);
-
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = su2double(1.0);
-  LocalCFL.resize(nPoint) = su2double(0.0);
-
-  /* Non-physical point (first-order) initialization. */
-  Non_Physical.resize(nPoint) = false;
-  Non_Physical_Counter.resize(nPoint) = 0;
-
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
@@ -208,5 +130,3 @@ void CEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidMod
    SetdPde_rho(iPoint, FluidModel->GetdPde_rho());
 
 }
-
-void CEulerVariable::SetSolution_New() { Solution_New = Solution; }

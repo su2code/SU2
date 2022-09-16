@@ -32,14 +32,14 @@
 #include "cgnslib.h"
 #endif
 
-#include "CMeshReader.hpp"
+#include "CMeshReaderFVM.hpp"
 
 /*!
  * \class CCGNSMeshReaderBase
  * \brief Base class for the reading of a CGNS zone.
  * \author: T. Economon
  */
-class CCGNSMeshReaderBase: public CMeshReader {
+class CCGNSMeshReaderBase: public CMeshReaderFVM {
   
 protected:
  

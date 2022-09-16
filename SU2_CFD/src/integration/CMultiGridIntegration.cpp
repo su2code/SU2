@@ -2,14 +2,14 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,20 +41,20 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {
-    case EULER:
-    case NAVIER_STOKES:
-    case NEMO_EULER:
-    case NEMO_NAVIER_STOKES:
-    case RANS:
-    case FEM_EULER:
-    case FEM_NAVIER_STOKES:
-    case FEM_RANS:
-    case FEM_LES:
-    case DISC_ADJ_EULER:
-    case DISC_ADJ_NAVIER_STOKES:
-    case DISC_ADJ_FEM_EULER:
-    case DISC_ADJ_FEM_NS:
-    case DISC_ADJ_RANS:
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
+    case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
       direct = true;
       break;
     default:
@@ -92,10 +92,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
-    SU2_OMP_MASTER
-    config[iZone]->SubtractFinestMesh();
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
@@ -185,8 +182,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         solver_fine->Set_OldSolution();
 
-        if (classical_rk4)
-          solver_fine->Set_NewSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 
@@ -227,7 +223,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
 
-    if (implicit) config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+    if (implicit) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_EXPLICIT);)
+    }
 
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
@@ -251,7 +249,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Restore the time integration settings. ---*/
 
-    if (implicit) config->SetKind_TimeIntScheme(EULER_IMPLICIT);
+    if (implicit) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
+    }
 
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
 
@@ -435,6 +435,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(32)
@@ -682,7 +683,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       CNumerics ****numerics_container, CConfig *config,
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
     case RUNTIME_FLOW_SYS:
@@ -712,9 +713,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                    numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       break;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
@@ -732,15 +731,14 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
 
     /*--- Set the force coefficients ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Restrict solution and gradients to the coarse levels ---*/
 

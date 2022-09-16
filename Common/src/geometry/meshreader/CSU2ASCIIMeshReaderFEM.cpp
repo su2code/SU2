@@ -36,7 +36,7 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig        *val_config,
 : CSU2ASCIIMeshReaderBase(val_config, val_iZone, val_nZone) {
   
   /* Read the basic metadata and perform some basic error checks. */
-  ReadMetadata();
+  ReadMetadata(true, val_config);
   
   /*--- Read the volume connectivity and distribute it
         linearly over the MPI ranks. ---*/

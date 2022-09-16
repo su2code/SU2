@@ -2,14 +2,14 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,15 +41,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Dimension of the problem  ---*/
-  switch (config->GetKind_Turb_Model()) {
-    case SA :        nVar = 1; break;
-    case SA_NEG :    nVar = 1; break;
-    case SA_E :      nVar = 1; break;
-    case SA_COMP :   nVar = 1; break;
-    case SA_E_COMP : nVar = 1; break;
-    case SST :       nVar = 2; break;
-    case SST_SUST :  nVar = 2; break;
-  }
+  nVar = config->GetnTurbVar();
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -312,7 +304,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Gradient of turbulent variables w/o reconstruction ---*/
     const auto TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
     const auto TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
-    numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
+    numerics->SetScalarVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 
     /*--- Set normal vectors and length ---*/
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
@@ -354,7 +346,7 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
      and turbulent adjoint variables w/o reconstruction ---*/
     numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint), solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint));
-    numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
+    numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
     numerics->SetTurbAdjointVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
 
     /*--- Viscosity ---*/
@@ -406,11 +398,11 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction ---*/
     TurbVar_i = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint);
-    numerics->SetTurbVar(TurbVar_i, nullptr);
+    numerics->SetScalarVar(TurbVar_i, nullptr);
 
     /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
     auto TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
-    numerics->SetTurbVarGradient(TurbVar_Grad_i, nullptr);
+    numerics->SetScalarVarGradient(TurbVar_Grad_i, nullptr);
 
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
     TurbPsi_i = nodes->GetSolution(iPoint);
@@ -445,7 +437,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    /*--- Gradient of turbulent variables w/o reconstruction ---*/
 //    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
 //    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
-//    second_numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
+//    second_numerics->SetScalarVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 //
 //    /*--- Turbulent adjoint variables w/o reconstruction ---*/
 //    TurbPsi_i = nodes->GetSolution(iPoint);

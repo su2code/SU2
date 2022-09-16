@@ -2,14 +2,14 @@
  * \file CConstantConductivity.hpp
  * \brief Defines a constant laminar thermal conductivity model.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,36 +39,12 @@ class CConstantConductivity final : public CConductivityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CConstantConductivity(su2double kt_const) : kt_(kt_const) {}
-
-  /*!
-   * \brief return conductivity value.
-   */
-  su2double GetConductivity() const override { return kt_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
+  CConstantConductivity(su2double kt_const) {
+    kt_ = kt_const;
+  }
 
   /*!
    * \brief Set thermal conductivity.
    */
-  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {}
-
-  /*!
-   * \brief Set thermal conductivity derivatives.
-   */
-  void SetDerConductivity(su2double t, su2double rho, su2double dmudrho_t, su2double dmudt_rho, su2double cp) override {
-  }
-
- private:
-  su2double kt_{0.0};        /*!< \brief Thermal conductivity. */
-  su2double dktdrho_t_{0.0}; /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0}; /*!< \brief DktDT_rho. */
+  void SetConductivity(su2double, su2double, su2double, su2double, su2double, su2double, su2double) override {}
 };

@@ -28,14 +28,14 @@
 
 #pragma once
 
-#include "CMeshReader.hpp"
+#include "CMeshReaderFVM.hpp"
 
 /*!
  * \class CBoxMeshReaderFEM
  * \brief Reads a 3D box grid into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CBoxMeshReaderFEM final: public CMeshReader {
+class CBoxMeshReaderFEM final: public CMeshReaderFVM {
   
 private:
   

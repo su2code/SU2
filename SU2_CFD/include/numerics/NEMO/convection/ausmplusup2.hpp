@@ -2,14 +2,14 @@
  * \file ausmplusup2.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz.
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,13 +38,12 @@
 class CUpwAUSMPLUSUP2_NEMO : public CNEMONumerics {
 private:
   su2double *FcL, *FcR, *FcLR;
-  //su2double *dmLP, *dmRM, *dpLP, *dpRM;
-  //su2double *daL, *daR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
   su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
   su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
-  su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
 
 public:
 

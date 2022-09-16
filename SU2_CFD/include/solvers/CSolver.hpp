@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,9 +56,7 @@
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
-#include "BasisGenerator.h"
-#include "QDEIM.h"
-#include "DEIM.h"
+#include "librom.h"
 #endif
 
 using namespace std;
@@ -99,6 +97,9 @@ protected:
   vector<unsigned long> Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
   su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+
+  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
+  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
   /*--- Variables that need to go. ---*/
 
@@ -250,15 +251,15 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
-  
+
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
 #endif
-  
+
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false);
+  CSolver(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Destructor of the class.
@@ -486,43 +487,11 @@ public:
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
-   * \brief Set the RMS and MAX residual to zero.
-   */
-  inline void SetResToZero() {
-    SU2_OMP_MASTER {
-      for (auto& r : Residual_RMS) r = 0;
-      for (auto& r : Residual_Max) r = 0;
-      for (auto& p : Point_Max) p = 0;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
-
-  /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history (overload).
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x, y, z) of the max residual point.
-   */
-  inline void AddRes_Max(unsigned short val_var,
-                         su2double val_residual,
-                         unsigned long val_point,
-                         const su2double* val_coord) {
-    if (val_residual > Residual_Max[val_var]) {
-      Residual_Max[val_var] = val_residual;
-      Point_Max[val_var] = val_point;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Point_Max_Coord[val_var][iDim] = val_coord[iDim];
-    }
-  }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -537,25 +506,6 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
-
-  /*!
-   * \brief Adds the maximal residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x, y, z) of the max residual point.
-   */
-  inline void AddRes_Max_BGS(unsigned short val_var,
-                             su2double val_residual,
-                             unsigned long val_point,
-                             const su2double* val_coord) {
-    if (val_residual > Residual_Max_BGS[val_var]) {
-    Residual_Max_BGS[val_var] = val_residual;
-    Point_Max_BGS[val_var] = val_point;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
-    }
-  }
 
   /*!
    * \brief Get the maximal residual for BGS subiterations.
@@ -861,8 +811,9 @@ public:
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
 
   /*!
    * \brief A virtual member.
@@ -972,34 +923,6 @@ public:
   inline virtual void BC_Damper(CGeometry *geometry,
                                 const CConfig *config,
                                 unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Interface_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_NearField_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1378,7 +1301,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *visc_numerics,
                                               CConfig *config,
@@ -1725,16 +1648,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetIntBoundary_Jump(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   inline virtual void SetTotal_CD(su2double val_Total_CD) { }
@@ -1825,20 +1738,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
    */
   inline virtual void SetTotal_CT(su2double val_Total_CT) { }
@@ -1896,6 +1795,19 @@ public:
                                           CSolver **solver_container,
                                           CNumerics *numerics,
                                           CConfig *config) { }
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  inline su2double GetTotal_ComboObj() const { return Total_ComboObj; }
+
+  /*!
+   * \brief Sets the value of the custom objective function.
+   * \param[in] value - Value of the total custom objective function.
+   */
+  inline void SetTotal_Custom_ObjFunc(su2double value) { Total_Custom_ObjFunc = value; }
 
   /*!
    * \brief A virtual member.
@@ -2314,20 +2226,6 @@ public:
   inline virtual su2double GetCD_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline virtual void SetTotal_ComboObj(su2double ComboObj) {}
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline virtual su2double GetTotal_ComboObj(void) const { return 0;}
-
-  /*!
    * \brief A virtual member.
    * \return Value of the sideforce coefficient (inviscid + viscous contribution).
    */
@@ -2410,13 +2308,6 @@ public:
    * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CNearFieldOF() const { return 0; }
-
-  /*!
-   * \author H. Kline
-   * \brief Add to the value of the total 'combo' objective.
-   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
-   */
-  inline virtual void AddTotal_ComboObj(su2double val_obj) {}
 
   /*!
    * \brief A virtual member.
@@ -2513,6 +2404,11 @@ public:
   inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline virtual su2double GetReferenceDynamicPressure() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -2601,12 +2497,6 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_DC60() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the custom objective function.
-   */
-  inline virtual su2double GetTotal_Custom_ObjFunc() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3269,13 +3159,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_dim - Index of the adjoint velocity vector.
-   * \return Value of the density x velocity at the infinity.
-   */
-  inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
@@ -3705,6 +3588,28 @@ public:
    * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
+
+  /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  virtual unsigned long RegisterSolutionExtra(bool input, const CConfig* config) { return 0; }
+
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
+  virtual void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {}
+
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
+  virtual void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {}
 
   /*!
    * \brief  A virtual member.
@@ -4296,6 +4201,59 @@ public:
                                         CConfig *config) { }
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
+   */
+  virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                        CNumerics *numerics,
+                                        CSurfaceMovement *surface_movement,
+                                        CVolumetricMovement *grid_movement,
+                                        CConfig *config,
+                                        su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                                     CSurfaceMovement *surface_movement,
+                                                     CVolumetricMovement *grid_movement,
+                                                     CConfig *config,
+                                                     su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void ReadSensFromGeometry(const CGeometry* geometry) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WriteSensToGeometry(CGeometry* geometry) const {}
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -4391,11 +4349,11 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
-  
+
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4414,4 +4372,93 @@ protected:
   void SetVerificationSolution(unsigned short nDim,
                                unsigned short nVar,
                                CConfig        *config);
+
+  /*!
+   * \brief "Add" residual at (iPoint,iVar) to residual variables local to the thread.
+   *  \param[in] iPoint - Point index.
+   *  \param[in] iVar - Variable index.
+   *  \param[in] res - Residual at (iPoint,iVar), e.g. LinSysRes(iPoint,iVar)
+   *  \param[in,out] resRMS - increases by pow(Residual, 2)
+   *  \param[in,out] resMax - increases to max(resMax, Residual)
+   *  \param[in,out] idxMax - changes when resMax increases
+   */
+  static inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax,
+                                                  unsigned long* idxMax) {
+    res = fabs(res);
+    resRMS[iVar] += res * res;
+    if (res > resMax[iVar]) {
+      resMax[iVar] = res;
+      idxMax[iVar] = iPoint;
+    }
+  }
+
+  /*!
+   * \brief "Add" local residual variables of all threads to compute global residual variables.
+   */
+  inline void ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax,
+                                                const unsigned long* idxMax){
+    SetResToZero();
+
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Residual_RMS[iVar] += resRMS[iVar];
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), geometry->nodes->GetCoord(idxMax[iVar]));
+    }
+    END_SU2_OMP_CRITICAL
+    SU2_OMP_BARRIER
+
+    /*--- Compute the root mean square residual ---*/
+    SetResidual_RMS(geometry, config);
+  }
+
+  /*!
+   * \brief Set the RMS and MAX residual to zero.
+   */
+  inline void SetResToZero() {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      for (auto& r : Residual_RMS) r = 0;
+      for (auto& r : Residual_Max) r = 0;
+      for (auto& p : Point_Max) p = 0;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  /*!
+   * \brief Adds the maximal residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max residual.
+   * \param[in] val_coord - Location (x, y, z) of the max residual point.
+   */
+  inline void AddRes_Max(unsigned short val_var,
+                         su2double val_residual,
+                         unsigned long val_point,
+                         const su2double* val_coord) {
+    if (val_residual > Residual_Max[val_var]) {
+      Residual_Max[val_var] = val_residual;
+      Point_Max[val_var] = val_point;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+    }
+  }
+
+  /*!
+   * \brief Adds the maximal residual for BGS subiterations.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max residual.
+   * \param[in] val_coord - Location (x, y, z) of the max residual point.
+   */
+  inline void AddRes_Max_BGS(unsigned short val_var,
+                             su2double val_residual,
+                             unsigned long val_point,
+                             const su2double* val_coord) {
+    if (val_residual > Residual_Max_BGS[val_var]) {
+    Residual_Max_BGS[val_var] = val_residual;
+    Point_Max_BGS[val_var] = val_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
+    }
+  }
+
 };

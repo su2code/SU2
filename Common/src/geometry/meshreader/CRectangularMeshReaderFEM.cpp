@@ -32,7 +32,7 @@
 CRectangularMeshReaderFEM::CRectangularMeshReaderFEM(CConfig        *val_config,
                                                      unsigned short val_iZone,
                                                      unsigned short val_nZone)
-: CMeshReader(val_config, val_iZone, val_nZone) {
+: CMeshReaderFVM(val_config, val_iZone, val_nZone) {
   
   /* The rectangular mesh is always 2D. */
   dimension = 2;

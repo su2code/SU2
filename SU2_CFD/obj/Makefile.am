@@ -3,14 +3,14 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.1.1 "Blackbird"
+# \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@ endif
 libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
+  ../src/fluid/CFluidScalar.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
@@ -85,6 +86,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
+  ../src/numerics/CLookUpTable.cpp \
+  ../src/numerics/CTrapezoidalMap.cpp \
+  ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
   ../src/numerics/flow/convection/fvs.cpp \
@@ -106,9 +110,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
-  ../src/numerics/turbulent/turb_convection.cpp \
-  ../src/numerics/turbulent/turb_diffusion.cpp \
-  ../src/numerics/turbulent/turb_sources.cpp \
+  ../src/numerics/scalar/scalar_sources.cpp \
+  ../src/numerics/species/species_sources.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
@@ -131,6 +134,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
+  ../src/output/filewriter/CCGNSFileWriter.cpp \  
   ../src/output/tools/CWindowingTools.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
@@ -145,6 +149,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CBaselineOutput.cpp \
   ../src/output/CAdjElasticityOutput.cpp \
   ../src/output/CAdjHeatOutput.cpp \
+  ../src/output/CAdjFlowOutput.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
@@ -176,6 +181,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
+  ../src/solvers/CSpeciesSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
@@ -205,6 +211,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
+  ../src/variables/CScalarVariable.cpp \
+  ../src/variables/CSpeciesVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \
@@ -215,7 +223,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp \
+  ../src/variables/CFlowVariable.cpp
 
 su2_cfd_sources = \
   ../src/SU2_CFD.cpp

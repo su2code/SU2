@@ -2,14 +2,14 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,7 +73,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++)
     denom += MassFrac[iSpecies] * (Ru/MolarMass[iSpecies]) * T;
   Density = Pressure / denom;
-  
+
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     rhos[iSpecies]     = MassFrac[iSpecies]*Density;
     MassFrac[iSpecies] = rhos[iSpecies]/Density;
@@ -119,7 +119,6 @@ su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
-  // TODO - extend for ionization
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
@@ -131,14 +130,13 @@ su2double CNEMOGas::ComputeGamma(){
 
   /*--- Extract Values ---*/
   rhoCvtr = ComputerhoCvtr();
-  rhoCvve = ComputerhoCvve();
 
   /*--- Gamma Computation ---*/
   su2double rhoR = 0.0;
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoR += rhos[iSpecies]*Ru/MolarMass[iSpecies];
 
-  gamma = rhoR/(rhoCvtr+rhoCvve)+1;
+  gamma = rhoR/rhoCvtr+1;
 
   return gamma;
 
@@ -146,7 +144,7 @@ su2double CNEMOGas::ComputeGamma(){
 
 su2double CNEMOGas::ComputerhoCvve() {
 
-    Cvves = ComputeSpeciesCvVibEle();
+    Cvves = ComputeSpeciesCvVibEle(Tve);
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -155,7 +153,7 @@ su2double CNEMOGas::ComputerhoCvve() {
     return rhoCvve;
 }
 
-void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
+void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dPdU){
 
   // Note: Electron energy not included properly.
 
@@ -185,7 +183,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
   /*--- Rename for convenience ---*/
   su2double rhoCvtr = V[RHOCVTR_INDEX];
   su2double rhoCvve = V[RHOCVVE_INDEX];
-  T       = V[T_INDEX];
+  T = V[T_INDEX];
 
   /*--- Pre-compute useful quantities ---*/
   su2double CvtrBAR = 0.0;
@@ -205,8 +203,8 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
-
   }
+
   if (ionization) {
     for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
       //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
@@ -238,14 +236,12 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
 }
 
-void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
-
-  su2double Vel[3] = {0.0};
+void CNEMOGas::ComputedTdU(const su2double *V, su2double *val_dTdU){
 
   /*--- Necessary indexes to assess primitive variables ---*/
-  unsigned long T_INDEX       = nSpecies;
-  unsigned long VEL_INDEX     = nSpecies+2;
-  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  const unsigned long T_INDEX       = nSpecies;
+  const unsigned long VEL_INDEX     = nSpecies+2;
+  const unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
 
   /*--- Rename for convenience ---*/
   T                 = V[T_INDEX];
@@ -256,18 +252,12 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
   Ref_Temperature    = GetRefTemperature();
 
   /*--- Calculate supporting quantities ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
-  su2double v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
+  const su2double v2 = GeometryToolbox::SquaredNorm(nDim, &V[VEL_INDEX]);
 
   /*--- Species density derivatives ---*/
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
     su2double ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
-  }
-
-  if (ionization) {
-    SU2_MPI::Error("NEED TO IMPLEMENT dTdU for IONIZED MIX",CURRENT_FUNCTION);
   }
 
   /*--- Momentum derivatives ---*/
@@ -280,7 +270,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
 }
 
-void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
+void CNEMOGas::ComputedTvedU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dTvedU){
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
@@ -301,4 +291,3 @@ void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2doubl
   val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
 
 }
-

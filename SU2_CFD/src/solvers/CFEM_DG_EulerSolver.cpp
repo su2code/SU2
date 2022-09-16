@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -204,8 +204,8 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
-  bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
-  bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
+  bool turbulent          = (config->GetKind_Solver() == MAIN_SOLVER::FEM_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES);
+  bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) ));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -215,6 +215,13 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
   CFluidModel* auxFluidModel = nullptr;
+
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+        To accomplish this, simply set the non-dimensional coefficients to the
+        dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
 
   switch (config->GetKind_FluidModel()) {
 
@@ -306,15 +313,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   /*--- Viscous initialization ---*/
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-          To accomplish this, simply set the non-dimensional coefficients to the
-          dimensional ones. This will be overruled later.---*/
-    config->SetMu_RefND(config->GetMu_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
-    config->SetMu_SND(config->GetMu_S());
-
-    config->SetMu_ConstantND(config->GetMu_Constant());
 
     /*--- Reynolds based initialization ---*/
     if (reynolds_init) {
@@ -433,22 +431,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max((Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
-
-  /*--- Set viscosity ND constants before defining the visc. model of the fluid models. ---*/
-
-  if (viscous) {
-    /*--- Constant viscosity model. ---*/
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-    /*--- Sutherland's model. ---*/
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
-    /*--- Constant thermal conductivity model. ---*/
-    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
-  }
-  
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
@@ -679,7 +661,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       Unit.str("");
       if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      NonDimTable << "Conductivity" << "-" << config->GetThermal_Conductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent) {
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
@@ -3221,7 +3203,11 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
-    case NONE:
+    case FEM_SHOCK_CAPTURING_DG::NONE:
+      break;
+    case FEM_SHOCK_CAPTURING_DG::PERSSON:
+      // to be done
+      //Shock_Capturing_DG_Persson(elemBeg, elemEnd, workArray);
       break;
   }
 }

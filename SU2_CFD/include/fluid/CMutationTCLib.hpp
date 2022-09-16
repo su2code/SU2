@@ -2,14 +2,14 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,7 +77,7 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  vector<su2double>& ComputeSpeciesCvVibEle() final;
+  vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) final;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
@@ -92,7 +92,9 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -123,7 +125,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) final;
 
   /*!
    * \brief Get species molar mass.

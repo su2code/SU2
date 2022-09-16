@@ -3,14 +3,14 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/toolboxes/CLinearPartitioner.hpp"
+
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 
-CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
+CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig *val_config,
                                                unsigned short val_iZone,
                                                unsigned short val_nZone)
 : CSU2ASCIIMeshReaderBase(val_config, val_iZone, val_nZone) {
@@ -44,7 +44,12 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
   Xloc = 0.0; Yloc = 0.0; Zloc = 0.0;
 
   /* Read the basic metadata and perform some basic error checks. */
-  ReadMetadata();
+  const auto try_single_pass = !actuator_disk;
+
+  if (ReadMetadata(try_single_pass, val_config)) {
+    /* The file contents were read together with the metadata. */
+    return;
+  }
 
   /* If the mesh contains an actuator disk as a single surface,
    we need to first split the surface into repeated points and update
@@ -55,19 +60,30 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
   /* Read and store the points, interior elements, and surface elements.
    We store only the points and interior elements on our rank's linear
    partition, but the master stores the entire set of surface connectivity. */
-  ReadPointCoordinates();
-  ReadVolumeElementConnectivity();
-  ReadSurfaceElementConnectivity();
 
+  mesh_file.open(meshFilename);
+  FastForwardToMyZone();
+
+  for (auto section : SectionOrder) {
+    switch (section) {
+    case FileSection::ELEMENTS:
+      ReadVolumeElementConnectivity();
+      break;
+    case FileSection::POINTS:
+      ReadPointCoordinates();
+      break;
+    case FileSection::MARKERS:
+      ReadSurfaceElementConnectivity();
+      break;
+    }
+  }
+  mesh_file.close();
 }
-
-CSU2ASCIIMeshReaderFVM::~CSU2ASCIIMeshReaderFVM(void) { }
 
 void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
   /*--- Actuator disk preprocesing ---*/
 
-  string Marker_Tag_Duplicate;
   bool InElem, Perimeter;
   unsigned long Counter = 0;
   Xloc = 0.0; Yloc = 0.0; Zloc = 0.0;
@@ -96,7 +112,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
   /*--- Open grid file ---*/
 
-  mesh_file.open(meshFilename.c_str(), ios::in);
+  mesh_file.open(meshFilename);
   FastForwardToMyZone();
 
   /*--- Read grid file with format SU2 ---*/
@@ -319,6 +335,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
         }
       }
+      break;
     }
   }
 
@@ -332,7 +349,8 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
   /* Open the mesh file again to read the coordinates of the new points. */
 
-  mesh_file.open(meshFilename, ios::in);
+  mesh_file.open(meshFilename);
+  FastForwardToMyZone();
 
   while (getline (mesh_file, text_line)) {
 
@@ -462,7 +480,6 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
         }
       }
     }
-
   }
 
   mesh_file.close();
@@ -501,7 +518,9 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
   /*--- Store the coordinates of all the surface and volume
    points that touch the actuator disk ---*/
 
-  mesh_file.open(meshFilename, ios::in);
+  mesh_file.open(meshFilename);
+  FastForwardToMyZone();
+
   while (getline (mesh_file, text_line)) {
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
@@ -526,6 +545,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
           }
         }
       }
+      break;
     }
   }
 
@@ -534,681 +554,6 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
    number of markers by one. */
   numberOfGlobalPoints += ActDiskNewPoints;
   numberOfMarkers++;
-
-  /* Close the mesh file. */
-  mesh_file.close();
-
-}
-
-void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
-
-  /* Get a partitioner to help with linear partitioning. */
-  CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
-
-  /* Determine number of local points */
-  for (unsigned long globalIndex=0; globalIndex < numberOfGlobalPoints; globalIndex++) {
-    if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
-      numberOfLocalPoints++;
-    }
-  }
-
-  /* Prepare our data structure for the point coordinates. */
-  localPointCoordinates.resize(dimension);
-  for (int k = 0; k < dimension; k++)
-    localPointCoordinates[k].reserve(numberOfLocalPoints);
-
-  /*--- Open the mesh file and jump to our zone. ---*/
-
-  mesh_file.open(meshFilename, ios::in);
-  FastForwardToMyZone();
-
-  /*--- Read the point coordinates into our data structure. ---*/
-
-  string text_line;
-  string::size_type position;
-  while (getline (mesh_file, text_line)) {
-
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
-
-      unsigned long GlobalIndex = 0;
-      while (GlobalIndex < numberOfGlobalPoints) {
-
-        if (!actuator_disk) { getline(mesh_file, text_line); }
-        else {
-          if (GlobalIndex < numberOfGlobalPoints-ActDiskNewPoints) {
-            getline(mesh_file, text_line);
-          }
-          else {
-            /* This is a new actuator disk point, so we must construct a
-             string with the new point's coordinates. */
-            ostringstream strsX, strsY, strsZ;
-            unsigned long BackActDisk_Index = GlobalIndex;
-            unsigned long LocalIndex = BackActDisk_Index - (numberOfGlobalPoints-ActDiskNewPoints);
-            strsX.precision(20); strsY.precision(20); strsZ.precision(20);
-            su2double CoordX = CoordXActDisk[LocalIndex]; strsX << scientific << CoordX;
-            su2double CoordY = CoordYActDisk[LocalIndex]; strsY << scientific << CoordY;
-            su2double CoordZ = CoordZActDisk[LocalIndex]; strsZ << scientific << CoordZ;
-            text_line = strsX.str() + "\t" + strsY.str() + "\t" + strsZ.str();
-          }
-        }
-
-        /*--- We only read information for this node if it is owned by this
-         rank based upon our initial linear partitioning. ---*/
-
-        passivedouble Coords[3] = {0.0,0.0,0.0};
-        if ((int)pointPartitioner.GetRankContainingIndex(GlobalIndex) == rank) {
-
-          istringstream point_line(text_line);
-
-          /* Store the coordinates more clearly. */
-          if (dimension == 2) {
-            point_line >> Coords[0];
-            point_line >> Coords[1];
-          } else {
-            point_line >> Coords[0];
-            point_line >> Coords[1];
-            point_line >> Coords[2];
-          }
-
-          /* Load into the coordinate class data structure. */
-          for (unsigned short iDim = 0; iDim < dimension; iDim++) {
-            localPointCoordinates[iDim].push_back(Coords[iDim]);
-
-          }
-        }
-        GlobalIndex++;
-      }
-    }
-  }
-
-  mesh_file.close();
-
-}
-
-void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity() {
-
-  /* Get a partitioner to help with linear partitioning. */
-  CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
-
-  /* Loop over our analytically defined of elements and store only those
-   that contain a node within our linear partition of points. */
-  numberOfLocalElements  = 0;
-  vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON,0);
-
-  /*--- Open the mesh file and jump to our zone. ---*/
-
-  mesh_file.open(meshFilename, ios::in);
-  FastForwardToMyZone();
-
-  string text_line;
-  string::size_type position;
-  while (getline (mesh_file, text_line)) {
-
-    /*--- Find the section containing the interior elements. ---*/
-
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
-
-      /*--- Loop over all the volumetric elements and store any element that
-       contains at least one of an owned node for this rank (i.e., there will
-       be element redundancy, since multiple ranks will store the same elems
-       on the boundaries of the initial linear partitioning. ---*/
-
-      numberOfLocalElements = 0;
-      unsigned long GlobalIndex = 0;
-      bool isOwned = false;
-      while (GlobalIndex < numberOfGlobalElements) {
-        getline(mesh_file, text_line);
-        istringstream elem_line(text_line);
-
-        /*--- Decide whether this rank needs each element. ---*/
-
-        unsigned short VTK_Type;
-        elem_line >> VTK_Type;
-
-        switch(VTK_Type) {
-
-          case TRIANGLE:
-
-            /*--- Store the connectivity for this element more clearly. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-
-            /*--- Adjust for actuator disk splitting if necessary. ---*/
-
-            if (actuator_disk) {
-              for (unsigned short i = 0; i<N_POINTS_TRIANGLE; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_TRIANGLE; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) {
-                      connectivity[i] = ActDiskPoint_Back[connectivity[i]];
-                    }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-
-          case QUADRILATERAL:
-
-            /*--- Load the connectivity for this element. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-            elem_line >> connectivity[3];
-
-            if (actuator_disk) {
-              for (unsigned short  i = 0; i<N_POINTS_QUADRILATERAL; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_QUADRILATERAL; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) {
-                      connectivity[i] = ActDiskPoint_Back[connectivity[i]];
-                    }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-
-          case TETRAHEDRON:
-
-            /*--- Load the connectivity for this element. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-            elem_line >> connectivity[3];
-
-            if (actuator_disk) {
-              for (unsigned short  i = 0; i<N_POINTS_TETRAHEDRON; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_TETRAHEDRON; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) {
-                      connectivity[i] = ActDiskPoint_Back[connectivity[i]];
-                    }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-
-          case HEXAHEDRON:
-
-            /*--- Load the connectivity for this element. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-            elem_line >> connectivity[3];
-            elem_line >> connectivity[4];
-            elem_line >> connectivity[5];
-            elem_line >> connectivity[6];
-            elem_line >> connectivity[7];
-
-            if (actuator_disk) {
-              for (unsigned short  i = 0; i<N_POINTS_HEXAHEDRON; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_HEXAHEDRON; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) { connectivity[i] = ActDiskPoint_Back[connectivity[i]]; }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-
-          case PRISM:
-
-            /*--- Load the connectivity for this element. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-            elem_line >> connectivity[3];
-            elem_line >> connectivity[4];
-            elem_line >> connectivity[5];
-
-            if (actuator_disk) {
-              for (unsigned short i = 0; i<N_POINTS_PRISM; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_PRISM; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) { connectivity[i] = ActDiskPoint_Back[connectivity[i]]; }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-
-          case PYRAMID:
-
-            /*--- Load the connectivity for this element. ---*/
-
-            elem_line >> connectivity[0];
-            elem_line >> connectivity[1];
-            elem_line >> connectivity[2];
-            elem_line >> connectivity[3];
-            elem_line >> connectivity[4];
-
-            if (actuator_disk) {
-              for (unsigned short i = 0; i<N_POINTS_PYRAMID; i++) {
-                if (ActDisk_Bool[connectivity[i]]) {
-
-                  su2double Xcg = 0.0; unsigned long Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_PYRAMID; j++) {
-                    if (connectivity[j] < numberOfGlobalPoints-ActDiskNewPoints) {
-                      Xcg += CoordXVolumePoint[VolumePoint_Inv[connectivity[j]]];
-                      Counter++;
-                    }
-                  }
-                  Xcg = Xcg / su2double(Counter);
-
-                  if (Counter != 0)  {
-                    if (Xcg > Xloc) { connectivity[i] = ActDiskPoint_Back[connectivity[i]]; }
-                    else { connectivity[i] = connectivity[i]; }
-                  }
-                }
-              }
-            }
-
-            /* Check whether any of the points reside in our linear partition. */
-            isOwned = false;
-            for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
-              if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
-                isOwned = true;
-              }
-            }
-
-            /* If so, we need to store the element locally. */
-            if (isOwned) {
-              localVolumeElementConnectivity.push_back(GlobalIndex);
-              localVolumeElementConnectivity.push_back(VTK_Type);
-              for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-                localVolumeElementConnectivity.push_back(connectivity[i]);
-              }
-              numberOfLocalElements++;
-            }
-            GlobalIndex++;
-            break;
-        }
-      }
-      if (GlobalIndex == numberOfGlobalElements) break;
-    }
-  }
-
-  mesh_file.close();
-
-}
-
-void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
-
-  /* We already read in the number of markers with the metadata. */
-  surfaceElementConnectivity.resize(numberOfMarkers);
-  markerNames.resize(numberOfMarkers);
-
-  vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON,0);
-
-  /*--- In this routine, the boundary info is read by all ranks,
-   however, the surface connectivity is still handled by the
-   master node (and eventually distributed by the master as well). ---*/
-
-  mesh_file.open(meshFilename, ios::in);
-  FastForwardToMyZone();
-
-  string text_line;
-  string::size_type position;
-  bool foundMarkers = false;
-  while (getline (mesh_file, text_line)) {
-
-    /*--- Jump to the section containing the markers. ---*/
-
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
-
-      foundMarkers = true;
-      unsigned short iMarker = 0;
-      while (iMarker < numberOfMarkers) {
-        getline (mesh_file, text_line);
-        text_line.erase (0,11);
-        string::size_type position;
-
-        for (unsigned short iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );
-          if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 );
-          if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 );
-          if (position != string::npos) text_line.erase (position,1);
-        }
-        markerNames[iMarker] = text_line.c_str();
-
-        bool duplicate = false;
-        string Marker_Tag_Duplicate;
-        if ((actuator_disk) &&
-            (markerNames[iMarker] == config->GetMarker_ActDiskInlet_TagBound(0))) {
-          duplicate = true;
-          markerNames[iMarker+1] = config->GetMarker_ActDiskOutlet_TagBound(0);
-        }
-
-        /*--- Physical boundaries definition ---*/
-
-        if (markerNames[iMarker]  != "SEND_RECEIVE") {
-
-          getline (mesh_file, text_line);
-          text_line.erase (0,13);
-          unsigned long nElem_Bound = atoi(text_line.c_str());
-
-          /*--- Allocate space for elements ---*/
-
-          for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound; iElem_Bound++) {
-            getline(mesh_file, text_line);
-            istringstream bound_line(text_line);
-
-            unsigned short VTK_Type;
-            bound_line >> VTK_Type;
-            switch(VTK_Type) {
-              case LINE:
-
-                if (dimension == 3) {
-                  SU2_MPI::Error(string("Line boundary conditions are not possible for 3D calculations.") +
-                                 string("Please check the SU2 ASCII mesh file."), CURRENT_FUNCTION);
-                }
-
-                bound_line >> connectivity[0];
-                bound_line >> connectivity[1];
-
-                surfaceElementConnectivity[iMarker].push_back(0);
-                surfaceElementConnectivity[iMarker].push_back(VTK_Type);
-                for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                  surfaceElementConnectivity[iMarker].push_back(connectivity[i]);
-
-                /* Duplicate the boundary element on an actuator disk if necessary. */
-
-                if (duplicate) {
-                  if (ActDisk_Bool[connectivity[0]]) {
-                    connectivity[0] = ActDiskPoint_Back[connectivity[0]];
-                  }
-                  if (ActDisk_Bool[connectivity[1]]) {
-                    connectivity[1] = ActDiskPoint_Back[connectivity[1]];
-                  }
-                  surfaceElementConnectivity[iMarker+1].push_back(0);
-                  surfaceElementConnectivity[iMarker+1].push_back(VTK_Type);
-                  for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                    surfaceElementConnectivity[iMarker+1].push_back(connectivity[i]);
-                }
-
-                break;
-
-              case TRIANGLE:
-
-                bound_line >> connectivity[0];
-                bound_line >> connectivity[1];
-                bound_line >> connectivity[2];
-                surfaceElementConnectivity[iMarker].push_back(0);
-                surfaceElementConnectivity[iMarker].push_back(VTK_Type);
-                for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                  surfaceElementConnectivity[iMarker].push_back(connectivity[i]);
-
-                if (duplicate) {
-                  if (ActDisk_Bool[connectivity[0]]) {
-                    connectivity[0] = ActDiskPoint_Back[connectivity[0]];
-                  }
-                  if (ActDisk_Bool[connectivity[1]]) {
-                    connectivity[1] = ActDiskPoint_Back[connectivity[1]];
-                  }
-                  if (ActDisk_Bool[connectivity[2]]) {
-                    connectivity[2] = ActDiskPoint_Back[connectivity[2]];
-                  }
-                  surfaceElementConnectivity[iMarker+1].push_back(0);
-                  surfaceElementConnectivity[iMarker+1].push_back(VTK_Type);
-                  for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                    surfaceElementConnectivity[iMarker+1].push_back(connectivity[i]);
-
-                }
-
-                break;
-
-              case QUADRILATERAL:
-
-                bound_line >> connectivity[0];
-                bound_line >> connectivity[1];
-                bound_line >> connectivity[2];
-                bound_line >> connectivity[3];
-                surfaceElementConnectivity[iMarker].push_back(0);
-                surfaceElementConnectivity[iMarker].push_back(VTK_Type);
-                for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                  surfaceElementConnectivity[iMarker].push_back(connectivity[i]);
-
-                if (duplicate) {
-                  if (ActDisk_Bool[connectivity[0]]) {
-                    connectivity[0] = ActDiskPoint_Back[connectivity[0]];
-
-                  }
-                  if (ActDisk_Bool[connectivity[1]]) {
-                    connectivity[1] = ActDiskPoint_Back[connectivity[1]];
-
-                  }
-                  if (ActDisk_Bool[connectivity[2]]) {
-                    connectivity[2] = ActDiskPoint_Back[connectivity[2]];
-
-                  }
-                  if (ActDisk_Bool[connectivity[3]]) {
-                    connectivity[3] = ActDiskPoint_Back[connectivity[3]];
-
-                  }
-                  surfaceElementConnectivity[iMarker+1].push_back(0);
-                  surfaceElementConnectivity[iMarker+1].push_back(VTK_Type);
-                  for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++)
-                    surfaceElementConnectivity[iMarker+1].push_back(connectivity[i]);
-
-                }
-
-                break;
-
-            }
-          }
-
-          /*--- Increment our counter if we stored a duplicate. ---*/
-
-          iMarker++;
-          if (duplicate) {
-            iMarker++;
-          }
-
-        } else {
-          /*--- Throw an error if we find deprecated references to SEND_RECEIVE
-           boundaries in the mesh. ---*/
-          SU2_MPI::Error(string("Mesh file contains deprecated SEND_RECEIVE marker!\n\n") +
-                         string("Please remove any SEND_RECEIVE markers from the SU2 ASCII mesh."),
-                         CURRENT_FUNCTION);
-        }
-
-        if (iMarker == numberOfMarkers) break;
-      }
-    }
-    if (foundMarkers) break;
-  }
-
-  /*--- Final error check for deprecated periodic BC format. ---*/
-
-  while (getline (mesh_file, text_line)) {
-
-    /*--- Find any periodic transformation information. ---*/
-
-    position = text_line.find ("NPERIODIC=",0);
-    if (position != string::npos) {
-      unsigned short nPeriodic;
-
-      /*--- Read and store the number of transformations. ---*/
-      text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
-      if (rank == MASTER_NODE) {
-        if (nPeriodic - 1 != 0)
-          SU2_MPI::Error(string("Mesh file contains deprecated periodic format!\n\n") +
-                         string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
-                         string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
-                         string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
-      }
-    }
-  }
-
-  /*--- Close the input file ---*/
 
   mesh_file.close();
 
