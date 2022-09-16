@@ -196,9 +196,11 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
+    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- for the flamelet model, the temperature is saved to file, but the energy equation is off ---*/
+    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
