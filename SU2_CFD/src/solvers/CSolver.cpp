@@ -3663,9 +3663,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         /*--- 2-equation flamelet model ---*/
         columnName << "PROGVAR    " << setw(24) << "ENTHALPY   " << setw(24);
         columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        /*--- auxiliary species transport equations ---*/
+        columnName << "CO         " << setw(24) << "NOX        " << setw(24);
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[2] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[3]<<"\t";
+         
         break; 
     }
 
+  /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     columnNames.push_back(columnName.str());
     columnValues.push_back(columnValue.str());
 

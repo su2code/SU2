@@ -1,7 +1,7 @@
 /*!
  * \file CSpeciesFlameletVariable.hpp
  * \brief Base class for defining the variables of the flamelet transport model.
- * \author D. Mayer, T. Economon
+ * \author D. Mayer, T. Economon, N. Beishuizen
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

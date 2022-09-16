@@ -1,7 +1,7 @@
 /*!
- * \file CFluidScalar.hpp
- * \brief  Defines the multicomponent incompressible Ideal Gas model for mixtures.
- * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
+ * \file CFluidFlamelet.hpp
+ * \brief  Defines the flamelet fluid model
+ * \author D. Mayer, T. Economon, N. Beishuizen
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

@@ -1196,11 +1196,14 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 
 /* the order matters: */
 /*! 
-* \brief progress variable and enthalpy are the first and second entry in the lookup table 
+* \brief progress variable and enthalpy are the first and second entry in the lookup table.
+*        CO and NOX are auxiliary transport equations that we solve 
 */
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
+  I_CO,
+  I_NOX,
 };
 
 /*! 
@@ -1208,6 +1211,8 @@ enum FLAMELET_SCALAR_VARIABLES {
  */
 enum FLAMELET_SCALAR_SOURCES {
   I_SRC_TOT_PROGVAR,
+  I_SRC_TOT_CO,
+  I_SRC_TOT_NOX,
 };
 
 /*!

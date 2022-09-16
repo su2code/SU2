@@ -876,6 +876,10 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET:{
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL); 
+      /*--- auxiliary species transport ---*/
+      AddHistoryOutput("RMS_CO", "rms[Y_CO]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the CO mass fraction equation." , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_NOX", "rms[Y_NOx]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the NOx mass fraction equation.", HistoryFieldType::RESIDUAL);
+
     }
     case SPECIES_MODEL::NONE: break;
   }
@@ -991,7 +995,10 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
     case SPECIES_MODEL::FLAMELET:{
       SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_RMS(I_PROGVAR)));
       SetHistoryOutputValue("RMS_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_RMS(I_ENTH)));
-
+      /*--- auxiliary species transport ---*/
+      SetHistoryOutputValue("RMS_CO", log10(solver[SPECIES_SOL]->GetRes_RMS(I_CO)));
+      SetHistoryOutputValue("RMS_NOX", log10(solver[SPECIES_SOL]->GetRes_RMS(I_NOX)));
+ 
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver())); 
     }
@@ -1024,7 +1031,16 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
     case SPECIES_MODEL::FLAMELET:
       AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
-      AddVolumeOutput("SOURCE_PROGRESS_VARIABLE", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      /*--- auxiliary species ---*/
+      AddVolumeOutput("Y_CO", "Y_CO", "SOLUTION", "CO Mass fraction solution" );
+      AddVolumeOutput("Y_NOX", "Y_NOx", "SOLUTION", "NOx Mass fraction solution");
+
+      AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      /*--- no source term for enthalpy ---*/
+      /*--- auxiliary species source terms ---*/
+      AddVolumeOutput("SOURCE_Y_CO", "Source_Y_CO", "SOURCE", "Source Y_CO");
+      AddVolumeOutput("SOURCE_Y_NOX", "Source_Y_NOx", "SOURCE", "Source Y_NOx");
+  
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
         if (config->GetLUTLookupName(i_lookup)!="NULL"){ 
           string strname1="lookup_"+config->GetLUTLookupName(i_lookup);
@@ -1059,6 +1075,9 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET:
       AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "SOLUTION", "Residual of progress variable");
       AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "SOLUTION", "Residual of total enthalpy");
+      /*--- residuals for auxiliary species transport equations ---*/
+      AddVolumeOutput("RES_Y_CO", "Residual_Y_CO", "RESIDUAL", "Residual of the Y_CO equation");
+      AddVolumeOutput("RES_Y_NOX", "Residual_Y_NOx", "RESIDUAL", "Residual of the Y_NOx equation");
       break;
     case SPECIES_MODEL::NONE:
       break;
@@ -1091,6 +1110,9 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
       case SPECIES_MODEL::FLAMELET:
         AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "SOLUTION", "Limiter of progress variable");
         AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "SOLUTION", "Limiter of total enthalpy");
+        /*--- limiter for auxiliary species transport ---*/
+        AddVolumeOutput("LIMITER_Y_CO", "Limiter_Y_CO", "LIMITER", "Limiter value for the Y_CO equation");
+        AddVolumeOutput("LIMITER_Y_NOX", "Limiter_Y_NOx", "LIMITER", "Limiter value for the Y_NOx equation");
       break;
       case SPECIES_MODEL::NONE:
         break;
@@ -1209,16 +1231,29 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       unsigned long table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarSources(scalars);
       SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, 0));
       SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, 1));
+      /*--- values from auxiliary species transport ---*/
+      SetVolumeOutputValue("Y_CO", iPoint, Node_Species->GetSolution(iPoint, I_CO));
+      SetVolumeOutputValue("Y_NOX", iPoint, Node_Species->GetSolution(iPoint, I_NOX));
 
-      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_PROGVAR));
+      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_PROGVAR));
+      /*--- no source term for enthalpy ---*/
+      /*--- source terms for auxiliary species transport ---*/
+      SetVolumeOutputValue("SOURCE_Y_CO", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_CO));
+      SetVolumeOutputValue("SOURCE_Y_NOX", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_NOX));
 
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));
+      /*--- residual for auxiliary species transport equations ---*/
+      SetVolumeOutputValue("RES_Y_CO", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_CO));
+      SetVolumeOutputValue("RES_Y_NOX", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_NOX));
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE){
         SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, 1));
-      }
+        /*--- limiter for auxiliary species transport equations ---*/
+        SetVolumeOutputValue("LIMITER_Y_CO", iPoint, Node_Species->GetLimiter(iPoint, I_CO));
+        SetVolumeOutputValue("LIMITER_Y_NOX", iPoint, Node_Species->GetLimiter(iPoint, I_NOX));
+       }
 
       /*--- variables that we look up from the LUT ---*/
       table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
