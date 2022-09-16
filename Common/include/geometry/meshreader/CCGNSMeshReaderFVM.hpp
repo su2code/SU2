@@ -44,47 +44,6 @@ class CCGNSMeshReaderFVM final: public CCGNSMeshReaderBase {
 private:
 
 #ifdef HAVE_CGNS
-<<<<<<< HEAD
-=======
-  int cgnsFileID; /*!< \brief CGNS file identifier. */
-  const int cgnsBase = 1; /*!< \brief CGNS database index (the CGNS reader currently assumes a single database). */
-  const int cgnsZone = 1; /*!< \brief CGNS zone index (and 1 zone in that database). */
-
-  int nSections;  /*!< \brief Total number of sections in the CGNS file. */
-
-  vector<bool> isInterior;             /*!< \brief Vector of booleans to store whether each section in the CGNS file is an interior or boundary section. */
-  vector<unsigned long> nElems;        /*!< \brief Vector containing the local number of elements found within each CGNS section. */
-  vector<unsigned long> elemOffset;    /*!< \brief Global ID offset for each interior section (i.e., the total number of global elements that came before it). */
-  vector<vector<cgsize_t> > connElems; /*!< \brief Vector containing the local element connectivity found within each CGNS section. First index is the section, second contains the connectivity in format [globalID VTK n1 n2 n3 n4 n5 n6 n7 n8] for each element. */
-  vector<vector<char> > sectionNames;  /*!< \brief Vector for storing the names of each boundary section (marker). */
-
-  /*!
-   * \brief Open the CGNS file and checks for errors.
-   * \param[in] val_filename - string name of the CGNS file to be read.
-   */
-  void OpenCGNSFile(string val_filename);
-
-  /*!
-   * \brief Reads all CGNS database metadata and checks for errors.
-   */
-  void ReadCGNSDatabaseMetadata();
-
-  /*!
-   * \brief Reads all CGNS zone metadata and checks for errors.
-   */
-  void ReadCGNSZoneMetadata();
-
-  /*!
-   * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
-   */
-  void ReadCGNSPointCoordinates();
-
-  /*!
-   * \brief Reads the metadata for each CGNS section in a zone and collect information, including the size and whether it is an interior or boundary section.
-   */
-  void ReadCGNSSectionMetadata();
-
->>>>>>> origin/develop
   /*!
    * \brief Reads the interior volume elements from one section of a CGNS zone into linear partitions across all ranks.
    * \param[in] val_section - CGNS section index.
