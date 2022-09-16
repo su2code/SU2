@@ -49,9 +49,11 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
       Gas_Constant(val_gas_constant),
       Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
+      GasConstant_Ref(config->GetGas_Constant_Ref()),
+      Non_Dimensional((config->GetRef_Inc_NonDim() == INITIAL_VALUES) ||
+                      (config->GetRef_Inc_NonDim() == REFERENCE_VALUES)),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
-
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -198,6 +200,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Density = Pressure_Thermodynamic / (Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight);
   Cp = ComputeMeanSpecificHeatCp(n_species_mixture, specificHeat, val_scalars);
   Cv = ComputeMeanSpecificHeatCv(n_species_mixture, specificHeat, val_scalars, molarMasses);
+  if (Non_Dimensional){Density *= GasConstant_Ref; Cp /= GasConstant_Ref ; Cv /= GasConstant_Ref ;}
   MassToMoleFractions(val_scalars);
 
   if (wilke) {

@@ -1672,16 +1672,28 @@ def main():
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
     
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg')
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.test_vals = [-6.205645, -5.061525, -4.904204, -7.393911, 2.744084, -5.738068, 30.000000, -6.781415, 7.000000, -8.011696, 10.000000, -8.265141, 2.089975, 1.000000, 0.600000, 0.489975]
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.timeout   = 1600
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.new_output = True
-    species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2.tol       = 0.00001
-    test_list.append(species2_primitiveVenturi_mixingmodel_mixingmodel_heatcapacity_H2)
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg')
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.205645, -5.061525, -4.904204, -7.393911, 2.744084, -5.738068, 30.000000, -6.781415, 7.000000, -8.011696, 10.000000, -8.265141, 2.089975, 1.000000, 0.600000, 0.489975]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.timeout   = 1600
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
+    
+        # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
+    species2_primitiveVenturi_mixingmodel_ND           = TestCase('species2_primitiveVenturi_mixingmodel_ND.cfg')
+    species2_primitiveVenturi_mixingmodel_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_ND.cfg"
+    species2_primitiveVenturi_mixingmodel_ND.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_ND.test_vals = [-5.979967, -5.078720, -5.091760, -5.936467, -1.523586, -5.329953, 5.000000, -1.719437, 5.000000, -3.932062, 5.000000, -7.065828, 2.608412, 1.000000, 0.600000, 1.008412]
+    species2_primitiveVenturi_mixingmodel_ND.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi_mixingmodel_ND.timeout   = 1600
+    species2_primitiveVenturi_mixingmodel_ND.new_output = True
+    species2_primitiveVenturi_mixingmodel_ND.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi_mixingmodel_ND)
         
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
