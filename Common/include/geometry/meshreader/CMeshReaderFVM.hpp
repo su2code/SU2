@@ -95,6 +95,11 @@ public:
                  unsigned short val_nZone);
 
   /*!
+   * \brief Destructor of the CMeshReader class.
+   */
+  virtual ~CMeshReaderFVM(void) = default;
+
+  /*!
    * \brief Get the physical dimension of the problem (2 or 3).
    * \returns Physical dimension of the problem.
    */

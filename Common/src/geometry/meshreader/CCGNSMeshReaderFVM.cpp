@@ -67,10 +67,12 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
   /*--- Put our CGNS data into the class data for the mesh reader. ---*/
   ReformatCGNSVolumeConnectivity();
   ReformatCGNSSurfaceConnectivity();
+#else
+  SU2_MPI::Error(string(" SU2 built without CGNS support. \n") +
+                 string(" To use CGNS, build SU2 accordingly."),
+                 CURRENT_FUNCTION);
 #endif
 }
-
-CCGNSMeshReaderFVM::~CCGNSMeshReaderFVM(void) { }
 
 #ifdef HAVE_CGNS
 void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
