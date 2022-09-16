@@ -1025,6 +1025,13 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
       AddVolumeOutput("SOURCE_PROGRESS_VARIABLE", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
+        if (config->GetLUTLookupName(i_lookup)!="NULL"){ 
+          string strname1="lookup_"+config->GetLUTLookupName(i_lookup);
+          AddVolumeOutput(config->GetLUTLookupName(i_lookup),strname1,"LOOKUP",config->GetLUTLookupName(i_lookup));
+        }
+      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
+  
       break;
   }
 }
@@ -1212,6 +1219,16 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, 1));
       }
+
+      /*--- variables that we look up from the LUT ---*/
+      table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
+        if (config->GetLUTLookupName(i_lookup)!="NULL")
+          SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarLookups(i_lookup));
+      }
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)table_misses);
+
+
       break;
     }
     case SPECIES_MODEL::NONE: break;
