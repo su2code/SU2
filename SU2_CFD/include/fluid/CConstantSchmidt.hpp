@@ -34,39 +34,30 @@
  * \brief Defines a mass diffusivity model for species equations based on Schmidt number.
  * \author T. Economon
  */
-class CConstantSchmidt final: public CDiffusivityModel {
-  
-protected:
-  //su2double Schmidt_const;  /*!< \brief Constant Schmidt number. */
-  
-public:
-  
+class CConstantSchmidt final : public CDiffusivityModel {
+ protected:
+  // su2double Schmidt_const;  /*!< \brief Constant Schmidt number. */
+
+ public:
   /*!
    * \brief Constructor of the class.
    */
   CConstantSchmidt() {}
-  
+
   /*!
    * \brief Constructor of the class.
    */
-  //CConstantSchmidt(su2double sc_const) : CDiffusivityModel() { Schmidt_const = sc_const; }
-  CConstantSchmidt(su2double sc_lam) : sc_lam_(sc_lam){}
-  
-  su2double GetDiffusivity() const override{return diff_;}
+  // CConstantSchmidt(su2double sc_const) : CDiffusivityModel() { Schmidt_const = sc_const; }
+  CConstantSchmidt(su2double sc_lam) : sc_lam_(sc_lam) {}
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CConstantSchmidt() {}
-  
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override {
-    diff_ = mu_lam / (rho*sc_lam_);
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {
+    diff_ = mu_lam / (rho * sc_lam_);
   }
-  
-  private:
-    su2double diff_{0.0};
-    su2double sc_lam_{0.0};
+
+ private:
+  su2double sc_lam_{0.0};
 };

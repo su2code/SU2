@@ -1,7 +1,7 @@
 /*!
  * \file CConstantDiffusivity.hpp
  * \brief Defines constant mass diffusivity.
- * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
+ * \author T. Economon, Cristopher Morales Ubal
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,24 +35,15 @@
  * \author T. Economon
  */
 class CConstantDiffusivity final : public CDiffusivityModel {
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    */
-  CConstantDiffusivity(su2double diff_const) :  diff_(diff_const){}
-  
-  su2double GetDiffusivity() const override {return diff_;}
+  CConstantDiffusivity(su2double diff_const) { diff_ = diff_const; }
 
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T,
-                      su2double rho,
-                      su2double mu_lam,
-                      su2double mu_turb,
-                      su2double cp,
-                      su2double kt) override { }
-
-  private:
-    su2double diff_{0.0};  
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {}
 };

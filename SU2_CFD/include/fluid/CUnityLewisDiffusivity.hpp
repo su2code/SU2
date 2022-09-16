@@ -32,26 +32,19 @@
 /*!
  * \class CUnityLewisDiffusivity
  * \brief Defines a unity Lewis mass diffusivity model for species equations.
- * \author M.Heimgartner 
+ * \author M.Heimgartner
  */
 class CUnityLewisDiffusivity final : public CDiffusivityModel {
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CUnityLewisDiffusivity() {}
- 
-  su2double GetDiffusivity() const override {return diff_;}
-
+ public:
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override { 
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {
     diff_ = kt / (Lewis * rho * cp);
   }
 
-  private:
-    su2double diff_{0.0}; 
-    su2double kt_{0.0}; 
-    su2double Lewis{1.0};  
+ private:
+  su2double kt_{0.0};
+  su2double Lewis{1.0};
 };

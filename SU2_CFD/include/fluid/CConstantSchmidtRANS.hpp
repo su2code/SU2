@@ -35,39 +35,31 @@
  * \author T. Economon
  */
 class CConstantSchmidtRANS : public CDiffusivityModel {
-  
-protected:
-  //su2double Schmidt_Lam;   /*!< \brief Laminar Schmidt number. */
-  //su2double Schmidt_Turb;  /*!< \brief Laminar Schmidt number. */
-  
-public:
-  
+ protected:
+  // su2double Schmidt_Lam;   /*!< \brief Laminar Schmidt number. */
+  // su2double Schmidt_Turb;  /*!< \brief Laminar Schmidt number. */
+
+ public:
   /*!
    * \brief Constructor of the class.
    */
-  //CConstantSchmidtRANS() {}
-  
+  // CConstantSchmidtRANS() {}
+
   /*!
    * \brief Constructor of the class.
    */
-  CConstantSchmidtRANS(su2double diff_lam_const, su2double sc_turb) : diff_lam_const_(diff_lam_const),sc_turb_(sc_turb){} 
- 
-  su2double GetDiffusivity() const override {return diff_;}
+  CConstantSchmidtRANS(su2double diff_lam_const, su2double sc_turb)
+      : diff_lam_const_(diff_lam_const), sc_turb_(sc_turb) {}
 
   /*!
    * \brief Set mass diffusivity.
    */
-  void SetDiffusivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override {
-    diff_ = diff_lam_const_ + mu_turb/(rho*sc_turb_);
+  void SetDiffusivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {
+    diff_ = diff_lam_const_ + mu_turb / (rho * sc_turb_);
   }
- 
-  /*!
-   * \brief Destructor of the class.
-   */
-  //~CConstantSchmidtRANS() {}
-  
-  private:
-    su2double diff_{0.0};
-    su2double diff_lam_const_{0.0};
-    su2double sc_turb_{0.0};  
+
+ private:
+  su2double diff_lam_const_{0.0};
+  su2double sc_turb_{0.0};
 };
