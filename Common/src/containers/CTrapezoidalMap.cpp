@@ -1,5 +1,5 @@
 /*!
- * \file TrapezoidalMap.cpp
+ * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon
  * \version 7.4.0 "Blackbird"
@@ -143,13 +143,13 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
   /* identify the triangle using the two edges */
-  std::array<unsigned long, 3> triangles_edge_low;
+  std::array<unsigned long, 2> triangles_edge_low;
   
-  for (int i=0;i<3;i++)
+  for (int i=0;i<2;i++)
    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
    
-  std::array<unsigned long, 3> triangles_edge_up;
-  for (int i=0;i<3;i++)
+  std::array<unsigned long, 2> triangles_edge_up;
+  for (int i=0;i<2;i++)
    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
