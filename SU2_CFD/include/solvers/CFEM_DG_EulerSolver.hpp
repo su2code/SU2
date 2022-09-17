@@ -102,7 +102,6 @@ public:
                                 const bool     writeOutput);
 
   /*!
->>>>>>> origin/develop
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.

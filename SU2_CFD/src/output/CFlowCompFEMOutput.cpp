@@ -158,7 +158,73 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
 
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  unsigned short nVar = solver[FLOW_SOL]->GetnVar();
+
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  CVolumeElementFEM_DG *volElem  = DGGeometry->GetVolElem();
+
+  /*--- Get a pointer to the fluid model class from the DG-FEM solver
+   so that we can access the states below. ---*/
+
+  CFluidModel *DGFluidModel = solver[FLOW_SOL]->GetFluidModel();
+
+  /*--- Make a copy of the solDOFs of the current iElem element for writing to output.
+   Maybe consider adding a member function to combine the next two steps into one? ---*/
+
+  ColMajorMatrix<su2double> sol = volElem[iElem].solDOFs;
+
+  volElem[iElem].standardElemFlow->ModalToNodal(sol);
+
+  /*--- Retrieve Gamma for converting entropy variable to primitive ones. ---*/
+
+  su2double Gamma = config->GetGamma();
+  su2double Gamma_Minus_One = Gamma - 1.0;
+
+  const unsigned long nItems = volElem[iElem].nDOFsSol;
+
+  /*--- Loop through the DOFs, compute the primitive variables and store. ---*/
+  for (unsigned long i = 0; i < nItems; ++i, ++index) {
+
+    const su2double V4Inv = (nDim == 3) ? 1.0/sol(i, 4) : 1.0/sol(i, 3);
+    const su2double u     = -V4Inv*sol(i, 1);
+    const su2double v     = -V4Inv*sol(i, 2);
+    const su2double w     = (nDim == 3) ? -V4Inv*sol(i, 3) : 0;
+    const su2double eKin  =  0.5*(u*u + v*v + w*w);
+    const su2double s     = (nDim == 3) ? Gamma - Gamma_Minus_One*(sol(i, 0) - sol(i, 4)*eKin) : Gamma - Gamma_Minus_One*(sol(i, 0) - sol(i, 3)*eKin);
+    const su2double tmp   = (nDim == 3) ? -sol(i, 4)*exp(s) : -sol(i, 3)*exp(s);
+    const su2double rho   =  pow(tmp, -1.0/Gamma_Minus_One);
+    const su2double p     = -rho*V4Inv;
+
+    DGFluidModel->SetTDState_Prho(p, rho);
+
+    SetVolumeOutputValue("COORD-X",        index, volElem[iElem].coorSolDOFs(i, 0));
+    SetVolumeOutputValue("COORD-Y",        index, volElem[iElem].coorSolDOFs(i, 1));
+    if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z",        index, volElem[iElem].coorSolDOFs(i, 2));
+    SetVolumeOutputValue("DENSITY",        index, rho);
+    SetVolumeOutputValue("MOMENTUM-X",     index, rho*u);
+    SetVolumeOutputValue("MOMENTUM-Y",     index, rho*v);
+    if (nDim == 3)
+    SetVolumeOutputValue("MOMENTUM-Z",     index, rho*w);
+    SetVolumeOutputValue("ENERGY",         index, p / Gamma_Minus_One + rho*eKin);
+      
+    SetVolumeOutputValue("PRESSURE",       index, DGFluidModel->GetPressure());
+    SetVolumeOutputValue("TEMPERATURE",    index, DGFluidModel->GetTemperature());
+    SetVolumeOutputValue("MACH",           index, sqrt(u*u + v*v + w*w)/DGFluidModel->GetSoundSpeed());
+    SetVolumeOutputValue("PRESSURE_COEFF", index, DGFluidModel->GetCp());
+
+    if (config->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES){
+      SetVolumeOutputValue("LAMINAR_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
+    }
+    if ((config->GetKind_Solver()  == MAIN_SOLVER::FEM_LES) && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)){
+      // todo: Export Eddy instead of Laminar viscosity
+      SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
+    }
+  }
 }
 
 void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {

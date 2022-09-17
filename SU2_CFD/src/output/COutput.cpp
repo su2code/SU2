@@ -1696,8 +1696,29 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
   if (femOutput){
 
-    SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+    /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+     geometrical information for the FEM DG solver. ---*/
 
+    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+    unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+
+    CVolumeElementFEM_DG *volElem  = DGGeometry->GetVolElem();
+
+    unsigned long index = 0;
+
+    /*--- Access the solution by looping over the owned volume elements. 
+     The loop over the DOFs are done within the function. The last argument
+     is a dummy and is kept for inheritance only. ---*/
+
+    for(unsigned long iElem=0; iElem<nVolElemOwned; ++iElem) {
+
+        buildFieldIndexCache = fieldIndexCache.empty();
+
+        LoadVolumeDataFEM(config, geometry, solver, iElem, index, 0);
+
+        index = index + volElem[iElem].nDOFsSol;
+    }
   } else {
 
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {

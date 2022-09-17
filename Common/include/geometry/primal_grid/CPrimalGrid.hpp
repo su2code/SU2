@@ -381,7 +381,6 @@ public:
   inline virtual unsigned long GetGlobalOffsetDOFsSol() const { return 0; }
 
   /*!
->>>>>>> origin/develop
    * \brief Virtual function to make available the polynomial degree of the grid.
    * \return The polynomial degree of the grid.
    */
