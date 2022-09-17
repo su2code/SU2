@@ -1258,9 +1258,23 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                               matchingInternalFaces[l].metricNormalsFace,
                               matchingInternalFaces[l].gridVelocities, numerics, fluxes);
 
+    /*--- Determine the length scale for the face. ---*/
+    const su2double lenScale0 = volElem[matchingInternalFaces[l].elemID0].lenScale;
+    const su2double lenScale1 = volElem[matchingInternalFaces[l].elemID1].lenScale;
+
+    unsigned short nPoly0 = volElem[matchingInternalFaces[l].elemID0].standardElemFlow->GetPolyDegree();
+    if(nPoly0 == 0) nPoly0 = 1;
+    unsigned short nPoly1 = volElem[matchingInternalFaces[l].elemID1].standardElemFlow->GetPolyDegree();
+    if(nPoly1 == 0) nPoly1 = 1;
+
+    const su2double lenScale = min(lenScale0, lenScale1);
+    const su2double lenScaleLES = 0.5*(lenScale0/nPoly0 + lenScale1/nPoly1);
+
     /*--- Compute the viscous fluxes and the symmetrizing fluxes in the
           integration points of the face. ---*/
-  
+    ComputeViscousFluxesFace(config, false, 0.0, lenScale, lenScaleLES, solIntLeft, solIntRight,
+                             gradSolIntLeft, matchingInternalFaces[l].JacobiansFace,
+                             matchingInternalFaces[l].metricNormalsFace, fluxes, gradSolIntRight);
 
     /*----------------------------------------------------------------------*/
     /*--- Step 2: Create the final form of the symmetrizing fluxes and   ---*/
@@ -1271,7 +1285,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
           functions for the residual. These must be the Cartesian gradients,
           but for the standard element the gradients w.r.t. the parametric
           coordinates are stored. To account for this, the Cartesian symmetrizing
-          fluxes are converted parametric fluxes. Note that this conversion is
+          fluxes are converted to parametric fluxes. Note that this conversion is
           usually different for the left and the right element. Therefore the final
           symmetrizing fluxes for the left element are stored in gradSolIntLeft
           and for the right element in gradSolIntRight. ---*/
@@ -1543,6 +1557,43 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig             *config,
                                  const unsigned long surfElemEnd,
                                  CSurfaceElementFEM  *surfElem,
                                  CNumerics           *conv_numerics) {
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
+  }
+
+  SU2_OMP_SINGLE
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
+}
+
+void CFEM_DG_NSSolver::ComputeViscousFluxesFace(CConfig                            *config,
+                                                bool                               heatFluxPrescribed,
+                                                su2double                          heatFlux,
+                                                su2double                          lenScale,
+                                                su2double                          lenScaleLES,
+                                                ColMajorMatrix<su2double>          &solLeft,
+                                                ColMajorMatrix<su2double>          &solRight,
+                                                vector<ColMajorMatrix<su2double> > &gradSol,
+                                                su2activevector                    &JacobiansFace,
+                                                ColMajorMatrix<su2double>          &normalsFace,
+                                                ColMajorMatrix<su2double>          &fluxes,
+                                                vector<ColMajorMatrix<su2double> > &symFluxes) {
+
+  /*--- The number of items for which the flux must be computed. ---*/
+  const unsigned int nItems = normalsFace.rows();
+
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
