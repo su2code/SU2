@@ -95,6 +95,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  * \brief Retrieve primitive variables for points i/j, reconstructing them if needed.
  * \param[in] iEdge, iPoint, jPoint - Edge and its nodes.
  * \param[in] muscl - If true, reconstruct, else simply fetch.
+ * \param[in] V1st - Pair of compressible flow primitives for nodes i,j.
  * \param[in] vector_ij - Distance vector from i to j.
  * \param[in] solution - Entire solution container (a derived CVariable).
  * \return Pair of primitive variables.
