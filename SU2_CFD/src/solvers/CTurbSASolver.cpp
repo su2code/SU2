@@ -1,8 +1,8 @@
 /*!
  * \file CTurbSASolver.cpp
- * \brief Main subrotuines of CTurbSASolver class
+ * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

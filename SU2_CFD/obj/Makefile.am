@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.1 "Blackbird"
+# \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -87,6 +87,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
+  ../src/numerics/CLookUpTable.cpp \
+  ../src/numerics/CTrapezoidalMap.cpp \
+  ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
   ../src/numerics/flow/convection/fvs.cpp \

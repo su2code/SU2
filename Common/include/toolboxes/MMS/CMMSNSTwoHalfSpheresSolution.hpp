@@ -3,7 +3,7 @@
  * \brief Header file for the class CMMSNSTwoHalfSpheresSolution.
  *        The implementations are in the <i>CMMSNSTwoHalfSpheresSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
