@@ -28,12 +28,12 @@
 #pragma once
 
 #include "CFluidModel.hpp"
-//#include "../../../externals/CoolProp/include/CoolProp.h"
-//#include "../../../externals/CoolProp/include/AbstractState.h"
-//#include "../../../externals/CoolProp/include/crossplatform_shared_ptr.h"
-#include "CoolProp.h"
-#include "AbstractState.h"
-#include "crossplatform_shared_ptr.h"
+#include "../../../externals/CoolProp/include/CoolProp.h"
+#include "../../../externals/CoolProp/include/AbstractState.h"
+#include "../../../externals/CoolProp/include/crossplatform_shared_ptr.h"
+//#include "CoolProp.h"
+//#include "AbstractState.h"
+//#include "crossplatform_shared_ptr.h"
 /*!
  * \class CCoolProp
  * \brief Child class for defining fluid model from CoolProp library.
