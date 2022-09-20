@@ -170,21 +170,6 @@ class CFluidModel {
   }
 
   /*!
-   * \brief Get fluid mean specific heat capacity at constant volume.
-   */
-  template <class Vector_t>
-  static su2double ComputeMeanSpecificHeatCv(int n_species, const Vector_t& specific_heat_cp, const su2double* val_scalars, const Vector_t& molar_masses) {
-    su2double val_scalars_sum = 0.0;
-    su2double mean_cv =0.0;
-
-    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++){
-      mean_cv += (specific_heat_cp[i_scalar] - UNIVERSAL_GAS_CONSTANT / (molar_masses[i_scalar] / 1000))* val_scalars[i_scalar];
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    return mean_cv += (specific_heat_cp[n_species - 1]- UNIVERSAL_GAS_CONSTANT / (molar_masses[n_species - 1] / 1000))*(1 - val_scalars_sum);
-  }
-
-  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {

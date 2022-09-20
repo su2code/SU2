@@ -199,7 +199,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / (Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight);
   Cp = ComputeMeanSpecificHeatCp(n_species_mixture, specificHeat, val_scalars);
-  Cv = ComputeMeanSpecificHeatCv(n_species_mixture, specificHeat, val_scalars, molarMasses);
+  Cv = Cp - UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight;
   if (Non_Dimensional){Density *= GasConstant_Ref; Cp /= GasConstant_Ref ; Cv /= GasConstant_Ref ;}
   MassToMoleFractions(val_scalars);
 

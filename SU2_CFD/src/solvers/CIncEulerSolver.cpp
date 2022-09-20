@@ -424,15 +424,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = auxFluidModel->GetCp()/Gas_Constant_Ref;                  config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
+  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
 
   /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
-  if (config->GetKind_FluidModel() == FLUID_MIXTURE) {
-    Specific_Heat_CvND = auxFluidModel->GetCv() / Gas_Constant_Ref;
-  } else {
-    Specific_Heat_CvND = config->GetSpecific_Heat_Cp() / Gas_Constant_Ref;
-  }
-  config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+  Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+
   Thermal_Expansion_CoeffND = config->GetThermal_Expansion_Coeff()*config->GetTemperature_Ref(); config->SetThermal_Expansion_CoeffND(Thermal_Expansion_CoeffND);
 
   ModVel_FreeStreamND = 0.0;
