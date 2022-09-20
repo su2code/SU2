@@ -102,14 +102,25 @@ CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short B
 CFreeFormDefBox::~CFreeFormDefBox(void) {
   unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
 
-  for (iOrder = 0; iOrder < lOrder; iOrder++)
-    for (jOrder = 0; jOrder < mOrder; jOrder++)
+  for (iOrder = 0; iOrder < lOrder; iOrder++){
+    for (jOrder = 0; jOrder < mOrder; jOrder++){
       for (kOrder = 0; kOrder < nOrder; kOrder++) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
         delete [] Coord_Control_Points_Copy[iOrder][jOrder][kOrder];
         if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder][jOrder][kOrder];
       }
+      delete [] Coord_Control_Points[iOrder][jOrder];
+      delete [] ParCoord_Control_Points[iOrder][jOrder];
+      delete [] Coord_Control_Points_Copy[iOrder][jOrder];
+      if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder][jOrder];
+    }
+    delete [] Coord_Control_Points[iOrder];
+    delete [] ParCoord_Control_Points[iOrder];
+    delete [] Coord_Control_Points_Copy[iOrder];
+    if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder];
+    }
+
   delete [] Coord_Control_Points;
   delete [] ParCoord_Control_Points;
   delete [] Coord_Control_Points_Copy;
@@ -979,7 +990,8 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
-  // indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7
+  /*--- indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7 ---*/
+
   unsigned short Index[6][5] = {
   {0,1,2,3,0},  // front side
   {1,5,6,2,1},  // right side
@@ -988,20 +1000,18 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   {4,5,1,0,4},  // bottom side
   {4,7,6,5,4}}; // back side
 
-/*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles 
+  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles 
       by defining a supporting middle point. This allows nonplanar FFD boxes.
       Note that the definition of the FFD box is as follows: the FFD box is a 6-sided die and we are looking at the side "1".
       The opposite side is side "6". 
       If we are looking at side "1", we define the nodes counterclockwise. 
       If we are looking at side "6", we define the face clockwise  ---*/
 
-
   unsigned short nDim = geometry->GetnDim();
 
   su2double Coord[3] = {0.0, 0.0, 0.0};
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = geometry->nodes->GetCoord(iPoint, iDim);
-
 
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
@@ -1029,16 +1039,22 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
   }
 
-  // loop over the faces of the FFD box  
+  /*--- loop over the faces of the FFD box  ---*/
+
   for (unsigned short iVar = 0; iVar < 6; iVar++) {
+
     su2double P[3] = {0.0, 0.0, 0.0};
-    // every face needs an interpolated middle point for the triangles
+
+    /*--- every face needs an interpolated middle point for the triangles ---*/
+
     for (int p = 0; p < 4; p++){
       P[0] += 0.25*Coord_Corner_Points[Index[iVar][p]][0];
       P[1] += 0.25*Coord_Corner_Points[Index[iVar][p]][1];
       P[2] += 0.25*Coord_Corner_Points[Index[iVar][p]][2];
     }
-    // loop over the 4 triangles making up the FFD box. The sign is equal for all distances
+
+    /*--- loop over the 4 triangles making up the FFD box. The sign is equal for all distances ---*/
+
     for (unsigned short jVar = 0; jVar < 4; jVar++) {
       su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
                                                                 Coord_Corner_Points[Index[iVar][jVar]],
