@@ -802,7 +802,7 @@ static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
  * \brief Types of centered spatial discretizations
  */
 enum class CENTERED {
-  NO_CENTERED,    /*!< \brief No centered scheme is used. */
+  NONE,    /*!< \brief No centered scheme is used. */
   JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
