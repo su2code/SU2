@@ -4722,6 +4722,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
+  
+  if ((Kind_Turb_Model != TURB_MODEL::SA) && Kind_Trans_Model == TURB_TRANS_MODEL::EN) {
+      SU2_MPI::Error("eN transition model currently only available in combination with SA (basic/FT2) turbulence model!", CURRENT_FUNCTION);
+  }
 
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
@@ -6032,6 +6036,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "." << endl;
             break;
         }
+		switch (Kind_Trans_Model) {
+			case TURB_TRANS_MODEL::NONE:  break;
+			case TURB_TRANS_MODEL::EN:    cout << "Low-turbulence Transition model: eN 1 equation model (2014)" << endl; break;
+		}
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
