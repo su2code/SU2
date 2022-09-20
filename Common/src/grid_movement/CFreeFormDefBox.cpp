@@ -102,8 +102,8 @@ CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short B
 CFreeFormDefBox::~CFreeFormDefBox(void) {
   unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
 
-  for (iOrder = 0; iOrder < lOrder; iOrder++){
-    for (jOrder = 0; jOrder < mOrder; jOrder++){
+  for (iOrder = 0; iOrder < lOrder; iOrder++) {
+    for (jOrder = 0; jOrder < mOrder; jOrder++) {
       for (kOrder = 0; kOrder < nOrder; kOrder++) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
