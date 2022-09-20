@@ -53,8 +53,5 @@ void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_I
 }
 
 void CTransLMVariable::SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {
-  AD::StartPreacc();
   Intermittency_Sep(iPoint) = val_Intermittency_sep;
-  AD::SetPreaccOut(Intermittency_Sep(iPoint));
-  AD::EndPreacc();
 }
