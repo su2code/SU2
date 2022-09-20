@@ -713,7 +713,7 @@ public:
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    * \param[in] intermittency_eff_j - Value of the effective intermittency at point j.
    */
-  virtual void SetIntermittencyEff(su2double val_intermittency_eff_i, su2double val_intermittency_eff_j) {
+  void SetIntermittencyEff(su2double val_intermittency_eff_i, su2double val_intermittency_eff_j) {
     intermittency_eff_i = val_intermittency_eff_i;
     intermittency_eff_j = val_intermittency_eff_j;
   };
