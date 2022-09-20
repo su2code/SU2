@@ -44,6 +44,7 @@
  * Usage: Allocate, store the initial solution (operator (i,j), default is 0),
  * run the FP, store its result ("FPresult"), compute new solution, use it
  * as the new input of the FP, run the FP, etc.
+ * \ingroup BLAS
  */
 template<class Scalar_t, bool WithMPI = true>
 class CQuasiNewtonInvLeastSquares {

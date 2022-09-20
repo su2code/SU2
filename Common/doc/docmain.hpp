@@ -31,10 +31,22 @@
  * to perform PDE analysis and PDE constrained optimization.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
  * include other families of governing equations such as potential flow, electrodynamics, chemically reacting
- * flows, and many others.  SU2 is released under an
- * open-source license.
- * 
- * The following technical documentation describes the structure and details of the source code for developers. 
+ * flows, and many others.  SU2 is released under an open-source license.
+ *
+ * The following technical documentation describes the structure and details of the source code for developers.
+ * Each module groups classes and functions dedicated to major areas or features of the code base.
+ * This documentation helps awnsering questions such as
+ * - What are the major classes of the code (architecture)?
+ * - How do those classes interact with each other?
+ * - What low-level functionality is already implemented that can be re-used?
+ *
+ * Given the use of polymorphism in SU2, it is usefull to start studying each module from the base class
+ * (which usually has a generic name), this will show the inheritance diagram for that family. Moreover,
+ * many important functions (defining the interactions between families) are implemented at the base level,
+ * the "call graph" of a function will show these interactions (derived classes only specialize certain details).
+ * Alternatively, "caller graphs" can be used to navigate to the larger classes that use smaller ones, and
+ * thus navigate the architecture from the bottom up (note that this will also be more effective if done
+ * for base classes).
  */
 
 /*!
@@ -87,4 +99,90 @@
 /*!
  * \defgroup Elasticity_Equations Solving the elasticity equations
  * \brief Group of classes to solve solid deformation problems.
+ */
+
+/*!
+ * \defgroup Interfaces Multiphysics interfaces
+ * \brief Classes for data transfer and interpolation across interfaces between zones.
+ */
+
+/*!
+ * \defgroup Drivers Iterative solution strategy
+ * \brief Group of classes which define the iterative process used to converge
+ *        the equations (fluid, turbulence, elasticity, FSI, CHT, etc.).
+ *        In general, "Driver" classes use "Iteration" classes to advance one inner
+ *        iteration, in turn "Iteration" classes use "Integration" classes to perform
+ *        space and time integration. The latter use mostly the "Solvers".
+ */
+
+/*!
+ * \defgroup Variable Storing solution variables
+ * \brief Classes used to store and access the solution variables of all types of problems.
+ */
+
+/*!
+ * \defgroup DiscAdj Discrete Adjoint
+ * \brief Classes and functions used to solve discrete adjoint equations.
+ */
+
+/*!
+ * \defgroup SpLinSys Sparse linear systems
+ * \brief Classes and function to represent and solve large distributed sparse linear systems.
+ */
+
+/*!
+ * \defgroup FvmAlgos General FVM algorithms
+ * \brief Common algorithms used in FVM implementations.
+ */
+
+/*!
+ * \defgroup FemAlgos General FEM algorithms
+ * \brief Common algorithms used in FEM implementations.
+ */
+
+/*!
+ * \defgroup Toolboxes Utility classes and functions
+ * \brief Several classes and functions that implement common operations.
+ */
+
+/*!
+ * \defgroup GeometryToolbox Geometry toolbox
+ * \brief Common geometry operations.
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup Containers Data containers
+ * \brief Container classes (vectors, matrices, ND-arrays, etc.).
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup LookUpInterp Look up and interpolation
+ * \brief Data look up and interpolation.
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup ADT Alternating Digital Tree
+ * \brief Tree-based searches (minimum distance, containment, etc.).
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup BLAS Dense linear algebra
+ * \brief Linear algebra functions and classes.
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup Graph Graph operations
+ * \brief Classes to represent graphs and functions to manipulate them (coloring, etc.).
+ * \ingroup Toolboxes
+ */
+
+/*!
+ * \defgroup SIMD Vectorization (SIMD)
+ * \brief Classes for explicit (done by the programmer) vectorization (SIMD) of computations.
+ * \ingroup Toolboxes
  */
