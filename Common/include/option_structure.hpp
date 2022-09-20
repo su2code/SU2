@@ -822,7 +822,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
  * \brief Types of upwind spatial discretizations
  */
 enum class UPWIND {
-  NO_UPWIND,              /*!< \brief No upwind scheme is used. */
+  NONE,              /*!< \brief No upwind scheme is used. */
   ROE,                    /*!< \brief Roe's upwind numerical method. */
   SCALAR_UPWIND,          /*!< \brief Scalar upwind numerical method. */
   AUSM,                   /*!< \brief AUSM numerical method. */
