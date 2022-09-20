@@ -1152,6 +1152,19 @@ public:
    * \return Returns intermittency
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  
+    /*!
+   * \brief Set the amplification factor.
+   * \param[in] val_dist - Value of the amplification factor.
+   */
+  inline virtual void SetAmplificationFactor(unsigned long iPoint, su2double val_AmplificationFactor) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Returns Amplification factor
+   */
+  inline virtual su2double GetAmplificationFactor(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
