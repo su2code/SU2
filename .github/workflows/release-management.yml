@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ccache
           key: ${{ matrix.os_bin }}-${{ github.sha }}
@@ -44,7 +44,7 @@ jobs:
           zip -r ../${{matrix.os_bin}}.zip bin/*
         # Uploads binaries as artifacts (just as a backup)
       - name: Upload Binaries
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.os_bin}}
           path: ${{matrix.os_bin}}.zip
