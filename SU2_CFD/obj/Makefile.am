@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.1 "Blackbird"
+# \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -51,12 +51,14 @@ endif
 libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
+  ../src/fluid/CFluidScalar.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
   ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
   ../src/fluid/CDataDrivenFluid.cpp \
+  ../src/fluid/CMLPGas_Template.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
@@ -86,6 +88,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
+  ../src/numerics/CLookUpTable.cpp \
+  ../src/numerics/CTrapezoidalMap.cpp \
+  ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
   ../src/numerics/flow/convection/fvs.cpp \

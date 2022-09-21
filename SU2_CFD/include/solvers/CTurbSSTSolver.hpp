@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,8 @@
  */
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double constants[10] = {0.0}; /*!< \brief Constants for the model. */
+  su2double constants[11] = {0.0}; /*!< \brief Constants for the model. */
+  SST_ParsedOptions sstParsedOptions;
 
   /*!
    * \brief Compute nu tilde from the wall functions.

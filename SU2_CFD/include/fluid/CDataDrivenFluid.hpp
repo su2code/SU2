@@ -28,7 +28,8 @@
 #pragma once
 
 #include "CFluidModel.hpp"
-#include "../numerics/MultiLayer_Perceptron/LookUp_MLP.hpp"
+//#include "../numerics/MultiLayer_Perceptron/LookUp_MLP.hpp"
+#include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 /*!
  * \class CDataDrivenFluid
  * \brief Child class for defining the ideal gas model.
@@ -43,11 +44,13 @@ class CDataDrivenFluid : public CFluidModel {
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
   bool ComputeEntropy{true},      /*!< \brief Whether or not to compute entropy. */
         failedNewtonSolver{false};
-  LookUp_MLP *ANN;
-  vector<string> input_names;
+  //LookUp_MLP *ANN;
+  MLPToolbox::CLookUp_ANN *ANN_new;
+  MLPToolbox::CIOMap * input_output_map, * input_output_map_lower_rho;
+
+  vector<string> input_names, input_names_lower_rho;
   vector<su2double> inputs;
   vector<string> output_names;
-  vector<string> output_names_lower;
   
   vector<su2double*> outputs;
   su2double rho_start, e_start, S, ds_de, ds_drho, d2s_dedrho, d2s_de2, d2s_drho2;
@@ -66,7 +69,9 @@ class CDataDrivenFluid : public CFluidModel {
   CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy = true);
 
   ~CDataDrivenFluid(){
-      delete ANN;
+      delete ANN_new;
+      delete input_output_map;
+      delete input_output_map_lower_rho;
       for(size_t i=0; i<6; i++){
             delete [] dOutputs_dInputs[i];
       }
@@ -124,6 +129,7 @@ class CDataDrivenFluid : public CFluidModel {
    */
   void SetTDState_Ps(su2double P, su2double s) override;
 
+
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
    * \param[in] InputSpec - Input pair for FLP calls ("Pv").
@@ -137,4 +143,7 @@ class CDataDrivenFluid : public CFluidModel {
   unsigned long GetnIter_NewtonSolver() {return nIter_NewtonSolver;}
 
   void Predict_MLP(su2double rho, su2double e);
+
+  void SetDensity(su2double rho) override {rho_start = rho;}
+  void SetEnergy(su2double e) override {e_start = e;}
 };

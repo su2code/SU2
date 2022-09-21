@@ -26,9 +26,8 @@
  */
 
 #include "../../include/fluid/CDataDrivenFluid.hpp"
-#include "../../include/numerics/MultiLayer_Perceptron/LookUp_MLP.hpp"
-#include "../../include/numerics/MultiLayer_Perceptron/NeuralNetwork.hpp"
-#include "../../include/numerics/MultiLayer_Perceptron/ReadNeuralNetwork.hpp"
+#include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+
 #include <fstream>
 
 CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
@@ -42,31 +41,32 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
   idx_e = 1;
 
   ComputeEntropy = CompEntropy;
-  ANN = new LookUp_MLP("split_dataset.mlp");
+  //ANN = new LookUp_MLP("split_dataset.mlp");
+  ANN_new = new MLPToolbox::CLookUp_ANN("split_dataset.mlp");
 
   input_names.push_back("rho");
+  input_names_lower_rho.push_back("rho_l");
   inputs.push_back(Density);
   input_names.push_back("e");
+  input_names_lower_rho.push_back("e_l");
   inputs.push_back(StaticEnergy);
-  output_names.push_back("s_u");
+
+
+  output_names.push_back("s");
   outputs.push_back(&Entropy);
-  output_names.push_back("ds_de_u");
+  output_names.push_back("ds_de");
   outputs.push_back(&ds_de);
-  output_names.push_back("ds_drho_u");
+  output_names.push_back("ds_drho");
   outputs.push_back(&ds_drho);
-  output_names.push_back("d2s_dedrho_u");
+  output_names.push_back("d2s_dedrho");
   outputs.push_back(&d2s_dedrho);
-  output_names.push_back("d2s_de2_u");
+  output_names.push_back("d2s_de2");
   outputs.push_back(&d2s_de2);
-  output_names.push_back("d2s_drho2_u");
+  output_names.push_back("d2s_drho2");
   outputs.push_back(&d2s_drho2);
 
-  output_names_lower.push_back("s_l");
-  output_names_lower.push_back("ds_de_l");
-  output_names_lower.push_back("ds_drho_l");
-  output_names_lower.push_back("d2s_dedrho_l");
-  output_names_lower.push_back("d2s_de2_l");
-  output_names_lower.push_back("d2s_drho2_l");
+  input_output_map = new MLPToolbox::CIOMap(ANN_new, input_names, output_names);
+  input_output_map_lower_rho = new MLPToolbox::CIOMap(ANN_new, input_names_lower_rho, output_names);
 
   // rho_maxmin = ANN->GetInputNorm(input_names.at(idx_rho));
   // e_maxmin = ANN->GetInputNorm(input_names.at(idx_e));
@@ -443,11 +443,13 @@ void CDataDrivenFluid::Predict_MLP(su2double rho, su2double e){
   inputs.at(idx_e) = e;
   vector<string> these_outputs;
   if(rho < 10.011693){
-    these_outputs = output_names_lower;
+    //these_outputs = output_names_lower;
+    ANN_new->Predict_ANN(input_output_map_lower_rho, inputs, outputs);
   }else{
-    these_outputs = output_names;
+    //these_outputs = output_names;
+    ANN_new->Predict_ANN(input_output_map, inputs, outputs);
   }
-  ANN->Predict_MLP(input_names, inputs, these_outputs, outputs);
+  //ANN->Predict_MLP(input_names, inputs, these_outputs, outputs);
   ds_drho = -exp(ds_drho);
   d2s_drho2 = exp(d2s_drho2);
 }

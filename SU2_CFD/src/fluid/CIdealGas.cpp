@@ -2,7 +2,7 @@
  * \file CIdealGas.cpp
  * \brief Source of the ideal gas model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,9 +26,6 @@
  */
 
 #include "../../include/fluid/CIdealGas.hpp"
-#include "../../src/numerics/MultiLayer_Perceptron/LookUp_MLP.cpp"
-#include "../../src/numerics/MultiLayer_Perceptron/NeuralNetwork.cpp"
-#include "../../src/numerics/MultiLayer_Perceptron/ReadNeuralNetwork.cpp"
 CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
   Gamma = gamma;
   Gamma_Minus_One = Gamma - 1.0;

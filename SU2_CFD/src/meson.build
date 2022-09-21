@@ -6,11 +6,13 @@ su2_cfd_src = files(['definition_structure.cpp',
 su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CIdealGas.cpp',
                       'fluid/CDataDrivenFluid.cpp',
+                      'fluid/CFluidScalar.cpp',
                       'fluid/CPengRobinson.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
-                      'fluid/CSU2TCLib.cpp'])
+                      'fluid/CSU2TCLib.cpp',
+                      'fluid/CMLPGas_Template.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -147,9 +149,7 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
                       'numerics/elasticity/nonlinear_models.cpp',
-                      'numerics/CGradSmoothing.cpp',
-                      'numerics/MultiLayer_Perceptron/LookUp_MLP.cpp',
-                      'numerics/MultiLayer_Perceptron/NeuralNetwork.cpp'])
+                      'numerics/CGradSmoothing.cpp'])
 
 su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 

@@ -2,7 +2,7 @@
  * \file CNewtonIntegration.cpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -121,10 +121,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
   /*--- Save the default integration scheme, and force to explicit if required. ---*/
   auto TimeIntScheme = config->GetKind_TimeIntScheme();
   if (type == ResEvalType::EXPLICIT) {
-    SU2_OMP_MASTER
-    config->SetKind_TimeIntScheme(EULER_EXPLICIT);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_EXPLICIT);)
   }
 
   solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -137,10 +134,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
   /*--- Restore default. ---*/
   if (type == ResEvalType::EXPLICIT) {
-    SU2_OMP_MASTER
-    config->SetKind_TimeIntScheme(TimeIntScheme);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(TimeIntScheme);)
   }
 
 }
@@ -162,15 +156,13 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 
   atomicAdd(rmsSol_loc, rmsSol);
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
     su2double t = rmsSol;
     SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     finDiffStep = finDiffStepND * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
@@ -213,12 +205,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   bool endStartup = false;
 
   if (startupPeriod) {
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       firstResidual = max(firstResidual, residual);
       if (startupIters) startupIters -= 1;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
     endStartup = (startupIters == 0) && (residual - firstResidual < startupResidual);
   }
 
@@ -227,10 +218,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   Scalar toleranceFactor = 1.0;
 
   if (!startupPeriod && tolRelaxFactor > 1 && fullTolResidual < 0.0) {
-    SU2_OMP_MASTER
-    firstResidual = max(firstResidual, residual);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(firstResidual = max(firstResidual, residual);)
     su2double x = (residual - firstResidual) / fullTolResidual;
     toleranceFactor = 1.0 + (tolRelaxFactor-1)*max(0.0, 1.0-SU2_TYPE::GetValue(x));
   }
@@ -256,12 +244,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   }
   SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     solvers[FLOW_SOL]->SetIterLinSolver(iter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /// TODO: Clever back-tracking and CFL adaptation based on residual reduction.
 
