@@ -4656,6 +4656,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
         }
+        GetFluidModel()->SetDensity(GetFluidModel()->GetDensity());
+        GetFluidModel()->SetEnergy(GetFluidModel()->GetStaticEnergy());
         StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
         GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
         Density_e = GetFluidModel()->GetDensity();

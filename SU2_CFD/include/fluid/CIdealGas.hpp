@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CFluidModel.hpp"
-#include "../numerics/MultiLayer_Perceptron/LookUp_MLP.hpp"
 /*!
  * \class CIdealGas
  * \brief Child class for defining the ideal gas model.
