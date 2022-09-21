@@ -44,7 +44,7 @@ jobs:
           zip -r ../${{matrix.os_bin}}.zip bin/*
         # Uploads binaries as artifacts (just as a backup)
       - name: Upload Binaries
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.os_bin}}
           path: ${{matrix.os_bin}}.zip
