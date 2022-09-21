@@ -58,14 +58,24 @@ void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
                 case ENUM_ACTIVATION_FUNCTION::SMOOTH_SLOPE:
                     for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
-                        y = x > 0 ? x : tanh(x);
+                        //y = x > 0 ? x : tanh(x);
+                        if(x > 0){
+                            y = x;
+                        }else{
+                            y = tanh(x);
+                        }
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::ELU:
                     for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
-                        y = x > 0 ? x : (exp(x) - 1);
+                        //y = x > 0 ? x : (exp(x) - 1);
+                        if(x > 0){
+                            y = x;
+                        }else{
+                            y = exp(x) - 1;
+                        }
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
@@ -79,7 +89,12 @@ void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
                 case ENUM_ACTIVATION_FUNCTION::RELU:
                     for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
-                        y = x > 0.0 ? x : 0.0;
+                        //y = x > 0.0 ? x : 0.0;
+                        if(x > 0){
+                            y = x;
+                        }else{
+                            y = 0.0;
+                        }
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
@@ -107,7 +122,12 @@ void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
                 case ENUM_ACTIVATION_FUNCTION::SELU:
                     for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
-                        y = x > 0.0 ? lambda * x : lambda * alpha * (exp(x) - 1);
+                        //y = x > 0.0 ? lambda * x : lambda * alpha * (exp(x) - 1);
+                        if(x > 0.0){
+                            y = lambda * x;
+                        }else{
+                            y = lambda * alpha * (exp(x) - 1);
+                        }
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
