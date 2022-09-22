@@ -43,6 +43,6 @@ CTransENVariable::CTransENVariable(su2double AmplificationFactor, unsigned long 
 void CTransENVariable::SetAmplificationFactor(unsigned long iPoint, su2double val_AmplificationFactor) {
   AD::StartPreacc();
   AmplificationFactor(iPoint) = val_AmplificationFactor;
-  AD::SetPreaccOut(AmplificationFactor(iPoint)); //Still need to be fixed
+  AD::SetPreaccOut(AmplificationFactor(iPoint)); //Still need to be fixed?
   AD::EndPreacc();
 }

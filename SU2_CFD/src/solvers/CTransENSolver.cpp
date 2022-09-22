@@ -72,7 +72,7 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (LM transition model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (eN transition model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
@@ -170,7 +170,7 @@ void CTransENSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     SetSolution_Gradient_LS(geometry, config);
   }
 
-  AD::StartNoSharedReading();
+  /*AD::StartNoSharedReading();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -182,7 +182,7 @@ void CTransENSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   END_SU2_OMP_FOR
 
-  AD::EndNoSharedReading();
+  AD::EndNoSharedReading();*/
 }
 
 

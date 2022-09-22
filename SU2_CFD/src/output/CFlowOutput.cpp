@@ -867,7 +867,17 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case TURB_FAMILY::NONE: break;
   }
 
-   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  switch (config->GetKind_Trans_Model()) {
+
+    case TURB_TRANS_MODEL::EN:
+      /// DESCRIPTION: Root-mean square residual of the Amplification factor (e^N model).
+      AddHistoryOutput("RMS_AMPLIFICATIONFACTOR", "rms[EN_n]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of amplification (EN model).", HistoryFieldType::RESIDUAL);
+      break;
+
+    case TURB_TRANS_MODEL::NONE: break;
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
     }
@@ -889,6 +899,17 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
 
     case TURB_FAMILY::NONE:
+      break;
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+
+    case TURB_TRANS_MODEL::LM:
+      /// DESCRIPTION: Maximum residual of the amplification factor (EN model).
+      AddHistoryOutput("MAX_AMPLIFICATIONFACTOR", "max[EN_n]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
       break;
   }
 
@@ -918,6 +939,17 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_FAMILY::NONE: break;
   }
 
+  switch (config->GetKind_Trans_Model()) {
+
+    case TURB_TRANS_MODEL::LM:
+      /// DESCRIPTION: Maximum residual of the amplification factor (EN model).
+      AddHistoryOutput("BGS_AMPLIFICATIONFACTOR", "bgs[EN_n]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
@@ -929,6 +961,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
+  }
+
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    AddHistoryOutput("LINSOL_ITER_TRANS", "LinSolIterTrans", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for transition solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TRANS", "LinSolResTrans", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for transition solver.");
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -967,6 +1004,18 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
   }
 
+  switch (config->GetKind_Trans_Model()) {
+	case TURB_TRANS_MODEL::EN:
+	  SetHistoryOutputValue("RMS_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
+	  SetHistoryOutputValue("MAX_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_Max(0)));
+	  if (multiZone) {
+		SetHistoryOutputValue("BGS_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
+	  }
+	  break;
+
+	case TURB_TRANS_MODEL::NONE: break;
+  }
+
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
@@ -996,6 +1045,15 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       break;
   }
 
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::EN:
+      AddVolumeOutput("AMPLIFICATIONFACTOR", "EN_n", "SOLUTION", "EN AMPLIFICATION");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
       AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
@@ -1014,6 +1072,15 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       break;
 
     case TURB_FAMILY::NONE:
+      break;
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::EN:
+      AddVolumeOutput("RES_AMPLIFICATIONFACTOR", "Residual_EN_AMLIFICATION", "RESIDUAL", "Residual of e^N amplification factor");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
       break;
   }
 
@@ -1076,8 +1143,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
 void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
+  const auto* trans_solver = solver[TRANS_SOL];
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
+  const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
 
   if (config->GetViscous()) {
@@ -1123,6 +1192,15 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
   if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::EN:
+      SetVolumeOutputValue("AMPLIFICATIONFACTOR", iPoint, Node_Trans->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("RES_AMPLIFICATION", iPoint, trans_solver->LinSysRes(iPoint, 0));
+      break;
+
+    case TURB_TRANS_MODEL::NONE: break;
   }
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
@@ -1925,6 +2003,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const bool gravity = config->GetGravityForce();
   const TURB_MODEL Kind_Turb_Model = config->GetKind_Turb_Model();
   const bool turbulent = Kind_Turb_Model != TURB_MODEL::NONE;
+  const TURB_TRANS_MODEL Kind_Trans_Model = config->GetKind_Trans_Model();
+  const bool transition = Kind_Trans_Model != TURB_TRANS_MODEL::NONE;
   const bool fixed_cl = config->GetFixed_CL_Mode();
   const auto Kind_Solver = config->GetKind_Solver();
   const auto Ref_NonDim = config->GetRef_NonDim();
@@ -2166,6 +2246,15 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else
             file << "Menter's SST\n";
          break;
+      }
+      if(transition) {
+		file << "Transition model: ";
+		switch (Kind_Trans_Model) {
+		case TURB_TRANS_MODEL::NONE: break;
+		case TURB_TRANS_MODEL::EN:
+		  file << "e^N transition\n";
+		  break;
+		}
       }
       break;
     default:

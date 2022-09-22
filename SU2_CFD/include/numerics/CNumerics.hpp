@@ -82,6 +82,9 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
+  amplification_factor_i,  /*!< \brief amplification factor at point i. */
+  amplification_factor_j;  /*!< \brief amplification factor at point j. */
+  su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
@@ -697,6 +700,21 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+  * \brief Get the Amplification factor for the e^N model.
+  */
+  inline su2double GetAmplificationFactor() const { return amplification_factor_i; }
+
+  /*!
+   * \brief Set the value of the amplification factor for the e^N model.
+   * \param[in] amplification_factor_i - Value of the amplification factor at point i.
+   * \param[in] amplification_factor_j - Value of the amplification factor at point j.
+   */
+  virtual void SetAmplificationFactor(su2double val_amplification_factor_i, su2double val_amplification_factor_j) {
+    amplification_factor_i = val_amplification_factor_i;
+	amplification_factor_j = val_amplification_factor_j;
+  };
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

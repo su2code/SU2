@@ -1935,7 +1935,7 @@ public:
    * \return Non-dimensionalized freestream intermittency.
    */
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
-  
+
   /*!
    * \brief Get the value of the non-dimensionalized freestream amplification factor.
    * \return Non-dimensionalized freestream amplification factor.

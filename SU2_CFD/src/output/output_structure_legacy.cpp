@@ -744,7 +744,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
-    bool transition = (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+    bool transition = (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
     bool thermal = (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver()  == MAIN_SOLVER::NAVIER_STOKES ||
                     config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS );
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
@@ -867,7 +867,13 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         default: break;
       }
     }
-    if (transition) nVar_Trans = 2;
+    if (transition){
+	  switch (config[val_iZone]->GetKind_Trans_Model()) {
+		case TURB_TRANS_MODEL::EN: nVar_Turb = 1; break;
+		default: break;
+	  }
+	}
+
     if (heat) nVar_Heat = 1;
 
     if (fem) {
@@ -1791,7 +1797,12 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               cout <<  "     Res[Heat]";
             }
 
-            if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
+            if (transition) {
+			  switch (config[val_iZone]->GetKind_Trans_Model()) {
+				case TURB_TRANS_MODEL::EN: cout << "      Res[n]";  break;
+				default: break;
+			  }
+			}
             else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)";
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch";
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)";

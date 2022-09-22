@@ -1117,6 +1117,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TRANS_SOL]) solver[iMesh][TRANS_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
       }
     }
@@ -1334,6 +1335,95 @@ template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template <class Indices>
+void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig *config,
+                                           const CSolver* trans_solver, CNumerics ****&numerics) const {
+  const int conv_term = CONV_TERM + offset;
+  const int visc_term = VISC_TERM + offset;
+
+  const int source_first_term = SOURCE_FIRST_TERM + offset;
+  const int source_second_term = SOURCE_SECOND_TERM + offset;
+
+  const int conv_bound_term = CONV_BOUND_TERM + offset;
+  const int visc_bound_term = VISC_BOUND_TERM + offset;
+
+  bool EN = false;
+
+  /*--- Assign transition model booleans ---*/
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::NONE:
+      break;
+    case TURB_TRANS_MODEL::EN: EN = true; break;
+  }
+
+  /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
+  switch (config->GetKind_ConvNumScheme_Turb()) {
+    case NO_UPWIND:
+      SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+      break;
+    case SPACE_UPWIND :
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        if ( NONE) {
+          SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
+        }
+        else if (EN) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+      }
+      break;
+    default:
+      SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
+      break;
+  }
+
+  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    if (NONE) {
+      SU2_MPI::Error("Invalid viscous scheme for the transition equations.", CURRENT_FUNCTION);
+    }
+    else if (EN)
+      numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, true, config);
+  }
+
+  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
+
+    if(NONE) {
+      SU2_MPI::Error("Invalid source for the transition equations.", CURRENT_FUNCTION);
+    }
+    else if (EN) {
+      trans_source_first_term = new CSourcePieceWise_TransEN<Indices>(nDim, nVar_Trans, config);
+    }
+
+    numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
+  }
+
+  /*--- Definition of the boundary condition method ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    if (NONE) {
+      SU2_MPI::Error("Invalid boundary conditions for the transition equations.", CURRENT_FUNCTION);
+    }
+    else if (EN) {
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, false, config);
+    }
+  }
+}
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+
+template <class Indices>
 void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
                                          const CSolver* species_solver, CNumerics ****&numerics) const {
   const int conv_term = CONV_TERM + offset;
@@ -1449,7 +1539,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
@@ -1466,7 +1556,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::FEM_EULER:
@@ -2019,41 +2109,18 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ConvNumScheme_Turb()) {
-      case NO_UPWIND:
-        SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
-        break;
-      case SPACE_UPWIND:
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM(nDim, nVar_Trans, config);
-        }
-        break;
-      default:
-        SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
-        break;
-    }
-
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
-    }
-
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][source_first_term] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
-      numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
-    }
-
-    /*--- Definition of the boundary condition method ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
-    }
+	if (incompressible)
+	  InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+																				 solver[MESH_0][TRANS_SOL], numerics);
+	else if (NEMO_ns)
+	  InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+																				  solver[MESH_0][TRANS_SOL], numerics);
+	else
+	  InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+																			  solver[MESH_0][TRANS_SOL], numerics);
   }
 
   /*--- Solver definition for the species transport problem ---*/
-
   if (species) {
     if (incompressible)
       InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
@@ -3519,7 +3586,7 @@ void CHBDriver::ResetConvergence() {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
       integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
       if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
+      if (config_container[ZONE_0]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:

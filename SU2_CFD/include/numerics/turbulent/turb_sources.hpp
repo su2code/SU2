@@ -49,10 +49,13 @@ struct CSAVariables {
   const su2double cr1 = 0.5;
 
   /*--- List of auxiliary functions ---*/
-  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
+  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Tu, Ncrit;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad, gamma_bc;
+
+  /*--- List of booleans ---*/
+  bool transEN = false;
 };
 
 /*!
@@ -65,6 +68,7 @@ template <class FlowIndices, class Omega, class ft2, class ModVort, class rFunc,
 class CSourceBase_TurbSA : public CNumerics {
  protected:
   su2double Gamma_BC = 0.0;
+
 
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
@@ -150,8 +154,17 @@ class CSourceBase_TurbSA : public CNumerics {
       var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
       var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
 
-      /*--- Compute ft2 term ---*/
-      ft2::get(var);
+      /*--- Compute ft2 term. Also includes boolean for e^N transition model that modifies the ft2 term ---*/
+      if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
+    	  AD::SetPreaccIn(amplification_factor_i);
+    	  su2double amplification_factor = amplification_factor_i;
+
+    	  var.transEN = true;
+    	  var.Tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
+    	  ft2::get(amplification_factor, var);
+      } else {
+    	  ft2::get(1.0, var);
+      }
 
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
@@ -260,7 +273,7 @@ namespace ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
-  static void get(CSAVariables& var) {
+  static void get(const su2double& n_hat, CSAVariables& var) {
     var.ft2 = 0.0;
     var.d_ft2 = 0.0;
   }
@@ -268,10 +281,18 @@ struct Zero {
 
 /*! \brief Non-zero ft2 term according to the literature. */
 struct Nonzero {
-  static void get(CSAVariables& var) {
-    const su2double xsi2 = pow(var.Ji, 2);
-    var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
-    var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
+  static void get(const su2double& n_hat, CSAVariables& var) {
+	if (var.transEN == false){
+      const su2double xsi2 = pow(var.Ji, 2);
+      var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
+      var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
+
+	} else { //Transition detected
+	  const su2double xsi2 = pow(var.Ji, 2);
+	  var.Ncrit = -8.43 - 2.4*log(var.Tu/100);
+	  var.ft2 = var.ct3 * (1 - exp(2*(n_hat - var.Ncrit)) ) * exp(-var.ct4 * xsi2);
+	  var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji; //Extra Ncrit part acting as a constant in var.ft2
+	}
   }
 };
 }  // namespace ft2
