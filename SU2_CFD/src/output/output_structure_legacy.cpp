@@ -869,8 +869,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     if (transition){
 	  switch (config[val_iZone]->GetKind_Trans_Model()) {
-		case TURB_TRANS_MODEL::EN: nVar_Turb = 1; break;
-		default: break;
+		case TURB_TRANS_MODEL::EN: nVar_Trans = 1; break;
+	    default: break;
 	  }
 	}
 

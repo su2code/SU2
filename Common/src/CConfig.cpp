@@ -6005,7 +6005,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "Spalart-Allmaras";
 
             if (!saParsedOptions.ft2) cout << "-noft2";
-            if (saParsedOptions.ft2) cout << "-ft2";
             if (saParsedOptions.rot) cout << "-R";
             if (saParsedOptions.comp) cout << "-comp";
             if (saParsedOptions.qcr2000) cout << "-QCR2000";
