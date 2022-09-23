@@ -189,10 +189,11 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   /*--- Loop through the DOFs, compute the primitive variables and store. ---*/
   for (unsigned long i = 0; i < nItems; ++i, ++index) {
 
+    const su2double zero  = 0.0;
     const su2double V4Inv = (nDim == 3) ? 1.0/sol(i, 4) : 1.0/sol(i, 3);
     const su2double u     = -V4Inv*sol(i, 1);
     const su2double v     = -V4Inv*sol(i, 2);
-    const su2double w     = (nDim == 3) ? -V4Inv*sol(i, 3) : 0;
+    const su2double w     = (nDim == 3) ? -V4Inv*sol(i, 3) : zero;
     const su2double eKin  =  0.5*(u*u + v*v + w*w);
     const su2double s     = (nDim == 3) ? Gamma - Gamma_Minus_One*(sol(i, 0) - sol(i, 4)*eKin) : Gamma - Gamma_Minus_One*(sol(i, 0) - sol(i, 3)*eKin);
     const su2double tmp   = (nDim == 3) ? -sol(i, 4)*exp(s) : -sol(i, 3)*exp(s);

@@ -842,6 +842,13 @@ void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
                                       ColMajorMatrix<su2double>     &C,
                                       const CConfig                 *config) {
 
+  /*--- Some checks to see if the leading dimensions are set correctly.
+        This is especially important for the jitted gemm calls, because
+        these are hard coded for these dimensions. ---*/
+  assert(LDA == A.rows());
+  assert(LDB == B.rows());
+  assert(LDC == C.rows());
+
   /*--- Check if the jitted gemm call can be used. ---*/
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 
