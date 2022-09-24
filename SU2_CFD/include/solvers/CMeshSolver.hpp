@@ -32,6 +32,10 @@
 #include "../variables/CMeshBoundVariable.hpp"
 #include "../variables/CMeshElement.hpp"
 
+/*!
+ * \brief Mesh deformation solver (pseudo elasticity).
+ * \ingroup Elasticity_Equations
+ */
 class CMeshSolver final : public CFEASolver {
 protected:
 

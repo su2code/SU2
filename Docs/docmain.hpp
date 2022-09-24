@@ -47,6 +47,16 @@
  * Alternatively, "caller graphs" can be used to navigate to the larger classes that use smaller ones, and
  * thus navigate the architecture from the bottom up (note that this will also be more effective if done
  * for base classes).
+ *
+ * ## Good practices when documenting a function
+ *
+ * The groups and subgroups defined in this file form a hierarchy of doxygen modules, when documenting a
+ * class or free function it should be added to a group (member functions belong to the group of the class
+ * by default), otherwise it will be difficult to navigate to the documentation.
+ * Therefore, all classes and functions should have a doxygen documentation block with at least \\brief and
+ * \\ingroup properties.
+ *
+ * Note that this is a work in progress and not all classes and functions are currently inserted into groups.
  */
 
 /*!
@@ -123,6 +133,12 @@
 /*!
  * \defgroup DiscAdj Discrete Adjoint
  * \brief Classes and functions used to solve discrete adjoint equations.
+ */
+
+/*!
+ * \defgroup GradSmooth Gradient Smoothing
+ * \brief Classes and functions used to smooth gradients from the discrete adjoint method.
+ * \ingroup DiscAdj
  */
 
 /*!
