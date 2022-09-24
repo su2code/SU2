@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -739,6 +739,7 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
     {
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CU(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CU());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
     }

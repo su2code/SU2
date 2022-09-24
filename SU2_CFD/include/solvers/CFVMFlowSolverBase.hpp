@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -88,6 +88,7 @@ class CFVMFlowSolverBase : public CSolver {
   struct AeroCoeffsArray {
     su2double* CD = nullptr;     /*!< \brief Drag coefficient. */
     su2double* CL = nullptr;     /*!< \brief Lift coefficient. */
+    su2double* CU = nullptr;     /*!< \brief Unstart coefficient. */
     su2double* CSF = nullptr;    /*!< \brief Sideforce coefficient. */
     su2double* CEff = nullptr;   /*!< \brief Efficiency (Cl/Cd). */
     su2double* CFx = nullptr;    /*!< \brief x Force coefficient. */
@@ -122,10 +123,10 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Scalar version of the coefficients type.
    */
   struct AeroCoeffs {
-    su2double CD, CL, CSF, CEff, CFx, CFy, CFz, CMx, CMy, CMz, CoPx, CoPy, CoPz, CT, CQ, CMerit;
+    su2double CD, CL, CU, CSF, CEff, CFx, CFy, CFz, CMx, CMy, CMz, CoPx, CoPy, CoPz, CT, CQ, CMerit;
 
     void setZero() {
-      CD = CL = CSF = CEff = CFx = CFy = CFz = CMx = CMy = CMz = CoPx = CoPy = CoPz = CT = CQ = CMerit = 0.0;
+      CD = CL = CU = CSF = CEff = CFx = CFy = CFz = CMx = CMy = CMz = CoPx = CoPy = CoPz = CT = CQ = CMerit = 0.0;
     }
 
     AeroCoeffs() { setZero(); }
@@ -1503,6 +1504,12 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CD() const final { return TotalCoeff.CD; }
+
+  /*!
+   * \brief Provide the unstart predictor coefficient.
+   * \return Value of the unstart.
+   */
+  inline su2double GetTotal_CU() const final { return TotalCoeff.CU; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.

@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1612,6 +1612,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_Total_CU - Value of the unstart coefficient.
+   */
+  inline virtual void SetTotal_CU(su2double val_Total_CU) { }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   inline virtual void SetTotal_NetThrust(su2double val_Total_NetThrust) { }
@@ -2365,6 +2371,12 @@ public:
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CL() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the unstart coefficient.
+   */
+  inline virtual su2double GetTotal_CU() const { return 0; }
 
   /*!
    * \brief A virtual member.

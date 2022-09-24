@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,7 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
   _size = size;
   CD = new su2double[size];
   CL = new su2double[size];
+  CU = new su2double[size];
   CSF = new su2double[size];
   CEff = new su2double[size];
   CFx = new su2double[size];
@@ -58,6 +59,7 @@ template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::AeroCoeffsArray::~AeroCoeffsArray() {
   delete[] CD;
   delete[] CL;
+  delete[] CU;
   delete[] CSF;
   delete[] CEff;
   delete[] CFx;
@@ -76,7 +78,7 @@ CFVMFlowSolverBase<V, R>::AeroCoeffsArray::~AeroCoeffsArray() {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
-  CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
+  CD[i] = CL[i] = CU[i] = CSF[i] = CEff[i] = 0.0;
   CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
   CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
   CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
@@ -1835,7 +1837,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
   su2double Pressure = 0.0, NFPressOF, RefPressure;
   const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
-  su2double AxiFactor;
+  su2double AxiFactor, Unstart;
 
   su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
@@ -1939,6 +1941,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             ForceInviscid[iDim] += Force[iDim];
           }
 
+          su2double Pcomb   = 40800.0;
+          su2double Rcomb   = 0.107+0.032;
+          su2double Vcomb   = 2735.97;
+          su2double Cfactor = 1/(0.5*Rcomb*Vcomb*Vcomb);
+          Unstart = pow(((Pressure - Pcomb)*Cfactor),8.0);
+
+
+
           /*--- Moment with respect to the reference axis ---*/
 
           if (nDim == 3) {
@@ -1962,7 +1972,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
         if (Boundary != NEARFIELD_BOUNDARY) {
           if (nDim == 2) {
             InvCoeff.CD[iMarker] = ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
-            InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
+            InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);           
+            InvCoeff.CU[iMarker] = Unstart;
             InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
             InvCoeff.CMz[iMarker] = MomentInviscid[2];
             InvCoeff.CoPx[iMarker] = MomentZ_Force[1];
@@ -1977,6 +1988,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             InvCoeff.CD[iMarker] = ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) +
                                    ForceInviscid[2] * sin(Alpha) * cos(Beta);
             InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha);
+            InvCoeff.CU[iMarker] = Unstart;
             InvCoeff.CSF[iMarker] = -ForceInviscid[0] * sin(Beta) * cos(Alpha) + ForceInviscid[1] * cos(Beta) -
                                     ForceInviscid[2] * sin(Beta) * sin(Alpha);
             InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
@@ -1995,6 +2007,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
           AllBoundInvCoeff.CD += InvCoeff.CD[iMarker];
           AllBoundInvCoeff.CL += InvCoeff.CL[iMarker];
+          AllBoundInvCoeff.CU += InvCoeff.CU[iMarker];
           AllBoundInvCoeff.CSF += InvCoeff.CSF[iMarker];
           AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
           AllBoundInvCoeff.CMx += InvCoeff.CMx[iMarker];
@@ -2018,6 +2031,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             if (Marker_Tag == Monitoring_Tag) {
               SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
               SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
+              SurfaceInvCoeff.CU[iMarker_Monitoring] += InvCoeff.CU[iMarker];
               SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
               SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
               SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
@@ -2054,6 +2068,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     };
     AllBoundInvCoeff.CD = Allreduce(AllBoundInvCoeff.CD);
     AllBoundInvCoeff.CL = Allreduce(AllBoundInvCoeff.CL);
+    AllBoundInvCoeff.CU = Allreduce(AllBoundInvCoeff.CU);
     AllBoundInvCoeff.CSF = Allreduce(AllBoundInvCoeff.CSF);
     AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
 
@@ -2092,6 +2107,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CL);
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CD);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CU);
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CSF);
 
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; iMarker_Monitoring++)
@@ -2115,6 +2131,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
   TotalCoeff.CD = AllBoundInvCoeff.CD;
   TotalCoeff.CL = AllBoundInvCoeff.CL;
+  TotalCoeff.CU = pow(AllBoundInvCoeff.CU,(1./8.));
   TotalCoeff.CSF = AllBoundInvCoeff.CSF;
   TotalCoeff.CEff = TotalCoeff.CL / (TotalCoeff.CD + EPS);
   TotalCoeff.CFx = AllBoundInvCoeff.CFx;
@@ -2136,6 +2153,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SurfaceCoeff.CL[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
+    SurfaceCoeff.CU[iMarker_Monitoring] = pow(SurfaceInvCoeff.CU[iMarker_Monitoring],(1./8.));
     SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
         SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
@@ -2919,6 +2937,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
         break;
       case LIFT_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CL[iMarker];
+        break;
+      case UNSTART_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CU[iMarker];
         break;
       case SIDEFORCE_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CSF[iMarker];

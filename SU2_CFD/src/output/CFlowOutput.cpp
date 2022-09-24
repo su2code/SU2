@@ -2,7 +2,7 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1090,6 +1090,8 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
   AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Unstart parameter
+  AddHistoryOutput("UNSTART",       "CU",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total unstart predictor on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
@@ -1145,6 +1147,7 @@ void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolve
 
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
+  SetHistoryOutputValue("UNSTART", flow_solver->GetTotal_CU());
   if (nDim == 3)
     SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
   if (nDim == 3){
@@ -1873,6 +1876,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   vector<su2double> Surface_CL(nMonitoring);
   vector<su2double> Surface_CD(nMonitoring);
+  vector<su2double> Surface_CU(nMonitoring);
   vector<su2double> Surface_CSF(nMonitoring);
   vector<su2double> Surface_CEff(nMonitoring);
   vector<su2double> Surface_CFx(nMonitoring);
@@ -1884,6 +1888,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   vector<su2double> Surface_CL_Inv(nMonitoring);
   vector<su2double> Surface_CD_Inv(nMonitoring);
+  vector<su2double> Surface_CU_Inv(nMonitoring);
   vector<su2double> Surface_CSF_Inv(nMonitoring);
   vector<su2double> Surface_CEff_Inv(nMonitoring);
   vector<su2double> Surface_CFx_Inv(nMonitoring);
@@ -1919,6 +1924,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   const auto Total_CL = flow_solver->GetTotal_CL();
   const auto Total_CD = flow_solver->GetTotal_CD();
+  const auto Total_CU = flow_solver->GetTotal_CU();
   const auto Total_CSF = flow_solver->GetTotal_CSF();
   const auto Total_CEff = flow_solver->GetTotal_CEff();
   const auto Total_CMx = flow_solver->GetTotal_CMx();
@@ -2035,7 +2041,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";

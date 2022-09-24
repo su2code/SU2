@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3208,7 +3208,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -6468,6 +6468,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           else {                         cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
+        case UNSTART_COEFFICIENT:        cout << "Unstart predictor objective function." << endl; break;
         case MOMENT_X_COEFFICIENT:       cout << "CMx objective function" << endl;
           if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMx/dCL = " << dCMx_dCL << "." << endl; }
           else {                         cout << "." << endl; }
@@ -8176,6 +8177,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:            AdjExt = "_cd";       break;
         case LIFT_COEFFICIENT:            AdjExt = "_cl";       break;
+        case UNSTART_COEFFICIENT:         AdjExt = "_cu";       break;
         case SIDEFORCE_COEFFICIENT:       AdjExt = "_csf";      break;
         case INVERSE_DESIGN_PRESSURE:     AdjExt = "_invpress"; break;
         case INVERSE_DESIGN_HEATFLUX:     AdjExt = "_invheat";  break;
