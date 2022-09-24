@@ -48,11 +48,11 @@
  * thus navigate the architecture from the bottom up (note that this will also be more effective if done
  * for base classes).
  *
- * ## Good practices when documenting a function
+ * ### Good practices when documenting classes and functions
  *
  * The groups and subgroups defined in this file form a hierarchy of doxygen modules, when documenting a
  * class or free function it should be added to a group (member functions belong to the group of the class
- * by default), otherwise it will be difficult to navigate to the documentation.
+ * by default), otherwise it will be difficult to navigate to the documentation of the class or function.
  * Therefore, all classes and functions should have a doxygen documentation block with at least \\brief and
  * \\ingroup properties.
  *
@@ -107,6 +107,11 @@
  */
 
 /*!
+ * \defgroup Scalar_Transport Solving scalar transport equations
+ * \brief Classes to solve scalar transport equations.
+ */
+
+/*!
  * \defgroup Elasticity_Equations Solving the elasticity equations
  * \brief Group of classes to solve solid deformation problems.
  */
@@ -128,6 +133,11 @@
 /*!
  * \defgroup Variable Storing solution variables
  * \brief Classes used to store and access the solution variables of all types of problems.
+ */
+
+/*!
+ * \defgroup Output Screen, history, and file output
+ * \brief Classes used to define the output of the solvers in SU2.
  */
 
 /*!
