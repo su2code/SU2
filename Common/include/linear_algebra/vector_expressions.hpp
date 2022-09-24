@@ -33,6 +33,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
+#include <cstdint>
 
 namespace VecExpr {
 
@@ -157,21 +158,22 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
   RETURNS( EXPR<Bcast<S>,V,S>(Bcast<S>(u), v.derived())                       \
 )                                                                             \
 
-/*--- std::max/min have issues (maybe because they return by reference).
- * For AD codi::max/min need to be used to avoid issues in debug builds. ---*/
+/*--- std::max/min have issues (because they return by reference).
+ * fmin and fmax return by value and thus are fine, but they would force
+ * conversions to double, to avoid that we provide integer overloads. ---*/
 
-#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-#define max_impl math::max
-#define min_impl math::min
-#else
-#define max_impl(a,b) a<b? Scalar(b) : Scalar(a)
-#define min_impl(a,b) b<a? Scalar(b) : Scalar(a)
-#endif
-MAKE_BINARY_FUN(fmax, max_, max_impl)
-MAKE_BINARY_FUN(fmin, min_, min_impl)
+#define MAKE_FMINMAX_OVERLOADS(TYPE)                          \
+FORCEINLINE TYPE fmax(TYPE a, TYPE b) { return a<b? b : a; }  \
+FORCEINLINE TYPE fmin(TYPE a, TYPE b) { return a<b? a : b; }
+MAKE_FMINMAX_OVERLOADS(int32_t)
+MAKE_FMINMAX_OVERLOADS(int64_t)
+MAKE_FMINMAX_OVERLOADS(uint32_t)
+MAKE_FMINMAX_OVERLOADS(uint64_t)
+#undef MAKE_FMINMAX_OVERLOADS
+
+MAKE_BINARY_FUN(fmax, max_, fmax)
+MAKE_BINARY_FUN(fmin, min_, fmin)
 MAKE_BINARY_FUN(pow, pow_, math::pow)
-#undef max_impl
-#undef min_impl
 
 /*--- sts::plus and co. were tried, the code was horrendous (due to the forced
  * conversion between different types) and creating functions for these ops
