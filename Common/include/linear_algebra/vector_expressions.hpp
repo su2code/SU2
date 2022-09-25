@@ -36,6 +36,8 @@
 #include <cstdint>
 
 namespace VecExpr {
+/// \addtogroup VecExpr
+/// @{
 
 /*!
  * \brief Base vector expression class.
@@ -227,4 +229,5 @@ MAKE_BINARY_FUN(operator>, gt_, gt_impl)
 
 #undef MAKE_BINARY_FUN
 
+/// @}
 } // end namespace

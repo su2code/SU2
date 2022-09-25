@@ -202,6 +202,12 @@
  */
 
 /*!
+ * \defgroup VecExpr Vector math expression templates
+ * \brief Expression templates for level-1 BLAS operations.
+ * \ingroup BLAS
+ */
+
+/*!
  * \defgroup Graph Graph operations
  * \brief Classes to represent graphs and functions to manipulate them (coloring, etc.).
  * \ingroup Toolboxes
