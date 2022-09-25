@@ -155,7 +155,10 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
-  const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
+  const auto flow_nodes = (config->GetKind_Solver() == MAIN_SOLVER::FEM_EULER               ||
+                           config->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES       ||
+                           config->GetKind_Solver() == MAIN_SOLVER::FEM_RANS                ||
+                           config->GetKind_Solver() == MAIN_SOLVER::FEM_LES                 ) ? nullptr : solver[FLOW_SOL]->GetNodes();
   const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
 
   vector<su2double> Surface_MassFlow          (nMarker,0.0);
