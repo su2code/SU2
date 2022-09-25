@@ -257,7 +257,12 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(solver, geometry, config, false);
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Analyze(iMarker) == YES) {
+      SU2_MPI::Error("SetAnalyzeSurface is not implemented for FEM-DG solver.", CURRENT_FUNCTION);
+    }
+  }
+  // SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 
