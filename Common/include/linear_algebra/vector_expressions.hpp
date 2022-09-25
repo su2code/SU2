@@ -160,7 +160,9 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
 
 /*--- std::max/min have issues (because they return by reference).
  * fmin and fmax return by value and thus are fine, but they would force
- * conversions to double, to avoid that we provide integer overloads. ---*/
+ * conversions to double, to avoid that we provide integer overloads.
+ * We use int32/64 instead of int/long to avoid issues with Windows,
+ * where long is 32 bits (instead of 64 bits). ---*/
 
 #define MAKE_FMINMAX_OVERLOADS(TYPE)                          \
 FORCEINLINE TYPE fmax(TYPE a, TYPE b) { return a<b? b : a; }  \
@@ -169,6 +171,10 @@ MAKE_FMINMAX_OVERLOADS(int32_t)
 MAKE_FMINMAX_OVERLOADS(int64_t)
 MAKE_FMINMAX_OVERLOADS(uint32_t)
 MAKE_FMINMAX_OVERLOADS(uint64_t)
+/*--- Make the float and double versions of fmin/max available in this
+ * namespace to avoid ambiguous overloads. ---*/
+using std::fmax;
+using std::fmin;
 #undef MAKE_FMINMAX_OVERLOADS
 
 MAKE_BINARY_FUN(fmax, max_, fmax)
@@ -192,20 +198,25 @@ MAKE_BINARY_FUN(operator/, div_, div_impl)
 #undef mul_impl
 #undef div_impl
 
-/*--- Relational operators need to be cast to the scalar type to allow vectorization. ---*/
+/*--- Relational operators need to be cast to the scalar type to allow vectorization.
+ * TO_PASSIVE is used to convert active scalars to passive, which CoDi will then capture
+ * by value in its expressions, and thus dangling references are avoided. No AD info
+ * is lost since these operators are non-differentiable. ---*/
 
-#define le_impl(a,b) Scalar(a<=b)
-#define ge_impl(a,b) Scalar(a>=b)
-#define eq_impl(a,b) Scalar(a==b)
-#define ne_impl(a,b) Scalar(a!=b)
-#define lt_impl(a,b) Scalar(a<b)
-#define gt_impl(a,b) Scalar(a>b)
+#define TO_PASSIVE(IMPL) SU2_TYPE::Passive<Scalar>::Value(IMPL)
+#define le_impl(a,b) TO_PASSIVE(a<=b)
+#define ge_impl(a,b) TO_PASSIVE(a>=b)
+#define eq_impl(a,b) TO_PASSIVE(a==b)
+#define ne_impl(a,b) TO_PASSIVE(a!=b)
+#define lt_impl(a,b) TO_PASSIVE(a<b)
+#define gt_impl(a,b) TO_PASSIVE(a>b)
 MAKE_BINARY_FUN(operator<=, le_, le_impl)
 MAKE_BINARY_FUN(operator>=, ge_, ge_impl)
 MAKE_BINARY_FUN(operator==, eq_, eq_impl)
 MAKE_BINARY_FUN(operator!=, ne_, ne_impl)
 MAKE_BINARY_FUN(operator<, lt_, lt_impl)
 MAKE_BINARY_FUN(operator>, gt_, gt_impl)
+#undef TO_PASSIVE
 #undef le_impl
 #undef ge_impl
 #undef eq_impl
