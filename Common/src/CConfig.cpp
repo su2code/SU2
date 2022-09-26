@@ -908,8 +908,9 @@ void CConfig::SetPointersNull(void) {
   ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow         = nullptr;    Surface_Mach             = nullptr;
   Surface_Temperature     = nullptr;    Surface_Pressure         = nullptr;    Surface_Density          = nullptr;    Surface_Enthalpy        = nullptr;
   Surface_NormalVelocity  = nullptr;    Surface_TotalTemperature = nullptr;    Surface_TotalPressure    = nullptr;    Surface_PressureDrop    = nullptr;
-  Surface_DC60            = nullptr;    Surface_IDC              = nullptr;
-  Surface_CO              = nullptr;    Surface_NOx               = nullptr;
+  Surface_DC60            = nullptr;    Surface_IDC              = nullptr;    Surface_PassiveScalar    = nullptr;
+  Surface_CO              = nullptr;    Surface_NOx               = nullptr;   Surface_ProgVar		= nullptr;    Surface_FTARatio        = nullptr;
+  Surface_ProgVar_Variance= nullptr;
   //Surface_Scalar          = nullptr;
 
   Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
@@ -1314,20 +1315,20 @@ void CConfig::SetConfig_Options() {
   /*!\brief SCALAR_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
   //addDoubleOption("SCALAR_INIT", Scalar_Init, 0.0);
 
-  addDoubleListOption("SCALAR_INIT", nScalar_Init, Scalar_Init);
+  addDoubleListOption("SPECIES_INIT", nScalar_Init, Scalar_Init);
   
   /*!\brief SCALAR_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \ingroup Config*/
-  addBoolOption("SCALAR_CLIPPING", Scalar_Clipping, false);
+  addBoolOption("SPECIES_CLIPPING", Scalar_Clipping, false);
 
   addBoolOption("ENABLE_REMESHING", enable_remeshing, false);
 
   addBoolOption("USE_WEAK_SCALAR_BC", use_weak_scalar_bc, false);
 
   /*!\brief SCALAR_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
-  addDoubleListOption("SCALAR_CLIPPING_MAX", nScalar_Clipping_Max, Scalar_Clipping_Max);
+  addDoubleListOption("SPECIES_CLIPPING_MAX", nScalar_Clipping_Max, Scalar_Clipping_Max);
   
   /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
-  addDoubleListOption("SCALAR_CLIPPING_MIN", nScalar_Clipping_Min, Scalar_Clipping_Min);
+  addDoubleListOption("SPECIES_CLIPPING_MIN", nScalar_Clipping_Min, Scalar_Clipping_Min);
 
   ffd_bounds[0] = -1e99;
   ffd_bounds[1] = -1e99;
@@ -1352,7 +1353,7 @@ void CConfig::SetConfig_Options() {
   flame_normal[2] = 0.0;
   addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
   
-  addDoubleOption("BURNT_THICKNESS", burnt_thickness, 1);
+  addDoubleOption("FLAME_BURNT_THICKNESS", burnt_thickness, 1);
 
   /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
@@ -1524,7 +1525,7 @@ void CConfig::SetConfig_Options() {
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /*!\brief MARKER_Inlet_Scalar \n DESCRIPTION: Inlet Scalar boundary marker(s) with the following format
    Inlet Scalar: (inlet_marker, progress variable, enthalpy, CO, NOx) */
-  addInletScalarOption("MARKER_INLET_SCALAR",nMarker_Inlet_Scalar, Marker_Inlet_Scalar, Inlet_ScalarVal);
+  addInletScalarOption("MARKER_INLET_SPECIES",nMarker_Inlet_Scalar, Marker_Inlet_Scalar, Inlet_ScalarVal);
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -1715,7 +1716,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the scalar transport problem */
-  addDoubleOption("CFL_REDUCTION_SCALAR", CFLRedCoeff_Scalar, 1.0);
+  addDoubleOption("CFL_REDUCTION_SPECIES", CFLRedCoeff_Scalar, 1.0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -1746,7 +1747,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_SCALAR", Kind_TimeIntScheme_Scalar, Time_Int_Map, EULER_IMPLICIT);
+  addEnumOption("TIME_DISCRE_SPECIES", Kind_TimeIntScheme_Scalar, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -1934,13 +1935,13 @@ void CConfig::SetConfig_Options() {
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
-  addBoolOption("MUSCL_SCALAR", MUSCL_Scalar, false);
+  addBoolOption("MUSCL_SPECIES", MUSCL_Scalar, false);
   /*!\brief SLOPE_LIMITER_SCALAR
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_SCALAR", Kind_SlopeLimit_Scalar, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Scalar, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_SCALAR
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
-  addConvectOption("CONV_NUM_METHOD_SCALAR", Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar, Kind_Upwind_Scalar);
+  addConvectOption("CONV_NUM_METHOD_SPECIES", Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar, Kind_Upwind_Scalar);
   
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
@@ -2896,6 +2897,9 @@ void CConfig::SetConfig_Options() {
   
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+
+  /*!\brief VARIANCE_NORMALIZATION \n DESCRIPTION: Flag for normalization of variance with respect to mean. */
+  addBoolOption("VARIANCE_NORMALIZATION", variance_normalization, false);
   
   /* END_CONFIG_OPTIONS */
 
@@ -5314,6 +5318,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Surface_IDR                = new su2double [nMarker_Analyze] ();
   Surface_CO                 = new su2double [nMarker_Analyze] ();
   Surface_NOx                = new su2double [nMarker_Analyze] ();
+  Surface_PassiveScalar      = new su2double [nMarker_Analyze] ();
+  Surface_ProgVar            = new su2double [nMarker_Analyze] ();
+  Surface_FTARatio           = new su2double [nMarker_Analyze] ();
+  Surface_ProgVar_Variance   = new su2double [nMarker_Analyze] ();
 
   //Surface_Scalar = new su2double*[nMarker_Analyze] ();
   //for (int i_scalar=0; i_scalar < nMarker_Analyze; ++i_scalar)
@@ -6258,7 +6266,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
         case SURFACE_CO:                 cout << "Y_CO objective function." << endl; break;
         case SURFACE_NOX:                cout << "Y_NOx objective function." << endl; break;
+        case SURFACE_PASSIVE_SCALAR:     cout << "Passive scalar objective function." << endl; break;
+        case SURFACE_PROG_VAR:           cout << "Progress variable objective function." << endl; break;
         case SURFACE_TEMP:               cout << "Temperature objective function." << endl; break;
+        case SURFACE_FTA_RATIO:          cout << "Fuel-to-air ratio objective function." << endl; break;
+        case SURFACE_PROGVAR_VARIANCE:   cout << "Progress variable variance objective function." << endl; break;
       }
     }
     else {
@@ -7851,6 +7863,10 @@ CConfig::~CConfig(void) {
      delete[]  Surface_IDR;
      delete[]  Surface_CO;
      delete[]  Surface_NOx;
+     delete[]  Surface_PassiveScalar;
+     delete[]  Surface_ProgVar;
+     delete[]  Surface_FTARatio;
+     delete[]  Surface_ProgVar_Variance;
      //delete[]  Surface_Scalar;
 
   delete[]  Inlet_Ttotal;
@@ -8205,6 +8221,10 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
         case SURFACE_CO:                  AdjExt = "_yco";      break;
         case SURFACE_NOX:                 AdjExt = "_ynox";     break;
+        case SURFACE_PASSIVE_SCALAR:      AdjExt = "_pass";     break;
+        case SURFACE_PROG_VAR:            AdjExt = "_prog";     break;
+        case SURFACE_FTA_RATIO:           AdjExt = "_fta";     break;
+        case SURFACE_PROGVAR_VARIANCE:    AdjExt = "_progvar";     break;
         case SURFACE_TEMP:                AdjExt = "_avgtemp";  break;
       }
     }

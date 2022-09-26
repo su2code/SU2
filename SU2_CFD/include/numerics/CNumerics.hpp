@@ -55,6 +55,7 @@ protected:
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
+  su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
@@ -362,7 +363,7 @@ public:
    */
   virtual void SetScalarSources(su2double *val_scalar_sources) {/* empty */}
 
-  virtual void SetSourcePV(su2double val_sourcepv) {}
+  //virtual void SetSourcePV(su2double val_sourcepv) {}
 
   /*!
    * \brief Set the value of the turbulent variable.
@@ -1650,6 +1651,12 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief SetMassFlux
+   * \param[in] val_MassFlux: Mass flux across the edge
+   */
+  inline void SetMassFlux(const su2double val_MassFlux) {MassFlux = val_MassFlux;}
 };
 
 /*!

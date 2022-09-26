@@ -343,6 +343,7 @@ private:
     su2double pk_axi, pw_axi, cdk_axi, cdw_axi;
 
     AD::SetPreaccIn(Coord_i[1]);
+    AD::SetPreaccIn(V_i[2]);
 
     yinv = 1.0/Coord_i[1];
     rhov = Density_i*V_i[2];

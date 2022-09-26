@@ -1,4 +1,36 @@
+/*!
+ * \file CLookupTable.hpp
+ * \brief tabulation of fluid properties
+ * \author D. Mayer, T. Economon
+ * \version 7.4.0 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
+
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <array>
 
 #include "../../Common/include/option_structure.hpp"
 #include "CFileReaderLUT.hpp"
@@ -27,6 +59,9 @@ protected:
   unsigned long n_variables;
   unsigned long n_hull_points;
 
+  /*! 
+   * \brief the lower and upper limits of the enthalpy and progress variable.
+   */
   su2double limits_table_enth[2];
   su2double limits_table_prog[2];
 
@@ -113,6 +148,16 @@ protected:
 
   bool IsInTriangle(su2double val_x, su2double val_y, unsigned long val_id_triangle, string name_prog,string name_enth);
 
+  /*!
+   * \brief compute the area of a triangle given the 3 points of the triangle.
+   * \param[in] x1 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \param[in] y1 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \param[in] x2 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \param[in] y2 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \param[in] x3 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \param[in] y3 - the coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
+   * \returns the absolute value of the area of the triangle.
+   */
   inline su2double TriArea(su2double x1, su2double y1, su2double x2, su2double y2, su2double x3, su2double y3) {
     return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) * 0.5);
   }
@@ -120,6 +165,10 @@ protected:
  public:
   CLookUpTable(string file_name_lut, string name_prog, string name_enth);
 
+
+  /*!
+   * \brief print information to screen.
+   */
   void PrintTableInfo();
 
   unsigned long LookUp_ProgEnth(string     val_name_var,

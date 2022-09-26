@@ -68,11 +68,11 @@ public:
    * \param[in] val_- the .
    * \param[in] val_ivar        - eqn. index to the .
    */
-  inline void SetSourceScalar(unsigned long  iPoint,
-                              su2double      val_source_scalar,
-                              unsigned short val_ivar) override {
-    source_scalar(iPoint,val_ivar) = val_source_scalar;
-  }
+  //inline void SetSourceScalar(unsigned long  iPoint,
+  //                            su2double      val_source_scalar,
+  //                            unsigned short val_ivar) override {
+  //  source_scalar(iPoint,val_ivar) = val_source_scalar;
+ // }
   
   /*!
    * \brief Set the value of the transported scalar source term

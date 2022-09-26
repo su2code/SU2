@@ -64,7 +64,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   
   /*--- Fluid model pointer initialization ---*/
   
-  FluidModel = nullptr;
+  //FluidModel = nullptr;
   
   /*--- Single grid simulation ---*/
 
@@ -237,7 +237,6 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
 }
 
 CFlameletSolver::~CFlameletSolver(void) {
-  if (FluidModel != nullptr) delete FluidModel;
 }
 
 
@@ -563,9 +562,7 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     fluid_model_local->SetScalarSources(nodes->GetSolution(i_point));
 
     /*--- Retrieve scalar sources from fluidmodel and update numerics class data. ---*/
-    //first_numerics->SetSourcePV(fluid_model_local->GetScalarSources()[0]);
     first_numerics->SetScalarSources(fluid_model_local->GetScalarSources());
-    //first_numerics->SetScalarSources(zero_sources);
 
     auto residual = first_numerics->ComputeResidual(config);
 
@@ -666,7 +663,6 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry,
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
-  
   }
 
 }

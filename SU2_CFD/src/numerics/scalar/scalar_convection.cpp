@@ -86,6 +86,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   a0 = 0.5 * (q_ij + fabs(q_ij));
   a1 = 0.5 * (q_ij - fabs(q_ij));
+  // nijso: use new massflux formulation
+  //a0 = max(0.0,MassFlux);
+  //a1 = min(0.0,MassFlux);
 
   FinishResidualCalc(config);
 

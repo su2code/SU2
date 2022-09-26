@@ -46,7 +46,7 @@ def main():
     parser.add_option("-g", "--gradient", dest="gradient", default="DISCRETE_ADJOINT",
                       help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, DISCRETE_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-o", "--optimization", dest="optimization", default="SLSQP",
-                      help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)", metavar="OPTIMIZATION")
+                      help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL, IPOPT)", metavar="OPTIMIZATION")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
@@ -163,6 +163,8 @@ def shape_optimization( filename                           ,
       SU2.opt.BFGS(project,x0,xb,its,accu)
     if optimization == 'POWELL':
       SU2.opt.POWELL(project,x0,xb,its,accu)
+    if optimization == 'IPOPT':
+      SU2.opt.IPOPT(project,x0,xb_low,xb_up,its,accu)
 
 
     # rename project file

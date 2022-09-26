@@ -265,7 +265,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Depending on the density model chosen, select a fluid model. ---*/
 
-  su2double *dummy_scalar;
+  su2double *dummy_scalar = nullptr;
   unsigned short n_scalars;
   CFluidModel* auxFluidModel = nullptr;
 
@@ -932,7 +932,6 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1298,6 +1297,14 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+
+    //if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
+    /* only when we solve additional scalars? So turbulence and species? */
+    if (iMesh == MESH_0) {
+      EdgeMassFluxes[iEdge] = residual[0];
+    }
+
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -2067,6 +2074,18 @@ void CIncEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
       break;
     case SURFACE_NOX:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
+      break;
+    case SURFACE_PASSIVE_SCALAR:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PassiveScalar(0);
+      break;
+    case SURFACE_PROG_VAR:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_ProgVar(0);
+      break;
+    case SURFACE_FTA_RATIO:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_FTARatio(0);
+      break;
+    case SURFACE_PROGVAR_VARIANCE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_ProgVar_Variance(0);
       break;
     case SURFACE_TEMP:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
@@ -2959,7 +2978,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
             if (axisymmetric) {
-              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              if (geometry->nodes->GetCoord(iPoint, 1) > 0.0)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
               else
                 AxiFactor = 1.0;

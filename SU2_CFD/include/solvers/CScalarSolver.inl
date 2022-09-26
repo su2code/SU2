@@ -102,6 +102,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
+  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
+
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
    * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
@@ -211,6 +213,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Update convective residual value ---*/
+      
+      /*--- Convective flux ---*/
+      EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+      numerics->SetMassFlux(EdgeMassFlux);
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -222,6 +228,19 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         LinSysRes.SubtractBlock(jPoint, residual);
         if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
+
+
+      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
+      // Evert's subtraction of divergence
+      /*
+      for(iVar=0; iVar<nVar; iVar++){
+        FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+        FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
+
+        LinSysRes(iPoint, iVar) -= FluxCorrection_i;
+        LinSysRes(jPoint, iVar) += FluxCorrection_j;
+      }
+      */            
 
       /*--- Viscous contribution. ---*/
 

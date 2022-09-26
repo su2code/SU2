@@ -43,6 +43,15 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
+  //if (rans && (iMesh == MESH_0)) {
+  // only when we solve additional scalars?    
+  if (iMesh == MESH_0) {
+    EdgeMassFluxes = new su2double [geometry->GetnEdge()];
+
+    for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); ++iEdge)
+      EdgeMassFluxes[iEdge] = 0.0;
+  }
+
   /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {

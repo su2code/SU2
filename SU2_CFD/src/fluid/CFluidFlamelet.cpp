@@ -12,24 +12,28 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     config->SetNScalars(n_scalars);
 
     table_scalar_names.resize(n_scalars);
-    table_scalar_names.at(I_ENTHALPY) = "Enthalpy";
-    table_scalar_names.at(I_PROG_VAR) = "ProgVar";
+    table_scalar_names.at(I_ENTHALPY) = "EnthalpyTot";
+    table_scalar_names.at(I_PROG_VAR) = "Progress Variable";
     table_scalar_names.at(I_CO)       = "Y-CO";
     table_scalar_names.at(I_NOX)      = "Y-NOx";
 
     config->SetScalarNames(table_scalar_names);
 
-    n_table_sources = 7;
+    /*--- number of sources that we need to look up from the LUT---*/
+    /*--- S1 : source for progress variable ---*/
+    /*--- S2 : total source term for Y_CO ---*/
+    /*--- S3 : total source term for Y_NO ---*/
+    n_table_sources = 3;
     config->SetNTableSources(n_table_sources);
 
     table_source_names.resize(n_table_sources);
     table_source_names.at(I_SRC_TOT_PROG_VAR) = "ProdRateTot-PV";
     table_source_names.at(I_SRC_TOT_CO)       = "ProdRateTot-CO";
     table_source_names.at(I_SRC_TOT_NOX)      = "ProdRateTot-X-NOx";
-    table_source_names.at(I_SRC_POS_CO)       = "ProdRatePos-CO";
-    table_source_names.at(I_SRC_NEG_CO)       = "ProdRateNeg-CO_OverY-CO";
-    table_source_names.at(I_SRC_POS_NOX)      = "ProdRatePos-NOx";
-    table_source_names.at(I_SRC_NEG_NOX)      = "ProdRateNeg-NOx_OverY-NOx";
+    //table_source_names.at(I_SRC_POS_CO)       = "ProdRatePos-CO";
+    //table_source_names.at(I_SRC_NEG_CO)       = "ProdRateNeg-CO_OverY-CO";
+    //table_source_names.at(I_SRC_POS_NOX)      = "ProdRatePos-NOx";
+    //table_source_names.at(I_SRC_NEG_NOX)      = "ProdRateNeg-NOx_OverY-NOx";
 
     config->SetTableSourceNames(table_source_names);
 
@@ -91,9 +95,9 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   source_scalar.at(I_ENTHALPY) = 0;
   source_scalar.at(I_PROG_VAR) = table_sources[I_SRC_TOT_PROG_VAR];
+  // source term splitting or total source term
   source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
   //source_scalar.at(I_CO)       = table_sources[I_SRC_POS_CO] + y_co*table_sources[I_SRC_NEG_CO];
-  //source_scalar.at(I_NOX)       = table_sources[I_SRC_TOT_NOX];
   //source_scalar.at(I_NOX)       = table_sources[I_SRC_POS_NOX] + y_nox*table_sources[I_SRC_NEG_NOX];
   source_scalar.at(I_NOX)      = table_sources[I_SRC_TOT_NOX];
 
@@ -138,8 +142,8 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
   look_up_data.push_back(&Kt);
   look_up_tags.push_back("Diffusivity");
   look_up_data.push_back(&mass_diffusivity);
-  look_up_tags.push_back("HeatRelease");
-  look_up_data.push_back(&source_energy);
+  //look_up_tags.push_back("HeatRelease");
+  //look_up_data.push_back(&source_energy);
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);

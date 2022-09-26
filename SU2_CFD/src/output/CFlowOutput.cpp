@@ -73,6 +73,14 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutput("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total average mass fraction of CO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of NO    
   AddHistoryOutput("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total average mass fraction of NO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average passive scalar    
+  AddHistoryOutput("SURFACE_PASSIVE_SCALAR",    "Avg_PassiveScalar",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average passive scalar on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average mass fraction of Progress Variable    
+  AddHistoryOutput("SURFACE_PROG_VAR",         "Avg_ProgVar",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of progress variable on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average fuel-to-air ratio    
+  AddHistoryOutput("SURFACE_FTA_RATIO",        "Avg_FTARatio",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average fuel-to-air ratio on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Surface ProgVar Variance
+  AddHistoryOutput("SURFACE_PROGVAR_VARIANCE", "ProgVar_Variance",          ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total progress variable variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -111,6 +119,14 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of NO    
   AddHistoryOutputPerSurface("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average passive scalar    
+  AddHistoryOutputPerSurface("SURFACE_PASSIVE_SCALAR",   "Avg_PassiveScalar",         ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average mass fraction of progress variable    
+  AddHistoryOutputPerSurface("SURFACE_PROG_VAR",         "Avg_ProgVar",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average fuel-to-air ratio    
+  AddHistoryOutputPerSurface("SURFACE_FTA_RATIO",        "Avg_FTARatio",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Surface ProgVar Variance
+  AddHistoryOutputPerSurface("SURFACE_PROGVAR_VARIANCE", "ProgVar_Variance",          ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -133,6 +149,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  const bool passive_scalar = config->GetKind_Scalar_Model() == PASSIVE_SCALAR;
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
 
   const bool axisymmetric               = config->GetAxisymmetric();
@@ -157,6 +174,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
   vector<su2double> Surface_CO                (nMarker,0.0);
   vector<su2double> Surface_NOx               (nMarker,0.0);
+  vector<su2double> Surface_PassiveScalar     (nMarker,0.0);
+  vector<su2double> Surface_ProgVar           (nMarker,0.0);
+  vector<su2double> Surface_FTARatio          (nMarker,0.0);
 
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
@@ -173,6 +193,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   su2double  Tot_SecondOverUniformity      = 0.0;
   su2double  Tot_Surface_CO                = 0.0;
   su2double  Tot_Surface_NOx               = 0.0;
+  su2double  Tot_Surface_PassiveScalar     = 0.0;
+  su2double  Tot_Surface_ProgVar           = 0.0;
+  su2double  Tot_Surface_FTARatio          = 0.0;
   //su2double  Tot_Surface_Scalar[n_scalars];
   //for (int i_scalar = 0; i_scalar < n_scalars; ++i_scalar)
   //  Tot_Surface_Scalar[i_scalar] = 0.0;
@@ -274,9 +297,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
           Surface_Pressure[iMarker]         += Pressure*Weight;
           Surface_TotalTemperature[iMarker] += TotalTemperature*Weight;
           Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
+          if (passive_scalar){
+            Surface_PassiveScalar[iMarker] += scalar_solver->GetNodes()->GetSolution(iPoint, 0) * Weight;
+          }
           if (flamelet_model){
             Surface_CO[iMarker]  += scalar_solver->GetNodes()->GetSolution(iPoint, I_CO) * Weight;
             Surface_NOx[iMarker] += scalar_solver->GetNodes()->GetSolution(iPoint, I_NOX) * Weight;
+            Surface_ProgVar[iMarker] += scalar_solver->GetNodes()->GetSolution(iPoint, I_PROG_VAR) * Weight;
+            Surface_FTARatio[iMarker] += (scalar_solver->GetNodes()->GetSolution(iPoint, I_PROG_VAR) / (1-scalar_solver->GetNodes()->GetSolution(iPoint, I_PROG_VAR))) * Weight;
           }
 
           /*--- For now, always used the area to weight the uniformities. ---*/
@@ -306,8 +334,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   vector<su2double> Surface_TotalPressure_Local     (nMarker_Analyze,0.0);
   vector<su2double> Surface_Area_Local              (nMarker_Analyze,0.0);
   vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
-  vector<su2double> Surface_CO_Local               (nMarker_Analyze,0.0);
+  vector<su2double> Surface_CO_Local                (nMarker_Analyze,0.0);
   vector<su2double> Surface_NOx_Local               (nMarker_Analyze,0.0);
+  vector<su2double> Surface_PassiveScalar_Local     (nMarker_Analyze,0.0);
+  vector<su2double> Surface_ProgVar_Local           (nMarker_Analyze,0.0);
+  vector<su2double> Surface_FTARatio_Local          (nMarker_Analyze,0.0);
   
   vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
   vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
@@ -324,6 +355,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
   vector<su2double> Surface_CO_Total                (nMarker_Analyze,0.0);
   vector<su2double> Surface_NOx_Total               (nMarker_Analyze,0.0);
+  vector<su2double> Surface_PassiveScalar_Total     (nMarker_Analyze,0.0);
+  vector<su2double> Surface_ProgVar_Total           (nMarker_Analyze,0.0);
+  vector<su2double> Surface_FTARatio_Total          (nMarker_Analyze,0.0);
 
   vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
@@ -353,6 +387,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
           Surface_CO_Local[iMarker_Analyze]                += Surface_CO[iMarker];
           Surface_NOx_Local[iMarker_Analyze]               += Surface_NOx[iMarker];
+          Surface_PassiveScalar_Local[iMarker_Analyze]     += Surface_PassiveScalar[iMarker];
+          Surface_ProgVar_Local[iMarker_Analyze]           += Surface_ProgVar[iMarker];
+          Surface_FTARatio_Local[iMarker_Analyze]          += Surface_FTARatio[iMarker];
         }
 
       }
@@ -380,6 +417,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
   Allreduce(Surface_CO_Local, Surface_CO_Total);
   Allreduce(Surface_NOx_Local,Surface_NOx_Total);
+  Allreduce(Surface_PassiveScalar_Local,Surface_PassiveScalar_Total);
+  Allreduce(Surface_ProgVar_Local,Surface_ProgVar_Total);
+  Allreduce(Surface_FTARatio_Local,Surface_FTARatio_Total);
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
 
@@ -400,6 +440,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
       Surface_CO_Total[iMarker_Analyze]               /= Weight;
       Surface_NOx_Total[iMarker_Analyze]              /= Weight;
+      Surface_PassiveScalar_Total[iMarker_Analyze]    /= Weight;
+      Surface_ProgVar_Total[iMarker_Analyze]          /= Weight;
+      Surface_FTARatio_Total[iMarker_Analyze]         /= Weight;
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -412,6 +455,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
       Surface_CO_Total[iMarker_Analyze]               = 0.0;
       Surface_NOx_Total[iMarker_Analyze]              = 0.0;
+      Surface_PassiveScalar_Total[iMarker_Analyze]    = 0.0;
+      Surface_ProgVar_Total[iMarker_Analyze]          = 0.0;
+      Surface_FTARatio_Total[iMarker_Analyze]         = 0.0;
     }
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
@@ -511,6 +557,21 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
     SetHistoryOutputPerSurfaceValue("AVG_NOX", y_NOx, iMarker_Analyze);
     Tot_Surface_NOx += y_NOx;
     config->SetSurface_NOx(iMarker_Analyze, y_NOx);
+    
+    su2double y_PassiveScalar = Surface_PassiveScalar_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_PASSIVE_SCALAR", y_PassiveScalar, iMarker_Analyze);
+    Tot_Surface_PassiveScalar += y_PassiveScalar;
+    config->SetSurface_PassiveScalar(iMarker_Analyze, y_PassiveScalar);
+    
+    su2double y_ProgVar = Surface_ProgVar_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_PROG_VAR", y_ProgVar, iMarker_Analyze);
+    Tot_Surface_ProgVar += y_ProgVar;
+    config->SetSurface_ProgVar(iMarker_Analyze, y_ProgVar);
+    
+    su2double y_FTARatio = Surface_FTARatio_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_FTA_RATIO", y_FTARatio, iMarker_Analyze);
+    Tot_Surface_FTARatio += y_FTARatio;
+    config->SetSurface_FTARatio(iMarker_Analyze, y_FTARatio);
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -542,6 +603,123 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   SetHistoryOutputValue("AVG_CO",   Tot_Surface_CO);
   SetHistoryOutputValue("AVG_NOX",  Tot_Surface_NOx);
+  SetHistoryOutputValue("SURFACE_PASSIVE_SCALAR",  Tot_Surface_PassiveScalar);
+  SetHistoryOutputValue("SURFACE_PROG_VAR",  Tot_Surface_ProgVar);
+  SetHistoryOutputValue("SURFACE_FTA_RATIO",  Tot_Surface_FTARatio);
+
+  /*--- Compute Variance of progress variable on the analyze markers. This is done after the rest as the average progress variable value is
+   * necessary. ---*/
+  vector<su2double> Surface_ProgVar_Variance(nMarker,0.0);
+  su2double Tot_Surface_ProgVar_Variance = 0.0;
+
+  if (flamelet_model){
+    /*--- sum += (Y_i - mu_Y)^2 * weight_i with i representing the node. ---*/
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+      if (config->GetMarker_All_Analyze(iMarker) == YES) {
+
+        /*--- Find iMarkerAnalyze to iMarker. As ProgVarAvg is accessed via iMarkerAnalyze. ---*/
+        for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++)
+          if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze))
+            break;
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->nodes->GetDomain(iPoint)) {
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+
+            if (axisymmetric) {
+              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
+              else {
+                /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+                AxiFactor = 0.0;
+                for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+                  auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+                  if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
+                    /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                    break;
+                  }
+                }
+              }
+            } else {
+              AxiFactor = 1.0;
+            }
+
+            Density = flow_solver->GetNodes()->GetDensity(iPoint);
+            Area = 0.0; MassFlow = 0.0;
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            }
+            Area= sqrt(Area);
+
+            if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+            else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+            else Weight = 1.0;
+            
+            if(!config->GetVarianceNormalization()){
+              Surface_ProgVar_Variance[iMarker] += pow(scalar_solver->GetNodes()->GetSolution(iPoint, I_PROG_VAR) - Surface_ProgVar_Total[iMarker_Analyze], 2) * Weight;
+            }else{
+              Surface_ProgVar_Variance[iMarker] += sqrt(pow(scalar_solver->GetNodes()->GetSolution(iPoint, I_PROG_VAR) - Surface_ProgVar_Total[iMarker_Analyze], 2)) * Weight;
+            }
+	  }
+        }
+      }
+    }
+  }
+
+  /*--- MPI Communication ---*/
+  vector<su2double> Surface_ProgVar_Variance_Local(nMarker_Analyze,0.0);
+  vector<su2double> Surface_ProgVar_Variance_Total(nMarker_Analyze,0.0);
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_Analyze(iMarker) == YES)  {
+
+      for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+        /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
+
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
+          Surface_ProgVar_Variance_Local[iMarker_Analyze] += Surface_ProgVar_Variance[iMarker];
+        }
+      }
+    }
+  }
+  Allreduce(Surface_ProgVar_Variance_Local, Surface_ProgVar_Variance_Total);
+
+  /*--- Divide quantity by weight. ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    else Weight = 1.0;
+
+    if (Weight != 0.0) {
+      if(!config->GetVarianceNormalization()){
+        Surface_ProgVar_Variance_Total[iMarker_Analyze] /= Weight;
+      }else{
+        Surface_ProgVar_Variance_Total[iMarker_Analyze] /= Weight*Surface_ProgVar_Total[iMarker_Analyze];
+      }
+    }
+    else {
+      Surface_ProgVar_Variance[iMarker_Analyze] = 0.0;
+    }
+  }
+
+  /*--- Set values on markers ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+    su2double ProgVarVariance = Surface_ProgVar_Variance_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_PROGVAR_VARIANCE", ProgVarVariance, iMarker_Analyze);
+    Tot_Surface_ProgVar_Variance += ProgVarVariance;
+    config->SetSurface_ProgVar_Variance(iMarker_Analyze, ProgVarVariance);
+  }
+  SetHistoryOutputValue("SURFACE_PROGVAR_VARIANCE", Tot_Surface_ProgVar_Variance);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 

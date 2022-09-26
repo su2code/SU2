@@ -695,13 +695,9 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    // note that p_total is either total pressure or velocity depending on tif it is a velocity inlet or pressure inlet
     su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
     su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
     auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
-
-    
-
 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;

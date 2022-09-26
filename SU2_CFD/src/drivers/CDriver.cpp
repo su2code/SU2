@@ -1104,12 +1104,9 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-          if (solver[iMesh][FLOW_SOL]) 
-            solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
-          if (solver[iMesh][TURB_SOL]) 
-            solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
-          if (solver[iMesh][SCALAR_SOL]) 
-            solver[iMesh][SCALAR_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][SCALAR_SOL]) solver[iMesh][SCALAR_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 

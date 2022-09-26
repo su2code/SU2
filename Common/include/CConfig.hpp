@@ -378,6 +378,10 @@ private:
   su2double *Surface_TotalPressure;          /*!< \brief Total pressure at the boundaries. */
   su2double *Surface_CO;                     /*!< \brief Mass fraction of CO at the boundaries. */
   su2double *Surface_NOx;                    /*!< \brief Mass fraction of NO at the boundaries. */
+  su2double *Surface_PassiveScalar;          /*!< \brief Passive scalar value at the boundaries. */
+  su2double *Surface_ProgVar;                /*!< \brief Mass fraction of progress variable at the boundaries. */
+  su2double *Surface_FTARatio;               /*!< \brief Fuel-to-air ratio at the boundaries. */
+  su2double *Surface_ProgVar_Variance;       /*!< \brief Variance of progress variable at the boundaries. */
   //su2double **Surface_Scalar;
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
   su2double *Surface_DC60;                   /*!< \brief Specified surface DC60 for nacelle boundaries. */
@@ -1195,6 +1199,7 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
 
+  bool variance_normalization;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -7659,6 +7664,34 @@ public:
   void SetSurface_NOx(unsigned short val_imarker, su2double val_surface_nox){ Surface_NOx[val_imarker] = val_surface_nox; };
 
   /*!
+   * \brief Set the passive scalar value at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_pass_scalar - Value of the passive scalar.
+   */
+  void SetSurface_PassiveScalar(unsigned short val_imarker, su2double val_surface_pass_scalar){ Surface_PassiveScalar[val_imarker] = val_surface_pass_scalar; };
+
+  /*!
+   * \brief Set the progress variable mass fraction at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_prog_var - Value of the progress variable mass fraction.
+   */
+  void SetSurface_ProgVar(unsigned short val_imarker, su2double val_surface_prog_var){ Surface_ProgVar[val_imarker] = val_surface_prog_var; };
+
+  /*!
+   * \brief Set the progress variable variance at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_progvar_variance - Value of the progress variable variance.
+   */
+  void SetSurface_ProgVar_Variance(unsigned short val_imarker, su2double val_surface_progvar_variance){ Surface_ProgVar_Variance[val_imarker] = val_surface_progvar_variance; };
+  
+  /*!
+   * \brief Set the fuel-to-air ratio at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_fta_ratio - Value of the fuel-to-air ratio.
+   */
+  void SetSurface_FTARatio(unsigned short val_imarker, su2double val_surface_fta_ratio){ Surface_FTARatio[val_imarker] = val_surface_fta_ratio; };
+
+  /*!
    * \brief Set the pressure drop between two surfaces.
    * \param[in] val_marker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_pressuredrop - Value of the pressure drop.
@@ -7944,6 +7977,34 @@ public:
    * \return The NOx mass fraction.
    */
   su2double GetSurface_NOx(unsigned short val_imarker) const { return Surface_NOx[val_imarker]; };
+
+  /*!
+   * \brief Get the passive scalar value at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The passive scalar value.
+   */
+  su2double GetSurface_PassiveScalar(unsigned short val_imarker) const { return Surface_PassiveScalar[val_imarker]; };
+
+  /*!
+   * \brief Get the progress variable mass fraction at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The progress variable mass fraction.
+   */
+  su2double GetSurface_ProgVar(unsigned short val_imarker) const { return Surface_ProgVar[val_imarker]; };
+
+  /*!
+   * \brief Get the progress variable variance at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The progress variable variance.
+   */
+  su2double GetSurface_ProgVar_Variance(unsigned short val_imarker) const { return Surface_ProgVar_Variance[val_imarker]; };
+
+  /*!
+   * \brief Get the fuel-to-air ratio at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The fuel-to-air ratio.
+   */
+  su2double GetSurface_FTARatio(unsigned short val_imarker) const { return Surface_FTARatio[val_imarker]; };
 
   /*!
    * \brief Get the pressure drop between two surfaces.
@@ -9675,4 +9736,10 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+  
+  /*!
+   * \brief Get whether the variance (obj) is normalized w.r.t. the mean.
+   * \return True if specified in config file.
+   */
+  bool GetVarianceNormalization(void) const {return variance_normalization; }
 };

@@ -2176,7 +2176,7 @@ public:
   inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
   inline virtual su2double* GetDiffusivity(unsigned long iPoint) { return NULL; }
   
-  inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
+  //inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
   inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
 
   inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }

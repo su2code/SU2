@@ -4264,6 +4264,18 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
     case SURFACE_NOX:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
       break;
+    case SURFACE_PASSIVE_SCALAR:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PassiveScalar(0);
+      break;
+    case SURFACE_PROG_VAR:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_ProgVar(0);
+      break;
+    case SURFACE_FTA_RATIO:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_FTARatio(0);
+      break;
+    case SURFACE_PROGVAR_VARIANCE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_ProgVar_Variance(0);
+      break;
     case SURFACE_TEMP:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
       break;

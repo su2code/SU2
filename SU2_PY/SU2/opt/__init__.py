@@ -5,3 +5,4 @@ from .scipy_tools import scipy_slsqp as SLSQP
 from .scipy_tools import scipy_cg as CG
 from .scipy_tools import scipy_bfgs as BFGS
 from .scipy_tools import scipy_powell as POWELL
+from .ipopt_tools import ipopt_run as IPOPT

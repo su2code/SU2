@@ -37,7 +37,7 @@
  */
 class CFlameletSolver: public CScalarLegacySolver {
 private:
-  CFluidModel *FluidModel;     /*!< \brief Fluid model for the scalar transport problem. */
+  //CFluidModel *FluidModel;     /*!< \brief Fluid model for the scalar transport problem. */
   //vector<su2double> scalar_clipping_max;
   //vector<su2double> scalar_clipping_min;
   unsigned long n_table_misses; /*!< \brief number of times we failed to do a lookup from the table */

@@ -389,6 +389,9 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
     if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
+    if ObjFun_name == "SURFACE_PASSIVE_SCALAR" 	:return -1.0
+    if ObjFun_name == "SURFACE_PROG_VAR" 	:return -1.0
+    if ObjFun_name == "SURFACE_FTA_RATIO" 	:return -1.0
     
     # otherwise
     return 1.0
@@ -452,6 +455,10 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
                  "AVG_CO"                      : "yco"       ,
                  "AVG_NOX"                     : "ynox"      ,
+                 "SURFACE_PASSIVE_SCALAR"      : "pass"      ,
+                 "SURFACE_PROG_VAR"            : "prog"      ,
+                 "SURFACE_FTA_RATIO"           : "fta"       ,
+                 "SURFACE_PROGVAR_VARIANCE"    : "progvar"   ,
                  "AVG_TEMP"                    : "avgtemp"   ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,
                  "KINETIC_ENERGY_LOSS"         : "ke"        ,
@@ -729,8 +736,8 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","Surface_CO","Surface_NOx","Surface_Temperature","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","Surface_CO","Surface_NOx","Surface_ProgVar","Surface_FTARatio","Surface_PassiveScalar","Surface_ProgVar_Variance","Surface_Temperature","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 

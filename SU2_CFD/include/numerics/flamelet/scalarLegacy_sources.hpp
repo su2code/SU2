@@ -63,6 +63,8 @@ private:
     if (Coord_i[1] > EPS) {
 
       AD::SetPreaccIn(Coord_i[1]);
+      AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+      AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);      
 
       yinv = 1.0/Coord_i[1];
 
@@ -150,9 +152,9 @@ public:
       scalar_sources[i_var] = val_scalar_sources[i_var];
   }
 
-  inline void SetSourcePV(su2double val_sourcepv) override {
-    source_pv = val_sourcepv;
-  }
+  //inline void SetSourcePV(su2double val_sourcepv) override {
+  //  source_pv = val_sourcepv;
+  //}
 
   /*!
    * \brief Destructor of the class.

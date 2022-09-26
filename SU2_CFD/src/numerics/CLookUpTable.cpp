@@ -32,17 +32,6 @@ CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string na
                                        GetEdges(), GetEdgeToTriangle());
   
 
-  /* nijso todo writing the trapezoidal map*/
-  //if (rank == MASTER_NODE)
-  //  trap_map_prog_enth.writeVec();
-
-  /*
-  ofstream trapfile;
-  string filename = "trapfile.dat";
-  trapfile.open (filename.c_str(), ios::out|ios::binary|ios::app);
-  */
-
-
   if (rank == MASTER_NODE) cout << " done." << endl;
 
   if (rank == MASTER_NODE) {
@@ -87,8 +76,8 @@ void CLookUpTable::FindTableLimits(string name_prog, string name_enth) {
 
   int ixEnth = GetIndexOfVar(name_enth);
   int ixProg = GetIndexOfVar(name_prog);
-  //cout << "findtablelimits:: expecting progress variable " << name_prog<< " at table column " << ixProg<<endl;
-  //cout << "findtablelimits:: expecting enthalpy "<<name_enth<<" at table column " << ixEnth<<endl;
+  cout << "findtablelimits:: expecting progress variable " << name_prog<< " at table column " << ixProg<<endl;
+  cout << "findtablelimits:: expecting enthalpy "<<name_enth<<" at table column " << ixEnth<<endl;
 
   
 
@@ -475,7 +464,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string    val_name_var,
                            interp_coeffs);
       exit_code = 0;
     } else {
-      //cout << "lookupprogenth: in bounding box but outside of table!, (c,h)="<<val_prog<<", "<<val_enth << endl;
       unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth,name_prog, name_enth);
       *val_var = GetData(val_name_var).at(nearest_neighbor);
       exit_code = 1;
@@ -534,7 +522,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
       exit_code = 0;
 
     } else {
-      //cout << "lookup_progenth: outside table range, c,h = "<< val_prog<< " "<<val_enth<<endl;
       /* if point is not inside a triangle (outside table domain) search nearest neighbor */
       nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog,name_enth);
       exit_code = 1;
@@ -549,6 +536,26 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
     exit_code = 1;
 
   }
+   
+  /* For keeping the derivative information we also obtain the look-up values from interpolation for values outside of the interpolation region */
+  //lisa:set to true to use different treatment and trigger next if
+  bool full_interpolation=false;
+  if( exit_code == 1 && full_interpolation){
+
+    //Find distance to nearest neighbor
+    su2double dist_prog = GetData(name_prog).at(nearest_neighbor)-val_prog;
+    su2double dist_enth = GetData(name_enth).at(nearest_neighbor)-val_enth;
+
+    /* Assign new value to value of nearest neighbor, keep derivative information (therefore only use the value) */
+    val_prog = val_prog + SU2_TYPE::GetValue(dist_prog); 
+    val_enth = val_enth + SU2_TYPE::GetValue(dist_enth);
+
+    /* try to find the triangle that holds the (prog, enth) point */
+    id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
+
+    /* get interpolation coefficients for point in  the triangle */
+    GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth.at(id_triangle), interp_coeffs);
+  }
 
   /* loop over variable names and interpolate / get values */
   for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
@@ -561,7 +568,9 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
     if (exit_code == 0)
       *val_vars.at(i_var) = Interpolate(GetData(val_names_var.at(i_var)), (triangles.at(id_triangle)), interp_coeffs);
     else
-      *val_vars.at(i_var) = GetData(val_names_var.at(i_var)).at(nearest_neighbor);
+      //lisa: use this to keep derivative information for values outside of domain (!does not agree with finite differences)
+      if(full_interpolation) *val_vars.at(i_var) = Interpolate(GetData(val_names_var.at(i_var)), (triangles.at(id_triangle)), interp_coeffs);  //at nearest neigbor
+      else *val_vars.at(i_var) = GetData(val_names_var.at(i_var)).at(nearest_neighbor);
 
     }
   }
@@ -597,8 +606,8 @@ su2double CLookUpTable::Interpolate(const vector<su2double> &val_samples,
                                     vector<unsigned long>   &val_triangle,
                                     vector<su2double>       &val_interp_coeffs) {
 
-  su2double result         = 0;
-  su2double z              = 0;
+  su2double result         = 0.0;
+  su2double z              = 0.0;
 
   for (int i_point = 0; i_point < N_POINTS_TRIANGLE; i_point++) {
     z = val_samples.at(val_triangle.at(i_point));

@@ -68,30 +68,13 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
   AD::SetPreaccIn(scalar_sources, nVar);
   AD::SetPreaccIn(Volume); 
 
-  // FIXME dan: the next two lines crashes when I run SU2_CFD_AD on the asym probe case
-  // AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
-  // AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
-
-  //if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE)
-  //  AD::SetPreaccIn(sourcepv_i);
-
-  //unsigned short iDim;
-
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
 
-    //Density_i = V_i[nDim+2];
-    //Laminar_Viscosity_i = V_i[nDim+4];
-    // we do not know if this exists
-    //Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);
 
-    //Density_i = V_i[nDim+2];
-    //Laminar_Viscosity_i = V_i[nDim+5];
-    // we do not know if this exists
-    //Eddy_Viscosity_i = V_i[nDim+6];
   }
 
   /*--- Implicit part for production term (to do). ---*/
@@ -101,10 +84,6 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
       Jacobian_i[i_var][j_var] = 0.0;
     }
   }
-  // FIXME dan: add source term derivatives to jacobian
-  //Jacobian[i][j] = dSource_i / dScalar_j
-
-   /*--- Add the production terms to the residuals. ---*/
 
    /*--- Contribution due to 2D axisymmetric formulation ---*/
    
@@ -112,7 +91,6 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
 
    /*--- Implicit part ---*/
 
-   
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
 
