@@ -32,25 +32,48 @@
 #include <cmath>
 #include <fstream>
 
-MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
-    PairVariableswithANNs(ANN_collection, inputs, outputs);
+MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*MLP_collection, vector<string> &inputs, vector<string> &outputs){
+    /* Generate an input-output map given a set of call inputs and call outputs. These inputs are 
+    mapped to the inputs of the loaded MLPs in the MLP_collection object. The call outputs are 
+    then matched to the MLPs with matching inputs.
+    */
+    PairVariableswithMLPs(MLP_collection, inputs, outputs);
+
+    // Perform checks on input-output validity
     if(outputs.size() > 0){
-        ANN_collection->Check_Use_of_Inputs(inputs, this);
-        ANN_collection->Check_Use_of_Outputs(outputs, this);
-        ANN_collection->Check_Duplicate_Outputs(outputs, this);
+        // Check wether all call inputs are used
+        MLP_collection->Check_Use_of_Inputs(inputs, this);
+
+        // Check wether all call outputs are present in the MLP collection
+        MLP_collection->Check_Use_of_Outputs(outputs, this);
+
+        // Check wether there are any duplicates in the MLP outputs
+        MLP_collection->Check_Duplicate_Outputs(outputs, this);
     }
 }
-void MLPToolbox::CIOMap::PairVariableswithANNs(CLookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
-
+void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN*MLP_collection, vector<string> &inputs, vector<string> &outputs){
+    /*
+    In this function, the call inputs and outputs are matched to those within the MLP collection. 
+    */
     bool isInput, isOutput;
-    for(size_t i_ANN=0; i_ANN<ANN_collection->GetNANNs(); i_ANN++){
-        vector<pair<size_t, size_t>> Input_Indices = ANN_collection->FindVariable_Indices(i_ANN, inputs, true);
+
+    // Looping over the loaded MLPs to check wether the MLP inputs match with the call inputs
+    for(size_t i_MLP=0; i_MLP<MLP_collection->GetNANNs(); i_MLP++){
+
+        // Mapped call inputs to MLP inputs
+        vector<pair<size_t, size_t>> Input_Indices = MLP_collection->FindVariable_Indices(i_MLP, inputs, true);
         isInput = Input_Indices.size() > 0;
+
         if(isInput){
-            vector<pair<size_t, size_t>> Output_Indices = ANN_collection->FindVariable_Indices(i_ANN, outputs, false);
+            // Only when the MLP inputs match with a portion of the call inputs are the output variable checks performed
+
+            vector<pair<size_t, size_t>> Output_Indices = MLP_collection->FindVariable_Indices(i_MLP, outputs, false);
             isOutput = Output_Indices.size() > 0;
+
             if(isOutput){
-                ANN_indices.push_back(i_ANN);
+
+                // Update input and output mapping if both inputs and outputs match
+                MLP_indices.push_back(i_MLP);
                 Input_Map.push_back(Input_Indices);
                 Output_Map.push_back(Output_Indices);
             }

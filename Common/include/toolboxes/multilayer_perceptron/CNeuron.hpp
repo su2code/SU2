@@ -32,9 +32,8 @@
 #include <cstdlib>
 
 #include "../../CConfig.hpp"
-#include "../../linear_algebra/blas_structure.hpp"
+//#include "../../linear_algebra/blas_structure.hpp"
 
-using namespace std;
 namespace MLPToolbox{
 class CNeuron
 {

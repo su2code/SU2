@@ -30,46 +30,45 @@
 #include <iostream>
 #include <limits>
 #include <cstdlib>
-
+#include <vector>
 #include "../../CConfig.hpp"
-#include "../../linear_algebra/blas_structure.hpp"
 
-using namespace std;
 namespace MLPToolbox{
+
 class CReadNeuralNetwork {
     private:
-    vector<string> input_names;
-    vector<string> output_names;
+    std::vector<std::string> input_names;
+    std::vector<std::string> output_names;
 
-    string filename;
+    std::string filename;
     unsigned long n_layers;
-    vector<unsigned long> n_neurons;
-    vector<vector<vector<double long>>> weights;
-    vector<vector<double long>> biases;
-    vector<string> activation_functions;
+    std::vector<unsigned long> n_neurons;
+    std::vector<std::vector<std::vector<su2double>>> weights;
+    std::vector<std::vector<su2double>> biases;
+    std::vector<std::string> activation_functions;
 
-    vector<pair<double long, double long>> input_norm;
-    vector<pair<double long, double long>> output_norm;
+    std::vector<std::pair<su2double, su2double>> input_norm;
+    std::vector<std::pair<su2double, su2double>> output_norm;
     public:
 
-    CReadNeuralNetwork(string filename_in);
+    CReadNeuralNetwork(std::string filename_in);
     void ReadMLPFile();
 
-    string SkipToFlag(ifstream *file_stream, string flag);
+    std::string SkipToFlag(std::ifstream *file_stream, std::string flag);
     
     unsigned long GetNInputs(){return n_neurons.at(0);}
     unsigned long GetNOutputs(){return n_neurons.at(n_layers - 1);}
 
     unsigned long GetNlayers(){return n_layers;}
-    unsigned long GetNneurons(size_t iLayer){return n_neurons.at(iLayer);}
-    double long GetWeight(size_t iLayer, size_t iNeuron, size_t jNeuron){return weights.at(iLayer).at(iNeuron).at(jNeuron);}
-    double long GetBias(size_t iLayer, size_t iNeuron){return biases.at(iLayer).at(iNeuron);}
-    pair<double long, double long> GetInputNorm(size_t iInput){return input_norm.at(iInput);}
-    pair<double long, double long> GetOutputNorm(size_t iOutput){return output_norm.at(iOutput);}
-    string GetActivationFunction(size_t iLayer){return activation_functions.at(iLayer);}
+    unsigned long GetNneurons(std::size_t iLayer){return n_neurons.at(iLayer);}
+    su2double GetWeight(std::size_t iLayer, std::size_t iNeuron, std::size_t jNeuron){return weights.at(iLayer).at(iNeuron).at(jNeuron);}
+    su2double GetBias(std::size_t iLayer, std::size_t iNeuron){return biases.at(iLayer).at(iNeuron);}
+    std::pair<su2double, su2double> GetInputNorm(std::size_t iInput){return input_norm.at(iInput);}
+    std::pair<su2double, su2double> GetOutputNorm(std::size_t iOutput){return output_norm.at(iOutput);}
+    std::string GetActivationFunction(std::size_t iLayer){return activation_functions.at(iLayer);}
 
-    string GetInputName(size_t iInput){return input_names.at(iInput);}
-    string GetOutputName(size_t iOutput){return output_names.at(iOutput);}
+    std::string GetInputName(std::size_t iInput){return input_names.at(iInput);}
+    std::string GetOutputName(std::size_t iOutput){return output_names.at(iOutput);}
     
     ~CReadNeuralNetwork(){};
 };

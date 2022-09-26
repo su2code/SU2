@@ -73,12 +73,12 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
 }
 
 void MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, vector<su2double>& inputs, vector<su2double*>& outputs){
-    for(size_t i_map=0; i_map<input_output_map->GetNANNs(); i_map++){
-        size_t i_ANN = input_output_map->GetANNIndex(i_map);
-        vector<su2double> ANN_inputs = input_output_map->GetANN_Inputs(i_map, inputs);
+    for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
+        size_t i_ANN = input_output_map->GetMLPIndex(i_map);
+        vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
         NeuralNetworks[i_ANN]->predict(ANN_inputs);
         for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
-            *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetANNOutputIndex(i_map, i));
+            *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
         }
     }
 }
@@ -111,7 +111,7 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     for(size_t i_layer = 0; i_layer < ANN->getNWeightLayers(); i_layer++){
         ANN->setActivationFunction(i_layer, Reader.GetActivationFunction(i_layer));
         for(size_t i_neuron=0; i_neuron < ANN->getNNeurons(i_layer); i_neuron++){
-            for(size_t j_neuron=0; j_neuron<ANN->getNNeurons(i_layer, i_neuron); j_neuron++){
+            for(size_t j_neuron=0; j_neuron<ANN->getNNeurons(i_layer+1); j_neuron++){
                 ANN->setWeight(i_layer, i_neuron, j_neuron, Reader.GetWeight(i_layer, i_neuron, j_neuron));
             }
         }
@@ -175,7 +175,7 @@ string MLPToolbox::CLookUp_ANN::SkipToFlag(ifstream *file_stream, string flag) {
   }
 
   if ((*file_stream).eof())
-    SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
+    SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
 
   return line;
 }
@@ -187,7 +187,7 @@ bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(vector<string> &output_nam
     vector<string> duplicate_variables;
     for(size_t i_Output =0; i_Output < output_names.size(); i_Output++){
         n_occurances = 0;
-        for(size_t i_map=0; i_map<input_output_map->GetNANNs(); i_map++){
+        for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
             vector<pair<size_t, size_t>> output_map = input_output_map->GetOutputMapping(i_map);
             for(size_t j_Output=0; j_Output<output_map.size(); j_Output++){
                 if(output_map[j_Output].first == i_Output) n_occurances++;
@@ -213,7 +213,7 @@ vector<string> missing_inputs;
 bool inputs_are_present{true};
 for(size_t iInput=0; iInput<input_names.size(); iInput ++){
     bool found_input = false;
-    for(size_t i_map=0; i_map < input_output_map->GetNANNs(); i_map++){
+    for(size_t i_map=0; i_map < input_output_map->GetNMLPs(); i_map++){
         vector<pair<size_t, size_t>> input_map = input_output_map->GetInputMapping(i_map);
         for(size_t jInput=0; jInput<input_map.size(); jInput++){
             if(input_map[jInput].first == iInput){
@@ -245,7 +245,7 @@ bool MLPToolbox::CLookUp_ANN::Check_Use_of_Outputs(vector<string> &output_names,
         bool found_output{false};
 
         /* Looping over all the selected ANNs */
-        for(size_t i_map=0; i_map < input_output_map->GetNANNs(); i_map++){
+        for(size_t i_map=0; i_map < input_output_map->GetNMLPs(); i_map++){
             vector<pair<size_t, size_t>> output_map = input_output_map->GetOutputMapping(i_map);
 
             /* Looping over the outputs of the output map of the current ANN */

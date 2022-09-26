@@ -37,12 +37,11 @@
 #include "../../linear_algebra/blas_structure.hpp"
 #include "CLayer.hpp"
 
-using namespace std;
 namespace MLPToolbox{
 class CNeuralNetwork
 {
 private:
-    vector<string> input_names,
+    std::vector<std::string> input_names,
                    output_names;
 
     unsigned long n_hidden_layers;
@@ -50,16 +49,16 @@ private:
     CLayer *inputLayer,
            *outputLayer;
 
-    vector<CLayer*> hiddenLayers,
+    std::vector<CLayer*> hiddenLayers,
                     total_layers;
 
-    vector<vector<vector<su2double>>> weights;
-    vector<su2activematrix> weights_mat;
-    vector<vector<su2double>> values;
+    //std::vector<std::vector<std::vector<su2double>>> weights;
+    std::vector<su2activematrix> weights_mat;
+    std::vector<std::vector<su2double>> values;
 
-    vector<pair<su2double, su2double>> input_norm,
+    std::vector<std::pair<su2double, su2double>> input_norm,
                                        output_norm;
-    vector<su2double> last_inputs;
+    std::vector<su2double> last_inputs;
 
     su2double* ANN_outputs;
 
@@ -68,14 +67,19 @@ private:
         LINEAR=1,
         RELU=2,
         SMOOTH_SLOPE=3,
-        ELU = 4
+        ELU = 4,
+        GELU = 5,
+        SELU = 6,
+        SIGMOID = 7,
+        SWISH = 8,
+        TANH = 9
     };
     ENUM_ACTIVATION_FUNCTION * activation_function_types;
 
 public:
     CNeuralNetwork();
     ~CNeuralNetwork(){
-        for(size_t i=0; i<total_layers.size(); i++){
+        for(std::size_t i=0; i<total_layers.size(); i++){
             delete total_layers.at(i);
         }
         delete [] ANN_outputs;
@@ -85,41 +89,41 @@ public:
     void push_hidden_layer(unsigned long n_neurons);
     void setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value);
     void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers.at(i_layer)->setBias(i_neuron, value);}
-    void setActivationFunction(unsigned long i_layer, string input);
+    void setActivationFunction(unsigned long i_layer, std::string input);
     void displayNetwork();
     void sizeWeights();
     void sizeInputs(unsigned long n_inputs){last_inputs.resize(n_inputs); for(unsigned long iInput=0; iInput<n_inputs; iInput++) last_inputs.at(iInput) = 0.0;}
-    unsigned long getNWeightLayers(){return weights.size();}
+    unsigned long getNWeightLayers(){return total_layers.size()-1;}
     unsigned long getNLayers(){return total_layers.size();}
 
     unsigned long getNNeurons(unsigned long iLayer){;
     return total_layers.at(iLayer)->getNNeurons();}
-    unsigned long getNNeurons(unsigned long iLayer, unsigned long iNeuron){return weights.at(iLayer).at(iNeuron).size();}
+    //unsigned long getNNeurons(unsigned long iLayer, unsigned long iNeuron){return weights.at(iLayer).at(iNeuron).size();}
 
-    void predict(vector<su2double> &inputs);
+    void predict(std::vector<su2double> &inputs);
 
 
     void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max){input_norm.at(iInput) = make_pair(input_min, input_max);}
     void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){output_norm.at(iOutput) = make_pair(output_min, output_max);}
     
-    void PushOutputName(string input){output_names.push_back(input);}
-    void PushInputName(string input){input_names.push_back(input);}
+    void PushOutputName(std::string input){output_names.push_back(input);}
+    void PushInputName(std::string input){input_names.push_back(input);}
    
-    string GetInputName(size_t iInput){return input_names[iInput];}
-    string GetOutputName(size_t iOutput){return output_names[iOutput];}
+    std::string GetInputName(std::size_t iInput){return input_names[iInput];}
+    std::string GetOutputName(std::size_t iOutput){return output_names[iOutput];}
 
-    size_t GetnInputs(){return input_names.size();}
-    size_t GetnOutputs(){return output_names.size();}
+    std::size_t GetnInputs(){return input_names.size();}
+    std::size_t GetnOutputs(){return output_names.size();}
 
-    su2double GetANN_Output(size_t iOutput){return ANN_outputs[iOutput];}
+    su2double GetANN_Output(std::size_t iOutput){return ANN_outputs[iOutput];}
     void SizeActivationFunctions(unsigned long n_layers){activation_function_types = new ENUM_ACTIVATION_FUNCTION[n_layers]; 
     }
 
-    su2double ComputeX(size_t iLayer, size_t iNeuron){
+    su2double ComputeX(std::size_t iLayer, std::size_t iNeuron){
         su2double x;
         x = total_layers[iLayer]->getBias(iNeuron);
-        size_t nNeurons_previous = total_layers[iLayer - 1]->getNNeurons();
-        for(size_t jNeuron=0; jNeuron<nNeurons_previous; jNeuron++){
+        std::size_t nNeurons_previous = total_layers[iLayer - 1]->getNNeurons();
+        for(std::size_t jNeuron=0; jNeuron<nNeurons_previous; jNeuron++){
             x += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer-1]->getOutput(jNeuron);
         }
         return x;
