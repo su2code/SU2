@@ -37,6 +37,32 @@ def print_vals(vals, name="Values"):
 
 class TestCase:
 
+    class Command:
+        """ Split a command into launch part, the executable itself and parameters.
+
+        Attributes
+        ----------
+        launch : str
+            e.g. "mpirun -n 2", possibly empty
+        exec : str
+            e.g. "SU2_CFD", must be a suitable argument to killall to clean up what the command started
+        param : str
+            e.g. "-t 2", possibly empty
+        """
+
+        def __init__(self, launch = "", exec = "", param = ""):
+          self.launch = launch
+          self.exec = exec
+          self.param = param
+
+        def empty(self):
+          return self.launch == "" and self.exec == "" and self.param == ""
+
+        def assemble(self):
+          assert self.exec != ""
+          return " ".join([part for part in [self.launch, self.exec, self.param] if part != ""])
+
+
     def __init__(self,tag_in):
 
         self.tag  = tag_in  # Input, string tag that identifies this run
@@ -67,11 +93,9 @@ class TestCase:
         self.test_vals_aarch64 = []
         self.cpu_arch = platform.processor()
         self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
+        self.command = self.Command()
 
         # These can be optionally varied
-        self.su2_exec_prefix = ""
-        self.su2_exec        = "SU2_CFD"
-        self.su2_exec_suffix = ""
         self.timeout     = 300
         self.tol         = 0.001
 
@@ -94,8 +118,8 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec_prefix.startswith('mpirun'):
-                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.command.launch.startswith('mpirun'):
+                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
@@ -113,11 +137,9 @@ class TestCase:
 
         # Check for polar calls
         if self.polar:
-            command = "%s %s %s > %s" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, logfilename)
+            shell_command = "%s > %s" % (self.command.assemble(), logfilename)
         else:
-            command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix,
-                                                 self.cfg_file,
-                                                 logfilename)
+            shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         self.adjust_test_data()
 
@@ -126,7 +148,7 @@ class TestCase:
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -136,7 +158,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -206,7 +228,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])      
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -254,19 +276,19 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec_prefix.startswith('mpirun'):
-                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.command.launch.startswith('mpirun'):
+                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -276,7 +298,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -352,14 +374,14 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -369,7 +391,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -429,7 +451,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])      
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -479,19 +501,19 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec_prefix.startswith('mpirun'):
-                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.command.launch.startswith('mpirun'):
+                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
                 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -501,7 +523,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -565,7 +587,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -608,19 +630,19 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec_prefix.startswith('mpirun'):
-                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.command.launch.startswith('mpirun'):
+                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
     
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
     
         # check for timeout
         while process.poll() is None:
@@ -630,7 +652,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -690,7 +712,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
     
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
     
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
