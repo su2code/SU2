@@ -1626,7 +1626,7 @@ public:
    * \brief Get the non-dimensional value of specific heat at constant pressure.
    * \return Value of the non-dim. constant: Cp
    */
-  su2double GetSpecific_Heat_CpND(void) const { return Specific_Heat_CpND; }
+  su2double GetSpecific_Heat_CpND(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index] / Gas_Constant_Ref; }
 
   /*!
    * \brief Get the value of specific heat at constant volume.

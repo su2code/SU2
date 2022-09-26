@@ -50,8 +50,6 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
       Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Non_Dimensional((config->GetRef_Inc_NonDim() == INITIAL_VALUES) ||
-                      (config->GetRef_Inc_NonDim() == REFERENCE_VALUES)),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
   if (n_species_mixture > ARRAYSIZE) {
@@ -60,7 +58,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
-    specificHeat[iVar] = config->GetSpecific_Heat_Cp(iVar);
+    specificHeat[iVar] = config->GetSpecific_Heat_CpND(iVar);
   }
 
   SetLaminarViscosityModel(config);
@@ -194,14 +192,33 @@ su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
   return conductivityMixture;
 }
 
+su2double CFluidScalar::ComputeGasConstant() {
+  su2double MeanMolecularWeight = 0.0;
+
+  for (int i = 0; i < n_species_mixture; i++) {
+    MeanMolecularWeight += moleFractions[i] * molarMasses[i] / 1000;
+  }
+  Gas_Constant = UNIVERSAL_GAS_CONSTANT / (GasConstant_Ref * MeanMolecularWeight);
+
+  return Gas_Constant;
+}
+
+su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) {
+  su2double mean_cp = 0.0;
+
+  for (int i_scalar = 0; i_scalar < n_species_mixture; i_scalar++) {
+    mean_cp += specificHeat[i_scalar] * massFractions[i_scalar];
+  }
+  return mean_cp;
+}
+
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(n_species_mixture, molarMasses, val_scalars);
-  Temperature = val_temperature;
-  Density = Pressure_Thermodynamic / (Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight);
-  Cp = ComputeMeanSpecificHeatCp(n_species_mixture, specificHeat, val_scalars);
-  Cv = Cp - UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight;
-  if (Non_Dimensional){Density *= GasConstant_Ref; Cp /= GasConstant_Ref ; Cv /= GasConstant_Ref ;}
   MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Temperature = val_temperature;
+  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
 
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);

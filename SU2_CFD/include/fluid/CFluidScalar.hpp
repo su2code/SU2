@@ -40,12 +40,11 @@
 class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
-  const su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
   const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
 
-  const bool Non_Dimensional; /*!< \brief bool needed for Nondimensional problems. */
   const bool wilke;
   const bool davidson;
 
@@ -86,6 +85,16 @@ class CFluidScalar final : public CFluidModel {
    * \param[in] val_scalars - Scalar mass fraction.
    */
   su2double WilkeConductivity(const su2double* val_scalars);
+
+  /*!
+   * \brief Get fluid mean specific heat capacity at constant pressure.
+   */
+  su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
+
+  /*!
+   * \brief Compute gas constant for mixture.
+   */
+  su2double ComputeGasConstant();
 
  public:
   /*!

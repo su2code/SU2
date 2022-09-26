@@ -138,38 +138,6 @@ class CFluidModel {
   inline virtual su2double GetCv() const { return Cv; }
 
   /*!
-   * \brief Compute and return fluid mean molecular weight in kg/mol.
-   */
-  template <class Vector_t>
-  static su2double ComputeMeanMolecularWeight(int n_species, const Vector_t& molar_masses,
-                                              const su2double* val_scalars) {
-    su2double OneOverMeanMolecularWeight = 0.0;
-    su2double val_scalars_sum = 0.0;
-
-    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++) {
-      OneOverMeanMolecularWeight += val_scalars[i_scalar] / (molar_masses[i_scalar] / 1000);
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[n_species - 1] / 1000);
-    return 1 / OneOverMeanMolecularWeight;
-  }
-
-  /*!
-   * \brief Get fluid mean specific heat capacity at constant pressure.
-   */
-  template <class Vector_t>
-  static su2double ComputeMeanSpecificHeatCp(int n_species, const Vector_t& specific_heat_cp, const su2double* val_scalars) {
-    su2double val_scalars_sum = 0.0;
-    su2double mean_cp =0.0;
-
-    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++){
-      mean_cp += specific_heat_cp[i_scalar] * val_scalars[i_scalar];
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    return mean_cp += specific_heat_cp[n_species - 1]*(1 - val_scalars_sum);
-  }
-
-  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {
