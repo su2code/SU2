@@ -35,6 +35,8 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
 
 class CElement;
 class CFluidModel;
@@ -1598,6 +1600,25 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief Set the geometry pointer.
+   * \param[in] geometry - geometry pointer.
+   */
+  virtual inline void SetNEMOGeometry(CGeometry *geometry)                                      { }
+
+  /*!
+   * \brief Set the Point IDs.
+   * \param[in] val_point_i - ID of point i.
+   * \param[in] val_point_j - ID of point j.
+   */
+  virtual inline void SetPoint(unsigned long val_point_i, unsigned long val_point_j)            { }
+
+  /*!
+   * \brief Set the solution pointer
+   * \param[in] solution - solution pointer.
+   */
+  virtual inline void SetNEMOSolution(CNEMOEulerVariable *solution)                             { }
 };
 
 /*!

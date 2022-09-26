@@ -481,6 +481,10 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM];
 
+  /*--- Set solution and geometry pointers. ---*/
+  numerics->SetNEMOGeometry(geometry);
+  numerics->SetNEMOSolution(nodes);
+
   /*--- Static arrays for MUSCL reconstructed variables ---*/
   su2double     Primitive_i[MAXNVAR] = {0.0},    Primitive_j[MAXNVAR] = {0.0};
   su2double     Conserved_i[MAXNVAR] = {0.0},    Conserved_j[MAXNVAR] = {0.0};
@@ -611,6 +615,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetGamma (chk_err_i ? nodes->GetGamma (iPoint) : Gamma_i,   chk_err_j ? nodes->GetGamma (jPoint) : Gamma_j);
 
     }
+    numerics->SetPoint(iPoint,jPoint);
 
     /*--- Compute the residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -1524,6 +1529,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
 
+  /*--- Set solution and geometry pointers. ---*/
+  conv_numerics->SetNEMOGeometry(geometry);
+  conv_numerics->SetNEMOSolution(nodes);
+
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1559,6 +1568,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      conv_numerics->SetPoint(iPoint,iPoint);
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -1935,6 +1945,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
+  /*--- Set solution and geometry pointers. ---*/
+  conv_numerics->SetNEMOGeometry(geometry);
+  conv_numerics->SetNEMOSolution(nodes);
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2085,6 +2099,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      conv_numerics->SetPoint(iPoint,iPoint);
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);

@@ -32,6 +32,8 @@
 #include "../../fluid/CMutationTCLib.hpp"
 #include "../../fluid/CSU2TCLib.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../variables/CNEMOEulerVariable.hpp"
 
 /*!
  * \class CNEMONumerics
@@ -41,6 +43,7 @@
 class CNEMONumerics : public CNumerics {
 public:
   bool implicit, ionization;
+  unsigned long iPoint,jPoint;
   su2double *rhos_i, *u_i;
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i;
@@ -70,6 +73,8 @@ public:
   LAM_VISC_INDEX, EDDY_VISC_INDEX;
 
   CNEMOGas *fluidmodel;
+  CGeometry *nemo_geometry;
+  CNEMOEulerVariable *nemo_solution;
 
   /*!
    * \brief Constructor of the class.
@@ -521,5 +526,24 @@ public:
    * \param[in] val_Gamma_j - Gamma at j.
    */
   inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
+
+  /*!
+   * \brief Set the geometry pointer.
+   * \param[in] geometry - geometry pointer.
+   */
+  inline void SetNEMOGeometry(CGeometry *geometry)                        final {nemo_geometry = geometry; }
+
+  /*!
+   * \brief Set the Point IDs.
+   * \param[in] val_point_i - ID of point i.
+   * \param[in] val_point_j - ID of point j.
+   */
+  inline void SetPoint(unsigned long val_point_i, unsigned long val_point_j) final {iPoint = val_point_i; jPoint = val_point_j;}
+
+  /*!
+   * \brief Set the solution pointer
+   * \param[in] solution - solution pointer.
+   */
+  inline void SetNEMOSolution(CNEMOEulerVariable *solution)                  final {nemo_solution = solution;}
 
 };

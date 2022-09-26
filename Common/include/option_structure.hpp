@@ -839,8 +839,9 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSUP2 = 17,           /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPWPLUS = 18,            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSM = 19              /*!< \brief AUSM+M numerical method. (NEMO only)*/   
 };
 static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
   MakePair("NONE", NO_UPWIND)
@@ -850,6 +851,7 @@ static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
   MakePair("AUSMPLUSUP", AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", AUSMPLUSUP2)
   MakePair("AUSMPWPLUS", AUSMPWPLUS)
+  MakePair("AUSMPLUSM", AUSMPLUSM)
   MakePair("SLAU", SLAU)
   MakePair("HLLC", HLLC)
   MakePair("SW", SW)

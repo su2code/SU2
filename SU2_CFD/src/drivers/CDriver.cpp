@@ -73,6 +73,7 @@
 #include "../../include/numerics/NEMO/convection/ausm.hpp"
 #include "../../include/numerics/NEMO/convection/ausmplusup2.hpp"
 #include "../../include/numerics/NEMO/convection/ausmpwplus.hpp"
+#include "../../include/numerics/NEMO/convection/ausmplusm.hpp"
 #include "../../include/numerics/NEMO/convection/msw.hpp"
 #include "../../include/numerics/NEMO/NEMO_diffusion.hpp"
 #include "../../include/numerics/NEMO/NEMO_sources.hpp"
@@ -1898,6 +1899,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSUP2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSUP2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            case AUSMPLUSM:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 
