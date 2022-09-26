@@ -34,8 +34,6 @@ CUpwAUSMPLUSM_NEMO::CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short v
                                                           config){
 
 
-  unsigned short iVar;
-
   /*--- Allocate data structures ---*/
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
@@ -49,8 +47,6 @@ CUpwAUSMPLUSM_NEMO::CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short v
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
-
-
   Flux   = new su2double[nVar];
 }
 
@@ -66,8 +62,6 @@ CUpwAUSMPLUSM_NEMO::~CUpwAUSMPLUSM_NEMO(void) {
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
-  unsigned short iVar;
-
   delete [] Flux;
 }
 
