@@ -88,8 +88,7 @@ def main():
     #################
 
     for test in test_list:
-        test.su2_exec_prefix = "mpirun -n 2"
-        test.su2_exec = "SU2_CFD"
+        test.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
         test.timeout = 300
         test.tol = 1e-5
     #end
