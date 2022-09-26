@@ -345,4 +345,11 @@ public:
    */
   void PrintVerificationError(const CConfig* config) const final { }
 
+  /*!
+   * \brief Compute the Pressure sensor for NEMO schemes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config);
+
 };

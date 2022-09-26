@@ -31,35 +31,29 @@
 
 /*!
  * \class CUpwAUSMPLUSM_NEMO
- * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model. https://doi.org/10.1016/j.apm.2019.09.005
- * \ingroup ConvDiscr
- * \author F. Morgado
+ * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model.
+ * https://doi.org/10.1016/j.apm.2019.09.005 \ingroup ConvDiscr \author F. Morgado
  */
 class CUpwAUSMPLUSM_NEMO : public CNEMONumerics {
-private:
-  su2double *FcL, *FcR, *FcLR;
-  su2double *dmLP, *dmRM, *dpLP, *dpRM;
-  su2double *daL, *daR;
-  su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
-  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
-  su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
-  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
-  su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+ private:
+  su2double* FcL = nullptr;
+  su2double* FcR = nullptr;
+  su2double* dmLP = nullptr;
+  su2double* dmRM = nullptr;
+  su2double* dpLP = nullptr;
+  su2double* dpRM = nullptr;
+  su2double* daL = nullptr;
+  su2double* daR = nullptr;
 
-  su2double f, f0, g, h_k, P_k, Point_aux;
-  su2double sqVi, sqVj, gam, Hnorm, gtl_i, gtl_j, atl, aij;
-
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,  CConfig *config);
+  CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad, CConfig* config);
 
   /*!
    * \brief Destructor of the class.

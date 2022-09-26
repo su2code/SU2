@@ -278,6 +278,10 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
     if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
   }
 
+  /*--- Set Pressure diffusion sensor ---*/
+  if (config->GetKind_Upwind_Flow() == AUSMPLUSM)
+    SetPressureDiffusionSensor(geometry, config);
+
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
@@ -481,10 +485,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  /*--- Set solution and geometry pointers. ---*/
-  numerics->SetNEMOGeometry(geometry);
-  numerics->SetNEMOSolution(nodes);
-
   /*--- Static arrays for MUSCL reconstructed variables ---*/
   su2double     Primitive_i[MAXNVAR] = {0.0},    Primitive_j[MAXNVAR] = {0.0};
   su2double     Conserved_i[MAXNVAR] = {0.0},    Conserved_j[MAXNVAR] = {0.0};
@@ -615,7 +615,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetGamma (chk_err_i ? nodes->GetGamma (iPoint) : Gamma_i,   chk_err_j ? nodes->GetGamma (jPoint) : Gamma_j);
 
     }
-    numerics->SetPoint(iPoint,jPoint);
+    if (config->GetKind_Upwind_Flow() == AUSMPLUSM)
+      numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
 
     /*--- Compute the residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -1529,10 +1530,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
 
-  /*--- Set solution and geometry pointers. ---*/
-  conv_numerics->SetNEMOGeometry(geometry);
-  conv_numerics->SetNEMOSolution(nodes);
-
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1568,7 +1565,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
-      conv_numerics->SetPoint(iPoint,iPoint);
+      if(config->GetKind_Upwind_Flow() == AUSMPLUSM)
+        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -1945,10 +1943,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
-  /*--- Set solution and geometry pointers. ---*/
-  conv_numerics->SetNEMOGeometry(geometry);
-  conv_numerics->SetNEMOSolution(nodes);
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2099,7 +2093,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
-      conv_numerics->SetPoint(iPoint,iPoint);
+      if(config->GetKind_Upwind_Flow() == AUSMPLUSM)
+        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -2444,5 +2439,30 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+
+}
+
+void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short P_INDEX    = nodes->GetPIndex();
+  su2double Sensor, P_k;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    Sensor = 1.0;
+
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      P_k = nodes->GetPrimitive(jPoint, P_INDEX) / nodes->GetPrimitive(iPoint, P_INDEX);
+      Sensor = min(Sensor, min(P_k, 1.0/P_k));
+    }
+
+    nodes->SetSensor(iPoint,Sensor);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
