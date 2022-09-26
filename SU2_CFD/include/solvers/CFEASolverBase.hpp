@@ -33,6 +33,11 @@
 #include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+/*!
+ * \class CFEASolverBase
+ * \ingroup Elasticity_Equations
+ * \brief Base class for FEM elasticity solvers.
+ */
 class CFEASolverBase : public CSolver {
  public:
   enum : size_t {MAXNNODE_2D = 4};
