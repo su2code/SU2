@@ -39,6 +39,7 @@ using namespace std;
 
 /*!
  * \class CInterpolator
+ * \ingroup Interfaces
  * \brief Main class for defining the interpolator, it requires
  *        a child class for each particular interpolation method.
  * \author H. Kline

@@ -27,6 +27,9 @@
 
 // no #pragma once, header needs to be included once per specialization.
 
+/// \addtogroup SIMD
+/// @{
+
 /*!
  * \brief Symbols that need to be defined before including this header:
  * \param[in] ARRAY_T - The desired specialization of simd::Array.
@@ -168,3 +171,5 @@ MAKE_BINARY_FUN(pow, ::pow)
 #undef SCALAR_T
 #undef REGISTER_T
 #undef SIZE_TAG
+
+/// @}

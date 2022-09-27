@@ -33,8 +33,8 @@
 
 /*!
  * \class CDiscAdjMeshSolver
+ * \ingroup DiscAdj
  * \brief Main class for defining the discrete adjoint solver for mesh deformation problems.
- * \ingroup Discrete_Adjoint
  * \author R. Sanchez
  */
 class CDiscAdjMeshSolver final : public CSolver {

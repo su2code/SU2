@@ -33,9 +33,9 @@
 #include "CSolver.hpp"
 
 /*!
- * \class CScalarSolver
  * \brief Main class for defining a scalar solver.
  * \tparam VariableType - Class of variable used by the solver inheriting from this template.
+ * \ingroup Scalar_Transport
  */
 template <class VariableType>
 class CScalarSolver : public CSolver {
