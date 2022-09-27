@@ -32,6 +32,10 @@
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
+/*!
+ * \brief Block Gauss-Seidel driver for multizone / multiphysics discrete adjoint problems.
+ * \ingroup DiscAdj
+ */
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:

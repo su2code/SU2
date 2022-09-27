@@ -32,6 +32,7 @@
 
 /*!
  * \class CMultizoneDriver
+ * \ingroup Drivers
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
  * \version 7.4.0 "Blackbird"
