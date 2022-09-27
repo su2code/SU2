@@ -1598,7 +1598,6 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
-
 };
 
 /*!
