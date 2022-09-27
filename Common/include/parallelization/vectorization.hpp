@@ -37,6 +37,8 @@
 #endif
 
 namespace simd {
+/// \addtogroup SIMD
+/// @{
 
 using namespace VecExpr;
 
@@ -314,4 +316,5 @@ FORCEINLINE __m512d sign_p(__m512d x) { return _mm512_or_pd(ones_8d, _mm512_and_
 
 #undef ARRAY_BOILERPLATE
 
+/// @}
 } // namespace

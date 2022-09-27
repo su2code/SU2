@@ -32,6 +32,7 @@
 
 /*!
  * \class CHeatIteration
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
  */

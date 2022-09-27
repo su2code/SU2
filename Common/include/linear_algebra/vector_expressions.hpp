@@ -36,9 +36,12 @@
 #include <cstdint>
 
 namespace VecExpr {
+/// \addtogroup VecExpr
+/// @{
 
 /*!
  * \brief Base vector expression class.
+ * \ingroup BLAS
  * \param[in] Derived - The class that inherits from this one to use the expressions.
  * \param[in] Scalar - Associated scalar type, prevents implicit conversions between exprs.
  * \note Derived classes must implement operator[], and at least operator= with
@@ -226,4 +229,5 @@ MAKE_BINARY_FUN(operator>, gt_, gt_impl)
 
 #undef MAKE_BINARY_FUN
 
+/// @}
 } // end namespace

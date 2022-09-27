@@ -38,6 +38,7 @@ using namespace std;
 
 /*!
  * \class CADTBaseClass
+ * \ingroup ADT
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
  */
