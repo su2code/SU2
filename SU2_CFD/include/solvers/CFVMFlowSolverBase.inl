@@ -325,12 +325,6 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     }
-
-    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
-        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
-      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
-    }
   }
 
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
@@ -1575,10 +1569,21 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
-                                                const CConfig *config) {
+                                                CConfig *config) {
   if (!edgeNumerics) {
+    if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
+        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
+    }
     InstantiateEdgeNumerics(solvers, config);
   }
+
+  /*--- Non-physical counter. ---*/
+  unsigned long counterLocal = 0;
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1604,20 +1609,15 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       } else {
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
+      if (MGLevel == MESH_0) {
+        for (auto j = 0ul; j < Double::Size; ++j)
+          counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
+      }
     }
     END_SU2_OMP_FOR
   }
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
-      Jacobian.SetDiagonalAsColumnSum();
-    }
-  }
+  FinalizeResidualComputation(geometry, pausePreacc, counterLocal, config);
 }
 
 template <class V, ENUM_REGIME R>

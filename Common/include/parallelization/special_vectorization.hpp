@@ -126,8 +126,8 @@ MAKE_BINARY_FUN(operator==, eq_p)
 MAKE_BINARY_FUN(operator!=, ne_p)
 MAKE_BINARY_FUN(operator<=, le_p)
 MAKE_BINARY_FUN(operator>=, ge_p)
-MAKE_BINARY_FUN(max, max_p)
-MAKE_BINARY_FUN(min, min_p)
+MAKE_BINARY_FUN(fmax, max_p)
+MAKE_BINARY_FUN(fmin, min_p)
 
 #undef MAKE_BINARY_FUN
 
