@@ -2444,16 +2444,14 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
 void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint;
-  unsigned short P_INDEX    = nodes->GetPIndex();
-  su2double Sensor, P_k;
+  const auto P_INDEX = nodes->GetPIndex();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Sensor = 1.0;
+    su2double Sensor = 1.0;
 
     for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-      P_k = nodes->GetPrimitive(jPoint, P_INDEX) / nodes->GetPrimitive(iPoint, P_INDEX);
+      const su2double P_k = nodes->GetPrimitive(jPoint, P_INDEX) / nodes->GetPrimitive(iPoint, P_INDEX);
       Sensor = min(Sensor, min(P_k, 1.0/P_k));
     }
 

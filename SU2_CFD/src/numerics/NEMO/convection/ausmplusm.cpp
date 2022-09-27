@@ -39,8 +39,6 @@ CUpwAUSMPLUSM_NEMO::CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short v
   dpRM = new su2double[nVar];
   rhos_i = new su2double[nSpecies];
   rhos_j = new su2double[nSpecies];
-  u_i = new su2double[nDim];
-  u_j = new su2double[nDim];
   Flux = new su2double[nVar];
 }
 
@@ -53,8 +51,6 @@ CUpwAUSMPLUSM_NEMO::~CUpwAUSMPLUSM_NEMO(void) {
   delete[] dpRM;
   delete[] rhos_i;
   delete[] rhos_j;
-  delete[] u_i;
-  delete[] u_j;
   delete[] Flux;
 }
 
@@ -65,9 +61,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig* con
   unsigned short iDim, iVar, iSpecies;
   
   /*--- Face area ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-  Area = sqrt(Area);
+  const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
@@ -83,6 +77,8 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig* con
 
   su2double sq_veli = 0.0;
   su2double sq_velj = 0.0;
+  su2double u_i[MAXNDIM] = {0.0};
+  su2double u_j[MAXNDIM] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++) {
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
@@ -121,9 +117,9 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig* con
 
   su2double sqVi = 0.0;
   su2double sqVj = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])*(u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
-    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])*(u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+  for (iDim = 0; iDim < nDim; iDim++) { 
+    sqVi += pow(u_i[iDim] - ProjVel_i * UnitNormal[iDim] , 2);
+    sqVj += pow(u_j[iDim] - ProjVel_j * UnitNormal[iDim] , 2);
   }
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
