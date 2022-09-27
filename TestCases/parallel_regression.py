@@ -232,7 +232,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653803, -1.181430, -0.794886, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 2.1492e+01, 5.6399e-01, 2.2787]
+    flatplate_udobj.test_vals = [-6.653802, -1.181430, -0.794887, 0.000611, -0.000369, 0.000736, -0.001104, 596.690000, 299.800000, 296.890000, 21.492000, 0.563990, 2.278700]
     flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate_udobj.timeout   = 1600
     flatplate_udobj.tol       = 0.00001
@@ -276,7 +276,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.492859, -7.672756, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.492870, -7.672494, -0.000000, 2.085796]
     poiseuille_profile.test_vals_aarch64 = [-12.492934, -7.673424, -0.000000, 2.085796]
     poiseuille_profile.su2_exec  = "parallel_computation.py -f"
     poiseuille_profile.timeout   = 1600
@@ -358,7 +358,7 @@ def main():
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
     turb_oneram6_nk.test_iter = 20
-    turb_oneram6_nk.test_vals = [-4.892257, -4.514011, -11.432312, 0.221025, 0.045570, 2, -0.899459, 3.1384e+01]
+    turb_oneram6_nk.test_vals = [-4.892253, -4.514006, -11.432312, 0.221026, 0.045570, 2.000000, -0.899460, 31.384000]
     turb_oneram6_nk.su2_exec  = "mpirun -n 2 SU2_CFD"
     turb_oneram6_nk.timeout   = 600
     turb_oneram6_nk.tol       = 0.0001
@@ -380,7 +380,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-11.456387, -12.800055, -5.865784, 1.049989, 0.019163, -1.838252, -38.694000]
+    turb_naca0012_sst.test_vals = [-11.456386, -12.800055, -5.865784, 1.049989, 0.019163, -1.838252, -38.694000]
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -391,7 +391,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-11.370785, -12.641676, -5.748419, 1.005233, 0.019017, -2.057144]
+    turb_naca0012_sst_sust.test_vals = [-11.370789, -12.641676, -5.748419, 1.005233, 0.019017, -2.057142]
     turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -462,7 +462,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.096377, -6.636625, -8.786639, -2.399099, -1938.200000]
+    axi_rans_air_nozzle.test_vals = [-12.096361, -6.636587, -8.786643, -2.399099, -1938.200000]
     axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -842,7 +842,7 @@ def main():
     contadj_ns_cylinder.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder.cfg_file  = "lam_cylinder.cfg"
     contadj_ns_cylinder.test_iter = 20
-    contadj_ns_cylinder.test_vals = [-3.651435, -9.113086, 2.056700, -0.000000]
+    contadj_ns_cylinder.test_vals = [-3.651430, -9.113079, 2.056700, -0.000000]
     contadj_ns_cylinder.su2_exec  = "parallel_computation.py -f"
     contadj_ns_cylinder.timeout   = 1600
     contadj_ns_cylinder.tol       = 0.00001
@@ -928,7 +928,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals         = [-5.483311, 0.968826, 0.303278, -0.113945]
+    turb_naca0012_2c.test_vals         = [-5.483323, 0.968820, 0.304757, -0.113468]
     turb_naca0012_2c.test_vals_aarch64 = [-5.483337, 0.968818, 0.304518, -0.113538]
     turb_naca0012_2c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_2c.timeout   = 1600
@@ -951,7 +951,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals         = [-5.128788, 1.077306, 0.584228, -0.048152]
+    turb_naca0012_p1c1.test_vals         = [-5.128867, 1.077141, 0.586532, -0.047632]
     turb_naca0012_p1c1.test_vals_aarch64 = [-5.129768, 1.077086, 0.585381, -0.047974]
     turb_naca0012_p1c1.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c1.timeout   = 1600
@@ -963,7 +963,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.554534, 0.943774, 0.400400, -0.095514]
+    turb_naca0012_p1c2.test_vals         = [-5.554659, 0.943705, 0.399234, -0.095799]
     turb_naca0012_p1c2.test_vals_aarch64 = [-5.554700, 0.943679, 0.399796, -0.095762]
     turb_naca0012_p1c2.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c2.timeout   = 1600
@@ -991,7 +991,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.902099, -5.949279, 0.007768, 0.128062]
+    hb_rans_preconditioning.test_vals = [-1.902098, -5.949275, 0.007768, 0.128061]
     hb_rans_preconditioning.su2_exec  = "parallel_computation.py -f"
     hb_rans_preconditioning.timeout   = 1600
     hb_rans_preconditioning.tol       = 0.00001
@@ -1056,7 +1056,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977520, 3.481804, -0.012378, -0.007388]
+    sine_gust.test_vals = [-1.977520, 3.481804, -0.012377, -0.007389]
     sine_gust.su2_exec  = "parallel_computation.py -f"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -1158,7 +1158,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625153, -1.568706, 33.994680, 10.181950]
+    Jones_tc_rst.test_vals = [-4.625155, -1.568708, 33.994680, 10.181950]
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.new_output = False
@@ -1170,7 +1170,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933143, 5.379977, 73.357940, 0.925863]
+    axial_stage2D.test_vals = [-1.933119, 5.365091, 73.354540, 0.925889]
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.new_output = False
@@ -1210,7 +1210,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631534] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631538]
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.00001
@@ -1223,7 +1223,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals         = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
+    channel_2D.test_vals         = [2.000000, 0.000000, 0.398011, 0.352778, 0.405461]
     channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.398036, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
@@ -1264,7 +1264,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777575, 1.134804, 1.224136] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777572, 1.134804, 1.224137]
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -1277,7 +1277,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.214356, 1.663914] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.214350, 1.663914]
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1290,7 +1290,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.619686, -1.564594]
+    bars_SST_2D.test_vals = [13.000000, -0.619686, -1.564595]
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1465,7 +1465,7 @@ def main():
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246951, -0.811811, -0.962123, -0.753322, 208.023676, 350.000000, -0.000000, -0.753320, 0.753320]
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246954, -0.811809, -0.962122, -0.753321, 208.023676, 350.000000, -0.000000, -0.753320, 0.753320]
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -1505,7 +1505,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-11.456387, -12.800055, -5.865784, 1.049989, 0.019163, -1.838252, -38.694000]
+    pywrapper_turb_naca0012_sst.test_vals = [-11.456386, -12.800055, -5.865784, 1.049989, 0.019163, -1.838252, -38.694000]
     pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
@@ -1553,7 +1553,7 @@ def main():
     pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
     pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter     = 5
-    pywrapper_unsteadyCHT.test_vals     = [-1.614167, 2.245726, -0.001240, 0.175715]
+    pywrapper_unsteadyCHT.test_vals     = [-1.614167, 2.245726, -0.001241, 0.175715]
     pywrapper_unsteadyCHT.su2_exec      = "mpirun -np 2 python launch_unsteady_CHT_FlatPlate.py --parallel -f"
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
@@ -1664,7 +1664,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.157644, -4.362599, -4.283857, -5.463199, 0.081487, -5.318959, 5.000000, -2.004281, 5.000000, -5.185921, 5.000000, -1.245597, 2.408977, 0.958168, 0.605425, 0.845384]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.157644, -4.362599, -4.283856, -5.463200, 0.081487, -5.318960, 5.000000, -2.004278, 5.000000, -5.185927, 5.000000, -1.245596, 2.408977, 0.958168, 0.605425, 0.845383]
     species2_primitiveVenturi_mixingmodel_viscosity.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel_viscosity.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
