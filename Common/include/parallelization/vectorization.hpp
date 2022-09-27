@@ -58,7 +58,17 @@ template<class T>
 constexpr size_t preferredLen() { return PREFERRED_SIZE / sizeof(T); }
 
 template<>
-constexpr size_t preferredLen<su2double>() { return PREFERRED_SIZE / sizeof(passivedouble); }
+constexpr size_t preferredLen<su2double>() {
+#ifdef CODI_REVERSE_TYPE
+  /*--- Use a SIMD size of 1 for reverse AD, larger sizes increase
+   * the pre-accumulation time with no performance benefit. ---*/
+  return 1;
+#else
+  /*--- For forward AD there is a performance benefit. This covers
+   * forward AD and primal mode (su2double == passivedouble). ---*/
+  return PREFERRED_SIZE / sizeof(passivedouble);
+#endif
+}
 
 /*!
  * \class Array
