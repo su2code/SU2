@@ -31,6 +31,7 @@
 /*!
  * \brief Mirror interpolation, transpose interpolation matrix of opposing mesh.
  * \note Requires that the opposing mesh has already run interpolation (jZone > iZone), otherwise throws.
+ * \ingroup Interfaces
  */
 class CMirror final : public CInterpolator {
 private:

@@ -31,6 +31,7 @@
 
 /*!
  * \class CFEASolver
+ * \ingroup Elasticity_Equations
  * \brief Main class for defining a FEM solver for elastic structural problems.
  * \author R. Sanchez.
  */

@@ -29,6 +29,7 @@
 
 /*!
  * \class CSingleGridIntegration
+ * \ingroup Drivers
  * \brief Class for numerical integration of fine grid-only problems (e.g. turbulence).
  * \author A. Bueno.
  */
