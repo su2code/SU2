@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -677,6 +677,18 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+};
+
+/*!
+ * \brief Types of Mixing viscosity model
+ */
+enum class MIXINGVISCOSITYMODEL {
+  WILKE,    /*!< \brief Wilke mixing viscosity model. */
+  DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
+};
+static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
 /*!
