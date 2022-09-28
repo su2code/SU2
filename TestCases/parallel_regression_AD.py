@@ -326,14 +326,14 @@ def main():
     ### RUN TESTS                      ###
     ######################################
 
-    # set default suitable defaults unless something else has been specified
+    # set suitable defaults unless something else has been specified
     # command: "mpirun -n 2 SU2_CFD_AD"
     # timeout: 1600
-    # tol: 0.00001
+    # tol:     0.00001
     for test in test_list:
         if test.command.empty():
             test.command = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
-        if test.timeout == 0
+        if test.timeout == 0:
             test.timeout = 1600
         if test.tol == 0.0:
             test.tol = 0.00001
