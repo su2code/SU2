@@ -1368,19 +1368,19 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (config->GetAxisymmetric() == YES) {
-      // nijso TODO BUG: I do not know yet how to use axisymmetry and other source terms.
-      // put axisymmetry in source_second term?
-      SU2_MPI::Error("nijso has broken axisymmetry for the species transport.", CURRENT_FUNCTION);
-      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
+    // nijso: we currently use axisymmetry with species transport using a simple inline function.
+    //if (config->GetAxisymmetric() == YES) {
+    //numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET){
+      numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Species, config);
     }
     else {
-        numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Species, config);
-        //numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;

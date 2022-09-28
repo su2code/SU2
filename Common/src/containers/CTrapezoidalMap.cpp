@@ -35,6 +35,7 @@ using namespace std;
 /* Trapezoidal map implementation. Reference: 
  * M. de Berg, O. Cheong M. van Kreveld, M. Overmars, 
  * Computational Geometry, Algorithms and Applications pp. 121-146 (2008)
+ * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                                  vector<vector<unsigned long> > const& edges,
@@ -165,81 +166,19 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
-//  unsigned long i_low = 0;
-//  unsigned long i_up = 0;
-//
-//  /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
-//  if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
-//  if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
-//
-//  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
-//  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
-//
-//
-// i_up =  bounds.first - unique_bands_x.begin();
-//  i_low = i_up-1;
-//
-//  cout << "val_band = " << " " << i_low << " " << i_up << endl;
-    su2double x_low;
-    su2double x_mid;
-    su2double x_up;
+  unsigned long i_low = 0;
+  unsigned long i_up = 0;
 
-    unsigned long i_low = 0;
-    unsigned long i_mid = 0;
-    unsigned long i_up = 0;
+  /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
+  if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
+  if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
 
-    /* start search at table limits */
-    i_up = unique_bands_x.size() - 1;
-    i_low = 0;
+  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
 
-    /* check if val_x is in bounds of the table */
-    // if (val_x < unique_bands_x.front() or val_x > unique_bands_x.back())
-    //   SU2_MPI::Error("Table-look-up is out of bounds.", CURRENT_FUNCTION);
-
-  if ( val_x < unique_bands_x.front() ) val_x = unique_bands_x.front();
-  if ( val_x > unique_bands_x.back()  ) val_x = unique_bands_x.back();
-
-  /* the next loop implements a binary search and computes i_low and i_up 
-   * which are the band indices that include val_x */
-  do {
-
-    i_mid = (i_up + i_low) / 2;
-
-    x_mid = unique_bands_x.at(i_mid);
-    x_low = unique_bands_x.at(i_low);
-    x_up  = unique_bands_x.at(i_up);
-
-    /* check and restart the search on the low end */
-    if ( (val_x < x_low) and (i_low > 0) ) {
-
-      i_up  = i_low;
-      i_low = i_low / 2;
-
-    /* check and restart the search on the upper end */
-    } else if ( (val_x > x_up) and (i_up < (unique_bands_x.size() - 1)) ) {
-      
-      i_low = i_up;
-      i_up  = (i_up + (unique_bands_x.size() - 1)) / 2;
-
-    /*  continue with regular binary search */
-    } else if (val_x < x_mid) {
-      i_up = i_mid;
-
-    } else if (val_x > x_mid) {
-      i_low = i_mid;
-
-    } else if (x_mid == val_x) {
-      i_low = i_mid;
-      i_up  = i_low + 1;
-      break;
-    }
-
-  } while (i_up - i_low > 1);
-
-
-
-
-
+  /*--- if upper bound = 0, then use the range [0,1] ---*/
+  i_up =  max((unsigned long)(1), (unsigned long)(bounds.first - unique_bands_x.begin()));
+  i_low = i_up-1;
 
   return make_pair(i_low, i_up);
 }
