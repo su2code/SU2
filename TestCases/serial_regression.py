@@ -1485,7 +1485,6 @@ def main():
     contadj_euler_py.test_iter = 10
     contadj_euler_py.command   =  TestCase.Command(exec = "continuous_adjoint.py", param = "-f")
     contadj_euler_py.timeout   = 1600
-    contadj_euler_py.tol       = 0.001
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
     contadj_euler_py.new_output = True
@@ -1512,7 +1511,6 @@ def main():
     contadj_multi_py.test_iter  = 10
     contadj_multi_py.command    =  TestCase.Command(exec = "continuous_adjoint.py", param = "-f")
     contadj_multi_py.timeout    = 1600
-    contadj_multi_py.tol        = 0.001
     contadj_multi_py.new_output = True
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
     contadj_multi_py.test_file  = "of_grad_combo.dat"

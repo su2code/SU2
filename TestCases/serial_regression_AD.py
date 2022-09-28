@@ -256,7 +256,6 @@ def main():
     discadj_rht.test_iter      = 10
     discadj_rht.command        = TestCase.Command(exec = "discrete_adjoint.py", param = "-f")
     discadj_rht.timeout        = 1600
-    discadj_rht.tol            = 0.001
     discadj_rht.reference_file = "of_grad_cd.csv.ref"
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
@@ -274,7 +273,6 @@ def main():
     discadj_euler_py.test_iter = 10
     discadj_euler_py.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-f")
     discadj_euler_py.timeout   = 1600
-    discadj_euler_py.tol       = 0.001
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
@@ -288,7 +286,6 @@ def main():
     discadj_multiple_ffd_py.test_iter = 9
     discadj_multiple_ffd_py.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-f")
     discadj_multiple_ffd_py.timeout   = 1600
-    discadj_multiple_ffd_py.tol       = 0.001
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
@@ -302,7 +299,6 @@ def main():
     directdiff_euler_py.test_iter = 10
     directdiff_euler_py.command   = TestCase.Command(exec = "direct_differentiation.py", param = "-f")
     directdiff_euler_py.timeout   = 1600
-    directdiff_euler_py.tol       = 0.001
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
@@ -316,7 +312,6 @@ def main():
     directdiff_multiple_ffd_py.test_iter = 9
     directdiff_multiple_ffd_py.command   = TestCase.Command(exec = "direct_differentiation.py", param = "-f")
     directdiff_multiple_ffd_py.timeout   = 1600
-    directdiff_multiple_ffd_py.tol       = 0.001
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
@@ -330,7 +325,6 @@ def main():
 #    discadj_multi_py.test_iter  = 10
 #    discadj_multi_py.command    = TestCase.Command(exec = "discrete_adjoint.py")
 #    discadj_multi_py.timeout    = 1600
-#    discadj_multi_py.timeout    = 0.001
 #    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
 #    discadj_multi_py.test_file  = "of_grad_combo.dat"
 #    pass_list.append(discadj_multi_py.run_filediff())
@@ -373,7 +367,6 @@ def main():
     grad_smooth_naca0012.test_iter = 1
     grad_smooth_naca0012.command   = TestCase.Command(exec = "SU2_DOT_AD")
     grad_smooth_naca0012.timeout   = 1600
-    grad_smooth_naca0012.tol       = 0.00001
     grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
     grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
