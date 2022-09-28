@@ -333,9 +333,9 @@ def main():
     for test in test_list:
         if test.command.empty():
             test.command = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
-        if test.timeout == TestCase.default_timeout:
+        if test.timeout == 0
             test.timeout = 1600
-        if test.tol == TestCase.default_tol:
+        if test.tol == 0.0:
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
@@ -368,6 +368,7 @@ def main():
     unsteady_naca0012.test_iter = 14
     unsteady_naca0012.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-f")
     unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.tol       = 0.001
     unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
     unsteady_naca0012.test_file = "of_grad_cd.csv"
     unsteady_naca0012.unsteady  = True
@@ -385,6 +386,7 @@ def main():
     unsteady_naca0012.test_iter = 14
     unsteady_naca0012.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-m adj -f")
     unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.tol       = 0.001
     unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
     unsteady_naca0012.test_file = "of_grad_cd.csv"
     unsteady_naca0012.unsteady  = True
@@ -418,6 +420,7 @@ def main():
     dyn_discadj_fsi.test_iter = 2
     dyn_discadj_fsi.command = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     dyn_discadj_fsi.timeout   = 1600
+    dyn_discadj_fsi.tol       = 0.001
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
     dyn_discadj_fsi.reference_file_aarch64 = "grad_dv_aarch64.opt.ref"
     dyn_discadj_fsi.test_file = "grad_young.opt"
@@ -436,6 +439,7 @@ def main():
     grad_smooth_oneram6.test_iter = 2
     grad_smooth_oneram6.command   = TestCase.Command("mpirun -n 2", "SU2_DOT_AD")
     grad_smooth_oneram6.timeout   = 1600
+    grad_smooth_oneram6.tol       = 0.001
     grad_smooth_oneram6.reference_file = "of_hess.dat.ref"
     grad_smooth_oneram6.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_oneram6.test_file = "of_hess.dat"

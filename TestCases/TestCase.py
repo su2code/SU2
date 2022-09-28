@@ -66,9 +66,6 @@ class TestCase:
           """ Issues a shell command that kills all processes matching self.exec, except this process. """
           os.system('pgrep %s | grep -vx %d | xargs kill -9' % (self.exec, os.getpid()))
 
-    default_timeout = 300
-    default_tol = 0.001
-
     def __init__(self,tag_in):
 
         self.tag  = tag_in  # Input, string tag that identifies this run
@@ -100,8 +97,8 @@ class TestCase:
         self.cpu_arch = platform.processor()
         self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
         self.command = self.Command()
-        self.timeout = default_timeout
-        self.tol = default_tol
+        self.timeout = 0
+        self.tol = 0.0
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
