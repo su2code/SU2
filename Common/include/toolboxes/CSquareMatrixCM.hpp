@@ -34,6 +34,7 @@
  * \brief Class to store a dense general square matrix that uses the Column
  *        Major order storage format. The code should be compiled with
  *        LAPACK to use optimized matrix inversion and multiplication routines.
+ * \ingroup BLAS
  */
 class CSquareMatrixCM {
   static_assert(ColMajorMatrix<passivedouble>::Storage == StorageType::ColumnMajor,

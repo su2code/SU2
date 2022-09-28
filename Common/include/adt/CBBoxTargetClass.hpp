@@ -31,6 +31,7 @@
 
 /*!
  * \class CBBoxTargetClass
+ * \ingroup ADT
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide

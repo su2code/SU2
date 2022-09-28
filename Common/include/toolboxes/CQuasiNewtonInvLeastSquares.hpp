@@ -37,13 +37,14 @@
 #include "CSymmetricMatrix.hpp"
 
 /*!
- * \class A quasi-Newton fixed-point (FP) accelerator based on IQN-ILS.
+ * \brief A quasi-Newton fixed-point (FP) accelerator based on IQN-ILS.
  * \note The implementation prioritizes storage, the LS problem is solved
  * via the normal equations as that is easy to make parallel over MPI, it
  * may however be unstable with large sample sizes (compared to QR decomp).
  * Usage: Allocate, store the initial solution (operator (i,j), default is 0),
  * run the FP, store its result ("FPresult"), compute new solution, use it
  * as the new input of the FP, run the FP, etc.
+ * \ingroup BLAS
  */
 template<class Scalar_t, bool WithMPI = true>
 class CQuasiNewtonInvLeastSquares {

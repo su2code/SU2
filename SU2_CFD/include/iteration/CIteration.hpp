@@ -42,6 +42,7 @@ class COutput;
 
 /*!
  * \class CIteration
+ * \ingroup Drivers
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
  */
