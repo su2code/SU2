@@ -190,7 +190,7 @@ def main():
     discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
     discadj_cylinder.test_iter = 6
     discadj_cylinder.test_vals = [0.202349, -0.000119, 1.899933, -0.000050, 1.067900]
-    discadj_cyliner.tol        = 0.0001
+    discadj_cylinder.tol       = 0.0001
     discadj_cylinder.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_DIRECTDIFF")
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)  
