@@ -45,7 +45,7 @@ class TestCase:
         launch : str
             e.g. "mpirun -n 2", possibly empty
         exec : str
-            e.g. "SU2_CFD", must be a suitable argument to killall to clean up what the command started
+            e.g. "SU2_CFD", must be suitable to identify the processes started by the command
         param : str
             e.g. "-t 2", possibly empty
         """
@@ -61,6 +61,10 @@ class TestCase:
         def assemble(self):
           assert self.exec != ""
           return " ".join([part for part in [self.launch, self.exec, self.param] if part != ""])
+
+        def killall(self):
+          """ Issues a shell command that kills all processes matching self.exec, except this process. """
+          os.system('pgrep %s | grep -vx %d | xargs kill -9' % (self.exec, os.getpid()))
 
 
     def __init__(self,tag_in):
@@ -158,7 +162,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -298,7 +302,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
+                    self.command.killall()  # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -391,7 +395,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
+                    self.command.killall()  # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -523,7 +527,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -652,7 +656,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.command.exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
