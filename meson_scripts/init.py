@@ -56,6 +56,8 @@ def init_submodules(method = 'auto'):
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_mpp = '5ff579f43781cae07411e5ab46291c9971536be6'
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
+  sha_version_coolprop = '38a6ea61e11d458baba98eb77124623957f1550f'
+  github_repo_coolprop = 'https://github.com/CoolProp/CoolProp.git'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
 
@@ -65,6 +67,7 @@ def init_submodules(method = 'auto'):
   meson_name = 'meson'
   ninja_name= 'ninja'
   mpp_name= 'Mutationpp'
+  coolprop_name= 'CoolProp'
   mel_name = 'MEL'
   base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
   alt_name_medi = base_path + 'medi'
@@ -74,6 +77,7 @@ def init_submodules(method = 'auto'):
   alt_name_ninja = base_path + 'ninja'
   alt_name_mel = base_path + 'mel'
   alt_name_mpp = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
+  alt_name_coolprop = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'CoolProp'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -94,6 +98,7 @@ def init_submodules(method = 'auto'):
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
     submodule_status(alt_name_mpp, sha_version_mpp)
+    submodule_status(alt_name_coolprop, sha_version_coolprop)
     submodule_status(alt_name_mel, sha_version_mel)
   # Otherwise download the zip file from git
   else:
@@ -103,6 +108,7 @@ def init_submodules(method = 'auto'):
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
+    download_module(coolprop_name, alt_name_coolprop, github_repo_coolprop, sha_version_coolprop)
     download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
 
 

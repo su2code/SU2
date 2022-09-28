@@ -16,10 +16,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e234375e-9a40-43de-a486-d27b5974797d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/SU2.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/subprojects/CoolProp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SU2_CFD/include/fluid/CCoolProp.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/SU2_CFD/include/fluid/CCoolProp.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/externals/CoolProp" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/meson.build" beforeDir="false" afterPath="$PROJECT_DIR$/meson.build" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/meson_options.txt" beforeDir="false" afterPath="$PROJECT_DIR$/meson_options.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/meson_scripts/init.py" beforeDir="false" afterPath="$PROJECT_DIR$/meson_scripts/init.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,7 +72,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;
   }
 }</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -85,6 +90,11 @@
       <workItem from="1659684947642" duration="3840000" />
       <workItem from="1663143129796" duration="1382000" />
       <workItem from="1663574598226" duration="797000" />
+      <workItem from="1663677362378" duration="6171000" />
+      <workItem from="1663739870322" duration="12286000" />
+      <workItem from="1664205181750" duration="329000" />
+      <workItem from="1664260169035" duration="22510000" />
+      <workItem from="1664346172072" duration="3504000" />
     </task>
     <servers />
   </component>

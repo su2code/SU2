@@ -16,9 +16,6 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-coolprop_deps     = [declare_dependency(include_directories: 'externals/CoolProp')]
-su2_deps += coolprop_deps
-
 default_warning_flags = []
 if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
@@ -233,10 +230,22 @@ catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 if get_option('enable-mpp')
   cmake = import('cmake')
   mpp_subproj = cmake.subproject('Mutationpp')
+  message('CMaket targets:\n - ' + '\n - '.join(mpp_subproj.target_list()))
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
 endif
+
+if get_option('enable-coolprop')
+  cmake = import('cmake')
+  coolprop_subproj = cmake.subproject('CoolProp')
+  message('CMaket targets:\n - ' + '\n - '.join(coolprop_subproj.target_list()))
+  message('generate\N{LOW LINE}headers')
+  coolprop_dep = coolprop_subproj.dependency('')
+  su2_deps     += coolprop_dep
+  su2_cpp_args += '-DHAVE_COOLPROP'
+endif
+
 
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
@@ -308,6 +317,14 @@ if get_option('enable-mpp')
 
           export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
           export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+          ''')
+endif
+
+if get_option('enable-coolprop')
+  message(''' To run SU2 with CoolProp library, add these lines to your .bashrc file:
+
+          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/CoolProp
 
           ''')
 endif

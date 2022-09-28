@@ -26,14 +26,14 @@
  */
 
 #pragma once
-
 #include "CFluidModel.hpp"
-#include "../../../externals/CoolProp/include/CoolProp.h"
-#include "../../../externals/CoolProp/include/AbstractState.h"
-#include "../../../externals/CoolProp/include/crossplatform_shared_ptr.h"
-//#include "CoolProp.h"
-//#include "AbstractState.h"
-//#include "crossplatform_shared_ptr.h"
+
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#include "CoolProp.h"
+#include "AbstractState.h"
+#include "crossplatform_shared_ptr.h"
+#endif
+
 /*!
  * \class CCoolProp
  * \brief Child class for defining fluid model from CoolProp library.
@@ -41,12 +41,12 @@
  */
 
 class CCoolProp final : public CFluidModel {
-protected:
-su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-su2double Gas_Constant{0.0};    /*!< \brief specific Gas Constant. */
-su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
-su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
-shared_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+    protected:
+        su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
+        su2double Gas_Constant{0.0};    /*!< \brief specific Gas Constant. */
+        su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
+        su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
+        shared_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
 
 public:
 /*!
