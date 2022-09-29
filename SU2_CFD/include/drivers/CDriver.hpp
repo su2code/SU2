@@ -45,6 +45,7 @@ class COutput;
 
 /*!
  * \class CDriver
+ * \ingroup Drivers
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
@@ -793,6 +794,7 @@ public:
 
 /*!
  * \class CFluidDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
  */
@@ -865,6 +867,7 @@ public:
 
 /*!
  * \class CTurbomachineryDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
  */
@@ -918,6 +921,7 @@ public:
 
 /*!
  * \class CHBDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  */

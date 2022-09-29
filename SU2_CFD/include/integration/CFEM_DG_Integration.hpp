@@ -29,6 +29,7 @@
 
 /*!
  * \class CFEM_DG_Integration
+ * \ingroup Drivers
  * \brief Class for integration with the FEM DG solver.
  * \author E. van der Weide, T. Economon
  * \version 7.4.0 "Blackbird"

@@ -31,6 +31,7 @@
 
 /*!
  * \class CSAVariables
+ * \ingroup SourceDiscr
  * \brief Structure with SA common auxiliary functions and constants.
  */
 struct CSAVariables {
@@ -60,6 +61,7 @@ struct CSAVariables {
 
 /*!
  * \class CSourceBase_TurbSA
+ * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * The variables that are subject to change in each variation/correction have their own class.
  * \note Additional source terms (e.g. compressibility) are implemented as decorators.
@@ -231,13 +233,14 @@ namespace detail {
  * ============================================================================*/
 
 /*!
- * \brief Strain rate classes.
+ * \brief SA strain rate classes.
+ * \ingroup SourceDiscr
  * \param[in] vorticity: Vorticity array.
  * \param[in] nDim: Problem dimension.
  * \param[in] velocity_grad: Velocity gradients.
  * \param[out] var: Common SA variables struct (to set Omega).
  */
-namespace Omega {
+struct Omega {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -263,13 +266,14 @@ struct Edw {
     var.Omega = sqrt(max(Sbar, 0.0));
   }
 };
-}  // namespace Omega
+};
 
 /*!
- * \brief Classes to set the ft2 term and its derivative.
+ * \brief SA classes to set the ft2 term and its derivative.
+ * \ingroup SourceDiscr
  * \param[in,out] var: Common SA variables struct.
  */
-namespace ft2 {
+struct ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
@@ -295,15 +299,16 @@ struct Nonzero {
 	}
   }
 };
-}  // namespace ft2
+};
 
 /*!
- * \brief Classes to compute the modified vorticity (\tilde{S}) and its derivative.
+ * \brief SA classes to compute the modified vorticity (\tilde{S}) and its derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] nu: Laminar viscosity.
  * \param[in,out] var: Common SA variables struct.
  */
-namespace ModVort {
+struct ModVort {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -348,14 +353,15 @@ struct Neg {
      * No need for Sbar ---*/
   }
 };
-}  // namespace ModVort
+};
 
 /*!
- * \brief Auxiliary function r and its derivative.
+ * \brief SA auxiliary function r and its derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in,out] var: Common SA variables struct.
  */
-namespace r {
+struct r {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -376,10 +382,11 @@ struct Edw {
     var.d_r = (1 - pow(tanh(var.r), 2.0)) * (var.d_r) / tanh(1.0);
   }
 };
-}  // namespace r
+};
 
 /*!
- * \brief Source terms classes: production, destruction and cross-productions term and their derivative.
+ * \brief SA source terms classes: production, destruction and cross-productions term and their derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
  * \param[out] production: Production term.
@@ -387,7 +394,7 @@ struct Edw {
  * \param[out] cross_production: CrossProduction term.
  * \param[out] jacobian: Derivative of the combined source term wrt nue.
  */
-namespace SourceTerms {
+struct SourceTerms {
 
 /*! \brief Baseline (Original SA model). */
 struct Bsl {
@@ -453,7 +460,7 @@ struct Neg {
     Bsl::ComputeCrossProduction(nue, var, cross_production, jacobian);
   }
 };
-}  // namespace SourceTerms
+};
 
 /* =============================================================================
  * SPALART-ALLMARAS ADDITIONAL SOURCE TERMS DECORATORS
@@ -461,6 +468,7 @@ struct Neg {
 
 /*!
  * \class CCompressibilityCorrection
+ * \ingroup SourceDiscr
  * \brief Mixing Layer Compressibility Correction (SA-comp).
  */
 template <class ParentClass>
@@ -560,6 +568,7 @@ CNumerics* SAFactoryImpl(bool use_ft2, Ts... args) {
 
 /*!
  * \brief Creates an SA source based on the version and modifications/correction in the config.
+ * \ingroup SourceDiscr
  */
 template <class FlowIndices>
 CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
@@ -580,6 +589,7 @@ CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
 
 /*!
  * \class CSourcePieceWise_TurbSST
+ * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  */
 template <class FlowIndices>

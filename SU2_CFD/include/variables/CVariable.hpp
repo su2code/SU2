@@ -43,6 +43,7 @@ class CNEMOGas;
 
 /*!
  * \class CVariable
+ * \ingroup Variable
  * \brief Main class for defining the variables.
  * \author F. Palacios
  */

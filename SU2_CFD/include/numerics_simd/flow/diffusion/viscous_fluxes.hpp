@@ -34,6 +34,7 @@
 
 /*!
  * \class CNoViscousFlux
+ * \ingroup ViscDiscr
  * \brief Numerics classes that accept a compile-time decorator should use this
  * class template as a "do-nothing" decorator and as a link to the interface when
  * they are not being decorated.
@@ -63,6 +64,7 @@ protected:
 
 /*!
  * \class CCompressibleViscousFluxBase
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow).
  */
 template<size_t NDIM, class Derived>
@@ -248,6 +250,7 @@ protected:
 
 /*!
  * \class CCompressibleViscousFlux
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow, ideal gas).
  */
 template<size_t NDIM>
@@ -306,6 +309,7 @@ public:
 
 /*!
  * \class CGeneralCompressibleViscousFlux
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow, real gas).
  */
 template<size_t NDIM>

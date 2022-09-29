@@ -30,6 +30,10 @@
 
 #include "CIteration.hpp"
 
+/*!
+ * \brief Creates a new iteration instance based on the current main solver.
+ * \ingroup Drivers
+ */
 class CIterationFactory {
  public:
   /*!

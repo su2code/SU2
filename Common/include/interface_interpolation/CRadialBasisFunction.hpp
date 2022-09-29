@@ -32,6 +32,7 @@
 
 /*!
  * \brief Radial basis function interpolation.
+ * \ingroup Interfaces
  */
 class CRadialBasisFunction final : public CInterpolator {
   static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");
