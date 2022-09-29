@@ -136,6 +136,16 @@ public:
                     ColMajorMatrix<su2double> &matSolInt) override;
 
   /*!
+   * \brief Function that computes the solution in integration points
+   *        from the padded modal solution.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs, the number
+   *                         DOFs are padded.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  void SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                              ColMajorMatrix<su2double> &matSolInt) override;
+
+  /*!
    * \brief Function, that updates the residuals of the DOFs with the integral of the
    *        product of the given scalar data and the basis function. The integral is
    *        approximated by the weighted sum of the data in the integration points.
@@ -193,6 +203,10 @@ private:
   void *jitterDOFs2Int = nullptr;      /*!< \brief Pointer to the data for the jitted gemm function
                                                    to compute data in the integration points. */
   dgemm_jit_kernel_t gemmDOFs2Int;     /*!< \brief Pointer to the function to carry out jitterDOFs2Int. */
+
+  void *jitterDOFsPad2Int = nullptr;   /*!< \brief Pointer to the data for the jitted gemm function
+                                                   to compute data in the integration points with padded DOFs. */
+  dgemm_jit_kernel_t gemmDOFsPad2Int;  /*!< \brief Pointer to the function to carry out jitterDOFsPad2Int. */
 
   void *jitterDOFs2SolDOFs = nullptr;  /*!< \brief Pointer to the data for the jitted gemm function
                                                    to compute data in the solution DOFs. */

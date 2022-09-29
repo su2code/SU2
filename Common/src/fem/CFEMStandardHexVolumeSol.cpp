@@ -218,6 +218,11 @@ void CFEMStandardHexVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF
       matSolInt(i,j) = matSolInt(0,j);
 }
 
+void CFEMStandardHexVolumeSol::SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                                                      ColMajorMatrix<su2double> &matSolInt) {
+  SolIntPoints(matSolDOF, matSolInt);
+}
+
 void CFEMStandardHexVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                                                       ColMajorMatrix<su2double> &resDOFs) {
 

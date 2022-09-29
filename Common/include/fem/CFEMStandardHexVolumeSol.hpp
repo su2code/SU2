@@ -133,6 +133,16 @@ public:
                     ColMajorMatrix<su2double> &matSolInt) override;
 
   /*!
+   * \brief Function that computes the solution in integration points
+   *        from the padded modal solution.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs, the number
+   *                         DOFs are padded.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  void SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                              ColMajorMatrix<su2double> &matSolInt) override;
+
+  /*!
    * \brief Function, that updates the residuals of the DOFs with the integral of the
    *        product of the given scalar data and the basis function. The integral is
    *        approximated by the weighted sum of the data in the integration points.

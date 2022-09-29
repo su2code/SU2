@@ -207,6 +207,11 @@ void CFEMStandardQuadVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDO
       matSolInt(i,j) = matSolInt(0,j);
 }
 
+void CFEMStandardQuadVolumeSol::SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                                                       ColMajorMatrix<su2double> &matSolInt) {
+  SolIntPoints(matSolDOF, matSolInt);
+}
+
 void CFEMStandardQuadVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                                                        ColMajorMatrix<su2double> &resDOFs) {
 

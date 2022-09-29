@@ -413,6 +413,19 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs, the number
+   *                         DOFs are padded.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  virtual void SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                                      ColMajorMatrix<su2double> &matSolInt) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \return - The value of the first (constant) basis function.
    */
   virtual passivedouble ValBasis0(void) {

@@ -143,6 +143,8 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
   /*--- Set up the jitted gemm calls, if supported. ---*/
   SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, nIntegrationPad,
                   nDOFs, nIntegrationPad, true, jitterDOFs2Int, gemmDOFs2Int);
+  SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, nIntegrationPad,
+                  nDOFsPad, nIntegrationPad, true, jitterDOFsPad2Int, gemmDOFsPad2Int);
   SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, nDOFs, nDOFs,
                   nDOFs, true, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
   SetUpJittedGEMM(nDOFsPad, val_nVar, nIntegration, nDOFsPad, nIntegrationPad,
@@ -170,15 +172,25 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
 CFEMStandardTetVolumeSol::~CFEMStandardTetVolumeSol() {
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
-if( jitterDOFs2Int ) {
+  if( jitterDOFs2Int ) {
     mkl_jit_destroy(jitterDOFs2Int);
     jitterDOFs2Int = nullptr;
+  }
+
+  if( jitterDOFsPad2Int ) {
+    mkl_jit_destroy(jitterDOFsPad2Int);
+    jitterDOFsPad2Int = nullptr;
   }
 
   if( jitterDOFs2SolDOFs ) {
     mkl_jit_destroy(jitterDOFs2SolDOFs);
     jitterDOFs2SolDOFs = nullptr;
-  }  
+  }
+
+  if( jitterInt2DOFs ) {
+    mkl_jit_destroy(jitterInt2DOFs);
+    jitterInt2DOFs = nullptr;
+  }
 #endif
 }
 
@@ -231,7 +243,15 @@ void CFEMStandardTetVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF
   OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, matSolDOF.cols(), nDOFs,
           nIntegrationPad, nDOFs, nIntegrationPad, true,
           legBasisInt, matSolDOF, matSolInt, nullptr);
+}
 
+void CFEMStandardTetVolumeSol::SolIntPointsDOFsPadded(ColMajorMatrix<su2double> &matSolDOF,
+                                                      ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call OwnGemm with the appropriate arguments to carry out the actual job. ---*/
+  OwnGemm(gemmDOFsPad2Int, jitterDOFsPad2Int, nIntegrationPad, matSolDOF.cols(),
+          nDOFs, nIntegrationPad, nDOFsPad, nIntegrationPad, true,
+          legBasisInt, matSolDOF, matSolInt, nullptr);
 }
 
 void CFEMStandardTetVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
