@@ -51,20 +51,25 @@ class TestCase:
         """
 
         def __init__(self, launch = "", exec = "", param = ""):
-          self.launch = launch
-          self.exec = exec
-          self.param = param
+            self.launch = launch
+            self.exec = exec
+            self.param = param
 
         def empty(self):
-          return self.launch == "" and self.exec == "" and self.param == ""
+            return self.launch == "" and self.exec == "" and self.param == ""
 
         def assemble(self):
-          assert self.exec != ""
-          return " ".join([part for part in [self.launch, self.exec, self.param] if part != ""])
+            assert self.exec != ""
+            return " ".join([part for part in [self.launch, self.exec, self.param] if part != ""])
+
+        def allow_mpi_as_root(self):
+            if os.geteuid() == 0:
+                if self.launch.startswith('mpirun'):
+                    self.launch = self.launch.replace('mpirun', 'mpirun --allow-run-as-root')
 
         def killall(self):
-          """ Issues a shell command that kills all processes matching self.exec, except this process. """
-          os.system('pgrep %s | grep -vx %d | xargs kill -9' % (self.exec, os.getpid()))
+            """ Issues a shell command that kills all processes matching self.exec, except this process. """
+            os.system('pgrep %s | grep -vx %d | xargs kill -9' % (self.exec, os.getpid()))
 
     def __init__(self,tag_in):
 
@@ -118,9 +123,7 @@ class TestCase:
         start_solver = True
 
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.command.launch.startswith('mpirun'):
-                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
@@ -276,9 +279,7 @@ class TestCase:
         self.adjust_test_data()
 
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.command.launch.startswith('mpirun'):
-                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
@@ -501,9 +502,7 @@ class TestCase:
         self.adjust_test_data()
 
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.command.launch.startswith('mpirun'):
-                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
                 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
@@ -630,9 +629,7 @@ class TestCase:
         self.adjust_test_data()
 
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.command.launch.startswith('mpirun'):
-                self.command.launch = self.command.launch.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
