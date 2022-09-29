@@ -38,7 +38,8 @@ using namespace std;
 
 /*!
  * \class CGraphColoringStructure
- * \brief Class, which provides graph coloring algorithms.
+ * \ingroup Graph
+ * \brief Class, which provides distributed graph coloring algorithms.
  * \author: E. van der Weide
  * \version 7.4.0 "Blackbird"
  */

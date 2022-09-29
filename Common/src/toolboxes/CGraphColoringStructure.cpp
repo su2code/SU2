@@ -27,6 +27,7 @@
 
 #include "../../include/toolboxes/CGraphColoringStructure.hpp"
 
+/* Function, which determines the colors for the vertices of the given graph. */
 void CGraphColoringStructure::GraphVertexColoring(
                               CConfig                              *config,
                               const vector<unsigned long>          &nVerticesPerRank,

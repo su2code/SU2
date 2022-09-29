@@ -32,8 +32,8 @@
 
 /*!
  * \class CDiscAdjFEABoundVariable
+ * \ingroup DiscAdj
  * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
- * \ingroup Discrete_Adjoint
  * \author R. Sanchez.
  * \version 7.4.0 "Blackbird"
  */

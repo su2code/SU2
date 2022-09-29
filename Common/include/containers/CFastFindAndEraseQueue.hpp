@@ -35,6 +35,7 @@
 
 /*!
  * \class CFastFindAndEraseQueue
+ * \ingroup Containers
  * \brief A queue-type container (push back, pop front), but with
  *        fast deletion of arbitrary items (possibly in the middle).
  * \param[in] ItemType_ - Type of the stored items.

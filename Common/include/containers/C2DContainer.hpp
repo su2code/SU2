@@ -34,6 +34,9 @@
 #include <utility>
 #include <type_traits>
 
+/// \addtogroup Containers
+/// @{
+
 /*!
  * \enum StorageType
  * \brief Supported ways to flatten a matrix into an array.
@@ -635,3 +638,5 @@ using su2activematrix = su2matrix<su2double>;
 
 using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
+
+/// @}

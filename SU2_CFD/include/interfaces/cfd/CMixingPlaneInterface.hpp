@@ -30,6 +30,10 @@
 
 #include "../CInterface.hpp"
 
+/*!
+ * \brief Mixing plane interface for turbomachinery.
+ * \ingroup Interfaces
+ */
 class CMixingPlaneInterface : public CInterface {
 public:
   /*!
