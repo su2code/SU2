@@ -4930,6 +4930,30 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig             *config,
   END_SU2_OMP_SINGLE
 }
 
+void CFEM_DG_EulerSolver::BC_HeatFlux_Wall(CConfig            *config,
+                                           const unsigned long surfElemBeg,
+                                           const unsigned long surfElemEnd,
+                                           CSurfaceElementFEM *surfElem,
+                                           CNumerics           *conv_numerics,
+                                           unsigned short      val_marker) {
+  /*--- This is a viscous wall boundary condition, which cannot be applied for
+        an inviscid analysis. Instead an inviscid wall boundary condition is
+        applied. ---*/
+  BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, conv_numerics);
+}
+
+void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig            *config,
+                                             const unsigned long surfElemBeg,
+                                             const unsigned long surfElemEnd,
+                                             CSurfaceElementFEM *surfElem,
+                                             CNumerics           *conv_numerics,
+                                             unsigned short      val_marker) {
+  /*--- This is a viscous wall boundary condition, which cannot be applied for
+        an inviscid analysis. Instead an inviscid wall boundary condition is
+        applied. ---*/
+  BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, conv_numerics);
+}
+
 void CFEM_DG_EulerSolver::BC_Riemann(CConfig             *config,
                                      const unsigned long surfElemBeg,
                                      const unsigned long surfElemEnd,

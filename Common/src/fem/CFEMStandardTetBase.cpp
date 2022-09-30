@@ -662,9 +662,9 @@ void CFEMStandardTetBase::LocationTetGridDOFsLGL(const unsigned short  mPoly,
     for(unsigned short i=0; i<nD; ++i) {
       blend[i] = Lb[i]*Lc[i]*Ld[i];
 
-      const passivedouble denom = (Lb[i]+0.5*La[i])*(Lc[i]+0.5*La[i])*(Lc[i]+0.5*La[i]);
-      if(denom > tol)
-        blend[i] *= (1.0 + alp*alp*La[i]*La[i])/denom;
+      passivedouble denom = (Lb[i]+0.5*La[i])*(Lc[i]+0.5*La[i])*(Lc[i]+0.5*La[i]);
+      denom = max(denom, tol);
+      blend[i] *= (1.0 + alp*alp*La[i]*La[i])/denom;
     }
 
     /*--- Update the corrections. ---*/

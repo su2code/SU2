@@ -458,12 +458,12 @@ public:
    * \param[in]     conv_numerics - Description of the numerical method.
    * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_HeatFlux_Wall(CConfig            *config,
-                                      const unsigned long surfElemBeg,
-                                      const unsigned long surfElemEnd,
-                                      CSurfaceElementFEM *surfElem,
-                                      CNumerics           *conv_numerics,
-                                      unsigned short      val_marker) {}
+  virtual void BC_HeatFlux_Wall(CConfig            *config,
+                                const unsigned long surfElemBeg,
+                                const unsigned long surfElemEnd,
+                                CSurfaceElementFEM *surfElem,
+                                CNumerics           *conv_numerics,
+                                unsigned short      val_marker);
   using CSolver::BC_HeatFlux_Wall;
 
   /*!
@@ -477,12 +477,12 @@ public:
    * \param[in]     conv_numerics - Description of the numerical method.
    * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Isothermal_Wall(CConfig            *config,
-                                        const unsigned long surfElemBeg,
-                                        const unsigned long surfElemEnd,
-                                        CSurfaceElementFEM  *surfElem,
-                                        CNumerics           *conv_numerics,
-                                        unsigned short      val_marker) {}
+  virtual void BC_Isothermal_Wall(CConfig            *config,
+                                  const unsigned long surfElemBeg,
+                                  const unsigned long surfElemEnd,
+                                  CSurfaceElementFEM  *surfElem,
+                                  CNumerics           *conv_numerics,
+                                  unsigned short      val_marker);
   using CSolver::BC_Isothermal_Wall;
 
   /*!
