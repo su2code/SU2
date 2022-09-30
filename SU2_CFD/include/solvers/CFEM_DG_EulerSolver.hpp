@@ -680,24 +680,16 @@ protected:
                                                su2double                *solIntL);
 
   /*!
-   * \brief Function, which computes the boundary states in the integration points
+   * \brief Function, which computes the boundary states for the given items
             of the boundary face by applying the inviscid wall boundary conditions.
-   * \param[in]  config     - Definition of the particular problem.
-   * \param[in]  nFaceSimul - Number of faces that are treated simultaneously
-                              to improve performance.
-   * \param[in]  NPad       - Value of the padding parameter to obtain optimal
-                              performance in the gemm computations.
    * \param[in]  surfElem   - Surface boundary elements for which the left state must
                               be computed.
    * \param[in]  solIntL    - Left states in the integration points of the face.
    * \param[out] solIntR    - Right states in the integration points of the face.
    */
-  void BoundaryStates_Euler_Wall(CConfig                  *config,
-                                 const unsigned short     nFaceSimul,
-                                 const unsigned short     NPad,
-                                 const CSurfaceElementFEM *surfElem,
-                                 const su2double          *solIntL,
-                                 su2double                *solIntR);
+  void BoundaryStates_Euler_Wall(const CSurfaceElementFEM        *surfElem,
+                                 const ColMajorMatrix<su2double> &solIntL,
+                                 ColMajorMatrix<su2double>       &solIntR);
 
   /*!
    * \brief Function, which computes the boundary states in the integration points
