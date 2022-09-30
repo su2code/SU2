@@ -193,7 +193,7 @@ def main():
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
     tutorial_unst_naca0012.test_vals         = [520, 0, -5.297585, 0, 0.297416, 0.770060, 0.003308, 0.014647]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.297724, 0, 0.300206, 0.794023, 0.002877, 0.014433]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.296968, 0, 0.312131, 0.801193, 0.002868, 0.014303]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
