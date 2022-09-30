@@ -238,10 +238,13 @@ endif
 
 if get_option('enable-coolprop')
   cmake = import('cmake')
-  coolprop_subproj = cmake.subproject('CoolProp')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.add_cmake_defines({'COOLPROP_STATIC_LIBRARY': true})
+  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts   )
   message('CMaket targets:\n - ' + '\n - '.join(coolprop_subproj.target_list()))
-  message('generate\N{LOW LINE}headers')
-  coolprop_dep = coolprop_subproj.dependency('')
+  message('Cmake tagerts include:')
+  message(coolprop_subproj.target_list())
+  coolprop_dep = coolprop_subproj.dependency('CoolProp')
   su2_deps     += coolprop_dep
   su2_cpp_args += '-DHAVE_COOLPROP'
 endif

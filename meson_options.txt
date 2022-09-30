@@ -18,7 +18,7 @@ option('enable-tests',  type : 'boolean', value : false, description: 'compile U
 option('enable-mixedprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for sparse algebra')
 option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
 option('enable-mpp',  type : 'boolean', value : false, description: 'enable Mutation++ support')
-option('enable-coolprop',  type : 'boolean', value : false, description: 'enable CoolProp support')
+option('enable-coolprop',  type : 'boolean', value : true, description: 'enable CoolProp support')
 option('opdi-backend', type : 'combo', choices : ['auto', 'macro', 'ompt'], value : 'auto', description: 'OpDiLib backend choice')
 option('codi-tape', type : 'combo', choices : ['JacobianLinear', 'JacobianIndex'], value : 'JacobianLinear', description: 'CoDiPack tape choice')
 option('opdi-shared-read-opt', type : 'boolean', value : true, description : 'OpDiLib shared reading optimization')

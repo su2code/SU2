@@ -247,6 +247,11 @@ su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
 # endif
 
+
+su2_cfd_cxx_flags += @CoolProp_CXX@
+su2_cfd_ldadd += @CoolProp_LD@
+
+
 if BUILD_NORMAL
 libSU2Core_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
