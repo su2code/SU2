@@ -1096,7 +1096,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
 
-  /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -3351,12 +3351,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     cout << "************************************************" << endl;
     cout << "***** setting all fluid models to FLAMELET *****" << endl;
     cout << "************************************************" << endl;
-
     // nijso TODO these should be set by the user and we should check explicitly the config settings
-    //Kind_Species_Model     = SPECIES_MODEL::FLAMELET;
-    //Kind_ViscosityModel    = VISCOSITYMODEL::FLAMELET;
-    //Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
-    //Kind_Diffusivity_Model  = DIFFUSIVITYMODEL::FLAMELET;
+    Kind_Species_Model = SPECIES_MODEL::FLAMELET;
+    Kind_ViscosityModel = VISCOSITYMODEL::FLAMELET;
+    Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
+    Kind_Diffusivity_Model = DIFFUSIVITYMODEL::FLAMELET;
   }
 
 

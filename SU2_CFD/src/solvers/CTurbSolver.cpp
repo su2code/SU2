@@ -238,8 +238,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -255,8 +256,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
          offset in the buffer of data from the restart file and load it. ---*/
 
         const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-
+        for (auto iVar = 0u; iVar < nVar; iVar++) 
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }

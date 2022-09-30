@@ -43,6 +43,8 @@
 #include "../../include/fluid/CConstantDiffusivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
+  cout << int (config->GetKind_ViscosityModel()) << endl;
+  
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       return unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND(iSpecies)));
@@ -55,7 +57,7 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
     case VISCOSITYMODEL::FLAMELET:
       /*--- Viscosity is obtained from the LUT ---*/
-      break;
+      return nullptr;
     default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       return nullptr;
@@ -98,11 +100,10 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
       break;
     case CONDUCTIVITYMODEL::FLAMELET:
       /*--- conductivity is obtained from the LUT ---*/
-      break;
+      return nullptr;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       return nullptr;
-      break;
   }
 }
 

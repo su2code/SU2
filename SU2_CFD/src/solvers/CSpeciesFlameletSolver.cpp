@@ -329,9 +329,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
     
-      /*--- the burnt value of the progress variable is set to a value slightly below the maximum value ---*/
-
-      prog_burnt = 0.95*fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
+      prog_burnt = fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         
         for (unsigned long i_var = 0; i_var < nVar; i_var++)
@@ -373,10 +371,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
         // initialize other transported scalars  (not pv and enth)
         // skip progress variable and enthalpy
         // we can make an init based on the lookup table. 
-        for(int i_scalar = 0; i_scalar < config->GetNScalars(); ++i_scalar){
-          if ( (i_scalar != I_ENTH) && (i_scalar != I_PROGVAR) ){
+        for(int i_scalar = 2; i_scalar < config->GetNScalars(); ++i_scalar){
+          //if ( (i_scalar != I_ENTH) && (i_scalar != I_PROGVAR) ){
             scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
-          }
+          //}
         }
 
         solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);

@@ -200,7 +200,8 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
     /*--- for the flamelet model, the temperature is saved to file, but the energy equation is off ---*/
-    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+
+   if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -218,7 +219,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-
+        
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }

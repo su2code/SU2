@@ -872,6 +872,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
         AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
       }
+      break;
     }
     case SPECIES_MODEL::FLAMELET:{
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
@@ -879,7 +880,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       /*--- auxiliary species transport ---*/
       AddHistoryOutput("RMS_CO", "rms[Y_CO]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the CO mass fraction equation." , HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_NOX", "rms[Y_NOx]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the NOx mass fraction equation.", HistoryFieldType::RESIDUAL);
-
+      break;
     }
     case SPECIES_MODEL::NONE: break;
   }
@@ -987,9 +988,9 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
           SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
         }
       }
-
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+      break;
     }
 
     case SPECIES_MODEL::FLAMELET:{
@@ -1001,6 +1002,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
  
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver())); 
+      break;
     }
 
     case SPECIES_MODEL::NONE: break;

@@ -285,7 +285,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
-
     case CONSTANT_DENSITY:
 
       auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
@@ -2930,20 +2929,26 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
           if (geometry->nodes->GetDomain(iPoint)) {
 
-            V_outlet = nodes->GetPrimitive(iPoint);
-
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
+            AxiFactor = 0.0; 
             if (axisymmetric) {
-              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-              else
-                AxiFactor = 1.0;
+              else {
+                for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0){
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint,1);
+                  }
+                }
+              }
             } else {
               AxiFactor = 1.0;
             }
 
-            Density      = V_outlet[prim_idx.Density()];
+            V_outlet = nodes->GetPrimitive(iPoint);
+
+            Density = V_outlet[prim_idx.Density()];
 
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
 
@@ -2953,6 +2958,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
               Velocity2 += Velocity[iDim] * Velocity[iDim];
               MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
             }
+
             Area = sqrt (Area);
 
             Outlet_MassFlow[iMarker] += MassFlow;
@@ -3046,9 +3052,14 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
           }
 
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
+          su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
+          cout << "target mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot_Target << endl;
+          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
+
 
         }
       }
