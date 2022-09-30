@@ -31,6 +31,7 @@
 
 /*!
  * \class CGaussVariable
+ * \ingroup FemAlgos
  * \brief Main class for defining the gaussian points.
  * \version 7.4.0 "Blackbird"
  */

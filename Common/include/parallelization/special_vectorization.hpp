@@ -27,6 +27,9 @@
 
 // no #pragma once, header needs to be included once per specialization.
 
+/// \addtogroup SIMD
+/// @{
+
 /*!
  * \brief Symbols that need to be defined before including this header:
  * \param[in] ARRAY_T - The desired specialization of simd::Array.
@@ -126,8 +129,8 @@ MAKE_BINARY_FUN(operator==, eq_p)
 MAKE_BINARY_FUN(operator!=, ne_p)
 MAKE_BINARY_FUN(operator<=, le_p)
 MAKE_BINARY_FUN(operator>=, ge_p)
-MAKE_BINARY_FUN(max, max_p)
-MAKE_BINARY_FUN(min, min_p)
+MAKE_BINARY_FUN(fmax, max_p)
+MAKE_BINARY_FUN(fmin, min_p)
 
 #undef MAKE_BINARY_FUN
 
@@ -168,3 +171,5 @@ MAKE_BINARY_FUN(pow, ::pow)
 #undef SCALAR_T
 #undef REGISTER_T
 #undef SIZE_TAG
+
+/// @}

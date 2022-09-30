@@ -35,6 +35,7 @@
 
 /*!
  * \class CTrapezoidalMap
+ * \ingroup LookUpInterp
  * \brief Construction of trapezoidal map for tabulated lookup 
  * \author: D. Mayer, T. Economon
  * \version 7.4.0 "Blackbird"
