@@ -74,7 +74,7 @@ def main():
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals         = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
-    visc_cone.test_vals_aarch64 = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
+    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.545048, -20.618697, -20.501528, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
@@ -143,7 +143,7 @@ def main():
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
-    polar_naca0012.test_vals_aarch64 = [-1.942718, 3.473466, 0.013110, 0.008987]
+    polar_naca0012.test_vals_aarch64 = [-3.148445, 2.270143, 0.003666, 0.008682]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     test_list.append(polar_naca0012)
 
@@ -209,7 +209,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.494757, -7.713330, -0.000000, 2.085796] #last 4 columns
-    poiseuille_profile.test_vals_aarch64 = [-12.494695, -7.711914, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals_aarch64 = [-12.494705, -7.711332, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.new_output = True
     test_list.append(poiseuille_profile)
 
@@ -730,7 +730,7 @@ def main():
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
     turb_naca0012_2c.test_vals         = [-5.483297, 0.968867, 0.255779, -0.109417] #last 4 columns
-    turb_naca0012_2c.test_vals_aarch64 = [-5.483375, 0.968843, 0.255870, -0.109398] #last 4 columns
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483310, 0.968862, 0.255650, -0.109464] #last 4 columns
     turb_naca0012_2c.new_output = True
     test_list.append(turb_naca0012_2c)
 
@@ -749,7 +749,7 @@ def main():
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
     turb_naca0012_p1c1.test_vals         = [-5.127470, 1.077450, 0.544081, -0.018573] #last 4 columns
-    turb_naca0012_p1c1.test_vals_aarch64 = [-5.127470, 1.077487, 0.543977, -0.018609] #last 4 columns
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.127512, 1.077345, 0.544130, -0.018555] #last 4 columns
     turb_naca0012_p1c1.new_output = True
     test_list.append(turb_naca0012_p1c1)
 
@@ -759,7 +759,7 @@ def main():
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
     turb_naca0012_p1c2.test_vals         = [-5.554427, 0.943668, 0.320426, -0.091140] #last 4 columns
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554486, 0.943644, 0.320343, -0.091167] #last 4 columns
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554391, 0.943687, 0.320285, -0.091188] #last 4 columns
     turb_naca0012_p1c2.new_output = True
     test_list.append(turb_naca0012_p1c2)
 
@@ -977,7 +977,7 @@ def main():
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
     uniform_flow.test_vals         = [2.000000, 0.000000, -0.205134, -13.251542] #last 4 columns
-    uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.253776] #last 4 columns
+    uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.250720] #last 4 columns
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
@@ -989,7 +989,7 @@ def main():
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
     channel_2D.test_vals         = [2.000000, 0.000000, 0.397995, 0.352789, 0.405474] #last 5 columns
-    channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.397977, 0.352782, 0.405474] #last 5 columns
+    channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.398053, 0.352788, 0.405474] #last 5 columns
     channel_2D.timeout   = 100
     channel_2D.unsteady  = True
     channel_2D.multizone = True
