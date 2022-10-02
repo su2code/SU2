@@ -59,7 +59,7 @@ void CCoolProp::SetTDState_PT(su2double P, su2double T) {
     SetTDState_rhoe(rho, e);
 }
 
-void CCoolProp::SetEnergy_Prho(su2double P, su2double rho) {
+void CCoolProp::SetTDState_Prho(su2double P, su2double rho) {
     fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
     su2double e = fluid_entity->umass();
     SetTDState_rhoe(rho, e);
@@ -79,16 +79,16 @@ void CCoolProp::SetTDState_hs(su2double h, su2double s) {
 
 void  CCoolProp::SetTDState_Ps(su2double P, su2double s) {
     fluid_entity->update(CoolProp::PSmass_INPUTS, P , s);
-    su2double  rho = fluid_entity->rhomass();
+    su2double  Rho = fluid_entity->rhomass();
     su2double e    = fluid_entity->umass();
-    SetTDState_rhoe(rho, e);
+    SetTDState_rhoe(Rho, e);
 }
 
 void CCoolProp::SetTDState_rhoT(su2double rho, su2double T) {
     fluid_entity->update(CoolProp::DmassT_INPUTS, rho, T);
-    su2double  rho = fluid_entity->rhomass();
+    su2double  Rho = fluid_entity->rhomass();
     su2double e    = fluid_entity->umass();
-    SetTDState_rhoe(rho, e);
+    SetTDState_rhoe(Rho, e);
 }
 
 void  CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {

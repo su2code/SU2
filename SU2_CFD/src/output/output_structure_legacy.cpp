@@ -2946,7 +2946,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
           Breakdown_file << "Critical Pressure:   " << auxFluidModel->GetPressure_Critical()  << " Pa." << "\n";
           Breakdown_file << "Critical Temperature:  " << auxFluidModel->GetTemperature_Critical() << " K." << "\n";
           Breakdown_file << "Critical Pressure (non-dim):   " << auxFluidModel->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << "\n";
-          reakdown_file << "Critical Temperature (non-dim) :  " << auxFluidModel->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << "\n";
+          Breakdown_file << "Critical Temperature (non-dim) :  " << auxFluidModel->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << "\n";
           break;
       }
 

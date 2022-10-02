@@ -27,12 +27,10 @@
 
 #pragma once
 #include "CFluidModel.hpp"
-
-#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 #include "CoolProp.h"
 #include "AbstractState.h"
 #include "crossplatform_shared_ptr.h"
-#endif
+
 
 /*!
  * \class CCoolProp

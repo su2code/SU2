@@ -3,6 +3,9 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
   <component name="CMakeReloadState">
     <option name="reloaded" value="true" />
   </component>
@@ -16,10 +19,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e234375e-9a40-43de-a486-d27b5974797d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/subprojects/CoolProp/install_root/static_library/Linux/64bit_GNU_8.3.0/libCoolProp.a" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SU2_CFD/obj/Makefile.am" beforeDir="false" afterPath="$PROJECT_DIR$/SU2_CFD/obj/Makefile.am" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/meson.build" beforeDir="false" afterPath="$PROJECT_DIR$/meson.build" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/meson_options.txt" beforeDir="false" afterPath="$PROJECT_DIR$/meson_options.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Common/src/CConfig.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Common/src/CConfig.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SU2_CFD/include/fluid/CCoolProp.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/SU2_CFD/include/fluid/CCoolProp.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SU2_CFD/src/fluid/CCoolProp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/SU2_CFD/src/fluid/CCoolProp.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SU2_CFD/src/output/output_structure_legacy.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/SU2_CFD/src/output/output_structure_legacy.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/meson_scripts/init.py" beforeDir="false" afterPath="$PROJECT_DIR$/meson_scripts/init.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/subprojects/CoolProp" beforeDir="false" afterPath="$PROJECT_DIR$/subprojects/CoolProp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,13 +77,6 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;
   }
 }</component>
-  <component name="RunManager">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -99,6 +99,8 @@
       <workItem from="1664346172072" duration="3904000" />
       <workItem from="1664360624244" duration="106000" />
       <workItem from="1664518867179" duration="9491000" />
+      <workItem from="1664638767803" duration="7102000" />
+      <workItem from="1664693088856" duration="3365000" />
     </task>
     <servers />
   </component>
