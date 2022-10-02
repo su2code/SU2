@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../include/fluid/CIdealGas.hpp"
@@ -113,6 +114,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
 
   EntropyVarFreeStream[0]      =  (Gamma-s)*ovgm1 - 0.5*pInv*Density_Inf*V2_Inf;
   EntropyVarFreeStream[nVar-1] = -pInv*Density_Inf;
+
+  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Start of the parallel region. ---*/
   SU2_OMP_PARALLEL
@@ -4390,7 +4394,49 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
   END_SU2_OMP_CRITICAL
 }
 
+void CFEM_DG_EulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dynamic meshes,
+   use the motion Mach number as a reference value for computing the force coefficients.
+   Otherwise, use the freestream values, which is the standard convention. ---*/
+  su2double RefVel2;
+
+  if (dynamic_grid && !config.GetFSI_Simulation()) {
+    su2double Gas_Constant = config.GetGas_ConstantND();
+    su2double Mach2Vel = sqrt(Gamma * Gas_Constant * Temperature_Inf);
+    su2double Mach_Motion = config.GetMach_Motion();
+    RefVel2 = pow(Mach_Motion * Mach2Vel, 2);
+  }
+  else {
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+
+  DynamicPressureRef = 0.5 * Density_Inf * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
+}
+
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
+
+  /*--- Get some information from config. ---*/
+  su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
+  su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
+  su2double RefArea = config->GetRefArea();
+  su2double RefLength = config->GetRefLength();
+  auto Origin = config->GetRefOriginMoment(0);
+
+  /*--- Reference pressure is always the far-field value. ---*/
+  const su2double RefPressure = Pressure_Inf;
+
+  /*--- Set the reference values and initialization. ---*/
+  SU2_OMP_SINGLE
+  SetReferenceValues(*config);
+  TotalCoeff.setZero();
+  AllBoundInvCoeff.setZero();
+  SurfaceInvCoeff.setZero();
+  SurfaceCoeff.setZero();
+  END_SU2_OMP_SINGLE
+
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -4399,27 +4445,319 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
     const unsigned short Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if(Monitoring == YES) {
 
-      for(int i=0; i<size; ++i) {
+      /* Easier storage of the boundary condition. */
+      const unsigned short Boundary = config->GetMarker_All_KindBC(iMarker);
 
-        if(i == rank) {
-
-          const int thread = omp_get_thread_num();
-          for(int j=0; j<omp_get_num_threads(); ++j) {
-            if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-            SU2_OMP_BARRIER
-          }
-        }
-
-        SU2_OMP_SINGLE
-        SU2_MPI::Barrier(SU2_MPI::GetComm());
-        END_SU2_OMP_SINGLE
+      /*--- Obtain the origin for the moment computation for a particular marker ---*/
+      for(unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring();
+                       ++iMarker_Monitoring) {
+        string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        string Marker_Tag     = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag)
+          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
 
-      SU2_OMP_SINGLE
-      SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-      END_SU2_OMP_SINGLE
+      /* Check for a boundary for which the forces must be computed. */
+      if((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+         (Boundary == ISOTHERMAL)) {
+
+        /*--- Forces initialization at each Marker ---*/
+        SU2_OMP_SINGLE
+        InvCoeff.setZero(iMarker);
+        END_SU2_OMP_SINGLE
+
+        /* Variables to store the contributions from the individual threads. */
+        su2double ForceInviscid[MAXNDIM] = {0.0}, MomentInviscid[MAXNDIM] = {0.0};
+        su2double MomentX_Force[MAXNDIM] = {0.0}, MomentY_Force[MAXNDIM] = {0.0},
+                  MomentZ_Force[MAXNDIM] = {0.0};
+
+        /* OpenMP parallel loop over the number of faces of this boundary. */
+        const unsigned long nFaces   = boundaries[iMarker].surfElem.size();
+        CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
+        SU2_OMP_FOR_DYN(omp_chunk_size)
+        for(unsigned long l=0; l<nFaces; ++l) {
+
+          /*--- Compute the variables of in the integration point of the face
+                and convert them to primitive variables. ---*/
+          ColMajorMatrix<su2double> &solInt = surfElem[l].ComputeSolSide0IntPoints(volElem);
+          EntropyToPrimitiveVariables(solInt);
+
+          /* Easier storage of the number of integration points and the weights,
+             unit normals, Jacobians and coordinates of the integration points. */
+          const unsigned short nInt = surfElem[l].standardElemFlow->GetNIntegration();
+          const passivedouble *weights = surfElem[l].standardElemFlow->GetIntegrationWeights();
+          const ColMajorMatrix<su2double> &normals = surfElem[l].metricNormalsFace;
+          const su2activevector &Jacobians = surfElem[l].JacobiansFace;
+          const ColMajorMatrix<su2double> &Coord = surfElem[l].coorIntegrationPoints;
+
+          /*--- Make a distinction between 2D and 3D for performance reasons. ---*/
+          switch( nDim ) {
+            case 2: {
+
+              /* Two dimensional simulation. Loop over the integration points. */
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the pressure and the distance to the origin
+                   for the moment computation. */
+                const su2double Pressure = solInt(i,3);
+                const su2double DistX = Coord(i,0) - Origin[0];
+                const su2double DistY = Coord(i,1) - Origin[1];
+
+                /* Update the pressure contribution to the forces. Note that the
+                   normal points into the geometry, hence no minus sign. */
+                const su2double ForceMag = (Pressure - Pressure_Inf)*weights[i]
+                                         * Jacobians[i]*factor;
+                const su2double ForceX   = ForceMag*normals(i,0);
+                const su2double ForceY   = ForceMag*normals(i,1);
+
+                ForceInviscid[0] += ForceX;
+                ForceInviscid[1] += ForceY;
+
+                /* Update the pressure contribution to the moments. */
+                MomentInviscid[2] += (ForceY*DistX - ForceX*DistY)/RefLength;
+                MomentZ_Force[0] += (-ForceX * Coord(i,1));
+                MomentZ_Force[1] += (ForceY * Coord(i,0));
+              }
+              break;
+            }
+
+            case 3: {
+
+                /* Three dimensional simulation. Loop over the integration points. */
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the pressure and the distance to the origin
+                   for the moment computation. */
+                const su2double Pressure = solInt(i,3);
+                const su2double DistX = Coord(i,0) - Origin[0];
+                const su2double DistY = Coord(i,1) - Origin[1];
+                const su2double DistZ = Coord(i,2) - Origin[2];
+
+                /* Update the pressure contribution to the forces. Note that the
+                   normal points into the geometry, hence no minus sign. */
+                const su2double ForceMag = (Pressure - Pressure_Inf)*weights[i]
+                                         * Jacobians[i]*factor;
+                const su2double ForceX   = ForceMag*normals(i,0);
+                const su2double ForceY   = ForceMag*normals(i,1);
+                const su2double ForceZ   = ForceMag*normals(i,2);
+
+                ForceInviscid[0] += ForceX;
+                ForceInviscid[1] += ForceY;
+                ForceInviscid[2] += ForceZ;
+
+                /* Update the pressure contribution to the moments. */
+                MomentInviscid[0] += (ForceZ*DistY - ForceY*DistZ)/RefLength;
+                MomentInviscid[1] += (ForceX*DistZ - ForceZ*DistX)/RefLength;
+                MomentInviscid[2] += (ForceY*DistX - ForceX*DistY)/RefLength;
+
+                MomentX_Force[1] += (-ForceY * Coord(i,2));
+                MomentX_Force[2] += (ForceZ * Coord(i,1));
+
+                MomentY_Force[2] += (-ForceZ * Coord(i,0));
+                MomentY_Force[0] += (ForceX * Coord(i,2));
+
+                MomentZ_Force[0] += (-ForceX * Coord(i,1));
+                MomentZ_Force[1] += (ForceY * Coord(i,0));
+              }
+
+              break;
+            }
+          }
+        }
+        END_SU2_OMP_FOR
+
+        /*--- Sum up the contributions from the threads. ---*/
+        if (nDim == 2) {
+          SU2_OMP_CRITICAL
+          InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
+          InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
+          InvCoeff.CMz[iMarker] += MomentInviscid[2];
+          InvCoeff.CoPx[iMarker] += MomentZ_Force[1];
+          InvCoeff.CoPy[iMarker] += -MomentZ_Force[0];
+          InvCoeff.CFx[iMarker] += ForceInviscid[0];
+          InvCoeff.CFy[iMarker] += ForceInviscid[1];
+          END_SU2_OMP_CRITICAL
+
+          SU2_OMP_SINGLE
+          InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+          InvCoeff.CT[iMarker] = -InvCoeff.CFx[iMarker];
+          InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
+          InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          END_SU2_OMP_SINGLE
+        }
+
+        if (nDim == 3) {
+          SU2_OMP_CRITICAL
+          InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) +
+                                  ForceInviscid[2] * sin(Alpha) * cos(Beta);
+          InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha);
+          InvCoeff.CSF[iMarker] += -ForceInviscid[0] * sin(Beta) * cos(Alpha) + ForceInviscid[1] * cos(Beta) -
+                                   ForceInviscid[2] * sin(Beta) * sin(Alpha);
+          InvCoeff.CMx[iMarker] += MomentInviscid[0];
+          InvCoeff.CMy[iMarker] += MomentInviscid[1];
+          InvCoeff.CMz[iMarker] += MomentInviscid[2];
+          InvCoeff.CoPx[iMarker] += -MomentY_Force[0];
+          InvCoeff.CoPz[iMarker] += MomentY_Force[2];
+          InvCoeff.CFx[iMarker] += ForceInviscid[0];
+          InvCoeff.CFy[iMarker] += ForceInviscid[1];
+          InvCoeff.CFz[iMarker] += ForceInviscid[2];
+          END_SU2_OMP_CRITICAL
+
+          SU2_OMP_SINGLE
+          InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+          InvCoeff.CT[iMarker] = -InvCoeff.CFz[iMarker];
+          InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
+          InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          END_SU2_OMP_SINGLE
+        }
+
+        /*--- Update the coefficients for all boundaries. ---*/
+        SU2_OMP_SINGLE
+        AllBoundInvCoeff.CD += InvCoeff.CD[iMarker];
+        AllBoundInvCoeff.CL += InvCoeff.CL[iMarker];
+        AllBoundInvCoeff.CSF += InvCoeff.CSF[iMarker];
+        AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
+        AllBoundInvCoeff.CMx += InvCoeff.CMx[iMarker];
+        AllBoundInvCoeff.CMy += InvCoeff.CMy[iMarker];
+        AllBoundInvCoeff.CMz += InvCoeff.CMz[iMarker];
+        AllBoundInvCoeff.CoPx += InvCoeff.CoPx[iMarker];
+        AllBoundInvCoeff.CoPy += InvCoeff.CoPy[iMarker];
+        AllBoundInvCoeff.CoPz += InvCoeff.CoPz[iMarker];
+        AllBoundInvCoeff.CFx += InvCoeff.CFx[iMarker];
+        AllBoundInvCoeff.CFy += InvCoeff.CFy[iMarker];
+        AllBoundInvCoeff.CFz += InvCoeff.CFz[iMarker];
+        AllBoundInvCoeff.CT += InvCoeff.CT[iMarker];
+        AllBoundInvCoeff.CQ += InvCoeff.CQ[iMarker];
+        AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
+        END_SU2_OMP_SINGLE
+
+        /*--- Compute the coefficients per surface ---*/
+        SU2_OMP_SINGLE
+        for(unsigned short iMarker_Monitoring = 0;
+             iMarker_Monitoring < config->GetnMarker_Monitoring();
+             ++iMarker_Monitoring) {
+          string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+          if(Marker_Tag == Monitoring_Tag) {
+            SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
+            SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
+            SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
+            SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+            SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
+            SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
+            SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
+            SurfaceInvCoeff.CMx[iMarker_Monitoring] += InvCoeff.CMx[iMarker];
+            SurfaceInvCoeff.CMy[iMarker_Monitoring] += InvCoeff.CMy[iMarker];
+            SurfaceInvCoeff.CMz[iMarker_Monitoring] += InvCoeff.CMz[iMarker];
+          }
+        }
+        END_SU2_OMP_SINGLE
+      }
     }
   }
+
+  SU2_OMP_SINGLE
+#ifdef HAVE_MPI
+  /*--- Accumulate the boundary contribution from all nodes. ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+
+    /* Lambda function to carry out the reduction. */
+    auto Allreduce = [](su2double x) {
+      su2double tmp = x;
+      x = 0.0;
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      return x;
+    };
+
+    /* The reduction of all elements of AllBoundInvCoeff. */
+    AllBoundInvCoeff.CD = Allreduce(AllBoundInvCoeff.CD);
+    AllBoundInvCoeff.CL = Allreduce(AllBoundInvCoeff.CL);
+    AllBoundInvCoeff.CSF = Allreduce(AllBoundInvCoeff.CSF);
+    AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
+
+    AllBoundInvCoeff.CMx = Allreduce(AllBoundInvCoeff.CMx);
+    AllBoundInvCoeff.CMy = Allreduce(AllBoundInvCoeff.CMy);
+    AllBoundInvCoeff.CMz = Allreduce(AllBoundInvCoeff.CMz);
+
+    AllBoundInvCoeff.CoPx = Allreduce(AllBoundInvCoeff.CoPx);
+    AllBoundInvCoeff.CoPy = Allreduce(AllBoundInvCoeff.CoPy);
+    AllBoundInvCoeff.CoPz = Allreduce(AllBoundInvCoeff.CoPz);
+
+    AllBoundInvCoeff.CFx = Allreduce(AllBoundInvCoeff.CFx);
+    AllBoundInvCoeff.CFy = Allreduce(AllBoundInvCoeff.CFy);
+    AllBoundInvCoeff.CFz = Allreduce(AllBoundInvCoeff.CFz);
+
+    AllBoundInvCoeff.CT = Allreduce(AllBoundInvCoeff.CT);
+    AllBoundInvCoeff.CQ = Allreduce(AllBoundInvCoeff.CQ);
+    AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
+
+    /*--- Lambda function for the reduction of multiple entities. ---*/
+    int nMarkerMon = config->GetnMarker_Monitoring();
+    su2double* buffer = new su2double[nMarkerMon];
+
+    auto Allreduce_inplace = [buffer](int size, su2double* x) {
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      for (int i = 0; i < size; ++i) x[i] = buffer[i];
+    };
+
+    /*--- The reduction of the forces and moments of the surfaces. ---*/
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CL);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CD);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CSF);
+
+    for (int iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; ++iMarker_Monitoring)
+      SurfaceInvCoeff.CEff[iMarker_Monitoring] =
+          SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFx);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFy);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFz);
+
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMx);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMy);
+    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMz);
+
+    delete[] buffer;
+  }
+#endif
+
+  /*--- Update the total coefficients (note that all the MPI ranks have the same value) ---*/
+  TotalCoeff.CD = AllBoundInvCoeff.CD;
+  TotalCoeff.CL = AllBoundInvCoeff.CL;
+  TotalCoeff.CSF = AllBoundInvCoeff.CSF;
+  TotalCoeff.CEff = TotalCoeff.CL / (TotalCoeff.CD + EPS);
+  TotalCoeff.CFx = AllBoundInvCoeff.CFx;
+  TotalCoeff.CFy = AllBoundInvCoeff.CFy;
+  TotalCoeff.CFz = AllBoundInvCoeff.CFz;
+  TotalCoeff.CMx = AllBoundInvCoeff.CMx;
+  TotalCoeff.CMy = AllBoundInvCoeff.CMy;
+  TotalCoeff.CMz = AllBoundInvCoeff.CMz;
+  TotalCoeff.CoPx = AllBoundInvCoeff.CoPx;
+  TotalCoeff.CoPy = AllBoundInvCoeff.CoPy;
+  TotalCoeff.CoPz = AllBoundInvCoeff.CoPz;
+  TotalCoeff.CT = AllBoundInvCoeff.CT;
+  TotalCoeff.CQ = AllBoundInvCoeff.CQ;
+  TotalCoeff.CMerit = TotalCoeff.CT / (TotalCoeff.CQ + EPS);
+
+  /*--- And the same for the surfaces. ---*/
+  for (int iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    SurfaceCoeff.CL[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring];
+    SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
+    SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
+    SurfaceCoeff.CEff[iMarker_Monitoring] =
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
+    SurfaceCoeff.CFx[iMarker_Monitoring] = SurfaceInvCoeff.CFx[iMarker_Monitoring];
+    SurfaceCoeff.CFy[iMarker_Monitoring] = SurfaceInvCoeff.CFy[iMarker_Monitoring];
+    SurfaceCoeff.CFz[iMarker_Monitoring] = SurfaceInvCoeff.CFz[iMarker_Monitoring];
+    SurfaceCoeff.CMx[iMarker_Monitoring] = SurfaceInvCoeff.CMx[iMarker_Monitoring];
+    SurfaceCoeff.CMy[iMarker_Monitoring] = SurfaceInvCoeff.CMy[iMarker_Monitoring];
+    SurfaceCoeff.CMz[iMarker_Monitoring] = SurfaceInvCoeff.CMz[iMarker_Monitoring];
+  }
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -4790,7 +5128,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig             *config,
     const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
 #endif
 
-  /*--- Determine the index in the work arrays where the left solution must be stored. ---*/
+  /*--- Determine the index in the work arrays where the right solution must be stored. ---*/
   const unsigned int indRight = omp_get_num_threads() + omp_get_thread_num();
 
   /*--- Loop over the requested range of surface faces. ---*/

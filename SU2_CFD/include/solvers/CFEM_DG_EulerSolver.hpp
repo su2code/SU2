@@ -785,6 +785,12 @@ protected:
    */
   void VolumeTransformationMatrix(CVolumeElementFEM_DG     *elem,
                                   ColMajorMatrix<su2double> &sol);
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config);
+
 private:
 
   /*!
