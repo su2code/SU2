@@ -45,6 +45,5 @@ class CUnityLewisDiffusivity final : public CDiffusivityModel {
   }
 
  private:
-  su2double kt_{0.0};
   su2double Lewis{1.0};
 };

@@ -130,12 +130,12 @@ class CFluidModel {
   /*!
    * \brief Get fluid specific heat at constant pressure.
    */
-  inline virtual su2double GetCp() const { return Cp; }
+  su2double GetCp() const { return Cp; }
 
   /*!
    * \brief Get fluid specific heat at constant volume.
    */
-  inline virtual su2double GetCv() const { return Cv; }
+  su2double GetCv() const { return Cv; }
 
   /*!
    * \brief Get fluid dynamic viscosity.

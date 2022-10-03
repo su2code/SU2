@@ -35,15 +35,7 @@
  * \author T. Economon
  */
 class CConstantSchmidtRANS : public CDiffusivityModel {
- protected:
-  // su2double Schmidt_Lam;   /*!< \brief Laminar Schmidt number. */
-  // su2double Schmidt_Turb;  /*!< \brief Laminar Schmidt number. */
-
  public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  // CConstantSchmidtRANS() {}
 
   /*!
    * \brief Constructor of the class.

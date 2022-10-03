@@ -123,22 +123,10 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetLaminarViscosity() override { return Mu; }
 
   /*!
-   * \brief Get specific heat capacity at constant pressure.
-   */
-
-  inline su2double GetCp() const override{ return Cp; }
-
-  /*!
-   * \brief Get specific heat capacity at constant volume.
-   */
-
-  inline su2double GetCv() const override{ return Cv; }
-  
-  /*!
    * \brief Get fluid thermal conductivity.
    */
   inline su2double GetThermalConductivity() override { return Kt; }
-  
+
   /*!
    * \brief Get fluid mass diffusivity.
    */

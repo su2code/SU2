@@ -35,9 +35,6 @@
  * \author T. Economon
  */
 class CConstantSchmidt final : public CDiffusivityModel {
- protected:
-  // su2double Schmidt_const;  /*!< \brief Constant Schmidt number. */
-
  public:
   /*!
    * \brief Constructor of the class.
@@ -47,7 +44,6 @@ class CConstantSchmidt final : public CDiffusivityModel {
   /*!
    * \brief Constructor of the class.
    */
-  // CConstantSchmidt(su2double sc_const) : CDiffusivityModel() { Schmidt_const = sc_const; }
   CConstantSchmidt(su2double sc_lam) : sc_lam_(sc_lam) {}
 
   /*!
