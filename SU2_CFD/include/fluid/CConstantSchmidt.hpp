@@ -36,10 +36,6 @@
  */
 class CConstantSchmidt final : public CDiffusivityModel {
  public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CConstantSchmidt() {}
 
   /*!
    * \brief Constructor of the class.
