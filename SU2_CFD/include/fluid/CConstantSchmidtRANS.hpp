@@ -34,7 +34,7 @@
  * \brief Defines a mass diffusivity model for species equations based on Schmidt numbers for RANS.
  * \author T. Economon
  */
-class CConstantSchmidtRANS : public CDiffusivityModel {
+class CConstantSchmidtRANS final : public CDiffusivityModel {
  public:
 
   /*!
