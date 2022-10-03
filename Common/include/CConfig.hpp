@@ -808,7 +808,6 @@ private:
   unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
   nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
   su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
-  Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
