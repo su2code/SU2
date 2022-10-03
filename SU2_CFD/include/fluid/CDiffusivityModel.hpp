@@ -1,7 +1,7 @@
 /*!
  * \file CDiffusivityModel.hpp
  * \brief Interface class for defining mass diffusivity models.
- * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
+ * \author T. Economon, C. Morales
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
