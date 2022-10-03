@@ -581,7 +581,7 @@ public:
   inline su2double GetNonLinResNorm(unsigned long iPoint) {
     su2double norm = 0.0;
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      norm += pow(NonLinSol_Old(iPoint,iVar), 2.0);
+      norm += pow(NonLinRes(iPoint,iVar), 2.0);
     return norm;
   }
 
@@ -591,7 +591,7 @@ public:
    * \return Pointer to the nonlinear residual vector.
    */
   inline su2double GetNonLinResNorm(unsigned long iPoint, unsigned long iVar) {
-    su2double norm = pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
+    su2double norm = pow(NonLinRes(iPoint,iVar), 2.0);
     return norm;
   }
 
