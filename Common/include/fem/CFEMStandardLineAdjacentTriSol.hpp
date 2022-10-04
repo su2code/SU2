@@ -87,8 +87,7 @@ public:
    * \return The padded number of solution DOFs of the adjacent volume element.
    */
   inline unsigned short GetNSolDOFsPad(void) const override {
-   const unsigned short nSol = nDOFs*(nDOFs+1)/2;
-   return PaddedValue(nSol);
+   return nDOFsPad;
   }
 
   /*-----------------------------------------------------------------------------------*/
