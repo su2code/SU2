@@ -4392,6 +4392,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
     AddRes_Max(iVar, LInfRes[iVar], indResMax[iVar], coorResMax[iVar]);
   }
   END_SU2_OMP_CRITICAL
+  SU2_OMP_BARRIER
 }
 
 void CFEM_DG_EulerSolver::SetReferenceValues(const CConfig& config) {
@@ -4429,11 +4430,13 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
 
   /*--- Set the reference values and initialization. ---*/
   SU2_OMP_SINGLE
-  SetReferenceValues(*config);
-  TotalCoeff.setZero();
-  AllBoundInvCoeff.setZero();
-  SurfaceInvCoeff.setZero();
-  SurfaceCoeff.setZero();
+  {
+    SetReferenceValues(*config);
+    TotalCoeff.setZero();
+    AllBoundInvCoeff.setZero();
+    SurfaceInvCoeff.setZero();
+    SurfaceCoeff.setZero();
+  }
   END_SU2_OMP_SINGLE
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
@@ -4463,7 +4466,9 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
 
         /*--- Forces initialization at each Marker ---*/
         SU2_OMP_SINGLE
-        InvCoeff.setZero(iMarker);
+        {
+          InvCoeff.setZero(iMarker);
+        }
         END_SU2_OMP_SINGLE
 
         /* Variables to store the contributions from the individual threads. */
@@ -4531,7 +4536,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
 
                 /* Easier storage of the pressure and the distance to the origin
                    for the moment computation. */
-                const su2double Pressure = solInt(i,3);
+                const su2double Pressure = solInt(i,4);
                 const su2double DistX = Coord(i,0) - Origin[0];
                 const su2double DistY = Coord(i,1) - Origin[1];
                 const su2double DistZ = Coord(i,2) - Origin[2];
@@ -4569,90 +4574,100 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
         }
         END_SU2_OMP_FOR
 
-        /*--- Sum up the contributions from the threads. ---*/
+        /*--- Reduce the forces and moments over all threads in this rank. ---*/
         if (nDim == 2) {
           SU2_OMP_CRITICAL
-          InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
-          InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
-          InvCoeff.CMz[iMarker] += MomentInviscid[2];
-          InvCoeff.CoPx[iMarker] += MomentZ_Force[1];
-          InvCoeff.CoPy[iMarker] += -MomentZ_Force[0];
-          InvCoeff.CFx[iMarker] += ForceInviscid[0];
-          InvCoeff.CFy[iMarker] += ForceInviscid[1];
+          {
+            InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
+            InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
+            InvCoeff.CMz[iMarker] += MomentInviscid[2];
+            InvCoeff.CoPx[iMarker] += MomentZ_Force[1];
+            InvCoeff.CoPy[iMarker] += -MomentZ_Force[0];
+            InvCoeff.CFx[iMarker] += ForceInviscid[0];
+            InvCoeff.CFy[iMarker] += ForceInviscid[1];
+          }
           END_SU2_OMP_CRITICAL
+          SU2_OMP_BARRIER
 
           SU2_OMP_SINGLE
-          InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
-          InvCoeff.CT[iMarker] = -InvCoeff.CFx[iMarker];
-          InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
-          InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          {
+            InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+            InvCoeff.CT[iMarker] = -InvCoeff.CFx[iMarker];
+            InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
+            InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          }
           END_SU2_OMP_SINGLE
         }
 
         if (nDim == 3) {
           SU2_OMP_CRITICAL
-          InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) +
-                                  ForceInviscid[2] * sin(Alpha) * cos(Beta);
-          InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha);
-          InvCoeff.CSF[iMarker] += -ForceInviscid[0] * sin(Beta) * cos(Alpha) + ForceInviscid[1] * cos(Beta) -
-                                   ForceInviscid[2] * sin(Beta) * sin(Alpha);
-          InvCoeff.CMx[iMarker] += MomentInviscid[0];
-          InvCoeff.CMy[iMarker] += MomentInviscid[1];
-          InvCoeff.CMz[iMarker] += MomentInviscid[2];
-          InvCoeff.CoPx[iMarker] += -MomentY_Force[0];
-          InvCoeff.CoPz[iMarker] += MomentY_Force[2];
-          InvCoeff.CFx[iMarker] += ForceInviscid[0];
-          InvCoeff.CFy[iMarker] += ForceInviscid[1];
-          InvCoeff.CFz[iMarker] += ForceInviscid[2];
+          {
+            InvCoeff.CD[iMarker] += ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) +
+                                    ForceInviscid[2] * sin(Alpha) * cos(Beta);
+            InvCoeff.CL[iMarker] += -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha);
+            InvCoeff.CSF[iMarker] += -ForceInviscid[0] * sin(Beta) * cos(Alpha) + ForceInviscid[1] * cos(Beta) -
+                                     ForceInviscid[2] * sin(Beta) * sin(Alpha);
+            InvCoeff.CMx[iMarker] += MomentInviscid[0];
+            InvCoeff.CMy[iMarker] += MomentInviscid[1];
+            InvCoeff.CMz[iMarker] += MomentInviscid[2];
+            InvCoeff.CoPx[iMarker] += -MomentY_Force[0];
+            InvCoeff.CoPz[iMarker] += MomentY_Force[2];
+            InvCoeff.CFx[iMarker] += ForceInviscid[0];
+            InvCoeff.CFy[iMarker] += ForceInviscid[1];
+            InvCoeff.CFz[iMarker] += ForceInviscid[2];
+          }
           END_SU2_OMP_CRITICAL
+          SU2_OMP_BARRIER
 
           SU2_OMP_SINGLE
-          InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
-          InvCoeff.CT[iMarker] = -InvCoeff.CFz[iMarker];
-          InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
-          InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          {
+            InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+            InvCoeff.CT[iMarker] = -InvCoeff.CFz[iMarker];
+            InvCoeff.CQ[iMarker] = -InvCoeff.CMz[iMarker];
+            InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
+          }
           END_SU2_OMP_SINGLE
         }
 
         /*--- Update the coefficients for all boundaries. ---*/
         SU2_OMP_SINGLE
-        AllBoundInvCoeff.CD += InvCoeff.CD[iMarker];
-        AllBoundInvCoeff.CL += InvCoeff.CL[iMarker];
-        AllBoundInvCoeff.CSF += InvCoeff.CSF[iMarker];
-        AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
-        AllBoundInvCoeff.CMx += InvCoeff.CMx[iMarker];
-        AllBoundInvCoeff.CMy += InvCoeff.CMy[iMarker];
-        AllBoundInvCoeff.CMz += InvCoeff.CMz[iMarker];
-        AllBoundInvCoeff.CoPx += InvCoeff.CoPx[iMarker];
-        AllBoundInvCoeff.CoPy += InvCoeff.CoPy[iMarker];
-        AllBoundInvCoeff.CoPz += InvCoeff.CoPz[iMarker];
-        AllBoundInvCoeff.CFx += InvCoeff.CFx[iMarker];
-        AllBoundInvCoeff.CFy += InvCoeff.CFy[iMarker];
-        AllBoundInvCoeff.CFz += InvCoeff.CFz[iMarker];
-        AllBoundInvCoeff.CT += InvCoeff.CT[iMarker];
-        AllBoundInvCoeff.CQ += InvCoeff.CQ[iMarker];
-        AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
-        END_SU2_OMP_SINGLE
+        {
+          AllBoundInvCoeff.CD += InvCoeff.CD[iMarker];
+          AllBoundInvCoeff.CL += InvCoeff.CL[iMarker];
+          AllBoundInvCoeff.CSF += InvCoeff.CSF[iMarker];
+          AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
+          AllBoundInvCoeff.CMx += InvCoeff.CMx[iMarker];
+          AllBoundInvCoeff.CMy += InvCoeff.CMy[iMarker];
+          AllBoundInvCoeff.CMz += InvCoeff.CMz[iMarker];
+          AllBoundInvCoeff.CoPx += InvCoeff.CoPx[iMarker];
+          AllBoundInvCoeff.CoPy += InvCoeff.CoPy[iMarker];
+          AllBoundInvCoeff.CoPz += InvCoeff.CoPz[iMarker];
+          AllBoundInvCoeff.CFx += InvCoeff.CFx[iMarker];
+          AllBoundInvCoeff.CFy += InvCoeff.CFy[iMarker];
+          AllBoundInvCoeff.CFz += InvCoeff.CFz[iMarker];
+          AllBoundInvCoeff.CT += InvCoeff.CT[iMarker];
+          AllBoundInvCoeff.CQ += InvCoeff.CQ[iMarker];
+          AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
 
-        /*--- Compute the coefficients per surface ---*/
-        SU2_OMP_SINGLE
-        for(unsigned short iMarker_Monitoring = 0;
-             iMarker_Monitoring < config->GetnMarker_Monitoring();
-             ++iMarker_Monitoring) {
-          string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-          string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          /*--- Compute the coefficients per surface ---*/
+          for(unsigned short iMarker_Monitoring = 0;
+               iMarker_Monitoring < config->GetnMarker_Monitoring();
+               ++iMarker_Monitoring) {
+            string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+            string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-          if(Marker_Tag == Monitoring_Tag) {
-            SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
-            SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
-            SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
-            SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
-            SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
-            SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
-            SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
-            SurfaceInvCoeff.CMx[iMarker_Monitoring] += InvCoeff.CMx[iMarker];
-            SurfaceInvCoeff.CMy[iMarker_Monitoring] += InvCoeff.CMy[iMarker];
-            SurfaceInvCoeff.CMz[iMarker_Monitoring] += InvCoeff.CMz[iMarker];
+            if(Marker_Tag == Monitoring_Tag) {
+              SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
+              SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
+              SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
+              SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+              SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
+              SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
+              SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
+              SurfaceInvCoeff.CMx[iMarker_Monitoring] += InvCoeff.CMx[iMarker];
+              SurfaceInvCoeff.CMy[iMarker_Monitoring] += InvCoeff.CMy[iMarker];
+              SurfaceInvCoeff.CMz[iMarker_Monitoring] += InvCoeff.CMz[iMarker];
+            }
           }
         }
         END_SU2_OMP_SINGLE
@@ -4661,101 +4676,103 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
   }
 
   SU2_OMP_SINGLE
+  {
 #ifdef HAVE_MPI
-  /*--- Accumulate the boundary contribution from all nodes. ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
+    /*--- Accumulate the boundary contribution from all nodes. ---*/
+    if (config->GetComm_Level() == COMM_FULL) {
 
-    /* Lambda function to carry out the reduction. */
-    auto Allreduce = [](su2double x) {
-      su2double tmp = x;
-      x = 0.0;
-      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      return x;
-    };
+      /* Lambda function to carry out the reduction. */
+      auto Allreduce = [](su2double x) {
+        su2double tmp = x;
+        x = 0.0;
+        SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        return x;
+      };
 
-    /* The reduction of all elements of AllBoundInvCoeff. */
-    AllBoundInvCoeff.CD = Allreduce(AllBoundInvCoeff.CD);
-    AllBoundInvCoeff.CL = Allreduce(AllBoundInvCoeff.CL);
-    AllBoundInvCoeff.CSF = Allreduce(AllBoundInvCoeff.CSF);
-    AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
+      /* The reduction of all elements of AllBoundInvCoeff. */
+      AllBoundInvCoeff.CD = Allreduce(AllBoundInvCoeff.CD);
+      AllBoundInvCoeff.CL = Allreduce(AllBoundInvCoeff.CL);
+      AllBoundInvCoeff.CSF = Allreduce(AllBoundInvCoeff.CSF);
+      AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
 
-    AllBoundInvCoeff.CMx = Allreduce(AllBoundInvCoeff.CMx);
-    AllBoundInvCoeff.CMy = Allreduce(AllBoundInvCoeff.CMy);
-    AllBoundInvCoeff.CMz = Allreduce(AllBoundInvCoeff.CMz);
+      AllBoundInvCoeff.CMx = Allreduce(AllBoundInvCoeff.CMx);
+      AllBoundInvCoeff.CMy = Allreduce(AllBoundInvCoeff.CMy);
+      AllBoundInvCoeff.CMz = Allreduce(AllBoundInvCoeff.CMz);
 
-    AllBoundInvCoeff.CoPx = Allreduce(AllBoundInvCoeff.CoPx);
-    AllBoundInvCoeff.CoPy = Allreduce(AllBoundInvCoeff.CoPy);
-    AllBoundInvCoeff.CoPz = Allreduce(AllBoundInvCoeff.CoPz);
+      AllBoundInvCoeff.CoPx = Allreduce(AllBoundInvCoeff.CoPx);
+      AllBoundInvCoeff.CoPy = Allreduce(AllBoundInvCoeff.CoPy);
+      AllBoundInvCoeff.CoPz = Allreduce(AllBoundInvCoeff.CoPz);
 
-    AllBoundInvCoeff.CFx = Allreduce(AllBoundInvCoeff.CFx);
-    AllBoundInvCoeff.CFy = Allreduce(AllBoundInvCoeff.CFy);
-    AllBoundInvCoeff.CFz = Allreduce(AllBoundInvCoeff.CFz);
+      AllBoundInvCoeff.CFx = Allreduce(AllBoundInvCoeff.CFx);
+      AllBoundInvCoeff.CFy = Allreduce(AllBoundInvCoeff.CFy);
+      AllBoundInvCoeff.CFz = Allreduce(AllBoundInvCoeff.CFz);
 
-    AllBoundInvCoeff.CT = Allreduce(AllBoundInvCoeff.CT);
-    AllBoundInvCoeff.CQ = Allreduce(AllBoundInvCoeff.CQ);
-    AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
+      AllBoundInvCoeff.CT = Allreduce(AllBoundInvCoeff.CT);
+      AllBoundInvCoeff.CQ = Allreduce(AllBoundInvCoeff.CQ);
+      AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
 
-    /*--- Lambda function for the reduction of multiple entities. ---*/
-    int nMarkerMon = config->GetnMarker_Monitoring();
-    su2double* buffer = new su2double[nMarkerMon];
+      /*--- Lambda function for the reduction of multiple entities. ---*/
+      int nMarkerMon = config->GetnMarker_Monitoring();
+      su2double* buffer = new su2double[nMarkerMon];
 
-    auto Allreduce_inplace = [buffer](int size, su2double* x) {
-      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      for (int i = 0; i < size; ++i) x[i] = buffer[i];
-    };
+      auto Allreduce_inplace = [buffer](int size, su2double* x) {
+        SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        for (int i = 0; i < size; ++i) x[i] = buffer[i];
+      };
 
-    /*--- The reduction of the forces and moments of the surfaces. ---*/
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CL);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CD);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CSF);
+      /*--- The reduction of the forces and moments of the surfaces. ---*/
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CL);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CD);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CSF);
 
-    for (int iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; ++iMarker_Monitoring)
-      SurfaceInvCoeff.CEff[iMarker_Monitoring] =
-          SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+      for (int iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; ++iMarker_Monitoring)
+        SurfaceInvCoeff.CEff[iMarker_Monitoring] =
+            SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
 
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFx);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFy);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFz);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFx);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFy);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFz);
 
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMx);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMy);
-    Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMz);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMx);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMy);
+      Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CMz);
 
-    delete[] buffer;
-  }
+      delete[] buffer;
+    }
 #endif
 
-  /*--- Update the total coefficients (note that all the MPI ranks have the same value) ---*/
-  TotalCoeff.CD = AllBoundInvCoeff.CD;
-  TotalCoeff.CL = AllBoundInvCoeff.CL;
-  TotalCoeff.CSF = AllBoundInvCoeff.CSF;
-  TotalCoeff.CEff = TotalCoeff.CL / (TotalCoeff.CD + EPS);
-  TotalCoeff.CFx = AllBoundInvCoeff.CFx;
-  TotalCoeff.CFy = AllBoundInvCoeff.CFy;
-  TotalCoeff.CFz = AllBoundInvCoeff.CFz;
-  TotalCoeff.CMx = AllBoundInvCoeff.CMx;
-  TotalCoeff.CMy = AllBoundInvCoeff.CMy;
-  TotalCoeff.CMz = AllBoundInvCoeff.CMz;
-  TotalCoeff.CoPx = AllBoundInvCoeff.CoPx;
-  TotalCoeff.CoPy = AllBoundInvCoeff.CoPy;
-  TotalCoeff.CoPz = AllBoundInvCoeff.CoPz;
-  TotalCoeff.CT = AllBoundInvCoeff.CT;
-  TotalCoeff.CQ = AllBoundInvCoeff.CQ;
-  TotalCoeff.CMerit = TotalCoeff.CT / (TotalCoeff.CQ + EPS);
+    /*--- Update the total coefficients (note that all the MPI ranks have the same value) ---*/
+    TotalCoeff.CD = AllBoundInvCoeff.CD;
+    TotalCoeff.CL = AllBoundInvCoeff.CL;
+    TotalCoeff.CSF = AllBoundInvCoeff.CSF;
+    TotalCoeff.CEff = TotalCoeff.CL / (TotalCoeff.CD + EPS);
+    TotalCoeff.CFx = AllBoundInvCoeff.CFx;
+    TotalCoeff.CFy = AllBoundInvCoeff.CFy;
+    TotalCoeff.CFz = AllBoundInvCoeff.CFz;
+    TotalCoeff.CMx = AllBoundInvCoeff.CMx;
+    TotalCoeff.CMy = AllBoundInvCoeff.CMy;
+    TotalCoeff.CMz = AllBoundInvCoeff.CMz;
+    TotalCoeff.CoPx = AllBoundInvCoeff.CoPx;
+    TotalCoeff.CoPy = AllBoundInvCoeff.CoPy;
+    TotalCoeff.CoPz = AllBoundInvCoeff.CoPz;
+    TotalCoeff.CT = AllBoundInvCoeff.CT;
+    TotalCoeff.CQ = AllBoundInvCoeff.CQ;
+    TotalCoeff.CMerit = TotalCoeff.CT / (TotalCoeff.CQ + EPS);
 
-  /*--- And the same for the surfaces. ---*/
-  for (int iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    SurfaceCoeff.CL[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring];
-    SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
-    SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
-    SurfaceCoeff.CEff[iMarker_Monitoring] =
-        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
-    SurfaceCoeff.CFx[iMarker_Monitoring] = SurfaceInvCoeff.CFx[iMarker_Monitoring];
-    SurfaceCoeff.CFy[iMarker_Monitoring] = SurfaceInvCoeff.CFy[iMarker_Monitoring];
-    SurfaceCoeff.CFz[iMarker_Monitoring] = SurfaceInvCoeff.CFz[iMarker_Monitoring];
-    SurfaceCoeff.CMx[iMarker_Monitoring] = SurfaceInvCoeff.CMx[iMarker_Monitoring];
-    SurfaceCoeff.CMy[iMarker_Monitoring] = SurfaceInvCoeff.CMy[iMarker_Monitoring];
-    SurfaceCoeff.CMz[iMarker_Monitoring] = SurfaceInvCoeff.CMz[iMarker_Monitoring];
+    /*--- And the same for the surfaces. ---*/
+    for (int iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      SurfaceCoeff.CL[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring];
+      SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
+      SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
+      SurfaceCoeff.CEff[iMarker_Monitoring] =
+          SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
+      SurfaceCoeff.CFx[iMarker_Monitoring] = SurfaceInvCoeff.CFx[iMarker_Monitoring];
+      SurfaceCoeff.CFy[iMarker_Monitoring] = SurfaceInvCoeff.CFy[iMarker_Monitoring];
+      SurfaceCoeff.CFz[iMarker_Monitoring] = SurfaceInvCoeff.CFz[iMarker_Monitoring];
+      SurfaceCoeff.CMx[iMarker_Monitoring] = SurfaceInvCoeff.CMx[iMarker_Monitoring];
+      SurfaceCoeff.CMy[iMarker_Monitoring] = SurfaceInvCoeff.CMy[iMarker_Monitoring];
+      SurfaceCoeff.CMz[iMarker_Monitoring] = SurfaceInvCoeff.CMz[iMarker_Monitoring];
+    }
   }
   END_SU2_OMP_SINGLE
 }
@@ -6170,146 +6187,151 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
                                       int       val_iter,
                                       bool      val_update_geo) {
 
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-  string restart_filename = config->GetSolution_FileName();
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
+  /*--- The actual reading is done by a single thread. ---*/
+  SU2_OMP_SINGLE
+  {
+    /*--- Read the restarRestart_Varst data from either an ASCII or binary SU2 file. ---*/
+    string restart_filename = config->GetSolution_FileName();
+    restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
-
-  /*--- Determine a map from the ID of the global DOF to the local
-        element and DOF of the element. ---*/
-  map<unsigned long, CUnsignedLong2T>  mapGlobalDOFToLocal;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-      unsigned long GlobalDOF = volElem[i].offsetDOFsSolGlobal+j;
-      mapGlobalDOFToLocal[GlobalDOF] = CUnsignedLong2T(i,j);
+    if (config->GetRead_Binary_Restart()) {
+      Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+    } else {
+      Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
-  }
 
-  /*--- Skip coordinates ---*/
-  unsigned short skipVars = nDim;
-
-  /*--- Loop over the global DOFs and determine whether they are
-        stored locally. ---*/
-  unsigned long counter = 0;
-  for (unsigned long iPoint_Global=0; iPoint_Global<geometry[MESH_0]->GetGlobal_nPointDomain(); ++iPoint_Global) {
-
-    /*--- Check if the DOF is stored on this rank. ---*/
-    auto it = mapGlobalDOFToLocal.find(iPoint_Global);
-    if(it != mapGlobalDOFToLocal.cend()) {
-
-      /*--- Retrieve the element and DOF inside the element. ---*/
-      const unsigned long i = it->second.long0;
-      const unsigned long j = it->second.long1;
-
-      /*--- Determine the start index in the read buffer and
-            update the counter afterwards. ---*/
-      const unsigned long index = counter*Restart_Vars[1] + skipVars;
-      ++counter;
-
-      /*--- Store the conservative variables in the local data structures. ---*/
-      for(unsigned short iVar=0; iVar<nVar; ++iVar)
-        volElem[i].solDOFs(j,iVar) = Restart_Data[index+iVar];
+    /*--- Determine a map from the ID of the global DOF to the local
+          element and DOF of the element. ---*/
+    map<unsigned long, CUnsignedLong2T>  mapGlobalDOFToLocal;
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
+      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+        unsigned long GlobalDOF = volElem[i].offsetDOFsSolGlobal+j;
+        mapGlobalDOFToLocal[GlobalDOF] = CUnsignedLong2T(i,j);
+      }
     }
-  }
 
-  /*--- Delete the class memory that is used to load the restart. ---*/
-  delete[] Restart_Vars;
-  delete[] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
+    /*--- Skip coordinates ---*/
+    unsigned short skipVars = nDim;
 
-  /*--- Detect a wrong solution file ---*/
-  unsigned short rbuf_NotMatching = 0;
-  if(counter < nDOFsLocOwned) rbuf_NotMatching = 1;
+    /*--- Loop over the global DOFs and determine whether they are
+          stored locally. ---*/
+    unsigned long counter = 0;
+    for (unsigned long iPoint_Global=0; iPoint_Global<geometry[MESH_0]->GetGlobal_nPointDomain(); ++iPoint_Global) {
+
+      /*--- Check if the DOF is stored on this rank. ---*/
+      auto it = mapGlobalDOFToLocal.find(iPoint_Global);
+      if(it != mapGlobalDOFToLocal.cend()) {
+
+        /*--- Retrieve the element and DOF inside the element. ---*/
+        const unsigned long i = it->second.long0;
+        const unsigned long j = it->second.long1;
+
+        /*--- Determine the start index in the read buffer and
+              update the counter afterwards. ---*/
+        const unsigned long index = counter*Restart_Vars[1] + skipVars;
+        ++counter;
+
+        /*--- Store the conservative variables in the local data structures. ---*/
+        for(unsigned short iVar=0; iVar<nVar; ++iVar)
+          volElem[i].solDOFs(j,iVar) = Restart_Data[index+iVar];
+      }
+    }
+  
+    /*--- Detect a wrong solution file ---*/
+    unsigned short rbuf_NotMatching = 0;
+    if(counter < nDOFsLocOwned) rbuf_NotMatching = 1;
 
 #ifdef HAVE_MPI
-  unsigned short sbuf_NotMatching = rbuf_NotMatching;
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+    unsigned short sbuf_NotMatching = rbuf_NotMatching;
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
-  if (rbuf_NotMatching != 0)
-    SU2_MPI::Error(string("The solution file ") + restart_filename.data() +
-                   string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."),
-                   CURRENT_FUNCTION);
+    if (rbuf_NotMatching != 0)
+      SU2_MPI::Error(string("The solution file ") + restart_filename.data() +
+                     string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
 
-  /*--- Start of the parallel region. ---*/
-  unsigned long nBadDOFs = 0;
-  SU2_OMP_PARALLEL
-  {
-    /*--- Definition of the number of bad elements for this thread.
-          The reduction is handled manually to avoid complications
-          with CODIPACK. ---*/
-    unsigned long nDOFsBad = 0;
+    /*--- Delete the class memory that is used to load the restart. ---*/
+    delete[] Restart_Vars;
+    delete[] Restart_Data;
+    Restart_Vars = nullptr; Restart_Data = nullptr;
 
-    /*--- Loop over the owned elements. ---*/
-#ifdef HAVE_OMP
-    const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
-#endif
-    SU2_OMP_FOR_STAT(omp_chunk_size_vol)
-    for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-      /*--- Loop over the DOFs of this element, which currently
-            stores the conservative variables. ---*/
-      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-        /*--- Compute the primitive variables. ---*/
-        const su2double rho    = volElem[i].solDOFs(j,0);
-        const su2double rhoInv = 1.0/rho;
-
-        su2double Velocity2 = 0.0;
-        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-          const su2double vel = volElem[i].solDOFs(j,iDim)*rhoInv;
-          Velocity2 += vel*vel;
-        }
-
-        const su2double StaticEnergy = volElem[i].solDOFs(j,nDim+1)*rhoInv - 0.5*Velocity2;
-
-        GetFluidModel()->SetTDState_rhoe(rho, StaticEnergy);
-        const su2double Pressure = GetFluidModel()->GetPressure();
-        const su2double Temperature = GetFluidModel()->GetTemperature();
-
-        /*--- Check for negative pressure, density or temperature. ---*/
-        if((Pressure < 0.0) || (rho < 0.0) || (Temperature < 0.0)) {
-
-          /*--- Reset the state to the infinity state and update nDOFsBad. ---*/
-          for(unsigned short k=0; k<nVar; ++k)
-            volElem[i].solDOFs(j,k) = ConsVarFreeStream[k];
-          ++nDOFsBad;
-        }
-      }
-
-      /*--- Convert the conservative variables to entropy variables. ---*/
-      ConservativeToEntropyVariables(volElem[i].solDOFs);
-
-      /*--- Convert the nodal solution to the modal solution. ---*/
-      volElem[i].NodalToModalFlow();
-    }
-    END_SU2_OMP_FOR
-
-    /*--- Carry out the reduction over the threads. ---*/
-    if (config->GetComm_Level() == COMM_FULL) {
-      SU2_OMP_CRITICAL
-      {
-        nBadDOFs += nDOFsBad;
-      }
-      END_SU2_OMP_CRITICAL
-    }
+    /* Initialize the counter for the number of bad DOFs. */
+    counter = 0;
   }
-  END_SU2_OMP_PARALLEL
+  END_SU2_OMP_SINGLE
+
+  /*--- Definition of the number of bad elements for this thread.
+        The reduction is handled manually to avoid complications
+        with CODIPACK. ---*/
+  unsigned long nDOFsBad = 0;
+
+  /*--- Loop over the owned elements. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+  SU2_OMP_FOR_STAT(omp_chunk_size_vol)
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /*--- Loop over the DOFs of this element, which currently
+          stores the conservative variables. ---*/
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+      /*--- Compute the primitive variables. ---*/
+      const su2double rho    = volElem[i].solDOFs(j,0);
+      const su2double rhoInv = 1.0/rho;
+
+      su2double Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = volElem[i].solDOFs(j,iDim)*rhoInv;
+        Velocity2 += vel*vel;
+      }
+
+      const su2double StaticEnergy = volElem[i].solDOFs(j,nDim+1)*rhoInv - 0.5*Velocity2;
+
+      GetFluidModel()->SetTDState_rhoe(rho, StaticEnergy);
+      const su2double Pressure = GetFluidModel()->GetPressure();
+      const su2double Temperature = GetFluidModel()->GetTemperature();
+
+      /*--- Check for negative pressure, density or temperature. ---*/
+      if((Pressure < 0.0) || (rho < 0.0) || (Temperature < 0.0)) {
+
+        /*--- Reset the state to the infinity state and update nDOFsBad. ---*/
+        for(unsigned short k=0; k<nVar; ++k)
+          volElem[i].solDOFs(j,k) = ConsVarFreeStream[k];
+        ++nDOFsBad;
+      }
+    }
+
+    /*--- Convert the conservative variables to entropy variables. ---*/
+    ConservativeToEntropyVariables(volElem[i].solDOFs);
+
+    /*--- Convert the nodal solution to the modal solution. ---*/
+    volElem[i].NodalToModalFlow();
+  }
+
+  /*--- Carry out the reduction over the threads. ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_OMP_ATOMIC
+    counter += nDOFsBad;
+
+    SU2_OMP_BARRIER
+  }
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
+
+    SU2_OMP_SINGLE
+    {
 #ifdef HAVE_MPI
-    unsigned long nBadDOFsLoc = nBadDOFs;
-    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+      unsigned long nBadDOFsLoc = counter;
+      SU2_MPI::Reduce(&nBadDOFsLoc, &nDOFsBad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
-    if((rank == MASTER_NODE) && (nBadDOFs != 0))
-      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
+      if((rank == MASTER_NODE) && (nDOFsBad != 0))
+        cout << "Warning. The initial solution contains "<< nDOFsBad << " DOFs that are not physical." << endl;
+    }
+    END_SU2_OMP_SINGLE
   }
 }
