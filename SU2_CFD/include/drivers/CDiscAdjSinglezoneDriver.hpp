@@ -31,6 +31,7 @@
 
 /*!
  * \class CDiscAdjSinglezoneDriver
+ * \ingroup DiscAdj
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
  * \version 7.4.0 "Blackbird"

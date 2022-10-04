@@ -809,7 +809,7 @@ enum class CENTERED {
   JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
-  MakePair("NONE", CENTERED::NO_CENTERED)
+  MakePair("NONE", CENTERED::NONE)
   MakePair("JST", CENTERED::JST)
   MakePair("JST_KE", CENTERED::JST_KE)
   MakePair("JST_MAT", CENTERED::JST_MAT)
@@ -844,7 +844,7 @@ enum class UPWIND {
   SCALAR_ADVECTION        /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
-  MakePair("NONE", UPWIND::NO_UPWIND)
+  MakePair("NONE", UPWIND::NONE)
   MakePair("ROE", UPWIND::ROE)
   MakePair("TURKEL_PREC", UPWIND::TURKEL)
   MakePair("AUSM", UPWIND::AUSM)

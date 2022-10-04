@@ -31,6 +31,10 @@
 #include "CVariable.hpp"
 #include "../../../Common/include/containers/CVertexMap.hpp"
 
+/*!
+ * \ingroup DiscAdj
+ * \brief Main class for defining the variables on the mesh deformation boundaries for adjoint applications.
+ */
 class CDiscAdjMeshBoundVariable final : public CVariable {
 private:
 

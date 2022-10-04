@@ -424,13 +424,13 @@ public:
     if (Centered_Map.count(option_value[0])) {
       this->space = Space_Map.find("SPACE_CENTERED")->second;
       this->centered = Centered_Map.find(option_value[0])->second;
-      this->upwind = UPWIND::NO_UPWIND;
+      this->upwind = UPWIND::NONE;
       return "";
     }
     if (Upwind_Map.count(option_value[0])) {
       this->space = Space_Map.find("SPACE_UPWIND")->second;
       this->upwind = Upwind_Map.find(option_value[0])->second;
-      this->centered = CENTERED::NO_CENTERED;
+      this->centered = CENTERED::NONE;
       return "";
     }
     // Make them defined in case something weird happens
@@ -440,8 +440,8 @@ public:
   }
 
   void SetDefault() override {
-    this->centered = CENTERED::NO_CENTERED;
-    this->upwind = UPWIND::NO_UPWIND;
+    this->centered = CENTERED::NONE;
+    this->upwind = UPWIND::NONE;
     this->space = NO_CONVECTIVE;
   }
 };

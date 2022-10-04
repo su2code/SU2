@@ -58,9 +58,9 @@ class CConfig;
 using namespace std;
 
 /*!
- * \class COutput
  * \brief Class for writing the convergence history and to write solution data to file.
  * \author T.Albring
+ * \ingroup Output
  */
 class COutput {
 protected:
