@@ -808,8 +808,6 @@ private:
   unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
   nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
   su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
-  Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
-  Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
@@ -1628,18 +1626,6 @@ public:
   su2double GetSpecific_Heat_CpND(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index] / Gas_Constant_Ref; }
 
   /*!
-   * \brief Get the value of specific heat at constant volume.
-   * \return Value of the constant: Cv
-   */
-  su2double GetSpecific_Heat_Cv(void) const { return Specific_Heat_Cv; }
-
-  /*!
-   * \brief Get the non-dimensional value of specific heat at constant volume.
-   * \return Value of the non-dim. constant: Cv
-   */
-  su2double GetSpecific_Heat_CvND(void) const { return Specific_Heat_CvND; }
-
-  /*!
    * \brief Get the value of wall temperature.
    * \return Value of the constant: Temperature
    */
@@ -2426,31 +2412,6 @@ public:
    * \param[in] val_gas_constant - Value of the gas-constant.
    */
   void SetGas_Constant(su2double val_gas_constant) { Gas_Constant = val_gas_constant; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cp - specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp[0] = val_specific_heat_cp; }
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp, unsigned short val_index) { Specific_Heat_Cp[val_index] = val_specific_heat_cp; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cpnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CpND(su2double val_specific_heat_cpnd) { Specific_Heat_CpND = val_specific_heat_cpnd; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cv - specific heat at constant volume.
-   */
-  void SetSpecific_Heat_Cv(su2double val_specific_heat_cv) { Specific_Heat_Cv = val_specific_heat_cv; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cvnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CvND(su2double val_specific_heat_cvnd) { Specific_Heat_CvND = val_specific_heat_cvnd; }
 
   /*!
    * \brief Set the heat flux reference value.

@@ -1162,8 +1162,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
-  /*!\brief CV_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cv (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
