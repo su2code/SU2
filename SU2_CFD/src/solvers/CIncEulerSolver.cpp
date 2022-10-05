@@ -2893,8 +2893,8 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
               else {
                 for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0){
-                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint,1);
+                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0) {
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
                   }
                 }
               }
