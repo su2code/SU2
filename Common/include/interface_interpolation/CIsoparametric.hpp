@@ -30,6 +30,7 @@
 
 /*!
  * \brief Isoparametric interpolation.
+ * \ingroup Interfaces
  */
 class CIsoparametric final : public CInterpolator {
 private:

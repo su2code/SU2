@@ -29,6 +29,7 @@
 
 /*!
  * \brief A traits class for limiters, see notes for "computeLimiters_impl()".
+ * \ingroup FvmAlgos
  * \note There is no default implementation (the code will compile but not
  *       link) specialization is mandatory.
  */
@@ -63,6 +64,7 @@ struct CLimiterDetails
 
 /*!
  * \brief Common small functions used by limiters.
+ * \ingroup FvmAlgos
  */
 template<class Type = su2double>
 struct LimiterHelpers
@@ -90,6 +92,7 @@ struct LimiterHelpers
 
 /*!
  * \brief Barth-Jespersen specialization.
+ * \ingroup FvmAlgos
  */
 template<>
 struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
@@ -120,6 +123,7 @@ struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
 
 /*!
  * \brief Venkatakrishnan specialization.
+ * \ingroup FvmAlgos
  */
 template<>
 struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
@@ -157,6 +161,7 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
 
 /*!
  * \brief Venkatakrishnan-Wang specialization.
+ * \ingroup FvmAlgos
  */
 template<>
 struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
@@ -255,6 +260,7 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
 
 /*!
  * \brief Venkatakrishnan with sharp edge modification.
+ * \ingroup FvmAlgos
  */
 template<>
 struct CLimiterDetails<LIMITER::SHARP_EDGES>
@@ -296,6 +302,7 @@ struct CLimiterDetails<LIMITER::SHARP_EDGES>
 
 /*!
  * \brief Venkatakrishnan with wall distance modification.
+ * \ingroup FvmAlgos
  */
 template<>
 struct CLimiterDetails<LIMITER::WALL_DISTANCE>

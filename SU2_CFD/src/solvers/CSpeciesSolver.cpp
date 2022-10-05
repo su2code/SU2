@@ -304,9 +304,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double mass_diffusivity = config->GetDiffusivity_ConstantND();
-
     for (auto iVar = 0u; iVar < nVar; iVar++) {
+      solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
+      su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
 

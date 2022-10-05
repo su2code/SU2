@@ -29,6 +29,8 @@
 #include <cmath>
 
 namespace GeometryToolbox {
+/// \addtogroup GeometryToolbox
+/// @{
 
 /*! \return ||a-b||^2 */
 template<class T, class U, typename Int>
@@ -204,5 +206,5 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
   for (Int iDim = 0; iDim < nDim; iDim++)
     proj[iDim] -= normalProj * vector[iDim];
 }
-
+/// @}
 }

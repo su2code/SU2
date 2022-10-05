@@ -30,6 +30,10 @@
 
 #include "../CInterface.hpp"
 
+/*!
+ * \brief Transfers conservative variables.
+ * \ingroup Interfaces
+ */
 class CConservativeVarsInterface : public CInterface {
 public:
   /*!
