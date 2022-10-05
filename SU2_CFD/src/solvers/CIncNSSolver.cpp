@@ -43,11 +43,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
-  //if (rans && (iMesh == MESH_0)) {
-  // only when we solve additional scalars?    
-  if (iMesh == MESH_0) {
+  /*--- Sizing edge mass flux array ---*/  
+  if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR)
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
-  }
 
 
   /*--- Initialize the secondary values for direct derivative approximations ---*/

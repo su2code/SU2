@@ -222,6 +222,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array ---*/
+  if((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR))
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "INC.FLOW";
 
@@ -1156,6 +1160,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool bounded_scalar   = ((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
+                                 (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR));
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1295,11 +1301,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
 
-    //if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
-    /* only when we solve additional scalars? So turbulence and species? */
-    if (iMesh == MESH_0) {
-      EdgeMassFluxes[iEdge] = residual[0];
-    }
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    
 
   }
   END_SU2_OMP_FOR
