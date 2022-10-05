@@ -66,6 +66,7 @@ struct CSAVariables {
 template <class FlowIndices, class Omega, class ft2, class ModVort, class rFunc, class SourceTerms>
 class CSourceBase_TurbSA : public CNumerics {
  protected:
+
   su2double Gamma_BC = 0.0;
 
   /*--- Residual and Jacobian ---*/
@@ -74,6 +75,36 @@ class CSourceBase_TurbSA : public CNumerics {
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
+  const bool axisymmetric = false;
+
+  /*!
+   * \brief Add contribution due to axisymmetric formulation to 2D residual
+   */
+  inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
+    if (Coord_i[1] < EPS) return;
+
+    AD::SetPreaccIn(Coord_i[1]);
+    AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
+
+    
+    const su2double yinv = 1.0 / Coord_i[1];
+    const su2double rhov = Density_i * V_i[idx.Velocity() + 1];
+    const su2double nu = ScalarVar_i;
+    const su2double sigma = 2.0/3.0;
+    /*--- Compute blended constants ---*/
+    //const su2double sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
+
+    /*--- Production ---*/
+    //const su2double pk_axi = max(
+    //    0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[idx.Velocity() + 1] - PrimVar_Grad_i[idx.Velocity()+1][1] - PrimVar_Grad_i[idx.Velocity()][0]) / zeta - 1.0));
+    //const su2double pw_axi = alfa_blended * zeta / k * pk_axi;
+
+    /*--- Convection-Diffusion ---*/
+    const su2double cdv_axi = rhov * nu - (1.0/sigma)*Density_i*(Laminar_Viscosity_i + nu) * ScalarVar_Grad_i[1];
+
+    /*--- Add terms to the residuals ---*/
+    Residual += yinv * Volume * (pk_axi - cdk_axi);
+  }
 
  public:
   /*!
