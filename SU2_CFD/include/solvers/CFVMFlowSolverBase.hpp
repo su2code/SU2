@@ -57,7 +57,6 @@ class CFVMFlowSolverBase : public CSolver {
 
   su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
 
-
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
    * \param[in] lhsRhsPairs - Pairs of destination and source e.g. a,0,b,-1.
