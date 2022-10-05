@@ -1008,17 +1008,14 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
     const bool energy;
-    const bool species_model;
-    LambdaVisc(bool e, bool species) : energy(e), species_model(species) {}
+
+    LambdaVisc(bool e) : energy(e) {}
 
     FORCEINLINE su2double lambda(su2double lamVisc, su2double eddyVisc, su2double rho, su2double k, su2double cv) const {
       su2double Lambda_1 = (4.0/3.0)*(lamVisc + eddyVisc);
       su2double Lambda_2 = 0.0;
       if (energy) Lambda_2 = k / cv;
-      if (species_model)
-        return max(Lambda_1, Lambda_2) / rho;
-      else
-        return (Lambda_1 + Lambda_2) / rho;
+      return (Lambda_1 + Lambda_2) / rho;
     }
 
     FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
@@ -1039,7 +1036,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
     }
 
-  } lambdaVisc(config->GetEnergy_Equation(),config->GetKind_Species_Model()==SPECIES_MODEL::PASSIVE_SCALAR);
+  } lambdaVisc(config->GetEnergy_Equation());
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 
