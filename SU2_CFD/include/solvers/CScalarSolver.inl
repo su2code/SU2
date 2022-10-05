@@ -152,7 +152,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
   
   bool bounded_scalar{false};
-  if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) bounded_scalar = true;
+  if((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
+     (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR)) bounded_scalar = true;
 
   su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
 
@@ -269,9 +270,11 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Convective flux ---*/
-      EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
-      numerics->SetMassFlux(EdgeMassFlux);
-
+      if(bounded_scalar){
+        EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+        numerics->SetMassFlux(EdgeMassFlux);
+      }
+    
       /*--- Update convective residual value ---*/
       auto residual = numerics->ComputeResidual(config);
 
