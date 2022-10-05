@@ -1604,7 +1604,7 @@ public:
    * \brief SetMassFlux
    * \param[in] val_MassFlux: Mass flux across the edge
    */
-  inline void SetMassFlux(const su2double val_MassFlux) {MassFlux = val_MassFlux;}
+  inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
 
 };
 
