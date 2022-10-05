@@ -841,7 +841,7 @@ enum class UPWIND {
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
-  SCALAR_ADVECTION        /*!< \brief Scalar advection numerical method. */
+  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("NONE", UPWIND::NONE)
@@ -857,7 +857,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("MSW", UPWIND::MSW)
   MakePair("CUSP", UPWIND::CUSP)
   MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
-  MakePair("SCALAR_ADVECTION", UPWIND::SCALAR_ADVECTION)
+  MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
   MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
   MakePair("L2ROE", UPWIND::L2ROE)
   MakePair("LMROE", UPWIND::LMROE)

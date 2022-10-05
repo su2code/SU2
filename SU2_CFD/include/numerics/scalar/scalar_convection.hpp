@@ -132,11 +132,13 @@ class CUpwScalar : public CNumerics {
       }
     }
     
-   
-    //a0 = 0.5 * (q_ij + fabs(q_ij));
-    //a1 = 0.5 * (q_ij - fabs(q_ij));
-    a0 = max(0.0, MassFlux);
-    a1 = min(0.0, MassFlux);
+    if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
+      a0 = max(0.0, MassFlux);
+      a1 = min(0.0, MassFlux);
+    }else{
+      a0 = 0.5 * (q_ij + fabs(q_ij));
+      a1 = 0.5 * (q_ij - fabs(q_ij));
+    }
 
     FinishResidualCalc(config);
 

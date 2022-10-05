@@ -120,19 +120,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
 
-  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
-
-  su2double **Jacobian_i_correction, **Jacobian_j_correction;
-  Jacobian_i_correction = new su2double*[nVar];
-  Jacobian_j_correction = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    Jacobian_i_correction[iVar] = new su2double[nVar];
-    Jacobian_j_correction[iVar] = new su2double[nVar];
-    for(unsigned short jVar=0; jVar<nVar; jVar++){
-      Jacobian_i_correction[iVar][jVar] = 0.0;
-      Jacobian_j_correction[iVar][jVar] = 0.0;
-    }
-  }
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -163,9 +150,23 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   else
     AD::StartNoSharedReading();
 
-  bool advection{false};
   
-  if(config->GetKind_Upwind_Species() == UPWIND::SCALAR_ADVECTION) advection = true;
+  bool bounded_scalar{false};
+  if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) bounded_scalar = true;
+
+  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
+
+  su2double **Jacobian_i_correction, **Jacobian_j_correction;
+  Jacobian_i_correction = new su2double*[nVar];
+  Jacobian_j_correction = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    Jacobian_i_correction[iVar] = new su2double[nVar];
+    Jacobian_j_correction[iVar] = new su2double[nVar];
+    for(unsigned short jVar=0; jVar<nVar; jVar++){
+      Jacobian_i_correction[iVar][jVar] = 0.0;
+      Jacobian_j_correction[iVar][jVar] = 0.0;
+    }
+  }
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -284,7 +285,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
-      if(advection){
+      if(bounded_scalar){
         for(iVar=0; iVar<nVar; iVar++){
           FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
           FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;

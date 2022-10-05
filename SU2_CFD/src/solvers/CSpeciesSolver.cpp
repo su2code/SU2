@@ -335,6 +335,8 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
+  bool bounded_scalar = (config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR);
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -360,42 +362,66 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
 
-      /*--- Allocate the value at the inlet ---*/
+      if(bounded_scalar){
 
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+        /*--- Obtain flow velocity vector at inlet boundary node ---*/
+        su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet, mflux_inlet;
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        
+        /*--- Obtain density at inlet boundary node ---*/
+        density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+        /*--- Compute mass flux on current node ---*/
+        mflux_inlet = density_inlet * GeometryToolbox::DotProduct(nDim, Velocity_Inlet, Normal);
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+        /*--- Compute convective species residual ---*/
+        su2double delta_species;
+        for(auto iVar = 0u; iVar < nVar; iVar++){
+          delta_species = Inlet_SpeciesVars[val_marker][iVertex][iVar] - nodes->GetSolution(iPoint, iVar);
+          LinSysRes(iPoint, iVar) += mflux_inlet * delta_species;
+        }
 
-      /*--- Set various quantities in the solver class ---*/
+      }else{ // bounded_scalar
 
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
+        conv_numerics->SetNormal(Normal);
 
-      /*--- Set the species variable state at the inlet. ---*/
+        /*--- Allocate the value at the inlet ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
+        auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-      /*--- Set various other quantities in the solver class ---*/
+        /*--- Retrieve solution at the farfield boundary node ---*/
 
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+        auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
-      /* nijso: TODO we have to compute mass flux here as well */ 
-      //su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
-      //conv_numerics->SetMassFlux(EdgeMassFlux);
+        /*--- Set various quantities in the solver class ---*/
 
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
+        conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+        /*--- Set the species variable state at the inlet. ---*/
 
-      // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+        conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
+
+        /*--- Set various other quantities in the solver class ---*/
+
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+        /* nijso: TODO we have to compute mass flux here as well */ 
+        //su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+        //conv_numerics->SetMassFlux(EdgeMassFlux);
+
+        /*--- Compute the residual using an upwind scheme ---*/
+        auto residual = conv_numerics->ComputeResidual(config);
+        LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+        // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+      } // bounded_scalar
+
     }
   }
   END_SU2_OMP_FOR
