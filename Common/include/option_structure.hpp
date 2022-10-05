@@ -1179,11 +1179,11 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  */
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
-  PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+  SPECIES_TRANSPORT,    /*!< \brief Passive scalar transport model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
-  MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
+  MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
 };
 
 /*!

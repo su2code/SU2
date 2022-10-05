@@ -247,7 +247,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Pressure_Thermodynamic = 0.0, Tke_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Temperature_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Heat_Flux_Ref = 0.0, Energy_Ref= 0.0, Pressure_FreeStreamND = 0.0, Pressure_ThermodynamicND = 0.0, Density_FreeStreamND = 0.0,
-  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Specific_Heat_CvND = 0.0, Thermal_Expansion_CoeffND = 0.0,
+  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Thermal_Expansion_CoeffND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
@@ -279,6 +279,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
+  config->SetGas_Constant_Ref(1.0);
 
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -428,10 +430,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
-
-  /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
-  Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+  Specific_Heat_CpND  = config->GetSpecific_Heat_CpND();
 
   Thermal_Expansion_CoeffND = config->GetThermal_Expansion_Coeff()*config->GetTemperature_Ref(); config->SetThermal_Expansion_CoeffND(Thermal_Expansion_CoeffND);
 
@@ -2842,7 +2841,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   su2double *V_outlet = nullptr, Velocity[3], MassFlow,
-  Velocity2, Density, Area, AxiFactor;
+  Velocity2, Density, Area;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   su2double Vector[MAXNDIM] = {0.0};
@@ -2897,14 +2896,18 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
+            su2double AxiFactor = 1.0; 
             if (axisymmetric) {
-              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-              else
-                AxiFactor = 1.0;
-            } else {
-              AxiFactor = 1.0;
-            }
+              else {
+                for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0) {
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                  }
+                }
+              }
+            } 
 
             Density      = V_outlet[prim_idx.Density()];
 

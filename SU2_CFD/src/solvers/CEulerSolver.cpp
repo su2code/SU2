@@ -823,6 +823,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   CFluidModel* auxFluidModel = nullptr;
 
