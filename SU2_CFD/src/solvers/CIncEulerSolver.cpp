@@ -2831,7 +2831,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   su2double *V_outlet = nullptr, Velocity[3], MassFlow,
-  Velocity2, Density, Area, AxiFactor;
+  Velocity2, Density, Area;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   su2double Vector[MAXNDIM] = {0.0};
@@ -2886,14 +2886,18 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
+            su2double AxiFactor = 1.0; 
             if (axisymmetric) {
-              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-              else
-                AxiFactor = 1.0;
-            } else {
-              AxiFactor = 1.0;
-            }
+              else {
+                for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0) {
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                  }
+                }
+              }
+            } 
 
             Density      = V_outlet[prim_idx.Density()];
 
