@@ -118,7 +118,6 @@ class CUpwScalar : public CNumerics {
 
     ExtraADPreaccIn();
 
-       
     su2double q_ij = 0.0;
     if (dynamic_grid) {
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
