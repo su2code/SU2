@@ -542,3 +542,53 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
   }
   END_SU2_OMP_FOR
 }
+
+void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool axisymmetric = config->GetAxisymmetric();
+
+  if(axisymmetric){
+    CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+  
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    //auto SolverSpecificNumerics = [&](unsigned long iPoint) {
+
+      /*--- Set primitive variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point), nullptr);
+
+      /*--- Set scalar variables w/o reconstruction ---*/
+
+      numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
+
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(i_point));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      /*--- Axisymmetry source term for the scalar equation. ---*/
+      /*--- Set y coordinate ---*/
+      numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
+      /*--- Set gradients ---*/
+      numerics->SetScalarVarGradient(nodes->GetGradient(i_point), nullptr);
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+    
+      LinSysRes.SubtractBlock(i_point, residual);
+    
+      /*--- Implicit part ---*/
+    
+      if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
+    
+    }//;
+    END_SU2_OMP_FOR
+  }
+}

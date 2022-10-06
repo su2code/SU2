@@ -69,6 +69,10 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
  protected:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
   bool implicit;
+  bool viscous;
+  bool inc_rans;
+  bool incompressible;
+  su2double Sc_t;
 
  public:
   /*!

@@ -5350,9 +5350,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    // For now, do not allow axisymmetric simulations
-    if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
-
     if(Kind_TimeIntScheme_Species != EULER_IMPLICIT &&
        Kind_TimeIntScheme_Species != EULER_EXPLICIT){
       SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented in the scalar solver.", CURRENT_FUNCTION);

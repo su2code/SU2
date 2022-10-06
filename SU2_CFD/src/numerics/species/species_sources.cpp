@@ -58,18 +58,91 @@ CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_n
                                                          const CConfig* config)
     : CSourceBase_Species(val_nDim, val_nVar, config),
     idx(val_nDim, config->GetnSpecies()) {
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+  viscous = config->GetViscous();
+  inc_rans = (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+
+  Sc_t = config->GetSchmidt_Number_Turbulent();
+
 }
 
 template <class T>
 CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const CConfig* config) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
+  
+  su2double yinv,Density_i,Velocity_i[3];
 
-  if (implicit) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] = 0.0;
+  /*--- Preaccumulation ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(Volume); 
+
+  if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+6);
+  }
+  else {
+    AD::SetPreaccIn(V_i, nDim+7);
+  }
+
+  /*--- Initialization. ---*/
+  for (auto i_var = 0; i_var < nVar; i_var++) {
+    residual[i_var] = 0.0;
+    for (auto j_var = 0; j_var < nVar; j_var++) {
+      jacobian[i_var][j_var] = 0.0;
     }
   }
+
+  /*--- Contribution due to 2D axisymmetric formulation ---*/
+  if (Coord_i[1] > EPS) {
+
+    AD::SetPreaccIn(Coord_i[1]);
+    AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);      
+    //std::cout<<Coord_i[1]<<" "<<Diffusion_Coeff_i[0]<<" "<<ScalarVar_Grad_i[0][1];
+
+    yinv = 1.0/Coord_i[1];
+
+    /*--- The incompressible density. Note that this is different for compressible flows ---*/
+
+    Density_i = V_i[nDim+2];
+
+    /*--- Set primitive variables at points iPoint. ---*/
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Velocity_i[iDim] = V_i[iDim+1];
+    //std::cout<<Density_i<<" "<<Velocity_i[1]<<" "<<Volume<<" "<<ScalarVar_i[0]<<std::endl;
+
+    /*--- Inviscid component of the source term. ---*/
+    
+    for (auto iVar=0u; iVar < nVar; iVar++)
+      residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
+
+    if (implicit) {
+      for (auto iVar=0u; iVar < nVar; iVar++) {
+        jacobian[iVar][iVar] -= yinv*Volume*Velocity_i[1];
+      }
+    }
+
+    /*--- Add the viscous terms if necessary. ---*/
+    
+    if (config->GetViscous()) {
+      //Laminar_Viscosity_i    = V_i[nDim+4];
+      Eddy_Viscosity_i       = V_i[nDim+5];
+      //Thermal_Conductivity_i = V_i[nDim+6];
+
+      su2double Mass_Diffusivity_Tur = 0.0;
+      if (inc_rans)
+        Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
+
+      for (auto iVar=0u; iVar < nVar; iVar++){
+        residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
+      } 
+      //std::cout<<Eddy_Viscosity_i<<" "<<Sc_t<<std::endl;
+    }
+  }
+  
+  AD::SetPreaccOut(residual, nVar);
+  AD::EndPreacc();
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
