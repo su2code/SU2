@@ -7904,6 +7904,8 @@ CConfig::~CConfig() {
   delete[] Marker_CfgFile_SobolevBC;
   delete[] Marker_All_SobolevBC;
 
+  delete[] Marker_All_SendRecv;
+  
   delete[] Kind_Wall;
 
   if (DV_Value != nullptr) {
