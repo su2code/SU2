@@ -5341,7 +5341,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
-
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -5989,8 +5988,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         break;
       case MAIN_SOLVER::NEMO_RANS: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
-        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == SU2_NONEQ){
+        cout << "Compressible two-temperature thermochemical non-equilibrium RANS equations." << endl;
+        if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
             SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }

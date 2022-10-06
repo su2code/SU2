@@ -1258,6 +1258,13 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetSurface_CD(unsigned short val_marker) const final { return SurfaceCoeff.CD[val_marker]; }
 
   /*!
+   * \brief Provide the non dimensional unstart coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CU(unsigned short val_marker) const final { return SurfaceCoeff.CU[val_marker]; }
+
+  /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
@@ -1333,6 +1340,13 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CSF_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CSF[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional unstart coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CU_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CU[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional side-force coefficient.

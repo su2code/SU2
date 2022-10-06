@@ -1972,7 +1972,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
         if (Boundary != NEARFIELD_BOUNDARY) {
           if (nDim == 2) {
             InvCoeff.CD[iMarker] = ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
-            InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);           
+            InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
             InvCoeff.CU[iMarker] = Unstart;
             InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
             InvCoeff.CMz[iMarker] = MomentInviscid[2];

@@ -1119,6 +1119,8 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
   AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Lift coefficient
+  AddHistoryOutputPerSurface("UNSTART_ON_SURFACE",       "CU",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis

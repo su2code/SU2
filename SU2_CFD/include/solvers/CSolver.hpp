@@ -1798,6 +1798,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetSurface_CU(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetSurface_CSF(unsigned short val_marker) const { return 0; }
@@ -1864,6 +1871,13 @@ public:
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetSurface_CD_Inv(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetSurface_CU_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2081,6 +2095,13 @@ public:
    * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetCD_Inv(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetCU_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2374,15 +2395,15 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the unstart coefficient.
-   */
-  inline virtual su2double GetTotal_CU() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CD() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the unstart coefficient.
+   */
+  inline virtual su2double GetTotal_CU() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2527,6 +2548,12 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   inline virtual su2double GetAllBound_CD_Inv() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the unstart coefficient (inviscid).
+   */
+  inline virtual su2double GetAllBound_CU_Inv() const {return 0; }   
 
   /*!
    * \brief A virtual member.
