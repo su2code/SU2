@@ -627,18 +627,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
     const su2double sigma_w_i = F1_i * sigma_w_1 + (1.0 - F1_i) * sigma_w_2;
 
-    /*--- Production ---*/
-    //const su2double pk_axi = max(
-    //    0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[idx.Velocity() + 1] - PrimVar_Grad_i[idx.Velocity()+1][1] - PrimVar_Grad_i[idx.Velocity()][0]) / zeta - 1.0));
-    //const su2double pw_axi = alfa_blended * zeta / k * pk_axi;
-
     /*--- Convection-Diffusion ---*/
     const su2double cdk_axi = rhov * k - (Laminar_Viscosity_i + sigma_k_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[0][1];
     const su2double cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
-    //Residual[0] += yinv * Volume * (pk_axi - cdk_axi);
-    //Residual[1] += yinv * Volume * (pw_axi - cdw_axi);
+ 
     Residual[0] += yinv * Volume * ( - cdk_axi);
     Residual[1] += yinv * Volume * ( - cdw_axi);
   }
@@ -742,7 +736,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
-      if (axisymmetric) diverg += V_i[idx.Velocity() + 1]/Coord_i[1];
+      if (axisymmetric && Coord_i[1]>EPS) diverg += V_i[idx.Velocity() + 1]/Coord_i[1];
       
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
