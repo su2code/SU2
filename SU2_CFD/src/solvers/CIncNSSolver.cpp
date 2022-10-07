@@ -651,7 +651,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       /*--- Check if the node belongs to the domain (i.e, not a halo node)
        *    and the neighbor is not part of the physical boundary ---*/
 
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
+      //if (!geometry->nodes->GetDomain(iPoint)) continue;
 
       /*--- Get coordinates of the current vertex and nearest normal point ---*/
 

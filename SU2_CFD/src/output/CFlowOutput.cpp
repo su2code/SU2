@@ -197,6 +197,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (geometry->nodes->GetDomain(iPoint)) {

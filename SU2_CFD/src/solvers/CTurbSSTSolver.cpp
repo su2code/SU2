@@ -460,6 +460,10 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- skip on halo nodes ---*/
+    //if (!geometry->nodes->GetDomain(iPoint)) continue;
+
     const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
@@ -471,7 +475,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
       /* --- Use zero flux (Neumann) conditions, i.e. nothing has to be done. --- */
       continue;
     }
-
+    
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);
     su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
