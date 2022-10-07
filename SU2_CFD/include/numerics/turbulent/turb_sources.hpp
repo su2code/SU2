@@ -740,10 +740,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     if (dist_i > 1e-10) {
 
       su2double diverg = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
       if (axisymmetric) diverg += V_i[idx.Velocity() + 1]/Coord_i[1];
-      }
+      
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
