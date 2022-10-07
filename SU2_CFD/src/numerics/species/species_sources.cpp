@@ -98,7 +98,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     AD::SetPreaccIn(Coord_i[1]);
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);      
-    //std::cout<<Coord_i[1]<<" "<<Diffusion_Coeff_i[0]<<" "<<ScalarVar_Grad_i[0][1];
 
     yinv = 1.0/Coord_i[1];
 
@@ -110,7 +109,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
-    //std::cout<<Density_i<<" "<<Velocity_i[1]<<" "<<Volume<<" "<<ScalarVar_i[0]<<std::endl;
 
     /*--- Inviscid component of the source term. ---*/
     
@@ -126,9 +124,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     /*--- Add the viscous terms if necessary. ---*/
     
     if (config->GetViscous()) {
-      //Laminar_Viscosity_i    = V_i[nDim+4];
       Eddy_Viscosity_i       = V_i[nDim+5];
-      //Thermal_Conductivity_i = V_i[nDim+6];
 
       su2double Mass_Diffusivity_Tur = 0.0;
       if (inc_rans)
@@ -137,7 +133,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       for (auto iVar=0u; iVar < nVar; iVar++){
         residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
       } 
-      //std::cout<<Eddy_Viscosity_i<<" "<<Sc_t<<std::endl;
     }
   }
   
