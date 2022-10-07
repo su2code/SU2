@@ -1720,7 +1720,8 @@ void CSolver::ResetCFLAdapt() {
   NonLinRes_Counter = 0;
 }
 
-
+// aggiunto da me
+// da modificare per tenere conto anche del modello di transizione!
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {

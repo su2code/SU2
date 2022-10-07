@@ -798,6 +798,19 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
     }
   }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC: break;
+    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM2015:
+      // DESCRIPTION: Root-mean square residual of the intermittency (LM model).
+      AddHistoryOutput("RMS_INTERMITTENCY", "rms[gamma]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of intermittency (LM transition model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Root-mean square residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("RMS_RE_THETA_T", "rms[Re_theta_t]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of RE_THETA_T (LM transition model).", HistoryFieldType::RESIDUAL);
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
@@ -823,6 +836,18 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
     }
   }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC: break;
+    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM2015:
+      // DESCRIPTION: Root-mean square residual of the intermittency (LM model).
+      AddHistoryOutput("MAX_INTERMITTENCY", "max[gamma]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of intermittency (LM transition model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Root-mean square residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("MAX_RE_THETA_T", "max[Re_theta_t]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of RE_THETA_T (LM transition model).", HistoryFieldType::RESIDUAL);
+    case TURB_TRANS_MODEL::NONE:
+    break;
+}
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
@@ -849,6 +874,19 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
     }
   }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC: break;
+    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM2015:
+      /// DESCRIPTION: Maximum residual of the intermittency (LM model).
+      AddHistoryOutput("BGS_INTERMITTENCY", "bgs[gamma]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("BGS_RE_THETA_T", "bgs[Re_theta_t]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      break;
+
+    case TURB_TRANS_MODEL::NONE: break;
+  }
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
@@ -861,6 +899,12 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
     AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
   }
+
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE && config->GetKind_Trans_Model() != TURB_TRANS_MODEL::BC) {
+    AddHistoryOutput("LINSOL_ITER_TRANS", "LinSolIterTrans", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for transition solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TRANS", "LinSolResTrans", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for transition solver.");
+  }
+
 }
 // clang-format on
 
@@ -905,6 +949,26 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
   }
+
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC: break;
+    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM2015:
+      SetHistoryOutputValue("LINSOL_ITER_TRANS", solver[TRANS_SOL]->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_TRANS", log10(solver[TRANS_SOL]->GetResLinSolver()));
+      SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
+      SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_Max(1)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
+      }
+      break;
+
+    case TURB_TRANS_MODEL::NONE: break;
+  }
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
@@ -925,6 +989,70 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
       AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC:
+      AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "SOLUTION", "Turbulence index");
+      AddVolumeOutput("PROD_NU_TILDE", "SA_prod_nu_tilde", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DESTR_NU_TILDE", "SA_destr_nu_tilde", "DEBUG", "LM RE_THETA_T");
+      break;
+    case TURB_TRANS_MODEL::LM2015:
+      AddVolumeOutput("RE_THETA_T_SCF", "LM_re_theta_t_scf", "DEBUG", "LM Critical stationary-cross-flow Reynolds number (from correlations)");
+      AddVolumeOutput("F_THETA_T_2", "LM_f_theta_t_2", "DEBUG", "LM Blending function for Re_Theta_t");
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
+      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "SOLUTION", "Turbulence index");
+      AddVolumeOutput("RE_THETA_T_EQ", "LM_re_theta_t_eq", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_THETA_C", "LM_re_theta_c", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_V", "LM_re_V", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_W", "LM_re_w", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("R_T", "LM_R_T", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("DELTA", "LM_delta", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_THETA_T", "LM_f_theta_t", "DEBUG", "LM Blending function for Re_Theta_t");
+      AddVolumeOutput("F_WAKE", "LM_f_wake", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_REATTACH", "F_Reattach", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LENGTH_1", "F_Length_1", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LENGTH", "F_Length", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_SUBLAYER", "F_Sublayer", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_ONSET", "F_Onset", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LAMBDA", "F_Lambda", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LAMBDA_NEW", "F_Lambda_new", "DEBUG", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("T_PARAM", "LM_T", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("LAMBDA_THETA", "LM_Lambda_Theta", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("PROD_GAMMA", "LM_prod_gamma", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("PROD_RE_THETA_T", "LM_prod_re_theta_t", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DESTR_GAMMA", "LM_destr_gamma", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("PROD_NU_TILDE", "SA_prod_nu_tilde", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DESTR_NU_TILDE", "SA_destr_nu_tilde", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("TI", "LM_TI", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("THETA_T", "LM_THETA_T", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DIST", "distance", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DU_DS", "Du_Ds", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DU_DX", "Du_Dx", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DU_DY", "Du_Dy", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("DU_DZ", "Du_Dz", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("U", "U_Mag", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("UX", "U_x", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("UY", "U_y", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("UZ", "U_z", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("LAMBDATHETA_L", "LambdaTheta_L", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("TU_L", "TU_L", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("FPG", "FPG", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("RETHETAC_CORR", "ReThetaC_Corr", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("RETHETAC_CORR_NEW", "ReThetaC_Corr_new", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("STRAINMAG", "StrainMag", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("VORTMAG", "VorticityMag", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("K", "K", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("W", "W", "DEBUG", "LM RE_THETA_T");
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
   }
 }
 
@@ -947,6 +1075,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
       AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
   }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC: break;
+    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM2015:
+      AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
+      AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
+      break;
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
@@ -1002,8 +1142,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
 void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
+  const auto* trans_solver = solver[TRANS_SOL];
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
+  const auto* Node_Trans = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
 
   if (config->GetViscous()) {
@@ -1047,9 +1189,72 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::BC:
+      SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittency(iPoint));
+      SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
+      SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
+      SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
+      break;
+    case TURB_TRANS_MODEL::LM2015:
+      SetVolumeOutputValue("RE_THETA_T_SCF", iPoint, Node_Trans->GetReThetat_SCF(iPoint));
+      SetVolumeOutputValue("F_THETA_T_2", iPoint, Node_Trans->GetF_thetat_2(iPoint));
+    case TURB_TRANS_MODEL::LM:
+      SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
+      SetVolumeOutputValue("RE_THETA_T_EQ", iPoint, Node_Trans->Getrethetat_eq(iPoint));
+      SetVolumeOutputValue("RE_THETA_C", iPoint, Node_Trans->Getrethetac(iPoint));
+      SetVolumeOutputValue("RE_V", iPoint, Node_Trans->GetreV(iPoint));
+      SetVolumeOutputValue("RE_W", iPoint, Node_Trans->Getrew(iPoint));
+      SetVolumeOutputValue("R_T", iPoint, Node_Trans->GetR_T(iPoint));
+      SetVolumeOutputValue("DELTA", iPoint, Node_Trans->Getdelta_param(iPoint));
+      SetVolumeOutputValue("F_THETA_T", iPoint, Node_Trans->GetF_thetat(iPoint));
+      SetVolumeOutputValue("F_WAKE", iPoint, Node_Trans->GetF_wake(iPoint));
+      SetVolumeOutputValue("F_REATTACH", iPoint, Node_Trans->GetF_Reattach(iPoint));
+      SetVolumeOutputValue("F_LENGTH", iPoint, Node_Trans->GetF_length(iPoint));
+      SetVolumeOutputValue("F_LENGTH_1", iPoint, Node_Trans->GetF_length1(iPoint));
+      SetVolumeOutputValue("F_SUBLAYER", iPoint, Node_Trans->GetF_sublayer(iPoint));
+      SetVolumeOutputValue("F_ONSET", iPoint, Node_Trans->GetF_onset(iPoint));
+      SetVolumeOutputValue("F_LAMBDA", iPoint, Node_Trans->GetF_lambda(iPoint));
+      SetVolumeOutputValue("F_LAMBDA_NEW", iPoint, Node_Trans->GetF_Lambda_New(iPoint));
+      SetVolumeOutputValue("LAMBDA_THETA", iPoint, Node_Trans->Getlambda_theta(iPoint));
+      SetVolumeOutputValue("T_PARAM", iPoint, Node_Trans->GetT(iPoint));
+      SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint,Node_Trans->GetGammaSep(iPoint));
+      SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint,Node_Trans->GetGammaEff(iPoint));
+      SetVolumeOutputValue("PROD_GAMMA", iPoint, Node_Trans->GetProductionGamma(iPoint));
+      SetVolumeOutputValue("PROD_RE_THETA_T", iPoint,Node_Trans->GetProductionReTheta(iPoint));
+      SetVolumeOutputValue("DESTR_GAMMA", iPoint,Node_Trans->GetDestructionGamma(iPoint));
+      SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
+      SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
+      SetVolumeOutputValue("TI", iPoint,Node_Trans->GetTurb_Intens(iPoint));
+      SetVolumeOutputValue("THETA_T", iPoint,Node_Trans->Getthetat(iPoint));
+      SetVolumeOutputValue("DIST", iPoint,Node_Trans->GetDist(iPoint));
+      SetVolumeOutputValue("DU_DS", iPoint,Node_Trans->GetdU_ds(iPoint));
+      SetVolumeOutputValue("DU_DX", iPoint,Node_Trans->Getdu_dx(iPoint));
+      SetVolumeOutputValue("DU_DY", iPoint,Node_Trans->Getdu_dy(iPoint));
+      SetVolumeOutputValue("DU_DZ", iPoint,Node_Trans->Getdu_dz(iPoint));
+      SetVolumeOutputValue("U", iPoint,Node_Trans->GetVelocity_Mag(iPoint));
+      SetVolumeOutputValue("UX", iPoint,Node_Trans->GetUx(iPoint));
+      SetVolumeOutputValue("UY", iPoint,Node_Trans->GetUy(iPoint));
+      SetVolumeOutputValue("UZ", iPoint,Node_Trans->GetUz(iPoint));
+      SetVolumeOutputValue("LAMBDATHETA_L", iPoint,Node_Trans->GetLambdaTheta_L(iPoint));
+      SetVolumeOutputValue("TU_L", iPoint,Node_Trans->GetTU_L(iPoint));
+      SetVolumeOutputValue("FPG", iPoint,Node_Trans->GetFPG(iPoint));
+      SetVolumeOutputValue("RETHETAC_CORR", iPoint,Node_Trans->GetReThetaC_Corr(iPoint));
+      SetVolumeOutputValue("RETHETAC_CORR_NEW", iPoint,Node_Trans->GetReThetaC_Corr_New(iPoint));
+      SetVolumeOutputValue("STRAINMAG", iPoint,Node_Flow->GetStrainMag(iPoint));
+      SetVolumeOutputValue("VORTMAG", iPoint, GeometryToolbox::Norm(3, Node_Flow->GetVorticity(iPoint)));
+      SetVolumeOutputValue("K", iPoint, Node_Trans->Getk(iPoint));
+      SetVolumeOutputValue("W", iPoint, Node_Trans->Getw(iPoint));
+      SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
+      SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
+
+      break;
+
+    case TURB_TRANS_MODEL::NONE: break;
   }
+
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
@@ -1851,6 +2056,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const bool gravity = config->GetGravityForce();
   const TURB_MODEL Kind_Turb_Model = config->GetKind_Turb_Model();
   const bool turbulent = Kind_Turb_Model != TURB_MODEL::NONE;
+  const TURB_TRANS_MODEL Kind_Trans_Model = config->GetKind_Trans_Model();
+  const bool transition = Kind_Trans_Model != TURB_TRANS_MODEL::NONE;
   const bool fixed_cl = config->GetFixed_CL_Mode();
   const auto Kind_Solver = config->GetKind_Solver();
   const auto Ref_NonDim = config->GetRef_NonDim();
@@ -2102,6 +2309,19 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_MODEL::SST_SUST:
           file << "Menter's SST with sustaining terms\n";
           break;
+      }
+      if(transition) {
+        file << "Transition model: ";
+        switch (Kind_Trans_Model) {
+        case TURB_TRANS_MODEL::NONE: break;
+        case TURB_TRANS_MODEL::BC: break;
+        case TURB_TRANS_MODEL::LM:
+          file << "Langtry and Menter's transition (2009)\n";
+          break;
+        case TURB_TRANS_MODEL::LM2015:
+          file << "Langtry and Menter's transition (2015)\n";
+          break;
+        }
       }
       break;
     default:

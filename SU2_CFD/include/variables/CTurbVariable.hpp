@@ -41,6 +41,7 @@ protected:
 
 public:
   static constexpr size_t MAXNVAR = 2;
+  VectorType turb_index;
 
   /*!
    * \brief Constructor of the class.

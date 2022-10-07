@@ -580,6 +580,11 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
   }
   END_SU2_OMP_FOR
 
+//  if(config->dummyVar == TRANS_SOL)
+//    for (int j = 0; j < LinSysRes.GetLocSize(); ++j) {
+//      cout << "LinSysRes[" << j << "] = " << LinSysRes[j] << endl;
+//    }
+
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   SU2_OMP_MASTER {
@@ -998,6 +1003,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
@@ -1034,7 +1040,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
   /*--- The value of the solution for the first iteration of the dual time ---*/
 
   if (dual_time && TimeIter == config->GetRestart_Iter()) {
-    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
+    PushSolutionBackInTime(TimeIter, restart, rans, transition, solver_container, geometry, config);
   }
 
   }
@@ -1042,8 +1048,10 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
 }
 
+// Aggiunto da me
+// Da modificare per rendere instazionario anche il TRANS_SOL
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans,
+void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans, bool transition,
                                                       CSolver*** solver_container, CGeometry** geometry,
                                                       CConfig* config) {
   /*--- Push back the initial condition to previous solution containers
@@ -1055,6 +1063,11 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
+
+      if(transition){
+        solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n();
+        solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n1();
+      }
     }
 
     if (dynamic_grid) {
@@ -1078,11 +1091,15 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     if (rans)
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
+    if (transition)
+      solver_container[MESH_0][TRANS_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
+
     /*--- Push back this new solution to time level N. ---*/
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
       if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      if (transition) solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n();
 
       geometry[iMesh]->nodes->SetVolume_n();
       if (config->GetGrid_Movement()) geometry[iMesh]->nodes->SetCoord_n();

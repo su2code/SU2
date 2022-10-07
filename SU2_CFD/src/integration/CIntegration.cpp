@@ -66,6 +66,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Compute source term residuals ---*/
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
+//  if(MainSolver == TRANS_SOL)
+//    for (int j = 0; j < solver_container[MainSolver]->LinSysRes.GetLocSize(); ++j) {
+//      cout << "solver_container[MainSolver]->LinSysRes[" << j << "] = " << solver_container[MainSolver]->LinSysRes[j] << endl;
+//    }
+
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
 
   if (dual_time)
@@ -205,7 +210,9 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
       solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
       break;
     case (EULER_IMPLICIT):
+      config->dummyVar = MainSolver;
       solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+      config->dummyVar = 200;
       break;
   }
 

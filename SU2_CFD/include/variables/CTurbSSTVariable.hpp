@@ -44,6 +44,9 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
+  bool transition;
+  VectorType turb_index;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -86,4 +89,15 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+  /*!
+    * \brief Set the value of the turbulence index.
+    */
+  inline void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) override { turb_index(iPoint) = val_turb_index; }
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   */
+  inline su2double GetTurbIndex(unsigned long iPoint) const override { return turb_index(iPoint); }
+
 };

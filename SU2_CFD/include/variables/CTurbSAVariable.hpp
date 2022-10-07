@@ -39,9 +39,12 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
+  VectorType intermittency;         /*!< \brief Value of the intermittency for the BC trans. model. */
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
+
+  VectorType Production;
+  VectorType Destruction;
 
 public:
   /*!
@@ -66,14 +69,14 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the intermittency of the BC transition model.
    */
-  inline su2double GetGammaBC(unsigned long iPoint) const override { return gamma_BC(iPoint); }
+  inline su2double GetIntermittency(unsigned long iPoint) const override { return intermittency(iPoint); }
 
   /*!
    * \brief Set the intermittency of the BC transition model.
    * \param[in] iPoint - Point index.
    * \param[in] val_gamma - New value of the intermittency.
    */
-  inline void SetGammaBC(unsigned long iPoint, su2double val_gamma) override { gamma_BC(iPoint) = val_gamma; }
+  inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) override { intermittency(iPoint) = val_intermittency; }
 
   /*!
    * \brief Get the DES length scale
@@ -101,5 +104,20 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
+  inline void SetProductionTerm(unsigned long iPoint, su2double val_production) override {Production(iPoint) = val_production;}
+  inline void SetDestructionTerm(unsigned long iPoint, su2double val_destruction) override {Destruction(iPoint) = val_destruction;}
+  inline su2double GetProductionTerm(unsigned long iPoint) const override { return Production(iPoint); }
+  inline su2double GetDestructionTerm(unsigned long iPoint) const override { return Destruction(iPoint); }
+
+  /*!
+    * \brief Set the value of the turbulence index.
+   */
+  inline void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) override { turb_index(iPoint) = val_turb_index; }
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   */
+  inline su2double GetTurbIndex(unsigned long iPoint) const override { return turb_index(iPoint); }
 
 };

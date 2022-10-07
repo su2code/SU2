@@ -414,6 +414,11 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 
   /*--- Solve or smooth the linear system. ---*/
 
+//  if(config->dummyVar == TRANS_SOL)
+//    for (int j = 0; j < LinSysRes.GetLocSize(); ++j) {
+//      cout << "LinSysRes[" << j << "] = " << LinSysRes[j] << endl;
+//    }
+
   SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     LinSysRes.SetBlock_Zero(iPoint);

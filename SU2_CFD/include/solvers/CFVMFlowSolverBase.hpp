@@ -261,7 +261,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Move solution to previous time levels (for restarts).
    */
-  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans, CSolver*** solver_container,
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans, bool transition, CSolver*** solver_container,
                               CGeometry** geometry, CConfig* config);
 
   /*!

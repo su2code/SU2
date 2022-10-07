@@ -2877,6 +2877,19 @@ public:
                                        unsigned short val_dim,
                                        su2double val_turb_var) { }
 
+
+  /*!
+   * \brief A virtual member
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the transition variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the transition variable to be used.
+   */
+  inline virtual void SetInlet_TransVar(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short val_dim,
+                                       su2double val_trans_var) { }
+
   /*!
    * \brief A virtual member
    * \param[in] config - Definition of the particular problem.
@@ -3147,6 +3160,18 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
+
+  /*!
+    * \brief Get the value of the intermittency.
+    * \return Value of the intermittency.
+   */
+  inline virtual su2double GetIntermittency_Inf(void) const {return 0.0;};
+
+  /*!
+     * \brief Get the value of the Re_theta_t.
+     * \return Value of the Re_theta_t.
+   */
+  inline virtual su2double GetRethetat_Inf(void) const {return 0.0;};
 
   /*!
    * \brief A virtual member.
@@ -4415,5 +4440,10 @@ protected:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
+
+
+
+
+
 
 };

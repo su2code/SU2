@@ -478,7 +478,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the transition model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
@@ -964,12 +964,36 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  LM2015,    /*!< \brief Kind of transition model (Langtry-Menter w cross-flow effects (LM-2015) for SST and Spalart-Allmaras). */
   BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("LM2015", TURB_TRANS_MODEL::LM2015)
   MakePair("BC", TURB_TRANS_MODEL::BC)
+};
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class TURB_TRANS_CORRELATION {
+  MALAN,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  SULUKSNA,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  KRAUSE,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  MEDIDA_BAEDER,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  MEDIDA,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  MENTER_LANGTRY,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  DEFAULT
+};
+static const MapType<std::string, TURB_TRANS_CORRELATION> Trans_Correlation_Map = {
+    MakePair("MALAN", TURB_TRANS_CORRELATION::MALAN)
+    MakePair("SULUKSNA", TURB_TRANS_CORRELATION::SULUKSNA)
+    MakePair("KRAUSE", TURB_TRANS_CORRELATION::KRAUSE)
+    MakePair("MEDIDA_BAEDER", TURB_TRANS_CORRELATION::MEDIDA_BAEDER)
+    MakePair("MEDIDA", TURB_TRANS_CORRELATION::MEDIDA)
+    MakePair("MENTER_LANGTRY", TURB_TRANS_CORRELATION::MENTER_LANGTRY)
+    MakePair("DEFAULT", TURB_TRANS_CORRELATION::DEFAULT)
 };
 
 /*!

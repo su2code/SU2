@@ -1,8 +1,8 @@
 /*!
- * \file CTurbSolver.hpp
- * \brief Headers of the CTurbSolver class
+ * \file CTransSolver.hpp
+ * \brief Headers of the CTransSolver class
  * \author A. Bueno.
- * \version 7.3.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,20 +28,19 @@
 #pragma once
 
 #include "CScalarSolver.hpp"
-#include "../variables/CTurbVariable.hpp"
+#include "../variables/CTransLMVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
- * \class CTurbSolver
- * \brief Main class for defining the turbulence model solver.
+ * \class CTransSolver
+ * \brief Main class for defining the transition model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbSolver : public CScalarSolver<CTurbVariable> {
+class CTransSolver : public CScalarSolver<CTransLMVariable> {
 protected:
 
-  vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
-  vector<su2activematrix> Inlet_TransVars;  /*!< \brief Turbulence variables at inlet profiles */
+  vector<su2activematrix> Inlet_TransVars;  /*!< \brief Transition variables at inlet profiles */
 
   /*--- Sliding meshes variables. ---*/
 
@@ -53,14 +52,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSolver() override;
+  ~CTransSolver() override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
+  CTransSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -213,10 +212,10 @@ public:
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
-  inline void SetInlet_TurbVar(unsigned short val_marker,
+  inline void SetInlet_TransVar(unsigned short val_marker,
                                unsigned long val_vertex,
                                unsigned short val_dim,
-                               su2double val_turb_var) final {
+                               su2double val_trans_var) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -224,9 +223,9 @@ public:
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else if (val_dim >= nVar)
-      SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Out-of-bounds index used for inlet transition variable.", CURRENT_FUNCTION);
     else
-      Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+      Inlet_TransVars[val_marker][val_vertex][val_dim] = val_trans_var;
   }
 
 };

@@ -252,6 +252,53 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   }
   END_SU2_OMP_FOR
 
+  if(config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX:
+        case HEAT_TRANSFER:
+          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+            /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+            if (geometry->nodes->GetDomain(iPoint)) {
+              const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+              su2double FrictionVelocity = 0.0;
+              if(nDim == 2){
+                su2double shearStress = 0.0;
+                for(auto iDim = 0u; iDim < nDim; iDim++) {
+                  shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
+                }
+                shearStress = sqrt(shearStress);
+
+                FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+              } else {
+                su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+                FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
+              }
+
+              su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+
+              su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
+
+
+              su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
+
+              nodes->SetTurbIndex(iPoint, turbulence_index);
+
+            }
+          }
+          END_SU2_OMP_FOR
+          break;
+      }
+  }
+
   AD::EndNoSharedReading();
 }
 
@@ -276,6 +323,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
+  const bool transition_LM = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -341,15 +389,30 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     }
 
+    /*--- Store the intermittency ---*/
+
+    if (transition_BC) {
+      nodes->SetIntermittency(iPoint,numerics->GetIntermittency());
+    }
+    if (transition_LM) {
+      numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
+      nodes->SetIntermittency(iPoint,numerics->GetIntermittency());
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Store the intermittency ---*/
+    if (transition_LM || transition_BC) {
 
-    if (transition_BC) {
-      nodes->SetGammaBC(iPoint,numerics->GetGammaBC());
+          nodes->SetProductionTerm(iPoint, numerics->getProductionTerm());
+          nodes->SetDestructionTerm(iPoint, numerics->getDestructionTerm());
+
     }
+
+
+//    cout << nodes->GetmuT(iPoint) << endl;
 
     /*--- Subtract residual and the Jacobian ---*/
 

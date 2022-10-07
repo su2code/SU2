@@ -422,6 +422,7 @@ private:
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
   su2double
   CFLRedCoeff_Turb,            /*!< \brief CFL reduction coefficient on the LevelSet problem. */
+  CFLRedCoeff_Trans,           /*!< \brief CFL reduction coefficient on the LevelSet transition problem. */
   CFLRedCoeff_AdjFlow,         /*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,         /*!< \brief CFL reduction coefficient for the adjoint turbulent problem. */
   CFLRedCoeff_Species,         /*!< \brief CFL reduction coefficient on the species problem. */
@@ -577,6 +578,9 @@ private:
   SPECIES_MODEL Kind_Species_Model; /*!< \brief Species model definition. */
   TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
+  TURB_TRANS_CORRELATION Kind_Trans_Correlation;  /*!< \brief Transition model definition. */
+  su2double hRoughness;
+  bool ConvertSA2SST;
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
@@ -1317,6 +1321,9 @@ private:
   void addPythonOption(const string name);
 
 public:
+
+ int dummyVar;
+ bool isTransition = false;
 
   /*!
    * \brief Tags for the different fields in a restart file.
@@ -4296,9 +4303,27 @@ public:
 
   /*!
    * \brief Get the kind of the transition model.
-   * \return Kind of the transion model.
+   * \return Kind of the transition model.
    */
   TURB_TRANS_MODEL GetKind_Trans_Model(void) const { return Kind_Trans_Model; }
+
+  /*!
+   * \brief Get the kind of the transition correlations.
+   * \return Kind of the transition correlation.
+   */
+  TURB_TRANS_CORRELATION GetKind_Trans_Correlation(void) const { return Kind_Trans_Correlation; }
+
+  /*!
+   * \brief Get if SA has to be converted into SST.
+   * \return True or False.
+   */
+  bool GetConvertSA2SST(void) const { return ConvertSA2SST; }
+
+  /*!
+   * \brief Get h roughness from config
+   * \return Value of roughness.
+   */
+  su2double GethRoughness(void) const { return hRoughness; }
 
   /*!
    * \brief Get the kind of the species model.
@@ -6634,6 +6659,14 @@ public:
    * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
+
+  // Aggiunta da me
+  /*!
+   * \brief Value of the CFL reduction in LevelSet problems.
+   * \return Value of the CFL reduction in LevelSet problems.
+   */
+  su2double GetCFLRedCoeff_Trans(void) const { return CFLRedCoeff_Trans; }
+
 
   /*!
    * \brief Value of the CFL reduction in species problems.

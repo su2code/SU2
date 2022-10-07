@@ -52,7 +52,10 @@ struct CSAVariables {
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
 
   /*--- List of helpers ---*/
-  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad, gamma_bc;
+  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
+
+  su2double intermittency, interDestrFactor;
+
 };
 
 /*!
@@ -64,7 +67,9 @@ struct CSAVariables {
 template <class FlowIndices, class Omega, class ft2, class ModVort, class rFunc, class SourceTerms>
 class CSourceBase_TurbSA : public CNumerics {
  protected:
-  su2double Gamma_BC = 0.0;
+  su2double Intermittency = 0.0;
+  su2double Intermittency_Eff = 0.0;
+  su2double Production, Destruction;
 
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
@@ -73,6 +78,8 @@ class CSourceBase_TurbSA : public CNumerics {
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const bool rotating_frame = false;
   const bool transition = false;
+  const bool transition_LM = false;
+  const bool transition_BC = false;
 
  public:
   /*!
@@ -84,7 +91,8 @@ class CSourceBase_TurbSA : public CNumerics {
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         rotating_frame(config->GetRotating_Frame()),
-        transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015),
+        transition_BC(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -94,7 +102,23 @@ class CSourceBase_TurbSA : public CNumerics {
    * \brief Get the intermittency for the BC transition model.
    * \return Value of the intermittency.
    */
-  su2double GetGammaBC() const final { return Gamma_BC; }
+  su2double GetIntermittency() const final { return Intermittency; }
+
+  /*!
+   * \brief Set the intermittency for the LM transition model.
+   * \return Value of the intermittency.
+   */
+  void SetIntermittency(su2double val_intermittency) override {
+    Intermittency = val_intermittency;
+  }
+
+  /*!
+   * \brief Set the effective intermittency for the LM transition model.
+   * \return Value of the intermittency.
+   */
+  void SetIntermittencyEff(su2double val_intermittency_eff) override {
+    Intermittency_Eff = val_intermittency_eff;
+  }
 
   /*!
    * \brief Residual for source term integration.
@@ -173,7 +197,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
-      if (transition) {
+      if (transition_BC) {
         /*--- BC transition model (2020 revision). This should only be used with SA-noft2.
          * TODO: Consider making this part of the "SourceTerms" template. ---*/
         const su2double chi_1 = 0.002;
@@ -188,22 +212,46 @@ class CSourceBase_TurbSA : public CNumerics {
         /*--- Menter correlation. ---*/
         const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);
 
+//        cout << "re_theta_t = " << re_theta_t << endl;
+
         const su2double term1 = sqrt(max(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
         const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
         const su2double term_exponential = (term1 + term2);
 
-        Gamma_BC = 1.0 - exp(-term_exponential);
-        var.gamma_bc = Gamma_BC;
-      } else {
+
+        Intermittency = 1.0 - exp(-term_exponential);
+
+        var.intermittency = Intermittency;
+        var.interDestrFactor = 1;
+
+
+      } else if (transition_LM){
+
+        var.intermittency = Intermittency_Eff;
+        //var.intermittency = 1.0;
+        // Is wrong the reference from NASA?
+        // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
+        var.interDestrFactor = min(max(Intermittency_Eff, 0.5), 1.0);
+//        var.interDestrFactor = 1;
+        //        var.interDestrFactor = min(max(Intermittency_Eff, 0.5), 1.0);
+//        var.interDestrFactor = max(min(Intermittency, 0.5), 1.0);
+
+      }
+      else{
         /*--- Do not modify the production. ---*/
-        var.gamma_bc = 1.0;
+        var.intermittency = 1.0;
+        var.interDestrFactor = 1.0;
       }
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
+//      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
+      su2double ProductionHere = 0.0, DestructionHere = 0.0, CrossProduction = 0.0;
+      SourceTerms::get(ScalarVar_i[0], var, ProductionHere, DestructionHere, CrossProduction, Jacobian_i[0]);
 
-      Residual = (Production - Destruction + CrossProduction) * Volume;
+      Production = ProductionHere;
+      Destruction = DestructionHere;
+
+      Residual = (ProductionHere - DestructionHere + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
     }
 
@@ -212,6 +260,11 @@ class CSourceBase_TurbSA : public CNumerics {
 
     return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
+
+
+  inline su2double getProductionTerm() override {return Production;}
+  inline su2double getDestructionTerm() override {return Destruction;}
+
 };
 
 namespace detail {
@@ -382,7 +435,7 @@ struct Bsl {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double factor = var.gamma_bc * var.cb1;
+    const su2double factor = var.intermittency * var.cb1;
     production = factor * (1.0 - var.ft2) * var.Shat * nue;
     jacobian += factor * (-var.Shat * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Shat));
   }
@@ -390,9 +443,11 @@ struct Bsl {
   static void ComputeDestruction(const su2double& nue, const CSAVariables& var, su2double& destruction,
                                  su2double& jacobian) {
     const su2double cb1_k2 = var.cb1 / var.k2;
-    const su2double factor = var.cw1 * var.fw - cb1_k2 * var.ft2;
-    destruction = factor * pow(nue, 2) / var.dist_i_2;
-    jacobian -= ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
+    const su2double factor =  (var.cw1 * var.fw - cb1_k2 * var.ft2);
+//    const su2double factor = var.interDestrFactor * (var.cw1 * var.fw );
+
+    destruction =  var.interDestrFactor * factor * pow(nue, 2) / var.dist_i_2;
+    jacobian -=  var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
@@ -417,7 +472,7 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double dP_dnu = var.gamma_bc * var.cb1 * (1.0 - var.ct3) * var.S;
+    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.S;
     production = dP_dnu * nue;
     jacobian += dP_dnu;
   }
@@ -426,8 +481,8 @@ struct Neg {
                                  su2double& jacobian) {
     /*--- The destruction when nue < 0 is added instead of the usual subtraction, hence the negative sign. ---*/
     const su2double dD_dnu = -var.cw1 * nue / var.dist_i_2;
-    destruction = dD_dnu * nue;
-    jacobian -= 2 * dD_dnu;
+    destruction = dD_dnu * nue * var.interDestrFactor;
+    jacobian -= 2 * dD_dnu * var.interDestrFactor;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
@@ -445,6 +500,11 @@ struct Neg {
  * \class CCompressibilityCorrection
  * \brief Mixing Layer Compressibility Correction (SA-comp).
  */
+
+//######################################################################################################################
+// Va anche qui l'intermittenza????
+//######################################################################################################################
+
 template <class ParentClass>
 class CCompressibilityCorrection final : public ParentClass {
  private:
@@ -561,12 +621,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const bool sustaining_terms = false;
   const bool axisymmetric = false;
+  bool transition;
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
+
+
+  su2double intermittency, Re_V;
 
   su2double F1_i, F2_i, CDkw_i;
   su2double Residual[2];
@@ -639,6 +703,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         idx(val_nDim, config->GetnSpecies()),
         sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
         axisymmetric(config->GetAxisymmetric()),
+        transition((config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
         sigma_w_1(constants[2]),
@@ -650,7 +715,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         alfa_1(constants[8]),
         alfa_2(constants[9]),
         kAmb(val_kine_Inf),
-        omegaAmb(val_omega_Inf) {
+        omegaAmb(val_omega_Inf),
+        intermittency(1.0),
+        Re_V(0.0) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
@@ -679,6 +746,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
    */
   inline void SetCrossDiff(su2double val_CDkw_i) override {
     CDkw_i = val_CDkw_i;
+  }
+
+  inline void SetIntermittency(su2double val_intermittency) override {
+    intermittency = val_intermittency;
+  }
+
+  inline void SetReV(su2double Re_V_in) override {
+    Re_V = Re_V_in;
   }
 
   /*!
@@ -735,6 +810,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
@@ -754,19 +830,49 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
+      if(transition){
+        pk = pk * intermittency;
+      }
+
+      // Add an extra production term for lower values of FSTI
+      // Eq 25-26-27-28 https://doi.org/10.1007/s10494-015-9622-4
+
+      su2double PkLim = 0.0;
+      bool AddFurtherProduction = true;
+
+      if(AddFurtherProduction){
+        su2double ReThetaCLim = 1100.0;
+        su2double Ck = 1.0;
+        su2double C_sep = 1.0;
+
+        su2double F_Lim_On = min( max(Re_V / (2.2*ReThetaCLim) - 1.0, 0.0) , 3.0);
+
+        PkLim = 5*Ck * max(intermittency-0.2, 0.0)*(1-intermittency)* F_Lim_On;
+        PkLim = PkLim * max(3*C_sep * Laminar_Viscosity_i - Eddy_Viscosity_i, 0.0) * StrainMag * VorticityMag;
+      }
+
+
       /*--- Add the production terms to the residuals. ---*/
 
-      Residual[0] += pk * Volume;
+      Residual[0] += (pk + PkLim) * Volume;
       Residual[1] += pw * Volume;
 
       /*--- Dissipation ---*/
+      // aggiunto da me
+      su2double DestructionTransMultiplier = 1.0;
+      if(transition){
+        DestructionTransMultiplier = min(max(intermittency, 0.1), 1.0);
+      }
 
-      Residual[0] -= beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Volume;
+      Residual[0] -= DestructionTransMultiplier*beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Volume;
       Residual[1] -= beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * Volume;
 
       /*--- Cross diffusion ---*/
 
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+
+//      cout << "Turb Source Residual[0] = " << Residual[0] << endl;
+//      cout << "Turb Source Residual[1] = " << Residual[1] << endl;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
@@ -774,8 +880,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
-      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
+      Jacobian_i[0][0] = -DestructionTransMultiplier*beta_star * ScalarVar_i[1] * Volume;
+      Jacobian_i[0][1] = -DestructionTransMultiplier*beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
     }

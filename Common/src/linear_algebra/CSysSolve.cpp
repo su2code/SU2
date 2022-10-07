@@ -387,6 +387,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType norm0 = b.norm();
 
+//  if(master){
+//    for (int j = 0; j < x.GetLocSize(); ++j) {
+//      cout << "x[" << j << "] = " << x[j] << endl;
+//    }
+//  }
+
+
   /*--- Calculate the initial residual (actually the negative residual) and compute its norm. ---*/
 
   if (!xIsZero) {
@@ -399,6 +406,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
 
+//  if(master)
+//    cout << "beta = " << beta << endl;
+
   /*--- Set the norm to the initial initial residual value ---*/
 
   if (tol_type == LinearToleranceType::RELATIVE) norm0 = beta;
@@ -407,7 +417,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*--- System is already solved ---*/
 
-    if (master) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (master) {
+      cout << "CSysSolve::FGMRES(): system solved by initial guess. beta = " << beta  << " norm0 = " << norm0 << endl;
+    }
     residual = beta;
     return 0;
   }

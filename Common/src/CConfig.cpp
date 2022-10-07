@@ -1091,6 +1091,12 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
+  /*!\brief KIND_TRANS_CORRELATION \n DESCRIPTION: Specify transition correlation OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: MENTER_LANGTRY \ingroup Config*/
+  addEnumOption("KIND_TRANS_CORRELATION", Kind_Trans_Correlation, Trans_Correlation_Map, TURB_TRANS_CORRELATION::DEFAULT);
+  /*!\brief CONVERTSA2SST \n DESCRIPTION: Define if SA has to be converted into SST for transition \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("CONVERTSA2SST", ConvertSA2SST, NO);
+  addDoubleOption("HROUGHNESS", hRoughness, 0.0);
+
 
   /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
@@ -1680,6 +1686,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set transition problem */
+  addDoubleOption("CFL_REDUCTION_TRANS", CFLRedCoeff_Trans, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /*!\brief CFL_REDUCTION_SPECIES \n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \n DEFAULT: 1.0 */
@@ -3395,6 +3403,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM2015 && val_nDim == 2){
+    SU2_MPI::Error("LM2015 Transition model should be used only with 3D meshes", CURRENT_FUNCTION);
+
+  }
+
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST){
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST or SST_SUST", CURRENT_FUNCTION);
@@ -4576,9 +4589,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
 
-  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
-    SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
-  }
+//  if ( Kind_Trans_Model == TURB_TRANS_MODEL::LM ) {
+//    if(Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST)
+//      SU2_MPI::Error("LM transition model currently only available in combination with SST turbulence model.", CURRENT_FUNCTION);
+//  }
 
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
@@ -5866,7 +5880,32 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
-        if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
+        if(Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+          cout << "Transition model: ";
+          switch (Kind_Trans_Model) {
+            case TURB_TRANS_MODEL::LM: cout << "Langtry-Menter Gamma-ReTheta (2009)" << endl;  break;
+            case TURB_TRANS_MODEL::LM2015: cout << "Langtry-Menter Gamma-ReTheta (2015)" << endl; cout << "Roughness value = " << hRoughness << endl; break;
+            case TURB_TRANS_MODEL::BC: cout << "revised BC (2020)" << endl;  break;
+          }
+          if(Kind_Trans_Model == TURB_TRANS_MODEL::LM || Kind_Trans_Model == TURB_TRANS_MODEL::LM2015){
+
+            if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::SA)
+              Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
+            if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::KW)
+              Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+
+            cout << "Correlation Functions: ";
+            switch (Kind_Trans_Correlation) {
+              case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+            }
+          }
+        }
+
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;

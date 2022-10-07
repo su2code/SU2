@@ -83,6 +83,7 @@ public:
    * \return The eddy viscosity of the flow.
    */
   inline su2double GetEddyViscosity(unsigned long iPoint) const override {
+//    cout << indices.EddyViscosity() << " " << Primitive(iPoint, indices.EddyViscosity()) << endl;
     return Primitive(iPoint, indices.EddyViscosity());
   }
 

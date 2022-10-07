@@ -133,8 +133,8 @@ protected:
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
-  *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
-  *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
+  *TransVar_i,  /*!< \brief Vector of transition variables at point i. */
+  *TransVar_j;  /*!< \brief Vector of transition variables at point j. */
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
@@ -1425,7 +1425,14 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double GetGammaBC(void) const { return 0.0; }
+  inline virtual su2double GetIntermittency(void) const { return 0.0; }
+//  inline virtual su2double GetGammaBC(void) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void SetIntermittencyEff(su2double val_intermittency) { }
+
 
   /*!
    * \brief A virtual member to compute the tangent matrix in structural problems
@@ -1598,6 +1605,32 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+
+
+  virtual inline void SetF_length(su2double val_F_length_i, su2double val_F_length_j) { }
+  virtual inline void SetF_onset(su2double val_F_onset_i, su2double val_F_onset_j) { }
+  virtual inline void SetF_thetat(su2double val_F_thetat_i, su2double val_F_thetat_j) { }
+  virtual inline void SetF_turb(su2double val_F_turb_i, su2double val_F_turb_j) { }
+  virtual inline void SetF_wake(su2double val_F_wake_i, su2double val_F_wake_j) { }
+  virtual inline void Setrethetat_eq(su2double val_rethetat_eq_i, su2double val_rethetat_eq_j) { }
+  virtual inline void SetT_param(su2double val_T_param_i, su2double val_T_param_j) { }
+  virtual inline void Setdelta_param(su2double val_delta_param_i, su2double val_delta_param_j) { }
+  virtual inline void SetU_mag(su2double val_U_mag_i, su2double val_U_mag_j) { }
+  virtual inline void SetReThetat_SCF(su2double val_ReThetat_SCF_i, su2double val_ReThetat_SCF_j) { }
+  virtual void SetF_thetat_2(su2double val_F_thetat_2_i, su2double val_F_thetat_2_j) { }
+
+  /*!
+   * \brief Set intermittency for numerics (used in SST with LM transition model)
+   */
+  inline virtual void SetIntermittency(su2double intermittency_in) { }
+  inline virtual void SetReV(su2double Re_V_in) { }
+
+
+  inline virtual su2double getProductionTerm() {return 0.0;}
+  inline virtual su2double getDestructionTerm() {return 0.0;}
+
+
 };
 
 /*!

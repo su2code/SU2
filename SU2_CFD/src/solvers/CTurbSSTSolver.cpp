@@ -188,6 +188,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -237,7 +238,52 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   END_SU2_OMP_FOR
 
+  if(config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX:
+        case HEAT_TRANSFER:
+          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+            /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+            if (geometry->nodes->GetDomain(iPoint)) {
+              const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+              su2double shearStress = 0.0;
+              for(auto iDim = 0u; iDim < nDim; iDim++) {
+                shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
+              }
+              shearStress = sqrt(shearStress);
+
+              su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+
+              su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+
+              su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
+
+
+
+              su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
+
+              nodes->SetTurbIndex(iPoint, turbulence_index);
+
+            }
+          }
+          END_SU2_OMP_FOR
+          break;
+      }
+  }
+
   AD::EndNoSharedReading();
+
+
+
 }
 
 void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
@@ -247,6 +293,7 @@ void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Menter's first blending function (only SST)---*/
     numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
+
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
@@ -265,6 +312,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Pick one numerics object per thread. ---*/
   auto* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  const bool transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
 
   /*--- Loop over all points. ---*/
 
@@ -307,6 +356,13 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
+
+    /*--- Intermittency from transition ---*/
+    if (transition) {
+//      cout << "intermittency = " << solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint) << endl;
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
+      numerics->SetReV(solver_container[TRANS_SOL]->GetNodes()->GetreV(iPoint));
+    }
 
     /*--- Cross diffusion ---*/
 
