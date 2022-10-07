@@ -821,7 +821,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
-      if (axisymmetric) ResidualAxisymmetric(alfa_blended, zeta);
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
 
       /*--- Implicit part ---*/
 
