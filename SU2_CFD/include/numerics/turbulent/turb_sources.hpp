@@ -633,8 +633,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     /*--- Add terms to the residuals ---*/
  
-    Residual[0] += yinv * Volume * ( - cdk_axi);
-    Residual[1] += yinv * Volume * ( - cdw_axi);
+    Residual[0] -= yinv * Volume * cdk_axi;
+    Residual[1] -= yinv * Volume * cdw_axi;
   }
 
  public:
