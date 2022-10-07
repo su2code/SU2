@@ -2,7 +2,7 @@
  * \file CSpeciesSolver.hpp
  * \brief Headers of the CSpeciesSolver class
  * \author T. Kattmann.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,9 +32,9 @@
 #include "CScalarSolver.hpp"
 
 /*!
- * \class CSpeciesSolver
  * \brief Main class for defining the species transport solver.
  * \author T. Kattmann.
+ * \ingroup Scalar_Transport
  */
 class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:

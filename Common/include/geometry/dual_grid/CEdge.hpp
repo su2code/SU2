@@ -2,7 +2,7 @@
  * \file CEdge.hpp
  * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,6 +43,7 @@ private:
   using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
   NodeArray Nodes;           /*!< \brief Vector to store the node indices of the edge. */
   su2activematrix Normal;    /*!< \brief Normal (area) of the edge. */
+  const Index nEdge, nEdgeSIMD;
 
   friend class CPhysicalGeometry;
 
@@ -70,11 +71,25 @@ public:
   inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
 
   /*!
-   * \brief SIMD version of GetNode, iNode returned for multiple contiguous iEdges
+   * \brief SIMD version of GetNode, iNode returned for contiguous iEdges.
    */
   template<class T, size_t N>
   FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdge, unsigned long iNode) const {
     return simd::Array<T,N>(&Nodes(iEdge[0],iNode));
+  }
+
+  /*!
+   * \brief Sets the tail of "Nodes" to repeat one of the last edges.
+   * \note This is needed when using the SIMD version of GetNode and
+   *       the number of edges is not a multiple of the simd width.
+   */
+  void SetPaddingNodes() {
+    for (auto iEdge = nEdge; iEdge < nEdgeSIMD; ++iEdge) {
+      /*--- Pad nodes by repeating the first edge in the last SIMD group. ---*/
+      const auto iEdge0 = nEdgeSIMD - simd::preferredLen<su2double>();
+      Nodes(iEdge, LEFT) = Nodes(iEdge0, LEFT);
+      Nodes(iEdge, RIGHT) = Nodes(iEdge0, RIGHT);
+    }
   }
 
   /*!

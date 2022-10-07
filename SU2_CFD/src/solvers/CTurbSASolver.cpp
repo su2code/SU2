@@ -1,8 +1,8 @@
 /*!
  * \file CTurbSASolver.cpp
- * \brief Main subrotuines of CTurbSASolver class
+ * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -110,7 +110,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+  if (config->GetSAParsedOptions().bc) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
@@ -119,7 +119,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+  if (config->GetSAParsedOptions().bc) {
     nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
   }
 
@@ -181,7 +181,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
@@ -217,7 +217,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
-  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
+  const bool neg_spalart_allmaras = config->GetSAParsedOptions().version == SA_OPTIONS::NEG;
 
   /*--- Compute eddy viscosity ---*/
 
@@ -226,22 +226,20 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    su2double nu  = mu/rho;
-    su2double nu_hat = nodes->GetSolution(iPoint,0);
-    su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
-    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+    const su2double nu = mu/rho;
+    const su2double nu_hat = nodes->GetSolution(iPoint,0);
+    const su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
+    const su2double dist = geometry->nodes->GetWall_Distance(iPoint) + rough_const * roughness;
 
-    dist += rough_const*roughness;
-
-    su2double Ji   = nu_hat/nu ;
+    su2double Ji = nu_hat/nu;
     if (roughness > 1.0e-10)
-      Ji+= cR1*roughness/(dist+EPS);
+      Ji += cR1*roughness/(dist+EPS);
 
-    su2double Ji_3 = Ji*Ji*Ji;
-    su2double fv1  = Ji_3/(Ji_3+cv1_3);
+    const su2double Ji_3 = Ji*Ji*Ji;
+    const su2double fv1  = Ji_3/(Ji_3+cv1_3);
 
     su2double muT = rho*fv1*nu_hat;
 
@@ -308,8 +306,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Roughness heights. ---*/
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
-      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
@@ -322,8 +319,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
+<<<<<<< HEAD
   const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
   const bool transition_LM = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
+=======
+  const bool transition_BC = config->GetSAParsedOptions().bc;
+>>>>>>> origin/develop
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -454,10 +455,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
   if (config->GetWall_Functions()) {
-    SU2_OMP_MASTER
-    SetTurbVars_WF(geometry, solver_container, config, val_marker);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTurbVars_WF(geometry, solver_container, config, val_marker);)
     return;
   }
 
@@ -1636,7 +1634,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
-  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG) return;
+  if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) return;
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */

@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,12 +107,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SU2_OMP_MASTER
-    SetTau_Wall_WF(geometry, solver_container, config);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
     // nijso: we have to set this as well??
     // seteddyviscfirstpoint
-    SU2_OMP_BARRIER
   }
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
@@ -273,10 +270,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   END_SU2_OMP_FOR
 
   /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-  SU2_OMP_MASTER
-  GetStreamwise_Periodic_Properties(geometry, config, iMesh);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(GetStreamwise_Periodic_Properties(geometry, config, iMesh);)
 }
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
@@ -289,9 +283,11 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
-  bool tkeNeeded = ((turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST));
+  bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   AD::StartNoSharedReading();
 
@@ -309,9 +305,14 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
       }
     }
 
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+  
     /*--- Incompressible flow, primitive variables --- */
 
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 
@@ -618,14 +619,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned long notConvergedCounter = 0;  /*--- Counts the number of wall cells that are not converged ---*/
   unsigned long smallYPlusCounter = 0;    /*--- Counts the number of wall cells where y+ < 5 ---*/
 
-  const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const auto max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
-
-  /*--- Compute the recovery factor use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
-
-  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -697,34 +692,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute the wall temperature using the Crocco-Buseman equation.
-       * In incompressible flows, we can assume that there is no velocity-related
-       * temperature change Prandtl: T+ = Pr*y+ ---*/
-      su2double T_Wall = nodes->GetTemperature(iPoint);
-      const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
-
-      /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
-
-      su2double q_w = 0.0;
-
-      if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        const su2double T_n = nodes->GetTemperature(Point_Normal);
-        q_w = Conductivity_Wall * (T_Wall - T_n) / (WallDistMod);
-      }
-      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-        q_w = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
-      }
-      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_TRANSFER) {
-        const su2double Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) *
-                                               config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-        const su2double Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-        q_w = Transfer_Coefficient * (Tinfinity - T_Wall);
-      }
-
-      /*--- Incompressible formulation ---*/
-
       su2double Density_Wall = nodes->GetDensity(iPoint);
-      const su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
 
       /*--- Compute the shear stress at the wall in the regular fashion
        *    by using the stress tensor on the surface ---*/
@@ -765,41 +733,33 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Friction velocity and u+ ---*/
 
-        const su2double U_Plus = VelTangMod/U_Tau;
+        const su2double U_Plus = VelTangMod / U_Tau;
 
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
+        /*--- Y+ defined by White & Christoph ---*/
+ 
+        const su2double kUp = kappa * U_Plus;
 
-        const su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-        const su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau);
-        const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-        const su2double Phi  = asin(-1.0*Beta/Q);
-
-        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
-
-        const su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+        // incompressible adiabatic result
+        const su2double Y_Plus_White = exp(kUp) * exp(-kappa * B);
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        const su2double kUp = kappa*U_Plus;
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        Y_Plus = U_Plus + Y_Plus_White + (exp(-kappa * B)* (1.0 - kUp - 0.5 * kUp * kUp - kUp * kUp * kUp / 6.0));
 
-        const su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        /*--- incompressible formulation ---*/
+        Eddy_Visc_Wall = Lam_Visc_Wall * kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0);
 
-        Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                         - Lam_Visc_Normal/Lam_Visc_Wall);
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
 
         diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-        /* --- Gradient of function defined above --- */
+        /* --- Gradient of function defined above wrt U_Tau --- */
 
-        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+        const su2double dyp_dup = 1.0 + exp(-kappa * B) * (kappa * exp(kUp) - kappa - kUp - 0.5 * kUp * kUp);
+        const su2double dup_dutau = - U_Plus / U_Tau;
+        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall - dyp_dup * dup_dutau;
 
         /* --- Newton Step --- */
 
@@ -843,8 +803,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
     SU2_OMP_ATOMIC
     globalCounter2 += smallYPlusCounter;
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -854,11 +813,11 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
+          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
                << " points, for which the wall model is not active." << endl;
       }
     }
-    END_SU2_OMP_MASTER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

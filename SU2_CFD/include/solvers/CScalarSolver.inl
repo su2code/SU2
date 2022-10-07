@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
- * \brief Main subrotuines of CScalarSolver class
- * \version 7.3.1 "Blackbird"
+ * \brief Main subroutines of CScalarSolver class
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -428,12 +428,11 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   CompleteImplicitIteration(geometry, solver_container, config);
 }

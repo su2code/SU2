@@ -77,6 +77,7 @@ Giulio Gori
 Guillaume Bâty
 Harichand M V
 HL Kline
+HL Zhi
 IndianaStokes
 J. Sinsay
 JSmith36
@@ -125,6 +126,7 @@ TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+Zan Xu
 aaronyicongfu
 aeroamit
 anilvar

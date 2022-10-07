@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,9 +33,9 @@
 #include "CSolver.hpp"
 
 /*!
- * \class CScalarSolver
  * \brief Main class for defining a scalar solver.
  * \tparam VariableType - Class of variable used by the solver inheriting from this template.
+ * \ingroup Scalar_Transport
  */
 template <class VariableType>
 class CScalarSolver : public CSolver {

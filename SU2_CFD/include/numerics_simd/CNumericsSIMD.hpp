@@ -2,7 +2,7 @@
  * \file CNumericsSIMD.hpp
  * \brief Vectorized (SIMD) numerics classes.
  * \author P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,6 +58,7 @@ using SparseMatrixType = CSysMatrix<su2mixedfloat>;
 
 /*!
  * \class CNumericsSIMD
+ * \ingroup ConvDiscr
  * \brief Base class to define the interface.
  * \note See CNumericsEmptyDecorator.
  */

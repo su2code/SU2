@@ -2,7 +2,7 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -773,8 +773,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
 
             /*--- Turbulent kinetic energy ---*/
-
-            if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+            /// TODO: This does not seem to be consistent with the primal treatment.
+            if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
               val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
             else
               val_turb_ke = 0.0;

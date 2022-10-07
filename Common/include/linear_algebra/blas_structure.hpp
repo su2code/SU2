@@ -4,7 +4,7 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,9 +38,10 @@ class CConfig;
 
 /*!
  * \class CBlasStructure
+ * \ingroup BLAS
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CBlasStructure {
 public:
@@ -48,11 +49,6 @@ public:
    * \brief Constructor of the class. Initialize the constant member variables.
    */
   CBlasStructure(void);
-
-  /*!
-   * \brief Constructor of the class. Nothing to be done.
-   */
-  ~CBlasStructure(void);
 
   /*!
    * \brief Function, which carries out a dense matrix product. It is a

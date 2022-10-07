@@ -2,7 +2,7 @@
  * \file CEdge.cpp
  * \brief Implementation of the edge class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,9 +31,10 @@
 
 using namespace GeometryToolbox;
 
-CEdge::CEdge(unsigned long nEdge, unsigned long nDim) {
+CEdge::CEdge(unsigned long nEdge_, unsigned long nDim)
+  : nEdge(nEdge_),
+    nEdgeSIMD(nextMultiple(nEdge_, simd::preferredLen<su2double>())) {
   /*--- Allocate with padding. ---*/
-  const auto nEdgeSIMD = nextMultiple(nEdge, simd::preferredLen<su2double>());
   Nodes.resize(nEdgeSIMD,2) = 0;
   Normal.resize(nEdgeSIMD,nDim) = su2double(0.0);
 }

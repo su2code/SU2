@@ -1,8 +1,13 @@
 /*!
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
+<<<<<<< HEAD
  * \author A. Aranake, M. Cerabona
  * \version 7.3.0 "Blackbird"
+=======
+ * \author A. Aranake
+ * \version 7.4.0 "Blackbird"
+>>>>>>> origin/develop
  *
  * SU2 Project Website: https://su2code.github.io
  *

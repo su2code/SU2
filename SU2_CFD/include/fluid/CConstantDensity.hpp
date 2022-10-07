@@ -2,7 +2,7 @@
  * \file CConstantDensity.hpp
  * \brief Defines the incompressible constant density model.
  * \author T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,7 +49,7 @@ class CConstantDensity final : public CFluidModel {
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double t) override {
+  void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
     /* Density is constant and thermodynamic pressure is
        not required for incompressible, constant density flows,
        but the energy equation can still be computed as a

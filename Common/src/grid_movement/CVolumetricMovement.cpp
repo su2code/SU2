@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2066,9 +2066,9 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 
   /*--- Angular velocity at the new time ---*/
 
-  alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
-  alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
-  alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
+  alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new + Phase[0]);
+  alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new + Phase[1]);
+  alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new + Phase[2]);
 
   if (rank == MASTER_NODE && iter == 0) {
       cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];

@@ -2,7 +2,7 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -200,6 +200,84 @@ protected:
   void Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Compute the custom outputs.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
+   * to evaluate the custom expressions.
+   */
+  template <class FlowIndices>
+  void ConvertVariableSymbolsToIndices(const FlowIndices& idx, CustomOutput& output) const {
+
+    static const auto knownVariables =
+        "TEMPERATURE, TEMPERATURE_VE, VELOCITY_X, VELOCITY_Y, VELOCITY_Z, PRESSURE,\n"
+        "DENSITY, ENTHALPY, SOUND_SPEED, LAMINAR_VISCOSITY, EDDY_VISCOSITY, THERMAL_CONDUCTIVITY\n"
+        "TURB[0,1,...], RAD[0,1,...], SPECIES[0,1,...]";
+
+    auto IndexOfVariable = [&](const FlowIndices& idx, const std::string& var) {
+      /*--- Primitives of the flow solver. ---*/
+      const auto flow_offset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+
+      if ("TEMPERATURE" == var) return flow_offset + idx.Temperature();
+      if ("TEMPERATURE_VE" == var) return flow_offset + idx.Temperature_ve();
+      if ("VELOCITY_X" == var) return flow_offset + idx.Velocity();
+      if ("VELOCITY_Y" == var) return flow_offset + idx.Velocity() + 1;
+      if ("VELOCITY_Z" == var) return flow_offset + idx.Velocity() + 2;
+      if ("PRESSURE" == var) return flow_offset + idx.Pressure();
+      if ("DENSITY" == var) return flow_offset + idx.Density();
+      if ("ENTHALPY" == var) return flow_offset + idx.Enthalpy();
+      if ("SOUND_SPEED" == var) return flow_offset + idx.SoundSpeed();
+      if ("LAMINAR_VISCOSITY" == var) return flow_offset + idx.LaminarViscosity();
+      if ("EDDY_VISCOSITY" == var) return flow_offset + idx.EddyViscosity();
+      if ("THERMAL_CONDUCTIVITY" == var) return flow_offset + idx.ThermalConductivity();
+
+      /*--- Index-based (no name) access to variables of other solvers. ---*/
+      auto GetIndex = [](const std::string& s, int nameLen) {
+        /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
+        return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
+      };
+      if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+      if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+      if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
+      return CustomOutput::NOT_A_VARIABLE;
+    };
+
+    output.otherOutputs.clear();
+    output.varIndices.clear();
+    output.varIndices.reserve(output.varSymbols.size());
+
+    for (const auto& var : output.varSymbols) {
+      output.varIndices.push_back(IndexOfVariable(idx, var));
+
+      if (output.type == OperationType::FUNCTION && output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) {
+        SU2_MPI::Error("Custom outputs of type 'Function' cannot reference solver variables.", CURRENT_FUNCTION);
+      }
+      /*--- Symbol is a valid solver variable. ---*/
+      if (output.varIndices.back() < CustomOutput::NOT_A_VARIABLE) continue;
+
+      /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
+      if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {
+        SU2_MPI::Error("Inactive solver variable (" + var + ") used in function " + output.name + "\n"
+                       "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
+      }
+
+      /*--- An index equal to NOT_A_VARIABLE may refer to a history output. ---*/
+      output.varIndices.back() += output.otherOutputs.size();
+      output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+      if (output.otherOutputs.back() == nullptr) {
+        SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                       "\nValid solvers variables: " + knownVariables, CURRENT_FUNCTION);
+      }
+    }
+  }
+
+  /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node
@@ -236,6 +314,25 @@ protected:
       (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
 
     return Q;
+  }
+
+  /*!
+   * \brief Returns the axisymmetric factor for a point on a marker.
+   */
+  template <class GeoNodes>
+  inline su2double GetAxiFactor(bool axisymmetric, const GeoNodes& nodes, unsigned long iPoint,
+                                unsigned short iMarker) {
+    if (!axisymmetric) return 1.0;
+
+    if (nodes.GetCoord(iPoint, 1) > EPS) return 2 * PI_NUMBER * nodes.GetCoord(iPoint, 1);
+
+    for (const auto jPoint : nodes.GetPoints(iPoint)) {
+      if (nodes.GetVertex(jPoint, iMarker) >= 0) {
+        /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+        return PI_NUMBER * nodes.GetCoord(jPoint, 1);
+      }
+    }
+    return 0.0;
   }
 
   /*!

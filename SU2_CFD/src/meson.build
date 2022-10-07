@@ -5,6 +5,7 @@ su2_cfd_src = files(['definition_structure.cpp',
 
 su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CIdealGas.cpp',
+                      'fluid/CFluidScalar.cpp',
                       'fluid/CPengRobinson.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
                       'fluid/CNEMOGas.cpp',
