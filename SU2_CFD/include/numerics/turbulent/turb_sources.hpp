@@ -615,9 +615,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
     if (Coord_i[1] < EPS) return;
 
-    AD::SetPreaccIn(Coord_i[1]);
-    AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
-
     const su2double yinv = 1.0 / Coord_i[1];
     const su2double rhov = Density_i * V_i[idx.Velocity() + 1];
     const su2double& k = ScalarVar_i[0];
