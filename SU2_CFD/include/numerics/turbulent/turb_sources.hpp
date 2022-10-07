@@ -630,8 +630,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     /*--- Add terms to the residuals ---*/
  
-    Residual[0] += yinv * Volume * ( - cdk_axi);
-    Residual[1] += yinv * Volume * ( - cdw_axi);
+    Residual[0] -= yinv * Volume * cdk_axi;
+    Residual[1] -= yinv * Volume * cdw_axi;
   }
 
  public:
@@ -733,7 +733,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
-      if (axisymmetric && Coord_i[1]>EPS) diverg += V_i[idx.Velocity() + 1]/Coord_i[1];
+      if (axisymmetric && Coord_i[1] > EPS) diverg += V_i[idx.Velocity() + 1] / Coord_i[1];
       
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
