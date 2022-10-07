@@ -30,7 +30,6 @@
 
 /*!
  * \class CADTComparePointClass
- * \ingroup ADT
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
  */

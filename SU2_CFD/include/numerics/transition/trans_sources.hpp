@@ -1,14 +1,3 @@
-//
-// Created by marcocera on 24/02/22.
-//
-
-
-#ifndef TRANSITION_MY_TRANS_SOURCES_HPP
-#define TRANSITION_MY_TRANS_SOURCES_HPP
-
-#endif //TRANSITION_MY_TRANS_SOURCES_HPP   // questi 3 li ha aggiunti automaticamente Clion, non so cosa siano
-
-
 #pragma once
 
 #include "../scalar/scalar_sources.hpp"
@@ -102,11 +91,9 @@ public:
     */
     ResidualType<> ComputeResidual(const CConfig* config) override{
 
-//      if(config->dummyVar == 0)
-//        cout << "trans_sources::ComputeResidual" << endl;
 
       unsigned short iDim;
-      // quelli in comune con SST non li ridefinisco => ci sarà da collegarsi a quello quindi
+      
       su2double P_gamma, P_rethetat, D_gamma, D_retheta_t;
       su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                                     Vorticity_i[1]*Vorticity_i[1] +
@@ -137,7 +124,6 @@ public:
       if( TransModel == TURB_TRANS_MODEL::LM2015) {
         D_retheta_t =
             c_thetat * (Density_i / T_param_i) * c_CF * min(ReThetat_SCF_i - ScalarVar_i[1], 0.0) * F_thetat_2_i;
-//        cout << "ReThetat_SCF_i = " << ReThetat_SCF_i << "   ReThetat = " << ScalarVar_i[1] << endl;
       }
 
 
@@ -151,10 +137,7 @@ public:
 
       /*--- Implicit part ---*/
 
-      // Allora, ScalarVar sono direttamente gamma e Retheta.
-      // lo jacobiano va fatto rispetto alle variabili conservative rho*gamma e rho*Retheta!
-      // lo jacobiano è approssimato, quindi se il termine di produzione ha derivate brutte lo lasciamo stare.
-      // l'importante è che il residuo sia giusto!
+  
       Jacobian_i[0][0] = (F_length_i*c_a1*StrainMag_i*sqrt(F_onset_i)*(0.5*pow(ScalarVar_i[0], -0.5) -1.5*c_e1*pow(ScalarVar_i[0], 0.5))
                           - c_a2 * VorticityMag*F_turb_i*(2.0*c_e2*ScalarVar_i[0]-1.0) )*Volume;
       Jacobian_i[0][1] = 0.0;
@@ -164,46 +147,10 @@ public:
       if(TransModel == TURB_TRANS_MODEL::LM2015 && min(ReThetat_SCF_i-ScalarVar_i[1], 0.0) != 0.0)
         Jacobian_i[1][1] = -(c_thetat/T_param_i)*c_CF*F_thetat_2_i*Volume;
 
-//      cout << "Jacobian_i(0, 0, " << config->dummyVar << ") = " << Jacobian_i[0][0] << endl;
-//      cout << "Jacobian_i(1, 1, " << config->dummyVar << ") = " << Jacobian_i[1][1] << endl;
 
-
-      //Termine [1][0] è la derivata del termine di produzione (non ha distruzione) di Retheta rispetto a rho*gamma.
-      //Ha dei livelli di approssimazione
-      int approxLevel = 2;
-//      if (approxLevel == 1)
-//        Jacobian_i[1][0] = 0.0;
-//      else if (approxLevel == 2) {
-//        su2double DF_theta_t_D_rhoGamma =
-//            -2 * (c_e2 / Density_i) * (c_e2 * ScalarVar_i[0] - 1) / pow((c_e2 - 1.0), 2.0);
-//        Jacobian_i[1][0] =
-//            -DF_theta_t_D_rhoGamma * c_thetat * (Density_i / T_param_i) * (rethetat_eq_i - ScalarVar_i[1]);
-//      }
-
-      // Termine [1][1] è la derivata del termine di produzione (non ha distruzione) di Retheta rispetto a rho*Retheta. Ha 3 livelli di approssimazione
-//      approxLevel = 3;
-//      Jacobian_i[1][1] = 0.0;
-//      if (approxLevel == 1)
-//        Jacobian_i[1][1] = 0.0;
-//      else if (approxLevel == 2) {
-//        Jacobian_i[1][1] = -c_thetat * (1.0 - F_thetat_i) * Volume/ T_param_i;
-//      } else {
-//        Jacobian_i[1][1] = -c_thetat * (1.0 - F_thetat_i) * Volume / T_param_i;
-//        su2double FirstMaxTerm = F_wake_i * exp(-pow(dist_i / delta_param_i, 4));
-//        su2double SecondMaxTerm = 1.0 - pow((c_e2 * ScalarVar_i[0] - 1) / (c_e2 - 1), 2);
-//        // Only if true then the derivative of F_theta_t wrt rho*Re_theta_t is different from 0
-//        if (FirstMaxTerm > SecondMaxTerm && FirstMaxTerm < 1.0) {
-//          su2double additiveTerm = c_thetat * Density_i * ScalarVar_i[1] / T_param_i;
-//          su2double tmp = dist_i / delta_param_i;
-//          su2double F_theta_t_derivative =
-//              4.0 * pow(tmp, 3) * F_wake_i * exp(-pow(tmp, 4.0)) * tmp / (Density_i * ScalarVar_i[1]);
-//          additiveTerm *= F_theta_t_derivative;
-//          Jacobian_i[1][1] += additiveTerm * Volume;
-//        }
-//      }
     }
 
-      return ResidualType<>(Residual, Jacobian_i, nullptr);
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
 
    }
 

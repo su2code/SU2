@@ -27,6 +27,12 @@
 
 #include "../include/graph_coloring_structure.hpp"
 
+/* Constructor. Nothing to be done. */
+CGraphColoringStructure::CGraphColoringStructure(void) {}
+
+/* Destructor. Nothing to be done. */
+CGraphColoringStructure::~CGraphColoringStructure(void) {}
+
 /* Function, which determines the colors for the vertices of the given graph. */
 void CGraphColoringStructure::GraphVertexColoring(
                          CConfig                              *config,

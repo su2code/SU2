@@ -57,7 +57,6 @@
 
 /*!
  * \class CSysVector
- * \ingroup SpLinSys
  * \brief Class for holding and manipulating vectors needed by linear solvers.
  */
 template <class ScalarType>

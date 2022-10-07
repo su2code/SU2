@@ -34,7 +34,6 @@
 
 /*!
  * \class CElement
- * \ingroup FemAlgos
  * \brief Abstract class for defining finite elements.
  * \note Usage: Element instances are used to compute gradients (in reference or current
  *       coordinates), element matrices (stiffness, mass, etc.), and nodal residuals.
@@ -556,7 +555,6 @@ public:
 
 /*!
  * \class CElementWithKnownSizes
- * \ingroup FemAlgos
  * \brief Templated class to implement the computation of gradients for specific element sizes.
  * \author P. Gomes, R. Sanchez
  */
@@ -795,7 +793,6 @@ public:
 
 /*!
  * \class CTRIA1
- * \ingroup FemAlgos
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
  */
@@ -822,7 +819,6 @@ public:
 
 /*!
  * \class CQUAD4
- * \ingroup FemAlgos
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
  */
@@ -869,7 +865,6 @@ public:
 
 /*!
  * \class CTETRA1
- * \ingroup FemAlgos
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
  */
@@ -895,7 +890,6 @@ public:
 
 /*!
  * \class CHEXA8
- * \ingroup FemAlgos
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
  */
@@ -922,7 +916,6 @@ public:
 
 /*!
  * \class CPYRAM5
- * \ingroup FemAlgos
  * \brief Pyramid element with 5 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  */
@@ -949,7 +942,6 @@ public:
 
 /*!
  * \class CPRISM6
- * \ingroup FemAlgos
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  * \version 7.4.0 "Blackbird"
@@ -977,7 +969,6 @@ public:
 
 /*!
  * \class CTRIA3
- * \ingroup FemAlgos
  * \brief Tria element with 3 Gauss Points
  * \author T.Dick
  */
@@ -1004,7 +995,6 @@ public:
 
 /*!
  * \class CTETRA4
- * \ingroup FemAlgos
  * \brief Tetrahedral element with 4 Gauss Points
  * \author T.Dick
  */
@@ -1031,7 +1021,6 @@ public:
 
 /*!
  * \class CPYRAM6
- * \ingroup FemAlgos
  * \brief Pyramid element with 6 Gauss Points
  * \author T.Dick
  */
@@ -1058,8 +1047,7 @@ public:
 
 /*!
  * \class CLINE
- * \ingroup FemAlgos
- * \brief Line element with 2 Gauss Points
+ * \brief line element with 2 Gauss Points
  * \author T.Dick
  */
 class CLINE final : public CElementWithKnownSizes<2,2,1> {

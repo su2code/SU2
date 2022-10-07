@@ -30,9 +30,6 @@
 
 #include "C2DContainer.hpp"
 
-/// \addtogroup Containers
-/// @{
-
 /*!
  * \brief Class to represent a matrix (without owning the data, this just wraps a pointer).
  */
@@ -286,5 +283,3 @@ inline void AllocVectorOfMatrices(const IndexVector& N, size_t P, VectorOfMatrix
   auto M = N.size();
   AllocVectorOfMatrices(M, N, P, X, val);
 }
-
-/// @}

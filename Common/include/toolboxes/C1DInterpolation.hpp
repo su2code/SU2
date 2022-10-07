@@ -32,10 +32,6 @@
 #include <algorithm>
 #include "../option_structure.hpp"
 
-/*!
- * \brief Base class for 1D interpolation.
- * \ingroup LookUpInterp
- */
 class C1DInterpolation {
 protected:
   std::vector<su2double> x, y;  /*!< \brief Data points. */
@@ -84,10 +80,6 @@ public:
 
 };
 
-/*!
- * \brief Akima 1D interpolation.
- * \ingroup LookUpInterp
- */
 class CAkimaInterpolation: public C1DInterpolation{
 protected:
   std::vector<su2double> b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
@@ -115,10 +107,6 @@ public:
   su2double EvaluateSpline(su2double Point_Interp) const final;
 };
 
-/*!
- * \brief Cubic spline interpolation.
- * \ingroup LookUpInterp
- */
 class CCubicSpline final: public CAkimaInterpolation {
 public:
   enum END_TYPE {SECOND, FIRST};
@@ -155,10 +143,6 @@ public:
   void SetSpline(const std::vector<su2double> &X, const std::vector<su2double> &Data) override;
 };
 
-/*!
- * \brief Linear interpolation.
- * \ingroup LookUpInterp
- */
 class CLinearInterpolation final: public C1DInterpolation {
 public:
   CLinearInterpolation() = default;
@@ -179,7 +163,7 @@ public:
 };
 
 /*!
- * \brief Corrects for interpolation type.
+ * \brief to correct for interpolation type.
  * \param[in] Inlet_Interpolated - the interpolated data after spline evaluation.
  * \param[in] Theta - the angle of the vertex (in xy plane).
  * \param[in] nDim - the dimensions of the case.
@@ -196,7 +180,7 @@ std::vector<su2double> CorrectedInletValues(const std::vector<su2double> &Inlet_
                                        INLET_INTERP_TYPE Interpolation_Type);
 
 /*!
- * \brief Prints the Inlet Interpolated Data
+ * \brief to print the Inlet Interpolated Data
  * \param[in] Inlet_Interpolated_Interpolated - the final std::vector for the interpolated data
  * \param[in] Marker - name of the inlet marker
  * \param[in] nVertex - total number of vertexes.

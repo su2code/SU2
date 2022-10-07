@@ -1263,14 +1263,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
-<<<<<<< HEAD
   switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::BC:
-      SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittency(iPoint));
-      SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
-      SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
-      SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
-      break;
     case TURB_TRANS_MODEL::LM2015:
       SetVolumeOutputValue("RE_THETA_T_SCF", iPoint, Node_Trans->GetReThetat_SCF(iPoint));
       SetVolumeOutputValue("F_THETA_T_2", iPoint, Node_Trans->GetF_thetat_2(iPoint));
@@ -1328,10 +1321,11 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
-=======
   if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
->>>>>>> origin/develop
+    SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
+    SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
+    SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
   }
 
 

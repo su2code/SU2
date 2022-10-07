@@ -1,12 +1,3 @@
-//
-// Created by marcocera on 03/03/22.
-//
-
-#ifndef TRANSITION_MY_TRANS_CONVECTION_HPP
-#define TRANSITION_MY_TRANS_CONVECTION_HPP
-
-#endif //TRANSITION_MY_TRANS_CONVECTION_HPP   // questi 3 li ha aggiunti automaticamente Clion, non so cosa siano
-
 #pragma once
 
 #include "../CNumerics.hpp"

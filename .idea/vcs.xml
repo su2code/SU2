@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/medi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/mel" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/meson" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/ninja" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/opdi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/subprojects/Mutationpp" vcs="Git" />
+  </component>
+</project>

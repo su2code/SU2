@@ -37,9 +37,6 @@
 #include <algorithm>
 #include <numeric>
 
-/// \addtogroup Graph
-/// @{
-
 /*!
  * \enum ConnectivityType
  * \brief In FVM points are connected by the edges (faces) of the grid.
@@ -720,5 +717,3 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
 
   return ideal / real;
 }
-
-/// @}

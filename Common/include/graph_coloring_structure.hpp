@@ -38,13 +38,22 @@ using namespace std;
 
 /*!
  * \class CGraphColoringStructure
- * \ingroup Graph
- * \brief Class, which provides distributed graph coloring algorithms.
+ * \brief Class, which provides graph coloring algorithms.
  * \author: E. van der Weide
  * \version 7.4.0 "Blackbird"
  */
 class CGraphColoringStructure {
 public:
+  /*!
+   * \brief Constructor of the class. Nothing to be done.
+   */
+  CGraphColoringStructure(void);
+
+  /*!
+   * \brief Constructor of the class. Nothing to be done.
+   */
+  ~CGraphColoringStructure(void);
+
   /*!
    * \brief Function, which determines the colors for the vertices of the given graph.
    * \param[in]  config             - Definition of the particular problem.

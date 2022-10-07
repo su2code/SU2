@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-//
-// Created by marcocera on 25/02/22.
-//
-=======
 /*!
  * \file CTransLMVariable.cpp
  * \brief Definition of the solution fields.
- * \author A. Aranake
+ * \author A. Aranake, A. Rausa, M. Cerabona
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
->>>>>>> origin/develop
 
 #include "../../include/variables/CTransLMVariable.hpp"
 #include <cmath>

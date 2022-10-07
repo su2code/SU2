@@ -36,10 +36,6 @@
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
-/*!
- * \brief Look up table.
- * \ingroup LookUpInterp
- */
 class CLookUpTable {
  protected:
   int rank; /*!< \brief MPI Rank. */

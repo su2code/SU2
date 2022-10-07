@@ -29,7 +29,6 @@
 
 /*!
  * \class CProperty
- * \ingroup Elasticity_Equations
  * \brief Base class for defining element properties.
  * \author R. Sanchez
  * \version 7.4.0 "Blackbird"
@@ -105,7 +104,6 @@ public:
 
 /*!
  * \class CElementProperty
- * \ingroup Elasticity_Equations
  * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
  * \version 7.4.0 "Blackbird"

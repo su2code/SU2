@@ -48,7 +48,6 @@ class CGeometry;
 
 /*!
  * \class CPastixWrapper
- * \ingroup SpLinSys
  * \brief Wrapper class that converts between SU2 sparse format and PaStiX
  *        format and simplifies calls to the external solver.
  */

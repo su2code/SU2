@@ -32,7 +32,6 @@
  * \brief Sliding mesh approach.
  * \note The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces
  *       for finite-volume discritization of conservation laws" 2015, Comp. Fluids, 120, pp 126-139
- * \ingroup Interfaces
  */
 class CSlidingMesh final : public CInterpolator {
 public:

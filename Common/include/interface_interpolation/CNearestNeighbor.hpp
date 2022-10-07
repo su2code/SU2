@@ -32,8 +32,7 @@
  * \brief Nearest Neighbor(s) interpolation.
  * \note The closest k neighbors are used for IDW interpolation, the computational
  * cost of setting up the interpolation is O(N^2 log(k)), this can be improved
- * by using an ADT.
- * \ingroup Interfaces
+ * by using a kd-tree.
  */
 class CNearestNeighbor final : public CInterpolator {
 private:

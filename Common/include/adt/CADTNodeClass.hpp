@@ -30,7 +30,6 @@
 
 /*!
  * \class CADTNodeClass
- * \ingroup ADT
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
  */

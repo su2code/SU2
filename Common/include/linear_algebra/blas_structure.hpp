@@ -38,7 +38,6 @@ class CConfig;
 
 /*!
  * \class CBlasStructure
- * \ingroup BLAS
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
  * \version 7.4.0 "Blackbird"
@@ -49,6 +48,11 @@ public:
    * \brief Constructor of the class. Initialize the constant member variables.
    */
   CBlasStructure(void);
+
+  /*!
+   * \brief Constructor of the class. Nothing to be done.
+   */
+  ~CBlasStructure(void);
 
   /*!
    * \brief Function, which carries out a dense matrix product. It is a

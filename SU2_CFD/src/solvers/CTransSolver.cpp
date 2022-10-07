@@ -1,8 +1,8 @@
 /*!
  * \file CTransSolver.cpp
  * \brief Main subrotuines of CTransSolver class
- * \author F. Palacios, A. Bueno
- * \version 7.3.0 "Blackbird"
+ * \author F. Palacios, A. Bueno, A. Rausa, M. Cerabona
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

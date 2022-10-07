@@ -30,7 +30,6 @@
 
 /*!
  * \class CADTPointsOnlyClass
- * \ingroup ADT
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
  */

@@ -44,14 +44,12 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
-<<<<<<< HEAD
 
   bool transition;
   VectorType turb_index;
 
-=======
   SST_ParsedOptions sstParsedOptions;
->>>>>>> origin/develop
+  
 public:
   /*!
    * \brief Constructor of the class.

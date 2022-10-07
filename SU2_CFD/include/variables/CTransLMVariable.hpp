@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-//
-// Created by marcocera on 25/02/22.
-//
-=======
 /*!
  * \file CTransLMVariable.hpp
  * \brief Declaration of the variables of the transition model.
- * \author F. Palacios, T. Economon
+ * \author F. Palacios, T. Economon, A. Rausa, M. Cerabona
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -29,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
->>>>>>> origin/develop
 
 #pragma once
 

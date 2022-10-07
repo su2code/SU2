@@ -78,14 +78,9 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-<<<<<<< HEAD
-  const bool rotating_frame = false;
   const bool transition = false;
   const bool transition_LM = false;
-  const bool transition_BC = false;
-=======
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
->>>>>>> origin/develop
 
  public:
   /*!
@@ -96,13 +91,8 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-<<<<<<< HEAD
-        rotating_frame(config->GetRotating_Frame()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015),
-        transition_BC(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
-=======
         options(config->GetSAParsedOptions()) {
->>>>>>> origin/develop
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -206,11 +196,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
-<<<<<<< HEAD
-      if (transition_BC) {
-=======
       if (options.bc) {
->>>>>>> origin/develop
         /*--- BC transition model (2020 revision). This should only be used with SA-noft2.
          * TODO: Consider making this part of the "SourceTerms" template. ---*/
         const su2double chi_1 = 0.002;
@@ -855,14 +841,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           break;
       }
 
-<<<<<<< HEAD
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-=======
       /*--- Production limiter. ---*/
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
->>>>>>> origin/develop
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
 

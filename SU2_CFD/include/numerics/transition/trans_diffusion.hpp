@@ -1,14 +1,3 @@
-//
-// Created by marcocera on 04/03/22.
-//
-
-#ifndef TRANSITION_MY_TRANS_DIFFUSION_HPP
-#define TRANSITION_MY_TRANS_DIFFUSION_HPP
-
-#endif //TRANSITION_MY_TRANS_DIFFUSION_HPP   // questi 3 li ha aggiunti automaticamente Clion, non so cosa siano
-
-// nei relativi turb dice che tutto ciò che riguarda i viscous residual si può fare estendendo al caso interessato quelle classi!
-
 #pragma once
 
 #include "../CNumerics.hpp"
