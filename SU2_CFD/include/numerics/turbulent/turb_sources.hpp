@@ -610,9 +610,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   }
 
   /*!
-   * \brief Add contribution due to axisymmetric formulation to 2D residual
+   * \brief Add contribution from convection and diffusion due to axisymmetric formulation to 2D residual
    */
-  inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
+  inline void ResidualAxisymmetricConvectionDiffusion(su2double alfa_blended, su2double zeta) {
     if (Coord_i[1] < EPS) return;
 
     const su2double yinv = 1.0 / Coord_i[1];
@@ -632,6 +632,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
  
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
+
+    Jacobian_i[0][0] = yinv * Volume * rhov;
+    Jacobian_i[0][1] = 0.0; 
+    Jacobian_i[1][0] = 0.0; 
+    Jacobian_i[1][1] = yinv * Volume * rhov;
+
   }
 
  public:
