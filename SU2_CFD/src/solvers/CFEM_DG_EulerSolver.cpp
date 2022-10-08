@@ -228,6 +228,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   switch (config->GetKind_FluidModel()) {
 
