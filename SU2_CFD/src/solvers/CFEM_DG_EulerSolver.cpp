@@ -2232,7 +2232,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
           }
 
           /*-------------------------------------------------------------------*/
-          /*---            Compute the all the grid velocities.             ---*/
+          /*---                Compute all the grid velocities.             ---*/
           /*-------------------------------------------------------------------*/
 
           /*--- Loop over the volume elements. ---*/
@@ -2379,9 +2379,11 @@ void CFEM_DG_EulerSolver::Set_NewSolution() {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  /*--- Initialize the minimum and maximum time step. ---*/
+  /*--- Initialize the minimum and maximum time step and determine the
+        active polynomial degree when grid sequencing is used. ---*/
   SU2_OMP_SINGLE
   {
+    DetermineCurrentPInPSequencing(config);
     Min_Delta_Time = 1.e25;
     Max_Delta_Time = 0.0;
   }
@@ -2490,7 +2492,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the time step for the element. Note that for the spectral
             radius a correction factor, which is a function of the polynomial degree
             and the element type, must be taken into account. ---*/
-      const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius();
+      const unsigned short pCurrent = min(currentPInPSequencing, volElem[l].standardElemFlow->GetPolyDegree());
+      const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius(pCurrent);
       volElem[l].deltaTime = CFL*volElem[l].lenScale/(factInv*sqrt(charVel2Max));
 
       /*--- Update the minimum and maximum value, for which the factor for
@@ -4382,6 +4385,19 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
       SU2_OMP_SIMD
       for(unsigned short i=0; i<nDOFsPad; ++i)
         rVec(i,j) = solVec(i,j);
+    }
+
+    /*--- If the current polynomial degree in the P sequencing is less than
+          the polynomial degree of the element, set the residuals of the higher
+          DOFs to zero to improve robustness. ---*/
+    if(currentPInPSequencing < volElem[l].standardElemFlow->GetPolyDegree()) {
+      const unsigned short VTK_Type = volElem[l].standardElemFlow->GetVTK_Type();
+      const unsigned short nDOFsUse = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, currentPInPSequencing);
+
+      for(unsigned short j=0; j<nVar; ++j) {
+        for(unsigned short i=nDOFsUse; i<nDOFsPad; ++i)
+          rVec(i,j) = 0.0;
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -6311,6 +6327,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
     /*--- Convert the nodal solution to the modal solution. ---*/
     volElem[i].NodalToModalFlow();
   }
+  END_SU2_OMP_FOR
 
   /*--- Carry out the reduction over the threads. ---*/
   if (config->GetComm_Level() == COMM_FULL) {

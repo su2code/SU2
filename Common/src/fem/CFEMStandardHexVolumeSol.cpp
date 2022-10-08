@@ -112,24 +112,45 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
   /*--- Set the function pointer for the tensor product multiplication to
         update the residual of the DOFs for a volume integration term. ---*/
   SetFunctionPointerVolumeDataHex(nInt1D, nDOFs1D, TensorProductResVolDOFs);
+}
 
-  /*--- Determine the correction factors for the inviscid and viscous
-        spectral radii for the high order element. These factors depend
-        on the polynomial degree and the element type. ---*/
-  switch( nPoly ) {
-    case 0: factInviscidRad =  2.0; factViscousRad =     6.0; break;
-    case 1: factInviscidRad =  6.0; factViscousRad =    36.0; break;
-    case 2: factInviscidRad = 12.0; factViscousRad =   150.0; break;
-    case 3: factInviscidRad = 20.0; factViscousRad =   420.0; break;
-    case 4: factInviscidRad = 28.0; factViscousRad =   980.0; break;
-    case 5: factInviscidRad = 38.0; factViscousRad =  1975.0; break;
-    case 6: factInviscidRad = 50.0; factViscousRad =  3575.0; break;
-    case 7: factInviscidRad = 64.0; factViscousRad =  7000.0; break;
-    case 8: factInviscidRad = 80.0; factViscousRad = 14000.0; break;
-    case 9: factInviscidRad = 98.0; factViscousRad = 28000.0; break;
+passivedouble CFEMStandardHexVolumeSol::GetFactorInviscidSpectralRadius(const unsigned short nPolyElem) const {
+
+  passivedouble factInviscidRad = 0.0;
+  switch( nPolyElem ) {
+    case 0: factInviscidRad =  3.0; break;
+    case 1: factInviscidRad =  6.0; break;
+    case 2: factInviscidRad = 12.0; break;
+    case 3: factInviscidRad = 20.0; break;
+    case 4: factInviscidRad = 28.0; break;
+    case 5: factInviscidRad = 38.0; break;
+    case 6: factInviscidRad = 50.0; break;
+    case 7: factInviscidRad = 64.0; break;
+    case 8: factInviscidRad = 80.0; break;
+    case 9: factInviscidRad = 98.0; break;
     default:
       SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
   }
+  return factInviscidRad;
+}
+
+passivedouble CFEMStandardHexVolumeSol::GetFactorViscousSpectralRadius(const unsigned short nPolyElem) const {
+  passivedouble factViscousRad = 0.0;
+  switch( nPolyElem ) {
+    case 0: factViscousRad =     6.0; break;
+    case 1: factViscousRad =    36.0; break;
+    case 2: factViscousRad =   150.0; break;
+    case 3: factViscousRad =   420.0; break;
+    case 4: factViscousRad =   980.0; break;
+    case 5: factViscousRad =  1975.0; break;
+    case 6: factViscousRad =  3575.0; break;
+    case 7: factViscousRad =  7000.0; break;
+    case 8: factViscousRad = 14000.0; break;
+    case 9: factViscousRad = 28000.0; break;
+    default:
+      SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
+  }
+  return factViscousRad;
 }
 
 void CFEMStandardHexVolumeSol::BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,

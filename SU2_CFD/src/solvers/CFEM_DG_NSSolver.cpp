@@ -107,9 +107,11 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry *geometry, const CConfig 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  /*--- Initialize the minimum and maximum time step. ---*/
+  /*--- Initialize the minimum and maximum time step and determine the
+        active polynomial degree when grid sequencing is used. ---*/
   SU2_OMP_SINGLE
   {
+    DetermineCurrentPInPSequencing(config);
     Min_Delta_Time = 1.e25;
     Max_Delta_Time = 0.0;
   }
@@ -436,8 +438,9 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       /*--- Compute the time step for the element. Note that for the spectral
             radii correction factors, which are a function of the polynomial degree
             and the element type, must be taken into account. ---*/
-      const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius();
-      const passivedouble factVis = volElem[l].standardElemFlow->GetFactorViscousSpectralRadius();
+      const unsigned short pCurrent = min(currentPInPSequencing, volElem[l].standardElemFlow->GetPolyDegree());
+      const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius(pCurrent);
+      const passivedouble factVis = volElem[l].standardElemFlow->GetFactorViscousSpectralRadius(pCurrent);
 
       const su2double invLen = 1.0/volElem[l].lenScale;
       const su2double dtInv  = invLen*(factInv*sqrt(charVel2Max) + factVis*radViscMax*invLen);

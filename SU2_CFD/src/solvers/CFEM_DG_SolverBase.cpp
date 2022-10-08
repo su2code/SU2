@@ -928,3 +928,17 @@ void CFEM_DG_SolverBase::Prepare_MPI_Communication(const CMeshFEM_DG *DGGeometry
     }
   }
 }
+
+void CFEM_DG_SolverBase::DetermineCurrentPInPSequencing(CConfig *config) {
+
+  if (config->GetUsePSequencing_DG() ) {
+
+    const unsigned long nIterPSequencing = config->GetnIterPSequencing_DG();
+    if (nIterPSequencing > 0) {
+      const unsigned long currentIter = config->GetInnerIter();
+      unsigned long current_p = currentIter/nIterPSequencing;
+      if (current_p > 100) current_p = 100;
+      currentPInPSequencing = static_cast<unsigned short>(current_p);
+    }
+  }
+}

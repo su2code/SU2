@@ -2322,6 +2322,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Only compute the exact Jacobian of the spatial discretization (NO, YES) */
   addBoolOption("JACOBIAN_SPATIAL_DISCRETIZATION_ONLY", Jacobian_Spatial_Discretization_Only, false);
 
+  /* DESCRIPTION: Use P-sequencing for FEM DG (YES, NO). */
+  addBoolOption("USE_P_SEQUENCING_DG", UsePSequencing_DG, true);
+  /* DESCRIPTION: Number of iterations per polynomial degree when P-sequencing is used. */
+  addUnsignedLongOption("ITER_P_SEQUENCING_DG", nIterPSequencing_DG, 100);
+
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
 
@@ -4480,6 +4485,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
+
+  /*--- Overwrite P-sequencing to false if a restart is carried out. ---*/
+  if (Restart) UsePSequencing_DG = false;
 
   /*--- Handle optional CFL adapt parameter values ---*/
 
@@ -6744,6 +6752,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
       cout << "Quadrature factor for elements with constant Jacobian:     " << Quadrature_Factor_Straight << endl;
       cout << "Quadrature factor for elements with non-constant Jacobian: " << Quadrature_Factor_Curved << endl;
+
+      if (UsePSequencing_DG) {
+        cout << "Number of iterations per polynomial degree in P-sequencing: " << nIterPSequencing_DG << endl;
+      }
     }
 
     cout << endl <<"--------------- Time Numerical Integration  ( Zone "  << iZone << " ) ------------------" << endl;

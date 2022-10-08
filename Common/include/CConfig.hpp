@@ -403,6 +403,9 @@ private:
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   su2double PhysicalTime;           /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
 
+  bool UsePSequencing_DG;             /*!< \brief Whether to use P (polynomial sequencing) for the FEM DG discretization. */
+  unsigned long nIterPSequencing_DG;  /*!< \brief Number of iterations per polynomial degree in the P sequencing. */
+
   unsigned short nLevels_TimeAccurateLTS;   /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;          /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   passivedouble *TimeDOFsADER_DG;           /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
@@ -2820,6 +2823,16 @@ public:
    * \return Number of Runge-Kutta steps.
    */
   unsigned short GetnRKStep(void) const { return nRKStep; }
+
+  /*!
+   * \brief Get whether P-sequencing must be used for DG_FEM. 
+   */
+  bool GetUsePSequencing_DG(void) const { return UsePSequencing_DG;}
+
+  /*!
+   * \brief Get the number of iterations (per polynomial degree) to use in the P-sequencing.
+   */
+  unsigned long GetnIterPSequencing_DG(void) const { return nIterPSequencing_DG;}
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.

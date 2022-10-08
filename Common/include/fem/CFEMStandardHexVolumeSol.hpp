@@ -69,26 +69,26 @@ public:
   ~CFEMStandardHexVolumeSol() = default;
 
   /*-----------------------------------------------------------------------------------*/
-  /*---                  Inline public member functions.                            ---*/
+  /*---                      Public member functions.                               ---*/
   /*-----------------------------------------------------------------------------------*/
 
   /*!
    * \brief Function, that makes available the correction factor for the inviscid
    *        spectral radius.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
    * \return The correction factor for the inviscid spectral radius.
    */
-  inline passivedouble GetFactorInviscidSpectralRadius(void) const override {return factInviscidRad;}
+  passivedouble GetFactorInviscidSpectralRadius(const unsigned short nPolyElem) const override;
 
   /*!
    * \brief Function, that makes available the correction factor for the viscous
    *        spectral radius.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
    * \return The correction factor for the viscous spectral radius.
    */
-  inline passivedouble GetFactorViscousSpectralRadius(void) const override {return factViscousRad;}
-
-  /*-----------------------------------------------------------------------------------*/
-  /*---                     Public member functions.                                ---*/
-  /*-----------------------------------------------------------------------------------*/
+  passivedouble GetFactorViscousSpectralRadius(const unsigned short nPolyElem) const override;
 
   /*!
    * \brief Function, which determines the basis functions for the given parametric
@@ -173,11 +173,6 @@ public:
   passivedouble ValBasis0(void) override;
 
 private:
-  passivedouble factInviscidRad = -1.0;  /*!< \brief Correction factor for the inviscid spectral radius
-                                                     for the high order element. */
-  passivedouble factViscousRad = -1.0;   /*!< \brief Correction factor for the viscous spectral radius
-                                                     for the high order element. */
-
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
 
   ColMajorMatrix<passivedouble> legBasisLineInt;    /*!< \brief The values of the 1D Legendre basis functions

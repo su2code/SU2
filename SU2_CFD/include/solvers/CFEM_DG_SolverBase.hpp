@@ -75,6 +75,9 @@ protected:
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
   su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
+  unsigned short currentPInPSequencing = 100; /*!< \brief Current value of the polynomial degree
+                                                              when grid sequencing must be used. */
+
   unsigned long counter = 0;          /*!< \brief Shared variable to be able to carry out some
                                                   global counting in OpenMP. ---*/
 
@@ -789,6 +792,12 @@ protected:
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetCD_Visc(unsigned short val_marker) const final { return ViscCoeff.CD[val_marker]; }
+
+  /*!
+   * \brief Determines the current values of the polynomial degree in P-sequencing.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  void DetermineCurrentPInPSequencing(CConfig *config);
 
 private:
 

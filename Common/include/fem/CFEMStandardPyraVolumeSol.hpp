@@ -69,20 +69,6 @@ public:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
-   * \brief Function, that makes available the correction factor for the inviscid
-   *        spectral radius.
-   * \return The correction factor for the inviscid spectral radius.
-   */
-  inline passivedouble GetFactorInviscidSpectralRadius(void) const override {return factInviscidRad;}
-
-  /*!
-   * \brief Function, that makes available the correction factor for the viscous
-   *        spectral radius.
-   * \return The correction factor for the viscous spectral radius.
-   */
-  inline passivedouble GetFactorViscousSpectralRadius(void) const override {return factViscousRad;}
-
-  /*!
    * \brief Function that makes available the value of the first (constant)
    *        basis function of this element.
    * \return - The value of the first (constant) basis function.
@@ -92,6 +78,24 @@ public:
   /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
   /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, that makes available the correction factor for the inviscid
+   *        spectral radius.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
+   * \return The correction factor for the inviscid spectral radius.
+   */
+  passivedouble GetFactorInviscidSpectralRadius(const unsigned short nPolyElem) const override;
+
+  /*!
+   * \brief Function, that makes available the correction factor for the viscous
+   *        spectral radius.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
+   * \return The correction factor for the viscous spectral radius.
+   */
+  passivedouble GetFactorViscousSpectralRadius(const unsigned short nPolyElem) const override;
 
   /*!
    * \brief Function, which determines the basis functions for the given parametric
@@ -169,11 +173,6 @@ public:
                                       ColMajorMatrix<su2double>          &resDOFs) override;
 
 private:
-  passivedouble factInviscidRad = -1.0;  /*!< \brief Correction factor for the inviscid spectral radius
-                                                     for the high order element. */
-  passivedouble factViscousRad = -1.0;   /*!< \brief Correction factor for the viscous spectral radius
-                                                     for the high order element. */
-
   vector<passivedouble> rPyraSolDOFs; /*!< \brief Parametric r-coordinates of the pyramid solution DOFs. */
   vector<passivedouble> sPyraSolDOFs; /*!< \brief Parametric s-coordinates of the pyramid solution DOFs. */
   vector<passivedouble> tPyraSolDOFs; /*!< \brief Parametric t-coordinates of the pyramid solution DOFs. */

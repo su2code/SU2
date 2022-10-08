@@ -244,9 +244,11 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
    * \return The correction factor for the inviscid spectral radius.
    */
-  virtual passivedouble GetFactorInviscidSpectralRadius(void) const {
+  virtual passivedouble GetFactorInviscidSpectralRadius(const unsigned short nPolyElem) const {
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
     return 0;
@@ -254,9 +256,11 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] nPolyElem - Polynomial degree of the element for which a correction
+   *                        factor must be determined.
    * \return The correction factor for the viscous spectral radius.
    */
-  virtual passivedouble GetFactorViscousSpectralRadius(void) const {
+  virtual passivedouble GetFactorViscousSpectralRadius(const unsigned short nPolyElem) const {
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
     return 0;
