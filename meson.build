@@ -326,13 +326,8 @@ if get_option('enable-mpp')
 endif
 
 if get_option('enable-coolprop')
-  message(''' 1.To run SU2 with CoolProp library, add these lines to your .bashrc file:
-
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/CoolProp
-          2. In current version, to use CoolProp, disable autodiff please: '-Denable-autodiff=false'
-          3. go into SU2/subprojects/CoolProp and do the following:
-             $git submodule init
-             $git submodule update
+  message('''
+          In current version, to use CoolProp, disable autodiff please: '-Denable-autodiff=false'
           ''')
 endif
 
