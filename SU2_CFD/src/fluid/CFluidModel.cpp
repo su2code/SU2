@@ -35,7 +35,6 @@
 #include "../../include/fluid/CConstantPrandtl.hpp"
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CConstantSchmidt.hpp"
-#include "../../include/fluid/CConstantSchmidtRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
@@ -112,12 +111,7 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       return unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
       break;
     case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
-      if ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS)) {
-        return unique_ptr<CConstantSchmidtRANS>(
-            new CConstantSchmidtRANS(config->GetSchmidt_Number_Laminar(), config->GetSchmidt_Number_Turbulent()));
-      } else {
-        return unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Number_Laminar()));
-      }
+      return unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Number_Laminar()));
       break;
     case DIFFUSIVITYMODEL::UNITY_LEWIS:
       return unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());
