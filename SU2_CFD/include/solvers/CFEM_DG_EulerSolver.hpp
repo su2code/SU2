@@ -686,10 +686,14 @@ protected:
                               be computed.
    * \param[in]  solIntL    - Left states in the integration points of the face.
    * \param[out] solIntR    - Right states in the integration points of the face.
+   * \param[in]  factNorm   - Either 1.0 or 2.0. factNorm = 1.0 corresponds to
+   *                          and inviscid wall while factNorm = 2.0 is a
+   *                          symmetry condition.
    */
   void BoundaryStates_Euler_Wall(const CSurfaceElementFEM        *surfElem,
                                  const ColMajorMatrix<su2double> &solIntL,
-                                 ColMajorMatrix<su2double>       &solIntR);
+                                 ColMajorMatrix<su2double>       &solIntR,
+                                 const su2double                 factNorm);
 
   /*!
    * \brief Function, which computes the boundary states in the integration points

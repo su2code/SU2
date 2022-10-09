@@ -5010,7 +5010,8 @@ void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
 
 void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(const CSurfaceElementFEM        *surfElem,
                                                     const ColMajorMatrix<su2double> &solIntL,
-                                                    ColMajorMatrix<su2double>       &solIntR) {
+                                                    ColMajorMatrix<su2double>       &solIntR,
+                                                    const su2double                 factNorm) {
 
   /*--- Easier storage of the number of items for which the BC must be applied.
         Usually the (padded) number of integration points. ---*/
@@ -5029,10 +5030,11 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(const CSurfaceElementFEM    
         const su2double Vn = (solIntL(i,1) - surfElem->gridVelocities(i,0))*nx
                            + (solIntL(i,2) - surfElem->gridVelocities(i,1))*ny;
 
-        /*--- Compute the boundary state by removing the normal component. ---*/
+        /*--- Compute the boundary state by removing or mirroring the normal component,
+              factNorm is 1.0 is removing, factNorm is 2.0 is mirroring. ---*/
         solIntR(i,0) = solIntL(i,0);
-        solIntR(i,1) = solIntL(i,1) - Vn*nx;
-        solIntR(i,2) = solIntL(i,2) - Vn*ny;
+        solIntR(i,1) = solIntL(i,1) - factNorm*Vn*nx;
+        solIntR(i,2) = solIntL(i,2) - factNorm*Vn*ny;
         solIntR(i,3) = solIntL(i,3);
       }
       break;
@@ -5051,11 +5053,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(const CSurfaceElementFEM    
                            + (solIntL(i,2) - surfElem->gridVelocities(i,1))*ny
                            + (solIntL(i,3) - surfElem->gridVelocities(i,2))*nz;
 
-        /*--- Compute the boundary state by removing the normal component. ---*/
+        /*--- Compute the boundary state by removing or mirroring the normal component,
+              factNorm is 1.0 is removing, factNorm is 2.0 is mirroring. ---*/
         solIntR(i,0) = solIntL(i,0);
-        solIntR(i,1) = solIntL(i,1) - Vn*nx;
-        solIntR(i,2) = solIntL(i,2) - Vn*ny;
-        solIntR(i,3) = solIntL(i,3) - Vn*nz;
+        solIntR(i,1) = solIntL(i,1) - factNorm*Vn*nx;
+        solIntR(i,2) = solIntL(i,2) - factNorm*Vn*ny;
+        solIntR(i,3) = solIntL(i,3) - factNorm*Vn*nz;
         solIntR(i,4) = solIntL(i,4);
       }
       break;
@@ -5176,7 +5179,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig             *config,
 
     /*--- Compute the right state by applying the inviscid wall BC's. ---*/
     ColMajorMatrix<su2double> &solIntRight = surfElem[l].standardElemFlow->workSolInt[indRight];
-    BoundaryStates_Euler_Wall(&surfElem[l], solIntLeft, solIntRight);
+    BoundaryStates_Euler_Wall(&surfElem[l], solIntLeft, solIntRight, 1.0);
 
     /*--- The remainder of the contribution of this boundary face to the residual
           is the same for all boundary conditions. Hence a generic function can
@@ -5236,25 +5239,35 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig             *config,
                                        CSurfaceElementFEM  *surfElem,
                                        CNumerics           *conv_numerics) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nFaces = surfElemEnd - surfElemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
 
-    if(i == rank) {
+  /*--- Determine the index in the work arrays where the right solution must be stored. ---*/
+  const unsigned int indRight = omp_get_num_threads() + omp_get_thread_num();
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
+  /*--- Loop over the requested range of surface faces. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
+    /*--- Compute the variables of the left state in the integration point of the face
+          and convert them to primitive variables. ---*/
+    ColMajorMatrix<su2double> &solIntLeft = surfElem[l].ComputeSolSide0IntPoints(volElem);
+    EntropyToPrimitiveVariables(solIntLeft);
+
+    /*--- Compute the right state by applying the mirror BC's. This is almost the same
+          as the Euler wall, except that the normal velocity is mirrored. ---*/
+    ColMajorMatrix<su2double> &solIntRight = surfElem[l].standardElemFlow->workSolInt[indRight];
+    BoundaryStates_Euler_Wall(&surfElem[l], solIntLeft, solIntRight, 2.0);
+
+    /*--- The remainder of the contribution of this boundary face to the residual
+          is the same for all boundary conditions. Hence a generic function can
+          be used to carry out this task. ---*/
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntLeft, solIntRight);
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig             *config,
