@@ -230,7 +230,6 @@ catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 if get_option('enable-mpp')
   cmake = import('cmake')
   mpp_subproj = cmake.subproject('Mutationpp')
-  message('CMaket targets:\n - ' + '\n - '.join(mpp_subproj.target_list()))
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
@@ -240,10 +239,7 @@ if get_option('enable-coolprop')
   cmake = import('cmake')
   cmake_opts = cmake.subproject_options()
   cmake_opts.add_cmake_defines({'COOLPROP_STATIC_LIBRARY': true})
-  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts   )
-  message('CMaket targets:\n - ' + '\n - '.join(coolprop_subproj.target_list()))
-  message('Cmake tagerts include:')
-  message(coolprop_subproj.target_list())
+  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
   coolprop_dep = coolprop_subproj.dependency('CoolProp')
   su2_deps     += coolprop_dep
   su2_cpp_args += '-DHAVE_COOLPROP'
@@ -299,6 +295,7 @@ message('''---------------------------------------------------------------------
          PaStiX:         @9@
          Mixed Float:    @10@
          libROM:         @11@
+         CoolProp:       @12@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -310,10 +307,10 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @12@ install' to compile and install SU2
+         Use './ninja -C @13@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'),
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
            meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
@@ -322,12 +319,6 @@ if get_option('enable-mpp')
           export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
           export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
 
-          ''')
-endif
-
-if get_option('enable-coolprop')
-  message('''
-          In current version, to use CoolProp, disable autodiff please: '-Denable-autodiff=false'
           ''')
 endif
 

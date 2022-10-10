@@ -2936,18 +2936,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
           Breakdown_file << "Critical Pressure (non-dim):   " << config[val_iZone]->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << "\n";
           Breakdown_file << "Critical Temperature (non-dim) :  " << config[val_iZone]->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << "\n";
           break;
-        case COOLPROP:
-          CCoolProp* auxFluidModel = nullptr;
-          auxFluidModel = new CCoolProp(config[val_iZone]->GetFluid_Name());
-          Breakdown_file << "Fluid Model: Peng-Robinson "<< "\n";
-          Breakdown_file << "Specific gas constant: " << auxFluidModel->GetGas_Constant() << " N.m/kg.K." << "\n";
-          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND()<< "\n";
-          Breakdown_file << "Specific Heat Ratio: "<< auxFluidModel->GetGamma() << "\n";
-          Breakdown_file << "Critical Pressure:   " << auxFluidModel->GetPressure_Critical()  << " Pa." << "\n";
-          Breakdown_file << "Critical Temperature:  " << auxFluidModel->GetTemperature_Critical() << " K." << "\n";
-          Breakdown_file << "Critical Pressure (non-dim):   " << auxFluidModel->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << "\n";
-          Breakdown_file << "Critical Temperature (non-dim) :  " << auxFluidModel->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << "\n";
-          break;
+        case COOLPROP: {
+          CCoolProp auxFluidModel(config[val_iZone]->GetFluid_Name());
+          Breakdown_file << "Fluid Model: CoolProp library \n";
+          Breakdown_file << "Specific gas constant: " << auxFluidModel.GetGas_Constant()<< " N.m/kg.K.\n";
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND() << "\n";
+          Breakdown_file << "Specific Heat Ratio: " << auxFluidModel.GetGamma() << "\n";
+          Breakdown_file << "Critical Pressure:   " << auxFluidModel.GetPressure_Critical() << " Pa.\n";
+          Breakdown_file << "Critical Temperature:  " << auxFluidModel.GetTemperature_Critical()<< " K.\n";
+          Breakdown_file << "Critical Pressure (non-dim):   " << auxFluidModel.GetPressure_Critical()/ config[val_iZone]->GetPressure_Ref()<< "\n";
+          Breakdown_file << "Critical Temperature (non-dim) :  " << auxFluidModel.GetTemperature_Critical() / config[val_iZone]->GetTemperature_Ref() << "\n";
+        } break;
       }
 
       if (viscous) {

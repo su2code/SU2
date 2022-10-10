@@ -3733,7 +3733,7 @@ public:
     * \brief Name of fluid that we are using.
     * \return Name of fluid that we are using.
     */
-  string GetFluid_Name(void) const {return FluidName;}
+  string GetFluid_Name(void) const { return FluidName; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.
