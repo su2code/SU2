@@ -112,7 +112,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
     /*--- Inviscid component of the source term. ---*/
     
-    for (auto iVar=0u; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
 
     if (implicit) {
