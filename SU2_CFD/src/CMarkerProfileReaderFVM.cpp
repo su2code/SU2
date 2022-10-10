@@ -57,23 +57,17 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   /* If the file is not found, then we merge the information necessary
    and write a template marker profile file. Otherwise, we read and
    store the information in the marker profile file. */
-  cout << "nijso: waiting, rank "<<rank << endl; 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   if (profile_file.fail()) {
-    cout << "profile fail::merge, rank= "<<rank << endl;
     MergeProfileMarkers();
-    cout << "profile fail::write (only for master), rank="<<rank << endl;
     SU2_MPI::Barrier(SU2_MPI::GetComm());
-    cout << "continuing" << endl;
     WriteMarkerProfileTemplate();
-    cout << "profile fail::end write" << endl;
 
     SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
-    cout << "profile fail::exit" << endl;
 
 }
 
@@ -212,7 +206,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   unsigned long iVertex, iMarker;
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-
+  unsigned long MaxProfiles = 0;
   unsigned long index, iChar;
 
   char str_buf[MAX_STRING_SIZE];
@@ -220,19 +214,14 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
   vector<unsigned long> nRowCum_Counter;
 
-  cout << "start::rank="<<rank << endl;
-
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
 
   /*--- Search all boundaries on the present rank to count the number
    of nodes found on profile markers. ---*/
 
   nLocalPoint = 0; numberOfProfiles = 0;
-  cout << rank << ", nmarker_all = " << config->GetnMarker_All() << endl;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    cout <<rank << " ,marker=" << config->GetMarker_All_KindBC(iMarker) << " " << markerType <<endl;
     if (config->GetMarker_All_KindBC(iMarker) == markerType) {
-      cout << "adding to numberofprofiles" << endl;
       numberOfProfiles++;
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -253,6 +242,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&numberOfProfiles, &MaxProfiles, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
@@ -271,7 +261,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   /*--- Prepare the receive buffers in the master node only. ---*/
 
   if (rank == MASTER_NODE) {
-  cout << "masternode::rank="<<rank << endl;
 
     Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
     Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
@@ -284,15 +273,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
-    cout << "profilecoords resize : " << numberOfProfiles << endl;
     profileCoords.resize(numberOfProfiles);
-    for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
-      cout << "profilecoords resize dimensions: " << dimension << endl;
+    for (iMarker = 0; iMarker < MaxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
     }
 
   }
-  cout << "main::rank="<<rank << endl;
 
   /*--- Main communication routine. Loop over each coordinate and perform
    the MPI comm. Temporary 1-D buffers are used to send the coordinates at
@@ -342,11 +328,9 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       }
     }
 
-  cout << "nijso mergeprofiles, rank = " << rank << endl;
 
   }
 
-  cout << "nijso end mergeprofiles, rank = " << rank << endl;
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Gather the coordinate data on the master node using MPI. ---*/
@@ -366,7 +350,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    cout << "entering master mode" << endl;
     profileTags.clear();
 
     /*--- First, parse the marker tags to count how many total profile markers
@@ -382,7 +365,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         profileTags.push_back(str_buf);
       }
     }
-    cout << "erase" << endl;
 
     /*--- Remove the duplicate profile marker strings. From 1 per point to 1 per marker. ---*/
 
@@ -395,7 +377,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     numberOfProfiles = profileTags.size();
 
     /*--- Count the number of rows (nodes) per marker. ---*/
-    cout << "resize" << endl;
 
     numberOfRowsInProfile.resize(numberOfProfiles,0.0);
     jPoint = 0;
@@ -411,12 +392,9 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     }
 
     /*--- Load up the coordinates, sorted into chunks per marker. ---*/
-    cout << "coords" << endl;
 
     jPoint = 0; kPoint = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-
-    cout << "iProcessor = " << iProcessor << endl;
 
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
         for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
@@ -439,16 +417,13 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       }
 
       /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-    cout << "adjust jpoint = "<<iProcessor << " " << MaxLocalPoint << endl;
 
       jPoint = (iProcessor+1)*MaxLocalPoint;
 
     }
-  cout << "exiting master mode" << endl;
 
   }
 
-  cout << "nijso deleting, rank = " << rank << endl;
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Immediately release the temporary data buffers. ---*/
@@ -472,7 +447,6 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
   /*--- Count the number of columns that we have for this case.
    Here, we have dimension entries for node coordinates and then the
    total number of columns of data specified in the constructor. ---*/
-cout << "nijso:writemarker" << endl;
   const unsigned short nColumns = dimension + numberOfVars;
 
   /*--- Write the profile file. Note that we have already merged
@@ -480,7 +454,6 @@ cout << "nijso:writemarker" << endl;
    in the MergeProfileMarkers() routine and only the master writes. ---*/
 
   if (rank == MASTER_NODE) {
-cout << "nijso:masterwritemarker" << endl;
 
     ofstream node_file("example_"+filename);
 
@@ -524,7 +497,6 @@ cout << "nijso:masterwritemarker" << endl;
     node_file.close();
 
     /*--- Print a message to inform the user about the template file. ---*/
-cout << "nijso:masterwritemarker" << endl;
 
     stringstream err;
     err << endl;
@@ -535,11 +507,9 @@ cout << "nijso:masterwritemarker" << endl;
     err << "  You can use this file as a guide for making your own profile" << endl;
     err << "  specification." << endl << endl;
     SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
-cout << "nijso:masterwritemarker" << endl;
 
   }
 
-cout << "nijso: waiting " << endl;
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 }
