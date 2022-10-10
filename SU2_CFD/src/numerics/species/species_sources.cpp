@@ -101,9 +101,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
     const su2double yinv = 1.0 / Coord_i[1];
 
-    /*--- The incompressible density. Note that this is different for compressible flows ---*/
-
-    Density_i = V_i[nDim+2];
+    const su2double Density_i = V_i[idx.Density()];
 
     /*--- Set primitive variables at points iPoint. ---*/
     
