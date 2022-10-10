@@ -99,7 +99,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);      
 
-    yinv = 1.0/Coord_i[1];
+    yinv = 1.0 / Coord_i[1];
 
     /*--- The incompressible density. Note that this is different for compressible flows ---*/
 
