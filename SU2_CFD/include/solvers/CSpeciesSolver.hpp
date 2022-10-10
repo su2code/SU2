@@ -151,14 +151,14 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     * (like BC_Isothermal_Wall) are implemented the respective CHeatSolver implementations can act as a  starting
     * point ---*/
 
-  /*!
-   * \brief Source term computation for axisymmetric flow.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Container for description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                       CConfig *config, unsigned short iMesh) override;
+   /*!
+    * \brief Source term computation for axisymmetric flow.
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] numerics_container - Container for description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] iMesh - Index of the mesh in multigrid computations.
+    */
+   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                        CConfig *config, unsigned short iMesh) override;
 };
