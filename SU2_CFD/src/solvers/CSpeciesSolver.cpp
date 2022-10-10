@@ -562,7 +562,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
 
-      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), 0);
 
       /*--- Set volume of the dual cell. ---*/
 
