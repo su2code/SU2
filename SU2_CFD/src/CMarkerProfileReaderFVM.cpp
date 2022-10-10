@@ -61,7 +61,6 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   if (profile_file.fail()) {
     MergeProfileMarkers();
     WriteMarkerProfileTemplate();
-
   } else {
     ReadMarkerProfile();
   }
@@ -269,6 +268,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
+
     profileCoords.resize(numberOfProfiles);
     for (iMarker = 0; iMarker < MaxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
@@ -323,11 +323,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         }
       }
     }
-
-
   }
-
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Gather the coordinate data on the master node using MPI. ---*/
 
@@ -419,8 +415,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
     }
   }
-
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Immediately release the temporary data buffers. ---*/
 
