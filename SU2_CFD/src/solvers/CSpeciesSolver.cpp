@@ -573,7 +573,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       /*--- Axisymmetry source term for the scalar equation. ---*/
       /*--- Set y coordinate ---*/
       
-      numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
+      numerics->SetCoord(geometry->nodes->GetCoord(i_point), nullptr);
       
       /*--- Set gradients ---*/
       
