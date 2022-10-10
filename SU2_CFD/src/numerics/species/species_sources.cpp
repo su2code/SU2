@@ -116,8 +116,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
 
     if (implicit) {
-      for (auto iVar=0u; iVar < nVar; iVar++) {
-        jacobian[iVar][iVar] -= yinv*Volume*Velocity_i[1];
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        jacobian[iVar][iVar] -= yinv * Volume * Velocity_i[1];
       }
     }
 
