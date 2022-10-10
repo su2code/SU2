@@ -549,7 +549,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
 
-  if(axisymmetric){
+  if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
   
     SU2_OMP_FOR_DYN(omp_chunk_size)
