@@ -42,6 +42,7 @@
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
 #include "../../include/fluid/CUnityLewisDiffusivity.hpp"
+#include "../../include/fluid/CDifferentLewisDiffusivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
   switch (config->GetKind_ViscosityModel()) {
@@ -115,6 +116,10 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       break;
     case DIFFUSIVITYMODEL::UNITY_LEWIS:
       return unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());
+      break;
+    case DIFFUSIVITYMODEL::DIFFERENT_LEWIS:
+      return unique_ptr<CDifferentLewisDiffusivity>(
+          new CDifferentLewisDiffusivity(config->GetDifferent_Lewis_Number(iSpecies)));
       break;
     default:
       SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);
