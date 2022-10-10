@@ -70,7 +70,6 @@ CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_n
 template <class T>
 CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const CConfig* config) {
   
-  su2double yinv,Density_i,Velocity_i[3];
 
   /*--- Preaccumulation ---*/
   AD::StartPreacc();
