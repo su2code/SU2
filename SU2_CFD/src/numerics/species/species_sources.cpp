@@ -103,7 +103,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     const su2double Density_i = V_i[idx.Density()];
     
     /*--- Set primitive variables at points iPoint. ---*/
-    su2double* Velocity_i;
+    su2double Velocity_i[3];
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
