@@ -85,9 +85,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
   /*--- Initialization. ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    residual[i_var] = 0.0;
-    for (auto j_var = 0; j_var < nVar; j_var++) {
-      jacobian[i_var][j_var] = 0.0;
+    residual[iVar] = 0.0;
+    for (auto jVar = 0; jVar < nVar; jVar++) {
+      jacobian[iVar][jVar] = 0.0;
     }
   }
 
@@ -101,9 +101,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     const su2double yinv = 1.0 / Coord_i[1];
 
     const su2double Density_i = V_i[idx.Density()];
-
-    /*--- Set primitive variables at points iPoint. ---*/
     
+    /*--- Set primitive variables at points iPoint. ---*/
+    su2double* Velocity_i;
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
