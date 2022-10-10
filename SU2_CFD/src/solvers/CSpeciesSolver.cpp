@@ -591,7 +591,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
       if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
     
-    }//;
+    }
     END_SU2_OMP_FOR
   }
 }
