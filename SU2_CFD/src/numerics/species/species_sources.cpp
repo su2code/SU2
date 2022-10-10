@@ -128,7 +128,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
       su2double Mass_Diffusivity_Tur = 0.0;
       if (inc_rans)
-        Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
+        Mass_Diffusivity_Tur = Eddy_Viscosity_i / Sc_t;
 
       for (auto iVar=0u; iVar < nVar; iVar++){
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
