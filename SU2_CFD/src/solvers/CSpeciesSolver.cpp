@@ -554,8 +554,6 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    //auto SolverSpecificNumerics = [&](unsigned long iPoint) {
-
       /*--- Set primitive variables w/o reconstruction ---*/
 
       numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point), nullptr);
