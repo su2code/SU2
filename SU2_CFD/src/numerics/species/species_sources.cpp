@@ -124,7 +124,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     /*--- Add the viscous terms if necessary. ---*/
     
     if (config->GetViscous()) {
-      Eddy_Viscosity_i       = V_i[nDim+5];
+      Eddy_Viscosity_i = V_i[nDim+5];
 
       su2double Mass_Diffusivity_Tur = 0.0;
       if (inc_rans)
