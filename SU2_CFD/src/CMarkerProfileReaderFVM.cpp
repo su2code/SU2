@@ -61,6 +61,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   if (profile_file.fail()) {
     MergeProfileMarkers();
     WriteMarkerProfileTemplate();
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
@@ -269,7 +270,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
 
-    profileCoords.resize(numberOfProfiles);
+    profileCoords.resize(MaxProfiles);
     for (iMarker = 0; iMarker < MaxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
     }
