@@ -57,14 +57,11 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   /* If the file is not found, then we merge the information necessary
    and write a template marker profile file. Otherwise, we read and
    store the information in the marker profile file. */
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   if (profile_file.fail()) {
     MergeProfileMarkers();
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
     WriteMarkerProfileTemplate();
 
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
@@ -237,7 +234,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   Buffer_Send_nPoin[0] = nLocalPoint;
 
   /*--- Communicate the total number of nodes on this domain. ---*/
-  cout << "gathering::rank="<<rank << endl;
 
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
@@ -347,9 +343,9 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
                   Buffer_Recv_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master node unpacks and sorts this variable by marker tag. ---*/
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
+
     profileTags.clear();
 
     /*--- First, parse the marker tags to count how many total profile markers
@@ -395,17 +391,18 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
     jPoint = 0; kPoint = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
         for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+
           if (profileTags[iMarker] == Marker_Tags[kPoint]) {
 
             /*--- Find our current index for this marker and store coords. ---*/
+
             profileCoords[iMarker][0].push_back(Buffer_Recv_X[jPoint]);
             profileCoords[iMarker][1].push_back(Buffer_Recv_Y[jPoint]);
-            if (dimension == 3){
+            if (dimension == 3)
               profileCoords[iMarker][2].push_back(Buffer_Recv_Z[jPoint]);
-            }
+
           }
         }
 
@@ -421,7 +418,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       jPoint = (iProcessor+1)*MaxLocalPoint;
 
     }
-
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -447,6 +443,7 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
   /*--- Count the number of columns that we have for this case.
    Here, we have dimension entries for node coordinates and then the
    total number of columns of data specified in the constructor. ---*/
+
   const unsigned short nColumns = dimension + numberOfVars;
 
   /*--- Write the profile file. Note that we have already merged
@@ -509,7 +506,5 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
     SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
 
   }
-
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 }
