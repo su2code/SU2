@@ -85,7 +85,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
   }
 
   /*--- Initialization. ---*/
-  for (auto i_var = 0; i_var < nVar; i_var++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     residual[i_var] = 0.0;
     for (auto j_var = 0; j_var < nVar; j_var++) {
       jacobian[i_var][j_var] = 0.0;
