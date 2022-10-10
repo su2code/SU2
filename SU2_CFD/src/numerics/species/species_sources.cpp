@@ -105,7 +105,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     /*--- Set primitive variables at points iPoint. ---*/
     
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
     /*--- Inviscid component of the source term. ---*/
     
