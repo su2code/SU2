@@ -1205,11 +1205,25 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    if(config->GetKind_FluidModel() == COOLPROP){
+          CCoolProp* auxFluidModel = nullptr;
+          auxFluidModel = new CCoolProp(config->GetFluid_Name());
+          NonDimTable << "Gas Constant" << auxFluidModel->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << auxFluidModel->GetGas_Constant()/config->GetGas_Constant_Ref();
+          delete auxFluidModel;
+      }
+    else
+        NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    if(config->GetKind_FluidModel() == COOLPROP){
+          CCoolProp* auxFluidModel = nullptr;
+          auxFluidModel = new CCoolProp(config->GetFluid_Name());
+        NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
+          delete auxFluidModel;
+      }
+    else
+        NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
