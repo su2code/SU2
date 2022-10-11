@@ -1334,8 +1334,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SCHMIDT_NUMBER_LAMINAR", Schmidt_Number_Laminar, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.70 (more or less experimental value) \ingroup Config*/
   addDoubleOption("SCHMIDT_NUMBER_TURBULENT", Schmidt_Number_Turbulent, 0.7);
-  /*!\brief DESCRIPTION: Different Lewis number for mass diffusion */
-  addDoubleListOption("DIFFERENT_LEWIS_NUMBER", nDifferent_Lewis_Number, Different_Lewis_Number);
+  /*!\brief DESCRIPTION: Constant Lewis number for mass diffusion */
+  addDoubleListOption("CONSTANT_LEWIS_NUMBER", nConstant_Lewis_Number, Constant_Lewis_Number);
 
   vel_inf[0] = 1.0; vel_inf[1] = 0.0; vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
@@ -3780,7 +3780,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     Thermal_Conductivity_Constant_Default);
   SetDefaultIfEmpty(Prandtl_Lam, nPrandtl_Lam, Prandtl_Lam_Default);
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
-  SetDefaultIfEmpty(Different_Lewis_Number, nDifferent_Lewis_Number, Lewis_Number_Default);
+  SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
@@ -5373,11 +5373,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("A DIFFUSIVITY_CONSTANT=<value> has to be set with DIFFUSIVITY_MODEL= CONSTANT_DIFFUSIVITY.", CURRENT_FUNCTION);
 
     /*--- Check whether the number of entries of the different Lewis numbers equals the number of transported scalar
-       equations solved. nDifferent_Lewis_Number is used because it is required for the diffusivity fluid mixing
+       equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
        models--- */
-    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::DIFFERENT_LEWIS && nDifferent_Lewis_Number != nSpecies_Init)
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
       SU2_MPI::Error(
-          "The use of DIFFERENT_LEWIS requires the number of entries for DIFFERENT_LEWIS_NUMBER ,\n"
+          "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
           "to be equal to the number of entries of SPECIES_INIT",
           CURRENT_FUNCTION);
 

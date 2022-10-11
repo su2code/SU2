@@ -1,7 +1,7 @@
 /*!
- * \file CUnityLewisDiffusivity.hpp
- * \brief Defines unity Lewis mass diffusivity.
- * \author M.Heimgartner
+ * \file CConstantLewisDiffusivity.hpp
+ * \brief Defines Constant Lewis mass diffusivity.
+ * \author M.Heimgartner, C.Morales
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,20 +30,25 @@
 #include "CDiffusivityModel.hpp"
 
 /*!
- * \class CUnityLewisDiffusivity
- * \brief Defines a unity Lewis mass diffusivity model for species equations.
- * \author M.Heimgartner
+ * \class CConstantLewisDiffusivity
+ * \brief Defines a Constant Lewis mass diffusivity model for species equations.
+ * \author M.Heimgartner, C.Morales
  */
-class CUnityLewisDiffusivity final : public CDiffusivityModel {
+class CConstantLewisDiffusivity final : public CDiffusivityModel {
  public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantLewisDiffusivity(su2double Lewis) : Lewis_(Lewis) {}
+
   /*!
    * \brief Set diffusivity.
    */
   void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
                       su2double kt) override {
-    diff_ = kt / (Lewis * rho * cp);
+    diff_ = kt / (Lewis_ * rho * cp);
   }
 
  private:
-  const su2double Lewis{1.0};
+  const su2double Lewis_{1.0};
 };

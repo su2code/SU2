@@ -833,12 +833,12 @@ private:
   nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
   nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
   nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
-  nDifferent_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
+  nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
-  su2double *Different_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
+  su2double *Constant_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
@@ -3852,12 +3852,13 @@ public:
    * \return Turbulent Schmidt number for scalar transport.
    */
   su2double GetSchmidt_Number_Turbulent(void) const { return Schmidt_Number_Turbulent; }
-  
+
   /*!
    * \brief Get the value of the Lewis number for each species.
    * \return Lewis Number.
    */
-  su2double GetDifferent_Lewis_Number(unsigned short val_index = 0) const { return Different_Lewis_Number[val_index]; }
+  su2double GetConstant_Lewis_Number(unsigned short val_index = 0) const { return Constant_Lewis_Number[val_index]; }
+
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
