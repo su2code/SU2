@@ -633,10 +633,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
-    Jacobian_i[0][0] = yinv * Volume * rhov;
-    Jacobian_i[0][1] = 0.0; 
-    Jacobian_i[1][0] = 0.0; 
-    Jacobian_i[1][1] = yinv * Volume * rhov;
+    Jacobian_i[0][0] -= yinv * Volume * rhov;
+    Jacobian_i[0][1] -= 0.0; 
+    Jacobian_i[1][0] -= 0.0; 
+    Jacobian_i[1][1] -= yinv * Volume * rhov;
 
   }
 
