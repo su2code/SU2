@@ -71,7 +71,7 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
   bool implicit;
   bool viscous;
   bool inc_rans;
-  bool incompressible;
+  bool turbulence;
   su2double Sc_t;
 
  public:

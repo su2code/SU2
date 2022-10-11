@@ -60,7 +60,7 @@ CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_n
     idx(val_nDim, config->GetnSpecies()) {
   implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
   viscous = config->GetViscous();
-  inc_rans = (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS);
+  turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
   incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Sc_t = config->GetSchmidt_Number_Turbulent();
@@ -124,7 +124,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
 
       su2double Mass_Diffusivity_Tur = 0.0;
-      if (inc_rans)
+      if (turbulence)
         Mass_Diffusivity_Tur = Eddy_Viscosity_i / Sc_t;
 
       for (auto iVar=0u; iVar < nVar; iVar++){
