@@ -2285,7 +2285,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             << "\n";
         file << "Critical Temperature (non-dim) :  "
             << auxFluidModel.GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
-            } break;
+        } break;
     }
 
     if (viscous) {
