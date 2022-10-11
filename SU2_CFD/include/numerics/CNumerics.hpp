@@ -1613,7 +1613,6 @@ public:
   virtual inline void Setrethetat_eq(su2double val_rethetat_eq_i, su2double val_rethetat_eq_j) { }
   virtual inline void SetT_param(su2double val_T_param_i, su2double val_T_param_j) { }
   virtual inline void Setdelta_param(su2double val_delta_param_i, su2double val_delta_param_j) { }
-  virtual inline void SetU_mag(su2double val_U_mag_i, su2double val_U_mag_j) { }
   virtual inline void SetReThetat_SCF(su2double val_ReThetat_SCF_i, su2double val_ReThetat_SCF_j) { }
   virtual void SetF_thetat_2(su2double val_F_thetat_2_i, su2double val_F_thetat_2_j) { }
 
@@ -1623,9 +1622,6 @@ public:
   inline virtual void SetIntermittency(su2double intermittency_in) { }
   inline virtual void SetReV(su2double Re_V_in) { }
 
-
-  inline virtual su2double getProductionTerm() {return 0.0;}
-  inline virtual su2double getDestructionTerm() {return 0.0;}
 
 
 

@@ -39,12 +39,10 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType intermittency;         /*!< \brief Value of the intermittency for the BC trans. model. */
+  VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. models. */
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
 
-  VectorType Production;
-  VectorType Destruction;
 public:
   /*!
    * \brief Constructor of the class.
@@ -64,14 +62,14 @@ public:
   ~CTurbSAVariable() override = default;
 
   /*!
-   * \brief Get the intermittency of the BC transition model.
+   * \brief Get the intermittency of the transition model.
    * \param[in] iPoint - Point index.
-   * \return Value of the intermittency of the BC transition model.
+   * \return Value of the intermittency of the transition model.
    */
   inline su2double GetIntermittency(unsigned long iPoint) const override { return intermittency(iPoint); }
 
   /*!
-   * \brief Set the intermittency of the BC transition model.
+   * \brief Set the intermittency of the transition model.
    * \param[in] iPoint - Point index.
    * \param[in] val_gamma - New value of the intermittency.
    */
@@ -103,12 +101,6 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
-
-
-  inline void SetProductionTerm(unsigned long iPoint, su2double val_production) override {Production(iPoint) = val_production;}
-  inline void SetDestructionTerm(unsigned long iPoint, su2double val_destruction) override {Destruction(iPoint) = val_destruction;}
-  inline su2double GetProductionTerm(unsigned long iPoint) const override { return Production(iPoint); }
-  inline su2double GetDestructionTerm(unsigned long iPoint) const override { return Destruction(iPoint); }
 
   /*!
     * \brief Set the value of the turbulence index.

@@ -2249,42 +2249,33 @@ public:
 
   // Transition functions
 
-  virtual void Set_kAndw(unsigned long iPoint, su2double VorticityMag, su2double VelocityMag, su2double val_eddy_viscosity, su2double StrainMag, su2double val_dist,
+  virtual void Set_kAndw(unsigned long iPoint, su2double VorticityMag, su2double val_velocity, su2double val_eddy_viscosity, su2double StrainMag, su2double val_dist,
                          su2double val_viscosity, CConfig *config) { };
   virtual void SetF_onset(unsigned long iPoint, su2double val_density, su2double StrainMag, su2double val_dist,
-                          su2double val_viscosity, su2double *TurbVars, su2double val_eddy_viscosity, su2double VorticityMag, CConfig *config) { };
+                          su2double val_viscosity, su2double *TurbVars, su2double val_eddy_viscosity, su2double VorticityMag, su2double val_velocity, CConfig *config) { };
   virtual void SetF_length(su2double *Velocity, unsigned long iPoint, su2double val_density, su2double *TurbVars,
                            su2double val_dist, su2double val_viscosity, CConfig *config) { };
   virtual void SetF_turb(unsigned long iPoint) { };
-  virtual void Setrethetat_eq(unsigned long iPoint, su2double *Velocity, su2double VelocityMag, CMatrixView<const su2double> Velocity_Gradient,
+  virtual void Setrethetat_eq(unsigned long iPoint, su2double *Velocity, su2double val_velocity, CMatrixView<const su2double> Velocity_Gradient,
                               su2double *TurbVars, su2double val_viscosity, su2double val_density, CConfig *config) { };
-  virtual void SetT(unsigned long iPoint, su2double *Velocity, su2double val_viscosity, su2double val_density, su2double val_localGridLength, su2double val_mu_T) { };
+  virtual void SetT(unsigned long iPoint, su2double val_velocity, su2double val_viscosity, su2double val_density, su2double val_localGridLength, su2double val_mu_T) { };
   virtual void SetF_thetat(unsigned long iPoint, su2double val_density, su2double *TurbVars, su2double val_dist,
-                           su2double val_viscosity, su2double val_vort, su2double* constants, CConfig *config) { };
+                           su2double val_viscosity, su2double val_vort, su2double val_velocity, su2double* constants, CConfig *config) { };
   virtual void SetF_thetat_2(unsigned long iPoint, su2double val_dist) { };
   virtual void SetReThetat_SCF(unsigned long iPoint, su2double val_dist, su2double val_density, su2double* val_velocity, su2double val_velocityMag, su2double hRoughness, su2double* val_vorticity, su2double val_viscosity, su2double val_eddy_viscosity) { };
   virtual void Setgamma_sep(unsigned long iPoint, su2double val_density, su2double *TurbVars, su2double val_viscosity,
                             su2double val_dist, su2double StrainMag, su2double val_vort, su2double* constants) { };
-  virtual void SetDebugQuantities(unsigned long iPoint, su2double* constants, su2double val_density,
-                                  su2double StrainMag, su2double val_vort, su2double val_dist,
-                                  su2double val_viscosity, su2double *TurbVars) { };
+
 
   inline virtual su2double Getrew(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_length1(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_sublayer(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_length(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetreV(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double GetF_onset1(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetR_T(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double GetF_onset2(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double GetF_onset3(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_onset(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_turb(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double GetVelocity_Mag(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetT(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double Getdu_dx(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double Getdu_dy(unsigned long iPoint) const {return 0.0;};
-  inline virtual su2double Getdu_dz(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetdU_ds(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetTurb_Intens(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_lambda(unsigned long iPoint) const {return 0.0;};
@@ -2296,25 +2287,8 @@ public:
   inline virtual su2double GetF_wake(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_thetat(unsigned long iPoint) const {return 0.0;};
   inline virtual su2double GetF_Reattach(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetProductionGamma(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetProductionReTheta(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetDestructionGamma(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetDist(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetUx(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetUy(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetUz(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetReThetat_SCF(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetF_thetat_2(unsigned long iPoint) const { return 0.0; }
-
-
-  inline virtual su2double GetLambdaTheta_L(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetTU_L(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetFPG(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetReThetaC_Corr(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetF_Lambda_New(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetReThetaC_Corr_New(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double Getk(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double Getw(unsigned long iPoint) const { return 0.0; }
 
 
 

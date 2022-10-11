@@ -51,7 +51,6 @@ private:
               T_param_i,
               F_wake_i,
               delta_param_i,
-              U_mag_i,
               ReThetat_SCF_i,
               F_thetat_2_i;
 
@@ -63,7 +62,6 @@ private:
               T_param_j,
               F_wake_j,
               delta_param_j,
-              U_mag_j,
               ReThetat_SCF_j,
               F_thetat_2_j;
 
@@ -215,11 +213,6 @@ public:
     inline void Setdelta_param(su2double val_delta_param_i, su2double val_delta_param_j) override {
       delta_param_i = val_delta_param_i;
       delta_param_j = val_delta_param_j;
-    }
-
-    inline void SetU_mag(su2double val_U_mag_i, su2double val_U_mag_j) override {
-      U_mag_i = val_U_mag_i;
-      U_mag_j = val_U_mag_j;
     }
 
     inline void SetReThetat_SCF(su2double val_ReThetat_SCF_i, su2double val_ReThetat_SCF_j) override {

@@ -1077,56 +1077,33 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
 
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM2015:
-      AddVolumeOutput("RE_THETA_T_SCF", "LM_re_theta_t_scf", "DEBUG", "LM Critical stationary-cross-flow Reynolds number (from correlations)");
-      AddVolumeOutput("F_THETA_T_2", "LM_f_theta_t_2", "DEBUG", "LM Blending function for Re_Theta_t");
+      AddVolumeOutput("RE_THETA_T_SCF", "LM_re_theta_t_scf", "TRANS_VARS", "LM Critical stationary-cross-flow Reynolds number (from correlations)");
+      AddVolumeOutput("F_THETA_T_2", "LM_f_theta_t_2", "TRANS_VARS", "LM Blending function for Re_Theta_t");
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
-      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM Transition Reynolds number");
       AddVolumeOutput("TURB_INDEX", "Turb_index", "SOLUTION", "Turbulence index");
-      AddVolumeOutput("RE_THETA_T_EQ", "LM_re_theta_t_eq", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("RE_THETA_C", "LM_re_theta_c", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("RE_V", "LM_re_V", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("RE_W", "LM_re_w", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("R_T", "LM_R_T", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("DELTA", "LM_delta", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_THETA_T", "LM_f_theta_t", "DEBUG", "LM Blending function for Re_Theta_t");
-      AddVolumeOutput("F_WAKE", "LM_f_wake", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_REATTACH", "F_Reattach", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_LENGTH_1", "F_Length_1", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_LENGTH", "F_Length", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_SUBLAYER", "F_Sublayer", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_ONSET", "F_Onset", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_LAMBDA", "F_Lambda", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("F_LAMBDA_NEW", "F_Lambda_new", "DEBUG", "LM Critical Reynolds number (from correlations)");
-      AddVolumeOutput("T_PARAM", "LM_T", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("LAMBDA_THETA", "LM_Lambda_Theta", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("PROD_GAMMA", "LM_prod_gamma", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("PROD_RE_THETA_T", "LM_prod_re_theta_t", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DESTR_GAMMA", "LM_destr_gamma", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("PROD_NU_TILDE", "SA_prod_nu_tilde", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DESTR_NU_TILDE", "SA_destr_nu_tilde", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("TI", "LM_TI", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("THETA_T", "LM_THETA_T", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DIST", "distance", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DU_DS", "Du_Ds", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DU_DX", "Du_Dx", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DU_DY", "Du_Dy", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("DU_DZ", "Du_Dz", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("U", "U_Mag", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("UX", "U_x", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("UY", "U_y", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("UZ", "U_z", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("LAMBDATHETA_L", "LambdaTheta_L", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("TU_L", "TU_L", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("FPG", "FPG", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("RETHETAC_CORR", "ReThetaC_Corr", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("RETHETAC_CORR_NEW", "ReThetaC_Corr_new", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("STRAINMAG", "StrainMag", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("VORTMAG", "VorticityMag", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("K", "K", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("W", "W", "DEBUG", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      AddVolumeOutput("RE_THETA_T_EQ", "LM_re_theta_t_eq", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_THETA_C", "LM_re_theta_c", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_V", "LM_re_V", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("RE_W", "LM_re_w", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("R_T", "LM_R_T", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("DELTA", "LM_delta", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_THETA_T", "LM_f_theta_t", "TRANS_VARS", "LM Blending function for Re_Theta_t");
+      AddVolumeOutput("F_WAKE", "LM_f_wake", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_REATTACH", "F_Reattach", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LENGTH_1", "F_Length_1", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LENGTH", "F_Length", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_SUBLAYER", "F_Sublayer", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_ONSET", "F_Onset", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("F_LAMBDA", "F_Lambda", "TRANS_VARS", "LM Critical Reynolds number (from correlations)");
+      AddVolumeOutput("T_PARAM", "LM_T", "TRANS_VARS", "LM RE_THETA_T");
+      AddVolumeOutput("LAMBDA_THETA", "LM_Lambda_Theta", "TRANS_VARS", "LM RE_THETA_T");
+      AddVolumeOutput("TI", "LM_TI", "TRANS_VARS", "LM RE_THETA_T");
+      AddVolumeOutput("THETA_T", "LM_THETA_T", "TRANS_VARS", "LM RE_THETA_T");
+      AddVolumeOutput("DU_DS", "Du_Ds", "TRANS_VARS", "LM RE_THETA_T");
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "TRANS_VARS", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "TRANS_VARS", "LM RE_THETA_T");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1136,9 +1113,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
     AddVolumeOutput("TURB_INDEX", "Turb_index", "SOLUTION", "Turbulence index");
-    AddVolumeOutput("PROD_NU_TILDE", "SA_prod_nu_tilde", "DEBUG", "LM RE_THETA_T");
-    AddVolumeOutput("DESTR_NU_TILDE", "SA_destr_nu_tilde", "DEBUG", "LM RE_THETA_T");
-  }
+   }
 
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -1301,36 +1276,13 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       SetVolumeOutputValue("F_SUBLAYER", iPoint, Node_Trans->GetF_sublayer(iPoint));
       SetVolumeOutputValue("F_ONSET", iPoint, Node_Trans->GetF_onset(iPoint));
       SetVolumeOutputValue("F_LAMBDA", iPoint, Node_Trans->GetF_lambda(iPoint));
-      SetVolumeOutputValue("F_LAMBDA_NEW", iPoint, Node_Trans->GetF_Lambda_New(iPoint));
       SetVolumeOutputValue("LAMBDA_THETA", iPoint, Node_Trans->Getlambda_theta(iPoint));
       SetVolumeOutputValue("T_PARAM", iPoint, Node_Trans->GetT(iPoint));
       SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint,Node_Trans->GetGammaSep(iPoint));
       SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint,Node_Trans->GetGammaEff(iPoint));
-      SetVolumeOutputValue("PROD_GAMMA", iPoint, Node_Trans->GetProductionGamma(iPoint));
-      SetVolumeOutputValue("PROD_RE_THETA_T", iPoint,Node_Trans->GetProductionReTheta(iPoint));
-      SetVolumeOutputValue("DESTR_GAMMA", iPoint,Node_Trans->GetDestructionGamma(iPoint));
-      SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
-      SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
       SetVolumeOutputValue("TI", iPoint,Node_Trans->GetTurb_Intens(iPoint));
       SetVolumeOutputValue("THETA_T", iPoint,Node_Trans->Getthetat(iPoint));
-      SetVolumeOutputValue("DIST", iPoint,Node_Trans->GetDist(iPoint));
       SetVolumeOutputValue("DU_DS", iPoint,Node_Trans->GetdU_ds(iPoint));
-      SetVolumeOutputValue("DU_DX", iPoint,Node_Trans->Getdu_dx(iPoint));
-      SetVolumeOutputValue("DU_DY", iPoint,Node_Trans->Getdu_dy(iPoint));
-      SetVolumeOutputValue("DU_DZ", iPoint,Node_Trans->Getdu_dz(iPoint));
-      SetVolumeOutputValue("U", iPoint,Node_Trans->GetVelocity_Mag(iPoint));
-      SetVolumeOutputValue("UX", iPoint,Node_Trans->GetUx(iPoint));
-      SetVolumeOutputValue("UY", iPoint,Node_Trans->GetUy(iPoint));
-      SetVolumeOutputValue("UZ", iPoint,Node_Trans->GetUz(iPoint));
-      SetVolumeOutputValue("LAMBDATHETA_L", iPoint,Node_Trans->GetLambdaTheta_L(iPoint));
-      SetVolumeOutputValue("TU_L", iPoint,Node_Trans->GetTU_L(iPoint));
-      SetVolumeOutputValue("FPG", iPoint,Node_Trans->GetFPG(iPoint));
-      SetVolumeOutputValue("RETHETAC_CORR", iPoint,Node_Trans->GetReThetaC_Corr(iPoint));
-      SetVolumeOutputValue("RETHETAC_CORR_NEW", iPoint,Node_Trans->GetReThetaC_Corr_New(iPoint));
-      SetVolumeOutputValue("STRAINMAG", iPoint,Node_Flow->GetStrainMag(iPoint));
-      SetVolumeOutputValue("VORTMAG", iPoint, GeometryToolbox::Norm(3, Node_Flow->GetVorticity(iPoint)));
-      SetVolumeOutputValue("K", iPoint, Node_Trans->Getk(iPoint));
-      SetVolumeOutputValue("W", iPoint, Node_Trans->Getw(iPoint));
       SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
 
@@ -1342,9 +1294,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittency(iPoint));
     SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
-    SetVolumeOutputValue("PROD_NU_TILDE", iPoint,Node_Turb->GetProductionTerm(iPoint));
-    SetVolumeOutputValue("DESTR_NU_TILDE", iPoint,Node_Turb->GetDestructionTerm(iPoint));
-  }
+     }
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));

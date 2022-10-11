@@ -403,13 +403,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (transition_LM || transition_BC) {
-
-          nodes->SetProductionTerm(iPoint, numerics->getProductionTerm());
-          nodes->SetDestructionTerm(iPoint, numerics->getDestructionTerm());
-
-    }
-
 
     /*--- Subtract residual and the Jacobian ---*/
 

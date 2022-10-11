@@ -115,7 +115,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   lowerlimit[1] = 1.0e-4;
   upperlimit[1] = 1.0e15;
 
-  // forse basta quello che fa in SST solver:
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double TU_inf;
 
@@ -133,9 +132,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   else {
     re_thetat_Inf = 331.5*pow(TU_inf-0.5658,-0.671);
   }
-
-//  cout << "TU_inf = " << TU_inf << endl;
-//  cout << "ReTheta_inf = " << re_thetat_Inf << endl;
 
 
   Solution_Inf[0] = intermittency_Inf;
@@ -185,7 +181,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Avg_CFL_Local = CFL;
 
   /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "LM model";   // da capire cosa farci con il solver name!
+  SolverName = "LM model";   
 
 }
 
@@ -201,10 +197,6 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
-
-  // modificata da me
-
-//  cout << "CTransLMSolver::PostProcessing" << endl;
 
     /*--- Compute transition gradients. ---*/
 
@@ -232,8 +224,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                       CNumerics* numerics, CConfig* config) {
 
-//    if(iEdge == 0)
-//      cout << "CTransLMSolver::Viscous_Residual" << endl;
 
     /*--- Define an object to set solver specific numerics contribution. ---*/
     auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) { };
@@ -247,7 +237,6 @@ void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-//  cout << "CTransLMSolver::Source_Residual" << endl;
 
     bool axisymmetric = config->GetAxisymmetric();
 
@@ -289,21 +278,19 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
         numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
 
         if(geometry->nodes->GetWall_Distance(iPoint) > 1e-10) {
+
           su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-          VorticityMag = max(VorticityMag, 1e-12);  // safety against division by zero
+          VorticityMag = max(VorticityMag, 1e-12);  
 
           // Aggiunto da me, sono da settare
           su2double Velocity[nDim];
           Velocity[0] = flowNodes->GetVelocity(iPoint, 0);
           Velocity[1] = flowNodes->GetVelocity(iPoint, 1);
           if (nDim == 3) Velocity[2] = flowNodes->GetVelocity(iPoint, 2);
-//          cout << Velocity[0] << " " << Velocity[1];
-//          if (nDim == 3) cout << " " << Velocity[2];
-//          cout << endl;
-          su2double VelocityMag = GeometryToolbox::Norm(3, Velocity);
-          VelocityMag = max(VelocityMag, 1e-12);  // safety against division by zero
 
-          //        cout << "Qui" << endl;
+          su2double VelocityMag = GeometryToolbox::Norm(3, Velocity);
+          VelocityMag = max(VelocityMag, 1e-12); 
+
 
           if(TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA && config->GetConvertSA2SST())
             nodes->Set_kAndw(iPoint, VorticityMag, VelocityMag, turbNodes->GetmuT(iPoint),  flowNodes->GetStrainMag(iPoint),  geometry->nodes->GetWall_Distance(iPoint),
@@ -312,17 +299,17 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
           nodes->SetF_onset(iPoint, flowNodes->GetDensity(iPoint), flowNodes->GetStrainMag(iPoint),
                             geometry->nodes->GetWall_Distance(iPoint), flowNodes->GetLaminarViscosity(iPoint),
-                            turbNodes->GetSolution(iPoint), turbNodes->GetmuT(iPoint), VorticityMag, config);
+                            turbNodes->GetSolution(iPoint), turbNodes->GetmuT(iPoint), VorticityMag, VelocityMag, config);
 
           nodes->SetF_length(Velocity, iPoint, flowNodes->GetDensity(iPoint), turbNodes->GetSolution(iPoint),
                              geometry->nodes->GetWall_Distance(iPoint), flowNodes->GetLaminarViscosity(iPoint), config);
           nodes->SetF_turb(iPoint);
           nodes->Setrethetat_eq(iPoint, Velocity, VelocityMag, flowNodes->GetVelocityGradient(iPoint), turbNodes->GetSolution(iPoint),
                                 flowNodes->GetLaminarViscosity(iPoint), flowNodes->GetDensity(iPoint), config);
-          nodes->SetT(iPoint, Velocity, flowNodes->GetLaminarViscosity(iPoint), flowNodes->GetDensity(iPoint), geometry->nodes->GetMaxLength(iPoint), turbNodes->GetmuT(iPoint));
+          nodes->SetT(iPoint, VelocityMag, flowNodes->GetLaminarViscosity(iPoint), flowNodes->GetDensity(iPoint), geometry->nodes->GetMaxLength(iPoint), turbNodes->GetmuT(iPoint));
           nodes->SetF_thetat(iPoint, flowNodes->GetDensity(iPoint), turbNodes->GetSolution(iPoint),
                              geometry->nodes->GetWall_Distance(iPoint), flowNodes->GetLaminarViscosity(iPoint),
-                             VorticityMag, constants, config);
+                             VorticityMag, VelocityMag, constants, config);
 
           if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
             nodes->SetF_thetat_2(iPoint, geometry->nodes->GetWall_Distance(iPoint));
@@ -333,12 +320,8 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
           nodes->Setgamma_sep(iPoint, flowNodes->GetDensity(iPoint), turbNodes->GetSolution(iPoint),
                               flowNodes->GetLaminarViscosity(iPoint), geometry->nodes->GetWall_Distance(iPoint),
                               flowNodes->GetStrainMag(iPoint), VorticityMag, constants);
-          nodes->SetDebugQuantities(iPoint, constants, flowNodes->GetDensity(iPoint), flowNodes->GetStrainMag(iPoint),
-                                    VorticityMag, geometry->nodes->GetWall_Distance(iPoint), flowNodes->GetLaminarViscosity(iPoint),
-                                    turbNodes->GetSolution(iPoint));
 
         }
-//        cout << "Qui" << endl;
 
 
 
@@ -354,7 +337,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
         numerics->Setrethetat_eq(nodes->Getrethetat_eq(iPoint), 0.0);
         numerics->SetT_param(nodes->GetT(iPoint), 0.0);
         numerics->Setdelta_param(nodes->Getdelta_param(iPoint), 0.0);
-        numerics->SetU_mag(nodes->GetVelocity_Mag(iPoint), 0.0);
+
         if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
           numerics->SetReThetat_SCF(nodes->GetReThetat_SCF(iPoint), 0.0);
           numerics->SetF_thetat_2(nodes->GetF_thetat_2(iPoint), 0.0);
@@ -367,8 +350,6 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
         numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
-        /*--- Cross diffusion ---*/
-        // credo sia corretto toglierla qui in LM
 
         if (axisymmetric){
             /*--- Set y coordinate ---*/

@@ -232,14 +232,12 @@ class CSourceBase_TurbSA : public CNumerics {
       }
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-      su2double ProductionHere = 0.0, DestructionHere = 0.0, CrossProduction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, ProductionHere, DestructionHere, CrossProduction, Jacobian_i[0]);
+      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
+      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
 
 
-      Production = ProductionHere;
-      Destruction = DestructionHere;
 
-      Residual = (ProductionHere - DestructionHere + CrossProduction) * Volume;
+      Residual = (Production - Destruction + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
     }
 
@@ -249,8 +247,6 @@ class CSourceBase_TurbSA : public CNumerics {
     return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
 
-  inline su2double getProductionTerm() override {return Production;}
-  inline su2double getDestructionTerm() override {return Destruction;}
 
 
 };
