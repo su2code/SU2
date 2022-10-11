@@ -57,14 +57,12 @@ template <class T>
 CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
     : CSourceBase_Species(val_nDim, val_nVar, config),
-    idx(val_nDim, config->GetnSpecies()) {
-  implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
-  viscous = config->GetViscous();
-  turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
-  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-
-  Sc_t = config->GetSchmidt_Number_Turbulent();
-
+      idx(val_nDim, config->GetnSpecies()),
+    implicit(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT),
+    viscous(config->GetViscous()),
+    turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE),
+    incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
+    Sc_t(config->GetSchmidt_Number_Turbulent()) {
 }
 
 template <class T>
@@ -102,7 +100,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
     const su2double Density_i = V_i[idx.Density()];
     
-    /*--- Set primitive variables at points iPoint. ---*/
     su2double Velocity_i[3];
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
@@ -121,11 +118,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     /*--- Add the viscous terms if necessary. ---*/
     
     if (config->GetViscous()) {
-      Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
-
       su2double Mass_Diffusivity_Tur = 0.0;
       if (turbulence)
-        Mass_Diffusivity_Tur = Eddy_Viscosity_i / Sc_t;
+        Mass_Diffusivity_Tur = V_i[idx.EddyViscosity()] / Sc_t;
 
       for (auto iVar=0u; iVar < nVar; iVar++){
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
