@@ -325,6 +325,12 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     }
+
+    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
+        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
+    }
   }
 
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
@@ -571,11 +577,6 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
     LinSysSol.SetBlock_Zero(iPoint);
   }
   END_SU2_OMP_FOR
-
-//  if(config->dummyVar == TRANS_SOL)
-//    for (int j = 0; j < LinSysRes.GetLocSize(); ++j) {
-//      cout << "LinSysRes[" << j << "] = " << LinSysRes[j] << endl;
-//    }
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
@@ -1036,8 +1037,6 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
 }
 
-// Aggiunto da me
-// Da modificare per rendere instazionario anche il TRANS_SOL
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans, bool transition,
                                                       CSolver*** solver_container, CGeometry** geometry,
@@ -1079,6 +1078,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     if (rans)
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
+    /*--- Load an additional restart file for the transition model. ---*/
     if (transition)
       solver_container[MESH_0][TRANS_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
@@ -1586,21 +1586,10 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
-                                                CConfig *config) {
+                                                const CConfig *config) {
   if (!edgeNumerics) {
-    if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
-        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
-      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
-    }
     InstantiateEdgeNumerics(solvers, config);
   }
-
-  /*--- Non-physical counter. ---*/
-  unsigned long counterLocal = 0;
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  END_SU2_OMP_MASTER
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1626,15 +1615,20 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       } else {
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
-      if (MGLevel == MESH_0) {
-        for (auto j = 0ul; j < Double::Size; ++j)
-          counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
-      }
     }
     END_SU2_OMP_FOR
   }
 
-  FinalizeResidualComputation(geometry, pausePreacc, counterLocal, config);
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetDiagonalAsColumnSum();
+    }
+  }
 }
 
 template <class V, ENUM_REGIME R>

@@ -1093,6 +1093,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     if (solver[MESH_0][SPECIES_SOL]) {
       solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
     }
+
     if (solver[MESH_0][TRANS_SOL]) {
       solver[MESH_0][TRANS_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TRANS_SOL, INLET_FLOW);
     }
@@ -1119,8 +1120,8 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
-        if (solver[iMesh][TRANS_SOL]) solver[iMesh][TRANS_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TRANS_SOL]) solver[iMesh][TRANS_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 
@@ -1326,6 +1327,16 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     }
   }
 }
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
 
 
 template <class Indices>
@@ -1392,16 +1403,6 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 }
 
 
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
-template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
@@ -1410,6 +1411,8 @@ template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices
 
 template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+
 
 
 template <class Indices>
@@ -1528,7 +1531,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
@@ -1545,7 +1548,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::FEM_EULER:
@@ -2096,7 +2099,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
                                                                               solver[MESH_0][TURB_SOL], numerics);
   }
 
-  /*--- Solver definition for the transition model problem ---*/
+ /*--- Solver definition for the transition model problem ---*/
   if (transition) {
 
     if (incompressible)
@@ -3577,7 +3580,7 @@ void CHBDriver::ResetConvergence() {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
       integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
       if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
+      if(config_container[ZONE_0]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:

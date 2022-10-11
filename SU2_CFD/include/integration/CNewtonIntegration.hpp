@@ -45,10 +45,8 @@
 
 /*!
  * \class CNewtonIntegration
- * \ingroup Drivers
  * \brief Class for time integration using a Newton-Krylov method, based
  * on matrix-free products with the true Jacobian via finite differences.
- * \author P. Gomes
  */
 class CNewtonIntegration final : public CIntegration {
 public:

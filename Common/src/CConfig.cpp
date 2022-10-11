@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1050,15 +1050,14 @@ void CConfig::SetPointersNull(void) {
 
   Time_Ref = 1.0;
 
-  Delta_UnstTime   = 0.0;
+  Delta_UnstTime = 0.0;
   Delta_UnstTimeND = 0.0;
-  Total_UnstTime   = 0.0;
+  Total_UnstTime = 0.0;
   Total_UnstTimeND = 0.0;
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
-
 }
 
 void CConfig::SetConfig_Options() {
@@ -1089,13 +1088,19 @@ void CConfig::SetConfig_Options() {
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options, SST_Options_Map);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
+
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
   /*!\brief KIND_TRANS_CORRELATION \n DESCRIPTION: Specify transition correlation OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: MENTER_LANGTRY \ingroup Config*/
   addEnumOption("KIND_TRANS_CORRELATION", Kind_Trans_Correlation, Trans_Correlation_Map, TURB_TRANS_CORRELATION::DEFAULT);
   /*!\brief CONVERTSA2SST \n DESCRIPTION: Define if SA has to be converted into SST for transition \n DEFAULT: NO \ingroup Config*/
   addBoolOption("CONVERTSA2SST", ConvertSA2SST, NO);
-  addDoubleOption("HROUGHNESS", hRoughness, 0.0);
+  /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
+  addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
 
   /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -1169,7 +1174,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
-  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+  addDoubleListOption("MOLECULAR_WEIGHT", nMolecular_Weight, Molecular_Weight);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
@@ -1936,6 +1941,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
   addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
+  /*!\brief CUSTOM_OUTPUTS \n DESCRIPTION: User-provided definitions for custom output. \ingroup Config*/
+  addStringOption("CUSTOM_OUTPUTS", CustomOutputs, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -2772,9 +2779,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
-  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
-  addBoolOption("SA_QCR", QCR, false);
-
   /* DESCRIPTION: Compute Average for unsteady simulations */
   addBoolOption("COMPUTE_AVERAGE", Compute_Average, false);
 
@@ -2836,9 +2840,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
-
-  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
-  addBoolOption("USING_UQ", using_uq, false);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
@@ -2952,7 +2953,6 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
      }
 
     if (TokenizeString(text_line, option_name, option_value)) {
-
       /*--- See if it's a python option ---*/
 
       if (option_map.find(option_name) == option_map.end()) {
@@ -3005,6 +3005,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
           else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
+          else if (!option_name.compare("SA_QCR"))
+            newString.append("SA_QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3062,6 +3064,22 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
 
       string out = option_map[option_name]->SetValue(option_value);
       if (out.compare("") != 0) {
+        /*--- valid option, but deprecated value ---*/
+        if (!option_name.compare("KIND_TURB_MODEL")) {
+          if (option_value[0] == "SST_SUST")
+            errorString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
+          else if (option_value[0] == "SA_NEG")
+            errorString.append("Option KIND_TURB_MODEL=SA_NEG is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=NEGATIVE instead.\n");
+          else if (option_value[0] == "SA_E")
+            errorString.append("Option KIND_TURB_MODEL=SA_E is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=EDWARDS instead.\n");
+          else if (option_value[0] == "SA_COMP")
+            errorString.append("Option KIND_TURB_MODEL=SA_COMP is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=COMPRESSIBILITY instead.\n");
+          else if (option_value[0] == "SA_E_COMP")
+            errorString.append("Option KIND_TURB_MODEL=SA_E_COMP is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=EDWARDS,COMPRESSIBILITY instead.\n");
+        } else if (!option_name.compare("KIND_TRANS_MODEL")) {
+          if (option_value[0] == "BC")
+            errorString.append("Option KIND_TRANS_MODEL=BC is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=BCM instead.\n");
+        }
         errorString.append(out);
         errorString.append("\n");
         err_count++;
@@ -3196,7 +3214,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3300,6 +3318,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
+                    (Kind_FluidModel == FLUID_MIXTURE) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
@@ -3327,7 +3346,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
+      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
@@ -3408,9 +3427,21 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   }
 
+  /*--- Postprocess SST_OPTIONS into structure. ---*/
+  if (Kind_Turb_Model == TURB_MODEL::SST) {
+    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
+  } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+    saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
+  }
+
+  if (Kind_Turb_Model == TURB_MODEL::SA) {
+    if (saParsedOptions.bc && Kind_Trans_Model != TURB_TRANS_MODEL::NONE)
+        SU2_MPI::Error("LM and BC cannot be active at the same time!", CURRENT_FUNCTION);
+  }
+
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
-  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST){
-    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST or SST_SUST", CURRENT_FUNCTION);
+  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
+    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -3634,6 +3665,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
     }
 
+    /*--- WINDOW_START_ITER must be larger than or equal to: RESTART_ITER. Otherwise, the running average is wrong. ---*/
+    if (OptionIsSet("WINDOW_START_ITER")) {
+      if (StartWindowIteration < Restart_Iter) {
+        SU2_MPI::Error("WINDOW_START_ITER must be larger than or equal to: RESTART_ITER!", CURRENT_FUNCTION);
+      }
+    } else {
+      /*--- Enforced default behavior: start of the window is the first new iteration. ---*/
+      if (rank == MASTER_NODE) cout << "WARNING: Setting WINDOW_START_ITER = RESTART_ITER for meaningful running average.\n";
+      StartWindowIteration = Restart_Iter;
+    }
+
     if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
   } else {
     nTimeIter = 1;
@@ -3720,6 +3762,35 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+/*--- Set default values for various fluid properties. ---*/
+
+  const su2double Molecular_Weight_Default = 28.96;
+
+  if (Molecular_Weight == nullptr) {
+    Molecular_Weight = new su2double[1];
+    Molecular_Weight[0] = Molecular_Weight_Default;
+    nMolecular_Weight = 1;
+  }
+
+  /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
+
+  if (Kind_FluidModel == FLUID_MIXTURE) {
+    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
+     equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
+    if (nMolecular_Weight != nSpecies_Init + 1) {
+      SU2_MPI::Error(
+          "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+          "to be equal to the number of entries of SCALAR_INIT + 1",
+          CURRENT_FUNCTION);
+    }
+    /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
+     VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density and
+     it will remain constant through the complete domain. --- */
+    if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+      SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
@@ -3742,8 +3813,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (Kind_FluidModel == SU2_NONEQ && Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE ) {
-    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+  if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
+    SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
   }
 
   if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
@@ -3871,10 +3942,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
 
-  if (Kind_GridMovement == ROTATING_FRAME)
-    Rotating_Frame = true;
-  else
-    Rotating_Frame = false;
+  Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
@@ -4667,18 +4735,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Finite_Difference_Mode = false;
 
-  /* --- Throw error if UQ used for any turbulence model other that SST --- */
-
-  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST && using_uq){
-    SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
-  }
-
-  /* --- Throw error if invalid componentiality used --- */
-
-  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
-    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
-  }
-
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -4715,7 +4771,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -4728,7 +4784,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
     if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
-      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
+      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLUID_MIXTURE)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
@@ -5862,51 +5918,84 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case TURB_MODEL::NONE: break;
-          case TURB_MODEL::SA:        cout << "Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST:       cout << "Menter's SST"     << endl; break;
-          case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
-        }
-        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
-        if(Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
-          cout << "Transition model: ";
-          switch (Kind_Trans_Model) {
-            case TURB_TRANS_MODEL::LM: cout << "Langtry-Menter Gamma-ReTheta (2009)" << endl;  break;
-            case TURB_TRANS_MODEL::LM2015: cout << "Langtry-Menter Gamma-ReTheta (2015)" << endl; cout << "Roughness value = " << hRoughness << endl; break;
-          }
-          if(Kind_Trans_Model == TURB_TRANS_MODEL::LM || Kind_Trans_Model == TURB_TRANS_MODEL::LM2015){
-
-            if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::SA)
-              Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
-            if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::KW)
-              Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
-
-            cout << "Correlation Functions: ";
-            switch (Kind_Trans_Correlation) {
-              case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
-              case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
-              case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
-              case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
-              case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
-              case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+          case TURB_MODEL::SA:
+            switch (saParsedOptions.version) {
+              case SA_OPTIONS::NEG:
+                cout << "Negative-";
+                break;
+              case SA_OPTIONS::EDW:
+                cout << "Edwards-";
+                break;
+              default:
+                break;
             }
-          }
-        }
+            cout << "Spalart-Allmaras";
 
+            if (!saParsedOptions.ft2) cout << "-noft2";
+            if (saParsedOptions.rot) cout << "-R";
+            if (saParsedOptions.comp) cout << "-comp";
+            if (saParsedOptions.qcr2000) cout << "-QCR2000";
+            if (saParsedOptions.bc) cout << "-BCM";
+            cout << endl;
+            break;
+          case TURB_MODEL::SST:
+            cout << "Menter's k-omega SST";
+            if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
+            else cout << "-2003";
+            if (sstParsedOptions.modified) cout << "m";
+            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+
+            switch (sstParsedOptions.production) {
+              case SST_OPTIONS::KL:
+                cout << " with Kato-Launder production";
+                break;
+              case SST_OPTIONS::V:
+                cout << " with Vorticity production";
+                break;
+              case SST_OPTIONS::UQ:
+                cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
+                if (uq_permute) cout << " (permuting eigenvectors)";
+                break;
+              default:
+                cout << " with no production modification";
+                break;
+            }
+            cout << "." << endl;
+
+            if(Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+              cout << "Transition model: ";
+              switch (Kind_Trans_Model) {
+                case TURB_TRANS_MODEL::LM: cout << "Langtry-Menter Gamma-ReTheta (2009)" << endl;  break;
+                case TURB_TRANS_MODEL::LM2015: cout << "Langtry-Menter Gamma-ReTheta (2015)" << endl; cout << "Roughness value = " << hRoughness << endl; break;
+              }
+              if(Kind_Trans_Model == TURB_TRANS_MODEL::LM || Kind_Trans_Model == TURB_TRANS_MODEL::LM2015){
+
+                if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::SA)
+                  Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
+                if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::KW)
+                  Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+
+                cout << "Correlation Functions: ";
+                switch (Kind_Trans_Correlation) {
+                  case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+                  case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+                  case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+                  case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+                  case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+                  case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+                }
+              }
+            }
+
+            break;
+        }
         cout << "Hybrid RANS/LES: ";
-        switch (Kind_HybridRANSLES){
-          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+        switch (Kind_HybridRANSLES) {
+          case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
           case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-        }
-        if (using_uq){
-          cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-          if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:

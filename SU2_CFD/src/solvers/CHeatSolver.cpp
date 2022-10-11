@@ -1,6 +1,6 @@
 /*!
  * \file CHeatSolver.cpp
- * \brief Main subroutines for solving the heat equation
+ * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
  * \version 7.4.0 "Blackbird"
  *

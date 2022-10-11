@@ -32,8 +32,7 @@
 namespace detail {
 
 /*!
- * \brief Prepare Smatrix for 2D.
- * \ingroup FvmAlgos
+ * \brief Prepare Smatrix for 2D or 3D
  */
 FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
                                 su2double r22, su2double r23, su2double r33,
@@ -43,10 +42,6 @@ FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
   Smatrix[1][1] = r11*r11/detR2;
 }
 
-/*!
- * \brief Prepare Smatrix for 3D.
- * \ingroup FvmAlgos
- */
 FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
                                 su2double r22, su2double r23, su2double r33,
                                 su2double detR2, su2double Smatrix[][3]) {
@@ -67,7 +62,6 @@ FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
 
 /*!
  * \brief Solve the least-squares problem for one point.
- * \ingroup FvmAlgos
  * \note See detail::computeGradientsLeastSquares for the
  *       purpose of template "nDim" and "periodic".
  */
@@ -164,7 +158,6 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 /*!
  * \brief Compute the gradient of a field using inverse-distance-weighted or
  *        unweighted Least-Squares approximation.
- * \ingroup FvmAlgos
  * \note See notes from computeGradientsGreenGauss.hpp.
  * \param[in] solver - Optional, solver associated with the field (used only for MPI).
  * \param[in] kindMpiComm - Type of MPI communication required.
@@ -327,7 +320,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
 /*!
  * \brief Instantiations for 2D and 3D.
- * \ingroup FvmAlgos
  */
 template<class FieldType, class GradientType, class RMatrixType>
 void computeGradientsLeastSquares(CSolver* solver,

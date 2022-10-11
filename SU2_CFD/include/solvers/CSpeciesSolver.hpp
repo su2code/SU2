@@ -32,9 +32,9 @@
 #include "CScalarSolver.hpp"
 
 /*!
+ * \class CSpeciesSolver
  * \brief Main class for defining the species transport solver.
  * \author T. Kattmann.
- * \ingroup Scalar_Transport
  */
 class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:

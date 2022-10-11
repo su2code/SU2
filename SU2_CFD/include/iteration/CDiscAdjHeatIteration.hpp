@@ -32,7 +32,6 @@
 
 /*!
  * \class CDiscAdjHeatIteration
- * \ingroup DiscAdj
  * \brief Class for driving an iteration of the discrete adjoint heat equation.
  * \author O. Burghardt
  */

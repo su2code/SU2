@@ -34,7 +34,6 @@ class CFEAIteration;
 
 /*!
  * \class CDiscAdjFEAIteration
- * \ingroup DiscAdj
  * \brief Class for driving an iteration of the discrete adjoint FEM system.
  * \author R. Sanchez
  */

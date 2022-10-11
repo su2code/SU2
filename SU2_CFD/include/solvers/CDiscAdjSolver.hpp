@@ -32,8 +32,8 @@
 
 /*!
  * \class CDiscAdjSolver
- * \ingroup DiscAdj
  * \brief Main class for defining the discrete adjoint solver.
+ * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
 class CDiscAdjSolver final : public CSolver {

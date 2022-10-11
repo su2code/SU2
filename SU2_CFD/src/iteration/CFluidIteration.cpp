@@ -63,7 +63,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
 
-  /*--- Setting up iteration values depending on if this is a
+  /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
 
   const auto InnerIter = config[val_iZone]->GetInnerIter();
@@ -118,7 +118,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
     /*--- Solve transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+    if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
@@ -217,7 +217,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
     /*--- Update dual time solver for the transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+    if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);

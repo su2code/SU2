@@ -30,10 +30,6 @@
 
 #include "../CInterface.hpp"
 
-/*!
- * \brief Structure-fluid interface (displacements).
- * \ingroup Interfaces
- */
 class CDisplacementsInterface : public CInterface {
 public:
   /*!

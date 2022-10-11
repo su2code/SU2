@@ -255,9 +255,9 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
-  if (config->GetnMarker_Analyze() > 0) {
-    SU2_MPI::Error("SetAnalyzeSurface is not implemented for FEM-DG solver.", CURRENT_FUNCTION);
-  }
+  /*--- Set the analyse surface history values --- */
+
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

@@ -1704,8 +1704,8 @@ void CSolver::ResetCFLAdapt() {
   NonLinRes_Counter = 0;
 }
 
-// aggiunto da me
-// da modificare per tenere conto anche del modello di transizione!
+
+// It should be modified to include transition (?)
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
@@ -3654,7 +3654,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::SPECIES_TRANSPORT:
+      case SPECIES_MODEL::PASSIVE_SCALAR:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";

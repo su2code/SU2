@@ -30,11 +30,6 @@
 
 #include "CFlowTractionInterface.hpp"
 
-/*!
- * \brief Fluid-structure interface (forces or tractions) for discrete adjoint problems.
- * \note This is a small specialization of CFlowTractionInterface that ommits load ramping.
- * \ingroup Interfaces
- */
 class CDiscAdjFlowTractionInterface : public CFlowTractionInterface {
 public:
   /*!

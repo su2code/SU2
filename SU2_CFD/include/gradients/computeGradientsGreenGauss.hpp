@@ -33,7 +33,6 @@ namespace detail {
 
 /*!
  * \brief Compute the gradient of a field using the Green-Gauss theorem.
- * \ingroup FvmAlgos
  * \note Template nDim to allow efficient unrolling of inner loops.
  * \note Gradients can be computed only for a contiguous range of variables, defined
  *       by [varBegin, varEnd[ (e.g. 0,1 computes the gradient of the 1st variable).
@@ -190,7 +189,6 @@ void computeGradientsGreenGauss(CSolver* solver,
 
 /*!
  * \brief Instantiations for 2D and 3D.
- * \ingroup FvmAlgos
  */
 template<class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver,

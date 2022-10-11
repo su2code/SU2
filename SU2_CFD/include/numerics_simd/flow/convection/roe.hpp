@@ -36,7 +36,6 @@
 
 /*!
  * \class CRoeBase
- * \ingroup ConvDiscr
  * \brief Base class for Roe schemes, derived classes implement
  * the dissipation term in a const "finalizeFlux" method.
  * A base class implementing "viscousTerms" is accepted as template parameter.
@@ -117,7 +116,7 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+                  iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
@@ -158,7 +157,7 @@ public:
     Double maxLambda = abs(projVel) + roeAvg.speedSound;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = fmax(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
@@ -216,7 +215,6 @@ public:
 
 /*!
  * \class CRoeScheme
- * \ingroup ConvDiscr
  * \brief Classical Roe scheme.
  */
 template<class Decorator>

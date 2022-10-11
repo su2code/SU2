@@ -32,8 +32,8 @@
 
 /*!
  * \class CGradSmoothing
- * \brief Class for computing the stiffness matrix of the Sobolev problem
- * \ingroup GradSmooth
+ * \brief Class for computing the stiffness matrix of the sobolev problem
+ * \ingroup Grad_Smooth
  * \author T. Dick
  */
 class CGradSmoothing final : public CNumerics {

@@ -33,7 +33,7 @@
 /*!
  * \class CFEALinearElasticity
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
- * \ingroup Elasticity_Equations
+ * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */
@@ -88,7 +88,7 @@ private:
 /*!
  * \class CFEAMeshElasticity
  * \brief Particular case of linear elasticity used for mesh deformation.
- * \ingroup Elasticity_Equations
+ * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */

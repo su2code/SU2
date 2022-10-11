@@ -41,7 +41,6 @@ class CTurbSolver : public CScalarSolver<CTurbVariable> {
 protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
-  vector<su2activematrix> Inlet_TransVars;  /*!< \brief Turbulence variables at inlet profiles */
 
   /*--- Sliding meshes variables. ---*/
 

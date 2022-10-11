@@ -54,7 +54,6 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
   turb_index.resize(nPoint) = su2double(1.0);
-
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
@@ -83,15 +82,13 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
-  // aggiunto da me
   /*--- F1 correction for LM transition model ---*/
   if(transition){
     su2double Ry = val_density * val_dist * sqrt(Solution(iPoint, 0)) / val_viscosity;
     su2double F3 = exp(- pow(Ry/120, 8));
     F1(iPoint) = max(F1(iPoint), F3);
   }
-
-
+  
   /*--- F2 ---*/
 
   arg2 = max(2.0*arg2A, arg2B);

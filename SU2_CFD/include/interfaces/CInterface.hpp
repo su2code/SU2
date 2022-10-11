@@ -48,7 +48,6 @@ using namespace std;
 
 /*!
  * \class CInterface
- * \ingroup Interfaces
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
  * \version 7.4.0 "Blackbird"

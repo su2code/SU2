@@ -31,10 +31,6 @@
 #include "../CInterface.hpp"
 #include <unordered_map>
 
-/*!
- * \brief Fluid-structure interface (forces or tractions).
- * \ingroup Interfaces
- */
 class CFlowTractionInterface : public CInterface {
 protected:
   const bool conservative;

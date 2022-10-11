@@ -197,7 +197,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -289,10 +288,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       }
   }
 
+
   AD::EndNoSharedReading();
-
-
-
 }
 
 void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
@@ -302,7 +299,6 @@ void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Menter's first blending function (only SST)---*/
     numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
-
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
@@ -368,7 +364,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Intermittency from transition ---*/
     if (transition) {
-//      cout << "intermittency = " << solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint) << endl;
       numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
       numerics->SetReV(solver_container[TRANS_SOL]->GetNodes()->GetreV(iPoint));
     }

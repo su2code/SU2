@@ -30,10 +30,6 @@
 
 #include "../CInterface.hpp"
 
-/*!
- * \brief Fluid-fluid interface.
- * \ingroup Interfaces
- */
 class CSlidingInterface : public CInterface {
 public:
   /*!

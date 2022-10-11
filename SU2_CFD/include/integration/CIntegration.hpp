@@ -39,7 +39,6 @@ using namespace std;
 
 /*!
  * \class CIntegration
- * \ingroup Drivers
  * \brief Main class for doing the space integration, time integration, and monitoring
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios

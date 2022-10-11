@@ -83,7 +83,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/iteration/CTurboIteration.cpp \
   ../src/numerics/CNumerics.cpp \
   ../src/numerics/template.cpp \
-  ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/CLookUpTable.cpp \
@@ -180,6 +179,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CNSSolver.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
+  ../src/solvers/CTransSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
   ../src/solvers/CSpeciesSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \

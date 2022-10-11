@@ -43,7 +43,6 @@ class CNEMOGas;
 
 /*!
  * \class CVariable
- * \ingroup Variable
  * \brief Main class for defining the variables.
  * \author F. Palacios
  */
@@ -1162,13 +1161,6 @@ public:
    */
   inline virtual void SetObjFuncSource(unsigned long iPoint, const su2double *val_SetObjFuncSource) {}
 
-//  /*!
-//   * \brief A virtual member.
-//   * \param[in] iPoint - Point index.
-//   * \return Value of the gamma_BC of B-C transition model.
-//   */
-//  inline virtual su2double GetGammaBC(unsigned long iPoint) const { return 0.0; }
-
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
@@ -2253,11 +2245,6 @@ public:
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
-
-
-
-
-
 
 
   // Transition functions

@@ -32,8 +32,8 @@
 
 /*!
  * \class CDiscAdjFEASolver
- * \ingroup DiscAdj
  * \brief Main class for defining the discrete adjoint solver for FE structural problems.
+ * \ingroup Discrete_Adjoint
  * \author R. Sanchez
  */
 class CDiscAdjFEASolver final : public CSolver {

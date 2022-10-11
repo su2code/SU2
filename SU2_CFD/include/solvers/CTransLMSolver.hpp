@@ -27,9 +27,8 @@
 
 #pragma once
 
-#include "../../include/solvers/CTransSolver.hpp"
-//#include "../../include/solvers/CTurbSolver.hpp"
-#include "../../include/variables/CTransLMVariable.hpp"
+#include "CTransSolver.hpp"
+#include "../variables/CTransLMVariable.hpp"
 
 /*!
  * \class CTransLMSolver

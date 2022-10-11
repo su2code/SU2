@@ -1,6 +1,6 @@
 /*!
  * \file CTurbSASolver.cpp
- * \brief Main subroutines of CTurbSASolver class
+ * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
  * \version 7.4.0 "Blackbird"
  *
@@ -391,11 +391,13 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (transition_BC) {
       nodes->SetIntermittency(iPoint,numerics->GetIntermittency());
     }
+
     if (transition_LM) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
       numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
       nodes->SetIntermittency(iPoint,numerics->GetIntermittency());
     }
+
 
     /*--- Compute the source term ---*/
 
@@ -408,8 +410,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-
-//    cout << nodes->GetmuT(iPoint) << endl;
 
     /*--- Subtract residual and the Jacobian ---*/
 

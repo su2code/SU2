@@ -31,8 +31,8 @@
 
 /*!
  * \class CDiscAdjVariable
- * \ingroup DiscAdj
  * \brief Main class for defining the variables of the adjoint solver.
+ * \ingroup Discrete_Adjoint
  * \author T. Albring.
  */
 class CDiscAdjVariable : public CVariable {

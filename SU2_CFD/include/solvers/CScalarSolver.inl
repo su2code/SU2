@@ -1,6 +1,6 @@
 /*!
  * \file CScalarSolver.inl
- * \brief Main subroutines of CScalarSolver class
+ * \brief Main subrotuines of CScalarSolver class
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -413,11 +413,6 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
   PrepareImplicitIteration(geometry, solver_container, config);
 
   /*--- Solve or smooth the linear system. ---*/
-
-//  if(config->dummyVar == TRANS_SOL)
-//    for (int j = 0; j < LinSysRes.GetLocSize(); ++j) {
-//      cout << "LinSysRes[" << j << "] = " << LinSysRes[j] << endl;
-//    }
 
   SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {

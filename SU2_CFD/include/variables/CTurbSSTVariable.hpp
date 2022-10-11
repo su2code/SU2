@@ -44,12 +44,10 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
+  SST_ParsedOptions sstParsedOptions;
 
   bool transition;
-  VectorType turb_index;
 
-  SST_ParsedOptions sstParsedOptions;
-  
 public:
   /*!
    * \brief Constructor of the class.
@@ -102,5 +100,7 @@ public:
    * \brief Get the value of the turbulence index.
    */
   inline su2double GetTurbIndex(unsigned long iPoint) const override { return turb_index(iPoint); }
+
+
 
 };

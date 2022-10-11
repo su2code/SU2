@@ -32,7 +32,6 @@
 
 /*!
  * \class CTurboIteration
- * \ingroup Drivers
  * \brief Class for driving an iteration for turbomachinery simulation.
  * \author T. Economon
  */

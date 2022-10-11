@@ -33,9 +33,9 @@
 #include "CSolver.hpp"
 
 /*!
+ * \class CScalarSolver
  * \brief Main class for defining a scalar solver.
  * \tparam VariableType - Class of variable used by the solver inheriting from this template.
- * \ingroup Scalar_Transport
  */
 template <class VariableType>
 class CScalarSolver : public CSolver {
@@ -96,7 +96,6 @@ class CScalarSolver : public CSolver {
                                          CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
     CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
     /*--- Points in edge ---*/
@@ -126,19 +125,12 @@ class CScalarSolver : public CSolver {
 
     auto residual = numerics->ComputeResidual(config);
 
-
-
-//    if(config->isTransition)
-//    cout << "iEdge = " << config->dummyVar << " Residual = " << residual.residual[0] << endl;
-
     if (ReducerStrategy) {
       EdgeFluxes.SubtractBlock(iEdge, residual);
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
     } else {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
-//      if(config->isTransition)
-//          cout << LinSysRes.norm() << endl;
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
   }
@@ -330,8 +322,8 @@ class CScalarSolver : public CSolver {
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                            bool val_update_geo) override = 0;
 
-//  /*!
-//   * \brief Scalar solvers support OpenMP+MPI.
-//   */
-//  inline bool GetHasHybridParallel() const override { return true; }
+  /*!
+   * \brief Scalar solvers support OpenMP+MPI.
+   */
+  inline bool GetHasHybridParallel() const override { return true; }
 };

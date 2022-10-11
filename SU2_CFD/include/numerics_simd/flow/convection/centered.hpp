@@ -36,7 +36,6 @@
 
 /*!
  * \class CCenteredBase
- * \ingroup ConvDiscr
  * \brief Base class for Centered schemes, derived classes implement
  * the dissipation term in a const "finalizeFlux" method.
  * \note See CRoeBase for the role of Base.
@@ -187,7 +186,6 @@ public:
 
 /*!
  * \class CJSTScheme
- * \ingroup ConvDiscr
  * \brief Classical JST scheme with scalar dissipation.
  */
 template<class Decorator>
@@ -245,7 +243,7 @@ public:
     const auto si = gatherVariables(iPoint, solution.GetSensor());
     const auto sj = gatherVariables(jPoint, solution.GetSensor());
     const Double eps2 = kappa2 * 0.5*(si+sj) * sc2;
-    const Double eps4 = fmax(0.0, kappa4-eps2) * sc4;
+    const Double eps4 = max(0.0, kappa4-eps2) * sc4;
 
     /*--- Update flux and Jacobians with dissipation terms. ---*/
 
@@ -267,7 +265,6 @@ public:
 
 /*!
  * \class CJSTmatScheme
- * \ingroup ConvDiscr
  * \brief JST scheme with matrix dissipation.
  */
 template<class Decorator>
@@ -324,7 +321,7 @@ public:
     const auto si = gatherVariables(iPoint, solution.GetSensor());
     const auto sj = gatherVariables(jPoint, solution.GetSensor());
     const Double eps2 = kappa2 * 0.5*(si+sj) * sc2;
-    const Double eps4 = fmax(0.0, kappa4-eps2) * sc4;
+    const Double eps4 = max(0.0, kappa4-eps2) * sc4;
 
     const auto lapl_i = gatherVariables<nVar>(iPoint, solution.GetUndivided_Laplacian());
     const auto lapl_j = gatherVariables<nVar>(jPoint, solution.GetUndivided_Laplacian());
@@ -360,10 +357,10 @@ public:
     lambda(nDim) = projVel + avgV.speedSound()*area;
     lambda(nDim+1) = projVel - avgV.speedSound()*area;
 
-    const Double maxLambda = fmax(lambda(nDim), -lambda(nDim+1));
+    const Double maxLambda = max(lambda(nDim), -lambda(nDim+1));
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = fmax(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Update flux and Jacobians with scaled dissipation terms. ---*/
@@ -394,7 +391,6 @@ public:
 
 /*!
  * \class CJSTkeScheme
- * \ingroup ConvDiscr
  * \brief JST scheme without 4th order dissipation.
  */
 template<class Decorator>
@@ -465,7 +461,6 @@ public:
 
 /*!
  * \class CLaxScheme
- * \ingroup ConvDiscr
  * \brief Lax–Friedrichs 1st order scheme.
  */
 template<class Decorator>

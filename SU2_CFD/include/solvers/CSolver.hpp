@@ -2887,7 +2887,7 @@ public:
    * \brief A virtual member
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
-   * \param[in] iDim - Index of the transition variable (i.e. k is 0 in SST)
+   * \param[in] iDim - Index of the transition variable (i.e. gamma is 0 in LM)
    * \param[in] val_turb_var - Value of the transition variable to be used.
    */
   inline virtual void SetInlet_TransVar(unsigned short val_marker,
@@ -3170,7 +3170,7 @@ public:
      * \return Value of the Re_theta_t.
    */
   inline virtual su2double GetRethetat_Inf(void) const {return 0.0;};
-
+  
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
@@ -4437,10 +4437,5 @@ protected:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
-
-
-
-
-
 
 };

@@ -25,11 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CTransLMVariable.hpp"
 #include <cmath>
 
-// bisogna capire se va fatto come "if(LM)" in SST o se va fatto a parte (come questo file nuovo)
 
 CTransLMVariable::CTransLMVariable(su2double intermittency, su2double Re_theta, const su2double* constants, unsigned long npoint, unsigned long ndim,
                                          unsigned long nvar, CConfig *config) :
@@ -40,9 +38,7 @@ CTransLMVariable::CTransLMVariable(su2double intermittency, su2double Re_theta, 
         Solution(iPoint,1) = Re_theta;
     }
 
-    Solution_Old = Solution;   // queste assegnazioni a Solution e Solution_Old (Runge-Kutta problem) sono copiate da SST =>
-                               // bisogna capire se cambiare nome o se il vector è pensato per contenere un numero qualsiasi
-                               // di elementi (forse contiene nvar elementi)
+    Solution_Old = Solution;  
 
 
     F_length.resize(nPoint) = su2double(0.0);

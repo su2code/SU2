@@ -32,7 +32,6 @@
 
 /*!
  * \class CFluidIteration
- * \ingroup Drivers
  * \brief Class for driving an iteration of the fluid system.
  * \author T. Economon
  */

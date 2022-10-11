@@ -103,7 +103,6 @@ private:
    */
   static CSolver* CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
 
-
   /*!
    * \brief Create a transition solver
    * \param[in] kindTransModel - Kind of transition solver
@@ -115,6 +114,7 @@ private:
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+
 
   /*!
    * \brief Create a species solver

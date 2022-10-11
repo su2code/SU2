@@ -31,7 +31,6 @@
 
 /*!
  * \class CSAVariables
- * \ingroup SourceDiscr
  * \brief Structure with SA common auxiliary functions and constants.
  */
 struct CSAVariables {
@@ -56,12 +55,10 @@ struct CSAVariables {
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
 
   su2double intermittency, interDestrFactor;
-
 };
 
 /*!
  * \class CSourceBase_TurbSA
- * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * The variables that are subject to change in each variation/correction have their own class.
  * \note Additional source terms (e.g. compressibility) are implemented as decorators.
@@ -78,10 +75,9 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const bool transition = false;
-  const bool transition_LM = false;
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
 
+  const bool transition_LM = false;
  public:
   /*!
    * \brief Constructor of the class.
@@ -211,12 +207,9 @@ class CSourceBase_TurbSA : public CNumerics {
         /*--- Menter correlation. ---*/
         const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);
 
-//        cout << "re_theta_t = " << re_theta_t << endl;
-
         const su2double term1 = sqrt(max(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
         const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
         const su2double term_exponential = (term1 + term2);
-
 
         Intermittency = 1.0 - exp(-term_exponential);
 
@@ -231,10 +224,6 @@ class CSourceBase_TurbSA : public CNumerics {
         // Is wrong the reference from NASA?
         // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
         var.interDestrFactor = min(max(Intermittency_Eff, 0.5), 1.0);
-//        var.interDestrFactor = 1;
-        //        var.interDestrFactor = min(max(Intermittency_Eff, 0.5), 1.0);
-//        var.interDestrFactor = max(min(Intermittency, 0.5), 1.0);
-
       }
       else{
         /*--- Do not modify the production. ---*/
@@ -243,9 +232,9 @@ class CSourceBase_TurbSA : public CNumerics {
       }
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-//      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
       su2double ProductionHere = 0.0, DestructionHere = 0.0, CrossProduction = 0.0;
       SourceTerms::get(ScalarVar_i[0], var, ProductionHere, DestructionHere, CrossProduction, Jacobian_i[0]);
+
 
       Production = ProductionHere;
       Destruction = DestructionHere;
@@ -260,9 +249,9 @@ class CSourceBase_TurbSA : public CNumerics {
     return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
 
-
   inline su2double getProductionTerm() override {return Production;}
   inline su2double getDestructionTerm() override {return Destruction;}
+
 
 };
 
@@ -273,14 +262,13 @@ namespace detail {
  * ============================================================================*/
 
 /*!
- * \brief SA strain rate classes.
- * \ingroup SourceDiscr
+ * \brief Strain rate classes.
  * \param[in] vorticity: Vorticity array.
  * \param[in] nDim: Problem dimension.
  * \param[in] velocity_grad: Velocity gradients.
  * \param[out] var: Common SA variables struct (to set Omega).
  */
-struct Omega {
+namespace Omega {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -306,14 +294,13 @@ struct Edw {
     var.Omega = sqrt(max(Sbar, 0.0));
   }
 };
-};
+}  // namespace Omega
 
 /*!
- * \brief SA classes to set the ft2 term and its derivative.
- * \ingroup SourceDiscr
+ * \brief Classes to set the ft2 term and its derivative.
  * \param[in,out] var: Common SA variables struct.
  */
-struct ft2 {
+namespace ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
@@ -331,16 +318,15 @@ struct Nonzero {
     var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
   }
 };
-};
+}  // namespace ft2
 
 /*!
- * \brief SA classes to compute the modified vorticity (\tilde{S}) and its derivative.
- * \ingroup SourceDiscr
+ * \brief Classes to compute the modified vorticity (\tilde{S}) and its derivative.
  * \param[in] nue: SA variable.
  * \param[in] nu: Laminar viscosity.
  * \param[in,out] var: Common SA variables struct.
  */
-struct ModVort {
+namespace ModVort {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -385,15 +371,14 @@ struct Neg {
      * No need for Sbar ---*/
   }
 };
-};
+}  // namespace ModVort
 
 /*!
- * \brief SA auxiliary function r and its derivative.
- * \ingroup SourceDiscr
+ * \brief Auxiliary function r and its derivative.
  * \param[in] nue: SA variable.
  * \param[in,out] var: Common SA variables struct.
  */
-struct r {
+namespace r {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -414,11 +399,10 @@ struct Edw {
     var.d_r = (1 - pow(tanh(var.r), 2.0)) * (var.d_r) / tanh(1.0);
   }
 };
-};
+}  // namespace r
 
 /*!
- * \brief SA source terms classes: production, destruction and cross-productions term and their derivative.
- * \ingroup SourceDiscr
+ * \brief Source terms classes: production, destruction and cross-productions term and their derivative.
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
  * \param[out] production: Production term.
@@ -426,7 +410,7 @@ struct Edw {
  * \param[out] cross_production: CrossProduction term.
  * \param[out] jacobian: Derivative of the combined source term wrt nue.
  */
-struct SourceTerms {
+namespace SourceTerms {
 
 /*! \brief Baseline (Original SA model). */
 struct Bsl {
@@ -447,11 +431,9 @@ struct Bsl {
   static void ComputeDestruction(const su2double& nue, const CSAVariables& var, su2double& destruction,
                                  su2double& jacobian) {
     const su2double cb1_k2 = var.cb1 / var.k2;
-    const su2double factor =  (var.cw1 * var.fw - cb1_k2 * var.ft2);
-//    const su2double factor = var.interDestrFactor * (var.cw1 * var.fw );
-
-    destruction =  var.interDestrFactor * factor * pow(nue, 2) / var.dist_i_2;
-    jacobian -=  var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
+    const su2double factor = var.cw1 * var.fw - cb1_k2 * var.ft2;
+    destruction = var.interDestrFactor * factor * pow(nue, 2) / var.dist_i_2;
+    jacobian -= var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
@@ -494,7 +476,7 @@ struct Neg {
     Bsl::ComputeCrossProduction(nue, var, cross_production, jacobian);
   }
 };
-};
+}  // namespace SourceTerms
 
 /* =============================================================================
  * SPALART-ALLMARAS ADDITIONAL SOURCE TERMS DECORATORS
@@ -502,14 +484,8 @@ struct Neg {
 
 /*!
  * \class CCompressibilityCorrection
- * \ingroup SourceDiscr
  * \brief Mixing Layer Compressibility Correction (SA-comp).
  */
-
-//######################################################################################################################
-// Va anche qui l'intermittenza????
-//######################################################################################################################
-
 template <class ParentClass>
 class CCompressibilityCorrection final : public ParentClass {
  private:
@@ -607,7 +583,6 @@ CNumerics* SAFactoryImpl(bool use_ft2, Ts... args) {
 
 /*!
  * \brief Creates an SA source based on the version and modifications/correction in the config.
- * \ingroup SourceDiscr
  */
 template <class FlowIndices>
 CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
@@ -628,7 +603,6 @@ CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
 
 /*!
  * \class CSourcePieceWise_TurbSST
- * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  */
 template <class FlowIndices>
@@ -637,7 +611,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const bool sustaining_terms = false;
   const bool axisymmetric = false;
-  bool transition;
+  bool transition = false;
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
@@ -645,7 +619,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
-
 
   su2double intermittency, Re_V;
 
@@ -719,7 +692,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
         axisymmetric(config->GetAxisymmetric()),
-        transition((config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)),
+        transition(config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
         sigma_w_1(constants[2]),
@@ -885,7 +858,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       // Eq 25-26-27-28 https://doi.org/10.1007/s10494-015-9622-4
 
       su2double PkLim = 0.0;
-      bool AddFurtherProduction = true;
+      bool AddFurtherProduction = false;
 
       if(AddFurtherProduction){
         su2double ReThetaCLim = 1100.0;
@@ -894,10 +867,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
         su2double F_Lim_On = min( max(Re_V / (2.2*ReThetaCLim) - 1.0, 0.0) , 3.0);
 
-        PkLim = 5*Ck * max(intermittency-0.2, 0.0)*(1-intermittency)* F_Lim_On;
-        PkLim = PkLim * max(3*C_sep * Laminar_Viscosity_i - Eddy_Viscosity_i, 0.0) * StrainMag * VorticityMag;
-      }
 
+        PkLim = 5*Ck * max(intermittency-0.2, 0.0)*(1-intermittency)* F_Lim_On;
+        PkLim = PkLim * max(3*C_sep * Laminar_Viscosity_i - Eddy_Viscosity_i, 0.0) * StrainMag_i * VorticityMag;
+      }
 
       /*--- Add the production terms to the residuals. ---*/
 
@@ -905,7 +878,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[1] += pw * Volume;
 
       /*--- Dissipation ---*/
-      // aggiunto da me
       su2double DestructionTransMultiplier = 1.0;
       if(transition){
         DestructionTransMultiplier = min(max(intermittency, 0.1), 1.0);
@@ -917,9 +889,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Cross diffusion ---*/
 
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
-
-//      cout << "Turb Source Residual[0] = " << Residual[0] << endl;
-//      cout << "Turb Source Residual[1] = " << Residual[1] << endl;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 

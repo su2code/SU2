@@ -31,7 +31,6 @@
 
 /*!
  * \brief CDummyDriver class that constructs the driver without running a solver.
- * \ingroup Drivers
  */
 class CDummyDriver : public CDriver {
 

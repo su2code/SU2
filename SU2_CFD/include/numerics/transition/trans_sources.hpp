@@ -1,3 +1,29 @@
+/*!
+ * \file trans_sources.hpp
+ * \brief Numerics classes for integration of source terms in transition problems.
+ * \author A. Rausa, M. Cerabona
+ * \version 7.4.0 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
 #pragma once
 
 #include "../scalar/scalar_sources.hpp"
@@ -93,7 +119,6 @@ public:
 
 
       unsigned short iDim;
-      
       su2double P_gamma, P_rethetat, D_gamma, D_retheta_t;
       su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                                     Vorticity_i[1]*Vorticity_i[1] +
@@ -137,7 +162,6 @@ public:
 
       /*--- Implicit part ---*/
 
-  
       Jacobian_i[0][0] = (F_length_i*c_a1*StrainMag_i*sqrt(F_onset_i)*(0.5*pow(ScalarVar_i[0], -0.5) -1.5*c_e1*pow(ScalarVar_i[0], 0.5))
                           - c_a2 * VorticityMag*F_turb_i*(2.0*c_e2*ScalarVar_i[0]-1.0) )*Volume;
       Jacobian_i[0][1] = 0.0;
@@ -147,10 +171,9 @@ public:
       if(TransModel == TURB_TRANS_MODEL::LM2015 && min(ReThetat_SCF_i-ScalarVar_i[1], 0.0) != 0.0)
         Jacobian_i[1][1] = -(c_thetat/T_param_i)*c_CF*F_thetat_2_i*Volume;
 
-
     }
 
-    return ResidualType<>(Residual, Jacobian_i, nullptr);
+      return ResidualType<>(Residual, Jacobian_i, nullptr);
 
    }
 

@@ -46,25 +46,25 @@ class CViscosityModel {
   /*!
    * \brief return viscosity value.
    */
-  inline su2double GetViscosity() const { return mu_; }
+  virtual su2double GetViscosity() const = 0;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  inline su2double Getdmudrho_T() const { return dmudrho_t_; }
+  virtual su2double Getdmudrho_T() const = 0;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  inline su2double GetdmudT_rho() const { return dmudt_rho_; }
+  virtual su2double GetdmudT_rho() const = 0;
 
   /*!
    * \brief Set Viscosity.
    */
   virtual void SetViscosity(su2double t, su2double rho) = 0;
 
- protected:
-  su2double mu_{0.0};        /*!< \brief Dynamic viscosity. */
-  su2double dmudrho_t_{0.0}; /*!< \brief DmuDrho_T. */
-  su2double dmudt_rho_{0.0}; /*!< \brief DmuDT_rho. */
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  virtual void SetDerViscosity(su2double t, su2double rho) = 0;
 };

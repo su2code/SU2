@@ -29,7 +29,6 @@
 
 /*!
  * \class CStructuralIntegration
- * \ingroup Drivers
  * \brief Class for numerical integration of structural problems.
  * \author R. Sanchez.
  */

@@ -269,8 +269,4 @@ public:
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
     F1_i = val_F1_i; F1_j = val_F1_j;
   }
-
-
-
-
 };

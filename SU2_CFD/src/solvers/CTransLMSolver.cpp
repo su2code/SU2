@@ -1,7 +1,7 @@
 /*!
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
- * \author A. Aranake, A.Rausa, M. Cerabona
+ * \author A. Aranake, A. Rausa, M. Cerabona
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -192,7 +192,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-//  cout << "CTransLMSolver::Preprocessing" << endl;
 
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
@@ -241,10 +240,8 @@ void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
     /*--- Now instantiate the generic implementation with the functor above. ---*/
 
-    config->isTransition = true;
-    config->dummyVar = iEdge;
     Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
-    config->isTransition = false;
+    
 }
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -347,9 +344,6 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
         /*--- Quantities for the LM model contributions ---*/
 
-        // Aggiunto da me
-        // Idem qui, come il commento per Viscous_Residual. Qui dobbiamo limitarci solamente alle quantità di interesse per
-        // i termini sorgenti (che poi magari sono tutte, adesso non lo so)
 
         /*--- Set quantities useful for the source residual and jacobian computations ---*/
         numerics->SetF_length(nodes->GetF_length(iPoint), 0.0);
@@ -382,18 +376,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
         }
 
         /*--- Compute the source term ---*/
-        config->dummyVar = iPoint;
         auto residual = numerics->ComputeResidual(config);
-
-//        auto SolutionHere = nodes->GetSolution(iPoint);
-//        if(SolutionHere[1] > 1e5) {
-//          cout << "Gamma(" << iPoint << ") = " << SolutionHere[0] << " ";
-//          cout << "ReTheta(" << iPoint << ") = " << SolutionHere[1] << endl;
-//        }
-//        if(iPoint == 0)
-//        cout << "iPoint = " << iPoint << " Residual = " << residual.residual[0] << endl;
-
-//        cout << residual.residual[0] << endl;
 
         /*--- Subtract residual and the Jacobian ---*/
 

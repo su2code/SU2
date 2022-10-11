@@ -45,7 +45,6 @@ private:
 
   VectorType Production;
   VectorType Destruction;
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -105,6 +104,7 @@ public:
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
 
+
   inline void SetProductionTerm(unsigned long iPoint, su2double val_production) override {Production(iPoint) = val_production;}
   inline void SetDestructionTerm(unsigned long iPoint, su2double val_destruction) override {Destruction(iPoint) = val_destruction;}
   inline su2double GetProductionTerm(unsigned long iPoint) const override { return Production(iPoint); }
@@ -119,5 +119,6 @@ public:
    * \brief Get the value of the turbulence index.
    */
   inline su2double GetTurbIndex(unsigned long iPoint) const override { return turb_index(iPoint); }
+
 
 };

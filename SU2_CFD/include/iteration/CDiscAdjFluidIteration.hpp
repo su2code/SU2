@@ -34,7 +34,6 @@ class CFluidIteration;
 
 /*!
  * \class CDiscAdjFluidIteration
- * \ingroup DiscAdj
  * \brief Class for driving an iteration of the discrete adjoint fluid system.
  * \author T. Economon
  */

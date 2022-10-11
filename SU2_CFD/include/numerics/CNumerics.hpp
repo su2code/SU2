@@ -133,8 +133,8 @@ protected:
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
-  *TransVar_i,  /*!< \brief Vector of transition variables at point i. */
-  *TransVar_j;  /*!< \brief Vector of transition variables at point j. */
+  *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
+  *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
@@ -1423,16 +1423,14 @@ public:
   }
 
   /*!
-   * \brief A virtual member.
+   * \brief A virtual member to get the intermittency value.
    */
   inline virtual su2double GetIntermittency(void) const { return 0.0; }
-//  inline virtual su2double GetGammaBC(void) const { return 0.0; }
 
   /*!
-   * \brief A virtual member.
+   * \brief A virtual member to set the effective intermittency value.
    */
   inline virtual void SetIntermittencyEff(su2double val_intermittency) { }
-
 
   /*!
    * \brief A virtual member to compute the tangent matrix in structural problems
@@ -1607,7 +1605,6 @@ public:
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
 
 
-
   virtual inline void SetF_length(su2double val_F_length_i, su2double val_F_length_j) { }
   virtual inline void SetF_onset(su2double val_F_onset_i, su2double val_F_onset_j) { }
   virtual inline void SetF_thetat(su2double val_F_thetat_i, su2double val_F_thetat_j) { }
@@ -1629,6 +1626,7 @@ public:
 
   inline virtual su2double getProductionTerm() {return 0.0;}
   inline virtual su2double getDestructionTerm() {return 0.0;}
+
 
 
 };

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,8 +92,8 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -478,7 +478,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the transition model. */
+  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
@@ -567,7 +567,8 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
   INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
+  SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
+  FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -579,6 +580,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("SU2_NONEQ", SU2_NONEQ)
+  MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
 };
 
 /*!
@@ -611,11 +613,13 @@ MakePair("ONESPECIES", ONESPECIES)
  * \brief types of coefficient transport model
  */
 enum class TRANSCOEFFMODEL {
+  SUTHERLAND,
   WILKE,
   GUPTAYOS,
   CHAPMANN_ENSKOG
 };
 static const MapType<std::string, TRANSCOEFFMODEL> TransCoeffModel_Map = {
+MakePair("SUTHERLAND", TRANSCOEFFMODEL::SUTHERLAND)
 MakePair("WILKE", TRANSCOEFFMODEL::WILKE)
 MakePair("GUPTA-YOS", TRANSCOEFFMODEL::GUPTAYOS)
 MakePair("CHAPMANN-ENSKOG", TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
@@ -912,22 +916,12 @@ static const MapType<std::string, LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
   MakePair("SA", TURB_MODEL::SA)
-  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
-  MakePair("SA_E", TURB_MODEL::SA_E)
-  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
-  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -946,16 +940,213 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::NONE:
       return TURB_FAMILY::NONE;
     case TURB_MODEL::SA:
-    case TURB_MODEL::SA_NEG:
-    case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_COMP:
-    case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
-    case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
+}
+
+
+/*!
+ * \brief SST Options
+ */
+enum class SST_OPTIONS {
+  NONE,        /*!< \brief No SST Turb model. */
+  V1994,       /*!< \brief 1994 Menter k-w SST model. */
+  V2003,       /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
+  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+};
+static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
+  MakePair("NONE", SST_OPTIONS::NONE)
+  MakePair("V1994m", SST_OPTIONS::V1994m)
+  MakePair("V2003m", SST_OPTIONS::V2003m)
+  /// TODO: For now we do not support "unmodified" versions of SST.
+  //MakePair("V1994", SST_OPTIONS::V1994)
+  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("SUSTAINING", SST_OPTIONS::SUST)
+  MakePair("VORTICITY", SST_OPTIONS::V)
+  MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
+  MakePair("UQ", SST_OPTIONS::UQ)
+};
+
+/*!
+ * \brief Structure containing parsed SST options.
+ */
+struct SST_ParsedOptions {
+  SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
+  SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
+  bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+};
+
+/*!
+ * \brief Function to parse SST options.
+ * \param[in] SST_Options - Selected SST option from config.
+ * \param[in] nSST_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SST options.
+ */
+inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank) {
+  SST_ParsedOptions SSTParsedOptions;
+
+  auto IsPresent = [&](SST_OPTIONS option) {
+    const auto sst_options_end = SST_Options + nSST_Options;
+    return std::find(SST_Options, sst_options_end, option) != sst_options_end;
+  };
+
+  const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
+  const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
+  const bool found_1994m = IsPresent(SST_OPTIONS::V1994m);
+  const bool found_2003m = IsPresent(SST_OPTIONS::V2003m);
+
+  const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
+
+  const bool sst_1994 = found_1994 || found_1994m || default_version;
+  const bool sst_2003 = found_2003 || found_2003m;
+
+  /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
+  const bool sst_m = found_1994m || found_2003m || default_version;
+
+  const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
+  const bool sst_v = IsPresent(SST_OPTIONS::V);
+  const bool sst_kl = IsPresent(SST_OPTIONS::KL);
+  const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+
+  if (sst_1994 && sst_2003) {
+    SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_2003) {
+    SSTParsedOptions.version = SST_OPTIONS::V2003;
+  } else {
+    SSTParsedOptions.version = SST_OPTIONS::V1994;
+
+    if (rank==MASTER_NODE) {
+      std::cout <<
+        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
+        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
+    }
+  }
+
+  // Parse production modifications
+  if ((int(sst_v) + int(sst_kl) + int(sst_uq)) > 1) {
+    SU2_MPI::Error("Please select only one SST production term modifier (VORTICITY, KATO-LAUNDER, or UQ).", CURRENT_FUNCTION);
+  } else if (sst_v) {
+    SSTParsedOptions.production = SST_OPTIONS::V;
+  } else if (sst_kl) {
+    SSTParsedOptions.production = SST_OPTIONS::KL;
+  } else if (sst_uq) {
+    SSTParsedOptions.production = SST_OPTIONS::UQ;
+  }
+
+  SSTParsedOptions.sust = sst_sust;
+  SSTParsedOptions.modified = sst_m;
+  SSTParsedOptions.uq = sst_uq;
+  return SSTParsedOptions;
+}
+
+/*!
+ * \brief SA Options
+ */
+enum class SA_OPTIONS {
+  NONE,     /*!< \brief No option / default. */
+  NEG,      /*!< \brief Negative SA. */
+  EDW,      /*!< \brief Edwards version. */
+  FT2,      /*!< \brief Use FT2 term. */
+  QCR2000,  /*!< \brief Quadratic constitutive relation. */
+  COMP,     /*!< \brief Compressibility correction. */
+  ROT,      /*!< \brief Rotation correction. */
+  BC,       /*!< \brief Bas-Cakmakcioclu transition. */
+  EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
+};
+static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
+  MakePair("NONE", SA_OPTIONS::NONE)
+  MakePair("NEGATIVE", SA_OPTIONS::NEG)
+  MakePair("EDWARDS", SA_OPTIONS::EDW)
+  MakePair("WITHFT2", SA_OPTIONS::FT2)
+  MakePair("QCR2000", SA_OPTIONS::QCR2000)
+  MakePair("COMPRESSIBILITY", SA_OPTIONS::COMP)
+  MakePair("ROTATION", SA_OPTIONS::ROT)
+  MakePair("BCM", SA_OPTIONS::BC)
+  MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
+};
+
+/*!
+ * \brief Structure containing parsed SA options.
+ */
+struct SA_ParsedOptions {
+  SA_OPTIONS version = SA_OPTIONS::NONE;  /*!< \brief SA base model. */
+  bool ft2 = false;                       /*!< \brief Use ft2 term. */
+  bool qcr2000 = false;                   /*!< \brief Use QCR-2000. */
+  bool comp = false;                      /*!< \brief Use compressibility correction. */
+  bool rot = false;                       /*!< \brief Use rotation correction. */
+  bool bc = false;                        /*!< \brief BC transition. */
+};
+
+/*!
+ * \brief Function to parse SA options.
+ * \param[in] SA_Options - Selected SA option from config.
+ * \param[in] nSA_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned short nSA_Options, int rank) {
+  SA_ParsedOptions SAParsedOptions;
+
+  auto IsPresent = [&](SA_OPTIONS option) {
+    const auto sa_options_end = SA_Options + nSA_Options;
+    return std::find(SA_Options, sa_options_end, option) != sa_options_end;
+  };
+
+  const bool found_neg = IsPresent(SA_OPTIONS::NEG);
+  const bool found_edw = IsPresent(SA_OPTIONS::EDW);
+  const bool found_bsl = !found_neg && !found_edw;
+
+  if (found_neg && found_edw) {
+    SU2_MPI::Error("Two versions (Negative and Edwards) selected for SA_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (found_bsl) {
+    SAParsedOptions.version = SA_OPTIONS::NONE;
+  } else if (found_neg) {
+    SAParsedOptions.version = SA_OPTIONS::NEG;
+  } else {
+    SAParsedOptions.version = SA_OPTIONS::EDW;
+  }
+  SAParsedOptions.ft2 = IsPresent(SA_OPTIONS::FT2);
+  SAParsedOptions.qcr2000 = IsPresent(SA_OPTIONS::QCR2000);
+  SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
+  SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
+  SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
+
+  /*--- Validate user settings when not in experimental mode. ---*/
+  if (!IsPresent(SA_OPTIONS::EXP)) {
+    const bool any_but_bc = SAParsedOptions.ft2 || SAParsedOptions.qcr2000 || SAParsedOptions.comp || SAParsedOptions.rot;
+
+    switch (SAParsedOptions.version) {
+      case SA_OPTIONS::NEG:
+        if (!SAParsedOptions.ft2 || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-neg was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      case SA_OPTIONS::EDW:
+        if (any_but_bc || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-noft2-Edwards was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      default:
+        if (SAParsedOptions.bc && any_but_bc)
+          SU2_MPI::Error("A non-standard version of SA-BCM was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  return SAParsedOptions;
 }
 
 /*!
@@ -964,8 +1155,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  LM2015,    /*!< \brief Kind of transition model (Langtry-Menter w cross-flow effects (LM-2015) for SST and Spalart-Allmaras). */
-  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  LM2015    /*!< \brief Kind of transition model (Langtry-Menter w cross-flow effects (LM-2015) for SST and Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
@@ -977,12 +1167,12 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  * \brief Types of transition correlations
  */
 enum class TURB_TRANS_CORRELATION {
-  MALAN,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  SULUKSNA,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
-  KRAUSE,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
-  MEDIDA_BAEDER,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
-  MEDIDA,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
-  MENTER_LANGTRY,    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  MALAN,    /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,    /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,    /*!< \brief Kind of transition correlation model (Krause). */
+  MEDIDA_BAEDER,    /*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,    /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,    /*!< \brief Kind of transition correlation model (Menter-Langtry). */
   DEFAULT
 };
 static const MapType<std::string, TURB_TRANS_CORRELATION> Trans_Correlation_Map = {
@@ -994,6 +1184,7 @@ static const MapType<std::string, TURB_TRANS_CORRELATION> Trans_Correlation_Map 
     MakePair("MENTER_LANGTRY", TURB_TRANS_CORRELATION::MENTER_LANGTRY)
     MakePair("DEFAULT", TURB_TRANS_CORRELATION::DEFAULT)
 };
+
 
 /*!
  * \brief types of species transport models
@@ -1024,7 +1215,6 @@ static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("WALE",         TURB_SGS_MODEL::WALE)
   MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
-
 
 /*!
  * \brief Types of window (weight) functions for cost functional
