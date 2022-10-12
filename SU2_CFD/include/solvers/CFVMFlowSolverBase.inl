@@ -2613,36 +2613,22 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
         
-	const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
+        const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
   
-        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/ 
+        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
         HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
-        //TODO: CHECK ME
-        bool catalytic = false;
-        unsigned short iMarker_Catalytic = 0;
-        while( iMarker_Catalytic < config->GetnWall_Catalytic()){
-
-          string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
-
-          if (Marker_Tag == Catalytic_Tag){
-            catalytic = true;
-            break;
-          } else {
-            iMarker_Catalytic++;
-          }
-        }
-
+        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
+        bool catalytic = config->GetCatalytic_Wall(iMarker);
         if (catalytic){
 
           const auto nSpecies = config->GetnSpecies();
-      	  const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
-	  const auto& PrimVar = nodes->GetPrimitive(iPoint);
+          const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+          const auto& PrimVar = nodes->GetPrimitive(iPoint);
           const auto& Ds = nodes->GetDiffusionCoeff(iPoint);
           const auto& hs = nodes->GetEnthalpys(iPoint);
           const su2double rho = PrimVar[prim_idx.Density()];
 
-          /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
           su2double sumJhs = 0.0;
           for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
             for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -2650,7 +2636,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
               sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
             }
           }
-          /*--- Surface energy balance: mass diffusion ---*/ 
+          /*--- Surface energy balance: mass diffusion ---*/
           HeatFlux[iMarker][iVertex] += sumJhs;
 
         }

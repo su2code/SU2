@@ -331,32 +331,14 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CConfig *config,
                                      unsigned short val_marker) {
 
-  bool catalytic = false;
-  unsigned short iMarker_Catalytic = 0;
+  bool catalytic = config->GetCatalytic_Wall(val_marker);
 
-  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  if (catalytic) { BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                             sour_numerics, config, val_marker);
 
-  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
-
-    string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
-
-    if (Marker_Tag == Catalytic_Tag){
-
-      catalytic = true;
-      BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                sour_numerics, config, val_marker);
-      break;
-
-    } else {
-
-      iMarker_Catalytic++;
-
-    }
+  } else { BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                        sour_numerics, config, val_marker);
   }
-
-  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                              sour_numerics, config, val_marker);
-
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -532,28 +514,14 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
                                        CNumerics *conv_numerics, CNumerics *sour_numerics,
                                        CConfig *config, unsigned short val_marker) {
 
-  bool catalytic = false;
-  unsigned short iMarker_Catalytic = 0;
+  bool catalytic = config->GetCatalytic_Wall(val_marker);
 
-  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  if (catalytic) { BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                             sour_numerics, config, val_marker);
 
-  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
-
-    string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
-
-    if (Marker_Tag == Catalytic_Tag){
-
-      catalytic = true;
-      BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                  sour_numerics, config, val_marker);
-      break;
-    } else {
-      iMarker_Catalytic++;
-    }
+  } else { BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                          sour_numerics, config, val_marker);
   }
-
-  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                                sour_numerics, config, val_marker);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,

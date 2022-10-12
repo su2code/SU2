@@ -7801,6 +7801,16 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
 }
 
+bool CConfig::GetCatalytic_Wall(unsigned short iMarker) const {
+
+  for (unsigned short iMarker_Catalytic = 0; iMarker_Catalytic < nWall_Catalytic; iMarker_Catalytic++){
+
+    string Catalytic_Tag = Wall_Catalytic[iMarker_Catalytic];
+
+    return (Catalytic_Tag == Marker_All_TagBound[iMarker]);
+  }
+}
+
 bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 
   return GetViscous_Wall(iMarker) ||

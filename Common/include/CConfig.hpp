@@ -6231,6 +6231,13 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
+   * \brief Determines whether a marker with index iMarker is a catalytic boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a catalytic boundary.
+   */
+  bool GetCatalytic_Wall(unsigned short iMarker) const;
+
+  /*!
    * \brief Determines if problem is adjoint.
    * \return true if Adjoint.
    */
