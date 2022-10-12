@@ -584,7 +584,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -637,6 +637,11 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     if (nDim == 3) {
       StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
       StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
+    }
+
+    if (config.GetAxisymmetric()){
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      if ((Coord[1])>EPS) StrainMag(iPoint) += nodes->GetVelocity(iPoint,1)/Coord[1];
     }
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
