@@ -33,6 +33,7 @@
 
 /*!
  * \class CVertexMap
+ * \ingroup Containers
  * \brief A lookup type map, maps indices in a large range to indices in a smaller one.
  *
  * The usage case is:

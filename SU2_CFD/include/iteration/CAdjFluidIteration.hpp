@@ -32,6 +32,7 @@
 
 /*!
  * \class CAdjFluidIteration
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the adjoint fluid system.
  * \author T. Economon
  */

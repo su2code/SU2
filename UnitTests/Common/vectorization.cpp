@@ -41,7 +41,7 @@ template<class T, class U>
 struct logicFun {
   static T f(T A, T B, T C, T D, U x, U y) {
     // (B < A || B >= C) && ...
-    return max(B < A, B >= min(C,-D)) * (abs(A) == abs(x)) * (abs(C) != abs(y));
+    return fmax(B < A, B >= fmin(C,-D)) * (abs(A) == abs(x)) * (abs(C) != abs(y));
   }
 };
 

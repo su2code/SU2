@@ -52,6 +52,7 @@ enum class LinearToleranceType {RELATIVE, ABSOLUTE};
 
 /*!
  * \class CSysSolve
+ * \ingroup SpLinSys
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
  *
  * The individual solvers could be stand-alone subroutines, but by
