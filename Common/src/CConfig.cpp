@@ -7803,12 +7803,13 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
 bool CConfig::GetCatalytic_Wall(unsigned short iMarker) const {
 
+  bool catalytic = false;
   for (unsigned short iMarker_Catalytic = 0; iMarker_Catalytic < nWall_Catalytic; iMarker_Catalytic++){
-
     string Catalytic_Tag = Wall_Catalytic[iMarker_Catalytic];
-
-    return (Catalytic_Tag == Marker_All_TagBound[iMarker]);
+    if (Catalytic_Tag == Marker_All_TagBound[iMarker]) { catalytic = true; break; }
   }
+
+  return catalytic;
 }
 
 bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
