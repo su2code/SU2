@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -262,8 +262,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
-  const unsigned short RHO_INDEX     = nodes->GetRhoIndex();
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -285,7 +283,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     // TODO: Look into this!
     // Note: Contributions from qtr and qve are used for proportional control
     //       to drive the solution toward the specified heatflux more quickly.
-    const auto V      = nodes->GetPrimitive(iPoint);
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);
     su2double dTdn   = 0.0;
     su2double dTvedn = 0.0;
@@ -295,24 +292,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     }
     su2double ktr = nodes->GetThermalConductivity(iPoint);
     su2double kve = nodes->GetThermalConductivity_ve(iPoint);
-
-    /*--- Scale thermal conductivity with turb ---*/
-    // TODO: Need to determine proper way to incorporate eddy viscosity
-    // This is only scaling Kve by same factor as ktr
-    su2double Mass = 0.0;
-    auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-    su2double tmp1, scl, Cptr;
-    su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
-    for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V[iSpecies]/V[RHO_INDEX]*Ms[iSpecies];
-    Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-    tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-    scl  = tmp1/ktr;
-    ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
-    //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-    //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Compute residual ---*/
     Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
@@ -585,17 +564,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
-
-  /*--- Extract required indices ---*/
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  const unsigned short RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;
@@ -657,24 +631,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Rename variables for convenience ---*/
     su2double ktr = nodes->GetThermalConductivity(iPoint);
     su2double kve = nodes->GetThermalConductivity_ve(iPoint);
-
-    /*--- Scale thermal conductivity with turb ---*/
-    // This is only scaling Kve by same factor as ktr
-    const auto V = nodes->GetPrimitive(iPoint);
-    su2double Mass = 0.0;
-    auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-    su2double tmp1, scl, Cptr;
-    su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
-    for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V[iSpecies]/V[RHO_INDEX]*Ms[iSpecies];
-    Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-    tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-    scl  = tmp1/ktr;
-    ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
-    //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-    //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Apply to the linear system ---*/
     Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
@@ -989,23 +945,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Retrieve Flow Data ---*/
     su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
-    su2double Eddy_Visc = nodes->GetEddyViscosity(iPoint);
     su2double Density   = nodes->GetDensity(iPoint);
     su2double Gamma     = nodes->GetGamma(iPoint);
-
-    /*--- Incorporate turbulence effects ---*/
-    const auto& Ms = FluidModel->GetSpeciesMolarMass();
-    su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
-    const auto Vi = nodes->GetPrimitive(iPoint);
-
-    su2double Mass = 0.0;
-    for (auto iSpecies=0u; iSpecies<nSpecies; iSpecies++)
-      Mass += Vi[iSpecies]*Ms[iSpecies];
-    su2double Cptr = rhoCvtr + Ru/Mass;
-    su2double tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
-    su2double scl  = tmp1/ktr;
-    ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
 
     /*--- Retrieve Primitive Gradients ---*/
     const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

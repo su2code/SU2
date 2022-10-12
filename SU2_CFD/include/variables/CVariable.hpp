@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,6 +43,7 @@ class CNEMOGas;
 
 /*!
  * \class CVariable
+ * \ingroup Variable
  * \brief Main class for defining the variables.
  * \author F. Palacios
  */

@@ -2,7 +2,7 @@
  * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -281,6 +281,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetRotatingFrameCoefficients(flow_solver);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomOutputs(solver, geometry, config);
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 

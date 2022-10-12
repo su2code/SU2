@@ -1,8 +1,8 @@
 /*!
  * \file CTurbSolver.cpp
- * \brief Main subrotuines of CTurbSolver class
+ * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -216,7 +216,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
@@ -270,9 +270,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                      CURRENT_FUNCTION);
     }
 
-  }  // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  }  // end safe global access, pre and postprocessing are thread-safe.
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
@@ -319,7 +318,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   }
 
   /*--- Go back to single threaded execution. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Delete the class memory that is used to load the restart. ---*/
 
     delete[] Restart_Vars;
@@ -327,8 +326,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     delete[] Restart_Data;
     Restart_Data = nullptr;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){

@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,6 +73,10 @@ struct mkl_jit_wrapper<float> {
 
 class CGeometry;
 
+/*!
+ * \brief Helper to communicate distributed vectors.
+ * \ingroup SpLinSys
+ */
 struct CSysMatrixComms {
   /*!
    * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
@@ -101,6 +105,7 @@ struct CSysMatrixComms {
 
 /*!
  * \class CSysMatrix
+ * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
  */
 template<class ScalarType>

@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -445,6 +445,7 @@ private:
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
+  string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -480,6 +481,7 @@ private:
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
+  MIXINGVISCOSITYMODEL Kind_MixingViscosityModel; /*!< \brief Kind of the mixing Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
@@ -803,11 +805,9 @@ private:
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
   *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
-  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
-  su2double Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
-  Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
-  Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
+  nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
+  su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
@@ -821,20 +821,24 @@ private:
   Pressure_Critical,     /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,      /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
-  Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
-  Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
-  Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
-  Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
-  Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
-  Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
-  Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
+  *Thermal_Conductivity_Constant,  /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
+  *Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
+  *Mu_S;                  /*!< \brief Reference S for Sutherland model.  */
+  unsigned short nMu_Constant,   /*!< \brief Number of species constant viscosities. */
+  nMu_Ref,                       /*!< \brief Number of species reference constants for Sutherland model. */
+  nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
+  nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
+  nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
+  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
+  nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
+  nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
+  su2double *Constant_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
@@ -860,8 +864,8 @@ private:
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
   wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
   wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
-  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -1616,25 +1620,13 @@ public:
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
    */
-  su2double GetSpecific_Heat_Cp(void) const { return Specific_Heat_Cp; }
+  su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index]; }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
    * \return Value of the non-dim. constant: Cp
    */
-  su2double GetSpecific_Heat_CpND(void) const { return Specific_Heat_CpND; }
-
-  /*!
-   * \brief Get the value of specific heat at constant volume.
-   * \return Value of the constant: Cv
-   */
-  su2double GetSpecific_Heat_Cv(void) const { return Specific_Heat_Cv; }
-
-  /*!
-   * \brief Get the non-dimensional value of specific heat at constant volume.
-   * \return Value of the non-dim. constant: Cv
-   */
-  su2double GetSpecific_Heat_CvND(void) const { return Specific_Heat_CvND; }
+  su2double GetSpecific_Heat_CpND(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index] / Gas_Constant_Ref; }
 
   /*!
    * \brief Get the value of wall temperature.
@@ -1705,13 +1697,13 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  su2double GetPrandtl_Lam(void) const { return Prandtl_Lam; }
+  su2double GetPrandtl_Lam(unsigned short val_index = 0) const { return Prandtl_Lam[val_index]; }
 
   /*!
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
+  su2double GetPrandtl_Turb(unsigned short val_index = 0) const { return Prandtl_Turb[val_index]; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
@@ -2423,30 +2415,6 @@ public:
    * \param[in] val_gas_constant - Value of the gas-constant.
    */
   void SetGas_Constant(su2double val_gas_constant) { Gas_Constant = val_gas_constant; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cp - specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp = val_specific_heat_cp; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cpnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CpND(su2double val_specific_heat_cpnd) { Specific_Heat_CpND = val_specific_heat_cpnd; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cv - specific heat at constant volume.
-   */
-  void SetSpecific_Heat_Cv(su2double val_specific_heat_cv) { Specific_Heat_Cv = val_specific_heat_cv; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cvnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CvND(su2double val_specific_heat_cvnd) { Specific_Heat_CvND = val_specific_heat_cvnd; }
 
   /*!
    * \brief Set the heat flux reference value.
@@ -3817,6 +3785,12 @@ public:
   VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
 
   /*!
+   * \brief Get the value of the mixing model for viscosity.
+   * \return Mixing Viscosity model.
+   */
+  MIXINGVISCOSITYMODEL GetKind_MixingViscosityModel() const { return Kind_MixingViscosityModel; }
+
+  /*!
    * \brief Get the value of the thermal conductivity model.
    * \return Conductivity model.
    */
@@ -3829,28 +3803,38 @@ public:
   CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  DIFFUSIVITYMODEL GetKind_Diffusivity_Model(void) const { return Kind_Diffusivity_Model; }
+
+  /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  su2double GetMu_Constant(void) const { return Mu_Constant; }
+  su2double GetMu_Constant(unsigned short val_index = 0) const { return Mu_Constant[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional constant viscosity.
    * \return Non-dimensional constant viscosity.
    */
-  su2double GetMu_ConstantND(void) const { return Mu_ConstantND; }
+  su2double GetMu_ConstantND(unsigned short val_index = 0) const { return Mu_Constant[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index];
+  }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
+  su2double GetThermal_Conductivity_ConstantND(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index] / Thermal_Conductivity_Ref;
+  }
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
@@ -3877,40 +3861,48 @@ public:
   su2double GetSchmidt_Number_Turbulent(void) const { return Schmidt_Number_Turbulent; }
 
   /*!
+   * \brief Get the value of the Lewis number for each species.
+   * \return Lewis Number.
+   */
+  su2double GetConstant_Lewis_Number(unsigned short val_index = 0) const { return Constant_Lewis_Number[val_index]; }
+
+  /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  su2double GetMu_Ref(void) const { return Mu_Ref; }
+  su2double GetMu_Ref(unsigned short val_index = 0) const { return Mu_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
    * \return The non-dimensional reference viscosity.
    */
-  su2double GetMu_RefND(void) const { return Mu_RefND; }
+  su2double GetMu_RefND(unsigned short val_index = 0) const { return Mu_Ref[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref; }
+  su2double GetMu_Temperature_Ref(unsigned short val_index = 0) const { return Mu_Temperature_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
    * \return The non-dimensional reference temperature.
    */
-  su2double GetMu_Temperature_RefND(void) const { return Mu_Temperature_RefND; }
+  su2double GetMu_Temperature_RefND(unsigned short val_index = 0) const {
+    return Mu_Temperature_Ref[val_index] / Temperature_Ref;
+  }
 
   /*!
    * \brief Get the value of the reference S for Sutherland model.
    * \return The reference S.
    */
-  su2double GetMu_S(void) const { return Mu_S; }
+  su2double GetMu_S(unsigned short val_index = 0) const { return Mu_S[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference S for Sutherland model.
    * \return The non-dimensional reference S.
    */
-  su2double GetMu_SND(void) const { return Mu_SND; }
+  su2double GetMu_SND(unsigned short val_index = 0) const { return Mu_S[val_index] / Temperature_Ref; }
 
   /*!
    * \brief Get the number of coefficients in the temperature polynomial models.
@@ -3971,31 +3963,6 @@ public:
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
   const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
-
-  /*!
-   * \brief Set the value of the non-dimensional constant viscosity.
-   */
-  void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional thermal conductivity.
-   */
-  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
-   */
-  void SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
-   */
-  void SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional S for Sutherland model.
-   */
-  void SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for specific heat Cp.
@@ -5230,6 +5197,11 @@ public:
    * \brief Get the user expression for the custom objective function.
    */
   const string& GetCustomObjFunc() const { return CustomObjFunc; }
+
+  /*!
+   * \brief Get the user expressions for custom outputs.
+   */
+  const string& GetCustomOutputs() const { return CustomOutputs; }
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.

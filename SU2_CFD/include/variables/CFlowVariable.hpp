@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,6 +66,23 @@ class CFlowVariable : public CVariable {
                 unsigned long nprimvargrad, const CConfig* config);
 
  public:
+  mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reconstruction counter for each edge. */
+  /*!
+   * \brief Updates the non-physical counter of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] isNonPhys - Should be 1 (true) if a non-physical reconstruction was occurred.
+   * \return Whether the reconstruction should be limited to first order, based on the counter.
+   */
+  template <class T>
+  inline T UpdateNonPhysicalEdgeCounter(unsigned long iEdge, const T& isNonPhys) const {
+    if (isNonPhys != 0) {
+      /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+      NonPhysicalEdgeCounter[iEdge] = 21;
+    }
+    NonPhysicalEdgeCounter[iEdge] = std::max<int8_t>(0, NonPhysicalEdgeCounter[iEdge] - 1);
+    return static_cast<T>(NonPhysicalEdgeCounter[iEdge] > 0);
+  }
+
   /*!
    * \brief Get a primitive variable.
    * \param[in] iPoint - Point index.

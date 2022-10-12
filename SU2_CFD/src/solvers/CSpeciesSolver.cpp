@@ -1,8 +1,8 @@
 /*!
  * \file CSpeciesSolver.cpp
- * \brief Main subrotuines of CSpeciesSolver class
+ * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -175,7 +175,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
@@ -230,9 +230,8 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
                      CURRENT_FUNCTION);
     }
 
-  }  // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  }  // end safe global access, pre and postprocessing are thread-safe.
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
@@ -286,7 +285,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   }
 
   /*--- Go back to single threaded execution. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Delete the class memory that is used to load the restart. ---*/
 
     delete[] Restart_Vars;
@@ -294,8 +293,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     delete[] Restart_Data;
     Restart_Data = nullptr;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
@@ -306,9 +304,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double mass_diffusivity = config->GetDiffusivity_ConstantND();
-
     for (auto iVar = 0u; iVar < nVar; iVar++) {
+      solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
+      su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
 
@@ -543,4 +541,55 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     }
   }
   END_SU2_OMP_FOR
+}
+
+void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool axisymmetric = config->GetAxisymmetric();
+
+  if (axisymmetric) {
+    CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+  
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set primitive variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set scalar variables w/o reconstruction ---*/
+
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      /*--- Axisymmetry source term for the scalar equation. ---*/
+      /*--- Set y coordinate ---*/
+      
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+      
+      /*--- Set gradients ---*/
+      
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+    
+      LinSysRes.SubtractBlock(iPoint, residual);
+    
+      /*--- Implicit part ---*/
+    
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    
+    }
+    END_SU2_OMP_FOR
+  }
 }

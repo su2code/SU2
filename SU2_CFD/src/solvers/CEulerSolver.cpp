@@ -1,8 +1,8 @@
 /*!
  * \file CEulerSolver.cpp
- * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
+ * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -280,6 +280,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
+
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
@@ -343,8 +347,8 @@ CEulerSolver::~CEulerSolver(void) {
 
 void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
 
   if (config->Low_Mach_Correction())
     SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
@@ -359,8 +363,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
                    "support vectorization.", CURRENT_FUNCTION);
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -811,6 +814,14 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream = config->GetTemperature_FreeStream();
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+        To accomplish this, simply set the non-dimensional coefficients to the
+        dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
+
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -887,15 +898,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Viscous initialization ---*/
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-          To accomplish this, simply set the non-dimensional coefficients to the
-          dimensional ones. This will be overruled later.---*/
-    config->SetMu_RefND(config->GetMu_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
-    config->SetMu_SND(config->GetMu_S());
-
-    config->SetMu_ConstantND(config->GetMu_Constant());
 
     /*--- Check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
@@ -1035,21 +1037,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
   delete auxFluidModel;
-
-  /*--- Set viscosity ND constants before defining the visc. model of the fluid models. ---*/
-
-  if (viscous) {
-    /*--- Constant viscosity model. ---*/
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-    /*--- Sutherland's model. ---*/
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
-    /*--- Constant thermal conductivity model. ---*/
-    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
-  }
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1499,9 +1486,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
     if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
@@ -1528,8 +1515,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Artificial dissipation ---*/
 
@@ -1680,17 +1666,19 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  if (config->GetUseVectorization()) {
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool low_mach_corr = config->Low_Mach_Correction();
+
+  /*--- Use vectorization if the scheme supports it. ---*/
+  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                                (config->GetKind_FluidModel() == IDEAL_GAS);
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
-  const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -1831,22 +1819,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
+      bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
+      counter_local += bad_recon;
 
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-      nodes->SetNon_Physical(iPoint, bad_i);
-      nodes->SetNon_Physical(jPoint, bad_j);
-
-      /*--- Get updated state, in case the point recovered after the set. ---*/
-      bad_i = nodes->GetNon_Physical(iPoint);
-      bad_j = nodes->GetNon_Physical(jPoint);
-
-      counter_local += bad_i+bad_j;
-
-      numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
-      numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+      numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
+      numerics->SetSecondary(bad_recon? S_i : Secondary_i,  bad_recon? S_j : Secondary_j);
 
     }
 
@@ -1901,34 +1880,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (implicit)
-      Jacobian.SetDiagonalAsColumnSum();
-  }
-
-  /*--- Warning message about non-physical reconstructions. ---*/
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
-
-    /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
-      counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-      config->SetNonphysical_Reconstr(ErrorCounter);
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
-
+  FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
@@ -5566,24 +5518,26 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   Velocity_i    = new su2double[nDim];
   deltaprim     = new su2double[nVar];
   cj            = new su2double[nVar];
-  complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, expArg;
+  complex<su2double> I, expArg;
+  static complex<su2double> cktemp_inf, cktemp_out1, cktemp_out2;
   I = complex<su2double>(0.0,1.0);
-
-#ifdef HAVE_MPI
-  su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
-#endif
 
   kend_max = geometry->GetnFreqSpanMax(marker_flag);
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     for(k=0; k < 2*kend_max+1; k++){
       freq = k - kend_max;
-      cktemp_inf = complex<su2double>(0.0,0.0);
-      cktemp_out1 = complex<su2double>(0.0,0.0);
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+      SU2_OMP_MASTER
+      {
+        cktemp_inf = complex<su2double>(0.0,0.0);
+        cktemp_out1 = complex<su2double>(0.0,0.0);
+        cktemp_out2 = complex<su2double>(0.0,0.0);
+      } END_SU2_OMP_MASTER
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              complex<su2double> cktemp_inf_local{0.,0.},cktemp_out1_local{0.,0.}, cktemp_out2_local{0.,0.};
+              SU2_OMP_FOR_DYN(roundUpDiv(geometry->GetnVertexSpan(iMarker,iSpan), 2*omp_get_max_threads()))
               for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
 
                 /*--- find the node related to the vertex ---*/
@@ -5638,64 +5592,72 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
                 expArg = complex<su2double>(cos(TwoPiThetaFreq_Pitch)) - I*complex<su2double>(sin(TwoPiThetaFreq_Pitch));
                 if (freq != 0){
-                  cktemp_out1 +=  cj_out1*expArg*deltaTheta/pitch;
-                  cktemp_out2 +=  cj_out2*expArg*deltaTheta/pitch;
-                  cktemp_inf  +=  cj_inf*expArg*deltaTheta/pitch;
+                  cktemp_out1_local +=  cj_out1*expArg*deltaTheta/pitch;
+                  cktemp_out2_local +=  cj_out2*expArg*deltaTheta/pitch;
+                  cktemp_inf_local  +=  cj_inf*expArg*deltaTheta/pitch;
                 }
                 else{
-                  cktemp_inf += complex<su2double>(0.0,0.0);
-                  cktemp_out1 += complex<su2double>(0.0,0.0);
-                  cktemp_out2 += complex<su2double>(0.0,0.0);
+                  cktemp_inf_local += complex<su2double>(0.0,0.0);
+                  cktemp_out1_local += complex<su2double>(0.0,0.0);
+                  cktemp_out2_local += complex<su2double>(0.0,0.0);
                 }
               }
-
+              END_SU2_OMP_FOR
+              SU2_OMP_CRITICAL
+              {
+                cktemp_inf += cktemp_inf_local;
+                cktemp_out1 += cktemp_out1_local;
+                cktemp_out2 += cktemp_out2_local;
+              } END_SU2_OMP_CRITICAL
             }
           }
         }
       }
 
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
 #ifdef HAVE_MPI
-      MyRe_inf = cktemp_inf.real(); Re_inf = 0.0;
-      MyIm_inf = cktemp_inf.imag(); Im_inf = 0.0;
-      cktemp_inf = complex<su2double>(0.0,0.0);
+        su2double MyRe_inf = cktemp_inf.real(); su2double Re_inf = 0.0;
+        su2double MyIm_inf = cktemp_inf.imag(); su2double Im_inf = 0.0;
+        cktemp_inf = complex<su2double>(0.0,0.0);
 
-      MyRe_out1 = cktemp_out1.real(); Re_out1 = 0.0;
-      MyIm_out1 = cktemp_out1.imag(); Im_out1 = 0.0;
-      cktemp_out1 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out1 = cktemp_out1.real(); su2double Re_out1 = 0.0;
+        su2double MyIm_out1 = cktemp_out1.imag(); su2double Im_out1 = 0.0;
+        cktemp_out1 = complex<su2double>(0.0,0.0);
 
-      MyRe_out2 = cktemp_out2.real(); Re_out2 = 0.0;
-      MyIm_out2 = cktemp_out2.imag(); Im_out2 = 0.0;
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out2 = cktemp_out2.real(); su2double Re_out2 = 0.0;
+        su2double MyIm_out2 = cktemp_out2.imag(); su2double Im_out2 = 0.0;
+        cktemp_out2 = complex<su2double>(0.0,0.0);
 
 
-      SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      cktemp_inf = complex<su2double>(Re_inf,Im_inf);
-      cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
-      cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
-
+        cktemp_inf = complex<su2double>(Re_inf,Im_inf);
+        cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
+        cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
 #endif
 
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              /*-----this is only valid 2D ----*/
-              if (marker_flag == INFLOW){
-                CkInflow[iMarker][iSpan][k]= cktemp_inf;
-              }else{
-                CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
-                CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+          for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+            if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+              if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+                /*-----this is only valid 2D ----*/
+                if (marker_flag == INFLOW){
+                  CkInflow[iMarker][iSpan][k]= cktemp_inf;
+                }else{
+                  CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
+                  CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+                }
               }
             }
           }
         }
-      }
+      } END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
   }
 
