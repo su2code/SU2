@@ -3731,10 +3731,10 @@ public:
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
-    /*!
-    * \brief Name of fluid that we are using.
-    * \return Name of fluid that we are using.
-    */
+  /*!
+   * \brief Name of fluid that we are using.
+   * \return Name of fluid that we are using.
+   */
   string GetFluid_Name(void) const { return FluidName; }
 
   /*!

@@ -44,7 +44,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
     Gamma = Cp/Cv;
     Pressure = fluid_entity->p();
     Temperature = fluid_entity->T();
-    SoundSpeed2 = fluid_entity->speed_sound()*fluid_entity->speed_sound();
+    SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
     Entropy = fluid_entity->smass();
     dPdrho_e = fluid_entity->first_partial_deriv(CoolProp::iP,CoolProp::iDmass,CoolProp::iUmass);
     dPde_rho = fluid_entity->first_partial_deriv(CoolProp::iP,CoolProp::iUmass,CoolProp::iDmass);
