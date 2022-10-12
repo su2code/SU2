@@ -137,7 +137,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.494719, -7.711541, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.494672, -7.709812, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.494692, -7.710648, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     # 2D Rotational Periodic
@@ -290,7 +290,7 @@ def main():
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
     turb_naca0012_2c.test_vals         = [-5.483318, 0.968892, 0.212994, -0.120007]
-    turb_naca0012_2c.test_vals_aarch64 = [-5.483392, 0.968865, 0.211814, -0.120382]
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483350, 0.968882, 0.212493, -0.120171]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -308,7 +308,7 @@ def main():
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
     turb_naca0012_p1c1.test_vals         = [-5.132760, 1.075858, 0.333412, -0.078553]
-    turb_naca0012_p1c1.test_vals_aarch64 = [-5.132779, 1.075950, 0.333311, -0.078596]
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.132731, 1.075863, 0.333419, -0.078553]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -317,7 +317,7 @@ def main():
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
     turb_naca0012_p1c2.test_vals         = [-5.554392, 0.943810, 0.226719, -0.116439]
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554530, 0.943735, 0.226407, -0.116548]
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554433, 0.943787, 0.226530, -0.116503]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -458,6 +458,7 @@ def main():
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
     square_cylinder.test_vals = [-2.558001, -1.162564, 0.066372, 1.399788, 2.220402, 1.399743, 2.218603, -0.453110]
+    square_cylinder.test_vals_aarch64 = [-2.558106, -1.162563, 0.066386, 1.399788, 2.220402, 1.399743, 2.218603, -0.453110]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
@@ -557,7 +558,7 @@ def main():
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
     axial_stage2D.test_vals         = [-1.933115, 5.365584, 73.354510, 0.925901]
-    axial_stage2D.test_vals_aarch64 = [-1.933139, 5.380373, 73.357910, 0.925874]
+    axial_stage2D.test_vals_aarch64 = [-1.933115, 5.365583, 73.354510, 0.925902]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
 
@@ -765,7 +766,7 @@ def main():
     pywrapper_translating_naca0012 = TestCase('pywrapper_translating_naca0012')
     pywrapper_translating_naca0012.cfg_dir = "py_wrapper/translating_NACA0012"
     pywrapper_translating_naca0012.cfg_file = "config.cfg"
-    pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
+    pywrapper_translating_naca0012.command = TestCase.Command(exec = "python", param = "run_su2.py")
     pywrapper_translating_naca0012.timeout = 60
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
@@ -778,7 +779,7 @@ def main():
     ######################################
 
     for test in test_list:
-        test.su2_exec = "SU2_CFD -t 2"
+        test.command = TestCase.Command(exec = "SU2_CFD", param = "-t 2")
         test.timeout = 600
         test.tol = 1e-4
     #end

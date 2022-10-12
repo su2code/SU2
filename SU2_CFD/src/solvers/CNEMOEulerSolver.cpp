@@ -1040,6 +1040,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
