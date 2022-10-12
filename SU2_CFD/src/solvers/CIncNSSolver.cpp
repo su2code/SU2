@@ -276,17 +276,9 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       Volume_Temp_Local += volume * Temp * nodes->GetThermalConductivity(iPoint);
 
-      if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
-
-        // coeff_b1 for turbulence
+      // coeff_b1 for turbulence
+      if (turbulent && (config->GetnMarker_Isothermal() != 0))
         turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 0) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
-        
-        // coeff_b2 for turbulence
-        su2double dot_product = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            dot_product += nodes->GetGradient_Primitive(iPoint, 3, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
-        turb_b2_coeff_Local += dot_product * volume * config->GetSpecific_Heat_Cp() / config->GetPrandtl_Turb();
-      }
 
       Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 0) * nodes->GetDensity(iPoint);
 
@@ -297,10 +289,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
+    if (turbulent && (config->GetnMarker_Isothermal() != 0))
       SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    }
 
     /*--- Set the solver variable Integrated Heatflux ---*/
     if (config->GetnMarker_HeatFlux() > 0)
@@ -315,7 +305,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
       su2double b0_coeff =  Volume_Temp_Global; 
       su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp() + turb_b1_coeff_Global;
-      su2double b2_coeff = -dTdn_Global + turb_b2_coeff_Global;
+      su2double b2_coeff = -dTdn_Global;
 
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
@@ -323,7 +313,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
         SPvals.Streamwise_Periodic_LambdaL -= 0.01 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
       else
         SPvals.Streamwise_Periodic_LambdaL = pred_lambda;
-      cout<<"Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+    //   cout<<"Lambda :: "<<SPvals.StrLambdaeamwise_Periodic_LambdaL<<endl;
       config->SetStreamwise_Periodic_LamdaL(SPvals.Streamwise_Periodic_LambdaL);
     } // if isothermal
   } // if energy
