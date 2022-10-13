@@ -1057,7 +1057,6 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
-  Gas_Composition = nullptr;
 }
 
 void CConfig::SetConfig_Options() {
@@ -1185,7 +1184,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-
+  /* DESCRIPTION: Specfify super-catalytic wall */
+  addBoolOption("SUPERCATALYTIC_WALL", Supercatalytic_Wall, false);
+  /* DESCRIPTION: Wall mass fractions for supercatalytic case */
+  addDoubleListOption("SUPERCATALYTIC_WALL_COMPOSITION", nSpecies_Cat_Wall, Supercatalytic_Wall_Composition);
+  /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
+  addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
+  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -5356,9 +5361,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    // For now, do not allow axisymmetric simulations
-    if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
-
     if(Kind_TimeIntScheme_Species != EULER_IMPLICIT &&
        Kind_TimeIntScheme_Species != EULER_EXPLICIT){
       SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented in the scalar solver.", CURRENT_FUNCTION);
@@ -7799,6 +7801,17 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
           Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
+}
+
+bool CConfig::GetCatalytic_Wall(unsigned short iMarker) const {
+
+  bool catalytic = false;
+  for (unsigned short iMarker_Catalytic = 0; iMarker_Catalytic < nWall_Catalytic; iMarker_Catalytic++){
+    string Catalytic_Tag = Wall_Catalytic[iMarker_Catalytic];
+    if (Catalytic_Tag == Marker_All_TagBound[iMarker]) { catalytic = true; break; }
+  }
+
+  return catalytic;
 }
 
 bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
