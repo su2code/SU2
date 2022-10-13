@@ -29,6 +29,7 @@
 
 /*!
  * \class CMultiGridIntegration
+ * \ingroup Drivers
  * \brief Class for time integration using a multigrid method.
  * \author F. Palacios
  */

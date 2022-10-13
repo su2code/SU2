@@ -311,7 +311,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
-  su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
@@ -805,11 +804,9 @@ private:
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
   *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
-  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
-  su2double Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
-  Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
-  Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
+  nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
+  su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
@@ -834,11 +831,13 @@ private:
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
   nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
   nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
-  nPrandtl_Turb;                 /*!< \brief Number of species turbulent Prandtl number. */
+  nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
+  nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
+  su2double *Constant_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
@@ -1169,20 +1168,24 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
-  iWall_Catalytic,
-  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
-  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
+  nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
-  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
+  monoatomic,                               /*!< \brief Flag for monoatomic mixture. */
+  Supercatalytic_Wall;                      /*!< \brief Flag for supercatalytic wall. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1619,25 +1622,13 @@ public:
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
    */
-  su2double GetSpecific_Heat_Cp(void) const { return Specific_Heat_Cp; }
+  su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index]; }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
    * \return Value of the non-dim. constant: Cp
    */
-  su2double GetSpecific_Heat_CpND(void) const { return Specific_Heat_CpND; }
-
-  /*!
-   * \brief Get the value of specific heat at constant volume.
-   * \return Value of the constant: Cv
-   */
-  su2double GetSpecific_Heat_Cv(void) const { return Specific_Heat_Cv; }
-
-  /*!
-   * \brief Get the non-dimensional value of specific heat at constant volume.
-   * \return Value of the non-dim. constant: Cv
-   */
-  su2double GetSpecific_Heat_CvND(void) const { return Specific_Heat_CvND; }
+  su2double GetSpecific_Heat_CpND(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index] / Gas_Constant_Ref; }
 
   /*!
    * \brief Get the value of wall temperature.
@@ -2428,30 +2419,6 @@ public:
   void SetGas_Constant(su2double val_gas_constant) { Gas_Constant = val_gas_constant; }
 
   /*!
-   * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cp - specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp = val_specific_heat_cp; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cpnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CpND(su2double val_specific_heat_cpnd) { Specific_Heat_CpND = val_specific_heat_cpnd; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cv - specific heat at constant volume.
-   */
-  void SetSpecific_Heat_Cv(su2double val_specific_heat_cv) { Specific_Heat_Cv = val_specific_heat_cv; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cvnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CvND(su2double val_specific_heat_cvnd) { Specific_Heat_CvND = val_specific_heat_cvnd; }
-
-  /*!
    * \brief Set the heat flux reference value.
    * \return Value of the reference heat flux.
    */
@@ -3065,13 +3032,13 @@ public:
 
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
-   * \return: Number of periodic time instances for Harmonic Balance.
+   * \return Number of periodic time instances for Harmonic Balance.
    */
   unsigned short GetnTimeInstances(void) const { return nTimeInstances; }
 
   /*!
    * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
-   * \return: Period for Harmonic Balance.
+   * \return Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void) const { return HarmonicBalance_Period; }
 
@@ -3761,6 +3728,12 @@ public:
   string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
 
   /*!
+   * \brief Get wall catalytic efficiency.
+   * \return wall catalytic efficiency value.
+   */
+  su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
+
+  /*!
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
    */
@@ -3832,6 +3805,12 @@ public:
   CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  DIFFUSIVITYMODEL GetKind_Diffusivity_Model(void) const { return Kind_Diffusivity_Model; }
+
+  /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
@@ -3882,6 +3861,12 @@ public:
    * \return Turbulent Schmidt number for scalar transport.
    */
   su2double GetSchmidt_Number_Turbulent(void) const { return Schmidt_Number_Turbulent; }
+
+  /*!
+   * \brief Get the value of the Lewis number for each species.
+   * \return Lewis Number.
+   */
+  su2double GetConstant_Lewis_Number(unsigned short val_index = 0) const { return Constant_Lewis_Number[val_index]; }
 
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
@@ -5235,22 +5220,22 @@ public:
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
-   * \brief Provides the number of species present in the plasma
-   * \return: The number of species present in the plasma, read from input file
+   * \brief Provides the number of species present in the gas mixture.
+   * \return The number of species present in the gas mixture.
    */
   unsigned short GetnSpecies() const { return nSpecies; }
 
-   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux.
-   */
-  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
-
   /*!
-   * \brief Provides the gas mass fractions of the flow
-   * \return: Gas Mass fractions
+   * \brief Provides the gas mass fractions of the flow.
+   * \return Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
+
+  /*!
+   * \brief Provides the gas mass fractions at the wall for supercat wall.
+   * \return Supercat wall gas mass fractions.
+   */
+  const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
   /*!
    * \brief Provides the restart information.
@@ -5327,6 +5312,11 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
+
+  /*!
+   * \brief Indicates whether supercatalytic wall is used.
+   */
+  bool GetSupercatalytic_Wall(void) const { return Supercatalytic_Wall; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
@@ -6241,16 +6231,29 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines whether a marker with index iMarker is a catalytic boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a catalytic boundary.
+   */
+  bool GetCatalytic_Wall(unsigned short iMarker) const;
+
+  /*!
+   * \brief Determines if problem is adjoint.
+   * \return true if Adjoint.
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
   /*!
-   * \brief Determines if problem is viscous
-   * \return true if Viscous
+   * \brief Determines if problem is viscous.
+   * \return true if Viscous.
    */
   bool GetViscous(void) const { return Viscous; }
+
+  /*!
+   * \brief Determines if problem has catalytic walls.
+   * \return true if catalytic walls are present.
+   */
+  bool GetCatalytic(void) const { return nWall_Catalytic > 0; }
 
   /*!
    * \brief Provides the index of the solution in the container.
