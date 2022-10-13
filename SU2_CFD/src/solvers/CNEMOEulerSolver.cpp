@@ -1129,7 +1129,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream    = energies[0] + 0.5*sqvel;
+    Energy_FreeStream = energies[0] + 0.5*sqvel;
 
   }
 
