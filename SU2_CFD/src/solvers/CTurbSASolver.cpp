@@ -527,7 +527,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   /*--- Bounded scalar problem ---*/
   bool bounded_scalar = conv_numerics->GetBoundedScalar();
 
-  su2double EdgeMassFlux;
+  su2double EdgeMassFlux = 0.0;
   su2double **Jacobian_i_correction;
   Jacobian_i_correction = new su2double*[nVar];
   for (unsigned short iVar=0; iVar<nVar; iVar++){
@@ -660,7 +660,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   const bool bounded_scalar = conv_numerics->GetBoundedScalar();
-  su2double EdgeMassFlux;
+  su2double EdgeMassFlux = 0.0;
   su2double **Jacobian_i_correction;
   Jacobian_i_correction = new su2double*[nVar];
   for (unsigned short iVar=0; iVar<nVar; iVar++){
