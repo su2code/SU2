@@ -132,8 +132,8 @@ class CUpwScalar : public CNumerics {
     }
     
     if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
-      a0 = max(0.0, MassFlux);
-      a1 = min(0.0, MassFlux);
+      a0 = max(0.0, MassFlux) / Density_i;
+      a1 = min(0.0, MassFlux) / Density_j;
     }else{
       a0 = 0.5 * (q_ij + fabs(q_ij));
       a1 = 0.5 * (q_ij - fabs(q_ij));
