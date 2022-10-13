@@ -1266,6 +1266,11 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
         }
         else if (menter_sst)
           numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
+        
+        /*--- Define bounded turbulent scalar problem ---*/
+        if(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR){
+          numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(true);
+        }else numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(false);
       }
       break;
     default:
@@ -1318,7 +1323,11 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
       numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, false,
                                                                                     config);
     }
-  }
+
+    if(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR){
+        numerics[iMGlevel][TURB_SOL][conv_bound_term]->SetBoundedScalar(true);
+      }else numerics[iMGlevel][TURB_SOL][conv_bound_term]->SetBoundedScalar(false);
+    }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
@@ -1350,7 +1359,16 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     case SPACE_UPWIND :
       for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
         numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+        if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
+          numerics[iMGlevel][SPECIES_SOL][conv_term]->SetBoundedScalar(true);
+        }else numerics[iMGlevel][SPECIES_SOL][conv_term]->SetBoundedScalar(false);
+
         numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+
+        /*--- Define bounded scalar problem ---*/
+        if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
+          numerics[iMGlevel][SPECIES_SOL][conv_bound_term]->SetBoundedScalar(true);
+        }else numerics[iMGlevel][SPECIES_SOL][conv_bound_term]->SetBoundedScalar(false);
       }
       break;
     default :

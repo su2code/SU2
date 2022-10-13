@@ -189,6 +189,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+  
+  bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
 public:
   /*!
@@ -1606,6 +1608,17 @@ public:
    */
   inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
 
+  /*!
+   * \brief Set bounded scalar transport problem
+   * \param[in] is_bounded_scalar : scalar solver uses bounded scalar convective transport
+   */
+  inline void SetBoundedScalar(const bool is_bounded_scalar) {bounded_scalar = is_bounded_scalar; }
+
+  /*!
+   * \brief Obtain information on bounded scalar problem
+   * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
+   */
+  inline bool GetBoundedScalar() const {return bounded_scalar;}
 };
 
 /*!

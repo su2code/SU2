@@ -131,7 +131,7 @@ class CUpwScalar : public CNumerics {
       }
     }
     
-    if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
+    if(bounded_scalar){
       a0 = max(0.0, MassFlux);
       a1 = min(0.0, MassFlux);
     }else{

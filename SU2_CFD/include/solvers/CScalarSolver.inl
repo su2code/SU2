@@ -138,6 +138,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   /*--- Pick one numerics object per thread. ---*/
   auto* numerics = numerics_container[CONV_TERM + omp_get_thread_num() * MAX_TERMS];
 
+  /*--- Apply scalar advection correction terms for bounded scalar problems ---*/
+  const bool bounded_scalar = numerics->GetBoundedScalar();
+
   /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
@@ -149,11 +152,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     pausePreacc = AD::PausePreaccumulation();
   else
     AD::StartNoSharedReading();
-
-  
-  bool bounded_scalar{false};
-  if((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
-     (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR)) bounded_scalar = true;
 
   su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
 
