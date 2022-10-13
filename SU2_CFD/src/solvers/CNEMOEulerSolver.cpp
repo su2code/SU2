@@ -1034,6 +1034,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
@@ -1128,7 +1129,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream    = energies[0] + 0.5*sqvel;
+    Energy_FreeStream = energies[0] + 0.5*sqvel;
 
   }
 

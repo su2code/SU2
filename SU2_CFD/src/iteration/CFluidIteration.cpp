@@ -63,7 +63,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
 
-  /* --- Setting up iteration values depending on if this is a
+  /*--- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
 
   const auto InnerIter = config[val_iZone]->GetInnerIter();

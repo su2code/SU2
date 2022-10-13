@@ -32,9 +32,10 @@
 #include "../variables/CSobolevSmoothingVariable.hpp"
 #include "CFEASolverBase.hpp"
 
-/*! \class CGradientSmoothingSolver
- *  \brief Main class for defining a gradient smoothing.
- *  \author T. Dick.
+/*!
+ * \brief Main class for defining a Sobolev-based gradient smoothing.
+ * \author T. Dick.
+ * \ingroup GradSmooth
  */
 class CGradientSmoothingSolver final : public CFEASolverBase {
 public:
