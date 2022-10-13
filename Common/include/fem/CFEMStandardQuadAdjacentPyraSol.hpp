@@ -123,6 +123,17 @@ public:
   void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                               ColMajorMatrix<su2double> &resDOFs) override;
 
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        dot product of the given vector data and the gradient of the basis function.
+   *        The integral is approximated by the weighted sum of the data in the integration points.
+   * \param[in]     vectorDataInt - The vector data in the integration points that must
+   *                                be multiplied by the gradient of the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                      ColMajorMatrix<su2double>          &resDOFs) override;
+
 private:
 
   unsigned short faceID_Elem;   /*!< \brief Face ID of the adjacent pyramid, which corresponds to this face. */
@@ -139,5 +150,6 @@ private:
                                                                      basis functions in the integration points. It is a vector,
                                                                      because there are derivatives in three directions. */
 
-  ColMajorMatrix<passivedouble> legBasisIntTranspose;    /*!< \brief Transpose of legBasisInt. */
+  ColMajorMatrix<passivedouble> legBasisIntTranspose;             /*!< \brief Transpose of legBasisInt. */
+  vector<ColMajorMatrix<passivedouble> > derLegBasisIntTranspose; /*!< \brief Transpose of derLegBasisInt. */
 };

@@ -116,17 +116,40 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
     tensorDSolDt[0] = legN;    tensorDSolDt[1] = legT0;    tensorDSolDt[2] = derLegT1;
   }
 
-  /*--- Set the components of the transpose tensors. ---*/
+  /*--- Set the components of the transpose tensors.
+        The first component (normal direction) is the same,
+        while the two tangential components are transposed. ---*/
   tensorSolTranspose.resize(3);
-  tensorSolTranspose[0] = tensorSol[0];
+  tensorDSolDrTranspose.resize(3);
+  tensorDSolDsTranspose.resize(3);
+  tensorDSolDtTranspose.resize(3);
 
-  tensorSolTranspose[1].resize(nDOFs1DPad, nInt1D); tensorSolTranspose[1].setConstant(0.0);
-  tensorSolTranspose[2].resize(nDOFs1DPad, nInt1D); tensorSolTranspose[2].setConstant(0.0);
+  tensorSolTranspose[0] = tensorSol[0];
+  tensorDSolDrTranspose[0] = tensorDSolDr[0];
+  tensorDSolDsTranspose[0] = tensorDSolDs[0];
+  tensorDSolDtTranspose[0] = tensorDSolDt[0];
+
+  tensorSolTranspose[1].resize(nDOFs1DPad, nInt1D);    tensorSolTranspose[1].setConstant(0.0);
+  tensorDSolDrTranspose[1].resize(nDOFs1DPad, nInt1D); tensorDSolDrTranspose[1].setConstant(0.0);
+  tensorDSolDsTranspose[1].resize(nDOFs1DPad, nInt1D); tensorDSolDsTranspose[1].setConstant(0.0);
+  tensorDSolDtTranspose[1].resize(nDOFs1DPad, nInt1D); tensorDSolDtTranspose[1].setConstant(0.0);
+
+  tensorSolTranspose[2].resize(nDOFs1DPad, nInt1D);    tensorSolTranspose[2].setConstant(0.0);
+  tensorDSolDrTranspose[2].resize(nDOFs1DPad, nInt1D); tensorDSolDrTranspose[2].setConstant(0.0);
+  tensorDSolDsTranspose[2].resize(nDOFs1DPad, nInt1D); tensorDSolDsTranspose[2].setConstant(0.0);
+  tensorDSolDtTranspose[2].resize(nDOFs1DPad, nInt1D); tensorDSolDtTranspose[2].setConstant(0.0);
 
   for(unsigned short j=0; j<nInt1D; ++j) {
     for(unsigned short i=0; i<nDOFs1D; ++i) {
-      tensorSolTranspose[1](i,j) = tensorSol[1](j,i);
-      tensorSolTranspose[2](i,j) = tensorSol[2](j,i);
+      tensorSolTranspose[1](i,j)    = tensorSol[1](j,i);
+      tensorDSolDrTranspose[1](i,j) = tensorDSolDr[1](j,i);
+      tensorDSolDsTranspose[1](i,j) = tensorDSolDs[1](j,i);
+      tensorDSolDtTranspose[1](i,j) = tensorDSolDt[1](j,i);
+
+      tensorSolTranspose[2](i,j)    = tensorSol[2](j,i);
+      tensorDSolDrTranspose[2](i,j) = tensorDSolDr[2](j,i);
+      tensorDSolDsTranspose[2](i,j) = tensorDSolDs[2](j,i);
+      tensorDSolDtTranspose[2](i,j) = tensorDSolDt[2](j,i);
     }
   }
 }
@@ -172,4 +195,17 @@ void CFEMStandardQuadAdjacentHexSol::ResidualBasisFunctions(ColMajorMatrix<su2do
         arguments to compute the residual in the DOFs of the volume. ---*/
   gemmInt2DOFs->Int2DOFs(tensorSolTranspose, faceID_Elem, swapTangInTensor,
                          scalarDataInt.cols(), scalarDataInt, resDOFs);
+}
+
+void CFEMStandardQuadAdjacentHexSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                                    ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call the generic functionality of gemmInt2DOFs 3 times with the appropriate
+        arguments to compute the residuals in the DOFs of the adjacent element. ---*/
+  gemmInt2DOFs->Int2DOFs(tensorDSolDrTranspose, faceID_Elem, swapTangInTensor,
+                         vectorDataInt[0].cols(), vectorDataInt[0], resDOFs);
+  gemmInt2DOFs->Int2DOFs(tensorDSolDsTranspose, faceID_Elem, swapTangInTensor,
+                         vectorDataInt[1].cols(), vectorDataInt[1], resDOFs);
+  gemmInt2DOFs->Int2DOFs(tensorDSolDsTranspose, faceID_Elem, swapTangInTensor,
+                         vectorDataInt[2].cols(), vectorDataInt[2], resDOFs);
 }

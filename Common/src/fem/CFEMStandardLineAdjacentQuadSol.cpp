@@ -93,15 +93,27 @@ CFEMStandardLineAdjacentQuadSol::CFEMStandardLineAdjacentQuadSol(const unsigned 
     tensorDSolDs[0] = legN;    tensorDSolDs[1] = derLegT;
   }
 
-  /*--- Set the components of the transpose tensors. ---*/
+  /*--- Set the components of the transpose tensors.
+        The first component (normal direction) is the same,
+        while the tangential component is transposed. ---*/
   tensorSolTranspose.resize(2);
+  tensorDSolDrTranspose.resize(2);
+  tensorDSolDsTranspose.resize(2);
+
   tensorSolTranspose[0] = tensorSol[0];
+  tensorDSolDrTranspose[0] = tensorDSolDr[0];
+  tensorDSolDsTranspose[0] = tensorDSolDs[0];
 
-  tensorSolTranspose[1].resize(nDOFsPad, nIntegration); tensorSolTranspose[1].setConstant(0.0);
+  tensorSolTranspose[1].resize(nDOFsPad, nInt1D);    tensorSolTranspose[1].setConstant(0.0);
+  tensorDSolDrTranspose[1].resize(nDOFsPad, nInt1D); tensorDSolDrTranspose[1].setConstant(0.0);
+  tensorDSolDsTranspose[1].resize(nDOFsPad, nInt1D); tensorDSolDsTranspose[1].setConstant(0.0);
 
-  for(unsigned short j=0; j<nIntegration; ++j) {
-    for(unsigned short i=0; i<nDOFs; ++i)
-      tensorSolTranspose[1](i,j) = tensorSol[1](j,i);
+  for(unsigned short j=0; j<nInt1D; ++j) {
+    for(unsigned short i=0; i<nDOFs1D; ++i) {
+      tensorSolTranspose[1](i,j)    = tensorSol[1](j,i);
+      tensorDSolDrTranspose[1](i,j) = tensorDSolDr[1](j,i);
+      tensorDSolDsTranspose[1](i,j) = tensorDSolDs[1](j,i);
+    }
   }
 }
 
@@ -140,6 +152,14 @@ void CFEMStandardLineAdjacentQuadSol::ResidualBasisFunctions(ColMajorMatrix<su2d
 
   /*--- Call the general functionality of gemmInt2DOFs with the appropriate
         arguments to compute the residual in the DOFs of the volume. ---*/
-  gemmInt2DOFs->Int2DOFs(tensorSolTranspose, faceID_Elem, scalarDataInt.cols(),
-                         scalarDataInt, resDOFs);
+  gemmInt2DOFs->Int2DOFs(tensorSolTranspose, faceID_Elem, scalarDataInt.cols(), scalarDataInt, resDOFs);
+}
+
+void CFEMStandardLineAdjacentQuadSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                                     ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call the generic functionality of gemmInt2DOFs 2 times with the appropriate
+        arguments to compute the residuals in the DOFs of the adjacent element. ---*/
+  gemmInt2DOFs->Int2DOFs(tensorDSolDrTranspose, faceID_Elem, vectorDataInt[0].cols(), vectorDataInt[0], resDOFs);
+  gemmInt2DOFs->Int2DOFs(tensorDSolDsTranspose, faceID_Elem, vectorDataInt[1].cols(), vectorDataInt[1], resDOFs);
 }

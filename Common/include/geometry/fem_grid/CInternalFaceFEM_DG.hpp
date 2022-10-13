@@ -155,6 +155,22 @@ public:
   void ResidualBasisFunctionsSide1(ColMajorMatrix<su2double> &scalarDataInt);
 
   /*!
+   * \brief Function, which adds to the residual of element on side 0 the contribution
+   *        coming from the multiplication with the divergence of the basis functions.
+   * \param[in] vectorDataInt - The vector data in the integration points to be
+   *                            multiplied by the gradient of the basis functions.
+   */
+  void ResidualGradientBasisFunctionsSide0(vector<ColMajorMatrix<su2double> > &vectorDataInt);
+
+  /*!
+   * \brief Function, which adds to the residual of element on side 1 the contribution
+   *        coming from the multiplication with the divergence of the basis functions.
+   * \param[in] vectorDataInt - The vector data in the integration points to be
+   *                            multiplied by the gradient of the basis functions.
+   */
+  void ResidualGradientBasisFunctionsSide1(vector<ColMajorMatrix<su2double> > &vectorDataInt);
+
+  /*!
    * \brief Function, which sets the wall distances to the given value.
    * \param[in] val - Value to which the wall distance must be set.
    */

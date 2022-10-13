@@ -157,7 +157,6 @@ public:
    * \brief Function, that updates the residuals of the DOFs with the integral of the
    *        dot product of the given vector data and the gradient of the basis function.
    *        The integral is approximated by the weighted sum of the data in the integration points.
-   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in]     vectorDataInt - The vector data in the integration points that must
    *                                be multiplied by the gradient of the basis functions.
    * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.

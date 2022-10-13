@@ -202,3 +202,11 @@ void CInternalFaceFEM_DG::ResidualBasisFunctionsSide0(ColMajorMatrix<su2double> 
 void CInternalFaceFEM_DG::ResidualBasisFunctionsSide1(ColMajorMatrix<su2double> &scalarDataInt) {
   standardElemFlow->elem1->ResidualBasisFunctions(scalarDataInt, resDOFsSide1);
 }
+
+void CInternalFaceFEM_DG::ResidualGradientBasisFunctionsSide0(vector<ColMajorMatrix<su2double> > &vectorDataInt) {
+  standardElemFlow->elem0->ResidualGradientBasisFunctions(vectorDataInt, resDOFsSide0);
+}
+
+void CInternalFaceFEM_DG::ResidualGradientBasisFunctionsSide1(vector<ColMajorMatrix<su2double> > &vectorDataInt) {
+  standardElemFlow->elem1->ResidualGradientBasisFunctions(vectorDataInt, resDOFsSide1);
+}

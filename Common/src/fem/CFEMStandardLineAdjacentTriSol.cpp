@@ -75,13 +75,20 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
     for(unsigned short j=0; j<nDOFs; ++j)
       legBasisInt(i,j) = legBasisInt(0,j);
 
-  /*--- Create the transpose of legBasisInt. ---*/
+  /*--- Create the transpose of legBasisInt and derLegBasisInt. ---*/
   nDOFsPad = PaddedValue(nDOFs);
   legBasisIntTranspose.resize(nDOFsPad, nIntegration); legBasisIntTranspose.setConstant(0.0);
 
+  derLegBasisIntTranspose.resize(2);
+  derLegBasisIntTranspose[0].resize(nDOFsPad, nIntegration); derLegBasisIntTranspose[0].setConstant(0.0);
+  derLegBasisIntTranspose[1].resize(nDOFsPad, nIntegration); derLegBasisIntTranspose[1].setConstant(0.0);
+
   for(unsigned short j=0; j<nIntegration; ++j) {
-    for(unsigned short i=0; i<nDOFs; ++i)
-      legBasisIntTranspose(i,j) = legBasisInt(j,i);
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      legBasisIntTranspose(i,j)       = legBasisInt(j,i);
+      derLegBasisIntTranspose[0](i,j) = derLegBasisInt[0](j,i);
+      derLegBasisIntTranspose[1](i,j) = derLegBasisInt[1](j,i);
+    }
   }
 }
 
@@ -110,4 +117,13 @@ void CFEMStandardLineAdjacentTriSol::ResidualBasisFunctions(ColMajorMatrix<su2do
   /*--- Call the generic functionality of gemmInt2DOFs with the appropriate
         arguments to compute the residuals in the DOFs of the adjacent element. ---*/
   gemmInt2DOFs->gemm(legBasisIntTranspose, scalarDataInt.cols(), scalarDataInt, resDOFs, nullptr);
+}
+
+void CFEMStandardLineAdjacentTriSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                                    ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call the generic functionality of gemmInt2DOFs 2 times with the appropriate
+        arguments to compute the residuals in the DOFs of the adjacent element. ---*/
+  gemmInt2DOFs->gemm(derLegBasisIntTranspose[0], vectorDataInt[0].cols(), vectorDataInt[0], resDOFs, nullptr);
+  gemmInt2DOFs->gemm(derLegBasisIntTranspose[1], vectorDataInt[1].cols(), vectorDataInt[1], resDOFs, nullptr);
 }

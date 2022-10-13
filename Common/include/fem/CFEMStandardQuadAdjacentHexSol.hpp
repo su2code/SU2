@@ -123,6 +123,17 @@ public:
   void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                               ColMajorMatrix<su2double> &resDOFs) override;
 
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        dot product of the given vector data and the gradient of the basis function.
+   *        The integral is approximated by the weighted sum of the data in the integration points.
+   * \param[in]     vectorDataInt - The vector data in the integration points that must
+   *                                be multiplied by the gradient of the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                      ColMajorMatrix<su2double>          &resDOFs) override;
+
 private:
 
   unsigned short faceID_Elem;       /*!< \brief Face ID of the adjacent quad, which corresponds to this face. */
@@ -147,7 +158,16 @@ private:
                                                                     the derivative in t-direction of the solution
                                                                     on the face of the hexahedron. */
 
-  vector<ColMajorMatrix<passivedouble> > tensorSolTranspose; /*!< \brief The three 1D components of the transpose of
-                                                                         tensorSol. Needed to compute the residuals
-                                                                         of the volume DOFs from the surface fluxes. */
+  vector<ColMajorMatrix<passivedouble> > tensorSolTranspose;    /*!< \brief The three 1D components of the transpose of
+                                                                            tensorSol. Needed to compute the residuals
+                                                                            of the volume DOFs from the surface fluxes. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDrTranspose; /*!< \brief The three 1D components of the transpose of
+                                                                            tensorDSolDr. Needed to compute the residuals
+                                                                            of the volume DOFs from the surface fluxes. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDsTranspose; /*!< \brief The three 1D components of the transpose of
+                                                                            tensorDSolDs. Needed to compute the residuals
+                                                                            of the volume DOFs from the surface fluxes. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDtTranspose; /*!< \brief The three 1D components of the transpose of
+                                                                            tensorDSolDt. Needed to compute the residuals
+                                                                            of the volume DOFs from the surface fluxes. */
 };

@@ -5450,13 +5450,13 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const passivedouble *weights = surfElem->standardElemFlow->GetIntegrationWeights();
 
   /*--- Compute the invisid fluxes in the integration points of the face.
-        Notethat solInt0 is used to store the fluxes. ---*/
+        Note that solInt0 is used to store the fluxes. ---*/
   ComputeInviscidFluxesFace(config, solInt0, solInt1, surfElem->JacobiansFace,
                             surfElem->metricNormalsFace, surfElem->gridVelocities,
                             conv_numerics, solInt0);
 
   /*--- Multiply the fluxes with the integration weight of the
-          corresponding integration point. ---*/
+        corresponding integration point. ---*/
   for(unsigned short j=0; j<nVar; ++j) {
     SU2_OMP_SIMD_IF_NOT_AD
     for(unsigned short i=0; i<nIntPad; ++i)

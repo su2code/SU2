@@ -1291,29 +1291,115 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
           fluxes are converted to parametric fluxes. Note that this conversion is
           usually different for the left and the right element. Therefore the final
           symmetrizing fluxes for the left element are stored in gradSolIntLeft
-          and for the right element in gradSolIntRight. ---*/
-  }
-  END_SU2_OMP_FOR
+          and for the right element in gradSolIntRight. Make a distinction between
+          2D and 3D for efficiency reasons.  ---*/
+    switch( nDim ) {
+      case 2: {
 
-  for(int i=0; i<size; ++i) {
+        /*--- Two dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx0 =  matchingInternalFaces[l].metricCoorDerivFace0[0];
+        ColMajorMatrix<su2double> &dParDy0 =  matchingInternalFaces[l].metricCoorDerivFace0[1];
 
-    if(i == rank) {
+        ColMajorMatrix<su2double> &dParDx1 =  matchingInternalFaces[l].metricCoorDerivFace1[0];
+        ColMajorMatrix<su2double> &dParDy1 =  matchingInternalFaces[l].metricCoorDerivFace1[1];
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+        /*--- Loop over the number of variables and padded number of integration points. ---*/
+        for(unsigned short l=0; l<nVar; ++l) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            /* Store the Cartesian symmetrizing fluxes, multiplied by the integration
+               weights, in fx and fy. */
+            const su2double fx = weights[i]*gradSolIntRight[0](i,l);
+            const su2double fy = weights[i]*gradSolIntRight[1](i,l);
+
+            /* Symmetrizing fluxes for the left element. */
+            gradSolIntLeft[0](i,l) = fx*dParDx0(i,0) + fy*dParDy0(i,0);
+            gradSolIntLeft[1](i,l) = fx*dParDx0(i,1) + fy*dParDy0(i,1);
+
+            /* Symmetrizing fluxes for the right element. */
+            gradSolIntRight[0](i,l) = fx*dParDx1(i,0) + fy*dParDy1(i,0);
+            gradSolIntRight[1](i,l) = fx*dParDx1(i,1) + fy*dParDy1(i,1);
+          }
+        }
+
+        break;
+      }
+
+      case 3: {
+
+        /*--- Three dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx0 =  matchingInternalFaces[l].metricCoorDerivFace0[0];
+        ColMajorMatrix<su2double> &dParDy0 =  matchingInternalFaces[l].metricCoorDerivFace0[1];
+        ColMajorMatrix<su2double> &dParDz0 =  matchingInternalFaces[l].metricCoorDerivFace0[2];
+
+        ColMajorMatrix<su2double> &dParDx1 =  matchingInternalFaces[l].metricCoorDerivFace1[0];
+        ColMajorMatrix<su2double> &dParDy1 =  matchingInternalFaces[l].metricCoorDerivFace1[1];
+        ColMajorMatrix<su2double> &dParDz1 =  matchingInternalFaces[l].metricCoorDerivFace1[2];
+
+        /*--- Loop over the number of variables and padded number of integration points. ---*/
+        for(unsigned short l=0; l<nVar; ++l) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            /* Store the Cartesian symmetrizing fluxes, multiplied by the integration
+               weights, in fx, fy and fz. */
+            const su2double fx = weights[i]*gradSolIntRight[0](i,l);
+            const su2double fy = weights[i]*gradSolIntRight[1](i,l);
+            const su2double fz = weights[i]*gradSolIntRight[2](i,l);
+
+            /* Symmetrizing fluxes for the left element. */
+            gradSolIntLeft[0](i,l) = fx*dParDx0(i,0) + fy*dParDy0(i,0) + fz*dParDz0(i,0);
+            gradSolIntLeft[1](i,l) = fx*dParDx0(i,1) + fy*dParDy0(i,1) + fz*dParDz0(i,1);
+            gradSolIntLeft[2](i,l) = fx*dParDx0(i,2) + fy*dParDy0(i,2) + fz*dParDz0(i,2);
+
+            /* Symmetrizing fluxes for the right element. */
+            gradSolIntRight[0](i,l) = fx*dParDx1(i,0) + fy*dParDy1(i,0) + fz*dParDz1(i,0);
+            gradSolIntRight[1](i,l) = fx*dParDx1(i,1) + fy*dParDy1(i,1) + fz*dParDz1(i,1);
+            gradSolIntRight[2](i,l) = fx*dParDx1(i,2) + fy*dParDy1(i,2) + fz*dParDz1(i,2);
+          }
+        }
+
+        break;
       }
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
+    /*--- Multiply the fluxes with the integration weight of the
+          corresponding integration point. ---*/
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i)
+        fluxes(i,j) *= weights[i];
+    }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals of the DOFs of ---*/
+    /*---         the elements on the left and right side of the face.     ---*/
+    /*------------------------------------------------------------------------*/
+
+    /*--- Initialize the residual to zero. ---*/
+    matchingInternalFaces[l].resDOFsSide0.setConstant(0.0);
+    matchingInternalFaces[l].resDOFsSide1.setConstant(0.0);
+
+    /*--- Add the contribution from the fluxes. Note that for side 1 
+          the fluxes must be negated because for side 1 the normal
+          is inward pointing. ---*/
+    matchingInternalFaces[l].ResidualBasisFunctionsSide0(fluxes);
+    
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i)
+        fluxes(i,j) = -fluxes(i,j);
+    }
+
+    matchingInternalFaces[l].ResidualBasisFunctionsSide1(fluxes); 
+
+    /*--- Add the contribution from the symmetrizing fluxes to the
+          residual. ---*/
+    matchingInternalFaces[l].ResidualGradientBasisFunctionsSide0(gradSolIntLeft);
+    matchingInternalFaces[l].ResidualGradientBasisFunctionsSide1(gradSolIntRight);
+  }
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig             *config,
