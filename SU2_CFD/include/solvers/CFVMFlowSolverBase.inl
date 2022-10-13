@@ -614,20 +614,16 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     AD::StartPreacc();
     AD::SetPreaccIn(VelocityGradient, nDim, nDim);
 
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += VelocityGradient(iDim, iDim);
-    Div /= 3.0;
-
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim), 2);
     }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(Div, 2);
+    if (config.GetAxisymmetric()){
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      if ((Coord[1])>EPS) StrainMag(iPoint) += pow(nodes->GetVelocity(iPoint,1)/Coord[1], 2);
     }
 
     /*--- Add off diagonals ---*/
@@ -639,10 +635,6 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
       StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
     }
 
-    if (config.GetAxisymmetric()){
-      auto Coord = geometry->nodes->GetCoord(iPoint);
-      if ((Coord[1])>EPS) StrainMag(iPoint) += nodes->GetVelocity(iPoint,1)/Coord[1];
-    }
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
