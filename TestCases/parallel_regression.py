@@ -1340,7 +1340,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.476961, -4.584495, -4.579154, -5.694241, -0.069527, -5.630550, 5.000000, -1.667301, 5.000000, -4.865917, 5.000000, -1.168657, 0.000426, 0.000405, 0.000020, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [-5.404946, -4.460179, -4.469851, -5.821773, -0.164394, -5.721980, 5.000000, -1.768764, 5.000000, -4.734637, 5.000000, -1.839654, 0.000210, 0.000210, 0.000000, 0.000000]
     species2_primitiveVenturi_mixingmodel.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
@@ -1400,7 +1400,7 @@ def main():
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
     species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
     species_primitiveVenturi_boundedscalar.test_iter   = 50
-    species_primitiveVenturi_boundedscalar.test_vals   = [-5.532478, -4.805561, -4.621048, -5.502216, -1.220972, -6.297465, 5.000000, -1.127514, 5.000000, -2.566223, 5.000000, -1.070083, 0.000098, 0.000098, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.test_vals   = [-5.579922, -4.827356, -4.678887, -5.511866, -1.175961, -6.343029, 5.000000, -1.081957, 5.000000, -2.772109, 5.000000, -1.011926, 0.000095, 0.000095, 0.000000, 0.000000]
     species_primitiveVenturi_boundedscalar.new_output  = True
     test_list.append(species_primitiveVenturi_boundedscalar)
 
