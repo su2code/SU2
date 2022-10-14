@@ -1344,6 +1344,15 @@ def main():
     species2_primitiveVenturi_mixingmodel.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
+    # 2 species (1 eq) primitive venturi mixing using mixing model and bounded scalar transport
+    species2_primitiveVenturi_mixingmodel_boundedscalar           = TestCase('species2_primitiveVenturi_mixingmodel_boundedscalar')
+    species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_file  = "species2_primitiveVenturi_mixingmodel_boundedscalar.cfg"
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.373927, -4.466593, -4.463893, -5.860614, -0.161944, -5.711591, 5.000000, -1.877285, 5.000000, -4.712579, 5.000000, -1.784465, 0.000211,  0.000211,  0.000000, 0.000000]
+    species2_primitiveVenturi_mixingmodel_boundedscalar.new_output = True
+    test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
+
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1385,6 +1394,15 @@ def main():
     species2_primitiveVenturi.test_vals = [-5.955472, -5.194868, -5.040170, -5.861356, -1.514787, -6.044817, 5.000000, -0.841155, 5.000000, -2.343846, 5.000000, -0.257718, 0.000089, 0.000088, 0.000001, 0.000000]
     species2_primitiveVenturi.new_output = True
     test_list.append(species2_primitiveVenturi)
+
+    # 2 species (1 eq) primitive venturi mixing with bounded scalar transport
+    species_primitiveVenturi_boundedscalar             = TestCase('species2_primitiveVenturi_bounded_scalar')
+    species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
+    species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
+    species_primitiveVenturi_boundedscalar.test_iter   = 50
+    species_primitiveVenturi_boundedscalar.test_vals   = [-5.532478, -4.805561, -4.621048, -5.502216, -1.220972, -6.297465, 5.000000, -1.127514, 5.000000, -2.566223, 5.000000, -1.070083, 0.000098, 0.000098, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.new_output  = True
+    test_list.append(species_primitiveVenturi_boundedscalar)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.
     # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
