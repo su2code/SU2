@@ -61,6 +61,7 @@ private:
   dynamic_grid,                    /*!< \brief Modification for grid movement. */
   variable_density,                /*!< \brief Variable density incompressible flows. */
   energy;                          /*!< \brief computation with the energy equation. */
+
   su2double fix_factor;            /*!< \brief Fix factor for Jacobians. */
 
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
@@ -122,6 +123,7 @@ private:
   dynamic_grid,          /*!< \brief Modification for grid movement. */
   variable_density,      /*!< \brief Variable density incompressible flows. */
   energy;                /*!< \brief computation with the energy equation. */
+
   su2double fix_factor;  /*!< \brief Fix factor for Jacobians. */
 
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */

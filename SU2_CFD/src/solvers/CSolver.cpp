@@ -3670,7 +3670,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break; 
     }
 
-  /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     columnNames.push_back(columnName.str());
     columnValues.push_back(columnValue.str());
 

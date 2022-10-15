@@ -66,7 +66,6 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
 }
 
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
-  cout << int (config->GetKind_ViscosityModel()) << endl;
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar] = MakeLaminarViscosityModel(config, iVar);
   }

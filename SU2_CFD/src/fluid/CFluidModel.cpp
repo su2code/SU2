@@ -45,8 +45,6 @@
 #include "../../include/fluid/CConstantLewisDiffusivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
-  cout << int (config->GetKind_ViscosityModel()) << endl;
-  
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       return unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND(iSpecies)));
