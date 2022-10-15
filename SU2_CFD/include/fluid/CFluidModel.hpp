@@ -37,7 +37,6 @@
 #include "CViscosityModel.hpp"
 #include "CDiffusivityModel.hpp"
 
-
 using namespace std;
 
 /*!
@@ -70,11 +69,8 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  // flamelet variables 
-  su2double mass_diffusivity{0.0};
-
-
   CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
+  su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
@@ -89,6 +85,11 @@ class CFluidModel {
    * \brief Instantiate the right type of conductivity model based on config.
    */
   static unique_ptr<CConductivityModel> MakeThermalConductivityModel(const CConfig* config, unsigned short iSpecies);
+  
+  /*!
+   * \brief Instantiate the right type of mass diffusivity model based on config.
+   */
+  static unique_ptr<CDiffusivityModel> MakeMassDiffusivityModel(const CConfig* config, unsigned short iSpecies);
 
  public:
   virtual ~CFluidModel() {}
@@ -218,14 +219,12 @@ class CFluidModel {
   /*!
    * \brief Get fluid mass diffusivity.
    */
-  virtual inline su2double GetMassDiffusivity() {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp);
+  inline virtual su2double GetMassDiffusivity(int iVar) {
+    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
-    // dDiffdrho_T nijso TODO
-    // dDiffdT_rho
     return mass_diffusivity;
   }
-
+  
   /*!
    * \brief Get fluid pressure partial derivative.
    */
@@ -300,7 +299,7 @@ class CFluidModel {
    * \brief Set thermal conductivity model.
    */
   virtual void SetThermalConductivityModel(const CConfig* config);
-
+  
   /*!
    * \brief Set mass diffusivity model.
    */

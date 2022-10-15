@@ -1,7 +1,7 @@
 /*!
- * \file CDiffusivityModel.hpp
- * \brief Interface class for defining mass diffusivity models.
- * \author T. Economon, C. Morales
+ * \file CConstantLewisDiffusivity.hpp
+ * \brief Defines Constant Lewis mass diffusivity.
+ * \author M.Heimgartner, C.Morales
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,28 +27,28 @@
 
 #pragma once
 
-#include "../../../Common/include/basic_types/datatype_structure.hpp"
+#include "CDiffusivityModel.hpp"
 
 /*!
- * \class CDiffusivityModel
- * \brief Defines a mass diffusivity model for species equations.
- * \author T. Economon
+ * \class CConstantLewisDiffusivity
+ * \brief Defines a Constant Lewis mass diffusivity model for species equations.
+ * \author M.Heimgartner, C.Morales
  */
-class CDiffusivityModel {
+class CConstantLewisDiffusivity final : public CDiffusivityModel {
  public:
-  virtual ~CDiffusivityModel() = default;
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantLewisDiffusivity(su2double Lewis) : Lewis_(Lewis) {}
 
   /*!
-   * \brief Get mass diffusivity
+   * \brief Set diffusivity.
    */
-  su2double GetDiffusivity() const { return diff_; }
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {
+    diff_ = kt / (Lewis_ * rho * cp);
+  }
 
-  /*!
-   * \brief Set mass diffusivity
-   */
-  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                              su2double kt) = 0;
-
- protected:
-  su2double diff_{0.0}; /*!< \brief mass diffusivity. */
+ private:
+  const su2double Lewis_{1.0};
 };

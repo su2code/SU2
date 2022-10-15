@@ -1,7 +1,7 @@
 /*!
- * \file CDiffusivityModel.hpp
- * \brief Interface class for defining mass diffusivity models.
- * \author T. Economon, C. Morales
+ * \file CConstantSchmidt.hpp
+ * \brief Defines a mass diffusivity model with constant Schmidt numbers.
+ * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,28 +27,29 @@
 
 #pragma once
 
-#include "../../../Common/include/basic_types/datatype_structure.hpp"
+#include "CDiffusivityModel.hpp"
 
 /*!
  * \class CDiffusivityModel
- * \brief Defines a mass diffusivity model for species equations.
+ * \brief Defines a mass diffusivity model for species equations based on Schmidt number.
  * \author T. Economon
  */
-class CDiffusivityModel {
+class CConstantSchmidt final : public CDiffusivityModel {
  public:
-  virtual ~CDiffusivityModel() = default;
 
   /*!
-   * \brief Get mass diffusivity
+   * \brief Constructor of the class.
    */
-  su2double GetDiffusivity() const { return diff_; }
+  CConstantSchmidt(su2double sc_lam) : sc_lam_(sc_lam) {}
 
   /*!
-   * \brief Set mass diffusivity
+   * \brief Set diffusivity.
    */
-  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                              su2double kt) = 0;
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                      su2double kt) override {
+    diff_ = mu_lam / (rho * sc_lam_);
+  }
 
- protected:
-  su2double diff_{0.0}; /*!< \brief mass diffusivity. */
+ private:
+  su2double sc_lam_{0.0};
 };
