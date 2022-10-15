@@ -35,7 +35,9 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-    cout << "n_scalars="<<n_scalars<<endl;
+    if (rank == MASTER_NODE){
+      cout << "n_scalars="<<n_scalars<<endl;
+    }
     // this is already done?
 
     /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
@@ -43,13 +45,15 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     n_scalars = 2 + n_auxiliary;
     config->SetNScalars(n_scalars);
 
-    cout << "*************************************************" << endl;
-    cout << "***** initializing the lookup table         *****" << endl;
-    cout << "*************************************************" << endl;
+    if (rank == MASTER_NODE){
+      cout << "*****************************************" << endl;
+      cout << "***   initializing the lookup table   ***" << endl;
+      cout << "*****************************************" << endl;
+    }
 
     table_scalar_names.resize(n_scalars);
     table_scalar_names.at(I_ENTH) = "EnthalpyTot";
-    table_scalar_names.at(I_PROGVAR) = "Progress Variable";
+    table_scalar_names.at(I_PROGVAR) = "ProgressVariable";
     /*--- auxiliary species transport equations---*/
     table_scalar_names.at(I_CO)       = "Y-CO";
     table_scalar_names.at(I_NOX)      = "Y-NOX";
@@ -66,7 +70,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     /*--- No source term for enthalpy ---*/
     /*--- source terms for auxiliary species transport equations ---*/
     table_source_names.at(I_SRC_TOT_CO) = "ProdRateTot-CO";
-    table_source_names.at(I_SRC_TOT_NOX) = "ProdRateTot-NOX";
+    table_source_names.at(I_SRC_TOT_NOX) = "ProdRateTot-NOx";
  
 
     config->SetLUTSourceNames(table_source_names);

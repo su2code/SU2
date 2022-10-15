@@ -3348,9 +3348,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   // nijso todo 
   if (Kind_FluidModel == FLUID_FLAMELET){
-    cout << "************************************************" << endl;
-    cout << "***** setting all fluid models to FLAMELET *****" << endl;
-    cout << "************************************************" << endl;
+    if (rank == MASTER_NODE) {
+      cout << "************************************************" << endl;
+      cout << "***   setting all fluid models to FLAMELET   ***" << endl;
+      cout << "************************************************" << endl;
+    }
     // nijso TODO these should be set by the user and we should check explicitly the config settings
     Kind_Species_Model = SPECIES_MODEL::FLAMELET;
     Kind_ViscosityModel = VISCOSITYMODEL::FLAMELET;
@@ -3903,10 +3905,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
     
     // nijso TODO: add LUT flamelet model here
-    cout << "******************************************************" << endl; 
-    cout << "*** check the input for the flamelet model !!!! ******" << endl; 
-    cout << "******************************************************" << endl; 
-
+    if (rank == MASTER_NODE) {
+      cout << "*******************************************************" << endl;
+      cout << "***   check the input for the flamelet model !!!!   ***" << endl;
+      cout << "*******************************************************" << endl;
+    }
     /*--- Check for Measurement System ---*/
 
     if (SystemMeasurements == US && !standard_air) {
