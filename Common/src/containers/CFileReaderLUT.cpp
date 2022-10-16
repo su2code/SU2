@@ -1,7 +1,7 @@
 /*!
  * \file CFileReaderLUT.hpp
  * \brief reading lookup table for tabulated fluid properties
- * \author D. Mayer, T. Economon, N. Beishuizen
+ * \author D. Mayer, T. Economon
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,14 +30,14 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
-#include <string>
-#include <fstream>
-#include <iomanip>
+//#include <string>
+//#include <fstream>
+//#include <iomanip>
 
 using namespace std;
 
 void CFileReaderLUT::ReadRawDRG(const string& file_name) {
-  version_reader = "2";
+  version_reader = "1.0.1";
 
   /*--- Store MPI rank. ---*/
   rank = SU2_MPI::GetRank();
@@ -61,7 +61,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   }
 
   /* Read header */
-  line = SkipToFlag(&file_stream, "<header>");
+  line = SkipToFlag(&file_stream, "<Header>");
 
   while (getline(file_stream, line) && !eoHeader) {
 
@@ -70,9 +70,8 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       line.erase(line.length()-1);
     }
 
-    
     /* number of points in LUT */
-    if (line.compare("[version]") == 0) {
+    if (line.compare("[Version]") == 0) {
       getline(file_stream, line);
 
       if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
@@ -82,7 +81,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     /* number of points in LUT */
-    if (line.compare("[Number of Points]") == 0) {
+    if (line.compare("[Number of points]") == 0) {
       getline(file_stream, line);
       if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
         line.erase(line.length()-1);
@@ -91,7 +90,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     /* number of triangles in LUT */
-    if (line.compare("[Number of Triangles]") == 0) {
+    if (line.compare("[Number of triangles]") == 0) {
       getline(file_stream, line);
       if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
         line.erase(line.length()-1);
@@ -100,7 +99,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     /* number of points on the hull */
-    if (line.compare("[Number of Hull Points]") == 0) {
+    if (line.compare("[Number of hull points]") == 0) {
       getline(file_stream, line);
       if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
         line.erase(line.length()-1);
@@ -109,7 +108,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     /* number of variables in LUT */
-    if (line.compare("[Number of Variables]") == 0) {
+    if (line.compare("[Number of variables]") == 0) {
       getline(file_stream, line);
       if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
         line.erase(line.length()-1);
@@ -118,7 +117,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     /* variable names */
-    if (line.compare("[Variable Names]") == 0) {
+    if (line.compare("[Variable names]") == 0) {
       
       for (unsigned long i = 0; i < n_variables; i++){
 
@@ -132,7 +131,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     }
 
     // check if end of header is reached
-    if (line.compare("</header>") == 0) eoHeader = true;
+    if (line.compare("</Header>") == 0) eoHeader = true;
   }
 
   // check version_lut
@@ -172,7 +171,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   // read data block
   if (rank == MASTER_NODE) cout << "loading data block" << endl;
 
-  line = SkipToFlag(&file_stream, "<data>");
+  line = SkipToFlag(&file_stream, "<Data>");
 
   unsigned long pointCounter = 0;
     while (getline(file_stream, line) && !eoData) {
@@ -180,7 +179,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       line.erase(line.length()-1);
     }
     // check if end of data is reached
-    if (line.compare("</data>") == 0) eoData = true;
+    if (line.compare("</Data>") == 0) eoData = true;
 
     if (!eoData) {
       // one line contains values for one point for all variables
@@ -205,7 +204,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   // read connectivity
   if (rank == MASTER_NODE) cout << "loading connectivity block" << endl;
 
-  line = SkipToFlag(&file_stream, "<connectivity>");
+  line = SkipToFlag(&file_stream, "<Connectivity>");
 
   unsigned long triCounter = 0;
   while (getline(file_stream, line) && !eoConnectivity) {
@@ -213,7 +212,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       line.erase(line.length()-1);
     }
     // check if end of data is reached
-    if (line.compare("</connectivity>") == 0) eoConnectivity = true;
+    if (line.compare("</Connectivity>") == 0) eoConnectivity = true;
 
     if (!eoConnectivity) {
       // one line contains values for one triangle (3 points)
@@ -239,7 +238,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   // read hull points
   if (rank == MASTER_NODE) cout << "loading hull block" << endl;
 
-  line = SkipToFlag(&file_stream, "<hull>");
+  line = SkipToFlag(&file_stream, "<Hull>");
 
   unsigned long hullCounter = 0;
   while (getline(file_stream, line) && !eoHull) {
@@ -247,7 +246,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       line.erase(line.length()-1);
     }
     // check if end of data is reached
-    if (line.compare("</hull>") == 0) eoHull = true;
+    if (line.compare("</Hull>") == 0) eoHull = true;
 
     if (!eoHull) {
       // one line contains one point ID for one point on the hull
@@ -280,7 +279,7 @@ string CFileReaderLUT::SkipToFlag(ifstream* file_stream, const string& flag) {
     getline(*file_stream, line);
   }
 
-  if ((*file_stream).eof()) SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
+  if ((*file_stream).eof()) SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
 
   return line;
 }
