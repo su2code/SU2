@@ -83,5 +83,12 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
+  inline std::string GetStrippedLine(std::string line) {
+    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      line.erase(line.length()-1);
+    }
+    return line;
+  }
+
   void ReadRawDRG(const std::string& file_name);
 };

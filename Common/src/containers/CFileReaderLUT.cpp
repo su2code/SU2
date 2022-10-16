@@ -63,53 +63,47 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   while (getline(file_stream, line) && !eoHeader) {
 
     /*--- first strip any possible carriage returns ---*/
-    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      line.erase(line.length()-1);
-    }
+    //if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+    //  line.erase(line.length()-1);
+    //}
+    line = GetStrippedLine(line);
 
     /* number of points in LUT */
     if (line.compare("[Version]") == 0) {
       getline(file_stream, line);
 
-      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-        line.erase(line.length()-1);
-      }
+      //if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      //  line.erase(line.length()-1);
+      //}
+      line = GetStrippedLine(line);
       version_lut = line;
     }
 
     /* number of points in LUT */
     if (line.compare("[Number of points]") == 0) {
       getline(file_stream, line);
-      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-        line.erase(line.length()-1);
-      }
+      line = GetStrippedLine(line);
       n_points = stoi(line);
     }
 
     /* number of triangles in LUT */
     if (line.compare("[Number of triangles]") == 0) {
       getline(file_stream, line);
-      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-        line.erase(line.length()-1);
-      }
+      line = GetStrippedLine(line);
       n_triangles = stoi(line);
     }
 
     /* number of points on the hull */
     if (line.compare("[Number of hull points]") == 0) {
       getline(file_stream, line);
-      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-        line.erase(line.length()-1);
-      }
+      line = GetStrippedLine(line);
       n_hull_points = stoi(line);
     }
 
     /* number of variables in LUT */
     if (line.compare("[Number of variables]") == 0) {
       getline(file_stream, line);
-      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-        line.erase(line.length()-1);
-      }
+      line = GetStrippedLine(line);
       n_variables = stoi(line);
     }
 
@@ -120,9 +114,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
         /*--- grab a single line ---*/
         getline(file_stream, line);
-        if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-          line.erase(line.length()-1);
-        }
+        line = GetStrippedLine(line);
         names_var.push_back(line.substr(line.find(":")+1)); 
       }
     }
