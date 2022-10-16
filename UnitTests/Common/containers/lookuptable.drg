@@ -4,28 +4,28 @@ Dragon library
 [version]
 1.0.0
 
-[number of points]
+[Number of Points]
 12
 
-[number of triangles]
+[Number of Triangles]
 14
 
-[number of hull points]
+[Number of Hull Points]
 8
 
-progress variable definition
+[Progress Variable Definition]
 prog var = 1*Y-CH4
 
-[progress variable range]
+[Progress Variable Range]
 0.0 | 1.0
 
-[enthalpy range]
+[Enthalpy Range]
 -1.0 | 1.0
 
-[number of variables]
+[Number of Variables]
 4
 
-[variable names]
+[Variable Names]
 1:PROGVAR 2:ENTHALPY 3:Density 4:Viscosity
 </header>
 
