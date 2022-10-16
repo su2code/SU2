@@ -83,11 +83,10 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
+  /*--- strip trailing characters ---*/
   inline std::string GetStrippedLine(std::string line) {
-    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      line.erase(line.length()-1);
-    }
-    return line;
+    size_t end = line.find_last_not_of(" \n\r\t\f\v");
+    return (end == std::string::npos) ? "" : line.substr(0, end + 1);
   }
 
   void ReadRawDRG(const std::string& file_name);

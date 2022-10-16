@@ -62,19 +62,11 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   while (getline(file_stream, line) && !eoHeader) {
 
-    /*--- first strip any possible carriage returns ---*/
-    //if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-    //  line.erase(line.length()-1);
-    //}
     line = GetStrippedLine(line);
 
     /* number of points in LUT */
     if (line.compare("[Version]") == 0) {
       getline(file_stream, line);
-
-      //if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      //  line.erase(line.length()-1);
-      //}
       line = GetStrippedLine(line);
       version_lut = line;
     }
@@ -144,14 +136,13 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   /* now that n_variables, n_points, n_hull_points and n_variables is available,
    * allocate memory */
-  if (rank == MASTER_NODE) cout << "allocating memory for the data" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the data, size = ( " << GetNVariables() << " , " << GetNPoints() << " )" << endl;
   table_data.resize(GetNVariables(), GetNPoints());
 
-
-  if (rank == MASTER_NODE) cout << "allocating memory for the triangles" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the triangles, size = "<< GetNTriangles() << endl;
   triangles.resize(GetNTriangles(), 3);
 
-  if (rank == MASTER_NODE) cout << "allocating memory for the hull points" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the hull points, size = " << GetNHullPoints() << endl;
   hull.resize(GetNHullPoints());
 
   /* flush any cout */
@@ -163,10 +154,9 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   line = SkipToFlag(&file_stream, "<Data>");
 
   unsigned long pointCounter = 0;
-    while (getline(file_stream, line) && !eoData) {
-    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      line.erase(line.length()-1);
-    }
+  while (getline(file_stream, line) && !eoData) {
+    line = GetStrippedLine(line);
+
     // check if end of data is reached
     if (line.compare("</Data>") == 0) eoData = true;
 
