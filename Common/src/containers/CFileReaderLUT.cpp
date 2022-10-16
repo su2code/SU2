@@ -49,8 +49,6 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   ifstream file_stream;
 
-  int ixColon;
-
   bool eoHeader = false;
   bool eoData = false;
   bool eoConnectivity = false;
@@ -122,7 +120,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
     /* variable names */
     if (line.compare("[Variable Names]") == 0) {
       
-      for (auto i=0;i<n_variables;i++){
+      for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
         getline(file_stream, line);
