@@ -30,9 +30,6 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
-//#include <string>
-//#include <fstream>
-//#include <iomanip>
 
 using namespace std;
 
