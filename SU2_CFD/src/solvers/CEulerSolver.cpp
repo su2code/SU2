@@ -338,6 +338,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+
+  if((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR))
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -1468,17 +1471,17 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
-  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
-  bool center_jst_mat   = (config->GetKind_Centered_Flow() == JST_MAT) && (iMesh == MESH_0);
+  bool center_jst       = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
+  bool center_jst_mat   = (config->GetKind_Centered_Flow() == CENTERED::JST_MAT) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
-                              (config->GetKind_Upwind_Flow() == ROE ||
-                               config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
+                              (config->GetKind_Upwind_Flow() == UPWIND::ROE ||
+                               config->GetKind_Upwind_Flow() == UPWIND::SLAU ||
+                               config->GetKind_Upwind_Flow() == UPWIND::SLAU2);
 
   /*--- Set the primitive variables ---*/
 
@@ -1671,20 +1674,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
+  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
+  const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
+  const bool bounded_scalar   = ((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
+                                 (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR));
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1872,6 +1877,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual.residual[0];
     /*--- Viscous contribution. ---*/
 
     Viscous_Residual(iEdge, geometry, solver_container,
@@ -2360,7 +2366,7 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
       return matrix;
     }
 
-  } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == TURKEL), nVar);
+  } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == UPWIND::TURKEL), nVar);
 
   PrepareImplicitIteration_impl(precond, geometry, config);
 }

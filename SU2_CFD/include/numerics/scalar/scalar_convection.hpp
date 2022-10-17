@@ -130,9 +130,14 @@ class CUpwScalar : public CNumerics {
         q_ij += 0.5 * (V_i[iDim + idx.Velocity()] + V_j[iDim + idx.Velocity()]) * Normal[iDim];
       }
     }
-
-    a0 = 0.5 * (q_ij + fabs(q_ij));
-    a1 = 0.5 * (q_ij - fabs(q_ij));
+    
+    if(bounded_scalar){
+      a0 = max(0.0, MassFlux);
+      a1 = min(0.0, MassFlux);
+    }else{
+      a0 = 0.5 * (q_ij + fabs(q_ij));
+      a1 = 0.5 * (q_ij - fabs(q_ij));
+    }
 
     FinishResidualCalc(config);
 

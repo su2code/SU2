@@ -335,6 +335,19 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
+  /*--- Bounded scalar problem ---*/
+  bool bounded_scalar = conv_numerics->GetBoundedScalar();
+
+  su2double EdgeMassFlux = 0.0;
+  su2double **Jacobian_i_correction;
+  Jacobian_i_correction = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    Jacobian_i_correction[iVar] = new su2double[nVar];
+    for(unsigned short jVar=0; jVar<nVar; jVar++){
+      Jacobian_i_correction[iVar][jVar] = 0.0;
+    }
+  }
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -360,6 +373,8 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+
       conv_numerics->SetNormal(Normal);
 
       /*--- Allocate the value at the inlet ---*/
@@ -383,8 +398,22 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Compute the residual using an upwind scheme ---*/
+      if(bounded_scalar){
+        /*--- Obtain flow velocity vector at inlet boundary node ---*/
+        su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet;
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        
+        /*--- Obtain density at inlet boundary node ---*/
+        density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
+        /*--- Compute mass flux on current node ---*/
+        EdgeMassFlux = density_inlet * GeometryToolbox::DotProduct(nDim, Velocity_Inlet, Normal);
+      
+        /*--- Communicate inlet mass flux to numerics ---*/
+        conv_numerics->SetMassFlux(EdgeMassFlux);
+      }
+
+      /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
@@ -392,10 +421,28 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
+      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
+      if(bounded_scalar){
+        for(unsigned short iVar=0; iVar<nVar; iVar++){
+          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+
+          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
+          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);
+        }
+      }if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i_correction);
+
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- Delete jacobian correction variable ---*/
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    delete [] Jacobian_i_correction[iVar];
+  }
+  delete [] Jacobian_i_correction;
+
 }
 
 void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
@@ -476,6 +523,18 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  
+  const bool bounded_scalar = conv_numerics->GetBoundedScalar();
+  su2double EdgeMassFlux = 0.0;
+  su2double **Jacobian_i_correction;
+  Jacobian_i_correction = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    Jacobian_i_correction[iVar] = new su2double[nVar];
+    for(unsigned short jVar=0; jVar<nVar; jVar++){
+      Jacobian_i_correction[iVar][jVar] = 0.0;
+    }
+  }
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -501,8 +560,9 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
         Jacobian.DeleteValsRowi(total_index);
       }
     } else {  // weak BC
-      /*--- Allocate the value at the outlet ---*/
 
+      
+      /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
@@ -514,8 +574,8 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
       /*--- Set the species variables. Here we use a Neumann BC such
-       that the species variable is copied from the interior of the
-       domain to the outlet before computing the residual. ---*/
+      that the species variable is copied from the interior of the
+      domain to the outlet before computing the residual. ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
@@ -528,8 +588,21 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Compute the residual using an upwind scheme ---*/
+      if(bounded_scalar){
+        /*--- Obtain flow velocity vector at inlet boundary node ---*/
+        su2double Velocity_Outlet[MAXNDIM] = {0.0}, density_outlet;
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Outlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        
+        /*--- Obtain density at inlet boundary node ---*/
+        density_outlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
+        /*--- Compute mass flux on current node ---*/
+        EdgeMassFlux = density_outlet * GeometryToolbox::DotProduct(nDim, Velocity_Outlet, Normal);
+      
+        conv_numerics->SetMassFlux(EdgeMassFlux);
+      }
+
+      /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
@@ -537,10 +610,27 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
+      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
+      if(bounded_scalar){
+        for(unsigned short iVar=0; iVar<nVar; iVar++){
+          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+
+          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
+          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);
+        }
+      }if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i_correction);
+
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+      
     }
   }
   END_SU2_OMP_FOR
+
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    delete [] Jacobian_i_correction[iVar];
+  }
+  delete [] Jacobian_i_correction;
+
 }
 
 void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,

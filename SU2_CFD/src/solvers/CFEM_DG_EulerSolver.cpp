@@ -8863,7 +8863,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
   /* Make a distinction between the several Riemann solvers. */
   switch( config->GetRiemann_Solver_FEM() ) {
 
-    case ROE: {
+    case UPWIND::ROE: {
 
       /* Roe's approximate Riemann solver. Easier storage of the cut off
          value for the entropy correction. */
@@ -9108,7 +9108,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
 
     /*------------------------------------------------------------------------*/
 
-    case LAX_FRIEDRICH: {
+    case UPWIND::LAX_FRIEDRICH: {
 
       /* Local Lax-Friedrich (Rusanov) flux Make a distinction between two and
          three space dimensions in order to have the most efficient code. */

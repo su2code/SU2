@@ -55,6 +55,8 @@ class CFVMFlowSolverBase : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
+
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
    * \param[in] lhsRhsPairs - Pairs of destination and source e.g. a,0,b,-1.
@@ -2401,4 +2403,12 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
     return EddyViscWall[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Get the mass flux across an edge (computed and stored during the discretization of convective fluxes).
+   * \param[in] iEdge - Index of the edge.
+   * \return The mass flux across the edge.
+   */
+  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const final { return EdgeMassFluxes[iEdge]; }
+
 };

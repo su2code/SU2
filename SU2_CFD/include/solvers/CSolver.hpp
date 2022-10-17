@@ -3000,6 +3000,13 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member 
+   * \param[in] iEdge - Index of the edge.
+   * \return The mass flux across the edge.
+   */
+  inline virtual su2double GetEdgeMassFlux(const unsigned long iEdge) const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -4311,7 +4318,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:
