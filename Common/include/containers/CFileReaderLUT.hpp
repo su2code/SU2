@@ -84,7 +84,7 @@ class CFileReaderLUT {
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
   /*--- strip trailing characters ---*/
-  inline static std::string StripLine(std::string line) {
+  inline static std::string GetStrippedLine(std::string line) {
     size_t end = line.find_last_not_of(" \n\r\t\f\v");
     return (end == std::string::npos) ? "" : line.substr(0, end + 1);
   }
