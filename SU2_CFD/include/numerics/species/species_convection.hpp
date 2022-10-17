@@ -72,8 +72,8 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
 
         /*--- Jacobians are taken wrt rho*Y not Y alone in the species solver. ---*/
         /*--- Off-diagonal entries are zero. ---*/
-        Jacobian_i[iVar][iVar] = a0;
-        Jacobian_j[iVar][iVar] = a1;
+        Jacobian_i[iVar][iVar] = a0 / V_i[idx.Density()];
+        Jacobian_j[iVar][iVar] = a1 / V_j[idx.Density()];
       }else{
         Flux[iVar] = a0 * V_i[idx.Density()] * ScalarVar_i[iVar] + a1 * V_j[idx.Density()] * ScalarVar_j[iVar];
 

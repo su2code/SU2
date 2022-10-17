@@ -126,8 +126,8 @@ private:
         Jacobian_i[0][0] = a0/V_i[idx.Density()];    Jacobian_i[0][1] = 0.0;
         Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0/V_i[idx.Density()];
 
-        Jacobian_j[0][0] = a1/V_j[idx.Density()]*ScalarVar_j[0];    Jacobian_j[0][1] = 0.0;
-        Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1/V_j[idx.Density()]*ScalarVar_j[0];
+        Jacobian_j[0][0] = a1/V_j[idx.Density()];    Jacobian_j[0][1] = 0.0;
+        Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1/V_j[idx.Density()];
       }else{
         Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
         Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
