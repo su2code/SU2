@@ -1,7 +1,7 @@
 Dragon library
 
 <Header>
-[Version]  
+[Version]
 1.0.1
 
 [Number of points]
@@ -26,8 +26,8 @@ prog var = 1*Y-CH4
 4
 
 [Variable names]
-PROGVAR
-ENTHALPY
+ProgressVariable
+EnthalpyTot
 Density
 Viscosity
 

@@ -44,8 +44,8 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- string names of the controlling variables ---*/
 
-  string name_CV1 = "PROGVAR";
-  string name_CV2 = "ENTHALPY";
+  string name_CV1 = "ProgressVariable";
+  string name_CV2 = "EnthalpyTot";
 
  /*--- look up a single value for density ---*/
 

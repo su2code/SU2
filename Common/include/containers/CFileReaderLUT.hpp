@@ -63,7 +63,11 @@ class CFileReaderLUT {
 
   std::vector<unsigned long> hull;
 
-  std::string SkipToFlag(std::ifstream* file_stream, const std::string& flag);
+  void SkipToFlag(std::ifstream* file_stream, const std::string& current_line, const std::string& flag);
+
+  bool GetNextNonEmptyLine(std::ifstream* file_stream, std::string& line);
+  
+  bool GetStrippedLine(std::ifstream* file_stream, std::string& line);
 
  public:
   CFileReaderLUT(){};
@@ -82,12 +86,6 @@ class CFileReaderLUT {
   inline const su2matrix<unsigned long>& GetTriangles() const { return triangles; };
 
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
-
-  /*--- strip trailing characters ---*/
-  inline static std::string GetStrippedLine(std::string line) {
-    size_t end = line.find_last_not_of(" \n\r\t\f\v");
-    return (end == std::string::npos) ? "" : line.substr(0, end + 1);
-  }
 
   void ReadRawDRG(const std::string& file_name);
 };
