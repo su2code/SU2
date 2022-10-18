@@ -34,6 +34,10 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
+/*!
+ * \brief File reader for look up tables.
+ * \ingroup LookUpInterp
+ */
 class CFileReaderLUT {
  protected:
   int rank;

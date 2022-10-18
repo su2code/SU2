@@ -30,6 +30,10 @@
 
 #include "../CInterface.hpp"
 
+/*!
+ * \brief Fluid-heat interface (and v.v.).
+ * \ingroup Interfaces
+ */
 class CConjugateHeatInterface : public CInterface {
 public:
   /*!

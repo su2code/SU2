@@ -33,6 +33,9 @@
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
 
+/// \addtogroup SpLinSys
+/// @{
+
 /*!
  * \class CPreconditioner
  * \brief Abstract base class for defining a preconditioning operation.
@@ -353,3 +356,5 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
 
   return prec;
 }
+
+/// @}

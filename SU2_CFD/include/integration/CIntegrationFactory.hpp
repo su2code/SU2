@@ -31,10 +31,12 @@
 class CIntegration;
 class CConfig;
 
+/*!
+ * \brief Factory for integration classes.
+ * \ingroup Drivers
+ */
 class CIntegrationFactory{
-
-public:
-
+ public:
   /*!
    * \brief Deleted constructor to avoid creating instances of this class
    */

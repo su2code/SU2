@@ -1,6 +1,6 @@
 /*!
  * \file CEulerSolver.cpp
- * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
+ * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
  * \version 7.4.0 "Blackbird"
  *
@@ -148,8 +148,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
-  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
-
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -281,6 +279,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nodes = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
+
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -812,6 +814,14 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream = config->GetTemperature_FreeStream();
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+        To accomplish this, simply set the non-dimensional coefficients to the
+        dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
+
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -888,15 +898,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Viscous initialization ---*/
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-          To accomplish this, simply set the non-dimensional coefficients to the
-          dimensional ones. This will be overruled later.---*/
-    config->SetMu_RefND(config->GetMu_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
-    config->SetMu_SND(config->GetMu_S());
-
-    config->SetMu_ConstantND(config->GetMu_Constant());
 
     /*--- Check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
@@ -1036,21 +1037,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
   delete auxFluidModel;
-
-  /*--- Set viscosity ND constants before defining the visc. model of the fluid models. ---*/
-
-  if (viscous) {
-    /*--- Constant viscosity model. ---*/
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-    /*--- Sutherland's model. ---*/
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
-    /*--- Constant thermal conductivity model. ---*/
-    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
-  }
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1680,17 +1666,19 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  if (config->GetUseVectorization()) {
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool low_mach_corr = config->Low_Mach_Correction();
+
+  /*--- Use vectorization if the scheme supports it. ---*/
+  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                                (config->GetKind_FluidModel() == IDEAL_GAS);
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
-  const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -1833,13 +1821,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
-      if (bad_recon) {
-        /*--- Force 1st order for this edge for at least 20 iterations. ---*/
-        NonPhysicalEdgeCounter[iEdge] = 20;
-      } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
-        --NonPhysicalEdgeCounter[iEdge];
-        bad_recon = true;
-      }
+      bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
 
       numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
@@ -1898,33 +1880,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (implicit)
-      Jacobian.SetDiagonalAsColumnSum();
-  }
-
-  /*--- Warning message about non-physical reconstructions. ---*/
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
-
-    /*--- Add counter results for all ranks. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-      config->SetNonphysical_Reconstr(ErrorCounter);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
-
+  FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,

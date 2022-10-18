@@ -45,8 +45,8 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 20
-    p30n30.test_vals         = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
-    p30n30.test_vals_aarch64 = [-10.632412, -10.296085, -10.474942, -10.242152, -13.517151, 0.050962, 2.828563, 1.317849, -0.206092]
+    p30n30.test_vals         = [-10.639125, -10.302345, -10.493880, -10.249452, -13.517221, 0.050962, 2.828563, 1.317849, -0.217586]
+    p30n30.test_vals_aarch64 = [-10.636663, -10.298256, -10.479415, -10.246700, -13.517161, 0.050962, 2.828563, 1.317849, -0.209200]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -54,8 +54,8 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.022223, -10.035608, -5.142357, -0.002535, 0.002809]
+    flatplate_sst1994m.test_vals         = [-13.022725, -10.035608, -5.142378, -0.002535, 0.002809]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.022949, -10.035600, -5.142348, -0.002535, 0.002809]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,8 +63,8 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.069231, -10.325333, -5.558903, 0.024576, 0.004967] 
-    bump_sst1994m.test_vals_aarch64 = [-13.057600, -10.325331, -5.558653, 0.024576, 0.004967]
+    bump_sst1994m.test_vals         = [-13.033896, -10.325323, -5.558745, 0.024576, 0.004967]
+    bump_sst1994m.test_vals_aarch64 = [-13.085614, -10.325319, -5.559183, 0.024576, 0.004967]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -88,7 +88,7 @@ def main():
     #################
 
     for test in test_list:
-        test.su2_exec = "mpirun -n 2 SU2_CFD"
+        test.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
         test.timeout = 300
         test.tol = 1e-5
     #end
