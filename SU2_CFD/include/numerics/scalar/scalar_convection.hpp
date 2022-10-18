@@ -115,6 +115,9 @@ class CUpwScalar : public CNumerics {
     }
     AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
     AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
+    AD::SetPreaccIn(V_i[idx.Density()]);
+    AD::SetPreaccIn(V_j[idx.Density()]);
+    AD::SetPreaccIn(MassFlux);
 
     ExtraADPreaccIn();
 
@@ -131,9 +134,9 @@ class CUpwScalar : public CNumerics {
       }
     }
     
-    if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
-      a0 = max(0.0, MassFlux) / Density_i;
-      a1 = min(0.0, MassFlux) / Density_j;
+    if(bounded_scalar){
+      a0 = max(0.0, MassFlux) / V_i[idx.Density()];
+      a1 = min(0.0, MassFlux) / V_j[idx.Density()];
     }else{
       a0 = 0.5 * (q_ij + fabs(q_ij));
       a1 = 0.5 * (q_ij - fabs(q_ij));
