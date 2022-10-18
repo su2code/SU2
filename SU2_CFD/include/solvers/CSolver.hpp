@@ -3004,7 +3004,7 @@ public:
    * \param[in] iEdge - Index of the edge.
    * \return The mass flux across the edge.
    */
-  inline virtual su2double GetEdgeMassFlux(const unsigned long iEdge) const { return 0; }
+  inline virtual su2double GetEdgeMassFlux(const unsigned long iEdge) const final { return 0; }
 
   /*!
    * \brief A virtual member.
