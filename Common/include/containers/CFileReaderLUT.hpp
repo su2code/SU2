@@ -87,5 +87,5 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
-  void ReadRawDRG(const std::string& file_name);
+  void ReadRawLUT(const std::string& file_name);
 };
