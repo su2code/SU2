@@ -58,37 +58,37 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   }
 
   /*--- Read header ---*/
-  SkipToFlag(&file_stream, line, "<Header>");
+  SkipToFlag(file_stream, line, "<Header>");
 
-  while (GetNextNonEmptyLine(&file_stream, line) && !eoHeader) {
+  while (GetNextNonEmptyLine(file_stream, line) && !eoHeader) {
 
     /*--- number of points in LUT ---*/
     if (line.compare("[Version]") == 0) {
-      GetNextNonEmptyLine(&file_stream, line);
+      GetNextNonEmptyLine(file_stream, line);
       version_lut = line;
     }
 
     /*--- number of points in LUT ---*/
     if (line.compare("[Number of points]") == 0) {
-      GetNextNonEmptyLine(&file_stream, line);
+      GetNextNonEmptyLine(file_stream, line);
       n_points = stoi(line);
     }
 
     /*--- number of triangles in LUT ---*/
     if (line.compare("[Number of triangles]") == 0) {
-      GetNextNonEmptyLine(&file_stream, line);
+      GetNextNonEmptyLine(file_stream, line);
       n_triangles = stoi(line);
     }
 
     /*--- number of points on the hull ---*/
     if (line.compare("[Number of hull points]") == 0) {
-      GetNextNonEmptyLine(&file_stream, line);
+      GetNextNonEmptyLine(file_stream, line);
       n_hull_points = stoi(line);
     }
 
     /*--- number of variables in LUT ---*/
     if (line.compare("[Number of variables]") == 0) {
-      GetNextNonEmptyLine(&file_stream, line);
+      GetNextNonEmptyLine(file_stream, line);
       n_variables = stoi(line);
     }
 
@@ -98,7 +98,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
-        GetNextNonEmptyLine(&file_stream, line);
+        GetNextNonEmptyLine(file_stream, line);
         names_var.push_back(line.substr(line.find(":")+1)); 
       }
     }
@@ -142,10 +142,10 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   /*--- read data block ---*/
   if (rank == MASTER_NODE) cout << "loading data block" << endl;
 
-  SkipToFlag(&file_stream, line, "<Data>");
+  SkipToFlag(file_stream, line, "<Data>");
 
   unsigned long pointCounter = 0;
-  while (GetNextNonEmptyLine(&file_stream, line) && !eoData) {
+  while (GetNextNonEmptyLine(file_stream, line) && !eoData) {
 
     /*--- check if end of data is reached ---*/
     if (line.compare("</Data>") == 0) eoData = true;
@@ -173,10 +173,10 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   /*--- read connectivity ---*/
   if (rank == MASTER_NODE) cout << "loading connectivity block" << endl;
 
-  SkipToFlag(&file_stream, line, "<Connectivity>");
+  SkipToFlag(file_stream, line, "<Connectivity>");
 
   unsigned long triCounter = 0;
-  while (GetNextNonEmptyLine(&file_stream, line) && !eoConnectivity) {
+  while (GetNextNonEmptyLine(file_stream, line) && !eoConnectivity) {
     if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
       line.erase(line.length()-1);
     }
@@ -208,10 +208,10 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   /*--- read hull points ---*/
   if (rank == MASTER_NODE) cout << "loading hull block" << endl;
 
-  SkipToFlag(&file_stream, line, "<Hull>");
+  SkipToFlag(file_stream, line, "<Hull>");
 
   unsigned long hullCounter = 0;
-  while (GetNextNonEmptyLine(&file_stream, line) && !eoHull) {
+  while (GetNextNonEmptyLine(file_stream, line) && !eoHull) {
     if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
       line.erase(line.length()-1);
     }
@@ -240,42 +240,34 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
 }
 
-/**
- * @brief Searches for the position of flag in file_stream and 
- *        sets the stream position of file_stream to that position.
- * 
- * @param file_stream 
- * @param current_line 
- * @param flag 
- */
-void CFileReaderLUT::SkipToFlag(ifstream* file_stream, const string& current_line, const string& flag) {
+
+ /*! \brief Searches for the position of flag in file_stream and 
+  *         sets the stream position of file_stream to that position.
+  */
+void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
   string next_line = "";
 
   /*--- compare current line to flag and return if equal ---*/
   if (current_line.compare(flag) == 0) return;
 
   /*--- else, search for flag ---*/
-  while (next_line.find(flag) == string::npos && !(*file_stream).eof()) {
+  while (next_line.find(flag) == string::npos && !(file_stream).eof()) {
     GetStrippedLine(file_stream, next_line);
   }
 
   /*--- throw error if end of file reached ---*/
-  if ((*file_stream).eof()) SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
+  if ((file_stream).eof()) SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
 }
 
-/**
- * @brief Extracts the next non-empty characters from file_stream and stores them into line.
- * 
- * @param file_stream 
- * @param line 
+/*! \brief Extracts the next non-empty characters from file_stream and stores them into line.
  */
-bool CFileReaderLUT::GetNextNonEmptyLine(ifstream* file_stream, string& line){
+bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) const {
 
   /*--- get next line and save return value ---*/
   bool return_value = GetStrippedLine(file_stream, line);
   
   /*--- skip empty lines ---*/
-  while (line.empty() && !(*file_stream).eof()){
+  while (line.empty() && !(file_stream).eof()){
     return_value = GetStrippedLine(file_stream, line);
   }
 
@@ -283,17 +275,13 @@ bool CFileReaderLUT::GetNextNonEmptyLine(ifstream* file_stream, string& line){
   return return_value;
 }
 
-/**
- * @brief Extracts characters from file_stream, removes trailing control characters,
- *        and stores them into line.
- * 
- * @param file_stream 
- * @param line 
+/*! \brief Extracts characters from file_stream, removes trailing control characters,
+ *         and stores them into line.
  */
-bool CFileReaderLUT::GetStrippedLine(ifstream* file_stream, string& line) {
+bool CFileReaderLUT::GetStrippedLine(ifstream& file_stream, string& line) const {
 
     /*--- get next line and save return value ---*/
-    getline(*file_stream, line);
+    getline(file_stream, line);
 
     /*--- find last non-control-character character ---*/
     size_t end = line.find_last_not_of(" \n\r\t\f\v");
