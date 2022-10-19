@@ -63,7 +63,11 @@ class CFileReaderLUT {
 
   std::vector<unsigned long> hull;
 
-  std::string SkipToFlag(std::ifstream* file_stream, const std::string& flag);
+  void SkipToFlag(std::ifstream* file_stream, const std::string& current_line, const std::string& flag);
+
+  bool GetNextNonEmptyLine(std::ifstream* file_stream, std::string& line);
+  
+  bool GetStrippedLine(std::ifstream* file_stream, std::string& line);
 
  public:
   CFileReaderLUT(){};
