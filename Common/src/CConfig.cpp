@@ -1095,7 +1095,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
 
-  /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -5339,7 +5339,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model != SPECIES_MODEL::NONE) {
+  if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
