@@ -40,7 +40,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- smaller and trivial lookup table ---*/
   
-  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","ProgressVariable","EnthalpyTot");
 
   /*--- string names of the controlling variables ---*/
 
