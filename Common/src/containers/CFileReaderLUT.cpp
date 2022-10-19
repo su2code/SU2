@@ -240,10 +240,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
 }
 
-
- /*! \brief Searches for the position of flag in file_stream and 
-  *         sets the stream position of file_stream to that position.
-  */
 void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
   string next_line = "";
 
@@ -259,8 +255,6 @@ void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_lin
   if ((file_stream).eof()) SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
 }
 
-/*! \brief Extracts the next non-empty characters from file_stream and stores them into line.
- */
 bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) const {
 
   /*--- get next line and save return value ---*/
@@ -275,9 +269,6 @@ bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) co
   return return_value;
 }
 
-/*! \brief Extracts characters from file_stream, removes trailing control characters,
- *         and stores them into line.
- */
 bool CFileReaderLUT::GetStrippedLine(ifstream& file_stream, string& line) const {
 
     /*--- get next line and save return value ---*/
