@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,7 @@
 
 /*!
  * \class CFEASolver
+ * \ingroup Elasticity_Equations
  * \brief Main class for defining a FEM solver for elastic structural problems.
  * \author R. Sanchez.
  */

@@ -29,13 +29,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ccache
           key: ${{ matrix.os_bin }}-${{ github.sha }}
           restore-keys: ${{ matrix.os_bin }}
       - name: Build
-        uses: docker://su2code/build-su2-cross:latest
+        uses: docker://ghcr.io/su2code/su2/build-su2-cross:220716-1459
         with:
           args: -b ${{ github.sha }} -f "${{matrix.flags}}"
       - name: Create Archive
@@ -44,7 +44,7 @@ jobs:
           zip -r ../${{matrix.os_bin}}.zip bin/*
         # Uploads binaries as artifacts (just as a backup)
       - name: Upload Binaries
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.os_bin}}
           path: ${{matrix.os_bin}}.zip
@@ -57,7 +57,7 @@ jobs:
         # Upload binaries as assets to draft release
       - name: Upload Release Asset
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

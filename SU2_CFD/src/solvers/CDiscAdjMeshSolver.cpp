@@ -2,7 +2,7 @@
  * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
  * \author Ruben Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -110,11 +110,7 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
 
   if (config->GetFSI_Simulation()) return;
 
-  SU2_OMP_MASTER {
-    direct_solver->GetNodes()->Register_BoundDisp();
-  }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(direct_solver->GetNodes()->Register_BoundDisp();)
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){

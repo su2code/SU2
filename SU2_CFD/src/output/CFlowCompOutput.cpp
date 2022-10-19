@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,10 +87,7 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
   if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
 
   if (config->GetFixed_CL_Mode()) {
-    bool found = false;
-    for (unsigned short iField = 0; iField < convFields.size(); iField++)
-      if (convFields[iField] == "LIFT") found = true;
-    if (!found) {
+    if (std::find(convFields.begin(), convFields.end(), "LIFT") != convFields.end()) {
       if (rank == MASTER_NODE)
         cout<<"  Fixed CL: Adding LIFT as Convergence Field to ensure convergence to target CL"<<endl;
       convFields.emplace_back("LIFT");
@@ -445,6 +442,8 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomOutputs(solver, geometry, config);
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 

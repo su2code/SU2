@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.1 "Blackbird"
+# \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -132,7 +132,10 @@ lib_sources = \
   ../src/linear_algebra/CSysMatrix.cpp \
   ../src/linear_algebra/CSysSolve.cpp \
   ../src/linear_algebra/CSysSolve_b.cpp \
-  ../src/linear_algebra/CPastixWrapper.cpp
+  ../src/linear_algebra/CPastixWrapper.cpp \
+  ../src/containers/CLookUpTable.cpp \
+  ../src/containers/CTrapezoidalMap.cpp \
+  ../src/containers/CFileReaderLUT.cpp
 
 lib_cxxflags = -fPIC -std=c++11
 lib_ldadd =

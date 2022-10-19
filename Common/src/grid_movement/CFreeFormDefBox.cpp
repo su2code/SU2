@@ -2,7 +2,7 @@
  * \file CFreeFormDefBox.cpp
  * \brief Subroutines for handling Free-Form Deformation Boxes
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,19 +102,34 @@ CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short B
 CFreeFormDefBox::~CFreeFormDefBox(void) {
   unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
 
-  for (iOrder = 0; iOrder < lOrder; iOrder++)
-    for (jOrder = 0; jOrder < mOrder; jOrder++)
+  for (iOrder = 0; iOrder < lOrder; iOrder++) {
+    for (jOrder = 0; jOrder < mOrder; jOrder++) {
       for (kOrder = 0; kOrder < nOrder; kOrder++) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
         delete [] Coord_Control_Points_Copy[iOrder][jOrder][kOrder];
+        if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder][jOrder][kOrder];
       }
+      delete [] Coord_Control_Points[iOrder][jOrder];
+      delete [] ParCoord_Control_Points[iOrder][jOrder];
+      delete [] Coord_Control_Points_Copy[iOrder][jOrder];
+      if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder][jOrder];
+    }
+    delete [] Coord_Control_Points[iOrder];
+    delete [] ParCoord_Control_Points[iOrder];
+    delete [] Coord_Control_Points_Copy[iOrder];
+    if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder];
+    }
+
   delete [] Coord_Control_Points;
   delete [] ParCoord_Control_Points;
   delete [] Coord_Control_Points_Copy;
+  delete [] Coord_SupportCP;
 
   delete [] ParamCoord;
+  delete [] ParamCoord_;
   delete [] cart_coord;
+  delete [] cart_coord_;
   delete [] Gradient;
 
   for (iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++)
@@ -969,25 +984,36 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 }
 
 bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const {
-  su2double Coord[3] = {0.0, 0.0, 0.0};
-  unsigned short iVar, jVar, iDim;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
-  bool Inside = false;
+  bool Inside = true;
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
-  unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
+  /*--- indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7 ---*/
+
+  unsigned short Index[6][5] = {
+  {0,1,2,3,0},  // front side
+  {1,5,6,2,1},  // right side
+  {2,6,7,3,2},  // top side
+  {3,7,4,0,3},  // left side
+  {4,5,1,0,4},  // bottom side
+  {4,7,6,5,4}}; // back side
+
+  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles 
+      by defining a supporting middle point. This allows nonplanar FFD boxes.
+      Note that the definition of the FFD box is as follows: the FFD box is a 6-sided die and we are looking at the side "1".
+      The opposite side is side "6". 
+      If we are looking at side "1", we define the nodes counterclockwise. 
+      If we are looking at side "6", we define the face clockwise  ---*/
+
   unsigned short nDim = geometry->GetnDim();
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  su2double Coord[3] = {0.0, 0.0, 0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = geometry->nodes->GetCoord(iPoint, iDim);
+
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
   if (cylindrical) {
 
@@ -1013,78 +1039,38 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
   }
 
-  /*--- 1st tetrahedron {V0, V1, V2, V5}
-   2nd tetrahedron {V0, V2, V7, V5}
-   3th tetrahedron {V0, V2, V3, V7}
-   4th tetrahedron {V0, V5, V7, V4}
-   5th tetrahedron {V2, V7, V5, V6} ---*/
+  /*--- loop over the faces of the FFD box  ---*/
 
-  for (iVar = 0; iVar < 5; iVar++) {
-    Inside = true;
-    for (jVar = 0; jVar < 4; jVar++) {
-      su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
-                                                                Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                Coord_Corner_Points[Index[iVar][jVar+3]]);
+  for (unsigned short iVar = 0; iVar < 6; iVar++) {
 
-      su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+3]]);
-      if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
+    su2double P[3] = {0.0, 0.0, 0.0};
+
+    /*--- every face needs an interpolated middle point for the triangles ---*/
+
+    for (int p = 0; p < 4; p++){
+      P[0] += 0.25*Coord_Corner_Points[Index[iVar][p]][0];
+      P[1] += 0.25*Coord_Corner_Points[Index[iVar][p]][1];
+      P[2] += 0.25*Coord_Corner_Points[Index[iVar][p]][2];
     }
-    if (Inside) break;
+
+    /*--- loop over the 4 triangles making up the FFD box. The sign is equal for all distances ---*/
+
+    for (unsigned short jVar = 0; jVar < 4; jVar++) {
+      su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
+                                                                Coord_Corner_Points[Index[iVar][jVar]],
+                                                                Coord_Corner_Points[Index[iVar][jVar+1]],
+                                                                P);
+      if (Distance_Point < 0) {
+        Inside = false;
+        return Inside;
+      }
+    }
   }
 
   return Inside;
 
 }
 
-void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
-  su2double *Coord;
-  unsigned short iMarker, iVar, jVar;
-  unsigned long iVertex, iPoint;
-  bool Inside = false;
-
-  unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        /*--- 1st tetrahedron {V0, V1, V2, V5}
-         2nd tetrahedron {V0, V2, V7, V5}
-         3th tetrahedron {V0, V2, V3, V7}
-         4th tetrahedron {V0, V5, V7, V4}
-         5th tetrahedron {V2, V7, V5, V6} ---*/
-
-        for (iVar = 0; iVar < 5; iVar++) {
-          Inside = true;
-          for (jVar = 0; jVar < 4; jVar++) {
-            su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
-                                                                   Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                   Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                   Coord_Corner_Points[Index[iVar][jVar+3]]);
-            su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+3]]);
-            if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
-          }
-          if (Inside) break;
-        }
-      }
-    }
-  }
-}
 
 su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const {
 
