@@ -33,7 +33,7 @@
 
 using namespace std;
 
-void CFileReaderLUT::ReadRawDRG(const string& file_name) {
+void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   version_reader = "1.0.1";
 
   /*--- Store MPI rank. ---*/
@@ -109,12 +109,12 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   /*--- check version_lut ---*/
   if (version_lut.compare(version_reader) != 0)
-    SU2_MPI::Error("Version conflict between Dragon reader and Dragon library file.", CURRENT_FUNCTION);
+    SU2_MPI::Error("Version conflict between LUT reader and LUT library file.", CURRENT_FUNCTION);
 
   /*--- check header quantities ---*/
   if (n_points == 0 || n_triangles == 0 || n_variables == 0 || n_hull_points == 0)
     SU2_MPI::Error(
-        "Number of points, triangles, hull points, or variables in Dragon "
+        "Number of points, triangles, hull points, or variables in lookup table "
         "library header is zero.",
         CURRENT_FUNCTION);
 
@@ -122,7 +122,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   if (n_variables != names_var.size())
     SU2_MPI::Error(
         "Number of read variables does not match number of "
-        "variables specified in Dragon "
+        "variables specified in lookup table "
         "library header.",
         CURRENT_FUNCTION);
 
@@ -167,7 +167,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   if (n_points != pointCounter - 1)
     SU2_MPI::Error(
         "Number of read points does not match number of points "
-        "specified in Dragon library header.",
+        "specified in lookup table library header.",
         CURRENT_FUNCTION);
 
   /*--- read connectivity ---*/
@@ -192,7 +192,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
         streamTriLine >> word;
 
-        /*--- Dragon table index starts with 1, convert to c++ indexing starting with 0: ---*/
+        /*--- lookup table index starts with 1, convert to c++ indexing starting with 0: ---*/
         triangles[triCounter][iPoint] = stol(word) - 1;
       }
     }
@@ -202,7 +202,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   if (n_triangles != triCounter - 1)
     SU2_MPI::Error(
         "Number of read triangles does not match number of points "
-        "specified in Dragon library header.",
+        "specified in lookup table library header.",
         CURRENT_FUNCTION);
 
   /*--- read hull points ---*/
@@ -224,7 +224,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
       streamHullLine >> word;
 
-      /*--- Dragon table indices start with 1, convert to c++ indexing starting with 0: ---*/
+      /*--- Lookup table indices start with 1, convert to c++ indexing starting with 0: ---*/
       hull[hullCounter] = stol(word) - 1;
     }
     hullCounter++;
@@ -233,7 +233,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   if (n_hull_points != hullCounter - 1)
     SU2_MPI::Error(
         "Number of read hull points does not match number of points "
-        "specified in Dragon library header.",
+        "specified in lookup table library header.",
         CURRENT_FUNCTION);
 
   file_stream.close();
