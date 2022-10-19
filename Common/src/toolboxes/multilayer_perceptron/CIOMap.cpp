@@ -48,7 +48,7 @@ MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*MLP_collection, vector<string> &inputs, v
         MLP_collection->Check_Use_of_Outputs(outputs, this);
 
         // Check wether there are any duplicates in the MLP outputs
-        MLP_collection->Check_Duplicate_Outputs(outputs, this);
+        //MLP_collection->Check_Duplicate_Outputs(outputs, this);
     }
 }
 void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN*MLP_collection, vector<string> &inputs, vector<string> &outputs){

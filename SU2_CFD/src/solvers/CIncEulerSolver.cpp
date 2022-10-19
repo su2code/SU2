@@ -30,6 +30,7 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/fluid/CMLPGas.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -330,6 +331,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
+    case MLP_GAS:
+      auxFluidModel = new CMLPGas(config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = auxFluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
+
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
@@ -489,6 +497,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
           fluidModel->SetCpModel(config);
         }
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
+
+      case MLP_GAS:
+        fluidModel = new CMLPGas(config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 

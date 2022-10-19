@@ -223,6 +223,7 @@ private:
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
+  string MLP_filename;          /*!< \brief Filename specifying an MLP-driven fluid model. */
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
@@ -4841,6 +4842,12 @@ public:
    * \return Name of the input file for the specified actuator disk.
    */
   string GetActDisk_FileName(void) const { return ActDisk_FileName; }
+
+  /*!
+   * \brief Get name of the input file for the fluid model multi-layer perceptron collection.
+   * \return Name of the input file for the specified MLP collection file.
+   */
+  string GetMLP_FileName(void) const { return MLP_filename; }
 
   /*!
    * \brief Get the tolerance used for matching two points on a specified inlet

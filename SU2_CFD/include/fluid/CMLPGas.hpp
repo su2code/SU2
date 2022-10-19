@@ -1,5 +1,5 @@
 /*!
- * \file CMLPGas_Template.hpp
+ * \file CMLPGas.hpp
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.Bunschoten
@@ -31,17 +31,18 @@
 #include "CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 /*!
- * \class CMLPGas_Template
+ * \class CMLPGas
  * \brief Template class for fluid model definition using multi-layer perceptrons for 
  * fluid dynamic state definition.
  * \author: E.Bunschoten.
  */
-class CMLPGas_Template : public CFluidModel {
+class CMLPGas : public CFluidModel {
  protected:
   su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
-  bool ComputeEntropy{true};      /*!< \brief Whether or not to compute entropy. */
+
+  su2double R_u = 8.31451;
 
   string ann_input_filename;
   MLPToolbox::CLookUp_ANN * lookup_ann;
@@ -69,9 +70,9 @@ class CMLPGas_Template : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CMLPGas_Template(su2double gamma, su2double R, bool CompEntropy = true);
+  CMLPGas(const CConfig* config);
 
-  ~CMLPGas_Template();
+  ~CMLPGas();
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.

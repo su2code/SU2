@@ -30,7 +30,7 @@ using namespace std;
 
 MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in){
     filename = filename_in;
-};
+}
 
 void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
     ifstream file_stream;
@@ -109,7 +109,6 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
       /* Read MLP input variable names */
       if(line.compare("[input names]") == 0){
         found_input_names = true;
-        unsigned short j{1};
         getline(file_stream, line);
         while(line.compare("") != 0){
           input_names.push_back(line);

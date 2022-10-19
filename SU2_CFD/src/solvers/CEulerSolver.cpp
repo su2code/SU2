@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CMLPGas.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -857,6 +858,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
+    
+    case MLP_GAS:
+
+      auxFluidModel = new CMLPGas(config);
+
+      break;
 
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
@@ -1069,6 +1076,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
+        break;
+
+      case MLP_GAS:
+        FluidModel[thread] = new CMLPGas(config);
+
         break;
     }
 
