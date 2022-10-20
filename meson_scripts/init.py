@@ -148,17 +148,18 @@ def submodule_status(path, sha_commit):
       subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
       # to update CoolProp external libraries
     if sha_commit == '0ce42fcf3bb2c373512bc825a4f0c1973a78f307':
+      print ("Current working dir : %s" % os.getcwd())
       print('update CoolProp')
-      subprocess.run(['pwd'], shell=True)
       absolute_path = os.getcwd()
       relative_path = "subprojects/CoolProp"
       full_path = os.path.join(absolute_path, relative_path)
       os.chdir(full_path)
+      print ("Current working dir : %s" % os.getcwd())
       subprocess.run(['git', 'submodule', 'init'])
       subprocess.run(['git', 'submodule', 'update'])
       print('CoolProp updated')
       os.chdir(absolute_path)
-      subprocess.run(['pwd'], shell=True)
+      print ("Current working dir : %s" % os.getcwd())
     else:
       print('')
     # Check that the SHA tag stored in this file matches the one stored in the git index
