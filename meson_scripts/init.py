@@ -161,7 +161,7 @@ def submodule_status(path, sha_commit):
       os.chdir(absolute_path)
       print ("Current working dir : %s" % os.getcwd())
     else:
-      print('')
+      print ("else: Current working dir : %s" % os.getcwd())
     # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
