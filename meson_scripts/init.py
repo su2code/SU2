@@ -123,20 +123,16 @@ def is_git_directory(path = '.'):
      return False
   return p == 0
 
-
 def submodule_status(path, sha_commit):
-
   if not os.path.exists(path + os.path.sep + sha_commit):
 
     # Check the status of the submodule
     status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
-
     # The first character of the output indicates the status of the submodule
     # '+' : The submodule does not match the SHA-1 currently in the index of the repository
     # '-' : The submodule is not initialized
     # ' ' : Correct version of submodule is initialized
     status_indicator = status[0][0]
-
     if status_indicator == '+':
       # Write a warning that the sha tags do not match
       sys.stderr.write('WARNING: the currently checked out submodule commit in '
@@ -148,20 +144,16 @@ def submodule_status(path, sha_commit):
       subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
       # to update CoolProp external libraries
     if sha_commit == '0ce42fcf3bb2c373512bc825a4f0c1973a78f307':
-      print ("Current working dir : %s" % os.getcwd())
+      original_path = os.getcwd()
       print('update CoolProp')
-      absolute_path = os.getcwd()
+      absolute_path = sys.path[0]
       relative_path = "subprojects/CoolProp"
       full_path = os.path.join(absolute_path, relative_path)
       os.chdir(full_path)
-      print ("Current working dir : %s" % os.getcwd())
       subprocess.run(['git', 'submodule', 'init'])
       subprocess.run(['git', 'submodule', 'update'])
       print('CoolProp updated')
-      os.chdir(absolute_path)
-      print ("Current working dir : %s" % os.getcwd())
-    else:
-      print ("else: Current working dir : %s" % os.getcwd())
+      os.chdir(original_path)
     # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
