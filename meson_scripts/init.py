@@ -77,7 +77,7 @@ def init_submodules(method = 'auto'):
   alt_name_ninja = base_path + 'ninja'
   alt_name_mel = base_path + 'mel'
   alt_name_mpp = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
-  alt_name_coolprop = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'CoolProp'
+  alt_name_coolprop = cur_dir + os.path.sep + 'subprojects' + os.path.sep + 'CoolProp'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -150,8 +150,8 @@ def submodule_status(path, sha_commit):
       relative_path = "subprojects/CoolProp"
       full_path = os.path.join(absolute_path, relative_path)
       os.chdir(full_path)
-      subprocess.run(['git', 'submodule', 'init'])
-      subprocess.run(['git', 'submodule', 'update'])
+      subprocess.run(['git', 'submodule', 'init', path], check = True, cwd = sys.path[0])
+      subprocess.run(['git', 'submodule', 'update', path], check = True, cwd = sys.path[0])
       print('CoolProp updated')
       os.chdir(original_path)
     # Check that the SHA tag stored in this file matches the one stored in the git index
