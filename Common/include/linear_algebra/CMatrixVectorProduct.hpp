@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@
 
 /*!
  * \class CMatrixVectorProduct
+ * \ingroup SpLinSys
  * \brief Abstract base class for defining matrix-vector products
  * \author J. Hicken.
  *
@@ -63,6 +64,7 @@ CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 
 /*!
  * \class CSysMatrixVectorProduct
+ * \ingroup SpLinSys
  * \brief Specialization of matrix-vector product that uses CSysMatrix class
  */
 template<class ScalarType>

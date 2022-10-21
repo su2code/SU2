@@ -2,7 +2,7 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -214,8 +214,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -227,8 +227,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       cg_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
@@ -358,8 +357,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Allocate if not allocated yet ---*/
 
   if (W.size() <= m || (flexible && Z.size() <= m)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       W.resize(m+1);
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       if (flexible) {
@@ -367,8 +366,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
         for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       }
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Define various arrays. In parallel, each thread of each rank has and works
@@ -549,8 +547,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -564,8 +562,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       bcg_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
@@ -715,8 +712,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -727,8 +724,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
       smooth_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
@@ -870,12 +866,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     TapeActive = AD::getGlobalTape().isActive();
 
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       AD::StartExtFunc(false, false);
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     AD::StopRecording();
 #endif
@@ -972,9 +967,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     /*--- Start recording if it was stopped for the linear solver ---*/
 #ifdef CODI_REVERSE_TYPE
     AD::StartRecording();
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
       AD::FuncHelper->addUserData(&LinSysRes);
       AD::FuncHelper->addUserData(&LinSysSol);
@@ -983,15 +978,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       AD::FuncHelper->addUserData(config);
       AD::FuncHelper->addUserData(this);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER
-    AD::EndExtFunc();
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
 #endif
   }
 
@@ -1057,29 +1048,32 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Solve the system ---*/
 
+  /*--- Local variable to prevent all threads from writing to a shared location (this->Residual). ---*/
+  ScalarType residual = 0.0;
+
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case PASTIX_LDLT : case PASTIX_LU:
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
-      Residual = 1e-20;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
@@ -1091,8 +1085,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   delete precond;
 
   SU2_OMP_MASTER
-  Iterations = IterLinSol;
-  END_SU2_OMP_MASTER
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  } END_SU2_OMP_MASTER
 
   return IterLinSol;
 

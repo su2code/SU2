@@ -2,7 +2,7 @@
  * \file CSlidingMesh.hpp
  * \brief Sliding mesh interpolation.
  * \author H. Kline
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
  * \brief Sliding mesh approach.
  * \note The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces
  *       for finite-volume discritization of conservation laws" 2015, Comp. Fluids, 120, pp 126-139
+ * \ingroup Interfaces
  */
 class CSlidingMesh final : public CInterpolator {
 public:

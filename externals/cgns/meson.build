@@ -1,13 +1,22 @@
-if build_machine.system() == 'windows' or meson.get_compiler('cpp').get_id() == 'intel'
-  cgns_default_warnings = []
-else
-  cgns_default_warnings = ['-Wno-unused-result',
-                           '-Wno-unused-parameter',
-                           '-Wno-unused-variable',
-                           '-Wno-unused-but-set-variable',
-                           '-Wno-sign-compare',
-                           '-Wno-error=unused-function',
-                           '-Wno-pedantic']
+cgns_default_warnings = []
+
+if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() != 'intel'
+  desired_warnings = ['-Wno-unused-result',
+                      '-Wno-unused-parameter',
+                      '-Wno-unused-variable',
+                      '-Wno-unused-but-set-variable',
+                      '-Wno-sign-compare',
+                      '-Wno-error=unused-function',
+                      '-Wno-pedantic',
+                      '-Wno-error=stringop-truncation',
+                      '-Wno-stringop-truncation',
+                      '-Wno-error=absolute-value',
+                      '-Wno-error=class-memaccess']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      cgns_default_warnings += flag
+    endif
+  endforeach
 endif
 
 subdir('hdf5')

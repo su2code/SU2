@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -613,11 +613,13 @@ MakePair("ONESPECIES", ONESPECIES)
  * \brief types of coefficient transport model
  */
 enum class TRANSCOEFFMODEL {
+  SUTHERLAND,
   WILKE,
   GUPTAYOS,
   CHAPMANN_ENSKOG
 };
 static const MapType<std::string, TRANSCOEFFMODEL> TransCoeffModel_Map = {
+MakePair("SUTHERLAND", TRANSCOEFFMODEL::SUTHERLAND)
 MakePair("WILKE", TRANSCOEFFMODEL::WILKE)
 MakePair("GUPTA-YOS", TRANSCOEFFMODEL::GUPTAYOS)
 MakePair("CHAPMANN-ENSKOG", TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
@@ -676,6 +678,18 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
 };
 
 /*!
+ * \brief Types of Mixing viscosity model
+ */
+enum class MIXINGVISCOSITYMODEL {
+  WILKE,    /*!< \brief Wilke mixing viscosity model. */
+  DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
+};
+static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
+};
+
+/*!
  * \brief Types of thermal conductivity model
  */
 enum class CONDUCTIVITYMODEL {
@@ -707,13 +721,15 @@ static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 enum class DIFFUSIVITYMODEL {
   CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
   CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
-  UNITY_LEWIS,          /*!< \brief Unity Lewis model */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
+  CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
+  MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
 };
 
 /*!
@@ -1163,11 +1179,11 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  */
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
-  PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+  SPECIES_TRANSPORT,    /*!< \brief Passive scalar transport model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
-  MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
+  MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
 };
 
 /*!

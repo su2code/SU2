@@ -1,17 +1,25 @@
-if target_machine.system() == 'windows' or meson.get_compiler('c').get_id() == 'intel'
-  hdf5_default_warnings = []
-else
-  hdf5_default_warnings = ['-Wno-unused-result',
-                           '-Wno-unused-parameter',
-                           '-Wno-unused-variable',
-                           '-Wno-unused-but-set-variable',
-                           '-Wno-sign-compare',
-                           '-Wno-stringop-overflow',
-                           '-Wno-discarded-qualifiers',
-                           '-Wno-error=maybe-uninitialized',
-                           '-Wno-error=unused-function',
-                           '-Wno-error=unused-label',
-                           '-Wno-pedantic']
+hdf5_default_warnings = []
+
+if target_machine.system() != 'windows' and meson.get_compiler('c').get_id() != 'intel'
+  desired_warnings = ['-Wno-unused-result',
+                      '-Wno-unused-parameter',
+                      '-Wno-unused-variable',
+                      '-Wno-unused-but-set-variable',
+                      '-Wno-sign-compare',
+                      '-Wno-stringop-overflow',
+                      '-Wno-error=discarded-qualifiers',
+                      '-Wno-error=maybe-uninitialized',
+                      '-Wno-error=unused-function',
+                      '-Wno-error=unused-label',
+                      '-Wno-pedantic',
+                      '-Wno-error=stringop-truncation',
+                      '-Wno-error=cast-function-type',
+                      '-Wno-stringop-truncation']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      hdf5_default_warnings += flag
+    endif
+  endforeach
 endif
 
 cc = meson.get_compiler('c')

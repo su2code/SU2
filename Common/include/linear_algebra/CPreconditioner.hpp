@@ -3,7 +3,7 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,9 @@
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
+
+/// \addtogroup SpLinSys
+/// @{
 
 /*!
  * \class CPreconditioner
@@ -353,3 +356,5 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
 
   return prec;
 }
+
+/// @}

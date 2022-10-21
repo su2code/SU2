@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,6 +45,7 @@ class COutput;
 
 /*!
  * \class CDriver
+ * \ingroup Drivers
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
@@ -785,6 +786,7 @@ public:
 
 /*!
  * \class CFluidDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
  */
@@ -857,6 +859,7 @@ public:
 
 /*!
  * \class CTurbomachineryDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
  */
@@ -910,6 +913,7 @@ public:
 
 /*!
  * \class CHBDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  */

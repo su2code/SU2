@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1055,12 +1055,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 #ifdef HAVE_MPI
       /*--- Once we have recv'd a message, get the source rank. ---*/
       int ind;
-      SU2_OMP_MASTER
-      SU2_MPI::Waitany(geometry->nPeriodicRecv,
-                       geometry->req_PeriodicRecv,
-                       &ind, &status);
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nPeriodicRecv, geometry->req_PeriodicRecv, &ind, &status);)
       source = status.MPI_SOURCE;
 #else
       /*--- For serial calculations, we know the rank. ---*/
@@ -1314,13 +1309,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_OMP_MASTER
-    SU2_MPI::Waitall(geometry->nPeriodicSend,
-                     geometry->req_PeriodicSend,
-                     MPI_STATUS_IGNORE);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nPeriodicSend, geometry->req_PeriodicSend, MPI_STATUS_IGNORE);)
 #endif
-    SU2_OMP_BARRIER
   }
 
   delete [] Diff;
@@ -1596,10 +1586,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
 
-      SU2_OMP_MASTER
-      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -1704,11 +1691,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_OMP_MASTER
-    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
-    SU2_OMP_BARRIER
   }
 
 }
@@ -1773,7 +1757,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      over time so that we do not get stuck in limit cycles, this is done
      on the fine grid and applied to all others. */
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
@@ -1832,9 +1816,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
       }
     }
-    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    } /* End safe global access, now all threads update the CFL number. */
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -1927,9 +1910,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         Avg_CFL_Local += myCFLSum;
       }
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* MPI reduction. */
         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
         SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
@@ -1937,8 +1919,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
   }
@@ -1949,7 +1930,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -2003,15 +1984,14 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) {
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -2046,8 +2026,7 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
@@ -2593,7 +2572,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -2741,8 +2720,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- It's necessary to communicate this information ---*/
 
@@ -3675,7 +3653,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::PASSIVE_SCALAR:
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";

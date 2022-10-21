@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4706,7 +4706,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
 
   /*--- Loop over all the elements ---*/
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     vector<vector<long> > elems(nPoint);
 
@@ -4720,8 +4720,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
     }
     nodes->SetElems(elems);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Loop over all the points ---*/
 
@@ -7378,7 +7377,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     END_SU2_OMP_FOR
   }
 
-  SU2_OMP_MASTER { /*--- The following is difficult to parallelize with threads. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { /*--- The following is difficult to parallelize with threads. ---*/
 
   su2double my_DomainVolume = 0.0;
   for (auto iElem = 0ul; iElem < nElem; iElem++) {
@@ -7511,8 +7510,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Check if there is a normal with null area ---*/
   SU2_OMP_FOR_STAT(1024)
