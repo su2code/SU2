@@ -40,18 +40,17 @@
  * \brief Child class for defining fluid model from CoolProp library.
  * \author: P.Yan
  */
-
 class CCoolProp final : public CFluidModel {
-    protected:
-        su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-        su2double Gas_Constant{0.0};    /*!< \brief specific Gas Constant. */
-        su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
-        su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
+ private:
+  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
+  su2double Gas_Constant{0.0};    /*!< \brief specific Gas Constant. */
+  su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
+  su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
 #ifdef USE_COOLPROP
-        std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+  std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
 #endif
 
-public:
+ public:
 /*!
  * \brief Constructor of the class.
  */
@@ -119,28 +118,28 @@ void SetTDState_Ps(su2double P, su2double s) override;
 void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
 #endif
 
-/*!
-     * \brief Get the value of the critical pressure.
-     * \return Critical pressure.
-*/
-su2double GetPressure_Critical(void) const { return Pressure_Critical; }
+ /*!
+  * \brief Get the value of the critical pressure.
+  * \return Critical pressure.
+  */
+  su2double GetPressure_Critical(void) const { return Pressure_Critical; }
 
-/*!
-     * \brief Get the value of the critical temperature.
-     * \return Critical temperature.
-*/
-su2double GetTemperature_Critical(void) const { return Temperature_Critical; }
+  /*!
+  * \brief Get the value of the critical temperature.
+  * \return Critical temperature.
+  */
+  su2double GetTemperature_Critical(void) const { return Temperature_Critical; }
 
-/*!
-     * \brief Get the value of specific gas constant.
-     * \return Value of the constant: Gamma
-*/
-su2double GetGas_Constant(void) const { return Gas_Constant; }
+ /*!
+  * \brief Get the value of specific gas constant.
+  * \return Value of the constant: Gamma
+  */
+  su2double GetGas_Constant(void) const { return Gas_Constant; }
 
-/*!
-     * \brief Get the value of specific gas constant.
-     * \return Value of the constant: Gamma
-*/
-su2double GetGamma(void) const { return Gamma; }
+ /*!
+  * \brief Get the value of specific gas constant.
+  * \return Value of the constant: Gamma
+  */
+  su2double GetGamma(void) const { return Gamma; }
 
 };
