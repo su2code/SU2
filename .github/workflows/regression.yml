@@ -45,6 +45,8 @@ jobs:
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
+      - name: get-cmake
+        uses: lukka/get-cmake@v3.24.2
       - name: Cache Object Files
         uses: actions/cache@v3
         with:

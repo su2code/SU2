@@ -153,8 +153,9 @@ def submodule_status(path, sha_commit):
       print(full_path)
       subprocess.run(['git', 'submodule', 'init'])
       subprocess.run(['git', 'submodule', 'update'])
-      print('CoolProp updated')
+      print(original_path)
       os.chdir(original_path)
+      print('CoolProp updated')
     # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
