@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNEMONumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CUpwSLAU2_NEMO
@@ -41,7 +41,7 @@ private:
   su2double sq_vel, Proj_ModJac_Tensor_ij;
   su2double aF, aux_slau, Chi, f_rho, Mach_tilde;
   su2double Vn_Mag, Vn_MagL, Vn_MagR, BetaL, BetaR;
-
+  su2double *Ys_avg, *mF_s;
 public:
 
   /*!

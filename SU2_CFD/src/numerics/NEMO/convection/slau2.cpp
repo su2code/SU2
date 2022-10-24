@@ -59,7 +59,7 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
       e_ve_i, e_ve_j, mL, mR, mF, pF;
 
   /*--- Compute geometric quantities ---*/
-  Area = GeomtryToolbox::Norm(nDim, Normal);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -90,8 +90,8 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   ProjVel_i = GeometryToolbox::DotProduct(nDim, u_i, UnitNormal);
   ProjVel_j = GeometryToolbox::DotProduct(nDim, u_j, UnitNormal);
   
-  sq_vel_i = GeometryToolbox::SquaredNorm(nDim,u_i);
-  sq_vel_j = GeometryToolbox::SquaredNorm(nDim,u_j);
+  su2double sq_vel_i = GeometryToolbox::SquaredNorm(nDim,u_i);
+  su2double sq_vel_j = GeometryToolbox::SquaredNorm(nDim,u_j);
 
   /*--- Calculate interface soundspeed and L/R Mach numbers ---*/
   aF = 0.5*(a_i + a_j);
@@ -113,9 +113,9 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
 
   /*--- Species extension mass flux function ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
-    Ys_avg[iSpecies] = 0.5 * (rhos_i[iSpecies]/rho_i+
-                              rhos_j[iSpecies]/rho_j);
-    mF_s[iSpecies]  = Ys_avg[iSpecies]*mF;
+    su2double Ys_i = rhos_i[iSpecies]/rho_i; 
+    su2double Ys_j = rhos_j[iSpecies]/rho_j;
+    mF_s[iSpecies]  = 0.5*mF*(Ys_i+Ys_j);
   }
 
   /*--- Pressure function ---*/
@@ -129,11 +129,10 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   
   //Roe Dissipation not implemented
   Dissipation_ij = 1.0;
-
+  bool slau2 = true;
+  su2double pressure = 0;
   if (!slau2) pressure += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(P_i+P_j);
   else        pressure += Dissipation_ij*sqrt(0.5*(sq_vel_i+sq_vel_j))*(BetaL+BetaR-1.0)*aF*0.5*(rho_i+rho_j);
-
-
 
   //TODO this could be dumb.....should just be mF_s???
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
@@ -154,6 +153,5 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   if (implicit){
     SU2_MPI::Error("NEMO SLAU2: Impicit not operational.", CURRENT_FUNCTION);
   }
-
   return ResidualType<>(Flux, nullptr, nullptr);
 }

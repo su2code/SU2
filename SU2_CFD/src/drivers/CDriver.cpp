@@ -1905,15 +1905,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
             case SLAU:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwSLAU_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, roe_low_dissipation);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwSLAU_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config, false);
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwSLAU_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwSLAU_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 
             case SLAU2:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwSLAU2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config, roe_low_dissipation);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwSLAU2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config, false);
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwSLAU2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwSLAU2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 
