@@ -153,8 +153,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   else
     AD::StartNoSharedReading();
 
-  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
-
   su2double **Jacobian_i_correction, **Jacobian_j_correction;
   Jacobian_i_correction = new su2double*[nVar];
   Jacobian_j_correction = new su2double*[nVar];
@@ -221,8 +219,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            Project_Grad_i = 0.0;
-            Project_Grad_j = 0.0;
+            su2double Project_Grad_i = 0.0;
+            su2double Project_Grad_j = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
               Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
@@ -268,6 +266,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Convective flux ---*/
+      su2double EdgeMassFlux = 0.0;
       if (bounded_scalar) {
         EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
         numerics->SetMassFlux(EdgeMassFlux);
@@ -288,13 +287,16 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
       if(bounded_scalar){
         for(iVar=0; iVar<nVar; iVar++){
-          FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
-          FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
+          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+          su2double FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
 
           LinSysRes(iPoint, iVar) -= FluxCorrection_i;
           LinSysRes(jPoint, iVar) += FluxCorrection_j;
-          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);;
-          Jacobian_j_correction[iVar][iVar] = min(0.0, EdgeMassFlux);
+
+          //Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);;
+          //Jacobian_j_correction[iVar][iVar] = min(0.0, EdgeMassFlux);
+          Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
+          Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
         }
       }if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i_correction, Jacobian_j_correction);
       /*--- Viscous contribution. ---*/

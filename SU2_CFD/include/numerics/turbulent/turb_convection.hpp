@@ -100,7 +100,7 @@ private:
   using Base::ScalarVar_j;
   using Base::implicit;
   using Base::idx;
-  using Base::bounded_scalar;
+
   /*!
    * \brief Adds any extra variables to AD
    */
@@ -114,27 +114,17 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
-    if(bounded_scalar){
-      Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
-      Flux[1] = a0*ScalarVar_i[1] + a1*ScalarVar_j[1];
-    }else{
-      Flux[0] = a0*V_i[idx.Density()]*ScalarVar_i[0] + a1*V_j[idx.Density()]*ScalarVar_j[0];
-      Flux[1] = a0*V_i[idx.Density()]*ScalarVar_i[1] + a1*V_j[idx.Density()]*ScalarVar_j[1];
-    }
+
+    Flux[0] = a0*V_i[idx.Density()]*ScalarVar_i[0] + a1*V_j[idx.Density()]*ScalarVar_j[0];
+    Flux[1] = a0*V_i[idx.Density()]*ScalarVar_i[1] + a1*V_j[idx.Density()]*ScalarVar_j[1];
+    
     if (implicit) {
-      if(bounded_scalar){
-        Jacobian_i[0][0] = a0/V_i[idx.Density()];    Jacobian_i[0][1] = 0.0;
-        Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0/V_i[idx.Density()];
 
-        Jacobian_j[0][0] = a1/V_j[idx.Density()];    Jacobian_j[0][1] = 0.0;
-        Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1/V_j[idx.Density()];
-      }else{
-        Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
-        Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
+      Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
 
-        Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
-        Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
-      }
+      Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
       
     }
   }
