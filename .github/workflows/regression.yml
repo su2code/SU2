@@ -45,8 +45,12 @@ jobs:
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
-      - name: actions-setup-cmake
-        uses: jwlawson/actions-setup-cmake@v1.13.0
+      - name: Setup cmake
+          uses: jwlawson/actions-setup-cmake@v1.13
+          with:
+            cmake-version: '3.16.x'
+      - name: Use cmake
+          run: cmake --version
       - name: Cache Object Files
         uses: actions/cache@v3
         with:
