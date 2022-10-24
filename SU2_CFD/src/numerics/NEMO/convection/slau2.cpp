@@ -38,7 +38,7 @@ CUpwSLAU2_NEMO::CUpwSLAU2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   mF_s   = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
-  Flux   = new su2double[nVar];
+  Flux   = new su2double [nVar];
 
 }
 
@@ -115,7 +115,9 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
     su2double Ys_i = rhos_i[iSpecies]/rho_i; 
     su2double Ys_j = rhos_j[iSpecies]/rho_j;
+    //cout <<Ys_i<<"    "<<Ys_j<<endl;
     mF_s[iSpecies]  = 0.5*mF*(Ys_i+Ys_j);
+    //cout <<mF_s[iSpecies]<<endl;
   }
 
   /*--- Pressure function ---*/
@@ -126,15 +128,26 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   if (fabs(mR) < 1.0) BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
   else if (mR >= 0 )  BetaR = 0.0;
   else                BetaR = 1.0;
-  
+ 
+
+  //cout <<"BetaL: "<<BetaL<<endl;
+  //cout <<"BetaR: "<<BetaR<<endl;
+
   //Roe Dissipation not implemented
   Dissipation_ij = 1.0;
   bool slau2 = true;
-  su2double pressure = 0;
-  if (!slau2) pressure += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(P_i+P_j);
-  else        pressure += Dissipation_ij*sqrt(0.5*(sq_vel_i+sq_vel_j))*(BetaL+BetaR-1.0)*aF*0.5*(rho_i+rho_j);
+  //cout <<"Dissipation_ij: "<<Dissipation_ij<<endl;
+  //cout <<"Chi: "<<Chi<<endl;
+
+  pF = 0.5*(P_i+P_j) + 0.5*(BetaL-BetaR)*(P_i-P_j);
+  if (!slau2) pF += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(P_i+P_j);
+  else        pF += Dissipation_ij*sqrt(0.5*(sq_vel_i+sq_vel_j))*(BetaL+BetaR-1.0)*aF*0.5*(rho_i+rho_j);
 
   //TODO this could be dumb.....should just be mF_s???
+  //cout <<"MassFlux: "<<mF<<endl;
+  //cout <<"DissFlux: "<<fabs(mF)<<endl;
+  //cout <<"Pressure: "<<pF<<endl;
+  
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
     Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
                      0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
