@@ -6705,10 +6705,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
 
-    if(Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES &&
-       Kind_Solver != MAIN_SOLVER::FEM_RANS  && Kind_Solver != MAIN_SOLVER::FEM_LES &&
-       Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_EULER && Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_NS &&
-       Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_RANS) {
+    if (Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES &&
+        Kind_Solver != MAIN_SOLVER::FEM_RANS  && Kind_Solver != MAIN_SOLVER::FEM_LES &&
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_EULER && Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_NS &&
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_RANS) {
       if (!fea){
         switch (Kind_Gradient_Method_Recon) {
           case GREEN_GAUSS: cout << "Gradient for upwind reconstruction: Green-Gauss." << endl; break;
@@ -6726,7 +6726,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       }
     }
 
-    if(Kind_Solver == MAIN_SOLVER::FEM_EULER || Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES ||
+    if (Kind_Solver == MAIN_SOLVER::FEM_EULER || Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES ||
        Kind_Solver == MAIN_SOLVER::FEM_RANS  || Kind_Solver == MAIN_SOLVER::FEM_LES ||
        Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_EULER || Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_NS ||
        Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_RANS) {
