@@ -914,6 +914,14 @@ def main():
     edge_PPR.test_vals = [-5.400790, 0.739723, -0.000035, 0.000000]
     test_list.append(edge_PPR)
 
+    # Rarefaction Q1D nozzke coolprop_nozzle
+    coolprop_nozzle           = TestCase('coolprop_nozzle')
+    coolprop_nozzle.cfg_dir   = "nicf/coolprop"
+    coolprop_nozzle.cfg_file  = "coolprop_nozzle.cfg"
+    coolprop_nozzle.test_iter = 100
+    coolprop_nozzle.test_vals = [-4.301640, -4.555290, 3.352195, 0.000000, 0.000000]
+    test_list.append(coolprop_nozzle)
+
     ######################################
     ### Turbomachinery                 ###
     ######################################
