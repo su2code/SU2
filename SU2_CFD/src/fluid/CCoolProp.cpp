@@ -29,10 +29,7 @@
 //#ifdef USE_COOLPROP
 
 CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
-  std::vector<std::string> fluid_name(1);
-  std::cout<<"fluid_names size "<<fluid_name.size()<<endl;
-  fluid_name[0] = fluidname;
-  fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluid_name));
+  fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
   Gas_Constant = fluid_entity->gas_constant()/fluid_entity->molar_mass();
   Pressure_Critical = fluid_entity->p_critical();
   Temperature_Critical = fluid_entity->T_critical();
@@ -40,6 +37,7 @@ CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
 }
 
 void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
+  //cout<<"p "<<Pressure<<"Pc "<<Pressure_Critical<<"T "<<Temperature<<"Tc"<<Temperature_Critical<<endl;
   Density = rho;
   StaticEnergy = e;
   fluid_entity->update(CoolProp::DmassUmass_INPUTS, Density, StaticEnergy);
@@ -48,17 +46,19 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   Gamma = Cp / Cv;
   Pressure = fluid_entity->p();
   Temperature = fluid_entity->T();
-  if (Pressure>Pressure_Critical || Temperature>Temperature_Critical){
-      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
-    }
-  else{
-      SoundSpeed2 = Gamma*Gas_Constant*Temperature;
-    }
   Entropy = fluid_entity->smass();
   dPdrho_e = fluid_entity->first_partial_deriv(CoolProp::iP, CoolProp::iDmass, CoolProp::iUmass);
   dPde_rho = fluid_entity->first_partial_deriv(CoolProp::iP, CoolProp::iUmass, CoolProp::iDmass);
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
+  if (Pressure>Pressure_Critical || Temperature>Temperature_Critical) {
+      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
+  }
+  else{
+      //SoundSpeed2 = Gamma * Pressure / Density;
+      SoundSpeed2 = dPdrho_e + Pressure / Density*Density*dPde_rho;
+  }
+
 }
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
