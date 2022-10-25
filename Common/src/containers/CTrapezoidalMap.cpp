@@ -177,7 +177,7 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
   bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
 
   /*--- if upper bound = 0, then use the range [0,1] ---*/
-  i_up =  max((unsigned long)(1), (unsigned long)(bounds.first - unique_bands_x.begin()));
+  i_up =  max<unsigned long>(1, bounds.first - unique_bands_x.begin());
   i_low = i_up-1;
 
   return make_pair(i_low, i_up);
