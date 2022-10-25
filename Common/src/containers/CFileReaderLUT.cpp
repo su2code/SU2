@@ -189,6 +189,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
       /*--- add next line to triangles ---*/
       for (int iPoint = 0; iPoint < 3; iPoint++) {
+
         streamTriLine >> word;
 
         /*--- lookup table index starts with 1, convert to c++ indexing starting with 0: ---*/
@@ -282,3 +283,4 @@ bool CFileReaderLUT::GetStrippedLine(ifstream& file_stream, string& line) const 
     /*--- return true if line is not empty, else return false ---*/
     return !line.empty();
   }
+
