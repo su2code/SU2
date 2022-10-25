@@ -3653,7 +3653,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::PASSIVE_SCALAR:
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
@@ -3670,7 +3670,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break; 
     }
 
-  /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     columnNames.push_back(columnName.str());
     columnValues.push_back(columnValue.str());
 

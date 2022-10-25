@@ -75,7 +75,7 @@ protected:
 
   //inline su2double GetSourceEnergy() { return source_energy; }
 
-  inline su2double GetMassDiffusivity() { return mass_diffusivity; }
+  inline su2double GetMassDiffusivity(int iVar) override { return mass_diffusivity; }
 
   inline su2double GetThermalConductivity() { return Kt; }
 

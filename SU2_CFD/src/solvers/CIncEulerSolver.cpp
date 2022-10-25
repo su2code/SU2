@@ -244,7 +244,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Pressure_Thermodynamic = 0.0, Tke_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Temperature_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Heat_Flux_Ref = 0.0, Energy_Ref= 0.0, Pressure_FreeStreamND = 0.0, Pressure_ThermodynamicND = 0.0, Density_FreeStreamND = 0.0,
-  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Specific_Heat_CvND = 0.0, Thermal_Expansion_CoeffND = 0.0,
+  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Thermal_Expansion_CoeffND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
@@ -276,6 +276,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
+  config->SetGas_Constant_Ref(1.0);
 
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -287,6 +289,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
+
     case CONSTANT_DENSITY:
 
       auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
@@ -434,10 +437,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
-
-  /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
-  Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+  Specific_Heat_CpND  = config->GetSpecific_Heat_CpND();
 
   Thermal_Expansion_CoeffND = config->GetThermal_Expansion_Coeff()*config->GetTemperature_Ref(); config->SetThermal_Expansion_CoeffND(Thermal_Expansion_CoeffND);
 
@@ -2617,7 +2617,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
-  const short flagEnergy  = (!energy);
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2669,7 +2668,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
 
-      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
+      for (iVar = 0; iVar < nVar-!energy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (second_order)
@@ -2731,7 +2730,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-        for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
+        for (iVar = 0; iVar < nVar-!energy; iVar++)
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
@@ -2770,7 +2769,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Cp = nodes->GetSpecificHeatCp(iPoint);
           V2U(Density, Cp, V_time_n, U_time_n);
 
-          for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
+          for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
         END_SU2_OMP_FOR
@@ -2816,7 +2815,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
+      for (iVar = 0; iVar < nVar-!energy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (second_order)
@@ -2848,7 +2847,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   su2double *V_outlet = nullptr, Velocity[3], MassFlow,
-  Velocity2, Density, Area, AxiFactor;
+  Velocity2, Density, Area;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   su2double Vector[MAXNDIM] = {0.0};
@@ -2901,20 +2900,18 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-            AxiFactor = 0.0; 
+            su2double AxiFactor = 1.0; 
             if (axisymmetric) {
               if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
               else {
                 for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0){
-                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint,1);
+                  if (geometry->nodes->GetVertex(jPoint,iMarker) >= 0) {
+                    AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
                   }
                 }
               }
-            } else {
-              AxiFactor = 1.0;
-            }
+            } 
 
             V_outlet = nodes->GetPrimitive(iPoint);
 

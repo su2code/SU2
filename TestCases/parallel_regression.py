@@ -82,11 +82,11 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_dir   = "nonequilibrium/viscous"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, 1.255761, -3.208360, -0.016014, 0.093462, 32634.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
@@ -99,6 +99,29 @@ def main():
     #viscwedge_mpp.new_output = True
     #test_list.append(viscwedge_mpp)
 
+    # Viscous single wedge - super catalytic walls
+    super_cat           = TestCase('super_cat')
+    super_cat.cfg_dir   = "nonequilibrium/viscous"
+    super_cat.cfg_file  = "super_cat.cfg"
+    super_cat.test_iter = 10
+    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
+    super_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    super_cat.timeout   = 1600
+    super_cat.new_output = True
+    super_cat.tol       = 0.00001
+    test_list.append(super_cat)
+
+    # Viscous single wedge - partially catalytic walls
+    partial_cat           = TestCase('partial_cat')
+    partial_cat.cfg_dir   = "nonequilibrium/viscous"
+    partial_cat.cfg_file  = "partial_cat.cfg"
+    partial_cat.test_iter = 10
+    partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
+    partial_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    partial_cat.timeout   = 1600
+    partial_cat.new_output = True
+    partial_cat.tol       = 0.00001
+    test_list.append(partial_cat)
 
     ##########################
     ### Compressible Euler ###
@@ -152,7 +175,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
-    polar_naca0012.test_vals_aarch64 = [-2.365216, 3.051488, 0.010353, 0.008594]
+    polar_naca0012.test_vals_aarch64 = [-2.936433, 2.478784, 0.005113, 0.008684]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     test_list.append(polar_naca0012)
 
@@ -223,7 +246,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.492870, -7.672494, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.492934, -7.673424, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.492842, -7.672800, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -571,7 +594,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
     turbmod_sa_neg_rae2822.test_vals         = [-1.374695, 1.976506, 1.898195, 4.831133, 1.187310, 0.426019, -86764]
-    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572, -87762]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.347530, 1.439078, 1.306846, -1.928774, 1.480543, 0.571601, -91503]
     turbmod_sa_neg_rae2822.new_output = True
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -734,7 +757,7 @@ def main():
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
     turb_naca0012_2c.test_vals         = [-5.483323, 0.968820, 0.304757, -0.113468]
-    turb_naca0012_2c.test_vals_aarch64 = [-5.483337, 0.968818, 0.304518, -0.113538]
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483345, 0.968812, 0.305213, -0.113317]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -751,7 +774,7 @@ def main():
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
     turb_naca0012_p1c1.test_vals         = [-5.128867, 1.077141, 0.586532, -0.047632]
-    turb_naca0012_p1c1.test_vals_aarch64 = [-5.129768, 1.077086, 0.585381, -0.047974]
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.130279, 1.076643, 0.587076, -0.047445]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -760,7 +783,7 @@ def main():
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
     turb_naca0012_p1c2.test_vals         = [-5.554659, 0.943705, 0.399234, -0.095799]
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554700, 0.943679, 0.399796, -0.095762]
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554645, 0.943709, 0.398620, -0.096021]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -1317,7 +1340,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.484286, -4.583959, -4.581872, -5.696027, -0.069058, -5.629894, 5.000000, -1.654603, 5.000000, -4.863218, 5.000000, -1.175041, 0.000429, 0.000409, 0.000020, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [-5.476961, -4.584495, -4.579154, -5.694241, -0.069527, -5.630550, 5.000000, -1.667301, 5.000000, -4.865917, 5.000000, -1.168657, 0.000426, 0.000405, 0.000020, 0.000000]
     species2_primitiveVenturi_mixingmodel.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
@@ -1326,10 +1349,34 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.157644, -4.362599, -4.283856, -5.463200, 0.081487, -5.318960, 5.000000, -2.004278, 5.000000, -5.185927, 5.000000, -1.245596, 2.408977, 0.958168, 0.605425, 0.845383]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.418875, -4.024662, -4.346220, -5.466040, 0.440294, -4.683778, 5.000000, -1.817254, 5.000000, -5.301984, 5.000000, -1.725507, 2.286795, 0.971651, 0.607234, 0.707910]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
-
+    
+    # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg')
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.123363, -4.997746, -4.889084, -7.380977, 2.465133, -5.638690, 30.000000, -5.717977, 12.000000, -8.166324, 10.000000, -8.597003, 2.084537, 1.000000, 0.600000, 0.484537]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.timeout   = 1600
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
+    
+    # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg')
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.729212, -5.302555, -5.193895, -8.384709, 2.160314, -5.244528, 30.000000, -5.717946, 12.000000, -8.166180, 10.000000, -8.597086, 2.084538, 1.000000, 0.600000, 0.484538]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.timeout   = 1600
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
+    
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"

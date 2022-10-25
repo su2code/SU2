@@ -68,7 +68,11 @@ template <class FlowIndices>
 class CSourceAxisymmetric_Species : public CSourceBase_Species {
  protected:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
-  bool implicit;
+  const bool implicit;
+  const bool viscous;
+  const bool turbulence;
+  const bool incompressible;
+  const su2double Sc_t;
 
  public:
   /*!

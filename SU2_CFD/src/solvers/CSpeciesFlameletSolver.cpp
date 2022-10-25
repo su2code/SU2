@@ -230,7 +230,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver
 
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/  
     for(auto i_scalar = 0u; i_scalar < config->GetNScalars(); ++i_scalar){
-      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), i_scalar);
+      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
     }
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);

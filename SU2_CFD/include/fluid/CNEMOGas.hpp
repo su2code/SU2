@@ -84,6 +84,8 @@ protected:
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
 
+  su2matrix<int> CatRecombTable;         /*!< \brief Table for catalytic wall recombination pairs. */
+
 public:
 
   /*!
@@ -258,4 +260,10 @@ public:
    * \brief Get species formation enthalpy.
    */
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;
+
+  /*!
+   * \brief Get catalytic wall recombination indices and constants.
+   */
+  inline const su2matrix<int>& GetCatalyticRecombination() const {return CatRecombTable;}
+
 };

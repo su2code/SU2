@@ -264,7 +264,6 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     }
   }
 
-
   if (!energy) {
     Flux[nDim+1] = 0.0;
     if (implicit) {
