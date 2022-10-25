@@ -175,25 +175,6 @@ class CFluidModel {
   virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(73,37); }
   virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(73,37); }
 
- 
-
-  /*!
-   * \brief Compute and return fluid mean molecular weight in kg/mol.
-   */
-  template <class Vector_t>
-  static su2double ComputeMeanMolecularWeight(int n_species, const Vector_t& molar_masses,
-                                              const su2double* val_scalars) {
-    su2double OneOverMeanMolecularWeight = 0.0;
-    su2double val_scalars_sum = 0.0;
-
-    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++) {
-      OneOverMeanMolecularWeight += val_scalars[i_scalar] / (molar_masses[i_scalar] / 1000);
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[n_species - 1] / 1000);
-    return 1 / OneOverMeanMolecularWeight;
-  }
-
   /*!
    * \brief Get fluid dynamic viscosity.
    */

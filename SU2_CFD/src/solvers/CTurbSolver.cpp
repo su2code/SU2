@@ -257,7 +257,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        
+
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }
