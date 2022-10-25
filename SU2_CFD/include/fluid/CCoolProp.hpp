@@ -42,10 +42,11 @@
  */
 class CCoolProp final : public CFluidModel {
  private:
-  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gas_Constant{0.0};    /*!< \brief specific Gas Constant. */
+  su2double Gamma{1.4};           /*!< \brief Ratio of Specific Heats. */
+  su2double Gas_Constant{297};    /*!< \brief specific Gas Constant. */
   su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
   su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
+  su2double acentric_factor{0.0};      /*!< \brief acentric factor */
 #ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
 #endif
@@ -56,7 +57,7 @@ class CCoolProp final : public CFluidModel {
    */
   CCoolProp(string fluidname);
   
-#ifdef USE_COOLPROP
+//#ifdef USE_COOLPROP
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
@@ -112,7 +113,7 @@ class CCoolProp final : public CFluidModel {
    * \param[in] th2 - second thermodynamic variable (rho).
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
-#endif
+//#endif
 
   /*!
    * \brief Get the value of the critical pressure.
@@ -137,5 +138,4 @@ class CCoolProp final : public CFluidModel {
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
-
 };
