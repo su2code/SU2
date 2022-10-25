@@ -1,5 +1,5 @@
 /*!
- * \file SLAU2.cpp
+ * \file slau2.cpp
  * \brief Implementations of the SLAU2-family of schemes in NEMO.
  * \author W. Maier
  * \version 7.4.0 "Blackbird"
@@ -29,9 +29,9 @@
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwSLAU2_NEMO::CUpwSLAU2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-                               unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-                               CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                                config) {
+                                                             unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                                                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                             config) {
 
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
@@ -115,9 +115,7 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
     su2double Ys_i = rhos_i[iSpecies]/rho_i; 
     su2double Ys_j = rhos_j[iSpecies]/rho_j;
-    //cout <<Ys_i<<"    "<<Ys_j<<endl;
     mF_s[iSpecies]  = 0.5*mF*(Ys_i+Ys_j);
-    //cout <<mF_s[iSpecies]<<endl;
   }
 
   /*--- Pressure function ---*/
@@ -129,25 +127,15 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
   else if (mR >= 0 )  BetaR = 0.0;
   else                BetaR = 1.0;
  
-
-  //cout <<"BetaL: "<<BetaL<<endl;
-  //cout <<"BetaR: "<<BetaR<<endl;
-
   //Roe Dissipation not implemented
   Dissipation_ij = 1.0;
   bool slau2 = true;
-  //cout <<"Dissipation_ij: "<<Dissipation_ij<<endl;
-  //cout <<"Chi: "<<Chi<<endl;
 
   pF = 0.5*(P_i+P_j) + 0.5*(BetaL-BetaR)*(P_i-P_j);
   if (!slau2) pF += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(P_i+P_j);
   else        pF += Dissipation_ij*sqrt(0.5*(sq_vel_i+sq_vel_j))*(BetaL+BetaR-1.0)*aF*0.5*(rho_i+rho_j);
 
   //TODO this could be dumb.....should just be mF_s???
-  //cout <<"MassFlux: "<<mF<<endl;
-  //cout <<"DissFlux: "<<fabs(mF)<<endl;
-  //cout <<"Pressure: "<<pF<<endl;
-  
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
     Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
                      0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));

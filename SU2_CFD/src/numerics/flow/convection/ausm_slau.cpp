@@ -356,9 +356,6 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
 
   ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
   DissFlux = fabs(MassFlux);
-  //cout <<"MassFlux: "<<MassFlux<<endl;
-  //cout <<"DissFlux: "<<DissFlux<<endl;
-  //cout <<"Pressure: "<<Pressure<<endl;
 
   Flux[0] = MassFlux;
 
@@ -774,17 +771,11 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2doubl
   else if (mR >= 0)   BetaR = 0.0;
   else                BetaR = 1.0;
 
-
-  //cout <<"BetaL: "<<BetaL<<endl;
-  //cout <<"BetaR: "<<BetaR<<endl;
-
-
   if (slau_low_diss)
     Dissipation_ij = GetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, config);
   else
     Dissipation_ij = 1.0;
-  //cout <<"Dissipation_ij: "<<Dissipation_ij<<endl;
-  //cout <<"Chi: "<<Chi<<endl;
+
   pressure = 0.5*(Pressure_i+Pressure_j) + 0.5*(BetaL-BetaR)*(Pressure_i-Pressure_j);
 
   if (!slau2) pressure += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(Pressure_i+Pressure_j);

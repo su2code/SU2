@@ -29,14 +29,13 @@
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwSLAU_NEMO::CUpwSLAU_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-                             unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                              config) {
+                                                         unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                                                         CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                         config) {
 
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
   mF_s   = new su2double [nSpecies];
-  Ys_avg = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
   Flux   = new su2double [nVar];
@@ -48,7 +47,6 @@ CUpwSLAU_NEMO::~CUpwSLAU_NEMO(void) {
   delete [] rhos_i;
   delete [] rhos_j;
   delete [] mF_s;
-  delete [] Ys_avg;
   delete [] u_i;
   delete [] u_j;
   delete [] Flux;
@@ -61,10 +59,7 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
       e_ve_i, e_ve_j, mL, mR, mF, pF;
 
   /*--- Compute geometric quantities ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -84,28 +79,28 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
   h_i       = V_i[H_INDEX];   h_j       = V_j[H_INDEX];
   a_i       = V_i[A_INDEX];   a_j       = V_j[A_INDEX];
   rho_i     = V_i[RHO_INDEX]; rho_j     = V_j[RHO_INDEX];
-  e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
-  e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
 
-  /*--- Projected velocities ---*/
-  ProjVel_i = 0.0; ProjVel_j = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVel_i += u_i[iDim]*UnitNormal[iDim];
-    ProjVel_j += u_j[iDim]*UnitNormal[iDim];
+  e_ve_i  = 0; e_ve_j  = 0;
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
   }
 
-  /*--- Calculate L/R Mach numbers ---*/
+  /*--- Projected and squared velocities ---*/
+  ProjVel_i = GeometryToolbox::DotProduct(nDim, u_i, UnitNormal);
+  ProjVel_j = GeometryToolbox::DotProduct(nDim, u_j, UnitNormal);
+  
+  su2double sq_vel_i = GeometryToolbox::SquaredNorm(nDim,u_i);
+  su2double sq_vel_j = GeometryToolbox::SquaredNorm(nDim,u_j);
+
+  /*--- Calculate interface soundspeed and L/R Mach numbers ---*/
   aF = 0.5*(a_i + a_j);
   mL = ProjVel_i/a_i;
   mR = ProjVel_j/a_j;
 
   /*--- Smooth function of the local Mach number---*/
-  aux_slau = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    aux_slau += u_i[iDim]*u_i[iDim];
-    aux_slau += u_j[iDim]*u_j[iDim];
-  }
-  Mach_tilde = min(1.0, (1.0/aF) * sqrt(aux_slau/2.0));
+
+  Mach_tilde = min(1.0, (1.0/aF) * sqrt(0.5*(sq_vel_i+sq_vel_j)));
   Chi = pow((1.0 - Mach_tilde),2.0);
   f_rho = -max(min(mL,0.0),-1.0) * min(max(mR,0.0),1.0);
 
@@ -118,26 +113,22 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
 
   /*--- Species extension mass flux function ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
-    Ys_avg[iSpecies] = 0.5 * (rhos_i[iSpecies]/rho_i+
-                              rhos_j[iSpecies]/rho_j);
-    mF_s[iSpecies]  = Ys_avg[iSpecies]*mF;
+    su2double Ys_i = rhos_i[iSpecies]/rho_i; 
+    su2double Ys_j = rhos_j[iSpecies]/rho_j;
+    mF_s[iSpecies]  = 0.5*mF*(Ys_i+Ys_j);
   }
 
   /*--- Pressure function ---*/
 
   if (fabs(mL) < 1.0) BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
-  else {
-    if (mL >= 0) BetaL = 1.0;
-    else BetaL = 0.0;
-  }
-
+  else if (mL >= 0)   BetaL = 1.0;
+  else                BetaL = 0.0;
+  
   if (fabs(mR) < 1.0) BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
-  else {
-    if (mR >= 0 ) BetaR = 0.0;
-    else BetaR = 1.0;
-  }
-
-  //Dissipation not implemented TODO
+  else if (mR >= 0 )  BetaR = 0.0;
+  else                BetaR = 1.0;
+  
+  //Roe Dissipation not implemented
   Dissipation_ij = 1.0;
   pF = 0.5 * (P_i + P_j) + 0.5 * (BetaL - BetaR) * (P_i - P_j)
       + Dissipation_ij*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (P_i + P_j);
@@ -147,7 +138,6 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
     Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
                      0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
   }
-
   for (iDim = 0; iDim < nDim; iDim++) {
     Flux[nSpecies+iDim] = 0.5*(mF+fabs(mF)) * u_i[iDim];
     Flux[nSpecies+iDim]+= 0.5*(mF-fabs(mF)) * u_j[iDim] ;
