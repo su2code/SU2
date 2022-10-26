@@ -607,10 +607,10 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet, laminar_viscosity_inlet, Intensity, viscRatio, VelMag2, muT;
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-      density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
+      
       /*--- Obtain flow properties at inlet boundary node ---*/
 
+      density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
       laminar_viscosity_inlet = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
       Intensity = config->GetTurbulenceIntensity_FreeStream();
       viscRatio = config->GetTurb2LamViscRatio_FreeStream();
