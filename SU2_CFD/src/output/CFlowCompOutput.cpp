@@ -348,7 +348,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   SetVolumeOutputValue("CFL_NUMBER", iPoint, Node_Flow->GetLocalCFL(iPoint));
-  
+
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
@@ -356,7 +356,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
 
-  if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){
+  if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES ||
+      config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS || config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
 
@@ -393,7 +394,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     if (nDim == 2){
       SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
       SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
-      
+
       SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
       SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
       SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
