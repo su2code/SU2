@@ -615,14 +615,34 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
+      /*--- Obtain flow velocity vector at inlet boundary node ---*/
+
+      su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet, laminar_viscosity_inlet, Intensity, viscRatio, VelMag2, muT;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+      density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+      /*--- Obtain flow properties at inlet boundary node ---*/
+
+      laminar_viscosity_inlet = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+      Intensity = config->GetTurbulenceIntensity_FreeStream();
+      viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+      VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
+
       /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
       su2double Inlet_Vars[MAXNVAR];
-      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
+      Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * Intensity * Intensity);
+      Inlet_Vars[1] = density_inlet * Inlet_Vars[0] / (laminar_viscosity_inlet * viscRatio);
       if (config->GetInlet_Profile_From_File()) {
         Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
         Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
       }
+
+      /*--- Obtain eddy viscosity at inlet boundary node ---*/
+      muT = density_inlet * Inlet_Vars[0] / Inlet_Vars[1];
+
+      /*-- Set eddy viscosity at inlet boundary node*/
+      nodes->SetmuT(iPoint, muT);
 
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
