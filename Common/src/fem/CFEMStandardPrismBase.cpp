@@ -694,3 +694,49 @@ void CFEMStandardPrismBase::LocationAllPointsPrism(const vector<passivedouble> &
     }
   }
 }
+
+void CFEMStandardPrismBase::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the prism, which is 5. Reserve memory for the second
+        index afterwards. ---*/
+  const unsigned short nDOFsQuad     = (nPoly+1)*(nPoly+1);
+  const unsigned short nDOFsTriangle = (nPoly+1)*(nPoly+2)/2;
+  gridConnFaces.resize(5);
+
+  gridConnFaces[0].reserve(nDOFsTriangle);
+  gridConnFaces[1].reserve(nDOFsTriangle);
+  gridConnFaces[2].reserve(nDOFsQuad);
+  gridConnFaces[3].reserve(nDOFsQuad);
+  gridConnFaces[4].reserve(nDOFsQuad);
+
+  /*--- Loop over all the nodes of the prism and pick the correct
+        ones for the faces. ---*/
+  unsigned int ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      const unsigned short uppBoundI = nPoly - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
+        if(k == 0)         gridConnFaces[0].push_back(ii);
+        if(k == nPoly)     gridConnFaces[1].push_back(ii);
+        if(j == 0)         gridConnFaces[2].push_back(ii);
+        if(i == 0)         gridConnFaces[3].push_back(ii);
+        if((i+j) == nPoly) gridConnFaces[4].push_back(ii);
+      }
+    }
+  }
+
+  /*--- Make sure that the element is to the left of the faces. ---*/
+  const unsigned short n0 = 0;
+  const unsigned short n1 = nPoly;
+  const unsigned short n2 = nDOFsTriangle -1;
+  const unsigned short n3 = n0 + nDOFsTriangle*nPoly;
+  const unsigned short n4 = n1 + nDOFsTriangle*nPoly;
+  const unsigned short n5 = n2 + nDOFsTriangle*nPoly;
+
+  ChangeDirectionTriangleConn(gridConnFaces[0], n0, n1, n2);
+  ChangeDirectionTriangleConn(gridConnFaces[1], n3, n5, n4);
+  ChangeDirectionQuadConn(gridConnFaces[2], n0, n3, n4, n1);
+  ChangeDirectionQuadConn(gridConnFaces[3], n0, n2, n5, n3);
+  ChangeDirectionQuadConn(gridConnFaces[4], n1, n4, n5, n2);
+}

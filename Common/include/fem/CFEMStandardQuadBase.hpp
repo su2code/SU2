@@ -140,6 +140,14 @@ protected:
   void SubConnLinearElements(void);
 
   /*!
+   * \brief Function, which creates the connectivity of the linear sub-elements when the
+   *        high order element is split in such elements. The splitting is done for one face
+   *        w.r.t the volume. The output is stored in subConn1ForPlotting using node ID
+   *        available in gridConnFaces.
+   */
+  void SubConnLinearElementsFace(int val_faceID_Elem);
+
+  /*!
    * \brief Function, which carries out the tensor product C = A*B to obtain the
    *        volume data in the set of points determined by the arguments.
    * \param[in]  TPVolData - Function pointer to carry out the actual multiplication.
@@ -163,4 +171,10 @@ protected:
                                    ColMajorMatrix<su2double>           &C,
                                    const bool                          initZero,
                                    const CConfig                       *config);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };

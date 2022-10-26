@@ -237,3 +237,47 @@ void CFEMStandardHexBase::TensorProductVolumeDataHex(TPI3D                      
   if( config ) config->TensorProduct_Tock(timeGemm, 3, N, K, M);
 #endif
 }
+
+void CFEMStandardHexBase::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the hexahedron, which is 6. Reserve memory for the second
+        index afterwards. ---*/
+  const unsigned short nDOFsQuad = (nPoly+1)*(nPoly+1);
+  gridConnFaces.resize(6);
+
+  for(unsigned short i=0; i<6; ++i) gridConnFaces[i].reserve(nDOFsQuad);
+
+  /*--- Loop over all the nodes of the hexahedron and pick the correct
+        ones for the faces. ---*/
+  unsigned int ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      for(unsigned short i=0; i<=nPoly; ++i, ++ii) {
+        if(k == 0)     gridConnFaces[0].push_back(ii);
+        if(k == nPoly) gridConnFaces[1].push_back(ii);
+        if(j == 0)     gridConnFaces[2].push_back(ii);
+        if(j == nPoly) gridConnFaces[3].push_back(ii);
+        if(i == 0)     gridConnFaces[4].push_back(ii);
+        if(i == nPoly) gridConnFaces[5].push_back(ii);
+      }
+    }
+  }
+
+  /*--- Make sure that the element is to the left of the faces. ---*/
+  const unsigned short n0 = 0;
+  const unsigned short n1 = nPoly;
+  const unsigned short n2 = nDOFsQuad -1;
+  const unsigned short n3 = n2 - nPoly;
+  const unsigned short n4 = n0 + nDOFsQuad*nPoly;
+  const unsigned short n5 = n1 + nDOFsQuad*nPoly;
+  const unsigned short n6 = n2 + nDOFsQuad*nPoly;
+  const unsigned short n7 = n3 + nDOFsQuad*nPoly;
+
+  ChangeDirectionQuadConn(gridConnFaces[0], n0, n1, n2, n3);
+  ChangeDirectionQuadConn(gridConnFaces[1], n4, n7, n6, n5);
+  ChangeDirectionQuadConn(gridConnFaces[2], n0, n4, n5, n1);
+  ChangeDirectionQuadConn(gridConnFaces[3], n3, n2, n6, n7);
+  ChangeDirectionQuadConn(gridConnFaces[4], n0, n3, n7, n4);
+  ChangeDirectionQuadConn(gridConnFaces[5], n1, n5, n6, n2);
+}

@@ -90,6 +90,14 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
       derLegBasisIntTranspose[1](i,j) = derLegBasisInt[1](j,i);
     }
   }
+
+  /*--- The following two functions are mainly for writing surface output.
+        Determine first the local connectivity of all faces ---*/
+  CFEMStandardTriBase::LocalGridConnFaces();
+
+  /*--- Then determine local subconnectivity at the corresponding face ID.
+        This will also instantiate the variable subConn1ForPlotting. ---*/
+  CFEMStandardLineBase::SubConnLinearElementsFace(faceID_Elem);
 }
 
 void CFEMStandardLineAdjacentTriSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

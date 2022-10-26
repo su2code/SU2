@@ -115,6 +115,14 @@ CFEMStandardLineAdjacentQuadSol::CFEMStandardLineAdjacentQuadSol(const unsigned 
       tensorDSolDsTranspose[1](i,j) = tensorDSolDs[1](j,i);
     }
   }
+
+  /*--- The following two functions are mainly for writing surface output.
+        Determine first the local connectivity of all faces ---*/
+  CFEMStandardQuadBase::LocalGridConnFaces();
+
+  /*--- Then determine local subconnectivity at the corresponding face ID.
+        This will also instantiate the variable subConn1ForPlotting. ---*/
+  CFEMStandardLineBase::SubConnLinearElementsFace(faceID_Elem);
 }
 
 void CFEMStandardLineAdjacentQuadSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

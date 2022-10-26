@@ -347,5 +347,119 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
                                                     const vector<string> &markerList) {
 
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  /* Determine the number of nodes for this element type. */
+  unsigned short NODES_PER_ELEMENT = 0;
+  switch (Elem_Type) {
+    case LINE:
+      NODES_PER_ELEMENT = N_POINTS_LINE;
+      break;
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+  }
+
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+        geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM_DG *volElem  = DGGeometry->GetVolElem();
+  const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
+
+  /*--- Determine the number of sub-elements on this rank by looping
+        over the surface elements of the boundary markers that must
+        be plotted. ---*/
+  unsigned long nSubElem_Local = 0;
+  for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+      string markerTag = boundaries[iMarker].markerTag;
+      auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+      if (it != markerList.end()) {
+        const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+        for(unsigned long i=0; i<surfElem.size(); ++i) {
+          const unsigned short VTK_Type = surfElem[i].VTK_Type;
+          /*--- We take polynomial order of the solution here since we want to plot solution at all 
+                solution DOFs, which is usually the same as or higher than the grid DOFs.
+                Note that the linear sub-elements of a surface element are of only one type, 
+                so no need to consider SubType2. ---*/
+          if(Elem_Type == VTK_Type) nSubElem_Local += surfElem[i].standardElemFlow->GetNSubElemsType1();
+        }
+      }
+    }
+  }
+
+  /* Allocate the memory to store the connectivity if the size is
+     larger than zero. */
+  int *Conn_SubElem = nullptr;
+  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
+
+  /*--- Repeat the loop over the surface elements of the boundary markers
+        that must be plotted, but now store the connectivity. ---*/
+  unsigned long kNode = 0;
+  for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+      string markerTag = boundaries[iMarker].markerTag;
+      auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+      if (it != markerList.end()) {
+        const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+        /* Loop over the surface elements of this boundary marker. */
+        for(unsigned long i=0; i<surfElem.size(); ++i) {
+
+          /* Check if this is the element type to be stored. */
+          const unsigned short VTK_Type = surfElem[i].VTK_Type;
+
+          if(Elem_Type == VTK_Type) {
+
+            /*  Get the number of sub-elements and the local connectivity of
+                the sub-elements. Again, note that the linear sub-elements of 
+                a surface element are of only one type, so no need to consider SubType2. ---*/
+
+            unsigned short nSubElems            = surfElem[i].standardElemFlow->GetNSubElemsType1();
+            unsigned short nDOFsPerSubElem      = surfElem[i].standardElemFlow->GetNDOFsPerSubElem(VTK_Type);
+            const unsigned short *connSubElems  = surfElem[i].standardElemFlow->GetSubConnType1();
+
+            const unsigned short *connSubElemsGrid  = surfElem[i].standardElemGrid->GetSubConnType1();
+
+            /*  The surface node indexing starts from 0 and ends at nSubElems * nDOFsPerSubElem in each element.
+                Note one is added to the index value, because visualization
+                softwares typically use 1-based indexing. ---*/
+            unsigned long offset = volElem[surfElem[i].volElemID].offsetDOFsSolGlobal;
+            for(unsigned short j=0; j<nSubElems; ++j) {
+              for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kNode) {
+                  Conn_SubElem[kNode] = connSubElems[j*nDOFsPerSubElem + k] + offset + 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
+
+  /*--- Store the particular global element count in the class data,
+        and set the class data pointer to the connectivity array. ---*/
+  switch (Elem_Type) {
+    case LINE:
+      delete [] Conn_Line_Par;
+      Conn_Line_Par = Conn_SubElem;
+      break;
+    case TRIANGLE:
+      delete [] Conn_Tria_Par;
+      Conn_Tria_Par = Conn_SubElem;
+      break;
+    case QUADRILATERAL:
+      delete [] Conn_Quad_Par;
+      Conn_Quad_Par = Conn_SubElem;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
+  }
 }

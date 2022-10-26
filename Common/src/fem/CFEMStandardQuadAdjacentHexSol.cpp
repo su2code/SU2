@@ -152,6 +152,15 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
       tensorDSolDtTranspose[2](i,j) = tensorDSolDt[2](j,i);
     }
   }
+
+
+  /*--- The following two functions are mainly for writing surface output.
+        Determine first the local connectivity of all faces ---*/
+  CFEMStandardHexBase::LocalGridConnFaces();
+
+  /*--- Then determine local subconnectivity at the corresponding face ID.
+        This will also instantiate the variable subConn1ForPlotting. ---*/
+  CFEMStandardQuadBase::SubConnLinearElementsFace(faceID_Elem);
 }
 
 void CFEMStandardQuadAdjacentHexSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

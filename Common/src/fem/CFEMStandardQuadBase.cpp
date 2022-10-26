@@ -300,6 +300,39 @@ void CFEMStandardQuadBase::SubConnLinearElements(void) {
   }
 }
 
+void CFEMStandardQuadBase::SubConnLinearElementsFace(int val_faceID_Elem) {
+
+  /*--- This is an added functionality specifically for surface output.
+        The utility is similar to SubConnLinearElements, but store the 
+        nodes (available in gridConnFaces) using the face ID w.r.t the 
+        volume when this base class is considered a face. ---*/
+
+  /*--- The quadrilateral is split into several linear quads.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = QUADRILATERAL;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the local subconnectivity of the quadrilateral element used for
+        plotting purposes. Note that the connectivity of the linear subelements
+        obey the VTK connectivity rule of a quadrilateral, which is different
+        from the connectivity for the high order quadrilateral. ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short j=0; j<nnPoly; ++j) {
+    unsigned short jj = j*(nnPoly+1);
+    for(unsigned short i=0; i<nnPoly; ++i) {
+      const unsigned short n0 = jj + i;
+      const unsigned short n1 = n0 + 1;
+      const unsigned short n2 = n1 + nPoly+1;
+      const unsigned short n3 = n2 - 1;
+
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n0]);
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n1]);
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n2]);
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n3]);
+    }
+  }
+}
+
 void CFEMStandardQuadBase::SetFunctionPointerVolumeDataQuad(const unsigned short K,
                                                             const unsigned short M,
                                                             TPI2D                &TPVolData) {
@@ -349,4 +382,28 @@ void CFEMStandardQuadBase::TensorProductVolumeDataQuad(TPI2D                    
 #ifdef PROFILE
   if( config ) config->TensorProduct_Tock(timeGemm, 2, N, K, M);
 #endif
+}
+
+void CFEMStandardQuadBase::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the quadrilateral, which is 4. Reserve memory for the second
+        index afterwards. ---*/
+  gridConnFaces.resize(4);
+
+  gridConnFaces[0].reserve(nPoly+1);
+  gridConnFaces[1].reserve(nPoly+1);
+  gridConnFaces[2].reserve(nPoly+1);
+  gridConnFaces[3].reserve(nPoly+1);
+
+  /*--- Define the corner vertices of the quadrilateral. ---*/
+  const unsigned short n0 = 0, n1 = nPoly, n2 = nDOFs-1, n3 = nPoly*(nPoly+1);
+
+  /*--- For a quad element the faces are lines. Loop over the nodes of the
+        lines to set the connectivity. Make sure that the element
+        is to the left of the faces. ---*/
+  for(signed short i=n0; i<=n1; ++i)          gridConnFaces[0].push_back(i);
+  for(signed short i=n1; i<=n2; i+=(nPoly+1)) gridConnFaces[1].push_back(i);
+  for(signed short i=n2; i>=n3; --i)          gridConnFaces[2].push_back(i);
+  for(signed short i=n3; i>=n0; i-=(nPoly+1)) gridConnFaces[3].push_back(i);
 }

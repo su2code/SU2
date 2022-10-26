@@ -153,14 +153,4 @@ private:
   void *jitterDOFs2Int = nullptr;      /*!< \brief Pointer to the data for the jitted gemm function
                                                    to compute data in the integration points. */
   dgemm_jit_kernel_t gemmDOFs2Int;     /*!< \brief Pointer to the function to carry out jitterDOFs2Int. */
-
-  /*-----------------------------------------------------------------------------------*/
-  /*---                     Private member functions.                               ---*/
-  /*-----------------------------------------------------------------------------------*/
-
-  /*!
-   * \brief Function, which creates the local grid connectivities of the faces
-   *        of the volume element.
-   */
-  void LocalGridConnFaces(void);
 };

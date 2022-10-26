@@ -309,4 +309,10 @@ protected:
    *        high order element is split in such elements.
    */
   void SubConnLinearElements(void);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };

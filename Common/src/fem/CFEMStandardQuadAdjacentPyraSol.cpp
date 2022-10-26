@@ -94,6 +94,14 @@ CFEMStandardQuadAdjacentPyraSol::CFEMStandardQuadAdjacentPyraSol(const unsigned 
       derLegBasisIntTranspose[2](i,j) = derLegBasisInt[2](j,i);
     }
   }
+
+  /*--- The following two functions are mainly for writing surface output.
+        Determine first the local connectivity of all faces ---*/
+  CFEMStandardPyraBase::LocalGridConnFaces();
+
+  /*--- Then determine local subconnectivity at the corresponding face ID.
+        This will also instantiate the variable subConn1ForPlotting. ---*/
+  CFEMStandardQuadBase::SubConnLinearElementsFace(faceID_Elem);
 }
 
 void CFEMStandardQuadAdjacentPyraSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

@@ -283,6 +283,27 @@ void CFEMStandardLineBase::SubConnLinearElements(void) {
   }
 }
 
+void CFEMStandardLineBase::SubConnLinearElementsFace(int val_faceID_Elem) {
+
+  /*--- This is an added functionality specifically for surface output.
+        The utility is similar to SubConnLinearElements, but store the 
+        nodes (available in gridConnFaces) using the face ID w.r.t the 
+        volume when this base class is considered a face. ---*/
+        
+  /*--- The line is split into several linear lines.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = LINE;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the local subconnectivity of the line element used for plotting
+        purposes. This is rather trivial, because the line element is subdivided
+        into nPoly linear line elements. ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short i=0; i<nnPoly; ++i) {
+    subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][i]);
+    subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][i+1]);
+  }
+}
 /*-----------------------------------------------------------------------------------*/
 /*---                          Private member functions.                          ---*/
 /*-----------------------------------------------------------------------------------*/

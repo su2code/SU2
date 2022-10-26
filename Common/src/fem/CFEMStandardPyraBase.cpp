@@ -1034,3 +1034,48 @@ void CFEMStandardPyraBase::SubConnLinearElements(void) {
     --nDOFsCurrentEdges;
   }
 }
+
+void CFEMStandardPyraBase::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the pyramid, which is 5. Reserve memory for the second
+        index afterwards. ---*/
+  const unsigned short nDOFsQuad     = (nPoly+1)*(nPoly+1);
+  const unsigned short nDOFsTriangle = (nPoly+1)*(nPoly+2)/2;
+  gridConnFaces.resize(5);
+
+  gridConnFaces[0].reserve(nDOFsQuad);
+  gridConnFaces[1].reserve(nDOFsTriangle);
+  gridConnFaces[2].reserve(nDOFsTriangle);
+  gridConnFaces[3].reserve(nDOFsTriangle);
+  gridConnFaces[4].reserve(nDOFsTriangle);
+
+  /*--- Loop over all the nodes of the pyramid and pick the correct
+        ones for the faces. ---*/
+  unsigned short mPoly = nPoly;
+  unsigned int ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k, --mPoly) {
+    for(unsigned short j=0; j<=mPoly; ++j) {
+      for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
+        if(k == 0)     gridConnFaces[0].push_back(ii);
+        if(j == 0)     gridConnFaces[1].push_back(ii);
+        if(j == mPoly) gridConnFaces[2].push_back(ii);
+        if(i == 0)     gridConnFaces[3].push_back(ii);
+        if(i == mPoly) gridConnFaces[4].push_back(ii);
+      }
+    }
+  }
+
+  /*--- Make sure that the element is to the left of the faces. ---*/
+  const unsigned short n0 = 0;
+  const unsigned short n1 = nPoly;
+  const unsigned short n2 = nDOFsQuad -1;
+  const unsigned short n3 = n2 - nPoly;
+  const unsigned short n4 = nDOFs -1;
+
+  ChangeDirectionQuadConn(gridConnFaces[0], n0, n1, n2, n3);
+  ChangeDirectionTriangleConn(gridConnFaces[1], n0, n4, n1);
+  ChangeDirectionTriangleConn(gridConnFaces[2], n3, n2, n4);
+  ChangeDirectionTriangleConn(gridConnFaces[3], n0, n3, n4);
+  ChangeDirectionTriangleConn(gridConnFaces[4], n1, n4, n2);
+}

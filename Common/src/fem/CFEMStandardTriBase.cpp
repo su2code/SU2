@@ -662,6 +662,62 @@ void CFEMStandardTriBase::SubConnLinearElements(void) {
   }
 }
 
+void CFEMStandardTriBase::SubConnLinearElementsFace(int val_faceID_Elem) {
+
+  /*--- This is an added functionality specifically for surface output.
+        The utility is similar to SubConnLinearElements, but store the 
+        nodes (available in gridConnFaces) using the face ID w.r.t the 
+        volume when this base class is considered a face. ---*/
+        
+  /*--- The triangle is split into several linear triangles.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = TRIANGLE;
+  VTK_SubType2 = NONE;
+
+  /*--- Initialize the counter for the edges jj. ---*/
+  unsigned short jj = 0;
+
+  /*--- Loop over subedges of the left boundary of the standard triangle. ---*/
+  for(unsigned short j=0; j<nPoly; ++j) {
+
+    /*--- Check if the "down" elements must be written. ---*/
+    if( j ) {
+
+      /*--- Offset of the relevant DOF on the previous row. ---*/
+      const unsigned short kk = jj - (nPoly + 1 - j);
+
+      /*--- Loop over the sub-elements of this edge. ---*/
+      for(unsigned short i=0; i<(nPoly-j); ++i) {
+        const unsigned short n0 = jj + i;
+        const unsigned short n1 = kk + i;
+        const unsigned short n2 = n0 + 1;
+
+        subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n0]);
+        subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n1]);
+        subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n2]);
+      }
+    }
+
+    /*--- The "upp" elements must always be written.
+          Determine the offset of the DOF on the next row. ---*/
+    const unsigned short kk = jj + (nPoly + 1 - j);
+
+    /*--- Loop over the sub-elements of this edge. ---*/
+    for(unsigned short i=0; i<(nPoly-j); ++i) {
+      const unsigned short n0 = jj + i;
+      const unsigned short n1 = n0 + 1;
+      const unsigned short n2 = kk + i;
+
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n0]);
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n1]);
+      subConn1ForPlotting.push_back(gridConnFaces[val_faceID_Elem][n2]);
+    }
+
+    /*--- Set jj to kk for the next edge. ---*/
+    jj = kk;
+  }
+}
+
 /*----------------------------------------------------------------------------------*/
 /*                Private member functions of CFEMStandardTriBase.                  */
 /*----------------------------------------------------------------------------------*/
@@ -721,4 +777,23 @@ void CFEMStandardTriBase::WarpFactor(const unsigned short        mPoly,
     warp[i] = warp[i]/sf + warp[i]*(zerof-1.0);
     if(fabs(warp[i]) < 1.e-10) warp[i] = 0.0;
   }
+}
+
+void CFEMStandardTriBase::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the triangle, which is 3. Reserve memory for the second
+        index afterwards. ---*/
+  gridConnFaces.resize(3);
+
+  gridConnFaces[0].reserve(nPoly+1);
+  gridConnFaces[1].reserve(nPoly+1);
+  gridConnFaces[2].reserve(nPoly+1);
+
+  /*--- For a triangular element the faces are lines. Loop over the nodes
+        of the lines to set the connectivity. Make sure that the element
+        is to the left of the faces. ---*/
+  for(signed short i=0; i<=nPoly; ++i) gridConnFaces[0].push_back(i);
+  for(signed short i=0; i<=nPoly; ++i) gridConnFaces[1].push_back((i+1)*(nPoly+1) - i*(i+1)/2 -1);
+  for(signed short i=nPoly; i>=0; --i) gridConnFaces[2].push_back(i*(nPoly+1) - i*(i-1)/2);
 }

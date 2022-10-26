@@ -303,4 +303,10 @@ protected:
                               vector<passivedouble>       &rPrism,
                               vector<passivedouble>       &sPrism,
                               vector<passivedouble>       &tPrism);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };

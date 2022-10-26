@@ -142,13 +142,4 @@ private:
   TPI3D TensorProductDataVolIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
                                                              to compute the data in the volume integration points. */
 
-  /*-----------------------------------------------------------------------------------*/
-  /*---                      Private member functions.                              ---*/
-  /*-----------------------------------------------------------------------------------*/
-
-  /*!
-   * \brief Function, which creates the local grid connectivities of the faces
-   *        of the volume element.
-   */
-  void LocalGridConnFaces(void);
 };

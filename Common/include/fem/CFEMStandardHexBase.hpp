@@ -151,4 +151,10 @@ protected:
                                   ColMajorMatrix<su2double>           &C,
                                   const bool                          initZero,
                                   const CConfig                       *config);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };
