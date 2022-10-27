@@ -52,12 +52,12 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup 
-        uses: ghcr.io/su2code/su2/build-su2:221027-0442
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build 
-        uses: ghcr.io/su2code/su2/build-su2:221027-0442
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
@@ -68,7 +68,7 @@ jobs:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: ghcr.io/su2code/su2/build-su2:221027-0442
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
