@@ -205,7 +205,6 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     su2double Volume_Local = 0.0, Volume_Global = 0.0;
     su2double Volume_VTemp_Local = 0.0, Volume_VTemp_Global = 0.0;
     su2double turb_b1_coeff_Local = 0.0, turb_b1_coeff_Global = 0.0;
-    su2double turb_b2_coeff_Local = 0.0, turb_b2_coeff_Global = 0.0;
 
     /*--- Loop over all heatflux Markers ---*/
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
