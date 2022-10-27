@@ -1778,7 +1778,7 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
-  STREAMWISE_PERIODIC_LAMBDAL= 71,
+  STREAMWISE_PERIODIC_LAMBDAL= 71, /*!< /brief temp. expo. coefficient for iso-thermal BCs Streamwise Periodic. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
