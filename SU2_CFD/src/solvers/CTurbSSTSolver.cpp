@@ -30,6 +30,11 @@
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/fluid/CConstantDensity.hpp"
+#include "../../include/fluid/CIncIdealGas.hpp"
+#include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidModel.hpp"
 
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
@@ -602,34 +607,14 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Obtain flow velocity vector at inlet boundary node ---*/
-
-      su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet, laminar_viscosity_inlet, Intensity, viscRatio, VelMag2, muT;
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-      
-      /*--- Obtain flow properties at inlet boundary node ---*/
-
-      density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      laminar_viscosity_inlet = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-      Intensity = config->GetTurbulenceIntensity_FreeStream();
-      viscRatio = config->GetTurb2LamViscRatio_FreeStream();
-      VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
-
       /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
       su2double Inlet_Vars[MAXNVAR];
-      Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * Intensity * Intensity);
-      Inlet_Vars[1] = density_inlet * Inlet_Vars[0] / (laminar_viscosity_inlet * viscRatio);
+      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
       if (config->GetInlet_Profile_From_File()) {
         Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
         Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
       }
-
-      /*--- Obtain eddy viscosity at inlet boundary node ---*/
-      muT = density_inlet * Inlet_Vars[0] / Inlet_Vars[1];
-
-      /*-- Set eddy viscosity at inlet boundary node*/
-      nodes->SetmuT(iPoint, muT);
 
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
@@ -1054,10 +1039,29 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
-      Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        CFluidModel* FluidModel= nullptr;
+        FluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), config->GetPressure_Thermodynamic(), config);
+        FluidModel->SetTDState_T(config->GetInlet_Ttotal(Marker_Tag), config->GetInlet_SpeciesVal(Marker_Tag));
+        const su2double VelMag2_inlet = pow(config->GetInlet_Ptotal(Marker_Tag),2);
+        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+        const su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+        const su2double density_inlet = FluidModel->GetDensity();
+        const su2double laminarViscosity = FluidModel->GetLaminarViscosity();
+        Inlet_TurbVars[iMarker][iVertex][0] = 3.0 / 2.0 * (VelMag2_inlet * Intensity * Intensity);
+        Inlet_TurbVars[iMarker][iVertex][1] =
+            density_inlet * Inlet_TurbVars[iMarker][iVertex][0] / (laminarViscosity * viscRatio);
+        /*--- Obtain eddy viscosity at inlet boundary ---*/
+        const su2double muT_inlet =
+            density_inlet * Inlet_TurbVars[iMarker][iVertex][0] / Inlet_TurbVars[iMarker][iVertex][1];
+        /*-- Set eddy viscosity at inlet boundary node*/
+        nodes->SetmuT(iVertex, muT_inlet);
+      } else {
+        Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+        Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+      }
     }
   }
-
 }
