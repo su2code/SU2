@@ -40,10 +40,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
 
-  su2double g_eff_i,
-  g_eff_j,
-  g_sep_i,
-  g_sep_j;
   /*--- LM Closure constants ---*/
   const su2double c_e1 = 1.0;
   const su2double c_a1 = 2.0;
@@ -54,7 +50,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   const su2double c_theta = 0.03;
   const su2double sigmat = 2.0;
 
-  su2double Vorticity;
   su2double Residual[2];
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];// Static storage for the Jacobian (which needs to be pointer for return type).

@@ -63,12 +63,12 @@ public:
   /*!
    * \brief Set Separation intermittency.
    */
-  void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) override ;
+  void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) override;
   
   /*!
    * \brief Set Effective intermittency.
    */
-  void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) override ;
+  void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) override;
 
   /*!
    * \brief Calculate effective intermittency.

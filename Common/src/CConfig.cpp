@@ -6049,8 +6049,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             break;
         }        
         switch (Kind_Trans_Model) {
-        case TURB_TRANS_MODEL::NONE:  break;
-        case TURB_TRANS_MODEL::LM:    cout << "Transition model: Langtry and Menter's 4 equation model (2009)" << endl; break;        
+          case TURB_TRANS_MODEL::NONE:  break;
+          case TURB_TRANS_MODEL::LM:    cout << "Transition model: Langtry and Menter's 4 equation model (2009)" << endl; break;        
         }
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
