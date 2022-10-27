@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fluid/CCoolProp.hpp"
-//#ifdef USE_COOLPROP
+#ifdef USE_COOLPROP
 
 CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
   fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
@@ -51,14 +51,13 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   dPde_rho = fluid_entity->first_partial_deriv(CoolProp::iP, CoolProp::iUmass, CoolProp::iDmass);
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
-  if (Pressure>Pressure_Critical || Temperature>Temperature_Critical) {
-      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
+  if (fluid_entity->phase() == 6) {
+      fluid_entity->specify_phase(CoolProp::iphase_gas);
+      SetTDState_PT(Pressure,Temperature);
   }
   else{
-      //SoundSpeed2 = Gamma * Pressure / Density;
-      SoundSpeed2 = dPdrho_e + Pressure / Density*Density*dPde_rho;
+      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   }
-
 }
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
@@ -108,8 +107,8 @@ void  CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   dsdrho_P = fluid_entity->first_partial_deriv(CoolProp::iSmass,CoolProp::iDmass,CoolProp::iP);
 }
 
-//#else
-//CCoolProp::CCoolProp(string fluidname) {
-  //SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
-//}
-//#endif
+#else
+CCoolProp::CCoolProp(string fluidname) {
+  SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
+}
+#endif

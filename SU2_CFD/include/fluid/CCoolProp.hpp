@@ -57,7 +57,7 @@ class CCoolProp final : public CFluidModel {
    */
   CCoolProp(string fluidname);
   
-//#ifdef USE_COOLPROP
+#ifdef USE_COOLPROP
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
@@ -113,7 +113,7 @@ class CCoolProp final : public CFluidModel {
    * \param[in] th2 - second thermodynamic variable (rho).
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
-//#endif
+#endif
 
   /*!
    * \brief Get the value of the critical pressure.
