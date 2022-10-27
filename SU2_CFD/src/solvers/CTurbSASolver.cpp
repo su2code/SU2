@@ -419,7 +419,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    // if (geometry->nodes->GetDomain(iPoint)) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       if (!rough_wall) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetSolution_Old(iPoint,iVar,0.0);
@@ -460,7 +460,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          Jacobian_i += 2.0*RoughWallBC*Area/sigma;
          if (implicit) Jacobian.AddVal2Diag(iPoint, -Jacobian_i);
       }
-    // }
+    }
   }
   END_SU2_OMP_FOR
 }
@@ -1752,6 +1752,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
+  // const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -1825,8 +1827,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const double Chi_3 = Chi_2*Chi;
   const double fv1 = Chi_3/(Chi_3+cv1_3);
   const double fv2 = 1.0 - Chi/(1.0+Chi*fv1);
-  // const double ft2 = ct3*exp(-ct4*Chi_2);
-  const double ft2 = 0.0;
+  const double ft2 = 0.0; //neg_spalart_allmaras? ct3*exp(-ct4*Chi_2) : 0.0;
   const double inv_k2_d2 = 1.0/(k2*dist2);
 
   double S = pow(gradu[1][0] - gradu[0][1], 2.0);
@@ -1836,7 +1837,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const double Sbar = nutilde*fv2*inv_k2_d2;
   double Stilde = S + Sbar;
   double dSbar = fv2*inv_k2_d2;
-  // if (Sbar <= -cv2*S) {
+  // if (neg_spalart_allmaras && (Sbar < -cv2*S)) {
   //   Stilde = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
   //   dSbar *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
   // }

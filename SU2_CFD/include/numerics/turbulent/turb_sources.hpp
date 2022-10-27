@@ -47,6 +47,8 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
+  const su2double cv2 = 0.7;
+  const su2double cv3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -292,12 +294,12 @@ struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
     var.Shat = var.S + Sbar;
-    if (var.Shat <= std::numeric_limits<su2double>::min()) {
+    var.Shat = max(var.Shat, 1.0e-10);
+    if (var.Shat <= 1.0e-10) {
       var.d_Shat = 0.0;
     } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
-    var.Shat = max(var.Shat, std::numeric_limits<su2double>::min());
   }
 };
 
@@ -321,7 +323,7 @@ struct Neg {
       // Baseline solution
       Bsl::get(nue, nu, var);
     } else {
-      var.Shat = std::numeric_limits<su2double>::min();
+      var.Shat = 1.0e-10;
       var.d_Shat = 0.0;
     }
     /*--- Don't check whether Sbar <>= -cv2*S.

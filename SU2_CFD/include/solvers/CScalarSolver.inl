@@ -198,7 +198,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const auto kappa      = config->GetMUSCL_Kappa_Turb();
   const auto kappa_flow = config->GetMUSCL_Kappa_Flow();
 
-  const bool sa_neg = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -336,8 +336,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         bad_i = bad_i || (flowPrimVar_i[nDim+2] < 0.0);
         bad_j = bad_j || (flowPrimVar_j[nDim+2] < 0.0);
         for (auto iVar = 0; iVar < nVar; iVar++) {
-          bad_i = bad_i || ((solution_i[iVar] < 0.0) && (!sa_neg));
-          bad_j = bad_j || ((solution_j[iVar] < 0.0) && (!sa_neg));
+          bad_i = bad_i || ((solution_i[iVar] < 0.0) && (!neg_spalart_allmaras));
+          bad_j = bad_j || ((solution_j[iVar] < 0.0) && (!neg_spalart_allmaras));
         }
 
         nodes->SetNon_Physical(iPoint, bad_i);
