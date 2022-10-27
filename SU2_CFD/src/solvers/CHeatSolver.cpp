@@ -1,15 +1,15 @@
 /*!
  * \file CHeatSolver.cpp
- * \brief Main subrotuines for solving the heat equation
+ * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -171,7 +171,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   const bool euler_implicit = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
   SetImplicitPeriodic(euler_implicit);
 
-
   /*--- MPI solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);
@@ -188,6 +187,9 @@ CHeatSolver::~CHeatSolver(void) {
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_OMP_MASTER
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  END_SU2_OMP_MASTER
 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     SetUndivided_Laplacian(geometry, config);
@@ -218,15 +220,15 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
 
-void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-
+void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter,
+                              bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVars = nDim;
 
   if (flow) {
     // P, vx, vy (,vz)
@@ -243,38 +245,31 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Load data from the restart into correct containers. ---*/
-  long iPoint_Local = 0;
-  unsigned long iPoint_Global_Local = 0;
   unsigned long counter = 0;
-  su2double Solution[MAXNVAR];
   for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      auto index = counter*Restart_Vars[1] + skipVars;
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
+      const auto index = counter*Restart_Vars[1] + skipVars;
+      for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
-
   }
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local != nPointDomain) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file!\n") +
+                   string("This can be caused by empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -288,31 +283,37 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
     for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const auto Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const auto Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        const auto Solution_Fine = solver[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
+      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+
     solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  delete[] Restart_Vars;
+  Restart_Vars = nullptr;
+  delete[] Restart_Data;
+  Restart_Data = nullptr;
 }
 
 void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
@@ -461,7 +462,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
             thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j;
 
-  const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
 
   eddy_viscosity_i = 0.0;
   eddy_viscosity_j = 0.0;
@@ -622,38 +623,21 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                                     unsigned short val_marker) {
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double Area, *Normal;
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  if(config->GetIntegrated_HeatFlux()) {
-
-    string HeatFlux_Tag, Marker_Tag;
-
-    for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-
-      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-      if (Marker_Tag == HeatFlux_Tag) {
-        Wall_HeatFlux = Wall_HeatFlux / Surface_Areas[iMarker_HeatFlux];
-      }
-    }
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
   }
-  Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
       Res_Visc[0] = 0.0;
 
@@ -663,7 +647,6 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
-
   }
 }
 
@@ -1041,7 +1024,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
   const su2double* Normal;
 
-  const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);

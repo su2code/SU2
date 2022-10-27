@@ -2,14 +2,14 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,10 +77,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
-    SU2_OMP_MASTER
-    solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/

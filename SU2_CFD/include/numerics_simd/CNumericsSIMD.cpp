@@ -4,14 +4,14 @@
  * \note This should be the only cpp for this family of classes
  * (which are all templates). All compilation takes place here.
  * \author P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -130,9 +130,12 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh, const CVariable*
  * numerical methods.
  */
 CNumericsSIMD* CNumericsSIMD::CreateNumerics(const CConfig& config, int nDim, int iMesh, const CVariable* turbVars) {
+#ifndef CODI_REVERSE_TYPE
   if ((Double::Size < 4) && (SU2_MPI::GetRank() == MASTER_NODE)) {
-    cout << "WARNING: SU2 was not compiled for an AVX-capable architecture." << endl;
+    cout << "WARNING: SU2 was not compiled for an AVX-capable architecture. Performance could be better,\n"
+            "         see https://su2code.github.io/docs_v7/Build-SU2-Linux-MacOS/#compiler-optimizations" << endl;
   }
+#endif
   if (nDim == 2) return createNumerics<2>(config, iMesh, turbVars);
   if (nDim == 3) return createNumerics<3>(config, iMesh, turbVars);
 

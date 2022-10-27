@@ -1,10 +1,14 @@
 project('SU2', 'c', 'cpp',
-        version: '7.2.1 "Blackbird"',
+        version: '7.4.0 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'c_std=c99',
                           'cpp_std=c++11'])
 
+if meson.version() != '0.61.1'
+  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+endif
 
 pymod = import('python')
 python = pymod.find_installation()
@@ -17,8 +21,21 @@ if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
     default_warning_flags += ['-Wno-empty-body']
   endif
-  default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-deprecated-declarations']
+  desired_warnings = ['-Wno-unused-parameter',
+                      '-Wno-deprecated-declarations',
+                      '-Wno-error=cast-function-type',
+                      '-Wno-cast-function-type',
+                      '-Wno-error=stringop-truncation',
+                      '-Wno-stringop-truncation',
+                      '-Wno-error=missing-field-initializers',
+                      '-Wno-missing-field-initializers',
+                      '-Wno-error=class-memaccess',
+                      '-Wno-class-memaccess']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      default_warning_flags += flag
+    endif
+  endforeach
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
@@ -191,12 +208,15 @@ if get_option('enable-librom')
    su2_cpp_args += '-DHAVE_LIBROM'
 
    librom_root = get_option('librom_root')
-   librom_dep = declare_dependency(include_directories: librom_root,
+   librom_dep = declare_dependency(include_directories: librom_root+'/lib',
                                    link_args: ['-L'+librom_root+'/build', '-lROM'])
 
    su2_deps += librom_dep
 
 endif
+
+mel_dep = declare_dependency(include_directories: 'externals/mel')
+su2_deps += mel_dep
 
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
@@ -246,7 +266,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.2.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.4.0 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -278,7 +298,8 @@ message('''---------------------------------------------------------------------
          Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'),
+           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
@@ -296,4 +317,8 @@ if get_option('enable-librom')
           
           '''.format(get_option('librom_root')))
 
+endif
+
+if get_option('enable-pywrapper') and get_option('enable-cgns') and not get_option('static-cgns-deps')
+  message(''' WARNING: If compilation fails with a message regarding "attempted static link of dynamic object", reconfigure with option -Dstatic-cgns-deps=true.''')
 endif

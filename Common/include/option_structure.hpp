@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -76,10 +76,10 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 13;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;    /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -92,8 +92,8 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -225,71 +225,71 @@ static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_MAIN_SOLVER {
-  NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
-  EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,                         /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
-  INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
-  INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
-  FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 12,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER = 13,             /*!< \brief Definition of template solver. */
-  DISC_ADJ_EULER = 15,              /*!< \brief Definition of the discrete adjoint Euler solver. */
-  DISC_ADJ_RANS = 16,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_NAVIER_STOKES = 17,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
-  DISC_ADJ_INC_EULER = 18,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
-  DISC_ADJ_INC_RANS = 19,           /*!< \brief Definition of the discrete adjoint imcompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_INC_NAVIER_STOKES = 20,  /*!< \brief Definition of the discrete adjoint imcompressible Navier-Stokes'. */
-  DISC_ADJ_HEAT = 21,               /*!< \brief Definition of the discrete adjoint heat solver. */
-  DISC_ADJ_FEM_EULER = 22,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
-  DISC_ADJ_FEM_RANS = 23,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_FEM_NS = 24,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
-  DISC_ADJ_FEM = 25,                /*!< \brief Definition of the discrete adjoint FEM solver. */
-  FEM_EULER = 26,                   /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
-  NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO NS solver. */
+enum class MAIN_SOLVER {
+  NONE,                        /*!< \brief Definition of no solver. */
+  EULER,                       /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES,               /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS,                        /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  INC_EULER,                   /*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES,           /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS,                    /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION,               /*!< \brief Definition of the finite volume heat solver. */
+  FEM_ELASTICITY,              /*!< \brief Definition of a FEM solver. */
+  ADJ_EULER,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER,             /*!< \brief Definition of template solver. */
+  DISC_ADJ_EULER,              /*!< \brief Definition of the discrete adjoint Euler solver. */
+  DISC_ADJ_RANS,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_NAVIER_STOKES,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
+  DISC_ADJ_INC_EULER,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
+  DISC_ADJ_INC_RANS,           /*!< \brief Definition of the discrete adjoint incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_INC_NAVIER_STOKES,  /*!< \brief Definition of the discrete adjoint incompressible Navier-Stokes'. */
+  DISC_ADJ_HEAT,               /*!< \brief Definition of the discrete adjoint heat solver. */
+  DISC_ADJ_FEM_EULER,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
+  DISC_ADJ_FEM_RANS,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_FEM_NS,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
+  DISC_ADJ_FEM,                /*!< \brief Definition of the discrete adjoint FEM solver. */
+  FEM_EULER,                   /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS,
+  NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
+  NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
-static const MapType<std::string, ENUM_MAIN_SOLVER> Solver_Map = {
-  MakePair("NONE", NO_SOLVER)
-  MakePair("EULER", EULER)
-  MakePair("NAVIER_STOKES", NAVIER_STOKES)
-  MakePair("RANS", RANS)
-  MakePair("INC_EULER", INC_EULER)
-  MakePair("INC_NAVIER_STOKES", INC_NAVIER_STOKES)
-  MakePair("INC_RANS", INC_RANS)
-  MakePair("FEM_EULER", FEM_EULER)
-  MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
-  MakePair("FEM_RANS", FEM_RANS)
-  MakePair("FEM_LES", FEM_LES)
-  MakePair("NEMO_EULER",NEMO_EULER)
-  MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION", HEAT_EQUATION)
-  MakePair("ELASTICITY", FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", DISC_ADJ_FEM)
-  MakePair("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-  MakePair("MULTIPHYSICS", MULTIPHYSICS)
+static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
+  MakePair("NONE", MAIN_SOLVER::NONE)
+  MakePair("EULER", MAIN_SOLVER::EULER)
+  MakePair("NAVIER_STOKES", MAIN_SOLVER::NAVIER_STOKES)
+  MakePair("RANS", MAIN_SOLVER::RANS)
+  MakePair("INC_EULER", MAIN_SOLVER::INC_EULER)
+  MakePair("INC_NAVIER_STOKES", MAIN_SOLVER::INC_NAVIER_STOKES)
+  MakePair("INC_RANS", MAIN_SOLVER::INC_RANS)
+  MakePair("FEM_EULER", MAIN_SOLVER::FEM_EULER)
+  MakePair("FEM_NAVIER_STOKES", MAIN_SOLVER::FEM_NAVIER_STOKES)
+  MakePair("FEM_RANS", MAIN_SOLVER::FEM_RANS)
+  MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
+  MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
+  MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
+  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
+  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
+  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
+  MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
+  MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
+  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
+  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
+  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
+  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
+  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
+  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
+  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
+  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
+  MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
+  MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
 
 /*!
@@ -482,6 +482,8 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
+  RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -500,6 +502,8 @@ const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 const int BFM_SOL = 11;     /*!< \brief Position of the Body-Force Model solver */
+const int SPECIES_SOL = 12;    /*!< \brief Position of the species solver. */
+const int ADJSPECIES_SOL = 13; /*!< \brief Position of the adjoint of the species solver. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -512,6 +516,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int GRAD_TERM = 6;           /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -521,16 +526,20 @@ const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 /*!
- * \brief Types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 1D or 2D or 3D)
  */
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
+
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;   /*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
-
+const int EL_TETRA2 = 4;  /*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;  /*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
 
 /*!
  * \brief Types of spatial discretizations
@@ -560,7 +569,8 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
   INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
+  SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
+  FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -572,6 +582,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("SU2_NONEQ", SU2_NONEQ)
+  MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
 };
 
 /*!
@@ -604,11 +615,13 @@ MakePair("ONESPECIES", ONESPECIES)
  * \brief types of coefficient transport model
  */
 enum class TRANSCOEFFMODEL {
+  SUTHERLAND,
   WILKE,
   GUPTAYOS,
   CHAPMANN_ENSKOG
 };
 static const MapType<std::string, TRANSCOEFFMODEL> TransCoeffModel_Map = {
+MakePair("SUTHERLAND", TRANSCOEFFMODEL::SUTHERLAND)
 MakePair("WILKE", TRANSCOEFFMODEL::WILKE)
 MakePair("GUPTA-YOS", TRANSCOEFFMODEL::GUPTAYOS)
 MakePair("CHAPMANN-ENSKOG", TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
@@ -667,6 +680,18 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
 };
 
 /*!
+ * \brief Types of Mixing viscosity model
+ */
+enum class MIXINGVISCOSITYMODEL {
+  WILKE,    /*!< \brief Wilke mixing viscosity model. */
+  DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
+};
+static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
+};
+
+/*!
  * \brief Types of thermal conductivity model
  */
 enum class CONDUCTIVITYMODEL {
@@ -693,23 +718,36 @@ static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 };
 
 /*!
+ * \brief types of mass diffusivity models
+ */
+enum class DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
+  CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
+};
+
+static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
+  MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
+  MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
+  MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
+  MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
+};
+
+/*!
  * \brief Types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0,          /*!< \brief Simulation on a static mesh. */
   RIGID_MOTION = 2,         /*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
   ROTATING_FRAME = 8,       /*!< \brief Simulation in a rotating frame. */
-  ELASTICITY = 9,           /*!< \brief Linear Elasticity. */
   STEADY_TRANSLATION = 11,  /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12,                /*!< \brief Simulation on a static mesh with a gust. */
-  MOVING_HTP = 13,          /*!< \brief Simulation with moving HTP (rotation). */
 };
 static const MapType<std::string, ENUM_GRIDMOVEMENT> GridMovement_Map = {
   MakePair("NONE", NO_MOVEMENT)
   MakePair("RIGID_MOTION", RIGID_MOTION)
   MakePair("ROTATING_FRAME", ROTATING_FRAME)
-  MakePair("ELASTICITY", ELASTICITY)
-  MakePair("MOVING_HTP", MOVING_HTP)
   MakePair("STEADY_TRANSLATION", STEADY_TRANSLATION)
   MakePair("GUST", GUST)
 };
@@ -845,13 +883,13 @@ static const MapType<std::string, ENUM_FEM> FEM_Map = {
 /*!
  * \brief Types of shock capturing method in Discontinuous Galerkin numerical method.
  */
-enum ENUM_SHOCK_CAPTURING_DG {
-  NO_SHOCK_CAPTURING = 0,     /*!< \brief Shock capturing is not used. */
-  PERSSON = 1                 /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
+enum class FEM_SHOCK_CAPTURING_DG {
+  NONE,     /*!< \brief Shock capturing is not used. */
+  PERSSON   /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
 };
-static const MapType<std::string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
-  MakePair("NONE", NO_SHOCK_CAPTURING)
-  MakePair("PERSSON", PERSSON)
+static const MapType<std::string, FEM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
+  MakePair("NONE", FEM_SHOCK_CAPTURING_DG::NONE)
+  MakePair("PERSSON", FEM_SHOCK_CAPTURING_DG::PERSSON)
 };
 
 /*!
@@ -869,23 +907,23 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 /*!
  * \brief Types of slope limiters
  */
-enum ENUM_LIMITER {
-  NO_LIMITER           = 0, /*!< \brief No limiter. */
-  VENKATAKRISHNAN      = 1, /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
-  VENKATAKRISHNAN_WANG = 2, /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
-  BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
-  VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
-  SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
+enum class LIMITER {
+  NONE                 , /*!< \brief No limiter. */
+  VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
+  BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
 };
-static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
-  MakePair("NONE", NO_LIMITER)
-  MakePair("VENKATAKRISHNAN", VENKATAKRISHNAN)
-  MakePair("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
-  MakePair("BARTH_JESPERSEN", BARTH_JESPERSEN)
-  MakePair("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
-  MakePair("SHARP_EDGES", SHARP_EDGES)
-  MakePair("WALL_DISTANCE", WALL_DISTANCE)
+static const MapType<std::string, LIMITER> Limiter_Map = {
+  MakePair("NONE", LIMITER::NONE)
+  MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
+  MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
+  MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
+  MakePair("SHARP_EDGES", LIMITER::SHARP_EDGES)
+  MakePair("WALL_DISTANCE", LIMITER::WALL_DISTANCE)
 };
 
 /*!
@@ -894,56 +932,279 @@ static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
   MakePair("SA", TURB_MODEL::SA)
-  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
-  MakePair("SA_E", TURB_MODEL::SA_E)
-  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
-  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
+
+/*!
+ * \brief Families of turbulence models
+ */
+enum class TURB_FAMILY {
+  NONE,   /*!< \brief No turbulence model. */
+  SA,     /*!< \brief Spalart-Allmaras variants. */
+  KW,     /*!< \brief k-w models. */
+};
+/*!
+ * \brief Associate turb models with their family
+ */
+inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
+  switch (model) {
+    case TURB_MODEL::NONE:
+      return TURB_FAMILY::NONE;
+    case TURB_MODEL::SA:
+      return TURB_FAMILY::SA;
+    case TURB_MODEL::SST:
+      return TURB_FAMILY::KW;
+  }
+  return TURB_FAMILY::NONE;
+}
+
+/*!
+ * \brief SST Options
+ */
+enum class SST_OPTIONS {
+  NONE,        /*!< \brief No SST Turb model. */
+  V1994,       /*!< \brief 1994 Menter k-w SST model. */
+  V2003,       /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
+  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+};
+static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
+  MakePair("NONE", SST_OPTIONS::NONE)
+  MakePair("V1994m", SST_OPTIONS::V1994m)
+  MakePair("V2003m", SST_OPTIONS::V2003m)
+  /// TODO: For now we do not support "unmodified" versions of SST.
+  //MakePair("V1994", SST_OPTIONS::V1994)
+  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("SUSTAINING", SST_OPTIONS::SUST)
+  MakePair("VORTICITY", SST_OPTIONS::V)
+  MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
+  MakePair("UQ", SST_OPTIONS::UQ)
+};
+
+/*!
+ * \brief Structure containing parsed SST options.
+ */
+struct SST_ParsedOptions {
+  SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
+  SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
+  bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+};
+
+/*!
+ * \brief Function to parse SST options.
+ * \param[in] SST_Options - Selected SST option from config.
+ * \param[in] nSST_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SST options.
+ */
+inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank) {
+  SST_ParsedOptions SSTParsedOptions;
+
+  auto IsPresent = [&](SST_OPTIONS option) {
+    const auto sst_options_end = SST_Options + nSST_Options;
+    return std::find(SST_Options, sst_options_end, option) != sst_options_end;
+  };
+
+  const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
+  const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
+  const bool found_1994m = IsPresent(SST_OPTIONS::V1994m);
+  const bool found_2003m = IsPresent(SST_OPTIONS::V2003m);
+
+  const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
+
+  const bool sst_1994 = found_1994 || found_1994m || default_version;
+  const bool sst_2003 = found_2003 || found_2003m;
+
+  /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
+  const bool sst_m = found_1994m || found_2003m || default_version;
+
+  const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
+  const bool sst_v = IsPresent(SST_OPTIONS::V);
+  const bool sst_kl = IsPresent(SST_OPTIONS::KL);
+  const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+
+  if (sst_1994 && sst_2003) {
+    SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_2003) {
+    SSTParsedOptions.version = SST_OPTIONS::V2003;
+  } else {
+    SSTParsedOptions.version = SST_OPTIONS::V1994;
+
+    if (rank==MASTER_NODE) {
+      std::cout <<
+        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
+        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
+    }
+  }
+
+  // Parse production modifications
+  if ((int(sst_v) + int(sst_kl) + int(sst_uq)) > 1) {
+    SU2_MPI::Error("Please select only one SST production term modifier (VORTICITY, KATO-LAUNDER, or UQ).", CURRENT_FUNCTION);
+  } else if (sst_v) {
+    SSTParsedOptions.production = SST_OPTIONS::V;
+  } else if (sst_kl) {
+    SSTParsedOptions.production = SST_OPTIONS::KL;
+  } else if (sst_uq) {
+    SSTParsedOptions.production = SST_OPTIONS::UQ;
+  }
+
+  SSTParsedOptions.sust = sst_sust;
+  SSTParsedOptions.modified = sst_m;
+  SSTParsedOptions.uq = sst_uq;
+  return SSTParsedOptions;
+}
+
+/*!
+ * \brief SA Options
+ */
+enum class SA_OPTIONS {
+  NONE,     /*!< \brief No option / default. */
+  NEG,      /*!< \brief Negative SA. */
+  EDW,      /*!< \brief Edwards version. */
+  FT2,      /*!< \brief Use FT2 term. */
+  QCR2000,  /*!< \brief Quadratic constitutive relation. */
+  COMP,     /*!< \brief Compressibility correction. */
+  ROT,      /*!< \brief Rotation correction. */
+  BC,       /*!< \brief Bas-Cakmakcioclu transition. */
+  EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
+};
+static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
+  MakePair("NONE", SA_OPTIONS::NONE)
+  MakePair("NEGATIVE", SA_OPTIONS::NEG)
+  MakePair("EDWARDS", SA_OPTIONS::EDW)
+  MakePair("WITHFT2", SA_OPTIONS::FT2)
+  MakePair("QCR2000", SA_OPTIONS::QCR2000)
+  MakePair("COMPRESSIBILITY", SA_OPTIONS::COMP)
+  MakePair("ROTATION", SA_OPTIONS::ROT)
+  MakePair("BCM", SA_OPTIONS::BC)
+  MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
+};
+
+/*!
+ * \brief Structure containing parsed SA options.
+ */
+struct SA_ParsedOptions {
+  SA_OPTIONS version = SA_OPTIONS::NONE;  /*!< \brief SA base model. */
+  bool ft2 = false;                       /*!< \brief Use ft2 term. */
+  bool qcr2000 = false;                   /*!< \brief Use QCR-2000. */
+  bool comp = false;                      /*!< \brief Use compressibility correction. */
+  bool rot = false;                       /*!< \brief Use rotation correction. */
+  bool bc = false;                        /*!< \brief BC transition. */
+};
+
+/*!
+ * \brief Function to parse SA options.
+ * \param[in] SA_Options - Selected SA option from config.
+ * \param[in] nSA_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned short nSA_Options, int rank) {
+  SA_ParsedOptions SAParsedOptions;
+
+  auto IsPresent = [&](SA_OPTIONS option) {
+    const auto sa_options_end = SA_Options + nSA_Options;
+    return std::find(SA_Options, sa_options_end, option) != sa_options_end;
+  };
+
+  const bool found_neg = IsPresent(SA_OPTIONS::NEG);
+  const bool found_edw = IsPresent(SA_OPTIONS::EDW);
+  const bool found_bsl = !found_neg && !found_edw;
+
+  if (found_neg && found_edw) {
+    SU2_MPI::Error("Two versions (Negative and Edwards) selected for SA_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (found_bsl) {
+    SAParsedOptions.version = SA_OPTIONS::NONE;
+  } else if (found_neg) {
+    SAParsedOptions.version = SA_OPTIONS::NEG;
+  } else {
+    SAParsedOptions.version = SA_OPTIONS::EDW;
+  }
+  SAParsedOptions.ft2 = IsPresent(SA_OPTIONS::FT2);
+  SAParsedOptions.qcr2000 = IsPresent(SA_OPTIONS::QCR2000);
+  SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
+  SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
+  SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
+
+  /*--- Validate user settings when not in experimental mode. ---*/
+  if (!IsPresent(SA_OPTIONS::EXP)) {
+    const bool any_but_bc = SAParsedOptions.ft2 || SAParsedOptions.qcr2000 || SAParsedOptions.comp || SAParsedOptions.rot;
+
+    switch (SAParsedOptions.version) {
+      case SA_OPTIONS::NEG:
+        if (!SAParsedOptions.ft2 || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-neg was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      case SA_OPTIONS::EDW:
+        if (any_but_bc || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-noft2-Edwards was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      default:
+        if (SAParsedOptions.bc && any_but_bc)
+          SU2_MPI::Error("A non-standard version of SA-BCM was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  return SAParsedOptions;
+}
 
 /*!
  * \brief Types of transition models
  */
-enum ENUM_TRANS_MODEL {
-  NO_TRANS_MODEL = 0,  /*!< \brief No transition model. */
-  LM = 1,              /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC = 2               /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+enum class TURB_TRANS_MODEL {
+  NONE,  /*!< \brief No transition model. */
+  LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
 };
-static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
-  MakePair("NONE", NO_TRANS_MODEL)
-  MakePair("LM", LM)
-  MakePair("BC", BC)
+static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
+  MakePair("NONE", TURB_TRANS_MODEL::NONE)
+  MakePair("LM", TURB_TRANS_MODEL::LM)
+};
+
+/*!
+ * \brief types of species transport models
+ */
+enum class SPECIES_MODEL {
+  NONE,              /*!< \brief No scalar transport model. */
+  SPECIES_TRANSPORT,    /*!< \brief Passive scalar transport model. */
+};
+static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
+  MakePair("NONE", SPECIES_MODEL::NONE)
+  MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
 };
 
 /*!
  * \brief Types of subgrid scale models
  */
-enum ENUM_SGS_MODEL {
-  NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
-  IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
-  SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
-  WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN       = 4  /*!< \brief Vreman SGS model. */
+enum class TURB_SGS_MODEL {
+  NONE        , /*!< \brief No subgrid scale model. */
+  IMPLICIT_LES, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
+  SMAGORINSKY , /*!< \brief Smagorinsky SGS model. */
+  WALE        , /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+  VREMAN        /*!< \brief Vreman SGS model. */
 };
-static const MapType<std::string, ENUM_SGS_MODEL> SGS_Model_Map = {
-  MakePair("NONE",         NO_SGS_MODEL)
-  MakePair("IMPLICIT_LES", IMPLICIT_LES)
-  MakePair("SMAGORINSKY",  SMAGORINSKY)
-  MakePair("WALE",         WALE)
-  MakePair("VREMAN",       VREMAN)
+static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
+  MakePair("NONE",         TURB_SGS_MODEL::NONE)
+  MakePair("IMPLICIT_LES", TURB_SGS_MODEL::IMPLICIT_LES)
+  MakePair("SMAGORINSKY",  TURB_SGS_MODEL::SMAGORINSKY)
+  MakePair("WALE",         TURB_SGS_MODEL::WALE)
+  MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
-
 
 /*!
  * \brief Types of window (weight) functions for cost functional
@@ -1001,7 +1262,7 @@ static const MapType<std::string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
  * \brief Types of wall functions.
  */
 enum class WALL_FUNCTIONS {
-  NONE                      ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  NONE                 ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_FUNCTION    ,   /*!< \brief Standard wall function. */
   ADAPTIVE_FUNCTION    ,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
   SCALABLE_FUNCTION    ,   /*!< \brief Scalable wall function. */
@@ -1397,7 +1658,7 @@ enum TURBO_MARKER_TYPE{
 /*!
  * \brief Types inlet boundary treatments
  */
-enum INLET_TYPE {
+enum class INLET_TYPE {
   TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE,       /*!< \brief User specifies an input file. */
@@ -1507,18 +1768,11 @@ enum ENUM_OBJECTIVE {
   SURFACE_MOM_DISTORTION = 54,  /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
   SURFACE_PRESSURE_DROP = 56,   /*!< \brief Pressure drop objective function definition. */
+  SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
+  SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  TOTAL_PRESSURE_LOSS = 39,
-  KINETIC_ENERGY_LOSS = 40,
-  TOTAL_EFFICIENCY = 41,
-  TOTAL_STATIC_EFFICIENCY = 42,
-  EULERIAN_WORK = 43,
-  TOTAL_ENTHALPY_IN = 44,
-  FLOW_ANGLE_IN = 45,
   FLOW_ANGLE_OUT = 46,
   MASS_FLOW_IN = 47,
-  MASS_FLOW_OUT = 48,
-  PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
@@ -1559,65 +1813,18 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
   MakePair("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
   MakePair("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
+  MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
+  MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
-  MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
-  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
-  MakePair("EULERIAN_WORK", EULERIAN_WORK)
-  MakePair("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
-  MakePair("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
   MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
   MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("MASS_FLOW_OUT", MASS_FLOW_OUT)
-  MakePair("PRESSURE_RATIO",  PRESSURE_RATIO)
   MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
-  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
-};
-
-/*!
- * \brief Types of residual criteria equations
- */
-enum ENUM_RESIDUAL {
-  RHO_RESIDUAL = 1,        /*!< \brief Rho equation residual criteria equation. */
-  RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
-};
-static const MapType<std::string, ENUM_RESIDUAL> Residual_Map = {
-  MakePair("RHO", RHO_RESIDUAL)
-  MakePair("RHO_ENERGY", RHO_ENERGY_RESIDUAL)
-};
-
-/*!
- * \brief Types of residual criteria for structural problems
- */
-enum ENUM_RESFEM {
-  RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
-  RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
-};
-static const MapType<std::string, ENUM_RESFEM> ResFem_Map = {
-  MakePair("RELATIVE", RESFEM_RELATIVE)
-  MakePair("ABSOLUTE", RESFEM_ABSOLUTE)
-};
-
-/*!
- * \brief Types of sensitivities to compute
- */
-enum ENUM_SENS {
-  SENS_GEOMETRY = 1,    /*!< \brief Geometrical sensitivity. */
-  SENS_MACH = 2,        /*!< \brief Mach number sensitivity. */
-  SENS_AOA = 3,         /*!< \brief Angle of attack sensitivity. */
-  SENS_AOS = 4          /*!< \brief Angle of Sideslip sensitivity. */
-};
-static const MapType<std::string, ENUM_SENS> Sens_Map = {
-  MakePair("SENS_GEOMETRY", SENS_GEOMETRY)
-  MakePair("SENS_MACH", SENS_MACH)
-  MakePair("SENS_AOA", SENS_AOA)
-  MakePair("SENS_AOS", SENS_AOS)
 };
 
 /*!
@@ -1636,65 +1843,67 @@ static const MapType<std::string, ENUM_INPUT> Input_Map = {
   MakePair("BOX", BOX)
 };
 
+
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_OUTPUT {
-  TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY          = 2,  /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT         = 3,  /*!< \brief Tecplot format for the solution output. */
-  SURFACE_TECPLOT_BINARY  = 4,  /*!< \brief Tecplot binary format for the solution output. */
-  CSV                     = 5,  /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV             = 6,  /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW                = 7,  /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY         = 8,  /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW        = 9,  /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY = 10, /*!< \brief Paraview binary format for the solution output. */
-  MESH                    = 11, /*!< \brief SU2 mesh format. */
-  RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
-  RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
-  CGNS                    = 19, /*!< \brief CGNS format. */
-  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
+enum class OUTPUT_TYPE {
+  TECPLOT_ASCII,           /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY,          /*!< \brief Tecplot binary format for the solution output. */
+  SURFACE_TECPLOT_ASCII,   /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY,  /*!< \brief Tecplot binary format for the solution output. */
+  CSV,                     /*!< \brief Comma-separated values format for the solution output. */
+  SURFACE_CSV,             /*!< \brief Comma-separated values format for the solution output. */
+  PARAVIEW_ASCII,          /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
+  MESH,                    /*!< \brief SU2 mesh format. */
+  RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
+  RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
+  PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML,    /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK,     /*!< \brief Paraview XML Multiblock */
+  CGNS,                    /*!< \brief CGNS format. */
+  SURFACE_CGNS,            /*!< \brief CGNS format. */
+  STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
-static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
-  MakePair("TECPLOT_ASCII", TECPLOT)
-  MakePair("TECPLOT", TECPLOT_BINARY)
-  MakePair("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
-  MakePair("SURFACE_TECPLOT", SURFACE_TECPLOT_BINARY)
-  MakePair("CSV", CSV)
-  MakePair("SURFACE_CSV", SURFACE_CSV)
-  MakePair("PARAVIEW_ASCII", PARAVIEW)
-  MakePair("PARAVIEW_LEGACY", PARAVIEW_BINARY)
-  MakePair("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
-  MakePair("SURFACE_PARAVIEW_LEGACY", SURFACE_PARAVIEW_BINARY)
-  MakePair("PARAVIEW", PARAVIEW_XML)
-  MakePair("SURFACE_PARAVIEW", SURFACE_PARAVIEW_XML)
-  MakePair("PARAVIEW_MULTIBLOCK", PARAVIEW_MULTIBLOCK)
-  MakePair("RESTART_ASCII", RESTART_ASCII)
-  MakePair("RESTART", RESTART_BINARY)
-  MakePair("CGNS", CGNS)
-  MakePair("SURFACE_CGNS", SURFACE_CGNS)
-  MakePair("STL", STL)
-  MakePair("STL_BINARY", STL_BINARY)
+static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
+  MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
+  MakePair("TECPLOT", OUTPUT_TYPE::TECPLOT_BINARY)
+  MakePair("SURFACE_TECPLOT_ASCII", OUTPUT_TYPE::SURFACE_TECPLOT_ASCII)
+  MakePair("SURFACE_TECPLOT", OUTPUT_TYPE::SURFACE_TECPLOT_BINARY)
+  MakePair("CSV", OUTPUT_TYPE::CSV)
+  MakePair("SURFACE_CSV", OUTPUT_TYPE::SURFACE_CSV)
+  MakePair("PARAVIEW_ASCII", OUTPUT_TYPE::PARAVIEW_ASCII)
+  MakePair("PARAVIEW_LEGACY", OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY)
+  MakePair("SURFACE_PARAVIEW_ASCII", OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII)
+  MakePair("SURFACE_PARAVIEW_LEGACY", OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY)
+  MakePair("PARAVIEW", OUTPUT_TYPE::PARAVIEW_XML)
+  MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
+  MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
+  MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
+  MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
+  MakePair("CGNS", OUTPUT_TYPE::CGNS)
+  MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
+  MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
+  MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
 };
 
 /*!
  * \brief Return true if format is one of the Paraview options.
  */
-inline bool isParaview(ENUM_OUTPUT format) {
+inline bool isParaview(OUTPUT_TYPE format) {
   switch(format) {
-    case PARAVIEW:
-    case PARAVIEW_BINARY:
-    case SURFACE_PARAVIEW:
-    case SURFACE_PARAVIEW_BINARY:
-    case PARAVIEW_XML:
-    case SURFACE_PARAVIEW_XML:
-    case PARAVIEW_MULTIBLOCK:
+    case OUTPUT_TYPE::PARAVIEW_ASCII:
+    case OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_XML:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
+    case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       return true;
     default:
       return false;
@@ -1704,12 +1913,12 @@ inline bool isParaview(ENUM_OUTPUT format) {
 /*!
  * \brief Return true if format is one of the Tecplot options.
  */
-inline bool isTecplot(ENUM_OUTPUT format) {
+inline bool isTecplot(OUTPUT_TYPE format) {
   switch(format) {
-    case TECPLOT:
-    case TECPLOT_BINARY:
-    case SURFACE_TECPLOT:
-    case SURFACE_TECPLOT_BINARY:
+    case OUTPUT_TYPE::TECPLOT_ASCII:
+    case OUTPUT_TYPE::TECPLOT_BINARY:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_BINARY:
       return true;
     default:
       return false;
@@ -1719,13 +1928,13 @@ inline bool isTecplot(ENUM_OUTPUT format) {
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_TAB_OUTPUT {
-  TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
+enum class TAB_OUTPUT {
+  TAB_CSV,            /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT         /*!< \brief Tecplot format for the solution output. */
 };
-static const MapType<std::string, ENUM_TAB_OUTPUT> TabOutput_Map = {
-  MakePair("CSV", TAB_CSV)
-  MakePair("TECPLOT", TAB_TECPLOT)
+static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
+  MakePair("CSV", TAB_OUTPUT::TAB_CSV)
+  MakePair("TECPLOT", TAB_OUTPUT::TAB_TECPLOT)
 };
 
 /*!
@@ -1764,32 +1973,6 @@ static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
   MakePair("V_CYCLE", V_CYCLE)
   MakePair("W_CYCLE", W_CYCLE)
   MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
-};
-
-/*!
- * \brief Type of solution output variables
- */
-enum ENUM_OUTPUT_VARS {
-  DENSITY = 1,      /*!< \brief Density. */
-  VEL_X = 2,        /*!< \brief X-component of velocity. */
-  VEL_Y = 3,        /*!< \brief Y-component of velocity. */
-  VEL_Z = 4,        /*!< \brief Z-component of velocity. */
-  PRESSURE = 5,     /*!< \brief Static pressure. */
-  MACH = 6,         /*!< \brief Mach number. */
-  TEMPERATURE = 7,  /*!< \brief Temperature. */
-  LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
-  EDDY_VISC = 9     /*!< \brief Eddy viscosity. */
-};
-static const MapType<std::string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
-  MakePair("DENSITY", DENSITY)
-  MakePair("VEL_X", VEL_X)
-  MakePair("VEL_Y", VEL_Y)
-  MakePair("VEL_Z", VEL_Z)
-  MakePair("PRESSURE", PRESSURE)
-  MakePair("MACH", MACH)
-  MakePair("TEMPERATURE", TEMPERATURE)
-  MakePair("LAM_VISC", LAM_VISC)
-  MakePair("EDDY_VISC", EDDY_VISC)
 };
 
 /*!
@@ -2222,35 +2405,35 @@ static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_
 /*!
  * \brief the different validation solution
  */
-enum ENUM_VERIFICATION_SOLUTIONS {
-  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
-  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
-  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
-  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
-  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
-  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
-  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
-  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
-  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
-  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
-  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
-  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
-  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+enum class VERIFICATION_SOLUTION {
+  NONE,                     /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX,          /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB,                  /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD,             /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX,      /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX,  /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD,         /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC, /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER,            /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS,               /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION,    /*!< \brief User defined solution. */
 };
-static const MapType<std::string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = {
-  MakePair("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
-  MakePair("INVISCID_VORTEX",          INVISCID_VORTEX)
-  MakePair("RINGLEB",                  RINGLEB)
-  MakePair("NS_UNIT_QUAD",             NS_UNIT_QUAD)
-  MakePair("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
-  MakePair("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
-  MakePair("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
-  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
-  MakePair("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
-  MakePair("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
-  MakePair("MMS_INC_EULER",            MMS_INC_EULER)
-  MakePair("MMS_INC_NS",               MMS_INC_NS)
-  MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+static const MapType<std::string, VERIFICATION_SOLUTION> Verification_Solution_Map = {
+  MakePair("NO_VERIFICATION_SOLUTION", VERIFICATION_SOLUTION::NONE)
+  MakePair("INVISCID_VORTEX",          VERIFICATION_SOLUTION::INVISCID_VORTEX)
+  MakePair("RINGLEB",                  VERIFICATION_SOLUTION::RINGLEB)
+  MakePair("NS_UNIT_QUAD",             VERIFICATION_SOLUTION::NS_UNIT_QUAD)
+  MakePair("TAYLOR_GREEN_VORTEX",      VERIFICATION_SOLUTION::TAYLOR_GREEN_VORTEX)
+  MakePair("INC_TAYLOR_GREEN_VORTEX",  VERIFICATION_SOLUTION::INC_TAYLOR_GREEN_VORTEX)
+  MakePair("MMS_NS_UNIT_QUAD",         VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD)
+  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD_WALL_BC)
+  MakePair("MMS_NS_TWO_HALF_CIRCLES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_CIRCLES)
+  MakePair("MMS_NS_TWO_HALF_SPHERES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_SPHERES)
+  MakePair("MMS_INC_EULER",            VERIFICATION_SOLUTION::MMS_INC_EULER)
+  MakePair("MMS_INC_NS",               VERIFICATION_SOLUTION::MMS_INC_NS)
+  MakePair("USER_DEFINED_SOLUTION",    VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION)
 };
 
 /*!
@@ -2275,6 +2458,8 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!
@@ -2324,6 +2509,31 @@ static const MapType<std::string, ENUM_BODY_FORCE_MODEL_FORMULATION> BFM_Formula
         MakePair("THOLLET", THOLLET)
 };
 
+/*!
+ * \brief Type of operation for the linear system solver, changes the source of solver options.
+ */
+enum class LINEAR_SOLVER_MODE {
+  STANDARD,        /*!< \brief Operate in standard mode. */
+  MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
+  GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+};
+
+/*!
+ * \brief mode of operation for the sobolev smoothing solver.
+ */
+enum class ENUM_SOBOLEV_MODUS {
+  NONE,                 /*!< \brief Default option if none is choosen. */
+  PARAM_LEVEL_COMPLETE, /*!< \brief Operate on parameter level. */
+  MESH_LEVEL,           /*!< \brief Operate on mesh level. */
+  ONLY_GRAD,            /*!< \brief Flag to only compute the original gradient. */
+};
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+  MakePair("NONE",                 ENUM_SOBOLEV_MODUS::NONE)
+  MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
+  MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
+  MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
+};
+
 #undef MakePair
 /* END_CONFIG_ENUMS */
 
@@ -2331,17 +2541,20 @@ class COptionBase {
 private:
   std::vector<std::string> value;
 public:
-  COptionBase() {};
-  virtual  ~COptionBase() = 0;
+  virtual ~COptionBase() = default;
 
-  virtual std::string SetValue(std::vector<std::string> value){this->value = value; return "";}
-  std::vector<std::string> GetValue() {return value;}
+  const std::vector<std::string>& GetValue() const {return value;}
+
+  virtual std::string SetValue(const std::vector<std::string>& val) {
+    value = val;
+    return "";
+  }
   virtual void SetDefault() = 0;
 
-  std::string optionCheckMultipleValues(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
+  std::string optionCheckMultipleValues(const std::vector<std::string>& option_value,
+                                        std::string type_id, const std::string& option_name) {
     if (option_value.size() != 1) {
-      std::string newString;
-      newString.append(option_name);
+      std::string newString(option_name);
       newString.append(": multiple values for type ");
       newString.append(type_id);
       return newString;
@@ -2349,16 +2562,13 @@ public:
     return "";
   }
 
-  std::string badValue(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
-    std::string newString;
-    newString.append(option_name);
+  std::string badValue(std::string type_id, const std::string& option_name) {
+    std::string newString(option_name);
     newString.append(": improper option value for type ");
     newString.append(type_id);
     return newString;
   }
 };
-
-inline COptionBase::~COptionBase() {}
 
 #ifdef ENABLE_MAPS
 #include "option_structure.inl"

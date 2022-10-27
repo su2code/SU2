@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -128,14 +128,10 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
     PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
     Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] *
-                                              (PrimVar_Grad_i[iSpecies][iDim] -
-                                               PrimVar_i[iSpecies] *
-                                               PrimVar_Grad_i[RHO_INDEX][iDim]) +
-                                              1.0/V_j[RHO_INDEX] *
-                                              (PrimVar_Grad_j[iSpecies][iDim] -
-                                               PrimVar_j[iSpecies] *
-                                               PrimVar_Grad_j[RHO_INDEX][iDim]));
+      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] * (PrimVar_Grad_i[iSpecies][iDim] -
+                                              PrimVar_i[iSpecies] * PrimVar_Grad_i[RHO_INDEX][iDim]) +
+                                              1.0/V_j[RHO_INDEX] * (PrimVar_Grad_j[iSpecies][iDim] -
+                                              PrimVar_j[iSpecies] * PrimVar_Grad_j[RHO_INDEX][iDim]));
     }
   }
 

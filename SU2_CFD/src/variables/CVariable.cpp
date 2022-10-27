@@ -2,14 +2,14 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -101,11 +101,17 @@ void CVariable::Set_Solution_time_n1() {
 void CVariable::Set_BGSSolution_k() {
   assert(Solution_BGS_k.size() == Solution.size());
   parallelCopy(Solution.size(), Solution.data(), Solution_BGS_k.data());
+
+  assert(SolutionExtra_BGS_k.size() == SolutionExtra.size());
+  parallelCopy(SolutionExtra.size(), SolutionExtra.data(), SolutionExtra_BGS_k.data());
 }
 
 void CVariable::Restore_BGSSolution_k() {
   assert(Solution.size() == Solution_BGS_k.size());
   parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
+
+  assert(SolutionExtra.size() == SolutionExtra_BGS_k.size());
+  parallelCopy(SolutionExtra_BGS_k.size(), SolutionExtra_BGS_k.data(), SolutionExtra.data());
 }
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }

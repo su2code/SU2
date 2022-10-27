@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,23 +27,16 @@
 
 #pragma once
 
-#include "CSolver.hpp"
-#include "../../../Common/include/geometry/elements/CElement.hpp"
-#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "CFEASolverBase.hpp"
 
 /*!
  * \class CFEASolver
+ * \ingroup Elasticity_Equations
  * \brief Main class for defining a FEM solver for elastic structural problems.
  * \author R. Sanchez.
  */
-class CFEASolver : public CSolver {
+class CFEASolver : public CFEASolverBase {
 protected:
-  enum : size_t {MAXNNODE_2D = 4};
-  enum : size_t {MAXNNODE_3D = 8};
-  enum : size_t {MAXNVAR = 3};
-  enum : size_t {MAXNDIM = 3};
-  enum : size_t {OMP_MIN_SIZE = 32};
-  enum : size_t {OMP_MAX_SIZE = 512};
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
 
@@ -70,7 +63,6 @@ protected:
   su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
   su2double Total_OFStressPenalty;  /*!< \brief Total Objective Function: Stress penalty. */
-  su2double ObjFunc;
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -91,7 +83,6 @@ protected:
   CSysMatrix<su2double> MassMatrix;
 #endif
 
-  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
   CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
 
 #ifdef HAVE_OMP
@@ -107,11 +98,6 @@ protected:
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
-
-  unsigned long nElement;      /*!< \brief Number of elements. */
-
-  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
-  vector<unsigned long> ExtraVerticesToEliminate;
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
@@ -232,7 +218,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEASolver(bool mesh_deform_mode = false);
+  CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \overload
@@ -556,35 +542,34 @@ public:
   /*!
    * \brief Compute the objective function.
    * \param[in] config - Definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline void Evaluate_ObjFunc(const CConfig *config) final {
-    ObjFunc = 0.0;
+  void Evaluate_ObjFunc(const CConfig *config, CSolver**) final {
+    Total_ComboObj = 0.0;
     switch (config->GetKind_ObjFunc()) {
       case REFERENCE_GEOMETRY:
-        ObjFunc = GetTotal_OFRefGeom();
+        Total_ComboObj = GetTotal_OFRefGeom();
         break;
       case REFERENCE_NODE:
-        ObjFunc = GetTotal_OFRefNode();
+        Total_ComboObj = GetTotal_OFRefNode();
         break;
       case TOPOL_COMPLIANCE:
-        ObjFunc = GetTotal_OFCompliance();
+        Total_ComboObj = GetTotal_OFCompliance();
         break;
       case VOLUME_FRACTION:
-        ObjFunc = GetTotal_OFVolFrac();
+        Total_ComboObj = GetTotal_OFVolFrac();
         break;
       case TOPOL_DISCRETENESS:
-        ObjFunc = GetTotal_OFDiscreteness();
+        Total_ComboObj = GetTotal_OFDiscreteness();
         break;
       case STRESS_PENALTY:
-        ObjFunc = GetTotal_OFStressPenalty();
+        Total_ComboObj = GetTotal_OFStressPenalty();
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj = Total_Custom_ObjFunc;
         break;
     }
   }
-
-  /*!
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   */
-  inline su2double GetTotal_ComboObj() const final { return ObjFunc; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.

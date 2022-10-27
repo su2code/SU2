@@ -1,0 +1,13 @@
+name: Regression tests running on Linux ARM64
+
+on:
+  push:
+    branches:
+      - 'develop'
+
+jobs:
+  build_on_arm64:
+    name: Run the jobs on Linux ARM64
+    uses: './.github/workflows/regression.yml'
+    with:
+      runner: 'ARM64'

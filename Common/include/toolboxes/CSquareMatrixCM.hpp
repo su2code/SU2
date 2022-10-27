@@ -3,14 +3,14 @@
  * \brief Dense general square matrix, used for example in DG standard elements
  *        in Column Major order storage.
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
  * \brief Class to store a dense general square matrix that uses the Column
  *        Major order storage format. The code should be compiled with
  *        LAPACK to use optimized matrix inversion and multiplication routines.
+ * \ingroup BLAS
  */
 class CSquareMatrixCM {
   static_assert(ColMajorMatrix<passivedouble>::Storage == StorageType::ColumnMajor,

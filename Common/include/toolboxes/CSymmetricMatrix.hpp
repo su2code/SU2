@@ -2,14 +2,14 @@
  * \file CSymmetricMatrix.hpp
  * \brief Dense symmetric matrix, used for example in RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
  * \brief The matrix is symmetric but full storage is used as that gives much better
  * performance for some BLAS libraries (notably OpenBLAS). The code should be compiled
  * with LAPACK to use optimized matrix inversion and multiplication routines.
+ * \ingroup BLAS
  */
 class CSymmetricMatrix {
   static_assert(su2passivematrix::IsRowMajor, "Row major storage is assumed for LAPACK.");

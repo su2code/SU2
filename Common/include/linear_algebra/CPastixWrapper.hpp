@@ -3,14 +3,14 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,7 @@ class CGeometry;
 
 /*!
  * \class CPastixWrapper
+ * \ingroup SpLinSys
  * \brief Wrapper class that converts between SU2 sparse format and PaStiX
  *        format and simplifies calls to the external solver.
  */

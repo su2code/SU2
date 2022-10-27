@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 using namespace GeometryToolbox;
 
 
-CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
+CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
   /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
@@ -173,12 +173,11 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   const bool wasActive = AD::BeginPassive();
 
   /*--- Initialize shared reduction variables. ---*/
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     MaxVolume = -1E22; MinVolume = 1E22;
     ElemCounter = 0;
   }
-  END_SU2_OMP_MASTER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Local min/max, final reduction outside loop. ---*/
   su2double maxVol = -1E22, minVol = 1E22;
@@ -238,17 +237,15 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     ElemCounter += elCount;
   }
   END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     elCount = ElemCounter; maxVol = MaxVolume; minVol = MinVolume;
     SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Volume from 0 to 1 ---*/
 
@@ -266,7 +263,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   END_SU2_OMP_FOR
 
   /*--- Store the maximum and minimum volume. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
   if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
@@ -280,8 +277,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   AD::EndPassive(wasActive);
 
@@ -375,17 +371,15 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       MinDistance = min(MinDistance, MinDistance_Local);
     }
     END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       MaxDistance_Local = MaxDistance;
       MinDistance_Local = MinDistance;
       SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Normalize distance from 0 to 1 ---*/

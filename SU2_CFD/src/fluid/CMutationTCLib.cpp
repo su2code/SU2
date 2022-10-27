@@ -2,14 +2,14 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
+  CatRecombTable.resize(nSpecies,2) = 0;
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -59,8 +60,42 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
 
-  if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
-  else                     { nHeavy = nSpecies;   nEl = 0; }
+  if (mix->hasElectrons()) {
+    if (config->GetViscous()) {
+      SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
+    } else {
+      nHeavy = nSpecies-1;
+      nEl = 1;
+    }
+  }
+  else { nHeavy = nSpecies;   nEl = 0; }
+
+  /*--- Set up catalytic recombination table. ---*/
+  // Creation/Destruction (+1/-1), Index of monoatomic reactants
+  // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
+  if (gas_model == "N2") {
+    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+
+  } else if (gas_model == "air_5"){
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
+
+  } else if (gas_model == "air_6") {
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
+    CatRecombTable(5,0) =  0; CatRecombTable(5,1) = 4;
+
+  } else {
+    if (config->GetCatalytic())
+      SU2_MPI::Error("Cataylic wall recombination not implemented for specified Mutation gas model.", CURRENT_FUNCTION);
+  }
 
 }
 
@@ -178,7 +213,7 @@ vector<su2double>& CMutationTCLib::GetThermalConductivities(){
   return ThermalConductivities;
 }
 
-vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old){
 
   rhos = val_rhos;
 

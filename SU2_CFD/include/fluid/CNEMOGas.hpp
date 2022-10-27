@@ -2,14 +2,14 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,6 +84,8 @@ protected:
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
 
+  su2matrix<int> CatRecombTable;         /*!< \brief Table for catalytic wall recombination pairs. */
+
 public:
 
   /*!
@@ -131,7 +133,7 @@ public:
                                                        su2double **val_jacobian) = 0;
 
   /*!
-   * \brief Populate chemical source term jacobian. 
+   * \brief Populate chemical source term jacobian.
    */
   virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
                                  const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
@@ -177,7 +179,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
+  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel, su2double Tve_old) = 0;
 
   /*!
    * \brief Compute speed of sound.
@@ -258,4 +260,10 @@ public:
    * \brief Get species formation enthalpy.
    */
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;
+
+  /*!
+   * \brief Get catalytic wall recombination indices and constants.
+   */
+  inline const su2matrix<int>& GetCatalyticRecombination() const {return CatRecombTable;}
+
 };

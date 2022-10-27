@@ -3,14 +3,14 @@
 ## \file compute_uncertainty.py
 #  \brief Python script for performing model-form UQ for SST turbulence model
 #  \author J. Mukhopadhaya
-#  \version 7.2.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,7 @@ def main():
 
     # prepare config
     config.NUMBER_PART = options.partitions
-    config.USING_UQ = 'YES'
+    config.SST_OPTIONS = 'UQ'
     config.UQ_DELTA_B = options.beta_delta
     config.UQ_URLX = options.urlx
     config.UQ_PERMUTE = 'NO'

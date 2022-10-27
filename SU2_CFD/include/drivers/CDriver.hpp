@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ class COutput;
 
 /*!
  * \class CDriver
+ * \ingroup Drivers
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
@@ -219,6 +220,13 @@ protected:
   template <class FlowIndices>
   void InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
                                     const CSolver* turb_solver, CNumerics ****&numerics) const;
+
+  /*!
+   * \brief Helper to instantiate species transport numerics specialized for different flow solvers.
+   */
+  template <class FlowIndices>
+  void InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
+                                  const CSolver* species_solver, CNumerics ****&numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -778,6 +786,7 @@ public:
 
 /*!
  * \class CFluidDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
  */
@@ -850,6 +859,7 @@ public:
 
 /*!
  * \class CTurbomachineryDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
  */
@@ -903,6 +913,7 @@ public:
 
 /*!
  * \class CHBDriver
+ * \ingroup Drivers
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  */

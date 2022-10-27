@@ -2,14 +2,14 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,7 @@ using namespace std;
 
 /*!
  * \class CIntegration
+ * \ingroup Drivers
  * \brief Main class for doing the space integration, time integration, and monitoring
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
@@ -49,7 +50,7 @@ protected:
   size;          /*!< \brief MPI Size. */
   bool Convergence,   /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  Convergence_FullMG;  /*!< \brief To indicate if the full multigrid has converged or not. */
 
   /*!
    * \brief Do the space integration of the numerical system.

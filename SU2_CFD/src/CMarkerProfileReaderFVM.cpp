@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   if (profile_file.fail()) {
     MergeProfileMarkers();
     WriteMarkerProfileTemplate();
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
@@ -75,13 +76,13 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
   ifstream profile_file;
   profile_file.open(filename.data(), ios::in);
-  bool nmarkFound = false; 
+  bool nmarkFound = false;
   unsigned long skip = 0;
 
   /*--- Identify the markers and data set in the profile file ---*/
 
   string text_line;
-  /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored. 
+  /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored.
         This allows for some information in a header that will be ignored by the profile reader. ---*/
   while (getline (profile_file, text_line)) {
     /*--- read NMARK ---*/
@@ -124,7 +125,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         }
 
         /*--- Skip the data. This is read in the next loop. ---*/
-        
+
         for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
 
       }
@@ -161,7 +162,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         getline (profile_file, text_line);
         getline (profile_file, text_line);
-        
+
         /*--- if skip=0 then we can expect column format description ---*/
         if (skip == 0) getline (profile_file, text_line);
 
@@ -202,7 +203,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   unsigned long iVertex, iMarker;
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-
+  unsigned long maxProfiles = 0;
   unsigned long index, iChar;
 
   char str_buf[MAX_STRING_SIZE];
@@ -237,6 +238,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&numberOfProfiles, &maxProfiles, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
@@ -268,8 +270,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
 
-    profileCoords.resize(numberOfProfiles);
-    for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+    profileCoords.resize(maxProfiles);
+    for (iMarker = 0; iMarker < maxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
     }
 
@@ -357,9 +359,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       }
     }
 
-    /*--- Sort and remove the duplicate profile marker strings. ---*/
+    /*--- Remove the duplicate profile marker strings. From 1 per point to 1 per marker. ---*/
 
-    sort(profileTags.begin(), profileTags.end());
     profileTags.erase(unique(profileTags.begin(),
                              profileTags.end()),
                       profileTags.end());
@@ -450,37 +451,41 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
 
     node_file << "NMARK= " << numberOfProfiles << endl;
 
-    for (unsigned short iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+    unsigned short iMarkerCounter = 0;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == markerType) {
 
-      /*--- Access the default data for this marker. ---*/
+        /*--- Access the default data for this marker. ---*/
 
-      string Marker_Tag = profileTags[iMarker];
+        string Marker_Tag = profileTags[iMarkerCounter];
 
-      /*--- Header information for this marker. ---*/
+        /*--- Header information for this marker. ---*/
 
-      node_file << "MARKER_TAG= " << Marker_Tag              << endl;
-      node_file << "NROW="        << numberOfRowsInProfile[iMarker] << endl;
-      node_file << "NCOL="        << nColumns          << endl;
+        node_file << "MARKER_TAG= " << Marker_Tag              << endl;
+        node_file << "NROW="        << numberOfRowsInProfile[iMarkerCounter] << endl;
+        node_file << "NCOL="        << nColumns          << endl;
 
-      /*--- header line (names of the columns) --- */
-      node_file << columnNames[iMarker] << endl;
+        /*--- header line (names of the columns) --- */
+        node_file << columnNames[iMarkerCounter] << endl;
 
-      node_file << setprecision(15);
-      node_file << std::scientific;
+        node_file << setprecision(15);
+        node_file << std::scientific;
 
-      /*--- Loop over the data structure and write the coords and vars. ---*/
+        /*--- Loop over the data structure and write the coords and vars. ---*/
 
-      for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[iMarker]; iPoint++) {
+        for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[iMarkerCounter]; iPoint++) {
 
-        for (unsigned short iDim = 0; iDim < dimension; iDim++) {
-          node_file << profileCoords[iMarker][iDim][iPoint] << "\t";
+          for (unsigned short iDim = 0; iDim < dimension; iDim++) {
+            node_file << profileCoords[iMarkerCounter][iDim][iPoint] << "\t";
+          }
+
+          node_file << columnValues[iMarkerCounter] << endl;
+
         }
 
-        node_file << columnValues[iMarker] << endl;
-
+        iMarkerCounter++;
       }
-
-    }
+    } // iMarker
     node_file.close();
 
     /*--- Print a message to inform the user about the template file. ---*/

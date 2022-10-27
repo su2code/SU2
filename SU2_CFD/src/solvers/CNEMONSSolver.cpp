@@ -2,14 +2,14 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,8 +58,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE;
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   const bool wall_functions = config->GetWall_Functions();
@@ -95,8 +95,12 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
-  const long unsigned int offset=(nSpecies+2);
-  ComputeVorticityAndStrainMag(*config, iMesh, offset);
+
+  /*--- Compute vorticity and strain mag. ---*/
+
+  ComputeVorticityAndStrainMag(*config, iMesh);
+
+  /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
     SetTau_Wall_WF(geometry, solver_container, config);
@@ -110,7 +114,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  //const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
+  //const bool tkeNeeded = (turb_model == TURB_MODEL::SST); 
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -246,7 +250,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -255,8 +262,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
-  const unsigned short RHO_INDEX     = nodes->GetRhoIndex();
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -278,7 +283,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     // TODO: Look into this!
     // Note: Contributions from qtr and qve are used for proportional control
     //       to drive the solution toward the specified heatflux more quickly.
-    const auto V      = nodes->GetPrimitive(iPoint);
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);
     su2double dTdn   = 0.0;
     su2double dTvedn = 0.0;
@@ -288,24 +292,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     }
     su2double ktr = nodes->GetThermalConductivity(iPoint);
     su2double kve = nodes->GetThermalConductivity_ve(iPoint);
-
-    /*--- Scale thermal conductivity with turb ---*/
-    // TODO: Need to determine proper way to incorporate eddy viscosity
-    // This is only scaling Kve by same factor as ktr
-    su2double Mass = 0.0;
-    auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-    su2double tmp1, scl, Cptr;
-    su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
-    for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V[iSpecies]/V[RHO_INDEX]*Ms[iSpecies];
-    Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-    tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-    scl  = tmp1/ktr;
-    ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
-    //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-    //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Compute residual ---*/
     Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
@@ -319,10 +305,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -346,32 +331,14 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CConfig *config,
                                      unsigned short val_marker) {
 
-  bool catalytic = false;
-  unsigned short iMarker_Catalytic = 0;
+  bool catalytic = config->GetCatalytic_Wall(val_marker);
 
-  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  if (catalytic) { BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                             sour_numerics, config, val_marker);
 
-  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
-
-    string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
-
-    if (Marker_Tag == Catalytic_Tag){
-
-      catalytic = true;
-      BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                sour_numerics, config, val_marker);
-      break;
-
-    } else {
-
-      iMarker_Catalytic++;
-
-    }
+  } else { BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                        sour_numerics, config, val_marker);
   }
-
-  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                              sour_numerics, config, val_marker);
-
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -402,7 +369,10 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Get the specified wall heat flux from config ---*/
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX    = nodes->GetTIndex();
@@ -544,28 +514,14 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
                                        CNumerics *conv_numerics, CNumerics *sour_numerics,
                                        CConfig *config, unsigned short val_marker) {
 
-  bool catalytic = false;
-  unsigned short iMarker_Catalytic = 0;
+  bool catalytic = config->GetCatalytic_Wall(val_marker);
 
-  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  if (catalytic) { BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                             sour_numerics, config, val_marker);
 
-  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
-
-    string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
-
-    if (Marker_Tag == Catalytic_Tag){
-
-      catalytic = true;
-      BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                  sour_numerics, config, val_marker);
-      break;
-    } else {
-      iMarker_Catalytic++;
-    }
+  } else { BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
+                                          sour_numerics, config, val_marker);
   }
-
-  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
-                                                sour_numerics, config, val_marker);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
@@ -576,17 +532,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
-
-  /*--- Extract required indices ---*/
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  const unsigned short RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;
@@ -635,10 +586,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize viscous residual to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
@@ -649,24 +599,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Rename variables for convenience ---*/
     su2double ktr = nodes->GetThermalConductivity(iPoint);
     su2double kve = nodes->GetThermalConductivity_ve(iPoint);
-
-    /*--- Scale thermal conductivity with turb ---*/
-    // This is only scaling Kve by same factor as ktr
-    const auto V = nodes->GetPrimitive(iPoint);
-    su2double Mass = 0.0;
-    auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-    su2double tmp1, scl, Cptr;
-    su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
-    for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V[iSpecies]/V[RHO_INDEX]*Ms[iSpecies];
-    Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-    tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-    scl  = tmp1/ktr;
-    ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
-    //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-    //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Apply to the linear system ---*/
     Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
@@ -684,7 +616,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
       const auto dTvedU = nodes->GetdTvedU(iPoint);
-      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal); 
+      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal);
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
@@ -724,35 +656,22 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
 
-  SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
-
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
-  ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
-  bool implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
-  unsigned long iVertex, iPoint, jPoint;
-  su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
-  const su2double *Yst;
-  vector<su2double> hs, Cvtrs;
+  unsigned short iSpecies, jSpecies, iVar, jVar, kVar;
+  su2double **GradY, **dVdU;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Set "Proportional control" coefficient ---*/
-  //su2double pcontrol = 0.6;
-
-  /*--- Get species mass fractions at the wall ---*/
-  Yst = config->GetWall_Catalycity();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool Supercatalytic_Wall = config->GetSupercatalytic_Wall();
 
   /*--- Get universal information ---*/
-  RuSI     = UNIVERSAL_GAS_CONSTANT;
-  Ru       = 1000.0*RuSI;
-  auto& Ms = FluidModel->GetSpeciesMolarMass();
+  const su2double RuSI = UNIVERSAL_GAS_CONSTANT;
+  const su2double Ru = 1000.0*RuSI;
+  const auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short RHOS_INDEX  = nodes->GetRhosIndex();
@@ -761,8 +680,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   const unsigned short TVE_INDEX   = nodes->GetTveIndex();
 
   /*--- Allocate arrays ---*/
-  Yj    = new su2double[nSpecies];
-  dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
@@ -771,133 +688,158 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     dVdU[iVar] = new su2double[nVar];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute closest normal neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Compute distance between wall & normal neighbor ---*/
-      dij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dij += (geometry->nodes->GetCoord(jPoint, iDim) -
-                geometry->nodes->GetCoord(iPoint, iDim))
-            * (geometry->nodes->GetCoord(jPoint, iDim) -
-               geometry->nodes->GetCoord(iPoint, iDim));
-      }
-      dij = sqrt(dij);
-
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(jPoint);
+      const su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
       /*--- Compute dual-grid area and boundary normal ---*/
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the viscous residual to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Res_Visc[iVar] = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
 
       /*--- Get primitive information ---*/
-      Vi   = nodes->GetPrimitive(iPoint);
-      Vj   = nodes->GetPrimitive(jPoint);
-      Di   = nodes->GetDiffusionCoeff(iPoint);
-      eves = nodes->GetEve(iPoint);
-      hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
-      rho    = Vi[RHO_INDEX];
-      dTdU   = nodes->GetdTdU(iPoint);
-      dTvedU = nodes->GetdTvedU(iPoint);
+      const auto& Vi = nodes->GetPrimitive(iPoint);
+      const auto& Vj = nodes->GetPrimitive(jPoint);
+      const auto& Di = nodes->GetDiffusionCoeff(iPoint);
+      const auto& eves = nodes->GetEve(iPoint);
+      const auto& hs = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
+      const su2double rho = Vi[RHO_INDEX];
+      const auto& dTdU = nodes->GetdTdU(iPoint);
+      const auto& dTvedU = nodes->GetdTvedU(iPoint);
 
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
+      if (Supercatalytic_Wall) {
 
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
+        const auto& Yst = config->GetSupercatalytic_Wall_Composition();
+
+        /*--- Calculate supplementary quantities ---*/
+        su2double dYdn = 0.0, SdYdn = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
+          SdYdn += rho*Di[iSpecies]*dYdn;
+        }
+
+        /*--- Calculate species residual at wall ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
+          Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn+Yst[iSpecies]*SdYdn)*Area;
+        }
+
+        if (implicit) {
+          /*--- Initialize the transformation matrix ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++) {
+              dVdU[iVar][jVar] = 0.0;
+              Jacobian_j[iVar][jVar] = 0.0;
+              Jacobian_i[iVar][jVar] = 0.0;
+            }
+
+          /*--- Populate transformation matrix ---*/
+          // dYsdrk
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
+            dVdU[iSpecies][iSpecies] += 1.0/rho;
+          }
+          for (iVar = 0; iVar < nVar; iVar++) {
+            dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
+            dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
+          }
+
+          /*--- Calculate supplementary quantities ---*/
+          const auto& Cvtrs = FluidModel->GetSpeciesCvTraRot();
+          const auto& Cvve = nodes->GetCvve(iPoint);
+
+          /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
+          // Species mass fraction
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
+            Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
+          }
+
+          // Temperature
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+              Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
+            }
+            Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
+                                                                                 Cvtrs[iSpecies]  );
+            Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+          }
+
+          // Vib.-El. Temperature
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
+            Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+          }
+
+          /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              for (kVar = 0; kVar < nVar; kVar++)
+                Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
+
+          /*--- Apply to the linear system ---*/
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+
+      } else {
+
+        if (implicit) {
+          SU2_MPI::Error("Implicit not currently available for partially catalytic wall.",CURRENT_FUNCTION);
+        }
+
+        /*--- Identify the boundary ---*/
+        string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+        /*--- Get isothermal wall temp ----*/
+        const su2double Tw = config->GetIsothermal_Temperature(Marker_Tag);
+
+        /*--- Get wall catalytic efficiency ----*/
+        const su2double gam = config->GetCatalytic_Efficiency();
+
+        /*--- Get cataltyic reaction map ---*/
+        const auto& RxnTable = FluidModel->GetCatalyticRecombination();
+
+        /*--- Common catalytic flux factor ---*/
+        const su2double factor = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
+
+        /*--- Compute catalytic recombination flux ---*/
+        // Ref: 10.2514/6.2022-1636
+        // ws = gam_s*Ys*rho_wall*sqrt(Ru*Tw/(2*Pi*M_combine)*Area
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
+          Res_Visc[iSpecies] = RxnTable(iSpecies,0)*factor*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
+        }
+      }
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
-                                       +Yst[iSpecies]*SdYdn            )*Area;
-        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
+        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies])*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
 
       /*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      if (implicit) {
-
-        /*--- Initialize the transformation matrix ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++) {
-            dVdU[iVar][jVar] = 0.0;
-            Jacobian_j[iVar][jVar] = 0.0;
-            Jacobian_i[iVar][jVar] = 0.0;
-          }
-
-        /*--- Populate transformation matrix ---*/
-        // dYsdrk
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
-          dVdU[iSpecies][iSpecies] += 1.0/rho;
-        }
-        for (iVar = 0; iVar < nVar; iVar++) {
-          dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
-          dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
-        }
-
-        /*--- Calculate supplementary quantities ---*/
-        Cvtrs = FluidModel->GetSpeciesCvTraRot();
-        Cvve = nodes->GetCvve(iPoint);
-
-        /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
-        // Species mass fraction
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
-          Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
-        }
-
-        // Temperature
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
-          }
-          Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
-                                                                               Cvtrs[iSpecies]  );
-          Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
-        }
-
-        // Vib.-El. Temperature
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
-          Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
-        }
-
-        /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            for (kVar = 0; kVar < nVar; kVar++)
-              Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
-
-        /*--- Apply to the linear system ---*/
-        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-      }
     }
   }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] GradY[iSpecies];
   delete [] GradY;
-  delete [] dYdn;
-  delete [] Yj;
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
@@ -981,23 +923,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Retrieve Flow Data ---*/
     su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
-    su2double Eddy_Visc = nodes->GetEddyViscosity(iPoint);
     su2double Density   = nodes->GetDensity(iPoint);
     su2double Gamma     = nodes->GetGamma(iPoint);
-
-    /*--- Incorporate turbulence effects ---*/
-    const auto& Ms = FluidModel->GetSpeciesMolarMass();
-    su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
-    const auto Vi = nodes->GetPrimitive(iPoint);
-
-    su2double Mass = 0.0;
-    for (auto iSpecies=0u; iSpecies<nSpecies; iSpecies++)
-      Mass += Vi[iSpecies]*Ms[iSpecies];
-    su2double Cptr = rhoCvtr + Ru/Mass;
-    su2double tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
-    su2double scl  = tmp1/ktr;
-    ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
-    kve  = kve*(1.0+scl);
 
     /*--- Retrieve Primitive Gradients ---*/
     const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

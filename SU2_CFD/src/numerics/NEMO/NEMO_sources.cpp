@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   /*--- Allocate arrays ---*/
   Y = new su2double[nSpecies];
-  
+
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
@@ -156,9 +156,9 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
     fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
                                          dTvedU_i, jacobian);
   }
-    
+
   residual[nSpecies+nDim+1] = VTterm * Volume;
-  
+
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {
       for (jVar = 0; jVar<nVar; jVar++) {
@@ -296,7 +296,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
     su2double Mass      = 0.0;
 
     for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V_i[iSpecies]*Ms[iSpecies];
+      Mass += V_i[iSpecies]/rho*Ms[iSpecies];
 
     su2double heat_capacity_cp_i   = V_i[RHOCVTR_INDEX]/rho + Ru/Mass;
     su2double total_viscosity_i    = Laminar_Viscosity_i + Eddy_Viscosity_i;

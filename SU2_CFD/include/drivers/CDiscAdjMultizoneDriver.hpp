@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,10 @@
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
+/*!
+ * \brief Block Gauss-Seidel driver for multizone / multiphysics discrete adjoint problems.
+ * \ingroup DiscAdj
+ */
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:

@@ -2,14 +2,14 @@
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
@@ -90,7 +90,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:

@@ -13,14 +13,14 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes, J. Blühdorn
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -184,6 +184,25 @@ void omp_finalize();
 #define END_SU2_OMP_FOR OPDI_END_FOR
 
 #endif
+
+/* The SU2_OMP_SAFE_GLOBAL_ACCESS constructs are used to safeguard code that should only be executed by the master
+ * thread, with all threads and memory views synchronized both beforehand and afterwards.
+ */
+
+#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  SU2_OMP_BARRIER \
+  SU2_OMP_MASTER
+
+#define END_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  END_SU2_OMP_MASTER \
+  SU2_OMP_BARRIER
+
+#define SU2_OMP_SAFE_GLOBAL_ACCESS(...) \
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  { \
+    __VA_ARGS__ \
+  } \
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 

@@ -2,14 +2,14 @@
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -180,15 +180,16 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     else           FcLR = FcR;
 
     /*--- Sound speed derivatives: Species density ---*/
-    for (unsigned short iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (unsigned short iSpecies = 0; iSpecies < nEl; iSpecies++) {
+      daL[iSpecies] = 1.0/(2.0*a_i*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i);
+      daR[iSpecies] = 1.0/(2.0*a_j*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j);
+    }
+
+    for (unsigned short iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
       daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
                     + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
       daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
                     + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
-    }
-    for (unsigned short iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      daL[nSpecies-1] = 1.0/(2.0*a_i*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
-      daR[nSpecies-1] = 1.0/(2.0*a_j*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[nSpecies-1] - P_j/rho_j);
     }
 
     /*--- Sound speed derivatives: Momentum ---*/

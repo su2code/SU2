@@ -2,14 +2,14 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 
 /*!
  * \class CNoViscousFlux
+ * \ingroup ViscDiscr
  * \brief Numerics classes that accept a compile-time decorator should use this
  * class template as a "do-nothing" decorator and as a link to the interface when
  * they are not being decorated.
@@ -63,6 +64,7 @@ protected:
 
 /*!
  * \class CCompressibleViscousFluxBase
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow).
  */
 template<size_t NDIM, class Derived>
@@ -99,9 +101,9 @@ protected:
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
     correct(iMesh == MESH_0),
-    useSA_QCR(config.GetQCR()),
+    useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
-    uq(config.GetUsing_UQ()),
+    uq(config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
     uq_eigval_comp(config.GetEig_Val_Comp()),
     uq_delta_b(config.GetUQ_Delta_B()),
@@ -248,6 +250,7 @@ protected:
 
 /*!
  * \class CCompressibleViscousFlux
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow, ideal gas).
  */
 template<size_t NDIM>
@@ -306,6 +309,7 @@ public:
 
 /*!
  * \class CGeneralCompressibleViscousFlux
+ * \ingroup ViscDiscr
  * \brief Decorator class to add viscous fluxes (compressible flow, real gas).
  */
 template<size_t NDIM>

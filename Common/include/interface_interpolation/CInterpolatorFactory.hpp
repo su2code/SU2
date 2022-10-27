@@ -1,14 +1,14 @@
 ﻿/*!
  * \file CInterpolatorFactory.hpp
  * \brief Factory to generate interpolator objects.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,14 +29,10 @@ class CConfig;
 class CGeometry;
 class CInterpolator;
 
-/*!
- * \namespace CInterpolatorFactory
- * \brief Factory methods for CInterpolator objects.
- */
 namespace CInterpolatorFactory {
-
 /*!
- * \brief The factory method.
+ * \brief Factory method for CInterpolator objects.
+ * \ingroup Interfaces
  * \param[in] geometry_container - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] transpInterpolator - Transpose interpolator.
@@ -50,5 +46,4 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CInterpolator* transpInterpolator,
                                   unsigned iZone, unsigned jZone,
                                   bool verbose = true);
-
 }

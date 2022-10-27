@@ -2,14 +2,14 @@
  * \file CVolumetricMovement.hpp
  * \brief Headers of the CVolumetricMovement class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.2.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -336,7 +336,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false, bool ForwardProjectionDerivative = false);
 
   /*!
    * \brief Grid deformation using the spring analogy method.
@@ -352,14 +352,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetBoundaryDerivatives(CGeometry *geometry, CConfig *config);
+  void SetBoundaryDerivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative);
 
   /*!
    * \brief Update the derivatives of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config);
+  void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative);
 
   /*!
    * \brief Store the number of iterations when moving the mesh.
