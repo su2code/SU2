@@ -169,6 +169,30 @@ def main():
     tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.no_restart = True
     test_list.append(tutorial_trans_flatplate)
+    
+    # Transitional FlatPlate T3A
+    tutorial_trans_flatplate_T3A            = TestCase('transitional_flatplate_tutorial_T3A')
+    tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
+    tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
+    tutorial_trans_flatplate_T3A.test_iter  = 0
+    tutorial_trans_flatplate_T3A.test_vals  = [0.663915, 4.088903, -6.733057, -4.697968] #last 4 columns
+    tutorial_trans_flatplate_T3A.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_trans_flatplate_T3A.timeout    = 1600
+    tutorial_trans_flatplate_T3A.tol        = 0.00001
+    tutorial_trans_flatplate_T3A.no_restart = True
+    test_list.append(tutorial_trans_flatplate_T3A)
+    
+    # Transitional FlatPlate T3A-
+    tutorial_trans_flatplate_T3A-            = TestCase('transitional_flatplate_tutorial_T3A-')
+    tutorial_trans_flatplate_T3A-.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
+    tutorial_trans_flatplate_T3A-.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
+    tutorial_trans_flatplate_T3A-.test_iter  = 0
+    tutorial_trans_flatplate_T3A-.test_vals  = [-1.955813, 4.655101, -6.548565, -3.782123] #last 4 columns
+    tutorial_trans_flatplate_T3A-.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_trans_flatplate_T3A-.timeout    = 1600
+    tutorial_trans_flatplate_T3A-.tol        = 0.00001
+    tutorial_trans_flatplate_T3A-.no_restart = True
+    test_list.append(tutorial_trans_flatplate_T3A-)
 
     # Turbulent ONERA M6
     tutorial_turb_oneram6            = TestCase('turbulent_oneram6_tutorial')
