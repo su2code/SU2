@@ -451,7 +451,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     Tot_Surface_Temperature += Temperature;
     config->SetSurface_Temperature(iMarker_Analyze, Temperature);
 
-    su2double Pressure = Surface_Pressure[iMarker_Analyze] * config->GetPressure_Ref();
+    su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("SURFACE_STATIC_PRESSURE", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
     config->SetSurface_Pressure(iMarker_Analyze, Pressure);
