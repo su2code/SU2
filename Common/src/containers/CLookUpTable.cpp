@@ -78,7 +78,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   if (rank == MASTER_NODE) 
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
-  file_reader.ReadRawDRG(var_file_name_lut);
+  file_reader.ReadRawLUT(var_file_name_lut);
 
   n_points = file_reader.GetNPoints();
   n_triangles = file_reader.GetNTriangles();
