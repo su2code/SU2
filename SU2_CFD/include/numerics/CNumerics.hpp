@@ -82,7 +82,7 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
-  intermittency_sep_i;  /*!< \brief separation intermittency at point i. */
+  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
