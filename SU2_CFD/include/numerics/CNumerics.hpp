@@ -703,11 +703,10 @@ public:
   /*!
    * \brief Set the value of the effective intermittency for the LM model.
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
-   * \param[in] intermittency_eff_j - Value of the effective intermittency at point j.
    */
   void SetIntermittencyEff(su2double val_intermittency_eff_i) {
     intermittency_eff_i = val_intermittency_eff_i;
-  };
+  }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1432,11 +1431,6 @@ public:
     }
     return ERR;
   }
-
-  /*!
-   * \brief Set intermittency for numerics (used in SA with LM transition model)
-   */
-  inline virtual void SetIntermittency(su2double intermittency_in) { }
 
   /*!
    * \brief A virtual member.

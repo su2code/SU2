@@ -2262,7 +2262,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             file << "Menter's SST\n";
          break;
       }
-      if(transition) {
+      if (transition) {
         file << "Transition model: ";
         switch (Kind_Trans_Model) {
         case TURB_TRANS_MODEL::NONE: break;        
