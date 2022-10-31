@@ -234,7 +234,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
     const su2double StrainMag = max(nodes->GetStrainMag(iPoint), 1e-12);
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho, config->GetKind_Trans_Model());
 
     const su2double F2 = nodes->GetF2blending(iPoint);
 
@@ -325,6 +325,12 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
+
+    /*--- Effective Intermittency ---*/
+    
+    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {      
+      numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
+    }
 
     if (axisymmetric){
       /*--- Set y coordinate ---*/
