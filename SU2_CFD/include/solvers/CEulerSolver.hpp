@@ -2905,5 +2905,13 @@ public:
      * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
      */
     inline bool GetHasHybridParallel() const final { return true; }
+
+      /*!
+   * \brief A virtual member.
+   */
+  void GetOutlet_Properties(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short iMesh,
+                            bool Output) final;
     
 };

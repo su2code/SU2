@@ -11535,6 +11535,220 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
     
 }
 
+void CEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  su2double *V_outlet = NULL, Velocity[3], MassFlow,
+  Velocity2, Density, Area, AxiFactor;
+  unsigned short iMarker_Outlet, nMarker_Outlet;
+  string Inlet_TagBound, Outlet_TagBound;
+
+  bool axisymmetric = config->GetAxisymmetric();
+
+  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetInnerIter()!= 0))
+                      || (config->GetInnerIter() == 1));
+
+  /*--- Get the number of outlet markers and check for any mass flow BCs. ---*/
+
+  nMarker_Outlet = config->GetnMarker_Outlet();
+  bool Evaluate_BC = false;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+    Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+      Evaluate_BC = true;
+  }
+
+  /*--- If we have a massflow outlet BC, then we need to compute and
+   communicate the total massflow, density, and area through each outlet
+   boundary, so that it can be used in the iterative procedure to update
+   the back pressure until we converge to the desired mass flow. This
+   routine is called only once per iteration as a preprocessing and the
+   values for all outlets are stored and retrieved later in the BC_Outlet
+   routines. ---*/
+
+  if (Evaluate_BC) {
+
+    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+
+    /*--- Comute MassFlow, average temp, press, etc. ---*/
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      Outlet_MassFlow[iMarker] = 0.0;
+      Outlet_Density[iMarker]  = 0.0;
+      Outlet_Area[iMarker]     = 0.0;
+
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) ) {
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            V_outlet = nodes->GetPrimitive(iPoint);
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+
+            if (axisymmetric) {
+              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              else
+                AxiFactor = 1.0;
+            } else {
+              AxiFactor = 1.0;
+            }
+
+            Density = V_outlet[nDim+2];
+
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+              Velocity[iDim] = V_outlet[iDim+1];
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            }
+            Area = sqrt (Area);
+
+            Outlet_MassFlow[iMarker] += MassFlow;
+            Outlet_Density[iMarker]  += Density*Area;
+            Outlet_Area[iMarker]     += Area;
+
+          }
+        }
+      }
+    }
+
+    /*--- Copy to the appropriate structure ---*/
+
+    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
+
+    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
+
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
+      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
+
+      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
+      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
+    }
+
+    /*--- Copy the values to the local array for MPI ---*/
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW)) {
+        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+          Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
+            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
+            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
+          }
+        }
+      }
+    }
+
+    /*--- All the ranks to compute the total value ---*/
+
+#ifdef HAVE_MPI
+
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
+      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
+    }
+
+#endif
+
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
+        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
+      }
+      else {
+        Outlet_Density_Total[iMarker_Outlet] = 0.0;
+      }
+
+      if (iMesh == MESH_0) {
+        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+      }
+    }
+
+    /*--- Screen output using the values already stored in the config container ---*/
+
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
+
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
+      }
+
+      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+
+          /*--- Geometry defintion ---*/
+
+          cout <<"Outlet surface: " << Outlet_TagBound << "." << endl;
+
+          if ((nDim ==3) || axisymmetric) {
+            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
+          }
+          if (nDim == 2) {
+            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
+          }
+
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
+
+        }
+      }
+
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
+        cout << "-------------------------------------------------------------------------" << endl << endl;
+      }
+
+      cout.unsetf(ios_base::floatfield);
+
+    }
+
+    delete [] Outlet_MassFlow_Local;
+    delete [] Outlet_Density_Local;
+    delete [] Outlet_Area_Local;
+
+    delete [] Outlet_MassFlow_Total;
+    delete [] Outlet_Density_Total;
+    delete [] Outlet_Area_Total;
+
+    delete [] Outlet_MassFlow;
+    delete [] Outlet_Density;
+    delete [] Outlet_Area;
+
+  }
+
+}
+
 void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
                                             CConfig   *config) {
     
