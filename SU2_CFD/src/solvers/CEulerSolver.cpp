@@ -9610,27 +9610,27 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
                     auto P_Inf  = config->GetPressure_FreeStream();
 		    Density = V_domain[nDim + 2];
-                    Velocity2 = 0.0; Vn = 0.0;
+                    cout <<Density<<endl;
+		    Velocity2 = 0.0; Vn = 0.0;
                     for (iDim = 0; iDim < nDim; iDim++) {
                         Velocity[iDim] = V_domain[iDim + 1];
                         Velocity2 += Velocity[iDim]*Velocity[iDim];
                         Vn += Velocity[iDim]*UnitNormal[iDim];
                     }
                     Pressure   = V_domain[nDim + 1];
-                    SoundSpeed = sqrt(Gamma*Pressure/Density);
+                    cout <<Pressure<<endl;
+		    SoundSpeed = sqrt(Gamma*Pressure/Density);
                     Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
             
                     /*--- Retrieve the specficied target mass flow at the outlet. ---*/
-                    //NOTE-TODO: This call requires extra steps not done in the Euler solver.
-		    //           Calling the pressure pressure will return input value.  
-                    su2double mDot_Target = config->GetOutlet_Pressure(Marker_Tag);
+                    
+		    su2double mDot_Target = config->GetOutlet_Pressure(Marker_Tag);
             
                     /*--- Compute the mass flow increment based on the difference
                           between the target mass flow and current mass flow. ---*/
             
                     //TODO: The same thing occurs here......Outlet_Area is not set yet.  See GetOutlet_Properties.
-		    //auto Area_Outlet = config->GetOutlet_Area(Marker_Tag);
-		    su2double Area_Outlet = 877.2;
+		    auto Area_Outlet = config->GetOutlet_Area(Marker_Tag);
 
                     auto mDot_Current = Density * Area_Outlet * Vn;
             
@@ -11572,7 +11572,7 @@ void CEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, un
   bool Evaluate_BC = false;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
-    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+    if (config->GetKind_Comp_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
       Evaluate_BC = true;
   }
 

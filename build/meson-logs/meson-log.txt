@@ -1,0 +1,240 @@
+Build started at 2022-10-31T16:04:51.220249
+Main binary: /usr/bin/python3
+Build Options: -Denable-autodiff=true -Dwith-mpi=enabled -Denable-mpp=false -Dprefix=/home/wallymaier/OTHER/QUAD
+Python system: Linux
+The Meson build system
+Version: 0.52.999
+Source dir: /home/wallymaier/OTHER/QUAD
+Build dir: /home/wallymaier/OTHER/QUAD/build
+Build type: native build
+WARNING: Unknown options: "enable-mpp"
+Project name: SU2
+Project version: 7.0.4 "Blackbird"
+No CFLAGS in the environment, not changing global flags.
+No LDFLAGS in the environment, not changing global flags.
+No CPPFLAGS in the environment, not changing global flags.
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.c -o /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.exe -pipe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.exe
+C compiler for the build machine: cc (gcc 9.4.0 "cc (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0")
+C linker for the build machine: GNU ld.bfd 2.34
+No CXXFLAGS in the environment, not changing global flags.
+No LDFLAGS in the environment, not changing global flags.
+No CPPFLAGS in the environment, not changing global flags.
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.cc -o /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.exe -pipe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.exe
+C++ compiler for the build machine: c++ (gcc 9.4.0 "c++ (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0")
+C++ linker for the build machine: GNU ld.bfd 2.34
+No CFLAGS in the environment, not changing global flags.
+No LDFLAGS in the environment, not changing global flags.
+No CPPFLAGS in the environment, not changing global flags.
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.c -o /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.exe -pipe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckc.exe
+C compiler for the host machine: cc (gcc 9.4.0 "cc (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0")
+C linker for the host machine: GNU ld.bfd 2.34
+No CXXFLAGS in the environment, not changing global flags.
+No LDFLAGS in the environment, not changing global flags.
+No CPPFLAGS in the environment, not changing global flags.
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.cc -o /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.exe -pipe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/wallymaier/OTHER/QUAD/build/meson-private/sanitycheckcpp.exe
+C++ compiler for the host machine: c++ (gcc 9.4.0 "c++ (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0")
+C++ linker for the host machine: GNU ld.bfd 2.34
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+Program python3 found: YES (/usr/bin/python3)
+Pkg-config binary for MachineChoice.HOST is not cached.
+Pkg-config binary missing from cross or native file, or env var undefined.
+Trying a default pkg-config fallback at pkg-config
+Trying pkg-config binary pkg-config for machine MachineChoice.HOST at ['/usr/bin/pkg-config']
+Determining dependency 'ompi-c' with pkg-config executable '/usr/bin/pkg-config'
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config --modversion ompi-c` -> 0
+3.1.6
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config --cflags ompi-c` -> 0
+-pthread -I/usr/local/include
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config ompi-c --libs` -> 0
+-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -lmpi
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config ompi-c --libs` -> 0
+-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -lmpi
+Running compile:
+Working directory:  /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsj4dquo4
+Command line:  cc /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsj4dquo4/testfile.c -o /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsj4dquo4/output.exe -pipe -D_FILE_OFFSET_BITS=64 -O0 
+
+Code:
+ #include<stdio.h>
+        
+        int main() {
+            printf("%ld\n", (long)(sizeof(void *)));
+            return 0;
+        };
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Program stdout:
+
+8
+
+Program stderr:
+
+
+Running compile:
+Working directory:  /home/wallymaier/OTHER/QUAD/build/meson-private/tmp1ocpzvqa
+Command line:  cc /home/wallymaier/OTHER/QUAD/build/meson-private/tmp1ocpzvqa/testfile.c -o /home/wallymaier/OTHER/QUAD/build/meson-private/tmp1ocpzvqa/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/9/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../lib/:/lib/x86_64-linux-gnu/9/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/9/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ 
+Run-time dependency MPI for c found: YES 3.1.6
+Pkg-config binary for MachineChoice.HOST is cached.
+Determining dependency 'ompi-cxx' with pkg-config executable '/usr/bin/pkg-config'
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config --modversion ompi-cxx` -> 0
+3.1.6
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config --cflags ompi-cxx` -> 0
+-pthread -I/usr/local/include
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config ompi-cxx --libs` -> 0
+-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -lmpi
+PKG_CONFIG_PATH: 
+Called `/usr/bin/pkg-config ompi-cxx --libs` -> 0
+-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -lmpi
+Running compile:
+Working directory:  /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsxnq7syp
+Command line:  c++ /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsxnq7syp/testfile.cpp -o /home/wallymaier/OTHER/QUAD/build/meson-private/tmpsxnq7syp/output.exe -pipe -D_FILE_OFFSET_BITS=64 -O0 -fpermissive 
+
+Code:
+ #include<stdio.h>
+        
+        int main() {
+            printf("%ld\n", (long)(sizeof(void *)));
+            return 0;
+        };
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Program stdout:
+
+8
+
+Program stderr:
+
+
+Running compile:
+Working directory:  /home/wallymaier/OTHER/QUAD/build/meson-private/tmp18i513gv
+Command line:  c++ /home/wallymaier/OTHER/QUAD/build/meson-private/tmp18i513gv/testfile.cpp -o /home/wallymaier/OTHER/QUAD/build/meson-private/tmp18i513gv/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/9/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../lib/:/lib/x86_64-linux-gnu/9/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/9/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ 
+Run-time dependency MPI for cpp found: YES 3.1.6
+Running command: /usr/bin/python3 /home/wallymaier/OTHER/QUAD/meson_scripts/check_dir.py boost
+--- stdout ---
+
+--- stderr ---
+
+
+Message: Extracting boost ...
+Running command: /usr/bin/python3 /home/wallymaier/OTHER/QUAD/meson_scripts/extract_file.py boost.tar.gz /home/wallymaier/OTHER/QUAD/externals/tecio
+--- stdout ---
+/home/wallymaier/OTHER/QUAD/externals/tecio
+
+--- stderr ---
+
+
+Message: -------------------------------------------------------------------------
+         |    ___ _   _ ___                                                      |
+         |   / __| | | |_  )   Release 7.0.4 "Blackbird"                         |
+         |   \__ \ |_| |/ /                                                      |
+         |   |___/\___//___|   Meson Configuration Summary                       |
+         |                                                                       |
+         -------------------------------------------------------------------------
+         
+         Option          Value
+         ---------------------
+         TecIO:          true
+         CGNS:           true
+         AD (reverse):   true
+         AD (forward):   false
+         Python Wrapper: false
+         Intel-MKL:      false
+         OpenBlas:       false
+         PaStiX:         false
+
+         Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
+         and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
+
+         Based on the input to this configuration, add these lines to your .bashrc file:
+
+         export SU2_RUN=/home/wallymaier/OTHER/QUAD/bin
+         export SU2_HOME=/home/wallymaier/OTHER/QUAD
+         export PATH=$PATH:$SU2_RUN
+         export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+         Use './ninja -C build install' to compile and install SU2
+
+Build targets in project: 16
+Found ninja-1.9.0.git at /home/wallymaier/OTHER/QUAD/ninja
+Running compile:
+Working directory:  /tmp/tmpmqnnxwet
+Command line:  c++ /tmp/tmpmqnnxwet/testfile.cpp -o /tmp/tmpmqnnxwet/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+
+Code:
+ int i = static_cast<int>(0);
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler accepts -std=c++11: YES
