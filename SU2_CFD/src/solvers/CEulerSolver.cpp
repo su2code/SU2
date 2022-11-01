@@ -9604,7 +9604,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                           of boundary update depends on this. ---*/
 
                     auto P_Inf  = config->GetPressure_FreeStream();
-                    Density = V_domain[nDim + 2];
+		    Density = V_domain[nDim + 2];
                     Velocity2 = 0.0; Vn = 0.0;
                     for (iDim = 0; iDim < nDim; iDim++) {
                         Velocity[iDim] = V_domain[iDim + 1];
@@ -9616,17 +9616,28 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                     Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
             
                     /*--- Retrieve the specficied target mass flow at the outlet. ---*/
-            
-                    auto mDot_Target = config->GetOutlet_MassFlow(Marker_Tag);
+                    //NOTE-TODO: This call requires extra steps not done in the Euler solver.
+		    //           Calling the pressure pressure will return input value.  
+                    su2double mDot_Target = config->GetOutlet_Pressure(Marker_Tag);
             
                     /*--- Compute the mass flow increment based on the difference
                           between the target mass flow and current mass flow. ---*/
             
-                    auto Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+                    //TODO: The same thing occurs here......Outlet_Area is not set yet.  See GetOutlet_Properties.
+		    //auto Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+		    su2double Area_Outlet = 877.2;
+
                     auto mDot_Current = Density * Area_Outlet * Vn;
             
                     auto delta_mDot = mDot_Target - mDot_Current;
-                    su2doube Damping, P_Outlet;
+                    cout <<"Target: "<<mDot_Target<<endl;
+		    cout <<"Area: "<<Area_Outlet<<endl;
+		    cout <<"Curr: "<<mDot_Current<<endl;
+		    
+		    
+		    
+		    
+		    su2double Damping, P_Outlet;
 
                     /*--- Update the new outlet mass flow. Note that we use damping
                           here to improve stability and convergence. ---*/
@@ -9653,7 +9664,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                     }
             
                     /*--- The pressure is prescribed at the outlet ---*/
-            
+                    V_outlet = V_domain; 
                     V_outlet[nDim + 1] = max(P_Inf, P_Outlet);
                     
                     break; 
