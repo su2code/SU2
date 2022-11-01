@@ -2531,7 +2531,8 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     (config->GetKind_Upwind_Flow() == ROE ||
      config->GetKind_Upwind_Flow() == SLAU ||
      config->GetKind_Upwind_Flow() == SLAU2);
-    
+    bool outlet           = ((config->GetnMarker_Outlet() != 0));
+
     /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
     
     if (fixed_cl && !disc_adjoint && !cont_adjoint) {
@@ -2568,6 +2569,10 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
         SU2_OMP_BARRIER
     }
     
+    /*--- Compute properties needed for mass flow BCs. ---*/
+
+    if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
+
     /*--- Compute the actuator disk properties and distortion levels ---*/
     
     if (actuator_disk) {
