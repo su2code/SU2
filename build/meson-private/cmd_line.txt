@@ -1,8 +1,0 @@
-[options]
-enable-autodiff = true
-with-mpi = enabled
-enable-mpp = false
-prefix = /home/wallymaier/OTHER/QUAD
-
-[properties]
-
