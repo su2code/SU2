@@ -622,12 +622,20 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
         su2double Velocity_Inlet[MAXNDIM] = {0.0};
         for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = V_inlet[iDim + 1];
-        const su2double Temperature_Inlet = V_inlet[nDim + 1];
+        su2double Temperature_Inlet;
+        if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+          Temperature_Inlet = V_inlet[0];
+        } else {
+          Temperature_Inlet = V_inlet[nDim + 1];
+        }
 
         /*--- Obtain flow properties at inlet boundary node ---*/
+        const su2double* Scalar_Inlet = nullptr;
+        if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+          Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        }
 
-        FluidModel->SetTDState_T(Temperature_Inlet,
-                                 config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker)));
+        FluidModel->SetTDState_T(Temperature_Inlet, Scalar_Inlet);
         const su2double density_inlet = FluidModel->GetDensity();
         const su2double laminar_viscosity_inlet = FluidModel->GetLaminarViscosity();
         const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
