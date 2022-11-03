@@ -644,12 +644,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
         Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
         Inlet_Vars[1] = density_inlet * Inlet_Vars[0] / (laminar_viscosity_inlet * viscRatio);
-
-        /*--- Obtain eddy viscosity at inlet boundary node ---*/
-        const su2double muT = density_inlet * Inlet_Vars[0] / Inlet_Vars[1];
-
-        /*-- Set eddy viscosity at inlet boundary node*/
-        nodes->SetmuT(iPoint, muT);
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST
