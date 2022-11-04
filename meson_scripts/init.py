@@ -157,14 +157,6 @@ def submodule_status(path, sha_commit):
       print(original_path)
       os.chdir(original_path)
       print('CoolProp updated')
-      # add ninja to path
-      print('add ninja to path')
-      f = open("vim ~/.bashrc",'a')
-      f.write("export PATH=$PATH:/github/workspace/src/SU2_refs_pull_1782_merge/externals/ninja\n")
-      f.close()
-      subprocess.run(['source ~/.bashrc'])
-      subprocess.run(['which ninja'])
-      print('ninja added in path')
       # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
