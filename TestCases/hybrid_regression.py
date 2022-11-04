@@ -166,7 +166,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.510635, 4.871104, 0.811904, 0.061614, -82395.000000]
+    rae2822_sst.test_vals = [-0.510634, 4.869669, 0.811906, 0.061614, -82395.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -174,7 +174,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.430589, 4.871104, 0.811903, 0.061614]
+    rae2822_sst_sust.test_vals = [-2.420843, 4.869669, 0.811906, 0.061614]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -207,7 +207,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals         = [-11.450472, -12.797872, -5.863655, 1.049989, 0.019163, -1.856265, -38.694000]
+    turb_naca0012_sst.test_vals         = [-11.418415, -12.801780, -5.864804, 1.049990, 0.019163, -1.669899, -38.695000]
     turb_naca0012_sst.test_vals_aarch64 = [-11.450473, -12.797872, -5.863655, 1.049989, 0.019163, -1.856266, -38.694000]
     test_list.append(turb_naca0012_sst)
 
@@ -216,7 +216,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals         = [-11.367052, -12.640670, -5.746919, 1.005233, 0.019017, -1.913902]
+    turb_naca0012_sst_sust.test_vals         = [-11.361657, -12.642245, -5.747099, 1.005234, 0.019017, -1.573783]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-11.367052, -12.640670, -5.746919, 1.005233, 0.019017, -1.913907]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -225,7 +225,7 @@ def main():
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
-    turb_naca0012_sst_fixedvalues.test_vals         = [-5.192502, -9.575898, -1.568269, 1.022571, 0.040527, -2.384329]
+    turb_naca0012_sst_fixedvalues.test_vals         = [-5.192502, -9.575351, -1.568269, 1.022571, 0.040527, -2.384334]
     turb_naca0012_sst_fixedvalues.test_vals_aarch64 = [-5.192501, -9.575897, -1.568269, 1.022571, 0.040527, -2.384327]
     test_list.append(turb_naca0012_sst_fixedvalues)
 
@@ -250,13 +250,13 @@ def main():
     #######################################
     
     # Axisymmetric air nozzle (transonic)
-    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
-    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
-    axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals         = [-12.093553, -6.630383, -8.798737, -2.399130, -1938.200000]
-    axi_rans_air_nozzle.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
-    test_list.append(axi_rans_air_nozzle)
+    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle_restart.test_iter = 10
+    axi_rans_air_nozzle_restart.test_vals         = [-6.189961, -0.620481, -2.083081, 2.428775, -1925.900000]
+    axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
+    test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
     ## Compressible RANS Restart  ###
@@ -424,7 +424,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.276424, 0.145860, 0.000003, 0.312011]
+    inc_turb_naca0012_sst_sust.test_vals = [-7.274028, 0.145888, 0.000002, 0.312014]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     ######################################
@@ -457,7 +457,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-2.558001, -1.162564, 0.066372, 1.399788, 2.220402, 1.399743, 2.218603, -0.453110]
+    square_cylinder.test_vals = [-2.558128, -1.158062, 0.067932, 1.399788, 2.220402, 1.399743, 2.218603, -0.453110]
     square_cylinder.test_vals_aarch64 = [-2.558106, -1.162563, 0.066386, 1.399788, 2.220402, 1.399743, 2.218603, -0.453110]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
@@ -539,25 +539,25 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.279930, 0.379651, 72.212100, 1.277439]
+    Jones_tc.test_vals = [-5.283765, 0.374023, 72.237490, 1.276352]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
 	# Jones APU Turbocharger restart
-    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
-    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
-    Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625251, -1.568824, 33.995140, 10.181940]
-    Jones_tc_rst.new_output = False
-    test_list.append(Jones_tc_rst)
+    Jones_tc_restart           = TestCase('jones_turbocharger_restart')
+    Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_restart.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_restart.test_iter = 5
+    Jones_tc_restart.test_vals = [-4.239867, -1.473789, 33.995230, 10.181650]
+    Jones_tc_restart.new_output = False
+    test_list.append(Jones_tc_restart)
 
     # 2D axial stage
     axial_stage2D           = TestCase('axial_stage2D')
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [-1.933115, 5.365584, 73.354510, 0.925901]
+    axial_stage2D.test_vals         = [-1.937003, 5.338805, 73.357170, 0.915734]
     axial_stage2D.test_vals_aarch64 = [-1.933115, 5.365583, 73.354510, 0.925902]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
@@ -567,20 +567,20 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals         = [-0.565608, 5.833408, 96.476150, 0.062517]
+    transonic_stator.test_vals         = [-0.556926, 5.833298, 96.475820, 0.062519]
     transonic_stator.test_vals_aarch64 = [-0.565610, 5.833410, 96.476160, 0.062517]
     transonic_stator.new_output = False
     test_list.append(transonic_stator)
 
     # 2D transonic stator restart
-    transonic_stator_rst           = TestCase('transonic_stator_restart')
-    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
-    transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals         = [-6.619122, -0.615690, 5.002986, 0.002951]
-    transonic_stator_rst.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
-    transonic_stator_rst.new_output = False
-    test_list.append(transonic_stator_rst)
+    transonic_stator_restart           = TestCase('transonic_stator_restart')
+    transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_restart.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_restart.test_iter = 20
+    transonic_stator_restart.test_vals         = [-3.311068, 0.208052, 5.003075, 0.002950]
+    transonic_stator_restart.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
+    transonic_stator_restart.new_output = False
+    test_list.append(transonic_stator_restart)
 
     ######################################
     ### Sliding Mesh                   ###
@@ -652,7 +652,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.619686, -1.564595]
+    bars_SST_2D.test_vals = [13.000000, -0.609170, -1.523885]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
