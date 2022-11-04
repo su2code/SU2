@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 50
-    bump_sst1994m.test_vals         = [-9.357032, -5.944060, -2.100896, 0.024576, 0.004967]
+    bump_sst1994m.test_vals         = [-5.125576, -1.819055, 2.334682, 0.026347, 0.004771]
     bump_sst1994m.test_vals_aarch64 = [-13.085614, -10.325319, -5.559183, 0.024576, 0.004967]
     test_list.append(bump_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m_restart.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m_restart.cfg_file  = "turb_bump_sst_restart.cfg"
     bump_sst1994m_restart.test_iter = 5
-    bump_sst1994m_restart.test_vals         = [-9.357032, -5.944060, -2.100896, 0.024576, 0.004967]
+    bump_sst1994m_restart.test_vals         = [-5.248762, -1.940175, 2.250798, 0.026499, 0.004869]
     bump_sst1994m_restart.test_vals_aarch64 = [-13.085614, -10.325319, -5.559183, 0.024576, 0.004967]
     test_list.append(bump_sst1994m_restart)
 
