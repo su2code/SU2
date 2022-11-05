@@ -168,5 +168,7 @@ public:
    */
   CAvgGrad_TransEN(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {
+  }
+  
 };

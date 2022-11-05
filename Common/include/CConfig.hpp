@@ -1929,16 +1929,16 @@ public:
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
 
   /*!
-   * \brief Get the value of the non-dimensionalized freestream amplification factor.
-   * \return Non-dimensionalized freestream amplification factor.
-   */
-  su2double GetAmplificationFactor_FreeStream(void) const { return AmplificationFactor_FreeStream; }
-
-/*!
    * \brief Get the value of the freestream momentum thickness Reynolds number.
    * \return Freestream momentum thickness Reynolds number.
    */
   su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream amplification factor.
+   * \return Non-dimensionalized freestream amplification factor.
+   */
+  su2double GetAmplificationFactor_FreeStream(void) const { return AmplificationFactor_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.

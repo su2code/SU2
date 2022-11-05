@@ -1386,7 +1386,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
-
+	
     if (LM) {
 	  trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
 	}
@@ -1407,7 +1407,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 	else if (EN) {
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
       numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, false, config);
-   }
+    }
   }
 }
 

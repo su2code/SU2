@@ -372,7 +372,7 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
 }
 
 CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
-
+	
   CSolver *transSolver = nullptr; 
 
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
@@ -383,16 +383,19 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break; 
+		
 	  case TURB_TRANS_MODEL::EN :
         transSolver = new CTransENSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break;
+
       case TURB_TRANS_MODEL::NONE:        
         break;
     }
   }  
+
   return transSolver;
 }
 

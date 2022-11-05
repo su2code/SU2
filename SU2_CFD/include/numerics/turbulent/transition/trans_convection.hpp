@@ -46,4 +46,3 @@ using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
 template <class FlowIndices>
 using CUpwSca_TransEN  = CUpwSca_TurbSA<FlowIndices>;
 
-

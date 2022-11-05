@@ -1090,6 +1090,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       break;
   }
 
+  switch (config->GetKind_Trans_Model()) {    
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
+      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
       AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
@@ -2300,7 +2312,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       if (transition) {
         file << "Transition model: ";
         switch (Kind_Trans_Model) {
-        case TURB_TRANS_MODEL::NONE: break;        
+        case TURB_TRANS_MODEL::NONE: 
+		  break;        
         case TURB_TRANS_MODEL::LM:
           file << "Langtry and Menter's transition\n";
           break;
