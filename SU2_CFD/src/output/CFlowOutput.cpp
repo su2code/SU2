@@ -867,16 +867,22 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 
     case TURB_FAMILY::NONE: break;
   }
-
-  switch (config->GetKind_Trans_Model()) {
-
-    case TURB_TRANS_MODEL::EN:
+  switch (config->GetKind_Trans_Model()) {    
+    
+    case TURB_TRANS_MODEL::LM:
+      /// DESCRIPTION: Root-mean square residual of the intermittency (LM model).
+      AddHistoryOutput("RMS_INTERMITTENCY", "rms[LM_1]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of intermittency (LM model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Root-mean square residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("RMS_RE_THETA_T", "rms[LM_2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      break;
+	  
+	case TURB_TRANS_MODEL::EN:
       /// DESCRIPTION: Root-mean square residual of the Amplification factor (e^N model).
-      AddHistoryOutput("RMS_AMPLIFICATIONFACTOR", "rms[EN_n]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of amplification (EN model).", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_AMPLIFICATION_FACTOR", "rms[n]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the amplification factor (EN model)).", HistoryFieldType::RESIDUAL);
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
-  }
+  } 
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
@@ -904,10 +910,16 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
   }
 
   switch (config->GetKind_Trans_Model()) {
-
+    
     case TURB_TRANS_MODEL::LM:
+      /// DESCRIPTION: Maximum residual of the intermittency (LM model).
+      AddHistoryOutput("MAX_INTERMITTENCY", "max[LM_1]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("MAX_RE_THETA_T", "max[LM_2]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+	  
+	case TURB_TRANS_MODEL::EN:
       /// DESCRIPTION: Maximum residual of the amplification factor (EN model).
-      AddHistoryOutput("MAX_AMPLIFICATIONFACTOR", "max[EN_n]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("MAX_AMPLIFICATION_FACTOR", "max[n]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -941,14 +953,19 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   }
 
   switch (config->GetKind_Trans_Model()) {
-
-    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM: 
+      /// DESCRIPTION: Maximum residual of the intermittency (LM model).
+      AddHistoryOutput("BGS_INTERMITTENCY", "bgs[LM_1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
+      AddHistoryOutput("BGS_RE_THETA_T", "bgs[LM_2]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      break;
+	  
+	case TURB_TRANS_MODEL::EN:
       /// DESCRIPTION: Maximum residual of the amplification factor (EN model).
-      AddHistoryOutput("BGS_AMPLIFICATIONFACTOR", "bgs[EN_n]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_AMPLIFICATION_FACTOR", "bgs[n]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the amplification factor (EN model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_TRANS_MODEL::NONE:
-      break;
+    case TURB_TRANS_MODEL::NONE: break;
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -1006,15 +1023,26 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   }
 
   switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::LM:
+      SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
+      SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_Max(1)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
+      }
+      break;
+	  
 	case TURB_TRANS_MODEL::EN:
-	  SetHistoryOutputValue("RMS_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
-	  SetHistoryOutputValue("MAX_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_Max(0)));
+	  SetHistoryOutputValue("RMS_AMPLIFICATION_FACTOR", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
+	  SetHistoryOutputValue("MAX_AMPLIFICATION_FACTOR", log10(solver[TRANS_SOL]->GetRes_Max(0)));
 	  if (multiZone) {
-		SetHistoryOutputValue("BGS_AMPLIFICATIONFACTOR", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
+		SetHistoryOutputValue("BGS_AMPLIFICATION_FACTOR", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
 	  }
 	  break;
 
-	case TURB_TRANS_MODEL::NONE: break;
+    case TURB_TRANS_MODEL::NONE: break;
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -1045,11 +1073,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
     case TURB_FAMILY::NONE:
       break;
   }
-
+  
   switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::EN:
-      AddVolumeOutput("AMPLIFICATIONFACTOR", "EN_n", "SOLUTION", "EN AMPLIFICATION");
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
+      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
       break;
+	  
+	case TURB_TRANS_MODEL::EN:
+      AddVolumeOutput("AMPLIFICATION_FACTOR", "n", "SOLUTION", "e^N transition Amplification Factor");
+	  break;
 
     case TURB_TRANS_MODEL::NONE:
       break;
@@ -1077,9 +1112,14 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   }
 
   switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::EN:
-      AddVolumeOutput("RES_AMPLIFICATIONFACTOR", "Residual_EN_AMLIFICATION", "RESIDUAL", "Residual of e^N amplification factor");
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
+      AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
       break;
+	  
+	case TURB_TRANS_MODEL::EN:
+      AddVolumeOutput("RES_AMPLIFICATION_FACTOR", "Residual_EN_AMLIFICATION", "RESIDUAL", "Residual of the amplification factor (EN model)");
+	  break;
 
     case TURB_TRANS_MODEL::NONE:
       break;
@@ -1196,10 +1236,19 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::EN:
-      SetVolumeOutputValue("AMPLIFICATIONFACTOR", iPoint, Node_Trans->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("RES_AMPLIFICATION", iPoint, trans_solver->LinSysRes(iPoint, 0));
+    case TURB_TRANS_MODEL::LM:
+      SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
+      SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
+      SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
+      SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
       break;
+	  
+	case TURB_TRANS_MODEL::EN:
+      SetVolumeOutputValue("AMPLIFICATION_FACTOR", iPoint, Node_Trans->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("RES_AMPLIFICATION_FACTOR", iPoint, trans_solver->LinSysRes(iPoint, 0));
+	  break;
 
     case TURB_TRANS_MODEL::NONE: break;
   }
@@ -2248,14 +2297,17 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             file << "Menter's SST\n";
          break;
       }
-      if(transition) {
-		file << "Transition model: ";
-		switch (Kind_Trans_Model) {
-		case TURB_TRANS_MODEL::NONE: break;
+      if (transition) {
+        file << "Transition model: ";
+        switch (Kind_Trans_Model) {
+        case TURB_TRANS_MODEL::NONE: break;        
+        case TURB_TRANS_MODEL::LM:
+          file << "Langtry and Menter's transition\n";
+          break;
 		case TURB_TRANS_MODEL::EN:
 		  file << "e^N transition\n";
 		  break;
-		}
+        }
       }
       break;
     default:

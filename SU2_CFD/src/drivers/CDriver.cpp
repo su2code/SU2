@@ -56,7 +56,6 @@
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 
 #include "../../include/numerics/template.hpp"
-#include "../../include/numerics/transition.hpp"
 #include "../../include/numerics/radiation.hpp"
 #include "../../include/numerics/heat.hpp"
 #include "../../include/numerics/flow/convection/roe.hpp"
@@ -1346,15 +1345,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int conv_bound_term = CONV_BOUND_TERM + offset;
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
-  bool EN = false;
-
   /*--- Assign transition model booleans ---*/
-
-  switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::NONE:
-      break;
-    case TURB_TRANS_MODEL::EN: EN = true; break;
-  }
+  
+  const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
+  const bool EN = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::EN;
 
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -1364,10 +1358,12 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if ( NONE) {
-          SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
-        }
-        else if (EN) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+        if (LM) {
+		  numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+		}	
+		else if (EN) {
+		  numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+		}
       }
       break;
     default:
@@ -1378,11 +1374,12 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (NONE) {
-      SU2_MPI::Error("Invalid viscous scheme for the transition equations.", CURRENT_FUNCTION);
-    }
-    else if (EN)
+    if (LM) {
+	  numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+	}
+	else if (EN) {
       numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, true, config);
+	}
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1390,10 +1387,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
 
-    if(NONE) {
-      SU2_MPI::Error("Invalid source for the transition equations.", CURRENT_FUNCTION);
-    }
-    else if (EN) {
+    if (LM) {
+	  trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+	}
+	else if (EN) {
       trans_source_first_term = new CSourcePieceWise_TransEN<Indices>(nDim, nVar_Trans, config);
     }
 
@@ -1403,15 +1400,17 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   /*--- Definition of the boundary condition method ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (NONE) {
-      SU2_MPI::Error("Invalid boundary conditions for the transition equations.", CURRENT_FUNCTION);
+    if (LM) {
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
     }
-    else if (EN) {
+	else if (EN) {
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
       numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, false, config);
-    }
+   }
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
@@ -1421,7 +1420,6 @@ template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices
 
 template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
 
 template <class Indices>
 void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
@@ -2109,16 +2107,16 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-	if (incompressible)
-	  InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
-																				 solver[MESH_0][TRANS_SOL], numerics);
-	else if (NEMO_ns)
-	  InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
-																				  solver[MESH_0][TRANS_SOL], numerics);
-	else
-	  InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
-																			  solver[MESH_0][TRANS_SOL], numerics);
-  }
+    if (incompressible)
+      InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+                                                                                 solver[MESH_0][TRANS_SOL], numerics);
+    else if (NEMO_ns)
+      InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+                                                                                  solver[MESH_0][TRANS_SOL], numerics);
+    else
+      InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+                                                                              solver[MESH_0][TRANS_SOL], numerics);
+  }  
 
   /*--- Solver definition for the species transport problem ---*/
   if (species) {

@@ -102,9 +102,9 @@ private:
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
-
+  
   /*!
-   * \brief Create a turbulent solver
+   * \brief Create a transition solver
    * \param[in] kindTransModel- Kind of transition solver
    * \param[in] solver        - The solver container (used to call preprocessing of the flow solver)
    * \param[in] geometry      - The geometry definition

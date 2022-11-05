@@ -251,6 +251,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
 
   AD::EndNoSharedReading();
+
 }
 
 void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
@@ -265,6 +266,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Now instantiate the generic implementation with the functor above. ---*/
 
   Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -273,9 +275,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
-
-  bool transition_EN = false;
-  if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) transition_EN = true;
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -350,9 +349,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (transition_BC) {
       nodes->SetGammaBC(iPoint,numerics->GetGammaBC());
     }
-    if (transition_EN) {
-      numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetAmplificationFactor(iPoint), 0.0);
-	}
 
     /*--- Subtract residual and the Jacobian ---*/
 

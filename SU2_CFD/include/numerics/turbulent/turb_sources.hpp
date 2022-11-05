@@ -41,7 +41,6 @@ struct CSAVariables {
   const su2double cb1 = 0.1355;
   const su2double cw2 = 0.3;
   const su2double ct3 = 1.2;
-  const su2double ct4 = 0.5;
   const su2double cw3_6 = pow(2, 6);
   const su2double sigma = 2.0 / 3.0;
   const su2double cb2 = 0.622;
@@ -49,8 +48,11 @@ struct CSAVariables {
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
 
+  /*--- List of non-const constants ---*/
+  su2double ct4 = 0.5;
+
   /*--- List of auxiliary functions ---*/
-  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Tu, Ncrit;
+  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Ncrit;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad, gamma_bc;
@@ -70,7 +72,6 @@ template <class FlowIndices, class Omega, class ft2, class ModVort, class rFunc,
 class CSourceBase_TurbSA : public CNumerics {
  protected:
   su2double Gamma_BC = 0.0;
-
 
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
@@ -158,14 +159,16 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute ft2 term. Also includes boolean for e^N transition model that modifies the ft2 term ---*/
       if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
-    	  AD::SetPreaccIn(amplification_factor_i);
-    	  su2double amplification_factor = amplification_factor_i;
 
-    	  var.transEN = true;
-    	  var.Tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
-    	  ft2::get(amplification_factor, var);
+    	su2double amplification = amplification_factor_i;
+        var.transEN = true;
+    	var.ct4 = 0.05;
+    	var.Ncrit = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
+
+    	ft2::get(amplification, var);
+
       } else {
-    	  ft2::get(1.0, var);
+    	ft2::get(1.0, var);
       }
 
       /*--- Compute modified vorticity ---*/
@@ -217,6 +220,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
+	  
     }
 
     AD::SetPreaccOut(Residual);
@@ -285,17 +289,15 @@ struct Zero {
 
 /*! \brief Non-zero ft2 term according to the literature. */
 struct Nonzero {
-  static void get(const su2double& n_hat, CSAVariables& var) {
-	if (var.transEN == false){
-      const su2double xsi2 = pow(var.Ji, 2);
-      var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
-      var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
-
-	} else { //Transition detected
-	  const su2double xsi2 = pow(var.Ji, 2);
-	  var.Ncrit = -8.43 - 2.4*log(var.Tu/100);
-	  var.ft2 = var.ct3 * (1 - exp(2*(n_hat - var.Ncrit)) ) * exp(-var.ct4 * xsi2);
-	  var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji; //Extra Ncrit part acting as a constant in var.ft2
+  static void get(const su2double& amplification, CSAVariables& var) {
+	const su2double xsi2 = pow(var.Ji, 2);	
+	
+	if (var.transEN == true){
+	  var.ft2 = var.ct3 * (1 - exp(2*(amplification - var.Ncrit)) ) * exp(-var.ct4 * xsi2);
+	  var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;	  
+	} else {
+	  var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
+	  var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
 	}
   }
 };
@@ -754,6 +756,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
+    su2double eff_intermittency = 1.0;
+
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+      AD::SetPreaccIn(intermittency_eff_i);
+      eff_intermittency = intermittency_eff_i;
+    }
+
     if (dist_i > 1e-10) {
 
       su2double diverg = 0.0;
@@ -823,15 +832,26 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
+      /*--- Dissipation ---*/
+
+      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
+
+      /*--- LM model coupling with production and dissipation term for k transport equation---*/
+      if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        pk = pk * eff_intermittency;
+        dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
+      }
+
       /*--- Add the production terms to the residuals. ---*/
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
-      /*--- Dissipation ---*/
+      /*--- Add the dissipation  terms to the residuals.---*/
 
-      Residual[0] -= beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Volume;
-      Residual[1] -= beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * Volume;
+      Residual[0] -= dk * Volume;
+      Residual[1] -= dw * Volume;
 
       /*--- Cross diffusion ---*/
 

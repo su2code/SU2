@@ -1153,8 +1153,8 @@ public:
    * \return Returns intermittency
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
-  
-    /*!
+
+  /*!
    * \brief Set the amplification factor.
    * \param[in] val_dist - Value of the amplification factor.
    */
@@ -1692,7 +1692,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
@@ -1714,6 +1714,30 @@ public:
    * \return the value of the eddy viscosity.
    */
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the separation intermittency.
+   * \return the value of the separation intermittency.
+   */
+  inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Set the separation intermittency(gamma).   
+   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   */
+  inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
+
+  /*!
+   * \brief Get the value of the effective intermittency.
+   * \return the value of the effective intermittency.
+   */
+  inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the effective intermittency(gamma).   
+   * \param[in] Value of the effective intermittency(gamma).
+   */
+  inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
   /*!
    * \brief Set the value of the eddy viscosity.

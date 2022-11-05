@@ -169,22 +169,7 @@ void CTransENSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetSolution_Gradient_LS(geometry, config);
   }
-
-  /*AD::StartNoSharedReading();
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-	su2double AmplificationFactor = 0.0;
-    nodes -> SetAmplificationFactor(iPoint, AmplificationFactor);
-
-  }
-  END_SU2_OMP_FOR
-
-  AD::EndNoSharedReading();*/
 }
-
 
 void CTransENSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, CConfig* config) {
@@ -236,6 +221,10 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTransVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetTransVarGradient(nodes->GetGradient(iPoint), nullptr);
 
+    /*--- Set Amplification specifically ---*/
+    //numerics-> SetAmplificationFactor(nodes->GetSolution(iPoint,0));
+    numerics-> SetAmplificationFactor(min(nodes->GetSolution(iPoint,0), 15.0));
+
     /*--- Set volume ---*/
 
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -254,7 +243,7 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
     
     /*--- Compute the source term ---*/
-
+	
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Subtract residual and the Jacobian ---*/
@@ -361,7 +350,7 @@ void CTransENSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
+      /*--- Set turbulent/transition variable at the wall, and at infinity ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
 

@@ -848,6 +848,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   AmplificationFactor_FreeStream,  /*!< \brief Freestream amplifictation factor for the eN 1 equation transition model.  */
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -1933,6 +1934,12 @@ public:
    */
   su2double GetAmplificationFactor_FreeStream(void) const { return AmplificationFactor_FreeStream; }
 
+/*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
@@ -2570,6 +2577,12 @@ public:
    * \param[in] val_omega_freestream - Value of the freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
+
+  /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
 
   /*!
    * \brief Set the non-dimensional freestream energy.
