@@ -353,7 +353,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 20
-    axi_rans_air_nozzle.test_vals = [-12.092891, -6.630495, -8.784840, -2.399099, -1938.200000]
+    axi_rans_air_nozzle.test_vals = [-2.614180, 3.073672, -6.599457, 4.471847, 193.720000]
     axi_rans_air_nozzle.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle)
 
@@ -362,7 +362,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.092891, -6.630495, -8.784840, -2.399099, -1938.200000]
+    axi_rans_air_nozzle_restart.test_vals = [-4.324056, 1.232220, -3.632845, 4.168155, 166.930000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
