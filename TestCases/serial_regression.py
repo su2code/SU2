@@ -348,10 +348,19 @@ def main():
     ### Axisymmetric Compressible RANS  ###
     #######################################
 
+    # Axisymmetric air nozzle (transonic) start
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 20
+    axi_rans_air_nozzle.test_vals = [-12.092891, -6.630495, -8.784840, -2.399099, -1938.200000]
+    axi_rans_air_nozzle.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle)
+
     # Axisymmetric air nozzle (transonic) restart
-    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
     axi_rans_air_nozzle_restart.test_vals = [-12.092891, -6.630495, -8.784840, -2.399099, -1938.200000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
@@ -937,7 +946,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933127, 5.364763, 73.354550, 0.925896] #last 4 columns
+    axial_stage2D.test_vals = [-1.937012, 5.338671, 73.357200, 0.915728] #last 4 columns
     axial_stage2D.new_output  = False
     test_list.append(axial_stage2D)
 
