@@ -390,9 +390,18 @@ def main():
     #######################################
 
     # Axisymmetric air nozzle (transonic)
-    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 10
+    axi_rans_air_nozzle.test_vals = [-12.096361, -6.636587, -8.786643, -2.399099, -1938.200000]
+    axi_rans_air_nozzle.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle)
+
+    # Axisymmetric air nozzle (transonic) restart
+    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
     axi_rans_air_nozzle_restart.test_vals = [-12.096361, -6.636587, -8.786643, -2.399099, -1938.200000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
@@ -923,7 +932,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.283772, 0.374024, 72.236800, 1.276420]
+    Jones_tc.test_vals = [5.283772, 0.374024, 72.236800, 1.276420]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -932,7 +941,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_rst.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-4.625155, -1.568708, 33.994680, 10.181950]
+    Jones_tc_restart.test_vals = [-4.239853, -1.473722, 33.994770, 10.181660]
     Jones_tc_restart.new_output = False
     test_list.append(Jones_tc_restart)
 
@@ -959,7 +968,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-6.628529, -0.613969, 5.002986, 0.002951]
+    transonic_stator_restart.test_vals = [-3.309626, 0.208402, 5.003076, 0.002950]
     transonic_stator_restart.new_output = False
     test_list.append(transonic_stator_restart)
 
@@ -1190,7 +1199,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000, 0.0]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-3.773085, -4.220555, -4.811282, -0.009675, 99.879858, 419.200000, 0.000000]
     sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-13.400623, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000, 0.0]
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
@@ -1223,7 +1232,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 10
-    pywrapper_square_cylinder.test_vals = [-1.158117, 0.067945, 1.399789, 2.220404, 1.399743, 2.218605, -0.453170]
+    pywrapper_square_cylinder.test_vals = [-1.136553, -0.347305, 1.407915, 2.358881, 1.404192, 2.301559, -0.348120]
     pywrapper_square_cylinder.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_square_cylinder.unsteady  = True
     test_list.append(pywrapper_square_cylinder)
