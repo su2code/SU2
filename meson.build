@@ -7,7 +7,7 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++11'])
 env = environment()
 if get_option('enable-coolprop')
-  env.set('PATH', '$PATH:$PWD')
+  env.set('PATH', '$PATH:' + meson.source_root())
 endif
 
 if meson.version() != '0.61.1'
