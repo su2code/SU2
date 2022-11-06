@@ -58,13 +58,13 @@ class CCoolProp final : public CFluidModel {
    */
   CCoolProp(string fluidname);
 
+#ifdef USE_COOLPROP
   /*!
    * \brief Destructor of the class.
    * \note Needs to be defined in the .cpp to allow using only a forward declaration of CoolProp::AbstractState.
    */
   ~CCoolProp();
-  
-#ifdef USE_COOLPROP
+
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
