@@ -5,6 +5,10 @@ project('SU2', 'c', 'cpp',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
+env = environment()
+if get_option('enable-coolprop')
+  env.set('PATH', '$PATH:$PWD')
+endif
 
 if meson.version() != '0.61.1'
   error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
