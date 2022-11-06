@@ -240,7 +240,8 @@ if get_option('enable-coolprop')
   cmake_opts = cmake.subproject_options()
   cmake_opts.add_cmake_defines({
     'COOLPROP_STATIC_LIBRARY': true,
-    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja'
+    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
   })
   coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
   coolprop_dep = coolprop_subproj.dependency('CoolProp')
