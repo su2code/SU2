@@ -21,7 +21,8 @@ if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
     default_warning_flags += ['-Wno-empty-body']
   endif
-  desired_warnings = ['-Wno-unused-parameter',
+  desired_warnings = ['-Wno-ignored-qualifiers',
+                      '-Wno-unused-parameter',
                       '-Wno-deprecated-declarations',
                       '-Wno-error=cast-function-type',
                       '-Wno-cast-function-type',
@@ -238,6 +239,7 @@ endif
 if get_option('enable-coolprop')
   cmake = import('cmake')
   cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
   cmake_opts.add_cmake_defines({
     'COOLPROP_STATIC_LIBRARY': true,
     'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',

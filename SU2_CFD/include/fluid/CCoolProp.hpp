@@ -29,8 +29,9 @@
 #include "CFluidModel.hpp"
 #if defined(HAVE_COOLPROP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_COOLPROP
-#include "CoolProp.h"
-#include "AbstractState.h"
+namespace CoolProp {
+  class AbstractState;
+}
 #endif
 #include <memory>
 
@@ -56,6 +57,12 @@ class CCoolProp final : public CFluidModel {
    * \brief Constructor of the class.
    */
   CCoolProp(string fluidname);
+
+  /*!
+   * \brief Destructor of the class.
+   * \note Needs to be defined in the .cpp to allow using only a forward declaration of CoolProp::AbstractState.
+   */
+  ~CCoolProp();
   
 #ifdef USE_COOLPROP
   /*!

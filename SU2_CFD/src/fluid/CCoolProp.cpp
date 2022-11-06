@@ -26,7 +26,10 @@
  */
 
 #include "../../include/fluid/CCoolProp.hpp"
+
 #ifdef USE_COOLPROP
+#include "CoolProp.h"
+#include "AbstractState.h"
 
 CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
   fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
@@ -35,6 +38,8 @@ CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
   Temperature_Critical = fluid_entity->T_critical();
   acentric_factor = fluid_entity->acentric_factor();
 }
+
+CCoolProp::~CCoolProp() {}
 
 void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   //cout<<"p "<<Pressure<<"Pc "<<Pressure_Critical<<"T "<<Temperature<<"Tc"<<Temperature_Critical<<endl;
