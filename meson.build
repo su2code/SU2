@@ -5,10 +5,6 @@ project('SU2', 'c', 'cpp',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
-env = environment()
-if get_option('enable-coolprop')
-  env.set('PATH', '$PATH:' + meson.source_root())
-endif
 
 if meson.version() != '0.61.1'
   error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
@@ -242,7 +238,10 @@ endif
 if get_option('enable-coolprop')
   cmake = import('cmake')
   cmake_opts = cmake.subproject_options()
-  cmake_opts.add_cmake_defines({'COOLPROP_STATIC_LIBRARY': true})
+  cmake_opts.add_cmake_defines({
+    'COOLPROP_STATIC_LIBRARY': true,
+    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja'
+  })
   coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
   coolprop_dep = coolprop_subproj.dependency('CoolProp')
   su2_deps     += coolprop_dep
