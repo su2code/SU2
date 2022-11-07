@@ -744,7 +744,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
-    bool transition = (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+    bool transition = (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
     bool thermal = (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver()  == MAIN_SOLVER::NAVIER_STOKES ||
                     config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS );
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||

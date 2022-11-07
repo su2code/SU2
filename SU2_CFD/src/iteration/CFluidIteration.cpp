@@ -113,7 +113,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     
     /*--- Solve transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
@@ -218,7 +218,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
     /*--- Update dual time solver for the transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
       integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);

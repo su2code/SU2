@@ -1150,13 +1150,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Returns intermittency
-   */
-  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return Value of the vorticity.
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
@@ -1703,14 +1696,27 @@ public:
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the intermittency.
+   * \return the value of the intermittency.
+   */
+  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Set the intermittency.   
+   * \param[in] val_dist - Value of the  intermittency.
+   */
+  inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
+
+
+  /*!
    * \brief Get the value of the separation intermittency.
    * \return the value of the separation intermittency.
    */
   inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
   
   /*!
-   * \brief Set the separation intermittency(gamma).   
-   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   * \brief Set the separation intermittency.   
+   * \param[in] val_dist - Value of the separation intermittency.
    */
   inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
 
@@ -1721,8 +1727,8 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the effective intermittency(gamma).   
-   * \param[in] Value of the effective intermittency(gamma).
+   * \brief Set the effective intermittency.   
+   * \param[in] Value of the effective intermittency.
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
@@ -1731,6 +1737,20 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] val_muT
+   */
+  inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
+
+
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] val_muT
+   */
+  inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 
   /*!
    * \brief A virtual member.

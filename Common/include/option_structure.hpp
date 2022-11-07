@@ -1168,11 +1168,36 @@ inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned sh
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  LM2015    /*!< \brief Kind of transition model (Langtry-Menter w cross-flow effects (LM-2015) for SST and Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("LM2015", TURB_TRANS_MODEL::LM2015)
 };
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class TURB_TRANS_CORRELATION {
+  MALAN,    /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,    /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,    /*!< \brief Kind of transition correlation model (Krause). */
+  MEDIDA_BAEDER,    /*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,    /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,    /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT
+};
+static const MapType<std::string, TURB_TRANS_CORRELATION> Trans_Correlation_Map = {
+    MakePair("MALAN", TURB_TRANS_CORRELATION::MALAN)
+    MakePair("SULUKSNA", TURB_TRANS_CORRELATION::SULUKSNA)
+    MakePair("KRAUSE", TURB_TRANS_CORRELATION::KRAUSE)
+    MakePair("MEDIDA_BAEDER", TURB_TRANS_CORRELATION::MEDIDA_BAEDER)
+    MakePair("MEDIDA", TURB_TRANS_CORRELATION::MEDIDA)
+    MakePair("MENTER_LANGTRY", TURB_TRANS_CORRELATION::MENTER_LANGTRY)
+    MakePair("DEFAULT", TURB_TRANS_CORRELATION::DEFAULT)
+};
+
 
 /*!
  * \brief types of species transport models

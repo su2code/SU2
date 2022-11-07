@@ -39,7 +39,6 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
 
@@ -60,20 +59,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CTurbSAVariable() override = default;
-
-  /*!
-   * \brief Get the intermittency of the BC transition model.
-   * \param[in] iPoint - Point index.
-   * \return Value of the intermittency of the BC transition model.
-   */
-  inline su2double GetGammaBC(unsigned long iPoint) const override { return gamma_BC(iPoint); }
-
-  /*!
-   * \brief Set the intermittency of the BC transition model.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_gamma - New value of the intermittency.
-   */
-  inline void SetGammaBC(unsigned long iPoint, su2double val_gamma) override { gamma_BC(iPoint) = val_gamma; }
 
   /*!
    * \brief Get the DES length scale

@@ -48,11 +48,130 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   const su2double sigmaf = 1.0;
   const su2double s1 = 2.0;
   const su2double c_theta = 0.03;
+  const su2double c_CF = 0.6;
   const su2double sigmat = 2.0;
+
+  TURB_TRANS_CORRELATION TransCorrelation;
+  TURB_FAMILY TurbFamily;
+  su2double hRoughness;
+
+  su2double IntermittencySep = 1.0;
+  su2double IntermittencyEff = 1.0;
 
   su2double Residual[2];
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];// Static storage for the Jacobian (which needs to be pointer for return type).
+
+  su2double ReThetaC_Correlations(const su2double Tu){
+
+    su2double rethetac;
+
+      switch (TransCorrelation) {
+      case TURB_TRANS_CORRELATION::MALAN: {
+        rethetac = min(0.615 * TransVar_i[1] + 61.5, TransVar_i[1]);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::SULUKSNA: {
+        rethetac = min(0.1 * exp(-0.0022 * TransVar_i[1] + 12), 300.0);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::KRAUSE: {
+        rethetac = 0.91 * TransVar_i[1] + 5.32;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
+        su2double FirstTerm = 4.45 * pow(Tu, 3);
+        su2double SecondTerm = 5.7 * pow(Tu, 2);
+        su2double ThirdTerm = 1.37 * pow(Tu, 1);
+        rethetac = (FirstTerm - SecondTerm + ThirdTerm + 0.585) * TransVar_i[1];
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA: {
+        rethetac = 0.62 * TransVar_i[1];
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
+
+        if (TransVar_i[1] <= 1870) {
+          su2double FirstTerm = (-396.035 * pow(10, -2));
+          su2double SecondTerm = (10120.656 * pow(10, -4)) * TransVar_i[1];
+          su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(TransVar_i[1], 2);
+          su2double ForthTerm = (696.506 * pow(10, -9)) * pow(TransVar_i[1], 3);
+          su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(TransVar_i[1], 4);
+          rethetac = FirstTerm + SecondTerm + ThirdTerm + ForthTerm + FifthTerm;
+        } else {
+          rethetac = TransVar_i[1] - (593.11 + 0.482 * (TransVar_i[1] - 1870.0));
+        }
+
+        break;
+      }
+
+    }
+
+    return rethetac;
+  }
+
+
+
+  su2double FLength_Correlations(const su2double Tu){
+
+    su2double F_length1;
+
+    switch (TransCorrelation) {
+      case TURB_TRANS_CORRELATION::MALAN: {
+        F_length1 = min(exp(7.168 - 0.01173 * TransVar_i[1]) + 0.5, 300.0);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::SULUKSNA: {
+        su2double FirstTerm = -pow(0.025 * TransVar_i[1], 2) + 1.47 * TransVar_i[1] - 120.0;
+        F_length1 = min(max(FirstTerm, 125.0), TransVar_i[1]);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::KRAUSE: {
+        F_length1 = 3.39 * TransVar_i[1] + 55.03;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
+        su2double FirstTerm = 0.171 * pow(Tu, 2);
+        su2double SecondTerm = 0.0083 * pow(Tu, 1);
+        F_length1 = (FirstTerm - SecondTerm + 0.0306);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA: {
+        F_length1 = 40;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
+        if (TransVar_i[1] < 400) {
+          F_length1 = 39.8189 + (-119.270 * pow(10, -4)) * TransVar_i[1] +
+                              (-132.567 * pow(10, -6)) * TransVar_i[1] * TransVar_i[1];
+        } else if (TransVar_i[1] < 596) {
+          F_length1 = 263.404 + (-123.939 * pow(10, -2)) * TransVar_i[1] +
+                              (194.548 * pow(10, -5)) * pow(TransVar_i[1], 2) +
+                              (-101.695 * pow(10, -8)) * pow(TransVar_i[1], 3);
+        } else if (TransVar_i[1] < 1200) {
+          F_length1 = 0.5 - (3.0 * pow(10, -4)) * (TransVar_i[1] - 596.0);
+        } else {
+          F_length1 = 0.3188;
+        }
+        break;
+      }
+
+    }
+
+    return F_length1;
+
+  }
 
  public:
   /*!
@@ -68,6 +187,17 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    TransCorrelation = config->GetKind_Trans_Correlation();
+    TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
+    if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::SA)
+      TransCorrelation = TURB_TRANS_CORRELATION::MALAN;
+    if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::KW)
+      TransCorrelation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+
+    hRoughness = config->GethRoughness();
+
   }
 
   /*!
@@ -111,41 +241,47 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   
   if (dist_i > 1e-10) {
 
+    su2double Tu = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      Tu = max(100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag,0.027);
+    if(TurbFamily == TURB_FAMILY::SA)
+      Tu = config->GetTurbulenceIntensity_FreeStream()*100;
+
     /*--- Corr_RetC correlation*/
-    su2double Corr_Rec = 0.0;
-    if(TransVar_i[1] <= 1870){
-     Corr_Rec = TransVar_i[1] - (396.035e-02 + (-120.656e-04)*TransVar_i[1] + (868.230e-06)*pow(TransVar_i[1], 2.) 
-                                +(-696.506e-09)*pow(TransVar_i[1], 3.) + (174.105e-12)*pow(TransVar_i[1], 4.));
-    } else {
-     Corr_Rec = TransVar_i[1] - (  593.11 + (TransVar_i[1] - 1870.0) * 0.482);
-    }
+    su2double Corr_Rec = ReThetaC_Correlations(Tu);
 
     /*--- F_length correlation*/
-    su2double Corr_F_length = 0.0;
-    if(TransVar_i[1] < 400){
-      Corr_F_length = 398.189e-01 + (-119.270e-04)*TransVar_i[1] + (-132.567e-06) * pow(TransVar_i[1], 2.);
-    } 
-    else if(TransVar_i[1] >= 400 && TransVar_i[1] < 596) {
-      Corr_F_length = 263.404 + (-123.939e-02) * TransVar_i[1] + (194.548e-5) * pow(TransVar_i[1], 2.) + (-101.695e-08) * pow(TransVar_i[1], 3.);
-    } 
-    else if(TransVar_i[1] >= 596 && TransVar_i[1] < 1200) {
-      Corr_F_length = 0.5 - (TransVar_i[1] - 596.0) * 3.0e-04;
-    } 
-    else {
-      Corr_F_length = 0.3188;
-    }    
+    su2double Corr_F_length = FLength_Correlations(Tu);
 
     /*--- F_length ---*/
-    const su2double r_omega = Density_i*dist_i*dist_i*ScalarVar_i[1]/Laminar_Viscosity_i;
-    const su2double f_sub = exp(-pow(r_omega/200.0, 2));
-    const su2double F_length = Corr_F_length *(1.-f_sub) + 40.0*f_sub;
+    su2double F_length = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      const su2double r_omega = Density_i*dist_i*dist_i*ScalarVar_i[1]/Laminar_Viscosity_i;
+      const su2double f_sub = exp(-pow(r_omega/200.0, 2));
+      F_length = Corr_F_length *(1.-f_sub) + 40.0*f_sub;
+    }
+    if(TurbFamily == TURB_FAMILY::SA)
+      F_length = Corr_F_length;
 
     /*--- F_onset ---*/
-    const su2double R_t = Density_i*ScalarVar_i[0]/ Laminar_Viscosity_i/ ScalarVar_i[1];
+    su2double R_t = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      R_t = Density_i*ScalarVar_i[0]/ Laminar_Viscosity_i/ ScalarVar_i[1];
+    if(TurbFamily == TURB_FAMILY::SA)
+      R_t = Eddy_Viscosity_i/ Laminar_Viscosity_i;
+
     const su2double Re_v = Density_i*dist_i*dist_i*StrainMag_i/Laminar_Viscosity_i;
     const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
-    const su2double F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 2.0);
-    const su2double F_onset3 = max(1.0 - pow(R_t/2.5, 3.0), 0.0);
+    su2double F_onset2 = 1.0;
+    su2double F_onset3 = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 2.0);
+      F_onset3 = max(1.0 - pow(R_t/2.5, 3.0), 0.0);
+    }
+    if(TurbFamily == TURB_FAMILY::SA){
+      F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 4.0);
+      F_onset3 = max(2.0 - pow(R_t/2.5, 3.0), 0.0);
+    }
     const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
 
     /*-- Gradient of velocity magnitude ---*/
@@ -171,28 +307,39 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       du_ds += vel_w/Velocity_Mag * dU_dz;
     
     /*-- Calculate blending function f_theta --*/
-
-    const su2double time_scale = 500.0*Laminar_Viscosity_i/Density_i/ Velocity_Mag /Velocity_Mag;
+    su2double time_scale = 500.0*Laminar_Viscosity_i/Density_i/ Velocity_Mag /Velocity_Mag;
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)
+      time_scale = min(time_scale, Density_i * LocalGridLength_i*LocalGridLength_i / ( Laminar_Viscosity_i+Eddy_Viscosity_i ));
     const su2double theta_bl = TransVar_i[1]*Laminar_Viscosity_i / Density_i /Velocity_Mag;
     const su2double delta_bl = 7.5*theta_bl;
     const su2double delta = 50.0*VorticityMag*dist_i/Velocity_Mag*delta_bl + 1e-20;
     
-    const su2double re_omega = Density_i*ScalarVar_i[1]*dist_i*dist_i/Laminar_Viscosity_i;
-    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    su2double f_wake = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      const su2double re_omega = Density_i*ScalarVar_i[1]*dist_i*dist_i/Laminar_Viscosity_i;
+      f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    }
+    if(TurbFamily == TURB_FAMILY::SA)
+      f_wake = 1.0;
     
     const su2double var1 = (TransVar_i[0]-1.0/c_e2)/(1.0-1.0/c_e2);
     const su2double var2 = 1.0 - pow(var1,2.0);
     const su2double f_theta = min(max(f_wake*exp(-pow(dist_i/delta, 4)), var2), 1.0);
     const su2double f_turb = exp(-pow(R_t/4, 4));
 
-    /*--- Corr_RetT correlation*/
-    su2double Corr_Ret_lim = 20.0;
+    su2double f_theta_2 = 0.0;
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)
+      f_theta_2 = min(f_wake*exp(-pow(dist_i/delta, 4.0)), 1.0);
+
+    
+
+    /*--- Corr_Ret correlation*/
+    const su2double Corr_Ret_lim = 20.0;
     su2double f_lambda = 1.0;
     
     su2double Retheta_Error = 200.0 , Retheta_old = 0.0;
     su2double lambda = 0.0;
     su2double Corr_Ret = 20.0;
-    const su2double Tu = max(100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag,0.027);
     
     for (int iter=0; iter<100 ; iter++) {
       
@@ -222,6 +369,52 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       Retheta_old = Corr_Ret;
     }
+
+
+    /*-- Corr_RetT_SCF Correlations--*/
+    su2double ReThetat_SCF = 0.0;
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015){
+      su2double VelocityNormalized[3];
+      VelocityNormalized[0] = vel_u/Velocity_Mag;
+      VelocityNormalized[1] = vel_v/Velocity_Mag;
+      if(nDim == 3)
+        VelocityNormalized[2] = vel_w/Velocity_Mag;
+
+      su2double StreamwiseVort = 0.0;
+      for(auto iDim = 0u; iDim < nDim; iDim++){
+        StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
+      }
+      StreamwiseVort = abs(StreamwiseVort);
+
+      const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
+      const su2double DeltaH_CF = H_CF * (1.0 + min(Eddy_Viscosity_i/Laminar_Viscosity_i, 0.4));
+      const su2double DeltaH_CF_Minus = max(-1.0*(0.1066-DeltaH_CF), 0.0);
+      const su2double DeltaH_CF_Plus = max(0.1066-DeltaH_CF, 0.0);
+      const su2double fDeltaH_CF_Minus = 75.0 * tanh(DeltaH_CF_Minus/0.0125);
+      const su2double fDeltaH_CF_Plus = 6200 * DeltaH_CF_Plus + 50000 * DeltaH_CF_Plus * DeltaH_CF_Plus;
+
+      const su2double toll = 1e-5;
+      su2double error = toll+1.0;
+      su2double thetat_SCF = 0.0;
+      su2double rethetat_SCF_old = 20.0;   
+      const int nMax = 100;
+      
+
+      int iter;
+      for (iter=0;iter<nMax && error > toll;iter++) {
+
+        thetat_SCF = rethetat_SCF_old*Laminar_Viscosity_i/(Density_i*(Velocity_Mag/0.82));
+        thetat_SCF = max(1e-20, thetat_SCF);
+
+        ReThetat_SCF = -35.088 * log(hRoughness/thetat_SCF) + 319.51 + fDeltaH_CF_Plus - fDeltaH_CF_Minus;
+
+        error = abs(ReThetat_SCF - rethetat_SCF_old)/rethetat_SCF_old;
+      
+        rethetat_SCF_old = ReThetat_SCF;
+
+      }
+
+    }
     
     /*-- production term of Intermeittency(Gamma) --*/
     const su2double Pg = F_length*c_a1*Density_i*StrainMag_i*sqrt(F_onset*TransVar_i[0])*(1.0 - c_e1 * TransVar_i[0]);
@@ -230,11 +423,17 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     const su2double Dg = c_a2*Density_i*VorticityMag*TransVar_i[0]*f_turb*(c_e2*TransVar_i[0] - 1.0);
 
     /*-- production term of ReThetaT --*/
-    const su2double Pthetat = c_theta*Density_i/time_scale * (Corr_Ret-TransVar_i[1])  * (1.0-f_theta);
+    const su2double PRethetat = c_theta*Density_i/time_scale * (Corr_Ret-TransVar_i[1])  * (1.0-f_theta);
+
+    /*-- destruction term of ReThetaT --*/
+    // It should not be with the minus sign but I put for consistency
+    su2double DRethetat = 0.0;
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)
+      DRethetat = -c_theta * (Density_i/time_scale) * c_CF * min(ReThetat_SCF-TransVar_i[1], 0.0) * f_theta_2;
 
     /*--- Source ---*/
     Residual[0] += (Pg - Dg)*Volume;
-    Residual[1] += Pthetat*Volume;
+    Residual[1] += (PRethetat-DRethetat)*Volume;
 
     /*--- Implicit part ---*/   
     Jacobian_i[0][0] = (F_length*c_a1*StrainMag_i*sqrt(F_onset)*(0.5*pow(TransVar_i[0], -0.5) -1.5*c_e1*pow(TransVar_i[0], 0.5))
@@ -242,6 +441,8 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = -c_theta/time_scale*(1.0-f_theta)*Volume;
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)
+      Jacobian_i[1][1] += (c_theta/time_scale) * c_CF*f_theta_2*Volume;
   }  
   
   AD::SetPreaccOut(Residual, nVar);
@@ -249,5 +450,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
   return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+
+
+  
+
 };
 

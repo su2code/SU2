@@ -39,6 +39,63 @@
 class CTransLMSolver final : public CTurbSolver {
 private:
 
+  TURB_TRANS_CORRELATION TransCorrelation;
+  TURB_FAMILY TurbFamily;
+
+  su2double ReThetaC_Correlations(const su2double Tu, const su2double Re_Theta_t){
+
+    su2double rethetac;
+
+      switch (TransCorrelation) {
+      case TURB_TRANS_CORRELATION::MALAN: {
+        rethetac = min(0.615 * Re_Theta_t + 61.5, Re_Theta_t);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::SULUKSNA: {
+        rethetac = min(0.1 * exp(-0.0022 * Re_Theta_t + 12), 300.0);
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::KRAUSE: {
+        rethetac = 0.91 * Re_Theta_t + 5.32;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
+        su2double FirstTerm = 4.45 * pow(Tu, 3);
+        su2double SecondTerm = 5.7 * pow(Tu, 2);
+        su2double ThirdTerm = 1.37 * pow(Tu, 1);
+        rethetac = (FirstTerm - SecondTerm + ThirdTerm + 0.585) * Re_Theta_t;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MEDIDA: {
+        rethetac = 0.62 * Re_Theta_t;
+        break;
+      }
+
+      case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
+
+        if (Re_Theta_t <= 1870) {
+          su2double FirstTerm = (-396.035 * pow(10, -2));
+          su2double SecondTerm = (10120.656 * pow(10, -4)) * Re_Theta_t;
+          su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(Re_Theta_t, 2);
+          su2double ForthTerm = (696.506 * pow(10, -9)) * pow(Re_Theta_t, 3);
+          su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(Re_Theta_t, 4);
+          rethetac = FirstTerm + SecondTerm + ThirdTerm + ForthTerm + FifthTerm;
+        } else {
+          rethetac = Re_Theta_t - (593.11 + 0.482 * (Re_Theta_t - 1870.0));
+        }
+
+        break;
+      }
+
+    }
+
+    return rethetac;
+  }
+
 public:
   /*!
    * \overload

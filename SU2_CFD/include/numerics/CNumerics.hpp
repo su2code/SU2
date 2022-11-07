@@ -82,7 +82,7 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
-  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
+  intermittency_eff_i; /*!< \brief effective intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -156,6 +156,9 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
+  su2double 
+  LocalGridLength_i, /*!< \brief Local grid length at point i. */
+  LocalGridLength_j; /*!< \brief Local grid length at point j. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -387,6 +390,16 @@ public:
                                   CMatrixView<const su2double> val_transvar_grad_j) {
     TransVar_Grad_i = val_transvar_grad_i;
     TransVar_Grad_j = val_transvar_grad_j;
+  }
+
+  /*!
+   * \brief Set the value of the turbulent variable.
+   * \param[in] val_transvar_i - Value of the turbulent variable at point i.
+   * \param[in] val_transvar_j - Value of the turbulent variable at point j.
+   */
+  inline void SetLocalGridLength(const su2double val_localGridLength_i, const su2double val_localGridLength_j) {
+    LocalGridLength_i = val_localGridLength_i;
+    LocalGridLength_j = val_localGridLength_j;
   }
 
   /*!
@@ -707,6 +720,13 @@ public:
   void SetIntermittencyEff(su2double val_intermittency_eff_i) {
     intermittency_eff_i = val_intermittency_eff_i;
   }
+
+  /*!
+   * \brief Get the value of the effective intermittency for the transition model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  su2double GetIntermittencyEff() {return intermittency_eff_i;}
+
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

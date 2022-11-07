@@ -30,4 +30,10 @@
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) { }
+  : CScalarVariable(npoint, ndim, nvar, config) {
+
+
+    turb_index.resize(nPoint) = su2double(1.0);
+    intermittency.resize(nPoint) = su2double(1.0);
+
+   }
