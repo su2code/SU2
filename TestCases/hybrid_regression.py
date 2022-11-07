@@ -250,7 +250,16 @@ def main():
     #######################################
     
     # Axisymmetric air nozzle (transonic)
-    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 50
+    axi_rans_air_nozzle.test_vals         = [-6.189961, -0.620481, -2.083081, 2.428775, -1925.900000]
+    axi_rans_air_nozzle.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
+    test_list.append(axi_rans_air_nozzle)
+
+    # Axisymmetric air nozzle (transonic)
+    axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
