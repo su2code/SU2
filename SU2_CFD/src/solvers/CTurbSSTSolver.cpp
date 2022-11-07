@@ -578,9 +578,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
-  CFluidModel *FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -618,32 +615,36 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
         Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
                         (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
       } else {
+        /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+        CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
         /*--- Obtain flow velocity vector at inlet boundary node ---*/
 
         su2double Velocity_Inlet[MAXNDIM] = {0.0};
         for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = V_inlet[iDim + 1];
         su2double Temperature_Inlet;
+        su2double Pressure_Inlet;
+        su2double Density_Inlet;
         if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-          Temperature_Inlet = V_inlet[0];
+          Pressure_Inlet = V_inlet[0];
+          Density_Inlet = V_inlet[nDim + 2];
+          FluidModel->SetTDState_Prho(Pressure_Inlet, Density_Inlet);
         } else {
           Temperature_Inlet = V_inlet[nDim + 1];
+          const su2double* Scalar_Inlet = nullptr;
+          if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+          }
+          FluidModel->SetTDState_T(Temperature_Inlet, Scalar_Inlet);
+          Density_Inlet = FluidModel->GetDensity();
         }
-
-        /*--- Obtain flow properties at inlet boundary node ---*/
-        const su2double* Scalar_Inlet = nullptr;
-        if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-          Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-        }
-
-        FluidModel->SetTDState_T(Temperature_Inlet, Scalar_Inlet);
-        const su2double density_inlet = FluidModel->GetDensity();
-        const su2double laminar_viscosity_inlet = FluidModel->GetLaminarViscosity();
+        const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
         const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
         const su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
         const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
         Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
-        Inlet_Vars[1] = density_inlet * Inlet_Vars[0] / (laminar_viscosity_inlet * viscRatio);
+        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST
