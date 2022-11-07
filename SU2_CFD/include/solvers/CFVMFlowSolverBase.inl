@@ -613,9 +613,9 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     const su2double vy = nodes->GetVelocity(iPoint, 1);
     const su2double y = geometry->nodes->GetCoord(iPoint, 1);
-    //AD::StartPreacc();
-    //AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-    //AD::SetPreaccIn(vy, y);
+    AD::StartPreacc();
+    AD::SetPreaccIn(VelocityGradient, nDim, nDim);
+    AD::SetPreaccIn(vy, y);
 
     StrainMag(iPoint) = 0.0;
 
@@ -638,7 +638,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     }
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-    //AD::SetPreaccOut(StrainMag(iPoint));
+    AD::SetPreaccOut(StrainMag(iPoint));
 
     /*--- Max is not differentiable, so we not register them for preacc. ---*/
     strainMax = max(strainMax, StrainMag(iPoint));
