@@ -57,6 +57,7 @@ public:
     inline IndexType ThermalConductivity() const { return nDim+6; }
     inline IndexType CpTotal() const { return nDim+7; }
     inline IndexType CvTotal() const { return nDim+8; }
+    inline IndexType GasConstant() const {return nDim+9; }
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
@@ -216,6 +217,13 @@ public:
   }
 
   /*!
+   * \brief Set Gas Constant.
+   */
+  inline void SetGasConstant(unsigned long iPoint, su2double val_gas_constant) final {
+    Primitive(iPoint, indices.GasConstant()) = val_gas_constant;
+  }
+
+  /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P of the flow.
    */
@@ -226,6 +234,12 @@ public:
    * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, indices.CvTotal()); }
+
+  /*!
+   * \brief Get Gas Constant of the flow.
+   * \return Value of the Gas Constant of the flow.
+   */
+  inline su2double GetGasConstant(unsigned long iPoint) const final { return Primitive(iPoint, indices.GasConstant()); }
 
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.

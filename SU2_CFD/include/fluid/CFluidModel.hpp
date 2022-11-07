@@ -61,6 +61,7 @@ class CFluidModel {
   su2double dsdP_rho{0.0};     /*!< \brief DsDp_rho. */
   su2double Cp{0.0};           /*!< \brief Specific Heat Capacity at constant pressure. */
   su2double Cv{0.0};           /*!< \brief Specific Heat Capacity at constant volume. */
+  su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
   su2double Mu{0.0};           /*!< \brief Laminar viscosity. */
   su2double Mu_Turb{0.0};      /*!< \brief Eddy viscosity provided by a turbulence model. */
   su2double dmudrho_T{0.0};    /*!< \brief Partial derivative of viscosity w.r.t. density. */
@@ -136,6 +137,11 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
+
+  /*!
+   * \brief Get fluid Gas Constant.
+   */
+  su2double GetGasConstant() const { return Gas_Constant; }
 
   /*!
    * \brief Get fluid dynamic viscosity.

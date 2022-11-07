@@ -116,6 +116,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+  SetGasConstant(iPoint, FluidModel->GetGasConstant());
 
   return physical;
 

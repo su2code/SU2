@@ -74,7 +74,9 @@ protected:
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
   Cp_i,               /*!< \brief Cp at point i. */
-  Cp_j;               /*!< \brief Cp at point j. */
+  Cp_j,               /*!< \brief Cp at point j. */
+  Gas_Constant_i,     /*!< \brief Cp at point i. */
+  Gas_Constant_j;      /*!< \brief Cp at point j. */
   su2double
   Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
@@ -778,7 +780,7 @@ public:
   }
 
   /*!
-   * \brief Set the specifc heat c_p.
+   * \brief Set the specific heat c_p.
    * \param[in] val_specific_heat_i - Value of the specific heat at point i.
    * \param[in] val_specific_heat_j - Value of the specific heat at point j.
    */
@@ -786,6 +788,17 @@ public:
                               su2double val_specific_heat_j) {
     Cp_i = val_specific_heat_i;
     Cp_j = val_specific_heat_j;
+  }
+
+  /*!
+   * \brief Set Gas Constant.
+   * \param[in] val_gas_constant_i - Value of the gas constant at point i.
+   * \param[in] val_gas_constant_j - Value of the gas constant at point j.
+   */
+  inline void SetGasConstant(su2double val_gas_constant_i,
+                              su2double val_gas_constant_j) {
+    Gas_Constant_i = val_gas_constant_i;
+    Gas_Constant_j = val_gas_constant_j;
   }
 
   /*!
