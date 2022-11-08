@@ -90,6 +90,7 @@ private:
 
         break;
       }
+      case TURB_TRANS_CORRELATION::DEFAULT: SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.", CURRENT_FUNCTION); break;
 
     }
 
