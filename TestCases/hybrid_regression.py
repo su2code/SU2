@@ -250,15 +250,6 @@ def main():
     #######################################
     
     # Axisymmetric air nozzle (transonic)
-    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
-    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
-    axi_rans_air_nozzle.test_iter = 50
-    axi_rans_air_nozzle.test_vals         = [-3.896930, 1.677006, 0.241104, 4.719832, -303.650000]
-    axi_rans_air_nozzle.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
-    test_list.append(axi_rans_air_nozzle)
-
-    # Axisymmetric air nozzle (transonic)
     axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
@@ -543,15 +534,6 @@ def main():
     ### Turbomachinery                 ###
     ######################################
 
-    # Jones APU Turbocharger
-    Jones_tc           = TestCase('jones_turbocharger')
-    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc.cfg_file  = "Jones.cfg"
-    Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.283765, 0.374023, 72.237490, 1.276352]
-    Jones_tc.new_output = False
-    test_list.append(Jones_tc)
-
 	# Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
@@ -570,16 +552,6 @@ def main():
     axial_stage2D.test_vals_aarch64 = [-1.933115, 5.365583, 73.354510, 0.925902]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
-
-    # 2D transonic stator
-    transonic_stator           = TestCase('transonic_stator')
-    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator.cfg_file  = "transonic_stator.cfg"
-    transonic_stator.test_iter = 20
-    transonic_stator.test_vals         = [-0.556926, 5.833298, 96.475820, 0.062519]
-    transonic_stator.test_vals_aarch64 = [-0.565610, 5.833410, 96.476160, 0.062517]
-    transonic_stator.new_output = False
-    test_list.append(transonic_stator)
 
     # 2D transonic stator restart
     transonic_stator_restart           = TestCase('transonic_stator_restart')

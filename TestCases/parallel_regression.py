@@ -389,15 +389,6 @@ def main():
     ### Axisymmetric Compressible RANS  ###
     #######################################
 
-    # Axisymmetric air nozzle (transonic)
-    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
-    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
-    axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-1.619755, 3.971206, -7.170784, 4.821522, 66.092000]
-    axi_rans_air_nozzle.tol       = 0.0001
-    test_list.append(axi_rans_air_nozzle)
-
     # Axisymmetric air nozzle (transonic) restart
     axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
@@ -927,15 +918,6 @@ def main():
     ### Turbomachinery                 ###
     ######################################
 
-    # Jones APU Turbocharger
-    Jones_tc           = TestCase('jones_turbocharger')
-    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc.cfg_file  = "Jones.cfg"
-    Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.283772, 0.374024, 72.236800, 1.276420]
-    Jones_tc.new_output = False
-    test_list.append(Jones_tc)
-
     # Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
@@ -953,15 +935,6 @@ def main():
     axial_stage2D.test_vals = [-1.937007, 5.338943, 73.357200, 0.915725]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
-
-    # 2D transonic stator
-    transonic_stator           = TestCase('transonic_stator')
-    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator.cfg_file  = "transonic_stator.cfg"
-    transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.571225, 5.831323, 96.911330, 0.062993]
-    transonic_stator.new_output = False
-    test_list.append(transonic_stator)
 
     # 2D transonic stator restart
     transonic_stator_restart           = TestCase('transonic_stator_restart')

@@ -348,15 +348,6 @@ def main():
     ### Axisymmetric Compressible RANS  ###
     #######################################
 
-    # Axisymmetric air nozzle (transonic) start
-    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
-    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
-    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
-    axi_rans_air_nozzle.test_iter = 20
-    axi_rans_air_nozzle.test_vals = [-2.614180, 3.073672, -6.599457, 4.471847, 193.720000]
-    axi_rans_air_nozzle.tol       = 0.0001
-    test_list.append(axi_rans_air_nozzle)
-
     # Axisymmetric air nozzle (transonic) restart
     axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
@@ -922,19 +913,10 @@ def main():
     ### turbomachinery                 ###
     ######################################
 
-    # Jones APU Turbocharger
-    Jones_tc           = TestCase('jones_turbocharger')
-    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc.cfg_file  = "Jones.cfg"
-    Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.283772, 0.374025, 72.237120, 1.276385] #last 4 columns
-    Jones_tc.new_output = False
-    test_list.append(Jones_tc)
-
     # Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc_restart.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
     Jones_tc_restart.test_vals = [-4.239857, -1.473748, 33.995240, 10.181660] #last 4 columns
     Jones_tc_restart.new_output = False
@@ -950,19 +932,10 @@ def main():
     axial_stage2D.new_output  = False
     test_list.append(axial_stage2D)
 
-    # 2D transonic stator
-    transonic_stator           = TestCase('transonic_stator')
-    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator.cfg_file  = "transonic_stator.cfg"
-    transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.555500, 5.833435, 96.257430, 0.062600] #last 4 columns
-    transonic_stator.new_output  = False
-    test_list.append(transonic_stator)
-
     # 2D transonic stator restart
     transonic_stator_restart           = TestCase('transonic_stator_restart')
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator_restart.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
     transonic_stator_restart.test_vals = [-3.309645, 0.206411, 5.003080, 0.002950] #last 4 columns
     transonic_stator_restart.new_output  = False
