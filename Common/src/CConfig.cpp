@@ -6073,6 +6073,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               switch (Kind_Turb_Model) {
                 case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
                 case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
               }
               break;
           }
