@@ -127,6 +127,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
       const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
       nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
     }
+    //const auto GasConstant = config->GetGas_ConstantND();
+    //nodes->SetGasConstant(iPoint, GasConstant);
   }
   END_SU2_OMP_FOR
 
@@ -309,6 +311,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
+    //nodes->SetGasConstant(iPoint, solver_container[FLOW_SOL]->GetFluidModel()->GetGasConstant());
 
   }  // iPoint
   END_SU2_OMP_FOR
@@ -324,6 +327,7 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
     /*--- Mass diffusivity coefficients. ---*/
 
     numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(jPoint));
+    //numerics->SetGasConstant(nodes->GetGasConstant(iPoint), nodes->GetGasConstant(jPoint));
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
@@ -563,6 +567,8 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
       numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+
+      //numerics->SetGasConstant(nodes->GetGasConstant(iPoint), 0);
 
       /*--- Set volume of the dual cell. ---*/
 

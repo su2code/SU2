@@ -36,6 +36,7 @@
 class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
+  VectorType GasConstant; /*!< \brief Vector (nPoint) of Gas Constant for scalar transport.>*/
 
  public:
   static constexpr size_t MAXNVAR = 4; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
@@ -67,6 +68,18 @@ class CSpeciesVariable : public CScalarVariable {
    */
   inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) {
     return Diffusivity(iPoint, val_ivar);
+  }
+
+  inline void SetGasConstant(unsigned long iPoint, su2double val_gasConstant) {
+    GasConstant(iPoint) = val_gasConstant;
+  }
+
+  /*!
+   * \brief Get the value of the mass diffusivity
+   * \return Value of the mass diffusivity
+   */
+  inline su2double GetGasConstant(unsigned long iPoint) const {
+    return GasConstant(iPoint);
   }
 
   /*!

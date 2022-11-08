@@ -44,6 +44,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Eddy_Viscosity_j;
   using Base::Diffusion_Coeff_i;
   using Base::Diffusion_Coeff_j;
+  using Base::Gas_Constant_i;
+  using Base::Gas_Constant_j;
   using Base::Density_i;
   using Base::Density_j;
   using Base::ScalarVar_i;
@@ -62,6 +64,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   void ExtraADPreaccIn(void) override {
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
+    AD::SetPreaccIn(Gas_Constant_i);
+    AD::SetPreaccIn(Gas_Constant_j);
   }
 
   /*!
@@ -83,6 +87,26 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
       const su2double Diffusivity = Diffusivity_Lam + Diffusivity_Turb;
 
       Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
+
+      if(!turbulence){
+        su2double oneovermeanmolecular_i = 0;
+        su2double sum=0;
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          sum += ScalarVar_i[iVar];
+          oneovermeanmolecular_i += ScalarVar_i[iVar] * 1000/config->GetMolecular_Weight(iVar);
+        }
+        oneovermeanmolecular_i +=(1-sum) * 1000 / config->GetMolecular_Weight(nVar);
+        su2double oneovermeanmolecular_j = 0;
+        sum=0;
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          sum += ScalarVar_j[iVar];
+          oneovermeanmolecular_j += ScalarVar_j[iVar] * 1000/config->GetMolecular_Weight(iVar);
+        }
+        oneovermeanmolecular_j +=(1-sum) * 1000 / config->GetMolecular_Weight(nVar);
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          Flux[iVar] += Diffusivity *(2 / (oneovermeanmolecular_i+oneovermeanmolecular_j))*((1000/config->GetMolecular_Weight(nVar))-(1000/config->GetMolecular_Weight(iVar)))* 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]) * Proj_Mean_GradScalarVar[iVar];
+        }
+      }
 
       /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
