@@ -248,10 +248,10 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       Tu = config->GetTurbulenceIntensity_FreeStream()*100;
 
     /*--- Corr_RetC correlation*/
-    su2double Corr_Rec = ReThetaC_Correlations(Tu);
+    const su2double Corr_Rec = ReThetaC_Correlations(Tu);
 
     /*--- F_length correlation*/
-    su2double Corr_F_length = FLength_Correlations(Tu);
+    const su2double Corr_F_length = FLength_Correlations(Tu);
 
     /*--- F_length ---*/
     su2double F_length = 0.0;

@@ -244,7 +244,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     if(TurbFamily == TURB_FAMILY::KW)
       R_t = rho*k/ mu/ omega;
     if(TurbFamily == TURB_FAMILY::SA)
-      R_t = mu/ muT;
+      R_t = muT/ mu;
 
     const su2double f_reattach = exp(-pow(R_t/20,4));
     su2double f_wake = 0.0;
