@@ -6060,10 +6060,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_TRANS_MODEL::LM2015:    cout << "Transition model: Langtry and Menter's 4 equation model w/ cross-flow corrections (2015)" << endl; break;        
         }
         if(Kind_Trans_Model == TURB_TRANS_MODEL::LM || Kind_Trans_Model == TURB_TRANS_MODEL::LM2015) {
-          if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::SA)
-            Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
-          if(Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT && TurbModelFamily(Kind_Turb_Model) == TURB_FAMILY::KW)
-            Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
 
           cout << "Correlation Functions: ";
           switch (Kind_Trans_Correlation) {
@@ -6073,6 +6069,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
             case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
             case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::DEFAULT: 
+              switch (Kind_Turb_Model) {
+                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
+                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+              }
+              break;
           }
         }
         cout << "Hybrid RANS/LES: ";
