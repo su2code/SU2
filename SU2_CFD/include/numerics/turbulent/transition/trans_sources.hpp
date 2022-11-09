@@ -316,7 +316,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       time_scale = min(time_scale, Density_i * LocalGridLength_i*LocalGridLength_i / ( Laminar_Viscosity_i+Eddy_Viscosity_i ));
     const su2double theta_bl = TransVar_i[1]*Laminar_Viscosity_i / Density_i /Velocity_Mag;
     const su2double delta_bl = 7.5*theta_bl;
-    const su2double delta = 50.0*VorticityMag*dist_i/Velocity_Mag*delta_bl + 1e-20;
+    const su2double delta = 50.0*VorticityMag*dist_i*delta_bl / Velocity_Mag + 1e-20;
     
     su2double f_wake = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
@@ -347,8 +347,8 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     
     for (int iter=0; iter<100 ; iter++) {
       
-      su2double theta = Corr_Ret * Laminar_Viscosity_i / Density_i/ Velocity_Mag;
-      lambda = Density_i*theta*theta/ Laminar_Viscosity_i*du_ds;
+      su2double theta = Corr_Ret*Laminar_Viscosity_i / (Density_i*Velocity_Mag);
+      lambda = Density_i*theta*theta*du_ds / Laminar_Viscosity_i;
       lambda = min(max(-0.1, lambda), 0.1);
 
       if (lambda<=0.0) {
