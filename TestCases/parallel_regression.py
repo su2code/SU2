@@ -921,7 +921,7 @@ def main():
     # Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc_restart.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
     Jones_tc_restart.test_vals = [-4.239853, -1.473722, 33.994770, 10.181660]
     Jones_tc_restart.new_output = False
