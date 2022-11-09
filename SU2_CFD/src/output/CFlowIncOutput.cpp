@@ -178,8 +178,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("STREAMWISE_MASSFLOW", "SWMassflow", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Massflow in streamwise periodic flow");
     AddHistoryOutput("STREAMWISE_DP",       "SWDeltaP",   ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Pressure drop in streamwise periodic flow");
     AddHistoryOutput("STREAMWISE_HEAT",     "SWHeat",     ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Integrated heat for streamwise periodic flow");
-    if(config->GetnMarker_Isothermal() > 0)
-        AddHistoryOutput("STREAMWISE_LAMBDAL",     "SWLambdaL",     ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Exponential factor for iso-thermal temperature gradient");
+    if (config->GetnMarker_Isothermal() > 0)
+        AddHistoryOutput("STREAMWISE_LAMBDAL", "SWLambdaL", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Exponential factor for iso-thermal temperature gradient");
   }
 
   AddAnalyzeSurfaceOutput(config);
@@ -260,11 +260,11 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadHistoryData_Scalar(config, solver);
 
-  if(streamwisePeriodic) {
+  if (streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
     SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_PressureDrop);
     SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_IntegratedHeatFlow);
-    if(config->GetnMarker_Isothermal() > 0)
+    if (config->GetnMarker_Isothermal() > 0)
         SetHistoryOutputValue("STREAMWISE_LAMBDAL", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_LambdaL);
   }
 

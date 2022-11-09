@@ -9646,8 +9646,8 @@ public:
   void SetStreamwise_Periodic_LamdaL(su2double value) { Streamwise_Periodic_LambdaL = value; }
 
   /*!
-   * \brief Set Lambda L for Streamwise Periodic
-   * \return bool
+   * \brief Get Lambda L for Streamwise Periodic
+   * \return su2double
    */
   su2double GetStreamwise_Periodic_LamdaL(void) const { return Streamwise_Periodic_LambdaL; }
 
