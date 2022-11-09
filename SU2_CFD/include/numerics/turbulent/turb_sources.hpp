@@ -77,6 +77,7 @@ class CSourceBase_TurbSA : public CNumerics {
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
 
   bool transition_LM;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -86,8 +87,8 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015),
-        options(config->GetSAParsedOptions()) {
+        options(config->GetSAParsedOptions()),
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
