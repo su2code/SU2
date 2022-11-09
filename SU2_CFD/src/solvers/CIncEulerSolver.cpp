@@ -1622,6 +1622,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
     else {
       numerics->SetStreamwisePeriodicValues(SPvals);
+      config->SetStreamwise_Periodic_ComputedMassFlow(SPvals.Streamwise_Periodic_MassFlow);
     }
 
     AD::StartNoSharedReading();
