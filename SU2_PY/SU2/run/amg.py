@@ -128,7 +128,8 @@ def amg(config):
 
     #--- Check config for filenames if restarting
     if config['RESTART_SOL'] == 'YES':
-        required_options=['SOLUTION_FILENAME', 'SOLUTION_ADJ_FILENAME']
+        required_options = ['SOLUTION_FILENAME']
+        if config['ADAP_SENSOR'] == 'GOAL': required_options.append('SOLUTION_ADJ_FILENAME')
         if not all (opt in config for opt in required_options):
             err = 'RESTART_SOL is set to YES, but the solution is missing:\n'
             for opt in required_options:
