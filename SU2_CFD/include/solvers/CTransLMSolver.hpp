@@ -44,7 +44,7 @@ private:
 
   su2double ReThetaC_Correlations(const su2double Tu, const su2double Re_Theta_t){
 
-    su2double rethetac;
+    su2double rethetac = 0.0;
 
       switch (TransCorrelation) {
       case TURB_TRANS_CORRELATION::MALAN: {

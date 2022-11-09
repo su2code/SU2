@@ -64,7 +64,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
   su2double ReThetaC_Correlations(const su2double Tu){
 
-    su2double rethetac;
+    su2double rethetac = 0.0;
 
       switch (TransCorrelation) {
       case TURB_TRANS_CORRELATION::MALAN: {
@@ -122,7 +122,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
   su2double FLength_Correlations(const su2double Tu){
 
-    su2double F_length1;
+    su2double F_length1 = 0.0;
 
     switch (TransCorrelation) {
       case TURB_TRANS_CORRELATION::MALAN: {
