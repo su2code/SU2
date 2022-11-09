@@ -9494,15 +9494,16 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CConfig *config, unsigned short val_marker) {
     unsigned short iVar, iDim;
     unsigned long iVertex, iPoint;
-    su2double Pressure, P_Exit, Velocity[3],
+    su2double Pressure, P_Exit, Velocity[3], P_domain, P_Inf, Pt_Inf, Damping,
     Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
-    Area, UnitNormal[3];
+    Area, UnitNormal[3], mDot_Target, mDot_Current, mDot_Delta;
     su2double *V_outlet, *V_domain;
-    bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    su2double Gas_Constant     = config->GetGas_ConstantND();
-    string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-    bool gravity = (config->GetGravityForce());
-    bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+    bool implicit          = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    su2double Gas_Constant = config->GetGas_ConstantND();
+    su2double Mach_Inf     = config->GetMach();
+    string Marker_Tag      = config->GetMarker_All_TagBound(val_marker);
+    bool gravity           = (config->GetGravityForce());
+    bool tkeNeeded         = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
     su2double *Normal = new su2double[nDim];
   
     unsigned short Kind_Outlet = config->GetKind_Comp_Outlet(Marker_Tag);
@@ -9517,21 +9518,26 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
         if (geometry->node[iPoint]->GetDomain()) {
-            
+
             /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
             geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
             conv_numerics->SetNormal(Normal);
             
             Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
+            Area = sqrt(Area);
             
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
             
-            /*--- Current solution at this boundary node ---*/
+            /*--- Current solution at this boundary node. ---*/
             V_domain = nodes->GetPrimitive(iPoint);
-            
+
+            /*--- Current static pressure at this boundary node. ---*/
+
+            P_domain = nodes->GetPressure(iPoint);
+
             /*--- Compute a boundary value for the pressure depending on whether
                   we are prescribing a back pressure or a mass flow target. ---*/
 
@@ -9567,6 +9573,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                               so no boundary condition is necessary. Set outlet state to current
                               state so that upwinding handles the direction of propagation. ---*/
                         for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
+
                     } else {
                 
                         /*--- Subsonic exit flow: there is one incoming characteristic,
@@ -9582,7 +9589,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                         Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
                 
                         /*--- Compute the new fictious state at the outlet ---*/
-                        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+                        Density    = pow(P_Exit/Entropy, 1.0/Gamma);
                         Pressure   = P_Exit;
                         SoundSpeed = sqrt(Gamma*P_Exit/Density);
                         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
@@ -9605,74 +9612,114 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
                 case MASS_FLOW_OUTLET:
 
+                    /*--- Retrieve the specified target mass flow at the outlet. ---*/
+
+                    mDot_Target = config->GetOutlet_Pressure(Marker_Tag);
+
+//                    cout << "Target massflow at outlet: " << mDot_Target << endl;
+
+                    /*--- Retrieve the free-stream static pressure. ---*/
+
+                    P_Inf = config->GetPressure_FreeStream();
+                    Pt_Inf = P_Inf * pow(1 + 0.5 * Gamma_Minus_One * Mach_Inf * Mach_Inf, Gamma / Gamma_Minus_One);
+
+//                    cout << "Static pressure free-stream: " << P_Inf << endl;
+//                    cout << "Total pressure free-stream: " << Pt_Inf << endl;
+
                     /*--- Check whether the flow is supersonic at the exit. The type
                           of boundary update depends on this. ---*/
 
-                    auto P_Inf  = config->GetPressure_FreeStream();
-		    Density = V_domain[nDim + 2];
-                    cout <<Density<<endl;
-		    Velocity2 = 0.0; Vn = 0.0;
+                    Density = V_domain[nDim + 2];
+                    Velocity2 = 0.0; Vn = 0.0;
                     for (iDim = 0; iDim < nDim; iDim++) {
                         Velocity[iDim] = V_domain[iDim + 1];
-                        Velocity2 += Velocity[iDim]*Velocity[iDim];
-                        Vn += Velocity[iDim]*UnitNormal[iDim];
+                        Velocity2 += Velocity[iDim] * Velocity[iDim];
+                        Vn += Velocity[iDim] * UnitNormal[iDim];
                     }
                     Pressure   = V_domain[nDim + 1];
-                    cout <<Pressure<<endl;
-		    SoundSpeed = sqrt(Gamma*Pressure/Density);
-                    Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
-            
-                    /*--- Retrieve the specficied target mass flow at the outlet. ---*/
-                    
-		    su2double mDot_Target = config->GetOutlet_Pressure(Marker_Tag);
-            
-                    /*--- Compute the mass flow increment based on the difference
-                          between the target mass flow and current mass flow. ---*/
-            
-                    //TODO: The same thing occurs here......Outlet_Area is not set yet.  See GetOutlet_Properties.
-		    auto Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+                    SoundSpeed = sqrt(Gamma * Pressure / Density);
+                    Mach_Exit  = sqrt(Velocity2) / SoundSpeed;
 
-                    auto mDot_Current = Density * Area_Outlet * Vn;
-            
-                    auto delta_mDot = mDot_Target - mDot_Current;
-                    cout <<"Target: "<<mDot_Target<<endl;
-		    cout <<"Area: "<<Area_Outlet<<endl;
-		    cout <<"Curr: "<<mDot_Current<<endl;
-		    
-		    
-		    
-		    
-		    su2double Damping, P_Outlet;
+//                    cout << "Density: " << Density << endl;
+//                    cout << "Pressure: " << Pressure << endl;
+//                    cout << "Mach exit: " << Mach_Exit << endl;
 
-                    /*--- Update the new outlet mass flow. Note that we use damping
-                          here to improve stability and convergence. ---*/
-            
                     if (Mach_Exit >= 1.0) {
-                
+
                         /*--- Supersonic exit flow: there are no incoming characteristics,
                               so no boundary condition is necessary. Set outlet state to current
                               state so that upwinding handles the direction of propagation. ---*/
-                
-                        Damping = 0.5;
-                
-                        if (mDot_Current < 0) { P_Outlet = Pressure * (1 - Damping * delta_mDot / mDot_Target); }
-                        else                  { P_Outlet = P_Inf * 1.1;                                         }            
+                        for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
+
                     } else {
-                
+
+                        /*--- Compute the mass flow increment based on the difference
+                        between the target mass flow and current mass flow. ---*/
+
+//                        su2double mDot_Current = Density * Area * Vn;
+                        mDot_Current = -config->GetOutlet_MassFlow(Marker_Tag);
+                        mDot_Delta = mDot_Target - mDot_Current;
+
+//                        cout << "Normal velocity [ft/s]: " << Vn << endl;
+//                        cout << "Area [ft^2]: " << Area << endl;
+//                        cout << "Current massflow at outlet: " << mDot_Current << endl;
+//                        cout << "Delta massflow at outlet: " << mDot_Delta << endl;
+
+                        /*--- Update the new outlet mass flow. Note that we use damping
+                              here to improve stability and convergence. ---*/
+
+                        if (Mach_Inf >= 1.0) {
+
+                            /*--- Supersonic free-stream flow. ---*/
+
+                            Damping = 0.5;
+
+                            if (mDot_Current > 0) { P_Exit = Pressure * (1 - Damping * mDot_Delta / mDot_Target); }
+                            else                  { P_Exit = P_Inf * 1.1;                                         }
+
+                        } else {
+
+                            /*--- Subsonic free-stream flow. ---*/
+
+                            Damping = 0.2;
+
+                            if (mDot_Current > 0) { P_Exit = Pressure * (1 - Damping * mDot_Delta / mDot_Target); }
+                            else                  { P_Exit = Pt_Inf; }
+                        }
+
                         /*--- Subsonic exit flow: there is one incoming characteristic,
-                              therefore one variable can be specified (back pressure). ---*/
-                
-                        Damping = 0.2;
-                
-                        if (mDot_Current < 0) { P_Outlet = Pressure * (1 - Damping * delta_mDot / mDot_Target); }
-                        else                  { P_Outlet = P_Inf;                                               }
+                              therefore one variable can be specified (back pressure) and is used
+                              to update the conservative variables. Compute the entropy and the
+                              acoustic Riemann variable. These invariants, as well as the
+                              tangential velocity components, are extrapolated. Adapted from an
+                              original implementation in the Stanford University multi-block
+                              (SUmb) solver in the routine bcSubsonicOutflow.f90 by Edwin van
+                              der Weide, last modified 09-10-2007. ---*/
+
+                        Entropy = Pressure * pow(1.0 / Density, Gamma);
+                        Riemann = Vn + 2.0 * SoundSpeed / Gamma_Minus_One;
+
+                        /*--- Compute the new fictitious state at the outlet ---*/
+                        Density    = pow(P_Exit / Entropy, 1.0 / Gamma);
+                        Pressure   = P_Exit;
+                        SoundSpeed = sqrt(Gamma * P_Exit / Density);
+                        Vn_Exit    = Riemann - 2.0 * SoundSpeed / Gamma_Minus_One;
+                        Velocity2  = 0.0;
+                        for (iDim = 0; iDim < nDim; iDim++) {
+                            Velocity[iDim] = Velocity[iDim] + (Vn_Exit - Vn) * UnitNormal[iDim];
+                            Velocity2 += Velocity[iDim] * Velocity[iDim];
+                        }
+                        Energy = P_Exit / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+                        if (tkeNeeded) Energy += GetTke_Inf();
+
+                        /*--- Conservative variables, using the derived quantities ---*/
+                        V_outlet[0] = Pressure / ( Gas_Constant * Density);
+                        for (iDim = 0; iDim < nDim; iDim++) V_outlet[iDim + 1] = Velocity[iDim];
+                        V_outlet[nDim + 1] = Pressure;
+                        V_outlet[nDim + 2] = Density;
+                        V_outlet[nDim + 3] = Energy + Pressure / Density;
                     }
-            
-                    /*--- The pressure is prescribed at the outlet ---*/
-                    V_outlet = V_domain; 
-                    V_outlet[nDim + 1] = max(P_Inf, P_Outlet);
-                    
-                    break; 
+                    break;
             }
 
             /*--- Set various quantities in the solver class ---*/
@@ -9692,140 +9739,12 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                 Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
         }
     }
-    /*--- Free locally allocated memory ---*/
-    delete [] Normal;
-}
 
-void CEulerSolver::BC_Massflow_Outlet(CGeometry *geometry, CSolver **solver_container,
-                                      CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                      CConfig *config, unsigned short val_marker) {
-    unsigned short iVar, iDim;
-    unsigned long iVertex, iPoint;
-    su2double Pressure, Pt_Inf, P_Inf, P_Outlet, Velocity[3], Damping,
-    Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
-    Area, UnitNormal[3], Area_Outlet, mDot_Current, mDot_Target, delta_mDot;
-    su2double *V_outlet, *V_domain;
-    
-    bool implicit          = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    su2double Gas_Constant = config->GetGas_ConstantND();
-    su2double Mach         = config->GetMach();
-    string Marker_Tag      = config->GetMarker_All_TagBound(val_marker);
-    su2double *Normal      = new su2double[nDim];
-    
-    /*--- Loop over all the vertices on this boundary marker ---*/
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-        
-        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-        
-        /*--- Allocate the value at the outlet ---*/
-        V_outlet = GetCharacPrimVar(val_marker, iVertex);
-        
-        /*--- Get freestream pressure ---*/
-        Pt_Inf = config->GetPressure_FreeStreamND();
-        P_Inf  = config->GetPressure_FreeStream();
-        
-        /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
-            
-            /*--- Normal vector for this vertex (negate for outward convention) ---*/
-            geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            conv_numerics->SetNormal(Normal);
-            
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
-            
-            for (iDim = 0; iDim < nDim; iDim++)
-                UnitNormal[iDim] = Normal[iDim]/Area;
-            
-            /*--- Current solution at this boundary node ---*/
-            V_domain = nodes->GetPrimitive(iPoint);
-            
-            /*--- Check whether the flow is supersonic at the exit. The type
-             of boundary update depends on this. ---*/
-            
-            Density = V_domain[nDim + 2];
-            Velocity2 = 0.0; Vn = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-                Velocity[iDim] = V_domain[iDim + 1];
-                Velocity2 += Velocity[iDim]*Velocity[iDim];
-                Vn += Velocity[iDim]*UnitNormal[iDim];
-            }
-            
-            Pressure   = V_domain[nDim + 1];
-            SoundSpeed = sqrt(Gamma*Pressure/Density);
-            Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
-            
-            /*--- Retrieve the specficied target mass flow at the outlet. ---*/
-            
-            mDot_Target = config->GetOutlet_MassFlow(Marker_Tag);
-            
-            /*--- Compute the mass flow increment based on the difference
-             between the target mass flow and current mass flow. ---*/
-            
-            Area_Outlet = config->GetOutlet_Area(Marker_Tag);
-            mDot_Current = Density * Area_Outlet * Vn;
-            
-            delta_mDot = mDot_Target - mDot_Current;
-            
-            /*--- Update the new outlet mass flow. Note that we use damping
-             here to improve stability and convergence. ---*/
-            
-            if (Mach_Exit >= 1.0) {
-                
-                /*--- Supersonic exit flow: there are no incoming characteristics,
-                 so no boundary condition is necessary. Set outlet state to current
-                 state so that upwinding handles the direction of propagation. ---*/
-                
-                Damping = 0.5;
-                
-                if (mDot_Current < 0) {
-                    P_Outlet = Pressure * (1 - Damping * delta_mDot / mDot_Target);
-                } else {
-                    P_Outlet = P_Inf * 1.1;
-                }
-                
-            } else {
-                
-                /*--- Subsonic exit flow: there is one incoming characteristic,
-                 therefore one variable can be specified (back pressure). ---*/
-                
-                Damping = 0.2;
-                
-                if (mDot_Current < 0) {
-                    P_Outlet = Pressure * (1 - Damping * delta_mDot / mDot_Target);
-                } else {
-                    P_Outlet = P_Inf;
-                }
-            }
-            
-            /*--- The pressure is prescribed at the outlet ---*/
-            
-            V_outlet[nDim + 1] = max(P_Inf, P_Outlet);
-            
-            /*--- Set various quantities in the solver class ---*/
-            conv_numerics->SetPrimitive(V_domain, V_outlet);
-            
-            if (dynamic_grid)
-                conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-            
-            /*--- Compute the residual using an upwind scheme ---*/
-            
-            auto residual = conv_numerics->ComputeResidual(config);
-            
-            /*--- Add Residuals and Jacobians ---*/
-            
-            LinSysRes.AddBlock(iPoint, residual);
-            if (implicit)
-                Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-            
-        }
-    }
-    
+    cout << "Target massflow at outlet: " << mDot_Target << endl;
+    cout << "Current massflow at outlet: " << mDot_Current << endl;
+
     /*--- Free locally allocated memory ---*/
     delete [] Normal;
-    
 }
 
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
@@ -11629,7 +11548,7 @@ void CEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, un
               Velocity2 += Velocity[iDim] * Velocity[iDim];
               MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
             }
-            Area = sqrt (Area);
+            Area = sqrt(Area);
 
             Outlet_MassFlow[iMarker] += MassFlow;
             Outlet_Density[iMarker]  += Density*Area;
