@@ -864,7 +864,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
-    TapeActive = AD::getGlobalTape().isActive();
+    TapeActive = AD::TapeActive();
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       AD::StartExtFunc(false, false);
@@ -971,16 +971,16 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-      AD::FuncHelper->addUserData(&LinSysRes);
-      AD::FuncHelper->addUserData(&LinSysSol);
-      AD::FuncHelper->addUserData(&Jacobian);
-      AD::FuncHelper->addUserData(geometry);
-      AD::FuncHelper->addUserData(config);
-      AD::FuncHelper->addUserData(this);
+      AD::FuncHelper.addUserData(&LinSysRes);
+      AD::FuncHelper.addUserData(&LinSysSol);
+      AD::FuncHelper.addUserData(&Jacobian);
+      AD::FuncHelper.addUserData(geometry);
+      AD::FuncHelper.addUserData(config);
+      AD::FuncHelper.addUserData(this);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
+    AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
 #endif

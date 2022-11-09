@@ -53,11 +53,6 @@ int main(int argc, char *argv[]) {
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
 
-  /*--- AD initialization ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().initialize();
-#endif
-
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
   CConfig **config_container            = nullptr;
@@ -424,11 +419,6 @@ int main(int argc, char *argv[]) {
 
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
-
-  /*--- Finalize AD, if necessary. ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().finalize();
-#endif
 
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();

@@ -36,7 +36,6 @@ void omp_initialize() {
 #endif
   opdi::logic = new opdi::OmpLogic;
   opdi::logic->init();
-  su2double::getGlobalTape().initialize();
   opdi::tool = new CoDiOpDiTool<su2double>;
   opdi::tool->init();
 #endif
@@ -45,7 +44,6 @@ void omp_initialize() {
 void omp_finalize() {
 #ifdef HAVE_OPDI
   opdi::tool->finalize();
-  su2double::getGlobalTape().finalize();
   opdi::logic->finalize();
   opdi::backend->finalize();
   delete opdi::tool;

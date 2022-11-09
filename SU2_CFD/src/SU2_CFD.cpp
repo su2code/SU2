@@ -164,11 +164,6 @@ int main(int argc, char *argv[]) {
   libxsmm_finalize();
 #endif
 
-  /*--- Finalize AD, if necessary. ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().finalize();
-#endif
-
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
 

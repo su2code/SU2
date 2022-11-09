@@ -87,7 +87,7 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 
 #if defined(CODI_REVERSE_TYPE) // reverse mode AD
 #include "codi.hpp"
-#include "codi/tools/dataStore.hpp"
+#include "codi/tools/data/externalFunctionUserData.hpp"
 
 #if defined(HAVE_OMP)
 using su2double = codi::RealReverseIndexParallel;

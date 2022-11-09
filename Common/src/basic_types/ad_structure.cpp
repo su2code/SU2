@@ -46,7 +46,7 @@ namespace AD {
   SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
-  ExtFuncHelper* FuncHelper;
+  ExtFuncHelper FuncHelper;
 
 #endif
 }
