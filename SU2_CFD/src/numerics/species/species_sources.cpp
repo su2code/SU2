@@ -105,18 +105,18 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
     /*--- Inviscid component of the source term. ---*/
+    if(!bounded_scalar){
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        residual[iVar] -= yinv * Volume * Density_i * ScalarVar_i[iVar] * Velocity_i[1];
     
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      residual[iVar] -= yinv * Volume * Density_i * ScalarVar_i[iVar] * Velocity_i[1];
-
-    if (implicit) {
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        jacobian[iVar][iVar] -= yinv * Volume * Velocity_i[1];
+      if (implicit) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          jacobian[iVar][iVar] -= yinv * Volume * Velocity_i[1];
+        }
       }
     }
-
-    /*--- Add the viscous terms if necessary. ---*/
-    
+      /*--- Add the viscous terms if necessary. ---*/
+      
     if (config->GetViscous()) {
       su2double Mass_Diffusivity_Tur = 0.0;
       if (turbulence)
@@ -126,6 +126,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
       } 
     }
+    
   }
   
   AD::SetPreaccOut(residual, nVar);

@@ -1393,6 +1393,13 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR){
+          numerics[iMGlevel][SPECIES_SOL][source_first_term]->SetBoundedScalar(true);
+          numerics[iMGlevel][SPECIES_SOL][source_second_term]->SetBoundedScalar(true);
+    }else{
+      numerics[iMGlevel][SPECIES_SOL][source_first_term]->SetBoundedScalar(false);
+      numerics[iMGlevel][SPECIES_SOL][source_second_term]->SetBoundedScalar(false);
+    }
   }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
