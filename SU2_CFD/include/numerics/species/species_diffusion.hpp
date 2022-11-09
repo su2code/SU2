@@ -89,23 +89,11 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
       Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
 
       if(!turbulence){
-        su2double oneovermeanmolecular_i = 0;
-        su2double sum=0;
+        su2double HirschCurtisCorrection = 0.0;
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          sum += ScalarVar_i[iVar];
-          oneovermeanmolecular_i += ScalarVar_i[iVar] * 1000/config->GetMolecular_Weight(iVar);
+          HirschCurtisCorrection += ((1000/config->GetMolecular_Weight(nVar))-(1000/config->GetMolecular_Weight(iVar)))* Proj_Mean_GradScalarVar[iVar];
         }
-        oneovermeanmolecular_i +=(1-sum) * 1000 / config->GetMolecular_Weight(nVar);
-        su2double oneovermeanmolecular_j = 0;
-        sum=0;
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          sum += ScalarVar_j[iVar];
-          oneovermeanmolecular_j += ScalarVar_j[iVar] * 1000/config->GetMolecular_Weight(iVar);
-        }
-        oneovermeanmolecular_j +=(1-sum) * 1000 / config->GetMolecular_Weight(nVar);
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Flux[iVar] += Diffusivity *(2 / (oneovermeanmolecular_i+oneovermeanmolecular_j))*((1000/config->GetMolecular_Weight(nVar))-(1000/config->GetMolecular_Weight(iVar)))* 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]) * Proj_Mean_GradScalarVar[iVar];
-        }
+        Flux[iVar] += Diffusivity *(UNIVERSAL_GAS_CONSTANT / (0.5 *(Gas_Constant_i+Gas_Constant_j)))* 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]) * HirschCurtisCorrection;
       }
 
       /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
