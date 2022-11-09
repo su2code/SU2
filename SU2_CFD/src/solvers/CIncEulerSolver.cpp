@@ -223,7 +223,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CommunicateInitialState(geometry, config);
 
   /*--- Sizing edge mass flux array ---*/
-  if((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR))
+  if(config->GetBounded_Scalar())
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 
   /*--- Add the solver name (max 8 characters) ---*/
@@ -1159,8 +1159,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
-  const bool bounded_scalar   = ((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
-                                 (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR));
+  const bool bounded_scalar   = (config->GetBounded_Scalar());
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/

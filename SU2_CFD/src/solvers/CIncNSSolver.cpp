@@ -44,7 +44,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Tke_Inf         = config->GetTke_FreeStreamND();
 
   /*--- Sizing edge mass flux array ---*/  
-  if(config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR)
+  if(config->GetBounded_Scalar())
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 
 

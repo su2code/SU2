@@ -295,9 +295,11 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
           //Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);;
           //Jacobian_j_correction[iVar][iVar] = min(0.0, EdgeMassFlux);
-          Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
-          Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
+          //Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
+          //Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
         }
+        Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
+        Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
       }if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i_correction, Jacobian_j_correction);
       /*--- Viscous contribution. ---*/
 
