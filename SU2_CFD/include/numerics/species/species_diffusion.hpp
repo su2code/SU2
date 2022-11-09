@@ -94,6 +94,13 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
           HirschCurtisCorrection += ((1000/config->GetMolecular_Weight(nVar))-(1000/config->GetMolecular_Weight(iVar)))* Proj_Mean_GradScalarVar[iVar];
         }
         Flux[iVar] += Diffusivity *(UNIVERSAL_GAS_CONSTANT / (0.5 *(Gas_Constant_i+Gas_Constant_j)))* 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]) * HirschCurtisCorrection;
+        su2double VelCorrection = 0.0;
+        su2double Diffusitivity_N_Species =  0.5 * (Density_i * Diffusion_Coeff_i[nVar] + Density_j * Diffusion_Coeff_j[nVar]) ;
+        for (auto iVar = 0u; iVar < nVar; iVar++){
+          VelCorrection +=(Diffusivity - Diffusitivity_N_Species)*Proj_Mean_GradScalarVar[iVar]+(UNIVERSAL_GAS_CONSTANT / (0.5 *(Gas_Constant_i+Gas_Constant_j))) * HirschCurtisCorrection * (Diffusivity - Diffusitivity_N_Species)*0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]); 
+        }
+        VelCorrection = (VelCorrection + (UNIVERSAL_GAS_CONSTANT / (0.5 *(Gas_Constant_i+Gas_Constant_j))) * HirschCurtisCorrection * Diffusivity) * 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]);
+        Flux[iVar] -= VelCorrection;
       }
 
       /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
