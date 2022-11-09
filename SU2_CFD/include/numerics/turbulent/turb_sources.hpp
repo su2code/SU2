@@ -76,7 +76,7 @@ class CSourceBase_TurbSA : public CNumerics {
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
 
-  bool transition_LM = false;
+  bool transition_LM;
  public:
   /*!
    * \brief Constructor of the class.
