@@ -201,6 +201,7 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.CONV_FILENAME        = 'history_adj'
     config.RESTART_ADJ_FILENAME = cur_solfil_adj
     config.SOLUTION_FILENAME    = cur_solfil
+    config.RESTART_FILENAME     = cur_solfil
     config.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
     config.VOLUME_OUTPUT        = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC'
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
