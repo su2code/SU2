@@ -82,10 +82,18 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         break;
       }
 
+      case TURB_TRANS_CORRELATION::KRAUSE_HYPER: {
+        const su2double FirstTerm = -0.042 * pow(Tu, 3);
+        const su2double SecondTerm = 0.4233 * pow(Tu, 2);
+        const su2double ThirdTerm = 0.0118 * pow(Tu, 1);
+        rethetac = TransVar_i[1] / (FirstTerm + SecondTerm + ThirdTerm + 1.0744);
+        break;
+      }
+
       case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
-        su2double FirstTerm = 4.45 * pow(Tu, 3);
-        su2double SecondTerm = 5.7 * pow(Tu, 2);
-        su2double ThirdTerm = 1.37 * pow(Tu, 1);
+        const su2double FirstTerm = 4.45 * pow(Tu, 3);
+        const su2double SecondTerm = 5.7 * pow(Tu, 2);
+        const su2double ThirdTerm = 1.37 * pow(Tu, 1);
         rethetac = (FirstTerm - SecondTerm + ThirdTerm + 0.585) * TransVar_i[1];
         break;
       }
@@ -98,11 +106,11 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
 
         if (TransVar_i[1] <= 1870) {
-          su2double FirstTerm = (-396.035 * pow(10, -2));
-          su2double SecondTerm = (10120.656 * pow(10, -4)) * TransVar_i[1];
-          su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(TransVar_i[1], 2);
-          su2double ForthTerm = (696.506 * pow(10, -9)) * pow(TransVar_i[1], 3);
-          su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(TransVar_i[1], 4);
+          const su2double FirstTerm = (-396.035 * pow(10, -2));
+          const su2double SecondTerm = (10120.656 * pow(10, -4)) * TransVar_i[1];
+          const su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(TransVar_i[1], 2);
+          const su2double ForthTerm = (696.506 * pow(10, -9)) * pow(TransVar_i[1], 3);
+          const su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(TransVar_i[1], 4);
           rethetac = FirstTerm + SecondTerm + ThirdTerm + ForthTerm + FifthTerm;
         } else {
           rethetac = TransVar_i[1] - (593.11 + 0.482 * (TransVar_i[1] - 1870.0));
@@ -131,7 +139,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       }
 
       case TURB_TRANS_CORRELATION::SULUKSNA: {
-        su2double FirstTerm = -pow(0.025 * TransVar_i[1], 2) + 1.47 * TransVar_i[1] - 120.0;
+        const su2double FirstTerm = -pow(0.025 * TransVar_i[1], 2) + 1.47 * TransVar_i[1] - 120.0;
         F_length1 = min(max(FirstTerm, 125.0), TransVar_i[1]);
         break;
       }
@@ -141,9 +149,21 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         break;
       }
 
+      case TURB_TRANS_CORRELATION::KRAUSE_HYPER: {
+        if(Tu <= 1.){
+          F_length1 = log(TransVar_i[1] + 1) / Tu;
+        }
+        else{
+          const su2double FirstTerm = 0.2337 * pow(Tu, 2);
+          const su2double SecondTerm = -1.3493 * pow(Tu, 1);
+          F_length1 = log(TransVar_i[1] + 1) * (FirstTerm + SecondTerm + 2.1449);
+        }
+        break;
+      }
+
       case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
-        su2double FirstTerm = 0.171 * pow(Tu, 2);
-        su2double SecondTerm = 0.0083 * pow(Tu, 1);
+        const su2double FirstTerm = 0.171 * pow(Tu, 2);
+        const su2double SecondTerm = 0.0083 * pow(Tu, 1);
         F_length1 = (FirstTerm - SecondTerm + 0.0306);
         break;
       }
@@ -194,11 +214,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
     TransCorrelation = config->GetKind_Trans_Correlation();
     TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
-
-    if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::SA)
-      TransCorrelation = TURB_TRANS_CORRELATION::MALAN;
-    if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::KW)
-      TransCorrelation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
 
     hRoughness = config->GethRoughness();
 
@@ -316,7 +331,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       time_scale = min(time_scale, Density_i * LocalGridLength_i*LocalGridLength_i / ( Laminar_Viscosity_i+Eddy_Viscosity_i ));
     const su2double theta_bl = TransVar_i[1]*Laminar_Viscosity_i / Density_i /Velocity_Mag;
     const su2double delta_bl = 7.5*theta_bl;
-    const su2double delta = 50.0*VorticityMag*dist_i*delta_bl / Velocity_Mag + 1e-20;
+    const su2double delta = 50.0*VorticityMag*dist_i / Velocity_Mag*delta_bl + 1e-20;
     
     su2double f_wake = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
@@ -347,8 +362,8 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     
     for (int iter=0; iter<100 ; iter++) {
       
-      su2double theta = Corr_Ret*Laminar_Viscosity_i / (Density_i*Velocity_Mag);
-      lambda = Density_i*theta*theta*du_ds / Laminar_Viscosity_i;
+      su2double theta = Corr_Ret*Laminar_Viscosity_i / Density_i / Velocity_Mag;
+      lambda = Density_i*theta*theta / Laminar_Viscosity_i*du_ds;
       lambda = min(max(-0.1, lambda), 0.1);
 
       if (lambda<=0.0) {

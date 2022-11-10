@@ -3440,6 +3440,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
+  /*--- Set the default correlation functions ---*/
+  if (Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT){
+    if (Kind_Turb_Model == TURB_MODEL::SST) {
+      Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+      Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
+    }
+  }
+
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
 
@@ -6062,6 +6071,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+            case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
             case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
             case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
             case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;

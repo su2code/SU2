@@ -65,11 +65,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   TransCorrelation = config->GetKind_Trans_Correlation();
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
-  if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::SA)
-    TransCorrelation = TURB_TRANS_CORRELATION::MALAN;
-  if(TransCorrelation == TURB_TRANS_CORRELATION::DEFAULT && TurbFamily == TURB_FAMILY::KW)
-    TransCorrelation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
-
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0) {
@@ -654,23 +649,24 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(Point_Fine);
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
+      solver[iMesh][TRANS_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
     }
     END_SU2_OMP_FOR
 
-    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
                                             false);
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+      solver[iMesh][TRANS_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }
 

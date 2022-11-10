@@ -62,10 +62,18 @@ private:
         break;
       }
 
+      case TURB_TRANS_CORRELATION::KRAUSE_HYPER: {
+        const su2double FirstTerm = -0.042 * pow(Tu, 3);
+        const su2double SecondTerm = 0.4233 * pow(Tu, 2);
+        const su2double ThirdTerm = 0.0118 * pow(Tu, 1);
+        rethetac = Re_Theta_t / (FirstTerm + SecondTerm + ThirdTerm + 1.0744);
+        break;
+      }
+
       case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
-        su2double FirstTerm = 4.45 * pow(Tu, 3);
-        su2double SecondTerm = 5.7 * pow(Tu, 2);
-        su2double ThirdTerm = 1.37 * pow(Tu, 1);
+        const su2double FirstTerm = 4.45 * pow(Tu, 3);
+        const su2double SecondTerm = 5.7 * pow(Tu, 2);
+        const su2double ThirdTerm = 1.37 * pow(Tu, 1);
         rethetac = (FirstTerm - SecondTerm + ThirdTerm + 0.585) * Re_Theta_t;
         break;
       }
@@ -78,11 +86,11 @@ private:
       case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
 
         if (Re_Theta_t <= 1870) {
-          su2double FirstTerm = (-396.035 * pow(10, -2));
-          su2double SecondTerm = (10120.656 * pow(10, -4)) * Re_Theta_t;
-          su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(Re_Theta_t, 2);
-          su2double ForthTerm = (696.506 * pow(10, -9)) * pow(Re_Theta_t, 3);
-          su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(Re_Theta_t, 4);
+          const su2double FirstTerm = (-396.035 * pow(10, -2));
+          const su2double SecondTerm = (10120.656 * pow(10, -4)) * Re_Theta_t;
+          const su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(Re_Theta_t, 2);
+          const su2double ForthTerm = (696.506 * pow(10, -9)) * pow(Re_Theta_t, 3);
+          const su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(Re_Theta_t, 4);
           rethetac = FirstTerm + SecondTerm + ThirdTerm + ForthTerm + FifthTerm;
         } else {
           rethetac = Re_Theta_t - (593.11 + 0.482 * (Re_Theta_t - 1870.0));

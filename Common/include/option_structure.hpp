@@ -1183,19 +1183,21 @@ enum class TURB_TRANS_CORRELATION {
   MALAN,    /*!< \brief Kind of transition correlation model (Malan). */
   SULUKSNA,    /*!< \brief Kind of transition correlation model (Suluksna). */
   KRAUSE,    /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER,    /*!< \brief Kind of transition correlation model (Krause hypersonic). */
   MEDIDA_BAEDER,    /*!< \brief Kind of transition correlation model (Medida-Baeder). */
   MEDIDA,    /*!< \brief Kind of transition correlation model (Medida). */
   MENTER_LANGTRY,    /*!< \brief Kind of transition correlation model (Menter-Langtry). */
-  DEFAULT
+  DEFAULT    /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 static const MapType<std::string, TURB_TRANS_CORRELATION> Trans_Correlation_Map = {
-    MakePair("MALAN", TURB_TRANS_CORRELATION::MALAN)
-    MakePair("SULUKSNA", TURB_TRANS_CORRELATION::SULUKSNA)
-    MakePair("KRAUSE", TURB_TRANS_CORRELATION::KRAUSE)
-    MakePair("MEDIDA_BAEDER", TURB_TRANS_CORRELATION::MEDIDA_BAEDER)
-    MakePair("MEDIDA", TURB_TRANS_CORRELATION::MEDIDA)
-    MakePair("MENTER_LANGTRY", TURB_TRANS_CORRELATION::MENTER_LANGTRY)
-    MakePair("DEFAULT", TURB_TRANS_CORRELATION::DEFAULT)
+  MakePair("MALAN", TURB_TRANS_CORRELATION::MALAN)
+  MakePair("SULUKSNA", TURB_TRANS_CORRELATION::SULUKSNA)
+  MakePair("KRAUSE", TURB_TRANS_CORRELATION::KRAUSE)
+  MakePair("KRAUSE_HYPER", TURB_TRANS_CORRELATION::KRAUSE_HYPER)
+  MakePair("MEDIDA_BAEDER", TURB_TRANS_CORRELATION::MEDIDA_BAEDER)
+  MakePair("MEDIDA", TURB_TRANS_CORRELATION::MEDIDA)
+  MakePair("MENTER_LANGTRY", TURB_TRANS_CORRELATION::MENTER_LANGTRY)
+  MakePair("DEFAULT", TURB_TRANS_CORRELATION::DEFAULT)
 };
 
 
