@@ -486,7 +486,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the transition model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */

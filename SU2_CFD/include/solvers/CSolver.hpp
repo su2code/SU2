@@ -3195,6 +3195,18 @@ public:
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
 
   /*!
+   * \brief Get value of the Intermittency.
+   * \return Value of the Intermittency.
+   */
+  inline virtual su2double GetIntermittency_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the momentum thickness Reynolds number.
+   * \return Value of the momentum thickness Reynolds number.
+   */
+  inline virtual su2double GetReThetaT_Inf() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
