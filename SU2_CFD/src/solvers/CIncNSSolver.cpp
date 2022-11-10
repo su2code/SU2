@@ -230,7 +230,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
         
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
