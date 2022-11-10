@@ -191,15 +191,15 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
   SPvals.Streamwise_Periodic_BoundaryArea = Area_Global;
   SPvals.Streamwise_Periodic_AvgDensity = Average_Density_Global;
 
+  su2double HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
+  su2double dTdn_Local = 0.0, dTdn_Global = 0.0;
+
   if (config->GetEnergy_Equation()) {
     /*---------------------------------------------------------------------------------------------*/
     /*--- 3. Compute the integrated Heatflow [W] for the energy equation source term, heatflux  ---*/
     /*---    boundary term and recovered Temperature. The computation is not completely clear.  ---*/
     /*---    Here the Heatflux from all Boundary markers in the config-file is used.            ---*/
     /*---------------------------------------------------------------------------------------------*/
-
-    su2double HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
-    su2double dTdn_Local = 0.0, dTdn_Global = 0.0;
 
     /*--- Loop over all heatflux Markers ---*/
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -226,19 +226,21 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
         /*--- Identify the boundary by string name and retrive ISOTHERMAL from config ---*/
-        su2double GradT[3] = {0.0,0.0,0.0};
-        
+
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
           const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
           /*--- Compute wall heat flux (normal to the wall) based on computed temperature gradient ---*/
-          const auto GradT = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature());
+          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          su2double GradT[MAXNDIM] = {0.0,0.0,0.0};
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            GradT[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+
           dTdn_Local += nodes->GetThermalConductivity(iPoint) * GeometryToolbox::DotProduct(nDim, GradT, AreaNormal);
-          } // loop dim
         } // loop Vertices
       } // loop Isothermal Marker
     } // loop AllMarker
