@@ -746,9 +746,10 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       // Reference Eq(20) Stalio et. al, doi:10.1115/1.2717235
 
       dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[3]);
+      su2double u_i = V_i[1], temp_i = V_i[nDim + 1];
       su2double term1 = 2 * Thermal_Conductivity_i * dot_product;
-      su2double term2 = - SPvals.Streamwise_Periodic_LambdaL * Thermal_Conductivity_i * V_i[3];
-      su2double term3 = - V_i[3] * V_i[1] * DensityInc_i *  config->GetSpecific_Heat_Cp();
+      su2double term2 = - SPvals.Streamwise_Periodic_LambdaL * Thermal_Conductivity_i * temp_i;
+      su2double term3 = - temp_i * u_i * DensityInc_i *  config->GetSpecific_Heat_Cp();
       scalar_factor = SPvals.Streamwise_Periodic_LambdaL * (term1 + term2 + term3);
       dot_product = 1.0;
     }
