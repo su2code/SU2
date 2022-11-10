@@ -5035,16 +5035,9 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
     //--- Otherwise, store recombined matrix.
     bool check_hess = true;
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      if (EigVal[iDim] != EigVal[iDim]) {
+      if (EigVal[iDim] != EigVal[iDim] || EigVal[iDim] < 1.0e-16) {
         check_hess = false;
       }
-      for (auto jDim = 0; jDim < nDim; jDim++) {
-        if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
-          check_hess = false;
-          break;
-        }
-      }
-      if (!check_hess) break;
     }
 
     if (check_hess){
@@ -5052,9 +5045,12 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
       CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
     }
     else {
-      for(auto iDim = 0; iDim < nDim; ++iDim)
-        for (auto jDim = 0; jDim < nDim; ++jDim)
-          A[iDim][jDim] = 0.;
+      for(auto iDim = 0; iDim < nDim; ++iDim) {
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+          A[iDim][jDim] = 0.0;
+        }
+        A[iDim][iDim] = 1.0e-16;
+      }
     }
 
     //--- Store upper half of Hessian matrix

@@ -4382,7 +4382,7 @@ public:
    * \brief Correct the gradient at symmetry planes.
    */
   void CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
-  
+
   /*!
    * \brief Correct the gradient at symmetry planes.
    */
