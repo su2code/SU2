@@ -31,7 +31,7 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
                                    unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
   /*--- Allocate space for the mass diffusivity. ---*/
-  Diffusivity.resize(nPoint, nVar) = su2double(0.0);
+  Diffusivity.resize(nPoint, nVar+1) = su2double(0.0);
   GasConstant.resize(nPoint);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
