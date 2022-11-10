@@ -265,7 +265,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_PressureDrop);
     SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_IntegratedHeatFlow);
     if (config->GetnMarker_Isothermal() > 0)
-        SetHistoryOutputValue("STREAMWISE_LAMBDAL", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_LambdaL);
+      SetHistoryOutputValue("STREAMWISE_LAMBDAL", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_LambdaL);
   }
 
   /*--- Set the analyse surface history values --- */
