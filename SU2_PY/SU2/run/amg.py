@@ -66,6 +66,9 @@ def amg(config):
     mesh_sizes = su2amg.get_mesh_sizes(config)
     sub_iter   = su2amg.get_sub_iterations(config)
 
+    if len(mesh_sizes) != len(sub_iter):
+        raise ValueError(f'Inconsistent number of mesh sizes and sub-iterations. {len(mesh_sizes)} mesh sizes and {len(sub_iter)} sub-iterations provided.')
+
     #--- Solver iterations/ residual reduction param for each size level
 
     flow_iter = su2amg.get_flow_iter(config)
@@ -78,8 +81,7 @@ def amg(config):
     if adap_sensor not in sensor_avail:
         raise ValueError(f'Unknown adaptation sensor {adap_sensor}. Available options are {sensor_avail}.')
 
-    if len(mesh_sizes) != len(sub_iter):
-        raise ValueError(f'Inconsistent number of mesh sizes and sub-iterations. {len(mesh_sizes)} mesh sizes and {len(sub_iter)} sub-iterations provided.')
+    gol = adap_sensor == 'GOAL'
 
     #--- Change current directory
 
@@ -127,9 +129,10 @@ def amg(config):
         config_cfd_ad.pop(opt, None)
 
     #--- Check config for filenames if restarting
-    if config['RESTART_SOL'] == 'YES':
+    restart = config['RESTART_SOL'] == 'YES'
+    if restart:
         required_options = ['SOLUTION_FILENAME']
-        if config['ADAP_SENSOR'] == 'GOAL': required_options.append('SOLUTION_ADJ_FILENAME')
+        if gol: required_options.append('SOLUTION_ADJ_FILENAME')
         if not all (opt in config for opt in required_options):
             err = 'RESTART_SOL is set to YES, but the solution is missing:\n'
             for opt in required_options:
@@ -153,13 +156,13 @@ def amg(config):
 
     try: # run with redirected outputs
         #--- Run a single iteration of the flow if restarting to get history info
-        if config['RESTART_SOL'] == 'YES':
+        if restart:
             config_cfd.ITER = 1
             config_cfd.RESTART_CFL = 'YES'
 
         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 
-        if config['RESTART_SOL'] == 'YES':
+        if restart:
             os.remove(solfil)
             os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
@@ -167,12 +170,12 @@ def amg(config):
         config_cfd.RESTART_SOL = 'YES'
         config_cfd.RESTART_CFL = 'YES'
 
-        if adap_sensor == 'GOAL':
+        if gol:
             adjsolfil = f'restart_adj{sol_ext}'
             su2amg.set_adj_config_ini(config_cfd_ad, solfil, adjsolfil, mesh_sizes[0])
 
             #--- If restarting, check for the existence of an adjoint restart
-            if config['RESTART_SOL'] == 'YES':
+            if restart:
                 adjsolfil_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME
                 func_name          = config.OBJECTIVE_FUNCTION
                 suffix             = su2io.get_adjointSuffix(func_name)
@@ -244,12 +247,12 @@ def amg(config):
             su2amg.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
 
             mesh_size = int(mesh_sizes[iSiz])
-            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
+            if gol and iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
             config_amg['size'] = mesh_size
 
-            #--- Use pyAmg interface
+            #--- Add metric or sensor field to GMF sol
 
-            if adap_sensor == 'GOAL':
+            if gol:
 
                 #--- Use metric computed from SU2 to drive the adaptation
 
@@ -301,7 +304,7 @@ def amg(config):
 
             su2amg.write_mesh_and_sol(meshfil, solfil, mesh_new)
 
-            if adap_sensor == 'GOAL':
+            if gol:
                 adjsolfil = f'adj{sol_ext}'
                 sol_adj = su2amg.split_adj_sol(mesh_new)
                 su2amg.write_sol(adjsolfil, sol_adj)
@@ -312,7 +315,7 @@ def amg(config):
 
             del mesh_new
 
-            if adap_sensor == 'GOAL':
+            if gol:
                 solfil_gmf_adj = 'adj_itp.solb'
                 su2amg.write_sol(solfil_gmf_adj, sol_adj)
                 del sol_adj
@@ -337,7 +340,7 @@ def amg(config):
                 npoin = su2amg.get_su2_npoin(meshfil)
                 su2amg.plot_results(history_format, history_filename, global_iter, npoin)
 
-                if adap_sensor == 'GOAL':
+                if gol:
 
                     adjsolfil_ini = f'adj_ini{sol_ext}'
                     adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
