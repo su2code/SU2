@@ -1400,7 +1400,7 @@ def main():
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
     species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
     species_primitiveVenturi_boundedscalar.test_iter   = 50
-    species_primitiveVenturi_boundedscalar.test_vals   = [-5.579922, -4.827356, -4.678887, -5.511866, -1.175961, -6.343029, 5.000000, -1.081957, 5.000000, -2.772109, 5.000000, -1.011926, 0.000095, 0.000095, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.test_vals   = [-5.284619, -4.338169, -4.332983, -5.830310, -0.940580, -5.478797, 5.000000, -1.804797, 5.000000, -4.055686, 5.000000, -2.187465, 0.000428, 0.000428, 0.000000, 0.000000]
     species_primitiveVenturi_boundedscalar.new_output  = True
     test_list.append(species_primitiveVenturi_boundedscalar)
 
