@@ -1057,7 +1057,6 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
-  Gas_Composition = nullptr;
 }
 
 void CConfig::SetConfig_Options() {
@@ -1096,7 +1095,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
 
-  /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -1161,9 +1160,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
-  /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
+  addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
@@ -1185,7 +1182,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-
+  /* DESCRIPTION: Specfify super-catalytic wall */
+  addBoolOption("SUPERCATALYTIC_WALL", Supercatalytic_Wall, false);
+  /* DESCRIPTION: Wall mass fractions for supercatalytic case */
+  addDoubleListOption("SUPERCATALYTIC_WALL_COMPOSITION", nSpecies_Cat_Wall, Supercatalytic_Wall_Composition);
+  /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
+  addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
+  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -1336,6 +1339,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SCHMIDT_NUMBER_LAMINAR", Schmidt_Number_Laminar, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.70 (more or less experimental value) \ingroup Config*/
   addDoubleOption("SCHMIDT_NUMBER_TURBULENT", Schmidt_Number_Turbulent, 0.7);
+  /*!\brief DESCRIPTION: Constant Lewis number for mass diffusion */
+  addDoubleListOption("CONSTANT_LEWIS_NUMBER", nConstant_Lewis_Number, Constant_Lewis_Number);
 
   vel_inf[0] = 1.0; vel_inf[1] = 0.0; vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
@@ -3755,9 +3760,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Mu_Ref_Default = Mu_Constant_Default;
   const su2double Mu_Temperature_Ref_Default = (SystemMeasurements == SI) ? 273.15 : (273.15 * 1.8);
   const su2double Mu_S_Default = (SystemMeasurements == SI) ? 110.4 : (110.4 * 1.8);
+  const su2double Specific_Heat_Cp_Default = 1004.703;
   const su2double Thermal_Conductivity_Constant_Default = (SystemMeasurements == SI) ? 2.57E-2 : (2.57E-2 * 0.577789317);
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
+  const su2double Lewis_Number_Default = 1.0;
 
   auto SetDefaultIfEmpty = [](su2double*& array, unsigned short& size, const su2double& default_val) {
     if (array == nullptr) {
@@ -3768,6 +3775,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   };
 
   SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
+  SetDefaultIfEmpty(Specific_Heat_Cp, nSpecific_Heat_Cp, Specific_Heat_Cp_Default);
   SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
     SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
@@ -3778,15 +3786,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     Thermal_Conductivity_Constant_Default);
   SetDefaultIfEmpty(Prandtl_Lam, nPrandtl_Lam, Prandtl_Lam_Default);
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
+  SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
       /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
-       equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
-      if (nMolecular_Weight != nSpecies_Init + 1) {
+       equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models. 
+       * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active.--- */
+      if (nMolecular_Weight != nSpecies_Init + 1 || nSpecific_Heat_Cp != nSpecies_Init + 1) {
         SU2_MPI::Error(
-            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }
@@ -4725,8 +4735,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
-    SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
+  if ((Kind_Turb_Model != TURB_MODEL::SST) && Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+    SU2_MPI::Error("LM transition model currently only available in combination with SST turbulence model!", CURRENT_FUNCTION);
   }
 
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
@@ -4837,7 +4847,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
 
-  if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) Energy_Equation = true;
+  if ((Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) && (Kind_Species_Model==SPECIES_MODEL::NONE)) Energy_Equation = true;
 
   if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;
@@ -5335,7 +5345,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model != SPECIES_MODEL::NONE) {
+  if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
@@ -5355,9 +5365,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    // For now, do not allow axisymmetric simulations
-    if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
-
     if(Kind_TimeIntScheme_Species != EULER_IMPLICIT &&
        Kind_TimeIntScheme_Species != EULER_EXPLICIT){
       SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented in the scalar solver.", CURRENT_FUNCTION);
@@ -5372,6 +5379,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY &&
         !(OptionIsSet("DIFFUSIVITY_CONSTANT")))
       SU2_MPI::Error("A DIFFUSIVITY_CONSTANT=<value> has to be set with DIFFUSIVITY_MODEL= CONSTANT_DIFFUSIVITY.", CURRENT_FUNCTION);
+
+    /*--- Check whether the number of entries of the constant Lewis number equals the number of transported scalar
+       equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
+       models--- */
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
+      SU2_MPI::Error(
+          "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
+          "to be equal to the number of entries of SPECIES_INIT",
+          CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
     auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
@@ -6037,6 +6053,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             }
             cout << "." << endl;
             break;
+        }        
+        switch (Kind_Trans_Model) {
+          case TURB_TRANS_MODEL::NONE:  break;
+          case TURB_TRANS_MODEL::LM:    cout << "Transition model: Langtry and Menter's 4 equation model (2009)" << endl; break;        
         }
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
@@ -7789,6 +7809,17 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
           Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
+}
+
+bool CConfig::GetCatalytic_Wall(unsigned short iMarker) const {
+
+  bool catalytic = false;
+  for (unsigned short iMarker_Catalytic = 0; iMarker_Catalytic < nWall_Catalytic; iMarker_Catalytic++){
+    string Catalytic_Tag = Wall_Catalytic[iMarker_Catalytic];
+    if (Catalytic_Tag == Marker_All_TagBound[iMarker]) { catalytic = true; break; }
+  }
+
+  return catalytic;
 }
 
 bool CConfig::GetSolid_Wall(unsigned short iMarker) const {

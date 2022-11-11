@@ -33,6 +33,7 @@
 
 /*!
  * \class CADTElemClass
+ * \ingroup ADT
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
  * \version 7.4.0 "Blackbird"

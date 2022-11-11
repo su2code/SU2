@@ -78,7 +78,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   if (rank == MASTER_NODE) 
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
-  file_reader.ReadRawDRG(var_file_name_lut);
+  file_reader.ReadRawLUT(var_file_name_lut);
 
   n_points = file_reader.GetNPoints();
   n_triangles = file_reader.GetNTriangles();
@@ -398,8 +398,10 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
           triangle[p] = triangles[id_triangle][p]; 
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var]), triangle, interp_coeffs);
       }
-      else
+      else{
         *val_vars[i_var] = GetDataP(val_names_var[i_var])[nearest_neighbor];
+      }
+        
     }
   }
   return exit_code;

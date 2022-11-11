@@ -149,8 +149,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
-  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
-
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -282,6 +280,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nodes = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
+
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -768,7 +770,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
+  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
@@ -819,6 +821,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   CFluidModel* auxFluidModel = nullptr;
 
@@ -1030,6 +1033,20 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+
+  if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {
+    if (config->GetTurbulenceIntensity_FreeStream() *100 >=0.027) {
+        Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/
+        (config->GetTurbulenceIntensity_FreeStream() *100*config->GetTurbulenceIntensity_FreeStream() *100));
+      }
+    else {
+      Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/(0.27*0.27));
+    }
+  }
+  else {
+    Re_ThetaT_FreeStream = 331.5*pow(config->GetTurbulenceIntensity_FreeStream() *100-0.5658,-0.671);
+  }
+  config->SetReThetaT_FreeStream(Re_ThetaT_FreeStream);
 
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
   config->SetDiffusivity_ConstantND(MassDiffusivityND);
@@ -1284,6 +1301,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
         Unit.str("");
+        if (config-> GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+          NonDimTable << "Intermittency"  << "-" << "-" << "-" << config->GetIntermittency_FreeStream();
+          Unit.str("");
+          NonDimTable << "Moment. Thick. Re"  << "-" << "-" << "-" << config->GetReThetaT_FreeStream();
+          Unit.str("");
+        }
       }
       if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
@@ -1674,18 +1697,20 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  if (config->GetUseVectorization()) {
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool low_mach_corr = config->Low_Mach_Correction();
+
+  /*--- Use vectorization if the scheme supports it. ---*/
+  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                                (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool mlp_gas          = config->GetKind_FluidModel() == DATADRIVEN_FLUID;
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
-  const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -1828,13 +1853,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
-      if (bad_recon) {
-        /*--- Force 1st order for this edge for at least 20 iterations. ---*/
-        NonPhysicalEdgeCounter[iEdge] = 20;
-      } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
-        --NonPhysicalEdgeCounter[iEdge];
-        bad_recon = true;
-      }
+      bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
 
       numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
@@ -1893,32 +1912,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (implicit)
-      Jacobian.SetDiagonalAsColumnSum();
-  }
-
-  /*--- Warning message about non-physical reconstructions. ---*/
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
-
-    /*--- Add counter results for all ranks. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-      config->SetNonphysical_Reconstr(ErrorCounter);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
+  FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,

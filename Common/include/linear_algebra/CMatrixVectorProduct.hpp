@@ -36,6 +36,7 @@
 
 /*!
  * \class CMatrixVectorProduct
+ * \ingroup SpLinSys
  * \brief Abstract base class for defining matrix-vector products
  * \author J. Hicken.
  *
@@ -63,6 +64,7 @@ CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 
 /*!
  * \class CSysMatrixVectorProduct
+ * \ingroup SpLinSys
  * \brief Specialization of matrix-vector product that uses CSysMatrix class
  */
 template<class ScalarType>

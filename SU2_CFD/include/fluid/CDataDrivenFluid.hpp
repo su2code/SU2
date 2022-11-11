@@ -30,6 +30,8 @@
 #include "CFluidModel.hpp"
 //#include "../numerics/MultiLayer_Perceptron/LookUp_MLP.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
+
 /*!
  * \class CDataDrivenFluid
  * \brief Child class for defining the ideal gas model.
@@ -48,6 +50,8 @@ class CDataDrivenFluid : public CFluidModel {
   MLPToolbox::CLookUp_ANN *ANN_new;
   MLPToolbox::CIOMap * input_output_map, * input_output_map_lower_rho;
 
+  CLookUpTable *look_up_table;
+
   vector<string> input_names, input_names_lower_rho;
   vector<su2double> inputs;
   vector<string> output_names;
@@ -61,7 +65,7 @@ class CDataDrivenFluid : public CFluidModel {
   unsigned short boundsviolation;
   unsigned long nIter_NewtonSolver{0};
   bool Reevaluate_MLP{true};
-
+  bool LUT = false;
  public:
   /*!
    * \brief Constructor of the class.
@@ -69,9 +73,14 @@ class CDataDrivenFluid : public CFluidModel {
   CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy = true);
 
   ~CDataDrivenFluid(){
-      delete ANN_new;
-      delete input_output_map;
-      delete input_output_map_lower_rho;
+      if(LUT){
+            delete look_up_table;
+      }else{
+            delete ANN_new;
+            delete input_output_map;
+            delete input_output_map_lower_rho;
+      }
+      
       for(size_t i=0; i<6; i++){
             delete [] dOutputs_dInputs[i];
       }
@@ -143,6 +152,10 @@ class CDataDrivenFluid : public CFluidModel {
   unsigned long GetnIter_NewtonSolver() {return nIter_NewtonSolver;}
 
   void Predict_MLP(su2double rho, su2double e);
+  
+  void Predict_LUT(su2double rho, su2double e);
+
+  void Evaluate_Dataset(su2double rho, su2double e);
 
   void SetDensity(su2double rho) override {rho_start = rho;}
   void SetEnergy(su2double e) override {e_start = e;}

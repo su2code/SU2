@@ -33,7 +33,7 @@
 /*!
  * \class CFEM_NeoHookean_Comp
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */
@@ -81,7 +81,7 @@ private:
 /*!
  * \class CFEM_NeoHookean_Comp
  * \brief Constitutive and stress tensors for a Knowles stored-energy function, nearly incompressible.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */
@@ -132,7 +132,7 @@ private:
 /*!
  * \class CFEM_DielectricElastomer
  * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */
@@ -180,7 +180,7 @@ private:
 /*!
  * \class CFEM_IdealDE
  * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */

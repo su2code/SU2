@@ -27,6 +27,7 @@
 
 #include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
 
 #include <fstream>
 
@@ -41,8 +42,13 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
   idx_e = 1;
 
   ComputeEntropy = CompEntropy;
-  //ANN = new LookUp_MLP("split_dataset.mlp");
-  ANN_new = new MLPToolbox::CLookUp_ANN("split_dataset.mlp");
+  LUT = true;
+  if(LUT){
+    look_up_table = new CLookUpTable("rhoe_table_fine.drg", "rho", "e");
+  }else{
+    ANN_new = new MLPToolbox::CLookUp_ANN("split_dataset.mlp");
+  }
+  
 
   input_names.push_back("rho");
   input_names_lower_rho.push_back("rho_l");
@@ -65,54 +71,16 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
   output_names.push_back("d2s_drho2");
   outputs.push_back(&d2s_drho2);
 
-  input_output_map = new MLPToolbox::CIOMap(ANN_new, input_names, output_names);
-  input_output_map_lower_rho = new MLPToolbox::CIOMap(ANN_new, input_names_lower_rho, output_names);
-
-  // rho_maxmin = ANN->GetInputNorm(input_names.at(idx_rho));
-  // e_maxmin = ANN->GetInputNorm(input_names.at(idx_e));
+  if(!LUT){
+    input_output_map = new MLPToolbox::CIOMap(ANN_new, input_names, output_names);
+    input_output_map_lower_rho = new MLPToolbox::CIOMap(ANN_new, input_names_lower_rho, output_names);
+  }
+  
   rho_maxmin = make_pair(0.80523, 295.251);
   e_maxmin = make_pair(350604.24, 479774.22);
   rho_start = 0.5*(rho_maxmin.first + rho_maxmin.second);
   e_start = 0.5*(e_maxmin.first + e_maxmin.second);
 
-  // ifstream infile("/home/evert/NICFD/testcase/roedata_ws.csv");
-  // ofstream outfile("refdata_prediction_newMLP.csv");
-  // string line;
-  // getline(infile, line);
-
-  // su2double rho_in, e_in;
-  // vector<string> input_names;
-  // vector<string> output_names;
-  // vector<su2double> inputs;
-  // vector<su2double*> outputs;
-  // su2double S, ds_de, ds_drho, d2s_dedrho, d2s_de2, d2s_drho2;
-  // input_names.push_back("rho");
-  // inputs.push_back(rho_in);
-  // input_names.push_back("e");
-  // inputs.push_back(e_in);
-  // output_names.push_back("s");
-  // outputs.push_back(&S);
-  // output_names.push_back("ds/de");
-  // outputs.push_back(&ds_de);
-  // output_names.push_back("ds/drho");
-  // outputs.push_back(&ds_drho);
-  // output_names.push_back("d2s/de.drho");
-  // outputs.push_back(&d2s_dedrho);
-  // output_names.push_back("d2s/de2");
-  // outputs.push_back(&d2s_de2);
-  // output_names.push_back("d2s/drho2");
-  // outputs.push_back(&d2s_drho2);
-
-  // while(getline(infile, line)){
-  //   istringstream line_input(line);
-  //   line_input >> rho_in >> e_in;
-  //   inputs.at(0) = rho_in;
-  //   inputs.at(1) = e_in;
-  //   Predict_MLP(inputs);
-  //   outfile << rho_in <<"\t" << e_in <<"\t"<< Entropy <<"\t" << ds_de << "\t" << ds_drho << "\t" << d2s_dedrho << "\t" << d2s_de2 << "\t" << d2s_drho2 << endl;
-  // }
-  // infile.close();
-  // outfile.close();
 
   dOutputs_dInputs = new su2double*[6];
   for(size_t i=0; i<6; i++){
@@ -125,7 +93,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   boundsviolation = 0;
 
-  Predict_MLP(rho, e);
+  Evaluate_Dataset(rho, e);
 
   su2double blue_term = (ds_drho * (2 - rho * pow(ds_de, -1) * d2s_dedrho) + rho * d2s_drho2);
   su2double green_term = (- pow(ds_de, -1) * d2s_de2 * ds_drho + d2s_dedrho);
@@ -154,6 +122,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   su2double tolerance_P = 10,
             tolerance_T = 1,
             relaxation = 0.1;
+  relaxation = 0.05;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, delta_P, delta_T, delta_rho, delta_e;
@@ -163,29 +132,14 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   vector<su2double> determinant_trend, dP_de_trend, dP_drho_trend, dT_de_trend, dT_drho_trend, delta_rho_trend, delta_e_trend;
 
   while(!converged && (Iter < iter_max)){
-    // ANN->Predict_MLP(input_names, inputs, output_names, outputs);
 
-    // ds_drho = -exp(ds_drho);
-    // d2s_drho2 = exp(d2s_drho2);
-    Predict_MLP(rho, e);
-    //ds_drho = dOutputs_dInputs[0][idx_rho];
-    //ds_de = dOutputs_dInputs[0][idx_e];
+    Evaluate_Dataset(rho ,e);
 
     T_current = pow(ds_de, -1);
     P_current = -pow(rho, 2)*T_current*ds_drho;
     delta_P = P_current - P;
     delta_T = T_current - T;
-    //if(Iter == 0) cout << "Start: " << rho << " " << e << " " << P_current << " " << P << " " << T_current << " " << T << endl;
-    // if(!thingy){
-    //   rho_trend.push_back(rho);
-    //   e_trend.push_back(e);
-    //   s_trend.push_back(Entropy);
-    //   ds_de_trend.push_back(ds_de);
-    //   ds_drho_trend.push_back(ds_drho);
-    //   d2s_dedrho_trend.push_back(d2s_dedrho);
-    //   d2s_de2_trend.push_back(d2s_de2);
-    //   d2s_drho2_trend.push_back(d2s_drho2);
-    // }
+
     if((abs(delta_P) < tolerance_P) && (abs(delta_T) < tolerance_T)){
       converged = true;
     }else{
@@ -201,51 +155,14 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 
       rho -= relaxation * delta_rho;
       e -= relaxation * delta_e;
-      // rho = max(min(rho, rho_maxmin.second), rho_maxmin.first);
-      // e = max(min(e, e_maxmin.second), e_maxmin.first);
     }
-    // if(!thingy){
-    //   rho_trend.push_back(rho);
-    //   e_trend.push_back(e);
-    //   s_trend.push_back(Entropy);
-    //   ds_de_trend.push_back(ds_de);
-    //   ds_drho_trend.push_back(ds_drho);
-    //   d2s_dedrho_trend.push_back(d2s_dedrho);
-    //   d2s_de2_trend.push_back(d2s_de2);
-    //   d2s_drho2_trend.push_back(d2s_drho2);
-    //   determinant_trend.push_back(determinant);
-    //   dP_de_trend.push_back(dP_de);
-    //   dP_drho_trend.push_back(dP_drho);
-    //   dT_de_trend.push_back(dT_de);
-    //   dT_drho_trend.push_back(dT_drho);
-    //   delta_rho_trend.push_back(delta_rho);
-    //   delta_e_trend.push_back(delta_e);
-    // }
     Iter ++;
   }
 
-  // if(!thingy){
-  //   ofstream outfile{"PT_trend.csv"};
-  //   for(size_t i=0; i<rho_trend.size(); i++){
-  //     outfile << rho_trend.at(i) <<"\t" << e_trend.at(i) <<"\t"<< s_trend.at(i) <<"\t" << ds_de_trend.at(i) << "\t" << ds_drho_trend.at(i) << "\t" << d2s_dedrho_trend.at(i) << "\t" << d2s_de2_trend.at(i) << "\t" << d2s_drho2_trend.at(i) << endl;
-  //   }
-  //   outfile.close();
-  //   ofstream outfile_2{"PT_details_trend.csv"};
-  //   for(size_t i=0; i<rho_trend.size(); i++){
-  //     outfile_2 << determinant_trend.at(i) <<"\t" << dP_de_trend.at(i) <<"\t"<< dP_drho_trend.at(i) <<"\t" << dT_de_trend.at(i) << "\t" << dT_drho_trend.at(i) << "\t" << delta_rho_trend.at(i) << "\t" << delta_e_trend.at(i) << endl;
-  //   }
-  //   outfile_2.close();
-  // }
-    
-  
 
-  //cout << "End: " << rho << " " << e << " " << P_current << " " << P << " " << T_current << " " << T << endl;
-  Reevaluate_MLP = false;
   SetTDState_rhoe(rho, e);
-  Reevaluate_MLP = true;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
-  //cout << "End SetTDState_PT" << endl;
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
@@ -264,6 +181,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
 
   su2double tolerance = 10;
   su2double relaxation = 0.1;
+  relaxation = 0.05;
   bool converged{false};
   unsigned long maxIter = 1000, Iter{0};
   
@@ -273,7 +191,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
       // ANN->Predict_MLP(input_names, inputs, output_names, outputs);
       // ds_drho = -exp(ds_drho);
       // d2s_drho2 = exp(d2s_drho2);
-      Predict_MLP(rho, e);
+      Evaluate_Dataset(rho, e);
       //ds_drho = dOutputs_dInputs[0][idx_rho];
       //ds_de = dOutputs_dInputs[0][idx_e];
 
@@ -303,27 +221,21 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   su2double tolerance_h = 10,
             tolerance_s = 1,
             relaxation = 0.1;
+  relaxation = 0.05;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, h_current, s_current;
   su2double delta_h, delta_s, delta_rho, delta_e, dP_de, dP_drho, dT_de, dT_drho, dh_drho, dh_de, determinant;
   while(!converged && (Iter < iter_max)){
-    //ANN->Predict_MLP(input_names, inputs, output_names, outputs);
-    //ds_drho = -exp(ds_drho);
-    //d2s_drho2 = exp(d2s_drho2);
-    Predict_MLP(rho, e);
-    
-    //ds_drho = dOutputs_dInputs[0][idx_rho];
-    //ds_de = dOutputs_dInputs[0][idx_e];
 
+    Evaluate_Dataset(rho, e);
+    
     T_current = pow(ds_de, -1);
     P_current = -pow(rho, 2)*T_current*ds_drho;
     h_current = e + P_current / rho;
 
     s_current = Entropy;
-    // if(Iter == 0){
-    //   cout << "Start: " << rho << " " << e << " " << h_current << " " << h << " " << s_current << " " << s << endl;
-    // }
+
     delta_h = h_current - h;
     delta_s = s_current - s;
     if((abs(delta_h) < tolerance_h) && (abs(delta_s) < tolerance_s)){
@@ -341,19 +253,14 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
 
       rho -= relaxation * delta_rho;
       e -= relaxation * delta_e;
-      // rho = max(min(rho, rho_maxmin.second), rho_maxmin.first);
-      // e = max(min(e, e_maxmin.second), e_maxmin.first);
     }
     Iter ++;
     
   }
 
-  Reevaluate_MLP = false;
   SetTDState_rhoe(rho, e);
-  Reevaluate_MLP = true;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
-  //cout << "End SetTDState_hs" << endl;
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
@@ -366,28 +273,23 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   su2double tolerance_P = 10,
             tolerance_s = 1,
             relaxation = 0.1;
+  relaxation = 0.05;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, h_current, s_current;
   su2double delta_P, delta_s, delta_rho, delta_e, dP_de, dP_drho, dT_de, dT_drho, dh_drho, dh_de, determinant;
 
   while(!converged && (Iter < iter_max)){
-    //ANN->Predict_MLP(input_names, inputs, output_names, outputs);
-    //ds_drho = -exp(ds_drho);
-    //d2s_drho2 = exp(d2s_drho2);
-    Predict_MLP(rho, e);
+
+    Evaluate_Dataset(rho, e);
     
-    //ds_drho = dOutputs_dInputs[0][idx_rho];
-    //ds_de = dOutputs_dInputs[0][idx_e];
 
     T_current = pow(ds_de, -1);
     P_current = -pow(rho, 2)*T_current*ds_drho;
     h_current = e + P_current / rho;
 
     s_current = Entropy;
-    // if(Iter == 0){
-    //   cout << "Start: " << rho << " " << e << " " << h_current << " " << h << " " << s_current << " " << s << endl;
-    // }
+
     delta_P = P_current - P;
     delta_s = s_current - s;
     if((abs(delta_P) < tolerance_P) && (abs(delta_s) < tolerance_s)){
@@ -402,22 +304,17 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 
       rho -= relaxation * delta_rho;
       e -= relaxation * delta_e;
-      // rho = max(min(rho, rho_maxmin.second), rho_maxmin.first);
-      // e = max(min(e, e_maxmin.second), e_maxmin.first);
     }
     Iter ++;
     
   }
 
-  Reevaluate_MLP = false;
   SetTDState_rhoe(rho, e);
-  Reevaluate_MLP = true;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
-  cout << "Calling TDState_rhoT" << endl;
   su2double e = T * Gas_Constant / Gamma_Minus_One;
   SetTDState_rhoe(rho, e);
 }
@@ -452,4 +349,18 @@ void CDataDrivenFluid::Predict_MLP(su2double rho, su2double e){
   //ANN->Predict_MLP(input_names, inputs, these_outputs, outputs);
   ds_drho = -exp(ds_drho);
   d2s_drho2 = exp(d2s_drho2);
+}
+
+void CDataDrivenFluid::Predict_LUT(su2double rho, su2double e){
+  
+  unsigned long exit_code = look_up_table->LookUp_ProgEnth(output_names, outputs, rho, e, "rho", "e");
+
+}
+
+void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
+  if(LUT){
+    Predict_LUT(rho, e);
+  }else{
+    Predict_MLP(rho, e);
+  }
 }
