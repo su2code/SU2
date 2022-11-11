@@ -323,9 +323,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case FLUID_MIXTURE:
 
-      //config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       /*
-      Correct gas constant of one inlet should be given in the .cfg fiel, otherwise the density will be computed wrongly,
+      Correct gas constant of one inlet should be given in the .cfg file, otherwise the density will be computed wrongly,
       this is a strong issue for mixing more than two gases. 
       */
       Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();

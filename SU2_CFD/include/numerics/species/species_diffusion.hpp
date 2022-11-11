@@ -89,20 +89,11 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
       Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
 
       if(!turbulence){
-        su2double HirschCurtisCorrection = 0.0;
+        su2double velocity_correction = 0.0;
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          HirschCurtisCorrection += ((1000/config->GetMolecular_Weight(nVar))-(1000/config->GetMolecular_Weight(iVar)))* Proj_Mean_GradScalarVar[iVar];
+          velocity_correction += 0.5*((Diffusion_Coeff_i[iVar] +Diffusion_Coeff_j[iVar])-(Diffusion_Coeff_i[nVar] + Diffusion_Coeff_j[nVar] ))* Proj_Mean_GradScalarVar[iVar];
         }
-        Flux[iVar] += Diffusivity *0.5*UNIVERSAL_GAS_CONSTANT * ( 1/ Gas_Constant_i + 1 / Gas_Constant_j)* 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]) * HirschCurtisCorrection;
-        /* velocity correction should be added in the species_convection.hpp, for now is commented out
-        su2double VelCorrection = 0.0;
-        su2double Diffusitivity_N_Species =  0.5 * (Density_i * Diffusion_Coeff_i[nVar] + Density_j * Diffusion_Coeff_j[nVar]) ;
-        for (auto iVar = 0u; iVar < nVar; iVar++){
-          VelCorrection +=(Diffusivity - Diffusitivity_N_Species)*Proj_Mean_GradScalarVar[iVar]+(UNIVERSAL_GAS_CONSTANT / (0.5 *(Gas_Constant_i+Gas_Constant_j))) * HirschCurtisCorrection * (Diffusivity - Diffusitivity_N_Species)*0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]); 
-        }
-        VelCorrection = (VelCorrection + 0.5*(UNIVERSAL_GAS_CONSTANT *(1 / Gas_Constant_i+1 / Gas_Constant_j)) * HirschCurtisCorrection * Diffusivity) * 0.5*(ScalarVar_i[iVar]+ScalarVar_j[iVar]);
-        Flux[iVar] -= VelCorrection;
-        */ 
+        Flux[iVar] -= 0.5 * (Density_i * ScalarVar_i[iVar] + Density_j * ScalarVar_j[iVar]) * velocity_correction;
       }
 
       /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
