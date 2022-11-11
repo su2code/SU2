@@ -3386,8 +3386,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 #endif
 
   /*--- Check if CoolProp is used with non-dimensionalization. ---*/
-  if (Kind_FluidModel == COOLPROP && Ref_NonDim !=  DIMENSIONAL) {
-    SU2_MPI::Error(string("CoolProp can not be used with non-dimensionlazation.\n"),CURRENT_FUNCTION);
+  if (Kind_FluidModel == COOLPROP && Ref_NonDim != DIMENSIONAL) {
+    SU2_MPI::Error("CoolProp can not be used with non-dimensionalization.", CURRENT_FUNCTION);
   }
 
   /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
