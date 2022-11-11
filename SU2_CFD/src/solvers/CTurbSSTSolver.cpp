@@ -626,7 +626,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
         su2double Pressure_Inlet;
         su2double Density_Inlet;
         if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-          Pressure_Inlet = V_inlet[0];
+          Pressure_Inlet = V_inlet[nDim+1];
           Density_Inlet = V_inlet[nDim + 2];
           FluidModel->SetTDState_Prho(Pressure_Inlet, Density_Inlet);
         } else {
