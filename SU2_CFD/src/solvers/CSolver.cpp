@@ -1926,13 +1926,41 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     bool incNonLinRes = false;
 
     if (config->GetInnerIter() != 0) {
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+      for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+        normNonLinRes += GetNodes()->GetNonLinResNorm(iPoint);
+        normNonLinRes_Upd += GetNodes()->GetNonLinResNorm_Update(iPoint);
+        normNonLinRes_Old += GetNodes()->GetNonLinResNorm_Old(iPoint);
+      }
+      END_SU2_OMP_FOR
+
+      SU2_OMP_MASTER
+      { /* MPI reduction. */
+        su2double myNormNonLinRes = normNonLinRes;
+        su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
+        su2double myNormNonLinRes_Old = normNonLinRes_Old;
+        SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      }
+      END_SU2_OMP_MASTER
+      SU2_OMP_BARRIER
+
+      normNonLinRes = sqrt(normNonLinRes);
+      normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
+      normNonLinRes_Old = sqrt(normNonLinRes_Old);
+
+      decNonLinRes = decNonLinRes && (normNonLinRes_Upd <= nonLinTol*normNonLinRes_Old);
+      incNonLinRes = incNonLinRes || (normNonLinRes_Upd  > nonLinInc*normNonLinRes_Old);
+
+      if (iMesh == MESH_0 && solverTurb) {
         su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
         SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
         for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-          normNonLinRes += GetNodes()->GetNonLinResNorm(iPoint, iVar);
-          normNonLinRes_Upd += GetNodes()->GetNonLinResNorm_Update(iPoint, iVar);
-          normNonLinRes_Old += GetNodes()->GetNonLinResNorm_Old(iPoint, iVar);
+          normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint);
+          normNonLinRes_Upd += solverTurb->GetNodes()->GetNonLinResNorm_Update(iPoint);
+          normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint);
         }
         END_SU2_OMP_FOR
 
@@ -1954,38 +1982,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
         decNonLinRes = decNonLinRes && (normNonLinRes_Upd <= nonLinTol*normNonLinRes_Old);
         incNonLinRes = incNonLinRes || (normNonLinRes_Upd  > nonLinInc*normNonLinRes_Old);
-      }
-
-      if (iMesh == MESH_0 && solverTurb) {
-        for (auto iVar = 0; iVar < nVarTurb; iVar++) {
-          su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
-          SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-          for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-            normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint, iVar);
-            normNonLinRes_Upd += solverTurb->GetNodes()->GetNonLinResNorm_Update(iPoint, iVar);
-            normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint, iVar);
-          }
-          END_SU2_OMP_FOR
-
-          SU2_OMP_MASTER
-          { /* MPI reduction. */
-            su2double myNormNonLinRes = normNonLinRes;
-            su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
-            su2double myNormNonLinRes_Old = normNonLinRes_Old;
-            SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-            SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-            SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          }
-          END_SU2_OMP_MASTER
-          SU2_OMP_BARRIER
-
-          normNonLinRes = sqrt(normNonLinRes);
-          normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
-          normNonLinRes_Old = sqrt(normNonLinRes_Old);
-
-          decNonLinRes = decNonLinRes && (normNonLinRes_Upd <= nonLinTol*normNonLinRes_Old);
-          incNonLinRes = incNonLinRes || (normNonLinRes_Upd  > nonLinInc*normNonLinRes_Old);
-        }
       }
     }
     else {
