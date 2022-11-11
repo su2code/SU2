@@ -347,7 +347,7 @@ def split_adj_sol(mesh):
 
     return adj_sol
 
-def create_sensor(solution, sensor):
+def create_sensor(solution, sensor_tag):
     """
     Store desired sensor for adaptation
 
@@ -357,19 +357,19 @@ def create_sensor(solution, sensor):
     Dim = solution['dimension']
     Sol = np.array(solution['solution'])
 
-    if sensor == 'MACH':
+    if sensor_tag == 'MACH':
         iMach = solution['id_solution_tag']['Mach']
         sensor = Sol[:,iMach]
         sensor = np.array(sensor).reshape((len(sensor),1))
         sensor_header = ['Mach']
 
-    elif sensor == 'PRES':
+    elif sensor_tag == 'PRES':
         iPres = solution['id_solution_tag']['Pressure']
         sensor = Sol[:,iPres]
         sensor = np.array(sensor).reshape((len(sensor),1))
         sensor_header = ['Pres']
 
-    elif sensor == 'MACH_PRES':
+    elif sensor_tag == 'MACH_PRES':
         iPres  = solution['id_solution_tag']['Pressure']
         iMach  = solution['id_solution_tag']['Mach']
         mach   = np.array(Sol[:,iMach])
@@ -377,7 +377,7 @@ def create_sensor(solution, sensor):
         sensor = np.stack((mach, pres), axis=1)
         sensor_header = ['Mach', 'Pres']
 
-    elif sensor == 'GOAL':
+    elif sensor_tag == 'GOAL':
         nMet = 3*(Dim-1)
         sensor = Sol[:,-nMet:]
         sensor = np.array(sensor).reshape((len(sensor),nMet))
