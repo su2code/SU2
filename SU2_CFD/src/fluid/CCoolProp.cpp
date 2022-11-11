@@ -2,7 +2,7 @@
  * \file CCoolProp.cpp
  * \brief Source of the fluid model from CoolProp.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
