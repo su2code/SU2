@@ -50,13 +50,13 @@ def main():
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
-    flatplate_sst1994m_restart           = TestCase('flatplate_sst1994m')
-    flatplate_sst1994m_restart.cfg_dir   = "vandv/rans/flatplate"
-    flatplate_sst1994m_restart.cfg_file  = "turb_flatplate_sst.cfg"
-    flatplate_sst1994m_restart.test_iter = 5
-    flatplate_sst1994m_restart.test_vals         = [-13.000480, -9.646253, -10.645471, -7.477528, -9.684807, -5.353455, 0.002809]
-    flatplate_sst1994m_restart.test_vals_aarch64 = [-13.000480, -9.646253, -10.645471, -7.477528, -9.684807, -5.353455, 0.002809]
-    test_list.append(flatplate_sst1994m_restart)
+    flatplate_sst1994m           = TestCase('flatplate_sst1994m')
+    flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
+    flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
+    flatplate_sst1994m.test_iter = 5
+    flatplate_sst1994m.test_vals         = [-13.044282, -9.682503, -10.712657, -7.519027, -9.742878, -5.374663, 0.002809]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.044282, -9.682503, -10.712657, -7.519027, -9.742878, -5.374663, 0.002809]
+    test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m 
     bump_sst1994m           = TestCase('bump_sst1994m')
@@ -80,7 +80,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 20
-    swbli_sst.test_vals = [-11.020298, -10.520189, -11.572148, -10.164444, -11.112109, -3.678967, 0.002339, -2.979149, -5.343362, 1.3401]
+    swbli_sst.test_vals = [-11.030236, -10.542428, -11.668592, -10.210996, -11.121572, -3.875880, 0.002339, -2.472912, -5.464633, 2.786]
     test_list.append(swbli_sst)
 
     #################
