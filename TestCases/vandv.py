@@ -54,27 +54,18 @@ def main():
     flatplate_sst1994m_restart.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m_restart.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m_restart.test_iter = 5
-    flatplate_sst1994m_restart.test_vals         = [-10.451866, -6.714739, -3.397794, -0.002535, 0.002809]
-    flatplate_sst1994m_restart.test_vals_aarch64 = [-13.022949, -10.035600, -5.142348, -0.002535, 0.002809]
+    flatplate_sst1994m_restart.test_vals         = [-13.000480, -9.646253, -10.645471, -7.477528, -9.684807, -5.353455, 0.002809]
+    flatplate_sst1994m_restart.test_vals_aarch64 = [-13.000480, -9.646253, -10.645471, -7.477528, -9.684807, -5.353455, 0.002809]
     test_list.append(flatplate_sst1994m_restart)
 
     # bump in channel - sst-v1994m 
     bump_sst1994m           = TestCase('bump_sst1994m')
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
-    bump_sst1994m.test_iter = 50
-    bump_sst1994m.test_vals         = [-5.125576, -1.819055, 2.334682, 0.026347, 0.004771]
-    bump_sst1994m.test_vals_aarch64 = [-13.085614, -10.325319, -5.559183, 0.024576, 0.004967]
+    bump_sst1994m.test_iter = 5
+    bump_sst1994m.test_vals         = [-13.005103, -9.889383, -10.555402, -7.584122, -10.312935, -5.470352, 0.004967]
+    bump_sst1994m.test_vals_aarch64 = [-13.005103, -9.889383, -10.555402, -7.584122, -10.312935, -5.470352, 0.004967]
     test_list.append(bump_sst1994m)
-
-    # bump in channel - sst-v1994m restart
-    bump_sst1994m_restart           = TestCase('bump_sst1994m_restart')
-    bump_sst1994m_restart.cfg_dir   = "vandv/rans/bump_in_channel"
-    bump_sst1994m_restart.cfg_file  = "turb_bump_sst_restart.cfg"
-    bump_sst1994m_restart.test_iter = 5
-    bump_sst1994m_restart.test_vals         = [-5.248762, -1.940175, 2.250798, 0.026499, 0.004869]
-    bump_sst1994m_restart.test_vals_aarch64 = [-13.085614, -10.325319, -5.559183, 0.024576, 0.004967]
-    test_list.append(bump_sst1994m_restart)
 
     # SWBLI SA
     swbli_sa           = TestCase('swbli_sa')
@@ -84,13 +75,13 @@ def main():
     swbli_sa.test_vals         = [-11.029255, -10.511982, -11.400926, -10.128471, -14.536798, 0.002233, -2.608466, 2.786]
     test_list.append(swbli_sa)
 
-    # SWBLI - sst-v2003m restart
-    swbli_sst_restart           = TestCase('swbli_sst')
-    swbli_sst_restart.cfg_dir   = "vandv/rans/swbli"
-    swbli_sst_restart.cfg_file  = "config_sst.cfg"
-    swbli_sst_restart.test_iter = 20
-    swbli_sst_restart.test_vals = [-8.059128, -7.393263, -7.956248, -6.897129, -7.268286, -2.491667, 0.002315, -2.435645, -3.182638, 1.000000]
-    test_list.append(swbli_sst_restart)
+    # SWBLI - sst-v2003m
+    swbli_sst           = TestCase('swbli_sst')
+    swbli_sst.cfg_dir   = "vandv/rans/swbli"
+    swbli_sst.cfg_file  = "config_sst.cfg"
+    swbli_sst.test_iter = 20
+    swbli_sst.test_vals = [-11.020298, -10.520189, -11.572148, -10.164444, -11.112109, -3.678967, 0.002339, -2.979149, -5.343362, 1.3401]
+    test_list.append(swbli_sst)
 
     #################
     ### RUN TESTS ###
