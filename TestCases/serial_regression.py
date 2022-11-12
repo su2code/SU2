@@ -353,7 +353,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-4.324056, 1.232220, -3.632845, 4.168155, 166.930000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.098379, -6.656873, -8.869081, -2.491818, -1924.900000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -918,7 +918,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-4.239857, -1.473748, 33.995240, 10.181660] #last 4 columns
+    Jones_tc_restart.test_vals = [-10.691501, -7.643699, 85.827890, 2.277151] #last 4 columns
     Jones_tc_restart.new_output = False
     Jones_tc_restart.tol       = 0.0001
     test_list.append(Jones_tc_restart)

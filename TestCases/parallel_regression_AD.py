@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.524674, 5.022532, 9.430247, 2.549328, 0.0, -2.4614e+23]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.524990, 5.023431, 9.417118, 2.545450, 0.000000, -246129999999999991087104.000000]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 

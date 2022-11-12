@@ -939,7 +939,7 @@ def main():
     # 2D transonic stator restart
     transonic_stator_restart           = TestCase('transonic_stator_restart')
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator_restart.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
     transonic_stator_restart.test_vals = [-3.309626, 0.208402, 5.003076, 0.002950]
     transonic_stator_restart.new_output = False
