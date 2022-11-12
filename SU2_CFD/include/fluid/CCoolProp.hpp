@@ -27,6 +27,7 @@
 
 #pragma once
 #include "CFluidModel.hpp"
+#include "CViscosityModel.hpp"
 #if defined(HAVE_COOLPROP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_COOLPROP
 namespace CoolProp {
@@ -41,7 +42,7 @@ namespace CoolProp {
  * \brief Child class for defining fluid model from CoolProp library.
  * \author: P.Yan
  */
-class CCoolProp final : public CFluidModel {
+class CCoolProp final : public CFluidModel{
  private:
   su2double Gamma{1.4};           /*!< \brief Ratio of Specific Heats. */
   su2double Gas_Constant{297};    /*!< \brief specific Gas Constant. */
@@ -145,4 +146,5 @@ class CCoolProp final : public CFluidModel {
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
 };

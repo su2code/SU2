@@ -2,7 +2,7 @@
  * \file CCoolProp.cpp
  * \brief Source of the fluid model from CoolProp.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,6 @@ CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
 CCoolProp::~CCoolProp() {}
 
 void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
-  //cout<<"p "<<Pressure<<"Pc "<<Pressure_Critical<<"T "<<Temperature<<"Tc"<<Temperature_Critical<<endl;
   Density = rho;
   StaticEnergy = e;
   fluid_entity->update(CoolProp::DmassUmass_INPUTS, Density, StaticEnergy);

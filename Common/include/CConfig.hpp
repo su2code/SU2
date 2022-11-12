@@ -3754,8 +3754,7 @@ public:
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
-   * \brief Name of fluid that we are using.
-   * \return Name of fluid that we are using.
+    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
 
