@@ -1161,6 +1161,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
 
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
