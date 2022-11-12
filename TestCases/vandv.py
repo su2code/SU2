@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.005103, -9.889383, -10.555402, -7.584122, -10.312935, -5.470352, 0.004967]
+    bump_sst1994m.test_vals         = [-13.033125, -9.924352, -10.574465, -7.579818, -10.322321, -5.537195, 0.004967]
     bump_sst1994m.test_vals_aarch64 = [-13.005103, -9.889383, -10.555402, -7.584122, -10.312935, -5.470352, 0.004967]
     test_list.append(bump_sst1994m)
 
