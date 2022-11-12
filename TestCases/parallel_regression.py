@@ -394,7 +394,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-2.211671, 3.475255, -6.023273, 4.454529, 195.920000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.098072, -6.657157, -8.872565, -2.491820, -1924.900000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -919,7 +919,7 @@ def main():
     coolprop_nozzle.cfg_dir   = "nicf/coolprop"
     coolprop_nozzle.cfg_file  = "coolprop_nozzle.cfg"
     coolprop_nozzle.test_iter = 10
-    coolprop_nozzle.test_vals = [-4.692515, -3.779318, 3.419183, 0.000000, 0.000000]
+    coolprop_nozzle.test_vals = [-4.692515, -3.779307, 3.419174, 0.000000, 0.000000]
     test_list.append(coolprop_nozzle)
 
     ######################################
@@ -931,7 +931,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-4.239853, -1.473722, 33.994770, 10.181660]
+    Jones_tc_restart.test_vals = [-10.691504, -7.643703, 85.827890, 2.277151]
     Jones_tc_restart.new_output = False
     test_list.append(Jones_tc_restart)
 
@@ -949,7 +949,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-3.309626, 0.208402, 5.003076, 0.002950]
+    transonic_stator_restart.test_vals = [-6.801911, -0.746307, 5.003453, 0.002946]
     transonic_stator_restart.new_output = False
     test_list.append(transonic_stator_restart)
 

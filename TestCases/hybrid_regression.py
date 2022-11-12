@@ -539,7 +539,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-4.239867, -1.473789, 33.995230, 10.181650]
+    Jones_tc_restart.test_vals = [-10.691521, -7.643723, 85.827890, 2.277151]
     Jones_tc_restart.new_output = False
     test_list.append(Jones_tc_restart)
 
@@ -558,7 +558,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-3.311068, 0.208052, 5.003075, 0.002950]
+    transonic_stator_restart.test_vals         = [-6.796363, -0.743837, 5.003453, 0.002946]
     transonic_stator_restart.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
     transonic_stator_restart.new_output = False
     test_list.append(transonic_stator_restart)

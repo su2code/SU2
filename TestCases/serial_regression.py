@@ -937,7 +937,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-3.309645, 0.206411, 5.003080, 0.002950] #last 4 columns
+    transonic_stator_restart.test_vals = [-6.765890, -0.742094, 5.003454, 0.002946] #last 4 columns
     transonic_stator_restart.new_output  = False
     test_list.append(transonic_stator_restart)
 
