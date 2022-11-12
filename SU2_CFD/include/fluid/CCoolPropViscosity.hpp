@@ -29,6 +29,8 @@
 
 #include "CViscosityModel.hpp"
 #include "CCoolProp.hpp"
+
+#ifdef USE_COOLPROP
 #include "CoolProp.h"
 #include "AbstractState.h"
 /*!
@@ -77,3 +79,4 @@ public:
    }
  }
 };
+#endif

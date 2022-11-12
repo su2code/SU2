@@ -27,7 +27,6 @@
 
 #pragma once
 #include "CFluidModel.hpp"
-#include "CViscosityModel.hpp"
 #if defined(HAVE_COOLPROP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_COOLPROP
 namespace CoolProp {

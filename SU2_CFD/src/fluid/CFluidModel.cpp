@@ -50,8 +50,10 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       return unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND(iSpecies)));
+    #ifdef USE_COOLPROP
     case VISCOSITYMODEL::COOLPROP:
       return unique_ptr<CCoolPropViscosity>(new CCoolPropViscosity(config->GetFluid_Name()));
+    #endif
     case VISCOSITYMODEL::SUTHERLAND:
       return unique_ptr<CSutherland>(new CSutherland(config->GetMu_RefND(iSpecies),
                                                      config->GetMu_Temperature_RefND(iSpecies),
@@ -82,6 +84,7 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
             new CConstantConductivity(config->GetThermal_Conductivity_ConstantND(iSpecies)));
       }
       break;
+    #ifdef USE_COOLPROP
     case CONDUCTIVITYMODEL::COOLPROP:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         return unique_ptr<CCoolPropConductivityRANS>(
@@ -92,6 +95,7 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
             new CCoolPropConductivity(config->GetFluid_Name()));
       }
       break;
+    #endif
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         return unique_ptr<CConstantPrandtlRANS>(

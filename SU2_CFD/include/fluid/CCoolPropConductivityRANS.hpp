@@ -29,6 +29,8 @@
 
 #include "CConductivityModel.hpp"
 #include "CCoolProp.hpp"
+
+#ifdef USE_COOLPROP
 #include "CoolProp.h"
 #include "AbstractState.h"
 
@@ -59,3 +61,4 @@ private:
  const su2double kt_lam_const_{0.0}; /*!< \brief Constant laminar conductivity. */
  const su2double pr_turb_{0.0};      /*!< \brief Turbulent Prandtl number. */
 };
+#endif
