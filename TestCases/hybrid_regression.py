@@ -254,7 +254,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals         = [-12.094405, -6.649212, -8.899548, -2.491859, -1924.900000]
+    axi_rans_air_nozzle_restart.test_vals         = [-5.942825, -0.377882, -2.220841, 0.802589, -1924.900000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -633,7 +633,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.609170, -1.523885]
+    bars_SST_2D.test_vals = [13.000000, -0.604409, -1.523885]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

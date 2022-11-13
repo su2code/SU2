@@ -264,7 +264,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.229952, -1.930555, -1.998476, 1.250387, -1.635646, 1.462394, 10.000000, -2.151907, 0.072873, 0.002514] #last 10 columns
+    turb_wallfunction_flatplate_sst.test_vals = [-4.229999, -1.930714, -1.998514, 1.250334, -1.635256, 1.474343, 10.000000, -2.152260, 0.072873, 0.002514] #last 10 columns
     test_list.append(turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
@@ -353,7 +353,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.098379, -6.656873, -8.869081, -2.491818, -1924.900000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.944561, -0.379681, -2.221365, 0.761776, -1924.900000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -1023,7 +1023,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.609170, -1.523885]
+    bars_SST_2D.test_vals = [13.000000, -0.604409, -1.523885]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
