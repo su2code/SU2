@@ -102,7 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
