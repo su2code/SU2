@@ -98,11 +98,8 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0e10;
-
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 1.0e15;
+  lowerlimit[0] = 0; //1.0e-10;
+  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AmplificationFactor_Inf  = 0.0;
@@ -223,7 +220,7 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Set Amplification specifically ---*/
     //numerics-> SetAmplificationFactor(nodes->GetSolution(iPoint,0));
-    numerics-> SetAmplificationFactor(min(nodes->GetSolution(iPoint,0), 15.0));
+    //numerics-> SetAmplificationFactor(min(nodes->GetSolution(iPoint,0), 15.0));
 
     /*--- Set volume ---*/
 

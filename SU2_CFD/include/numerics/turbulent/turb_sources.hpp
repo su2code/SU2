@@ -50,6 +50,7 @@ struct CSAVariables {
 
   /*--- List of non-const constants ---*/
   su2double ct4 = 0.5;
+  su2double amplification;
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Ncrit;
@@ -158,18 +159,14 @@ class CSourceBase_TurbSA : public CNumerics {
       var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
 
       /*--- Compute ft2 term. Also includes boolean for e^N transition model that modifies the ft2 term ---*/
-      if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
+	  if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
+	    var.transEN = true;
+		var.amplification = amplification_factor_i;
+		var.ct4 = 0.05;
+		var.Ncrit = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
+	  }
 
-    	su2double amplification = amplification_factor_i;
-        var.transEN = true;
-    	var.ct4 = 0.05;
-    	var.Ncrit = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
-
-    	ft2::get(amplification, var);
-
-      } else {
-    	ft2::get(1.0, var);
-      }
+      ft2::get( var);
 
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
@@ -281,7 +278,7 @@ struct ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
-  static void get(const su2double& n_hat, CSAVariables& var) {
+  static void get(CSAVariables& var) {
     var.ft2 = 0.0;
     var.d_ft2 = 0.0;
   }
@@ -289,11 +286,11 @@ struct Zero {
 
 /*! \brief Non-zero ft2 term according to the literature. */
 struct Nonzero {
-  static void get(const su2double& amplification, CSAVariables& var) {
+  static void get(CSAVariables& var) {
 	const su2double xsi2 = pow(var.Ji, 2);	
 	
 	if (var.transEN == true){
-	  var.ft2 = var.ct3 * (1 - exp(2*(amplification - var.Ncrit)) ) * exp(-var.ct4 * xsi2);
+	  var.ft2 = var.ct3 * (1 - exp(2*(var.amplification - var.Ncrit)) ) * exp(-var.ct4 * xsi2);
 	  var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;	  
 	} else {
 	  var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);

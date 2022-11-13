@@ -276,6 +276,9 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
 
+  bool transition_EN = false;
+  if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) transition_EN = true;
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
@@ -339,6 +342,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       numerics->SetDistance(nodes->GetDES_LengthScale(iPoint), 0.0);
 
     }
+
+    if (transition_EN) {
+	  numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,0));
+	}
 
     /*--- Compute the source term ---*/
 
