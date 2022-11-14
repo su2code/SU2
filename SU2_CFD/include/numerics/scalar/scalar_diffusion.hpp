@@ -125,7 +125,7 @@ class CAvgGrad_Scalar : public CNumerics {
     Laminar_Viscosity_j = V_j[idx.LaminarViscosity()];
     Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
     Eddy_Viscosity_j = V_j[idx.EddyViscosity()];
-    
+
     ExtraADPreaccIn();
 
     su2double ProjGradScalarVarNoCorr[MAXNVAR];
