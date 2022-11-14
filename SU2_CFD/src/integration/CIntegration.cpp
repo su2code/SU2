@@ -81,7 +81,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   //const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
 
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
-
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/

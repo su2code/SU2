@@ -117,7 +117,7 @@ class CUpwScalar : public CNumerics {
     AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
 
     ExtraADPreaccIn();
-
+    
     su2double q_ij = 0.0;
     if (dynamic_grid) {
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {

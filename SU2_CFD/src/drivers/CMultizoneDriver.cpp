@@ -560,6 +560,20 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           config_container[donorZone],
           config_container[targetZone]);
       }
+
+            /*--- Additional transfer for turbulence variables. ---*/
+      //if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
+      //    config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS)
+      //{
+        interface_container[donorZone][targetZone]->BroadcastData(
+          *interpolator_container[donorZone][targetZone].get(),
+          solver_container[donorZone][INST_0][MESH_0][SPECIES_SOL],
+          solver_container[targetZone][INST_0][MESH_0][SPECIES_SOL],
+          geometry_container[donorZone][INST_0][MESH_0],
+          geometry_container[targetZone][INST_0][MESH_0],
+          config_container[donorZone],
+          config_container[targetZone]);
+      //}
       break;
     }
     case CONJUGATE_HEAT_FS:

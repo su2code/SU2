@@ -118,7 +118,6 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
 
   /*--- Set the fields ---*/
   for (unsigned short iZone = 0; iZone < nZone; iZone++) {
-
     const auto& ZoneHistoryFields = output[iZone]->GetHistoryFields();
     zoneIndex = "[" + PrintingToolbox::to_string(iZone) + "]";
 
@@ -156,7 +155,6 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
 
       name = nameSinglezone + zoneIndex;
-
       /*--- Remove the unnecessary Marker name from the fieldName, i.e. "Avg_Massflow(inlet)"->"Avg_Massflow". ---*/
       /*--- Note that index zero in 'field[0]' refers to a specific Marker. Some attributes remain constant over the markers
             like the first part of the name, the screenFormat and the fieldType. ---*/
@@ -170,6 +168,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       header = baseheader + zoneIndex;
       /*--- Attach zone-index to the group after determining which group it is. ---*/
       group = field[0].outputGroup;
+
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
       auto* Marker = &Marker_Monitoring;
