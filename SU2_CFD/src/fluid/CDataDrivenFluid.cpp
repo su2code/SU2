@@ -31,24 +31,11 @@
 
 #include <fstream>
 
-CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
-  Gamma = gamma;
-  Gamma_Minus_One = Gamma - 1.0;
-  Gas_Constant = R;
-  Cp = Gamma / Gamma_Minus_One * Gas_Constant;
-  Cv = Cp - R;
-
+CDataDrivenFluid::CDataDrivenFluid(CConfig*config) : CFluidModel() {
+  
   idx_rho = 0;
   idx_e = 1;
-
-  ComputeEntropy = CompEntropy;
-  LUT = true;
-  if(LUT){
-    look_up_table = new CLookUpTable("rhoe_table_fine.drg", "rho", "e");
-  }else{
-    ANN_new = new MLPToolbox::CLookUp_ANN("split_dataset.mlp");
-  }
-  
+  Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
 
   input_names.push_back("rho");
   input_names_lower_rho.push_back("rho_l");
@@ -71,11 +58,25 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
   output_names.push_back("d2s_drho2");
   outputs.push_back(&d2s_drho2);
 
-  if(!LUT){
-    input_output_map = new MLPToolbox::CIOMap(ANN_new, input_names, output_names);
-    input_output_map_lower_rho = new MLPToolbox::CIOMap(ANN_new, input_names_lower_rho, output_names);
+  /*--- Set up interpolation algorithm based on config options ---*/
+  switch (Kind_DataDriven_Method)
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT :
+    LUT = true;
+    look_up_table = new CLookUpTable(config->GetDataDriven_Filename(), "rho", "e");
+    break;
+  case ENUM_DATADRIVEN_METHOD::MLP :
+    MLP = true;
+    ANN = new MLPToolbox::CLookUp_ANN(config->GetDataDriven_Filename());
+    input_output_map = new MLPToolbox::CIOMap(ANN, input_names, output_names);
+    input_output_map_lower_rho = new MLPToolbox::CIOMap(ANN, input_names_lower_rho, output_names);
+  default:
+    break;
   }
-  
+
+  Newton_Relaxation = config->GetRelaxation_DataDriven();
+
+
   rho_maxmin = make_pair(0.80523, 295.251);
   e_maxmin = make_pair(350604.24, 479774.22);
   rho_start = 0.5*(rho_maxmin.first + rho_maxmin.second);
@@ -120,9 +121,8 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 
   bool converged{false};
   su2double tolerance_P = 10,
-            tolerance_T = 1,
-            relaxation = 0.1;
-  relaxation = 0.05;
+            tolerance_T = 1;
+
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, delta_P, delta_T, delta_rho, delta_e;
@@ -153,8 +153,8 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
       delta_rho = (dT_de * delta_P - dP_de * delta_T) / determinant;
       delta_e = (-dT_drho * delta_P + dP_drho * delta_T) / determinant;
 
-      rho -= relaxation * delta_rho;
-      e -= relaxation * delta_e;
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
     }
     Iter ++;
   }
@@ -180,8 +180,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
   su2double e = e_start;
 
   su2double tolerance = 10;
-  su2double relaxation = 0.1;
-  relaxation = 0.05;
+
   bool converged{false};
   unsigned long maxIter = 1000, Iter{0};
   
@@ -203,7 +202,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
       }else{
         dP_de = pow(rho, 2)*pow(ds_de, -2)*d2s_de2*ds_drho;
         delta_e = delta_P / dP_de;
-        e -= relaxation * delta_e;
+        e -= Newton_Relaxation * delta_e;
         //e = max(min(e, e_maxmin.second), e_maxmin.first);
       }
       Iter ++;
@@ -219,9 +218,7 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
 
   bool converged{false};
   su2double tolerance_h = 10,
-            tolerance_s = 1,
-            relaxation = 0.1;
-  relaxation = 0.05;
+            tolerance_s = 1;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, h_current, s_current;
@@ -251,8 +248,8 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
       delta_rho = (ds_de * delta_h - dh_de * delta_s) / determinant;
       delta_e = (-ds_drho * delta_h + dh_drho * delta_s) / determinant;
 
-      rho -= relaxation * delta_rho;
-      e -= relaxation * delta_e;
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
     }
     Iter ++;
     
@@ -271,9 +268,7 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 
   bool converged{false};
   su2double tolerance_P = 10,
-            tolerance_s = 1,
-            relaxation = 0.1;
-  relaxation = 0.05;
+            tolerance_s = 1;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, h_current, s_current;
@@ -302,8 +297,8 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
       delta_rho = (ds_de * delta_P - dP_de * delta_s) / determinant;
       delta_e = (-ds_drho * delta_P + dP_drho * delta_s) / determinant;
 
-      rho -= relaxation * delta_rho;
-      e -= relaxation * delta_e;
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
     }
     Iter ++;
     
@@ -341,10 +336,10 @@ void CDataDrivenFluid::Predict_MLP(su2double rho, su2double e){
   vector<string> these_outputs;
   if(rho < 10.011693){
     //these_outputs = output_names_lower;
-    ANN_new->Predict_ANN(input_output_map_lower_rho, inputs, outputs);
+    ANN->Predict_ANN(input_output_map_lower_rho, inputs, outputs);
   }else{
     //these_outputs = output_names;
-    ANN_new->Predict_ANN(input_output_map, inputs, outputs);
+    ANN->Predict_ANN(input_output_map, inputs, outputs);
   }
   //ANN->Predict_MLP(input_names, inputs, these_outputs, outputs);
   ds_drho = -exp(ds_drho);
@@ -358,9 +353,17 @@ void CDataDrivenFluid::Predict_LUT(su2double rho, su2double e){
 }
 
 void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
-  if(LUT){
+
+  /*--- Evaluate dataset based on regression method ---*/
+  switch (Kind_DataDriven_Method)
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT:
     Predict_LUT(rho, e);
-  }else{
+    break;
+  case ENUM_DATADRIVEN_METHOD::MLP:
     Predict_MLP(rho, e);
+    break;
+  default:
+    break;
   }
 }

@@ -611,6 +611,16 @@ MakePair("ARGON-SID",ARGON_SID)
 MakePair("ONESPECIES", ONESPECIES)
 };
 
+enum ENUM_DATADRIVEN_METHOD {
+  LUT = 0,
+  MLP = 1
+};
+
+static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
+  MakePair("LUT", LUT)
+  MakePair("MLP", MLP)
+};
+
 /*!
  * \brief types of coefficient transport model
  */

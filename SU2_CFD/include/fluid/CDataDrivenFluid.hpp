@@ -47,7 +47,7 @@ class CDataDrivenFluid : public CFluidModel {
   bool ComputeEntropy{true},      /*!< \brief Whether or not to compute entropy. */
         failedNewtonSolver{false};
   //LookUp_MLP *ANN;
-  MLPToolbox::CLookUp_ANN *ANN_new;
+  MLPToolbox::CLookUp_ANN *ANN;
   MLPToolbox::CIOMap * input_output_map, * input_output_map_lower_rho;
 
   CLookUpTable *look_up_table;
@@ -65,22 +65,31 @@ class CDataDrivenFluid : public CFluidModel {
   unsigned short boundsviolation;
   unsigned long nIter_NewtonSolver{0};
   bool Reevaluate_MLP{true};
-  bool LUT = false;
+  bool LUT = false,
+       MLP = false;
+  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;
+  su2double Newton_Relaxation = 0.05;
+  
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy = true);
+  CDataDrivenFluid(CConfig *config);
 
   ~CDataDrivenFluid(){
-      if(LUT){
+      switch (Kind_DataDriven_Method)
+      {
+      case ENUM_DATADRIVEN_METHOD::LUT:
             delete look_up_table;
-      }else{
-            delete ANN_new;
+            break;
+      case ENUM_DATADRIVEN_METHOD::MLP:
+            delete ANN;
             delete input_output_map;
             delete input_output_map_lower_rho;
+            break;
+      default:
+            break;
       }
-      
       for(size_t i=0; i<6; i++){
             delete [] dOutputs_dInputs[i];
       }

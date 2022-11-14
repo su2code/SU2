@@ -1152,6 +1152,10 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
 
+  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, LUT);
+  addStringOption("FILENAME_INTERPOLATOR", DataDriven_Method_FileName, "table.drg");
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
 

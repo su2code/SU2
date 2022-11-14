@@ -860,7 +860,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
 
     case DATADRIVEN_FLUID:
-      auxFluidModel = new CDataDrivenFluid(Gamma, config->GetGas_Constant());
+      auxFluidModel = new CDataDrivenFluid(config);
       break;
 
     default:
@@ -1089,7 +1089,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetAcentric_Factor());
         break;
       case DATADRIVEN_FLUID:
-        FluidModel[thread] = new CDataDrivenFluid(Gamma, Gas_ConstantND);
+        FluidModel[thread] = new CDataDrivenFluid(config);
         break;
     }
     

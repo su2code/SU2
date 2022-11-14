@@ -516,7 +516,11 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
+
+  su2double DataDriven_Relaxation_Factor = 0.05; /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
+
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
   unsigned short
@@ -786,7 +790,8 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  DataDriven_Method_FileName;    /*!< \brief Dataset information for datadriven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -3752,6 +3757,15 @@ public:
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
+  /*!
+   * \brief Datadriven method for EoS evaluation.
+   */
+  unsigned short GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+
+  
+  string GetDataDriven_Filename(void) const { return DataDriven_Method_FileName; }
+
+  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
   /*!
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
