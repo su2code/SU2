@@ -33,6 +33,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CDataDrivenFluid.hpp"
+#include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -858,6 +859,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
+    case COOLPROP:
+
+      auxFluidModel = new CCoolProp(config->GetFluid_Name());
+      break;
 
     case DATADRIVEN_FLUID:
       auxFluidModel = new CDataDrivenFluid(config);
@@ -1090,6 +1095,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
       case DATADRIVEN_FLUID:
         FluidModel[thread] = new CDataDrivenFluid(config);
+
+      case COOLPROP:
+        FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
     }
     
@@ -1218,11 +1226,22 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    if (config->GetKind_FluidModel() == COOLPROP) {
+      CCoolProp auxFluidModel(config->GetFluid_Name());
+      NonDimTable << "Gas Constant" << auxFluidModel.GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << auxFluidModel.GetGas_Constant()/config->GetGas_Constant_Ref();
+    }
+    else {
+        NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    }
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    if (config->GetKind_FluidModel() == COOLPROP) {
+      NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
+    }
+    else {
+        NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    }
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
@@ -1240,6 +1259,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case DATADRIVEN_FLUID:
       ModelTable << "DATADRIVEN_FLUID";
+    case COOLPROP:
+      ModelTable << "CoolProp library";
       break;
     }
 
@@ -1249,6 +1270,14 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         Unit << "K";
         NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
+    }
+    if (config->GetKind_FluidModel() == COOLPROP) {
+      CCoolProp auxFluidModel(config->GetFluid_Name());
+      NonDimTable << "Critical Pressure" << auxFluidModel.GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << auxFluidModel.GetPressure_Critical() /config->GetPressure_Ref();
+      Unit.str("");
+      Unit << "K";
+      NonDimTable << "Critical Temperature" << auxFluidModel.GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << auxFluidModel.GetTemperature_Critical() /config->GetTemperature_Ref();
+      Unit.str("");
     }
     NonDimTable.PrintFooter();
 

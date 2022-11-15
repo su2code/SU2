@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -3766,6 +3767,11 @@ public:
   string GetDataDriven_Filename(void) const { return DataDriven_Method_FileName; }
 
   su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
+  /*! 
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
+
   /*!
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option

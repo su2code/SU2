@@ -1026,7 +1026,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
    */
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh);
+  void ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh);
 
   /*!
    * \brief Destructor.

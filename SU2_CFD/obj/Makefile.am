@@ -54,6 +54,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidScalar.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
+  ../src/fluid/CCoolProp.cpp \
   ../src/fluid/CNEMOGas.cpp \
   ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
@@ -247,6 +248,11 @@ libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
 # endif
+
+
+su2_cfd_cxx_flags += @CoolProp_CXX@
+su2_cfd_ldadd += @CoolProp_LD@
+
 
 if BUILD_NORMAL
 libSU2Core_a_SOURCES = $(libSU2Core_sources)
