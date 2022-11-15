@@ -863,7 +863,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
       break;
-
     case DATADRIVEN_FLUID:
       auxFluidModel = new CDataDrivenFluid(config);
       break;
@@ -1095,7 +1094,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
       case DATADRIVEN_FLUID:
         FluidModel[thread] = new CDataDrivenFluid(config);
-
+        break;
       case COOLPROP:
         FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
@@ -1259,6 +1258,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case DATADRIVEN_FLUID:
       ModelTable << "DATADRIVEN_FLUID";
+      break;
     case COOLPROP:
       ModelTable << "CoolProp library";
       break;
