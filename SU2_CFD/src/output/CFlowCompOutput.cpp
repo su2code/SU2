@@ -295,7 +295,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddCommonFVMOutputs(config);
 
   // Anisotropic metric
-  if(config->GetBool_Compute_Metric()) {
+  if(config->GetCompute_Metric()) {
     if (nDim == 2){
       AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "GRADIENT_ADAPT", "x-component of the density gradient");
       AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "GRADIENT_ADAPT", "y-component of the density gradient");
@@ -390,7 +390,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
-  if(config->GetBool_Compute_Metric()) {
+  if(config->GetCompute_Metric()) {
     if (nDim == 2){
       SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
       SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));

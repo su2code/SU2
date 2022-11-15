@@ -130,7 +130,7 @@ public:
   /*!
    * \brief Perform all steps to compute the metric.
    */
-  void ComputeMetric(void);
+  void ComputeMetric(void) override;
 
   /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)

@@ -96,11 +96,11 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  CVectorOfMatrix Gradient_Adapt;        /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
-  MatrixType AuxVar_Adapt;   /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
-  CVectorOfMatrix Gradient_AuxVar_Adapt;    /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
-  CVectorOfMatrix Hessian;                    /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
-  su2matrix<double> Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Gradient_Adapt;         /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  MatrixType AuxVar_Adapt;                /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Gradient_AuxVar_Adapt;  /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Hessian;                /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  su2matrix<double> Metric;               /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
@@ -2523,8 +2523,8 @@ public:
    * \param[in] iVar - Index of the variable.
    * \param[in] hess - Matrix to store the hessian.
    */
-  template <class Mat>
-  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess, su2double scale) {
+  template <class Met>
+  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Met& hess, const su2double scale) {
     switch( nDim ) {
       case 2: {
         Hessian(iPoint,iVar,0) = hess[0][0]*scale;
@@ -2565,8 +2565,8 @@ public:
    * \param[in] iVar - Index of the variable.
    * \param[in] hess - Matrix to store the hessian.
    */
-  template <class Mat>
-  inline void GetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess) {
+  template <class Met>
+  inline void GetHessianMat(unsigned long iPoint, unsigned long iVar, Met& hess) {
     switch( nDim ) {
       case 2: {
         hess[0][0] = Hessian(iPoint,iVar,0); hess[0][1] = Hessian(iPoint,iVar,1);
@@ -2594,8 +2594,8 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] met - Matrix to store the metric.
    */
-  template <class Mat>
-  inline void SetMetricMat(unsigned long iPoint, Mat& met, double scale) {
+  template <class Met>
+  inline void SetMetricMat(unsigned long iPoint, Met& met, const double scale) {
     switch( nDim ) {
       case 2: {
         Metric(iPoint,0) = met[0][0]*scale;
@@ -2616,6 +2616,12 @@ public:
   }
 
   /*!
+   * \brief Get the metric of the entire solution.
+   * \return Reference to hessian.
+   */
+  inline su2matrix<double>& GetMetric(void) { return Metric; }
+
+  /*!
    * \brief Add the value of the metric.
    * \param[in] iMetr - Index value.
    * \param[in] metric - Metric value.
@@ -2633,8 +2639,8 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] met - Matrix to store the metric.
    */
-  template <class Mat>
-  inline void GetMetricMat(unsigned long iPoint, Mat& met) {
+  template <class Met>
+  inline void GetMetricMat(unsigned long iPoint, Met& met) {
     switch( nDim ) {
       case 2: {
         met[0][0] = Metric(iPoint,0); met[0][1] = Metric(iPoint,1);

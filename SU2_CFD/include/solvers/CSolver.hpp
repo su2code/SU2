@@ -4464,14 +4464,100 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void SumWeightedHessians(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                           unsigned long iPoint, vector<vector<double> > &weights);
+                           unsigned long iPoint, unsigned short iSensor, vector<vector<double> > &weights);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void NormalizeMetric(const CGeometry *geometry, const CConfig *config);
+  template<class MetType, class Metric>
+  void NormalizeMetric(const CGeometry *geometry, const CConfig *config, unsigned short iSensor) {
+    const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+    const bool goal = (config->GetGoal_Oriented_Metric());
+
+    MetType localScale = 0.;
+    MetType globalScale = 0.;
+
+    MetType localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+    MetType globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
+
+    const MetType p = SU2_TYPE::GetValue(config->GetAdap_Norm());
+    const MetType eigmax = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmin()),2.));
+    const MetType eigmin = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmax()),2.));
+    const MetType armax2 = pow(SU2_TYPE::GetValue(config->GetAdap_ARmax()), 2.);
+    const MetType outComplex = MetType(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+    MetType A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+    //--- set tolerance and obtain global scaling
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+      Metric::get(*base_nodes, iPoint, iSensor, A);
+
+      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+      if (nDim == 2) EigVal[2] = 1.;
+
+      const MetType Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
+
+      localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
+    }
+
+    CBaseMPIWrapper::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+    //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+      Metric::get(*base_nodes, iPoint, iSensor, A);
+
+      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+      if (nDim == 2) EigVal[2] = 1.;
+
+      const MetType factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+
+      for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+
+      unsigned short iMax = 0;
+      for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
+      for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+
+      CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+      Metric::set(*base_nodes, iPoint, iSensor, A, 1.0);
+
+      //--- compute min, max, total complexity
+      const MetType Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
+      const MetType density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+      MetType hmin= max(EigVal[0], EigVal[1]);
+      MetType hmax= min(EigVal[0], EigVal[1]);
+
+      if (nDim == 3) {
+        hmin = max(hmin, EigVal[2]);
+        hmax = min(hmax, EigVal[2]);
+      }
+      hmin = 1./sqrt(hmin);
+      hmax = 1./sqrt(hmax);
+
+      localMinDensity = min(localMinDensity, density);
+      localMaxDensity = max(localMaxDensity, density);
+      localMaxAspectR = max(hmax/hmin, localMaxAspectR);
+      localTotComplex += density*Vol;
+    }
+
+    CBaseMPIWrapper::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    CBaseMPIWrapper::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    CBaseMPIWrapper::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    CBaseMPIWrapper::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+    if(rank == MASTER_NODE) {
+      if (!goal) cout << "Metric field statistics for " << config->GetAdap_Sensor(iSensor) << ":" << endl;
+      cout << "Minimum density: " << globalMinDensity << "." << endl;
+      cout << "Maximum density: " << globalMaxDensity << "." << endl;
+      cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
+      cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+    }
+  }
 
 protected:
   /*!
@@ -4573,4 +4659,28 @@ protected:
     }
   }
 
+};
+
+namespace metric {
+  struct goal {
+    template <class MetType>
+    static void get(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met) {
+      nodes.GetMetricMat(iPoint, met);
+    };
+    template <class MetType>
+    static void set(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met, double scale) {
+      nodes.SetMetricMat(iPoint, met, scale);
+    };
+  };
+
+  struct feature {
+    template <class MetType>
+    static void get(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met) {
+      nodes.GetHessianMat(iPoint, iSensor, met);
+    };
+    template <class MetType>
+    static void set(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met, su2double scale) {
+      nodes.SetHessianMat(iPoint, iSensor, met, scale);
+    };
+  };
 };

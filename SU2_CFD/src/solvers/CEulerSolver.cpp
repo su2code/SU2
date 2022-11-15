@@ -114,8 +114,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4; nAuxGradAdap = nDim+3;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+
 
   /*--- Initialize nVarGrad for deallocation ---*/
 

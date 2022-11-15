@@ -104,6 +104,11 @@ public:
   bool Monitor(unsigned long TimeIter) override;
 
   /*!
+   * \brief Perform all steps to compute the metric.
+   */
+  virtual void ComputeMetric(void);
+
+  /*!
      * \brief  Returns whether all specified windowed-time-averaged ouputs have been converged
      * \return Boolean indicating whether the problem is converged.
      */

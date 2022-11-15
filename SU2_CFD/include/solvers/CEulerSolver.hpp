@@ -260,18 +260,33 @@ protected:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
-    //--- store temperature and viscosity in aux vector
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      const su2double density = nodes->GetDensity(iPoint);
-      const su2double temp = nodes->GetTemperature(iPoint);
-      const su2double* vel = nodes->GetPrimitive(iPoint)+1;
-      const su2double lam_visc = nodes->GetLaminarViscosity(iPoint);
-      const su2double eddy_visc = nodes->GetEddyViscosity(iPoint);
-      nodes->SetAuxVar_Adapt(iPoint, 0, temp);
-      for (auto iDim = 0; iDim < nDim; ++iDim)
-        nodes->SetAuxVar_Adapt(iPoint, iDim+1, vel[iDim]);
-      nodes->SetAuxVar_Adapt(iPoint, nDim+1, lam_visc/density);
-      nodes->SetAuxVar_Adapt(iPoint, nDim+2, eddy_visc/density);
+    if (config->GetGoal_Oriented_Metric()) {
+      //--- store temperature and viscosity in aux vector
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        const su2double density = nodes->GetDensity(iPoint);
+        const su2double temp = nodes->GetTemperature(iPoint);
+        const su2double* vel = nodes->GetPrimitive(iPoint)+1;
+        const su2double lam_visc = nodes->GetLaminarViscosity(iPoint);
+        const su2double eddy_visc = nodes->GetEddyViscosity(iPoint);
+        nodes->SetAuxVar_Adapt(iPoint, 0, temp);
+        for (auto iDim = 0; iDim < nDim; ++iDim)
+          nodes->SetAuxVar_Adapt(iPoint, iDim+1, vel[iDim]);
+        nodes->SetAuxVar_Adapt(iPoint, nDim+1, lam_visc/density);
+        nodes->SetAuxVar_Adapt(iPoint, nDim+2, eddy_visc/density);
+      }
+    }
+    else {
+      //--- store mach and/or pressure in aux vector
+      const auto nAdapSensor = config->GetnAdap_Sensor();
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
+          su2double aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+          if (config->GetAdap_Sensor(iSensor) == "PRES") {
+            aux = nodes->GetPressure(iPoint);
+          }
+          nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
+        }
+      }
     }
 
     //--- communicate the solution values via MPI
@@ -1591,7 +1606,7 @@ public:
                    unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
-   * \brief Compute the viscous terms due to errors in 
+   * \brief Compute the viscous terms due to errors in
    *        laminar viscosity of the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.

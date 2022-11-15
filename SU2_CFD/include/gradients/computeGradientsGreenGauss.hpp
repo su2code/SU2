@@ -247,7 +247,7 @@ void computeHessiansGreenGauss(CSolver* solver,
           {
             for (size_t iDim = 0; iDim < nDim; ++iDim)
             {
-              size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+              size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                           : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
               su2double flux = weight * (gradient(iPoint,iVar,jDim) + gradient(jPoint,iVar,jDim));
               if (iDim != jDim) flux *= 0.5;

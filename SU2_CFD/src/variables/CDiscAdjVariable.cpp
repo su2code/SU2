@@ -44,7 +44,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
 
-  if (config->GetBool_Compute_Metric()) {
+  if (config->GetCompute_Metric()) {
     ObjectiveTerm.resize(nPoint,nVar) = su2double(0.0);
   }
 }

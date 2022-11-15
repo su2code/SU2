@@ -1392,7 +1392,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case GRADIENT_ADAPT:
-      COUNT_PER_POINT  = nVar*nDim;
+      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? nVar*nDim : config->GetnAdap_Sensor()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case AUXVAR_ADAPT:
@@ -1404,7 +1404,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case HESSIAN:
-      COUNT_PER_POINT  = 3*(nDim-1)*nVar;
+      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? 3*(nDim-1)*nVar : 3*(nDim-1)*config->GetnAdap_Sensor();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case METRIC:
@@ -2341,45 +2341,49 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
 
   //--- communicate the solution values via MPI
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? SOLUTION : AUXVAR_ADAPT;
+  InitiateComms(geometry, config, commSol);
+  CompleteComms(geometry, config, commSol);
 
-  const auto& solution = base_nodes->GetSolution();
+  const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
   auto& gradient = base_nodes->GetGradient_Adapt();
+  auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
 
   computeGradientsGreenGauss(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nVar, gradient);
+                             *config, solution, 0, nHess, gradient);
 
-  CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
+  // CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
   // CorrectWallGradient(geometry, config, Kind_Solver);
 
   auto& hessian = base_nodes->GetHessian();
 
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
-                            *config, gradient, 0, nVar, hessian);
+                            *config, gradient, 0, nHess, hessian);
 
-  // CorrectBoundHessian(geometry, config, Kind_Solver);
+  CorrectBoundHessian(geometry, config, Kind_Solver);
 
 }
 
 void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
 
   //--- communicate the solution values via MPI
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? SOLUTION : AUXVAR_ADAPT;
+  InitiateComms(geometry, config, commSol);
+  CompleteComms(geometry, config, commSol);
 
-  const auto& solution = base_nodes->GetSolution();
+  const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
   auto& gradient = base_nodes->GetGradient_Adapt();
+  auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
 
   computeGradientsL2Projection(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                               *config, solution, 0, nVar, gradient);
+                               *config, solution, 0, nHess, gradient);
 
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
 
   auto& hessian = base_nodes->GetHessian();
 
   computeHessiansL2Projection(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
-                              *config, gradient, 0, nVar, hessian);
+                              *config, gradient, 0, nHess, hessian);
 
 }
 
@@ -3353,7 +3357,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     const auto partitioner = CLinearPartitioner(nPointFile,0);
 
     blocklen[0] = nFields*partitioner.GetSizeOnRank(rank);
-    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);;
+    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);
   }
 
   MPI_Type_create_hindexed(nBlock, blocklen, displace, MPI_DOUBLE, &filetype);
@@ -4773,17 +4777,20 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
 void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
   constexpr size_t MAXNMET = 30;
   const unsigned short nMet = 3*(nDim-1);
+  const unsigned short nSen = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
+
+  const bool visc = (config->GetViscous());
 
   su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
   su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {// ||
-        // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        //  config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+    if (config->GetSolid_Wall(iMarker) ||
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+         config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+         config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
@@ -4796,10 +4803,10 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
           su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-            if(!nodes->GetSolidBoundary(jPoint)) {// && !nodes->GetPhysicalBoundary(jPoint)) {
+            if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
               const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
               suminvdist += 1./dist;
-              for(auto iVar = 0; iVar < nVar; iVar++){
+              for(auto iVar = 0; iVar < nSen; iVar++){
                 const unsigned short i = iVar*nMet;
                 for(auto iMet = 0; iMet < nMet; iMet++) {
                   hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
@@ -4852,7 +4859,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
                 break;
               }
             }// switch
-            for(auto iVar = 0; iVar < nVar; iVar++){
+            for(auto iVar = 0; iVar < nSen; iVar++){
               const auto i = iVar*nMet;
               //--- Get upper triangle
               switch ( nDim ) {
@@ -4869,21 +4876,24 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
                 }
               }
 
-              //--- Compute eigenvalues and eigenvectors
-              CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+              if (visc && nodes->GetSolidBoundary(iPoint)) {
+                //--- Compute eigenvalues and eigenvectors
+                CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
 
-              //--- Store max eigenvalue in normal direction
-              unsigned short ind = 0;
-              if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
-              if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
-              if (ind != 0) {
-                const su2double tmp = EigVal[ind];
-                EigVal[ind] = EigVal[0];
-                EigVal[0] = tmp;
+                //--- Store max eigenvalue in normal direction
+                unsigned short ind = 0;
+                if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
+                if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
+                if (ind != 0) {
+                  const su2double tmp = EigVal[ind];
+                  EigVal[ind] = EigVal[0];
+                  EigVal[0] = tmp;
+                }
+
+                //--- Store new Hessian
+                CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
               }
 
-              //--- Store new Hessian
-              CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
               base_nodes->SetHessianMat(iPoint, iVar, A, 1.0/suminvdist);
             }// iVar
           }// if counter
@@ -5020,7 +5030,9 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
 
   su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
-  for(auto iVar = 0; iVar < nVar; iVar++){
+  unsigned short nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
+
+  for(auto iVar = 0; iVar < nHess; iVar++){
     //--- Get full Hessian matrix
     base_nodes->GetHessianMat(iPoint, iVar, A);
 
@@ -5031,7 +5043,7 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
     //--- Otherwise, store recombined matrix.
     bool check_hess = true;
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      if (EigVal[iDim] != EigVal[iDim] || EigVal[iDim] < 1.0e-16) {
+      if (EigVal[iDim] != EigVal[iDim] || fabs(EigVal[iDim]) < 1.0e-16) {
         check_hess = false;
       }
     }
@@ -5056,51 +5068,79 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
 
 void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
 
-  unsigned long nPointDomain = geometry->GetnPointDomain();
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
 
-  bool visc = (config->GetViscous());
-  bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool visc = (config->GetViscous());
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+  const bool goal = (config->GetGoal_Oriented_Metric());
 
   //--- Vector to store weights from various error contributions
   unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
-  if(turb) nVarTot += solver[TURB_SOL]->GetnVar();
+  if(goal && turb) nVarTot += solver[TURB_SOL]->GetnVar();
+
+  unsigned short nSensor = config->GetnAdap_Sensor();
 
   //--- Compute weights for Hessians
   vector<vector<double> > weights(3, vector<double>(nVarTot));
   for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    for (auto& w : weights) std::fill(w.begin(), w.end(), 0.0);
-    //--- Objective function terms
-    ObjectiveError(solver, geometry, config, iPoint, weights);
+    for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
+      for (auto& w : weights) std::fill(w.begin(), w.end(), 0.0);
+      if (goal) {
+        //--- Objective function terms
+        ObjectiveError(solver, geometry, config, iPoint, weights);
 
-    //--- Convective terms
-    solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
+        //--- Convective terms
+        solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
 
-    //--- Viscous terms
-    if (visc) solver[FLOW_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
+        //--- Viscous terms
+        if (visc) solver[FLOW_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
 
-    //--- Turbulent terms
-    if (turb) {
-      solver[TURB_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
-      solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
-      solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, weights);
+        //--- Turbulent terms
+        if (turb) {
+          solver[TURB_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
+          solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
+          solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, weights);
+        }
+      }
+
+      //--- Make Hessians positive definite
+      SetPositiveDefiniteHessian(geometry, config, iPoint);
+      if (turb && goal) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
+
+      //--- Add Hessians
+      SumWeightedHessians(solver, geometry, config, iPoint, iSensor, weights);
     }
 
-    //--- Make Hessians positive definite
-    SetPositiveDefiniteHessian(geometry, config, iPoint);
-    if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
-
-    //--- Add Hessians
-    SumWeightedHessians(solver, geometry, config, iPoint, weights);
+    //--- Apply correction to wall boundary
+    // CorrectBoundMetric(geometry, config);
   }
 
-  //--- Apply correction to wall boundary
-  // CorrectBoundMetric(geometry, config);
+  for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
+    //--- Compute Lp-normalization of the metric tensor field
+    SU2_OMP_MASTER
+    if (goal)
+      NormalizeMetric<double, metric::goal>(geometry, config, iSensor);
+    else
+      NormalizeMetric<su2double, metric::feature>(geometry, config, iSensor);
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
 
-  //--- Compute Lp-normalizatio of the metric tensor field
-  SU2_OMP_MASTER
-  NormalizeMetric(geometry, config);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  /*--- Add together feature-based ---*/
+  if (!goal) {
+    auto varFlo = solver[FLOW_SOL]->GetNodes();
+    const unsigned short nMet = 3*(nDim-1);
+    for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
+      const double sensorWeight = SU2_TYPE::GetValue(config->GetAdap_Sensor_Weight(iSensor));
+      for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+        for (auto iMet = 0; iMet < nMet; ++iMet) {
+          const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iSensor, iMet));
+          varFlo->AddMetric(iPoint, iMet, sensorWeight*hess);
+        }
+      }
+    }
+  }
 
 }
 
@@ -5130,119 +5170,38 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
 }
 
 void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
-                                  unsigned long iPoint, vector<vector<double> > &weights) {
+                                  unsigned long iPoint, unsigned short iSensor, vector<vector<double> > &weights) {
 
   auto varFlo = solver[FLOW_SOL]->GetNodes();
 
   const unsigned short nMet = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+  const unsigned short nSensor = config->GetnAdap_Sensor();
 
   const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool goal = (config->GetGoal_Oriented_Metric());
 
-  //--- Mean flow variables
-  for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
-    const double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
-    for (auto iMet = 0; iMet < nMet; ++iMet) {
-      const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iVar, iMet));
-      varFlo->AddMetric(iPoint, iMet, weight*hess);
-    }
-  }
-
-  //--- Turbulent variables
-  if(turb) {
-    auto varTur = solver[TURB_SOL]->GetNodes();
-    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
-    for (auto iVar = 0; iVar < nVarTur; ++iVar) {
-      const double weight = fabs( weights[0][nVarFlo+iVar] + weights[1][nVarFlo+iVar] + weights[2][nVarFlo+iVar] );
+  if (goal) {
+    //--- Mean flow variables
+    for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+      const double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
       for (auto iMet = 0; iMet < nMet; ++iMet) {
-        const double hess = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, iVar, iMet));
+        const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iVar, iMet));
         varFlo->AddMetric(iPoint, iMet, weight*hess);
       }
     }
-  }
-}
 
-void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) {
-
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-
-  double localScale = 0.;
-  double globalScale = 0.;
-
-  double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
-  double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
-
-  const double p = SU2_TYPE::GetValue(config->GetAdap_Norm());
-  const double eigmax = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmin()),2.));
-  const double eigmin = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmax()),2.));
-  const double armax2 = pow(SU2_TYPE::GetValue(config->GetAdap_ARmax()), 2.);
-  const double outComplex = double(config->GetAdap_Complexity());  // Constraint mesh complexity
-
-  double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
-
-  //--- set tolerance and obtain global scaling
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-
-    base_nodes->GetMetricMat(iPoint, A);
-
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-    if (nDim == 2) EigVal[2] = 1.;
-
-    const double Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
-
-    localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
-  }
-
-  CBaseMPIWrapper::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-
-    base_nodes->GetMetricMat(iPoint, A);
-
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-    if (nDim == 2) EigVal[2] = 1.;
-
-    const double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
-
-    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-
-    unsigned short iMax = 0;
-    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
-    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
-
-    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-    base_nodes->SetMetricMat(iPoint, A, 1.0);
-
-    //--- compute min, max, total complexity
-    const double Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
-    const double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
-    double hmin= max(EigVal[0], EigVal[1]);
-    double hmax= min(EigVal[0], EigVal[1]);
-
-    if (nDim == 3) {
-      hmin = max(hmin, EigVal[2]);
-      hmax = min(hmax, EigVal[2]);
+    //--- Turbulent variables
+    if(turb) {
+      auto varTur = solver[TURB_SOL]->GetNodes();
+      const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+      for (auto iVar = 0; iVar < nVarTur; ++iVar) {
+        const double weight = fabs( weights[0][nVarFlo+iVar] + weights[1][nVarFlo+iVar] + weights[2][nVarFlo+iVar] );
+        for (auto iMet = 0; iMet < nMet; ++iMet) {
+          const double hess = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, iVar, iMet));
+          varFlo->AddMetric(iPoint, iMet, weight*hess);
+        }
+      }
     }
-    hmin = 1./sqrt(hmin);
-    hmax = 1./sqrt(hmax);
-
-    localMinDensity = min(localMinDensity, density);
-    localMaxDensity = max(localMaxDensity, density);
-    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
-    localTotComplex += density*Vol;
-  }
-
-  CBaseMPIWrapper::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  CBaseMPIWrapper::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  CBaseMPIWrapper::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  CBaseMPIWrapper::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  if(rank == MASTER_NODE) {
-    cout << "Minimum density: " << globalMinDensity << "." << endl;
-    cout << "Maximum density: " << globalMaxDensity << "." << endl;
-    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
-    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 }

@@ -1851,7 +1851,7 @@ void CConfig::SetConfig_Options() {
   addConvectFEMOption("NUM_METHOD_FEM_FLOW", Kind_ConvNumScheme_FEM_Flow, Kind_FEM_Flow);
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
-  addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);  
+  addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2887,11 +2887,17 @@ void CConfig::SetConfig_Options() {
 
   /*--- Options used for mesh adaptation ---*/
   /* DESCRIPTION: Compute an error estimate */
-  addBoolOption("COMPUTE_METRIC", Bool_Compute_Metric, false);
-  
+  addBoolOption("COMPUTE_METRIC", Compute_Metric, false);
+
   /*!\brief NUM_METHOD_HESS
    *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
   addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, L2_PROJECTION);
+
+  /* DESCRIPTION: Sensors for mesh adaptation */
+  addStringListOption("ADAP_SENSOR", nAdap_Sensor, Adap_Sensor);
+
+  /* DESCRIPTION: Weights for mesh adaptation sensors */
+  addDoubleListOption("ADAP_SENSOR_WEIGHTS", nAdap_Sensor_Weights, Adap_Sensor_Weights);
 
   /* DESCRIPTION: Lp-norm for mesh adaptation */
   addDoubleOption("ADAP_NORM", Adap_Norm, 1.0);
@@ -2901,40 +2907,37 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Constraint minimum cell size */
   addDoubleOption("ADAP_HMIN", Adap_Hmin, 1.0E-8);
-  
+
   /* DESCRIPTION: Constraint maximum cell aspect ratio */
   addDoubleOption("ADAP_ARMAX", Adap_ARmax, 1.0E6);
 
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_SIZES");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_SUBITER");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_FLOW_ITER");
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_ADJ_ITER");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_FLOW_CFL");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_ADJ_CFL");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_BACK");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_SENSOR");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_HGRAD");
 
@@ -2943,7 +2946,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_ORTHO");
-  
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RDG");
 
@@ -5359,6 +5362,38 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
+
+  /*--- Checks for mesh adaptation ---*/
+  if (Compute_Metric) {
+    /*--- Check that sensor is valid ---*/
+    vector<string> Sensor_Avail{"GOAL", "MACH", "PRES"};
+    for (auto iSensor = 0; iSensor < nAdap_Sensor; iSensor++) {
+      if (find(begin(Sensor_Avail), end(Sensor_Avail), Adap_Sensor[iSensor]) != end(Sensor_Avail)) {
+        /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+        if (Adap_Sensor[iSensor] == "GOAL") {
+          if (nAdap_Sensor != 1)
+            SU2_MPI::Error("Adaptation sensor GOAL cannot be used with other sensors.", CURRENT_FUNCTION);
+
+          /*--- Set weight to 1 ---*/
+          if (!OptionIsSet("ADAP_SENSOR_WEIGHTS")) {
+            Adap_Sensor_Weights = new su2double[1];
+          }
+          nAdap_Sensor_Weights = 1;
+          Adap_Sensor_Weights[0] = 1.0;
+
+          if (!DiscreteAdjoint)
+            SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
+        }
+      }
+      else {
+        SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, or PRES."), CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Check that we have a weight for each sensor ---*/
+    if (nAdap_Sensor != nAdap_Sensor_Weights)
+      SU2_MPI::Error("Number of adaptation sensors must be equal to number of weights.", CURRENT_FUNCTION);
+  }
 
 }
 

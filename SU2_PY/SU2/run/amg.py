@@ -43,10 +43,9 @@ def amg(config):
 
     #--- Check config options related to mesh adaptation
 
-    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_BACK',
-                       'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER',
-                       'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO',
-                       'ADAP_RDG' ]
+    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_BACK', 'ADAP_HGRAD',
+                       'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER',
+                       'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO', 'ADAP_RDG' ]
     required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_HMAX',
                          'ADAP_HMIN', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME' ]
 
@@ -75,13 +74,14 @@ def amg(config):
     adj_iter  = su2amg.get_adj_iter(config)
     flow_cfl  = su2amg.get_flow_cfl(config)
 
-    adap_sensor = config.ADAP_SENSOR
-    sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
+    adap_sensors = su2amg.get_adap_sensors(config)
+    sensor_avail = ['MACH', 'PRES', 'GOAL']
 
-    if adap_sensor not in sensor_avail:
-        raise ValueError(f'Unknown adaptation sensor {adap_sensor}. Available options are {sensor_avail}.')
+    for sensor in adap_sensors:
+        if sensor not in sensor_avail:
+            raise ValueError(f'Unknown adaptation sensor {sensor}. Available options are {sensor_avail}.')
 
-    gol = adap_sensor == 'GOAL'
+    gol = 'GOAL' in adap_sensors
 
     #--- Change current directory
 
@@ -152,7 +152,7 @@ def amg(config):
 
     meshfil = config['MESH_FILENAME']
     solfil  = f'restart_flow{sol_ext}'
-    su2amg.set_flow_config_ini(config_cfd, solfil)
+    su2amg.set_flow_config_ini(config_cfd, solfil, adap_sensors, mesh_sizes[0])
 
     try: # run with redirected outputs
         #--- Run a single iteration of the flow if restarting to get history info
@@ -247,17 +247,15 @@ def amg(config):
             su2amg.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
 
             mesh_size = int(mesh_sizes[iSiz])
-            if gol and iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
+            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
             config_amg['size'] = mesh_size
 
-            #--- Add metric or sensor field to GMF sol
+            #--- Add metric computed from SU2 to GMF sol
+
+            metric_wrap = su2amg.create_sensor(mesh, adap_sensors)
+            mesh['metric'] = metric_wrap['solution']
 
             if gol:
-
-                #--- Use metric computed from SU2 to drive the adaptation
-
-                metric_wrap = su2amg.create_sensor(mesh, adap_sensor)
-                mesh['metric'] = metric_wrap['solution']
 
                 #--- Read and merge adjoint solution to be interpolated
 
@@ -265,13 +263,6 @@ def amg(config):
                 su2amg.merge_sol(mesh, sol_adj)
 
                 del sol_adj
-
-            else:
-
-                #--- Create sensor used to drive the adaptation
-
-                sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
-                mesh['sensor'] = sensor_wrap['solution']
 
             #--- Adapt mesh with AMG
 
@@ -328,7 +319,7 @@ def amg(config):
                 os.rename(solfil, solfil_ini)
 
                 su2amg.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
-                                          flow_iter[iSiz], flow_cfl[iSiz])
+                                          flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
 
                 with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 

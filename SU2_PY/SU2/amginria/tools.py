@@ -187,14 +187,23 @@ def set_cfl(config, cfl_iSiz):
                 else: cfl_param_str = f"{cfl_param_str}, "
             cfl_param_str = config['CFL_ADAPT_PARAM']
 
-def set_flow_config_ini(config, cur_solfil):
+def get_adap_sensors(config):
+    """Get adaptation sensors"""
+    return config['ADAP_SENSOR'].replace(' ','').strip('()').split(',')
+
+def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
     """Set primal config for initial solution"""
     config.CONV_FILENAME    = 'history'
     config.RESTART_FILENAME = cur_solfil
-    config.VOLUME_OUTPUT    = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER'
     config.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
-    config.COMPUTE_METRIC   = 'NO'
     config.MATH_PROBLEM     = 'DIRECT'
+    if 'GOAL' in sensor_tags:
+        config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER'
+        config.COMPUTE_METRIC = 'NO'
+    else:
+        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC'
+        config.COMPUTE_METRIC  = 'YES'
+        config.ADAP_COMPLEXITY = int(mesh_size)
 
 def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     """Set adjoint config for initial solution"""
@@ -209,12 +218,14 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.ADAP_COMPLEXITY      = int(mesh_size)
     config.RESTART_CFL          = 'YES'
 
-def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl):
+def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl, sensor_tags, mesh_size):
     """Set primal config for current solution"""
     config.MESH_FILENAME     = cur_meshfil
     config.SOLUTION_FILENAME = cur_solfil_ini
     config.RESTART_FILENAME  = cur_solfil
     config.ITER              = int(flow_iter)
+    if 'GOAL' not in sensor_tags:
+        config.ADAP_COMPLEXITY   = int(mesh_size)
 
     set_cfl(config, flow_cfl)
 
@@ -347,7 +358,7 @@ def split_adj_sol(mesh):
 
     return adj_sol
 
-def create_sensor(solution, sensor_tag):
+def create_sensor(solution, sensor_tags):
     """
     Store desired sensor for adaptation
 
@@ -357,38 +368,13 @@ def create_sensor(solution, sensor_tag):
     Dim = solution['dimension']
     Sol = np.array(solution['solution'])
 
-    if sensor_tag == 'MACH':
-        iMach = solution['id_solution_tag']['Mach']
-        sensor = Sol[:,iMach]
-        sensor = np.array(sensor).reshape((len(sensor),1))
-        sensor_header = ['Mach']
-
-    elif sensor_tag == 'PRES':
-        iPres = solution['id_solution_tag']['Pressure']
-        sensor = Sol[:,iPres]
-        sensor = np.array(sensor).reshape((len(sensor),1))
-        sensor_header = ['Pres']
-
-    elif sensor_tag == 'MACH_PRES':
-        iPres  = solution['id_solution_tag']['Pressure']
-        iMach  = solution['id_solution_tag']['Mach']
-        mach   = np.array(Sol[:,iMach])
-        pres   = np.array(Sol[:,iPres])
-        sensor = np.stack((mach, pres), axis=1)
-        sensor_header = ['Mach', 'Pres']
-
-    elif sensor_tag == 'GOAL':
-        nMet = 3*(Dim-1)
-        sensor = Sol[:,-nMet:]
-        sensor = np.array(sensor).reshape((len(sensor),nMet))
-        sensor_header = ['Goal']
-
-    else:
-        raise ValueError(f'Unknown sensor: {sensor}.')
+    nMet = 3*(Dim-1)
+    sensor = Sol[:,-nMet:]
+    sensor = np.array(sensor).reshape((len(sensor),nMet))
 
     sensor_wrap = dict()
 
-    sensor_wrap['solution_tag'] = sensor_header
+    sensor_wrap['solution_tag'] = '-'.join(sensor_tags)
     sensor_wrap['xyz'] = solution['xyz']
 
     sensor_wrap['dimension'] = solution['dimension']

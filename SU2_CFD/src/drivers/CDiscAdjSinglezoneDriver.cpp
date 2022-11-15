@@ -241,7 +241,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   }//switch
 
-  if (config->GetBool_Compute_Metric()) {
+  if (config->GetCompute_Metric()) {
     /*--- Compute df/dU ---*/
     ObjectiveRecording();
 

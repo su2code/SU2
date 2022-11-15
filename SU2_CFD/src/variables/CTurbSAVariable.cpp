@@ -50,7 +50,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
 
-   if (config->GetBool_Compute_Metric()) {
+   if (config->GetCompute_Metric()) {
     AuxVar_Adapt.resize(nPoint, 4) = su2double(0.0);
     Gradient_AuxVar_Adapt.resize(nPoint,4,nDim,0.0);
   }

@@ -78,7 +78,7 @@ void computeGradientsL2Projection(CSolver* solver,
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         gradient(iPoint, iVar, iDim) = 0.0;
   }
-  
+
   /*--- For each volume integrate over its faces (edges). ---*/
   auto nodes = geometry.nodes;
   for (size_t iElem = 0; iElem < nElem; ++iElem)
@@ -164,7 +164,7 @@ void computeHessiansL2Projection(CSolver* solver,
       for (size_t iDim = 0; iDim < 3*(nDim-1); ++iDim)
         hessian(iPoint, iVar, iDim) = 0.0;
   }
-  
+
   /*--- For each volume integrate over its faces (edges). ---*/
   auto nodes = geometry.nodes;
   for (size_t iElem = 0; iElem < nElem; ++iElem)
@@ -196,7 +196,7 @@ void computeHessiansL2Projection(CSolver* solver,
           for (size_t iDim = 0; iDim < nDim; ++iDim) {
             for (size_t jDim = 0; jDim < nDim; ++jDim) {
               su2double grad = gradient(iPoint,iVar,jDim);
-              size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+              size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                           : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
               if (iDim != jDim) grad *= 0.5;
               hessian(jPoint, iVar, ind) += factor*grad*normal[iDim]/Vol;
