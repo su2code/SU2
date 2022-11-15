@@ -562,9 +562,8 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       }
 
             /*--- Additional transfer for turbulence variables. ---*/
-      //if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
-      //    config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS)
-      //{
+      // if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
+      // {
         interface_container[donorZone][targetZone]->BroadcastData(
           *interpolator_container[donorZone][targetZone].get(),
           solver_container[donorZone][INST_0][MESH_0][SPECIES_SOL],
