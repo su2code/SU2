@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -311,7 +312,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
-  su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
@@ -849,6 +849,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -1169,20 +1170,24 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
-  iWall_Catalytic,
-  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
-  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
+  nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
-  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
+  monoatomic,                               /*!< \brief Flag for monoatomic mixture. */
+  Supercatalytic_Wall;                      /*!< \brief Flag for supercatalytic wall. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1924,6 +1929,12 @@ public:
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
@@ -2562,6 +2573,12 @@ public:
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
 
   /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
+
+  /*!
    * \brief Set the non-dimensional freestream energy.
    * \param[in] val_energy_freestreamnd - Value of the non-dimensional freestream energy.
    */
@@ -3029,13 +3046,13 @@ public:
 
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
-   * \return: Number of periodic time instances for Harmonic Balance.
+   * \return Number of periodic time instances for Harmonic Balance.
    */
   unsigned short GetnTimeInstances(void) const { return nTimeInstances; }
 
   /*!
    * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
-   * \return: Period for Harmonic Balance.
+   * \return Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void) const { return HarmonicBalance_Period; }
 
@@ -3725,10 +3742,21 @@ public:
   string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
 
   /*!
+   * \brief Get wall catalytic efficiency.
+   * \return wall catalytic efficiency value.
+   */
+  su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
+
+  /*!
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+
+  /*!
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.
@@ -5211,22 +5239,22 @@ public:
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
-   * \brief Provides the number of species present in the plasma
-   * \return: The number of species present in the plasma, read from input file
+   * \brief Provides the number of species present in the gas mixture.
+   * \return The number of species present in the gas mixture.
    */
   unsigned short GetnSpecies() const { return nSpecies; }
 
-   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux.
-   */
-  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
-
   /*!
-   * \brief Provides the gas mass fractions of the flow
-   * \return: Gas Mass fractions
+   * \brief Provides the gas mass fractions of the flow.
+   * \return Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
+
+  /*!
+   * \brief Provides the gas mass fractions at the wall for supercat wall.
+   * \return Supercat wall gas mass fractions.
+   */
+  const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
   /*!
    * \brief Provides the restart information.
@@ -5303,6 +5331,11 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
+
+  /*!
+   * \brief Indicates whether supercatalytic wall is used.
+   */
+  bool GetSupercatalytic_Wall(void) const { return Supercatalytic_Wall; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
@@ -6217,16 +6250,29 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines whether a marker with index iMarker is a catalytic boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a catalytic boundary.
+   */
+  bool GetCatalytic_Wall(unsigned short iMarker) const;
+
+  /*!
+   * \brief Determines if problem is adjoint.
+   * \return true if Adjoint.
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
   /*!
-   * \brief Determines if problem is viscous
-   * \return true if Viscous
+   * \brief Determines if problem is viscous.
+   * \return true if Viscous.
    */
   bool GetViscous(void) const { return Viscous; }
+
+  /*!
+   * \brief Determines if problem has catalytic walls.
+   * \return true if catalytic walls are present.
+   */
+  bool GetCatalytic(void) const { return nWall_Catalytic > 0; }
 
   /*!
    * \brief Provides the index of the solution in the container.

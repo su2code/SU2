@@ -102,7 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -647,11 +647,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-      /*--- Check if the node belongs to the domain (i.e, not a halo node)
-       *    and the neighbor is not part of the physical boundary ---*/
-
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
+      /*--- On the finest mesh compute also on halo nodes to avoid communication of tau wall. ---*/
+      if ((!geometry->nodes->GetDomain(iPoint)) && !(MGLevel==MESH_0)) continue;
 
       /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
