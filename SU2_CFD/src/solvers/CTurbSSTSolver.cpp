@@ -28,6 +28,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -322,8 +323,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     /*--- Effective Intermittency ---*/
-    
-    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {      
+
+    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
     }
 
@@ -578,6 +579,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  const CPrimitiveIndices<unsigned short> prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+                                                   config->GetNEMOProblem(), nDim, config->GetnSpecies());
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -620,22 +624,17 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
         /*--- Obtain flow velocity vector at inlet boundary node ---*/
 
-        su2double Velocity_Inlet[MAXNDIM] = {0.0};
-        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = V_inlet[iDim + 1];
-        su2double Temperature_Inlet;
-        su2double Pressure_Inlet;
+        const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
         su2double Density_Inlet;
         if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-          Pressure_Inlet = V_inlet[nDim+1];
-          Density_Inlet = V_inlet[nDim + 2];
-          FluidModel->SetTDState_Prho(Pressure_Inlet, Density_Inlet);
+          Density_Inlet = V_inlet[prim_idx.Density()];
+          FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
         } else {
-          Temperature_Inlet = V_inlet[nDim + 1];
           const su2double* Scalar_Inlet = nullptr;
           if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
             Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
           }
-          FluidModel->SetTDState_T(Temperature_Inlet, Scalar_Inlet);
+          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
           Density_Inlet = FluidModel->GetDensity();
         }
         const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
