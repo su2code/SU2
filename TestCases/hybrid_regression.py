@@ -254,7 +254,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals         = [-5.942825, -0.377882, -2.220841, 0.802589, -1924.900000]
+    axi_rans_air_nozzle_restart.test_vals         = [-12.085749, -7.439410, -8.772091, -4.045091, -1924.800000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
     test_list.append(axi_rans_air_nozzle_restart)
 
