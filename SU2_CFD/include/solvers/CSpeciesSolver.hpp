@@ -58,7 +58,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \brief Impose the fluid interface boundary condition using transfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
