@@ -40,13 +40,24 @@
 */
 class CCoolPropViscosity final : public CViscosityModel {
  private:
-  std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+  std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /* \brief fluid entity */
+  /* \brief list of fluids whose viscosity model is available in CoolProp */
+  vector<string> fluidNameList = {"Air", "Ammonia", "Argon", "Benzene", "CarbonDioxide", "CycloHexane", "Cyclopentane", "DimethylEther",
+                              "Ethane", "Ethanol", "HeavyWater", "Helium", "Hydrogen", "HydrogenSulfide", "IsoButane", "Isopentane",
+                              "Methane", "Methanol", "Nitrogen", "Oxygen", "Propylene", "R11", "R116" , "R12", "R123", "R1233zd(E)",
+                              "R1234yf", "R1234ze(E)", "R124", "R125", "R13", "R134a", "R14", "R141b", "R142b", "R143a", "R152A",
+                              "R218", "R22", "R227EA", "R23", "R236EA", "R236FA", "R245fa", "R32", "R404A", "R407C", "R410A",  "R507A",
+                              "RC318",  "SulfurHexafluoride", "Toluene", "Water", "m-Xylene", "n-Butane", "n-Decane", "n-Dodecane", "n-Heptane",
+                              "n-Hexane", "n-Nonane", "n-Octane", "n-Pentane", "n-Propane", "o-Xylene", "p-Xylene"};
 public:
  /*!
   * \brief Constructor of the class.
   */
  CCoolPropViscosity (string fluidname) {
    fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
+   if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()){
+       SU2_MPI::Error("Viscosity model not available for this fluid in CoolProp library.", CURRENT_FUNCTION);
+   }
  }
 
 
@@ -55,28 +66,7 @@ public:
   */
  void SetViscosity(su2double t, su2double rho) override {
    fluid_entity->update(CoolProp::DmassT_INPUTS, rho, t);
-   if(fluid_entity->name()=="Air" || fluid_entity->name() == "Ammonia" || fluid_entity->name() == "Argon" || fluid_entity->name() == "Benzene" || fluid_entity->name() == "CarbonDioxide"
-       || fluid_entity->name() == "CycloHexane" || fluid_entity->name() == "Cyclopentane" || fluid_entity->name() == "DimethylEther" || fluid_entity->name() == "Ethane"
-       || fluid_entity->name() == "Ethanol" || fluid_entity->name() == "HeavyWater" || fluid_entity->name() == "Helium" || fluid_entity->name() == "Hydrogen"
-       || fluid_entity->name() == "HydrogenSulfide" || fluid_entity->name() == "IsoButane" || fluid_entity->name() == "Isopentane" || fluid_entity->name() == "Methane"
-       || fluid_entity->name() == "Methanol" || fluid_entity->name() == "Nitrogen" || fluid_entity->name() == "Oxygen" || fluid_entity->name() == "Propylene"
-       || fluid_entity->name() == "R11" || fluid_entity->name() == "R116" || fluid_entity->name() == "R12" || fluid_entity->name() == "R123"
-       || fluid_entity->name() == "R1233zd(E)" || fluid_entity->name() == "R1234yf" || fluid_entity->name() == "R1234ze(E)" || fluid_entity->name() == "R124"
-       || fluid_entity->name() == "R125" || fluid_entity->name() == "R13" || fluid_entity->name() == "R134a" || fluid_entity->name() == "R14"
-       || fluid_entity->name() == "R141b" || fluid_entity->name() == "R142b" || fluid_entity->name() == "R143a" || fluid_entity->name() == "R152A"
-       || fluid_entity->name() == "R218" || fluid_entity->name() == "R22" || fluid_entity->name() == "R227EA" || fluid_entity->name() == "R23"
-       || fluid_entity->name() == "R236EA" || fluid_entity->name() == "R236FA" || fluid_entity->name() == "R245fa" || fluid_entity->name() == "R32"
-       || fluid_entity->name() == "R404A" || fluid_entity->name() == "R407C" || fluid_entity->name() == "R410A" || fluid_entity->name() == "R507A"
-       || fluid_entity->name() == "RC318" || fluid_entity->name() == "SulfurHexafluoride" || fluid_entity->name() == "Toluene" || fluid_entity->name() == "Water"
-       || fluid_entity->name() == "m-Xylene" || fluid_entity->name() == "n-Butane" || fluid_entity->name() == "n-Decane" || fluid_entity->name() == "n-Dodecane"
-       || fluid_entity->name() == "n-Heptane" || fluid_entity->name() == "n-Hexane" || fluid_entity->name() == "n-Nonane" || fluid_entity->name() == "n-Octane"
-       || fluid_entity->name() == "n-Pentane" || fluid_entity->name() == "n-Propane" || fluid_entity->name() == "o-Xylene" || fluid_entity->name() == "p-Xylene") {
      mu_ = fluid_entity->viscosity();
-   }
-   else
-   {
-     SU2_MPI::Error("Viscosity model not available for this fluid in CoolProp library.", CURRENT_FUNCTION);
-   }
  }
 };
 #endif

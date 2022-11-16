@@ -41,7 +41,7 @@ namespace CoolProp {
  * \brief Child class for defining fluid model from CoolProp library.
  * \author: P.Yan
  */
-class CCoolProp final : public CFluidModel{
+class CCoolProp final : public CFluidModel {
  private:
   su2double Gamma{1.4};           /*!< \brief Ratio of Specific Heats. */
   su2double Gas_Constant{297};    /*!< \brief specific Gas Constant. */

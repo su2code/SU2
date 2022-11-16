@@ -44,16 +44,15 @@
 #include "../../include/fluid/CCoolPropViscosity.hpp"
 #include "../../include/fluid/CConstantLewisDiffusivity.hpp"
 #include "../../include/fluid/CCoolPropConductivity.hpp"
-#include "../../include/fluid/CCoolPropConductivityRANS.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       return unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND(iSpecies)));
-    #ifdef USE_COOLPROP
+    //#ifdef USE_COOLPROP
     case VISCOSITYMODEL::COOLPROP:
       return unique_ptr<CCoolPropViscosity>(new CCoolPropViscosity(config->GetFluid_Name()));
-    #endif
+    //#endif
     case VISCOSITYMODEL::SUTHERLAND:
       return unique_ptr<CSutherland>(new CSutherland(config->GetMu_RefND(iSpecies),
                                                      config->GetMu_Temperature_RefND(iSpecies),
@@ -84,18 +83,18 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
             new CConstantConductivity(config->GetThermal_Conductivity_ConstantND(iSpecies)));
       }
       break;
-    #ifdef USE_COOLPROP
+    //#ifdef USE_COOLPROP
     case CONDUCTIVITYMODEL::COOLPROP:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-        return unique_ptr<CCoolPropConductivityRANS>(
-            new CCoolPropConductivityRANS(config->GetThermal_Conductivity_ConstantND(iSpecies),
+        return unique_ptr<CConstantConductivityRANS>(
+            new CConstantConductivityRANS(config->GetThermal_Conductivity_ConstantND(iSpecies),
                                           config->GetPrandtl_Turb(iSpecies)));
       } else {
         return unique_ptr<CCoolPropConductivity>(
             new CCoolPropConductivity(config->GetFluid_Name()));
       }
       break;
-    #endif
+    //#endif
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         return unique_ptr<CConstantPrandtlRANS>(
