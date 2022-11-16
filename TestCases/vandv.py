@@ -80,7 +80,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.527743, -11.150388, -11.944923, -10.750834, -11.116769, -4.030059, 0.002339, -2.730391, -4.067274, 1.3401]
+    swbli_sst.test_vals = [-11.527743, -11.150388, -11.944923, -10.750834, -11.116769, -4.030059, 0.002339, -2.730391, -4.067274, 1.276300]
     test_list.append(swbli_sst)
 
     #################
