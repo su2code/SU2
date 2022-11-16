@@ -41,8 +41,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
 
-  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
-  vector<vector<int> > SlidingStateNodes;
  public:
   /*!
    * \brief Constructor of the class.
@@ -177,73 +175,5 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
-
-  /*!
-  * \brief Get the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  * \param[in] donor_index- index of the donor node to get
-  */
-  inline su2double GetSlidingState(unsigned short val_marker,
-                                   unsigned long val_vertex,
-                                   unsigned short val_state,
-                                   unsigned long donor_index) const final {
-    return SlidingState[val_marker][val_vertex][val_state][donor_index];
-  }
-
-  /*!
-   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
-   * \param[in] val_marker   - marker index
-   * \param[in] val_vertex   - vertex index
-   */
-  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
-    int iVar;
-
-    for( iVar = 0; iVar < nVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
-        delete [] SlidingState[val_marker][val_vertex][iVar];
-    }
-
-    for( iVar = 0; iVar < nVar+1; iVar++)
-      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
-  }
-
-
-  /*!
-   * \brief Set the outer state for fluid interface nodes.
-   * \param[in] val_marker   - marker index
-   * \param[in] val_vertex   - vertex index
-   * \param[in] val_state    - requested state component
-   * \param[in] donor_index  - index of the donor node to set
-   * \param[in] component    - set value
-   */
-  inline void SetSlidingState(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              unsigned short val_state,
-                              unsigned long donor_index,
-                              su2double component) final {
-    SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
-  }
-
-
-  /*!
-   * \brief Set the number of outer state for fluid interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_vertex - vertex index
-   * \param[in] value - number of outer states
-   */
-  inline void SetnSlidingStates(unsigned short val_marker,
-                                unsigned long val_vertex,
-                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
-
-  /*!
-   * \brief Get the number of outer state for fluid interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_vertex - vertex index
-   */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
-    return SlidingStateNodes[val_marker][val_vertex];
-  }
 
 };
