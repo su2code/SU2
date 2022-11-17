@@ -35,6 +35,7 @@
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
+#include "../../include/fluid/CThermallyPerfectGas.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -778,7 +779,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0, Gamma_Freestream;
 
   unsigned short iDim;
 
@@ -852,6 +853,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
                  config->GetPressure_Critical(), config->GetTemperature_Critical());
       break;
+
+   case THERMALLY_PERFECT:
+
+      auxFluidModel = new CThermallyPerfectGas(config, config->GetGas_Constant());
+      break;      
 
     case PR_GAS:
 
@@ -1077,6 +1083,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         FluidModel[thread] = new CIdealGas(Gamma, Gas_ConstantND);
         break;
 
+      case THERMALLY_PERFECT:
+        FluidModel[thread] = new CThermallyPerfectGas(config, Gas_ConstantND);
+        break;        
+
+
       case VW_GAS:
         FluidModel[thread] = new CVanDerWaalsGas(Gamma, Gas_ConstantND,
                                                  config->GetPressure_Critical() / config->GetPressure_Ref(),
@@ -1095,7 +1106,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
     }
 
-    GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+    if (config->GetKind_FluidModel() == THERMALLY_PERFECT) {      GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, Temperature_FreeStreamND); }
+    else {
+      GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+    }
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
@@ -1813,6 +1827,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
+      su2double limiter_i = 2.0;
+      su2double limiter_j = 2.0;
+
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         su2double Project_Grad_i = 0.0;
@@ -1836,9 +1853,21 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+          limiter_i = min(limiter_i, lim_i);
+          limiter_j = min(limiter_j, lim_j);
+      }
 
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        }
+
+        Primitive_i[iVar] = V_i[iVar] + limiter_i/2.0 * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + limiter_j/2.0 * Project_Grad_j;
       }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
@@ -1847,8 +1876,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
       }
-
-      /*--- Low-Mach number correction. ---*/
+//
+//      /*--- Low-Mach number correction. ---*/
 
       if (low_mach_corr) {
         LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
