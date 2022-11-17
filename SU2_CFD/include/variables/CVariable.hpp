@@ -2266,4 +2266,6 @@ public:
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+  inline virtual su2double GetGamma(unsigned long iPoint)       const { return 0.0; }
+
 };

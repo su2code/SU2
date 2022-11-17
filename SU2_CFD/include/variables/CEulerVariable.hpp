@@ -70,6 +70,7 @@ public:
 
   MatrixType WindGust;      /*! < \brief Wind gust value */
   MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
+  VectorType Gamma;     /*!< \brief Square of the velocity vector. */  
 
  public:
   /*!
@@ -187,6 +188,13 @@ public:
     Primitive(iPoint, indices.Temperature()) = temperature;
     return temperature <= 0.0;
   }
+
+  inline bool SetGamma(unsigned long iPoint, su2double g) {
+    Gamma(iPoint) = g;
+    return g <= 0.0;
+  }
+
+  inline su2double GetGamma(unsigned long iPoint) const final{ return Gamma(iPoint); }
 
   /*!
    * \brief Get the flow pressure.

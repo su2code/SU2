@@ -70,6 +70,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjMultizoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
+  ../src/fluid/CThermallyPerfectGas.cpp \
+  ../include/fluid/CThermallyPerfectGas.hpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration/CIteration.cpp \
   ../src/iteration/CIterationFactory.cpp \

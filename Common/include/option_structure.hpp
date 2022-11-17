@@ -570,12 +570,14 @@ enum ENUM_FLUIDMODEL {
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
+  THERMALLY_PERFECT = 11,
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
   MakePair("IDEAL_GAS", IDEAL_GAS)
   MakePair("VW_GAS", VW_GAS)
   MakePair("PR_GAS", PR_GAS)
+  MakePair("THERMALLY_PERFECT", THERMALLY_PERFECT)
   MakePair("CONSTANT_DENSITY", CONSTANT_DENSITY)
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)

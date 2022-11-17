@@ -36,8 +36,6 @@
  */
 class CIdealGas : public CFluidModel {
  protected:
-  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
   bool ComputeEntropy{true};      /*!< \brief Whether or not to compute entropy. */
 
