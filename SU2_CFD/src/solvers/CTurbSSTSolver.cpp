@@ -322,8 +322,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     /*--- Effective Intermittency ---*/
-    
-    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {      
+
+    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
     }
 
