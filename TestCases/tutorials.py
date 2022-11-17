@@ -201,7 +201,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.187400, -9.379921, 3.477522, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.187397, -2.338536, 3.613629, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
