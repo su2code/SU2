@@ -843,6 +843,8 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(V_i, nDim+4);
   AD::SetPreaccIn(V_j, nDim+4);
 
+  su2double Gamma_Minus_One_i, Gamma_Minus_One_j;
+
   /*--- Face area (norm or the normal vector) ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -860,7 +862,8 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
+  Gamma_Minus_One_i = Gamma_i - 1;
+  SoundSpeed_i = sqrt(fabs(Gamma_i*Gamma_Minus_One_i*(Energy_i-0.5*sq_vel)));
 
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -872,7 +875,8 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
+  Gamma_Minus_One_j = Gamma_j - 1;
+  SoundSpeed_j = sqrt(fabs(Gamma_j*Gamma_Minus_One_j*(Energy_j-0.5*sq_vel)));
 
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;

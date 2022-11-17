@@ -878,6 +878,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
     Density_FreeStream = auxFluidModel->GetDensity();
     config->SetDensity_FreeStream(Density_FreeStream);
+    Gamma_Freestream = auxFluidModel->GetGamma();
+    config->SetGamma_FreeStream(Gamma_Freestream);
   }
   else {
     auxFluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
@@ -1899,7 +1901,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
+      Gamma = 0.5*(nodes->GetGamma(iPoint) + nodes->GetGamma(jPoint));
       const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
@@ -1926,6 +1930,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     }
 
     /*--- Compute the residual ---*/
+    numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     auto residual = numerics->ComputeResidual(config);
 
@@ -4316,6 +4321,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
+  su2double Gamma_Bound, Gamma_Bound_Minus_One, Gamma_Infty, Gamma_Infty_Minus_One, Gamma_Minus, Gamma_Plus;
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
@@ -4378,8 +4384,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
       }
       Pressure_Bound   = nodes->GetPressure(iPoint);
-      SoundSpeed_Bound = sqrt(Gamma*Pressure_Bound/Density_Bound);
-      Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
+      Gamma_Bound   = nodes->GetGamma(iPoint);
+      //cout << "iPoint=" << iPoint << " Gamma_Bound =" << Gamma_Bound  << endl;
+      Gamma_Bound_Minus_One = Gamma_Bound - 1;
+      SoundSpeed_Bound = sqrt(Gamma_Bound*Pressure_Bound/Density_Bound);
+      Entropy_Bound    = pow(Density_Bound, Gamma_Bound)/Pressure_Bound;
 
       /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
@@ -4393,8 +4402,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
       }
       Pressure_Infty   = GetPressure_Inf();
-      SoundSpeed_Infty = sqrt(Gamma*Pressure_Infty/Density_Infty);
-      Entropy_Infty    = pow(Density_Infty, Gamma)/Pressure_Infty;
+      Gamma_Infty      = config->GetGamma_FreeStream();
+      //cout << "Gamma_Infty =" << Gamma_Infty  << endl;
+      Gamma_Infty_Minus_One = Gamma_Infty - 1;
+      SoundSpeed_Infty = sqrt(Gamma_Infty*Pressure_Infty/Density_Infty);
+      Entropy_Infty    = pow(Density_Infty, Gamma_Infty)/Pressure_Infty;
 
       /*--- Adjust the normal freestream velocity for grid movement ---*/
 
@@ -4418,28 +4430,42 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Check whether (u.n+c) is greater or less than zero ---*/
 
+
       if (Qn_Infty > -SoundSpeed_Infty) {
         /*--- Subsonic inflow or outflow ---*/
-        RiemannPlus = Vn_Bound + 2.0*SoundSpeed_Bound/Gamma_Minus_One;
+        RiemannPlus = Vn_Bound + 2.0*SoundSpeed_Bound/Gamma_Bound_Minus_One;
+        Gamma_Plus = Gamma_Bound;
+        //cout << "plus Gamma=" << Gamma << endl;
       } else {
         /*--- Supersonic inflow ---*/
-        RiemannPlus = Vn_Infty + 2.0*SoundSpeed_Infty/Gamma_Minus_One;
+        RiemannPlus = Vn_Infty + 2.0*SoundSpeed_Infty/Gamma_Infty_Minus_One;
+        Gamma_Plus = Gamma_Infty;
+        //cout << "plus Gamma=" << Gamma << endl;
       }
 
       /*--- Check whether (u.n-c) is greater or less than zero ---*/
 
       if (Qn_Infty > SoundSpeed_Infty) {
         /*--- Supersonic outflow ---*/
-        RiemannMinus = Vn_Bound - 2.0*SoundSpeed_Bound/Gamma_Minus_One;
+        RiemannMinus = Vn_Bound - 2.0*SoundSpeed_Bound/Gamma_Bound_Minus_One;
+        Gamma_Minus = Gamma_Bound;
+        //cout << "minus Gamma=" << Gamma << endl;
       } else {
         /*--- Subsonic outflow ---*/
-        RiemannMinus = Vn_Infty - 2.0*SoundSpeed_Infty/Gamma_Minus_One;
+        RiemannMinus = Vn_Infty - 2.0*SoundSpeed_Infty/Gamma_Infty_Minus_One;
+        Gamma_Minus = Gamma_Infty;
+        //cout << "minus Gamma=" << Gamma << endl;
       }
 
       /*--- Compute a new value for the local normal velocity and speed of
          sound from the Riemann invariants. ---*/
 
       Vn = 0.5 * (RiemannPlus + RiemannMinus);
+
+      Gamma = 0.5 * (Gamma_Plus + Gamma_Minus);
+      //cout << "average Gamma=" << Gamma << endl;
+      Gamma_Minus_One = Gamma - 1;
+
       SoundSpeed = 0.25 * (RiemannPlus - RiemannMinus)*Gamma_Minus_One;
 
       /*--- Construct the primitive variable state at the boundary for
@@ -4455,11 +4481,17 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
         Entropy = Entropy_Bound;
+        Gamma = Gamma_Bound;
+        //cout << "bound Gamma=" << Gamma << endl;
+        Gamma_Minus_One = Gamma - 1;
       } else  {
         /*--- Inflow conditions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
         Entropy = Entropy_Infty;
+        Gamma = Gamma_Infty;
+        //cout << "infty Gamma=" << Gamma << endl;
+        Gamma_Minus_One = Gamma - 1;
       }
 
       /*--- Recompute the primitive variables. ---*/
@@ -4487,6 +4519,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetGamma(Gamma_Bound, Gamma_Infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),

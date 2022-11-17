@@ -843,6 +843,7 @@ private:
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
+  Gamma_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -9650,5 +9651,9 @@ public:
    * \return SA option data structure.
    */
   SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
+
+  su2double GetGamma_FreeStream(void) const { return Gamma_FreeStream; }  
+
+  void SetGamma_FreeStream(su2double val_gamma_freestream) { Gamma_FreeStream = val_gamma_freestream; }  
 
 };

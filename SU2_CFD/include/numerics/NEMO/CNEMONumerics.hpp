@@ -520,6 +520,6 @@ public:
    * \param[in] val_Gamma_i - Gamma at i.
    * \param[in] val_Gamma_j - Gamma at j.
    */
-  inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
+  //inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
 
 };
