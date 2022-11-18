@@ -1396,6 +1396,15 @@ def main():
     species_passive_val.new_output = True
     test_list.append(species_passive_val)
 
+    # species transport, 3 species with multizone (2 fluid regions)
+    species3_multizone_restart           = TestCase('species3_multizoneVenturi')
+    species3_multizone_restart.cfg_dir   = "species_transport/multizone"
+    species3_multizone_restart.cfg_file  = "configMaster.cfg"
+    species3_multizone_restart.test_iter = 50
+    species3_multizone_restart.test_vals = [0.000000]
+    species3_multizone_restart.new_output = True
+    test_list.append(species3_multizone_restart)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
