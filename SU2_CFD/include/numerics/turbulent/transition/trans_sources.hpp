@@ -460,7 +460,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = -c_theta/time_scale*(1.0-f_theta)*Volume;
-    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015)
+    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015 && ReThetat_SCF-TransVar_i[1] < 0)
       Jacobian_i[1][1] += (c_theta/time_scale) * c_CF*f_theta_2*Volume;
   }  
   
