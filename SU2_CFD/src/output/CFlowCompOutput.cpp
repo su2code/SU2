@@ -233,6 +233,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Primitive variables
+  AddVolumeOutput("GAMMA",    "Gamma",                "PRIMITIVE", "Gamma");
+
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
@@ -308,6 +310,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     if (nDim == 3)
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
+  SetVolumeOutputValue("GAMMA", iPoint, Node_Flow->GetGamma(iPoint));
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));

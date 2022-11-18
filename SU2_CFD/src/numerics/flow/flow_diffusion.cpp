@@ -412,6 +412,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
+  Mean_Gamma = 0.5*(Gamma_i+Gamma_j);
+
+
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
   if (correct_gradient && dist_ij_2 != 0.0) {
@@ -440,7 +443,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
-                    Mean_Eddy_Viscosity);
+                    Mean_Eddy_Viscosity, Mean_Gamma);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -476,8 +479,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
 void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
                                       const su2double val_laminar_viscosity,
-                                      const su2double val_eddy_viscosity) {
+                                      const su2double val_eddy_viscosity,
+                                      const su2double val_gamma){
 
+  Gamma = val_gamma;
+  Gamma_Minus_One = Gamma - 1;
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
 

@@ -1691,11 +1691,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
-    const su2double gamma, prandtlLam, prandtlTurb;
+    const su2double prandtlLam, prandtlTurb;
 
-    LambdaVisc(su2double g, su2double pl, su2double pt) : gamma(g), prandtlLam(pl), prandtlTurb(pt) {}
+    LambdaVisc(su2double pl, su2double pt) : prandtlLam(pl), prandtlTurb(pt) {}
 
-    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density) const {
+    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density, su2double gamma) const {
       su2double Lambda_1 = (4.0/3.0)*(laminarVisc + eddyVisc);
       /// TODO: (REAL_GAS) removing gamma as it cannot work with FLUIDPROP
       su2double Lambda_2 = (1.0 + (prandtlLam/prandtlTurb)*(eddyVisc/laminarVisc))*(gamma*laminarVisc/prandtlLam);
@@ -1706,17 +1706,19 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double gamma = 0.5*(nodes.GetGamma(iPoint) + nodes.GetGamma(jPoint));
+      return lambda(laminarVisc, eddyVisc, density, gamma);
     }
 
     FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double gamma = nodes.GetGamma(iPoint);
+      return lambda(laminarVisc, eddyVisc, density, gamma);
     }
 
-  } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
+  } lambdaVisc(Prandtl_Lam, Prandtl_Turb);
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 

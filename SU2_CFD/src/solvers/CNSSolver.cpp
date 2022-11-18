@@ -622,7 +622,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  //const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -651,6 +651,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    su2double Cp = nodes->GetSpecificHeatCp(iPoint);
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 

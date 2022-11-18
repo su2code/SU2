@@ -424,6 +424,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                          nodes->GetSecondary(jPoint));
 
   /*--- Gradients. ---*/
+  numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
   numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                nodes->GetGradient_Primitive(jPoint));
@@ -2510,7 +2511,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+      
+      Gamma = nodes->GetGamma(iPoint);
+      Gamma_Minus_One = Gamma - 1;
+ 
       Coord = geometry->nodes->GetCoord(iPoint);
 
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
