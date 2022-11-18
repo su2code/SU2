@@ -30,7 +30,7 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
-#include "../../include/fluid/CMLPGas.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -331,8 +331,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
-    case MLP_GAS:
-      auxFluidModel = new CMLPGas(config);
+    case DATADRIVEN_FLUID:
+      auxFluidModel = new CDataDrivenFluid(config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
@@ -500,8 +500,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
-      case MLP_GAS:
-        fluidModel = new CMLPGas(config);
+      case DATADRIVEN_FLUID:
+        fluidModel = new CDataDrivenFluid(config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 

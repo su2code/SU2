@@ -478,7 +478,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the transition model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
@@ -569,7 +569,8 @@ enum ENUM_FLUIDMODEL {
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
-  MLP_GAS = 10,           /*!< \brief multi-layer perceptron driven fluid model. */
+  COOLPROP = 10,          /*!< \brief Thermodynamics library. */
+  DATADRIVEN_FLUID = 11,           /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -582,7 +583,8 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
-  MakePair("MLP_GAS", MLP_GAS)
+  MakePair("COOLPROP", COOLPROP)
+  MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
 };
 
 /*!
@@ -609,6 +611,19 @@ MakePair("N2", N2)
 MakePair("AIR-5", AIR5)
 MakePair("ARGON-SID",ARGON_SID)
 MakePair("ONESPECIES", ONESPECIES)
+};
+
+/*!
+* \brief types of interpolation methods for data-driven fluid models.
+*/
+enum ENUM_DATADRIVEN_METHOD {
+  LUT = 0,
+  MLP = 1
+};
+
+static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
+  MakePair("LUT", LUT)
+  MakePair("MLP", MLP)
 };
 
 /*!

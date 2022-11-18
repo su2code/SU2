@@ -31,14 +31,13 @@
 
 /*!
  * \class CTransLMSolver
- * \brief Main class for defining the turbulence model solver.
+ * \brief Main class for defining the transition model solver.
  * \ingroup Turbulence_Model
- * \author A. Aranake.
+ * \author A. Aranake, S. Kang.
  */
 
 class CTransLMSolver final : public CTurbSolver {
 private:
-  su2double Intermittency_Inf, REth_Inf;
 
 public:
   /*!
@@ -52,7 +51,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMSolver(void) override;
+  ~CTransLMSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -73,7 +72,7 @@ public:
                      bool Output) override;
 
   /*!
-   * \brief A virtual member.
+   * \brief Computes the effective intermtittency.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -85,34 +84,16 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the spatial integration using a upwind scheme.
+   * \brief Compute the viscous flux for the LM equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) override;
-
-  /*!
-   * \brief Compute the viscous residuals for the turbulent equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
+  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, CConfig* config) override;
 
   /*!
    * \brief Source term computation.
@@ -143,7 +124,7 @@ public:
                        unsigned short iMesh) override;
 
   /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \brief Impose the Langtry Menter transition wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -158,6 +139,22 @@ public:
                         CConfig *config,
                         unsigned short val_marker) override;
 
+ /*!
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config,
+                          unsigned short val_marker) override; 
+  
   /*!
    * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -207,34 +204,25 @@ public:
                  unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the symmetry condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \brief Get the value of the intermittency.
+   * \return Value of the turbulent kinetic energy.
    */
-  void BC_Sym_Plane(CGeometry      *geometry,
-                    CSolver        **solver_container,
-                    CNumerics      *conv_numerics,
-                    CNumerics      *visc_numerics,
-                    CConfig        *config,
-                    unsigned short val_marker) override;
+  inline su2double GetIntermittency_Inf(void) const override { return Solution_Inf[0]; }
 
   /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Get the value of the intermittency.
+   * \return Value of the turbulent kinetic energy.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
+  inline su2double GetReThetaT_Inf(void) const override { return Solution_Inf[1]; }
 
   /*!
-   * \brief No support for OpenMP+MPI.
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  inline bool GetHasHybridParallel() const override { return false; }
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
 };

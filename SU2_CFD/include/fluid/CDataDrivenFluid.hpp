@@ -1,5 +1,5 @@
 /*!
- * \file CMLPGas.hpp
+ * \file CDataDrivenFluid.hpp
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.Bunschoten
@@ -31,38 +31,34 @@
 #include "CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 /*!
- * \class CMLPGas
+ * \class CDataDrivenFluid
  * \brief Template class for fluid model definition using multi-layer perceptrons for 
  * fluid dynamic state definition.
  * \author: E.Bunschoten.
  */
-class CMLPGas : public CFluidModel {
+class CDataDrivenFluid : public CFluidModel {
  protected:
-  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
-  su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
 
-  su2double R_u = 8.31451;
+  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;
+  size_t idx_rho,
+         idx_e;
 
-  string ann_input_filename;
-  MLPToolbox::CLookUp_ANN * lookup_ann;
-  vector<string> mlp_input_names, lookup_names;
-  vector<su2double*> lookup_data;
+  su2double Newton_Relaxation,
+            rho_start,
+            e_start;
 
-  MLPToolbox::CIOMap * iomap_rhoe;
-  vector<string> input_names_rhoe, 
+  string input_filename;
+
+  vector<string> input_names_rhoe,
                  output_names_rhoe;
-  vector<su2double*> outputs_rhoe;
-  
-  MLPToolbox::CIOMap * iomap_PT;
-  vector<string> input_names_PT, 
-                 output_names_PT;
-  vector<su2double*> outputs_PT;
 
-  MLPToolbox::CIOMap * iomap_Prho;
-  vector<string> input_names_Prho, 
-                 output_names_Prho;
-  vector<su2double*> outputs_Prho;
+  vector<su2double*> outputs_rhoe;
+
+  MLPToolbox::CLookUp_ANN * lookup_mlp;
+  MLPToolbox::CIOMap * iomap_rhoe;
+  vector<su2double> MLP_inputs;
+
+  
 
   void MapInputs_to_Outputs();
 
@@ -70,9 +66,9 @@ class CMLPGas : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CMLPGas(const CConfig* config);
+  CDataDrivenFluid(const CConfig* config);
 
-  ~CMLPGas();
+  ~CDataDrivenFluid();
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.

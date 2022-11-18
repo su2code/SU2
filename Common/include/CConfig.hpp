@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -517,7 +518,13 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
+
+  su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
+            DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in datadriven fluid models. */
+            DataDriven_initial_energy;    /*!< \brief Initial static energy value for Newton solvers in datadriven fluid models. */
+
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
   unsigned short
@@ -787,7 +794,8 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  DataDriven_Method_FileName;    /*!< \brief Dataset information for datadriven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -849,6 +857,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -1928,6 +1937,12 @@ public:
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
@@ -2564,6 +2579,12 @@ public:
    * \param[in] val_omega_freestream - Value of the freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
+
+  /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
 
   /*!
    * \brief Set the non-dimensional freestream energy.
@@ -3741,6 +3762,39 @@ public:
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
+   * \brief Datadriven method for EoS evaluation.
+   */
+  unsigned short GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+
+  /*!
+   * \brief Get name of the input file for the data-driven fluid model interpolation method.
+   * \return Name of the input file for the interpolation method.
+   */
+  string GetDataDriven_Filename(void) const { return DataDriven_Method_FileName; }
+
+  /*!
+   * \brief Get Newton solver relaxation factor for data-driven fluid models.
+   * \return Newton solver relaxation factor.
+   */
+  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
+
+  /*!
+   * \brief Get initial value for the density in the Newton solvers in the data-driven fluid model.
+   * \return Initial density value.
+   */
+  su2double GetDensity_Init_DataDriven(void) const { return DataDriven_initial_density; }
+  /*!
+   * \brief Get initial value for the static energy in the Newton solvers in the data-driven fluid model.
+   * \return Initial dstatic energy value.
+   */
+  su2double GetEnergy_Init_DataDriven(void) const { return DataDriven_initial_energy; }
+
+  /*!
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
+
+  /*!
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
    */
@@ -4842,12 +4896,6 @@ public:
    * \return Name of the input file for the specified actuator disk.
    */
   string GetActDisk_FileName(void) const { return ActDisk_FileName; }
-
-  /*!
-   * \brief Get name of the input file for the fluid model multi-layer perceptron collection.
-   * \return Name of the input file for the specified MLP collection file.
-   */
-  string GetMLP_FileName(void) const { return MLP_filename; }
 
   /*!
    * \brief Get the tolerance used for matching two points on a specified inlet
