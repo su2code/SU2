@@ -987,12 +987,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    Pressure_Ref      = Gamma_Freestream*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    Pressure_Ref      = Mach*Mach*Gamma_Freestream*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
@@ -1023,7 +1023,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
 
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-
 
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
@@ -1108,7 +1107,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
     }
 
-    if (config->GetKind_FluidModel() == THERMALLY_PERFECT) {      GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, Temperature_FreeStreamND); }
+    if (config->GetKind_FluidModel() == THERMALLY_PERFECT) {  
+        GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, Temperature_FreeStreamND); }
     else {
       GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
     }
@@ -1859,6 +1859,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           limiter_j = min(limiter_j, lim_j);
       }
 
+
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
@@ -1971,13 +1972,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
                                                   su2double *primitive, su2double *secondary) {
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
-  const su2double density = primitive[prim_idx.Density()];
+  //const su2double density = primitive[prim_idx.Density()];
   const su2double pressure = primitive[prim_idx.Pressure()];
   const su2double velocity2 = GeometryToolbox::SquaredNorm(nDim, &primitive[prim_idx.Velocity()]);
+  const su2double temperature = primitive[prim_idx.Temperature()];
+  //fluidModel->SetTDState_Prho(pressure, density);
+  fluidModel->SetTDState_PT(pressure, temperature);
 
-  fluidModel->SetTDState_Prho(pressure, density);
-
-  primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
+  primitive[prim_idx.Density()] = fluidModel->GetDensity();
+  const su2double density = primitive[prim_idx.Density()];
   primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;
   primitive[prim_idx.SoundSpeed()] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
@@ -4390,6 +4393,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       SoundSpeed_Bound = sqrt(Gamma_Bound*Pressure_Bound/Density_Bound);
       Entropy_Bound    = pow(Density_Bound, Gamma_Bound)/Pressure_Bound;
 
+
       /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
          i.e. compute v_infty.n. ---*/
@@ -4502,19 +4506,24 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      //Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
 
-      /*--- Store new primitive state for computing the flux. ---*/
+      V_infty[0] = config->GetTemperature_FreeStream();
 
-      V_infty[0] = Pressure/(Gas_Constant*Density);
+      /*--- Store new primitive state for computing the flux. ---*/
+      GetFluidModel()->SetTDState_PT(Pressure, V_infty[0]);
+      Energy = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2;
+
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = Velocity[iDim];
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
 
-
+//      std::cout<<Pressure<<" "<<Gamma_Minus_One<<" "<<Density<<" "<<Velocity2<<std::endl;
+//      std::cout<<V_infty[nDim+1]<<" "<<V_infty[nDim+2]<<" "<<V_infty[nDim+3]<<" "<<V_infty[nDim+4]<<std::endl;     
+//      std::cout<<V_domain[nDim+1]<<" "<<V_domain[nDim+2]<<" "<<V_domain[nDim+3]<<" "<<V_domain[nDim+4]<<std::endl; std::exit(1);
 
       /*--- Set various quantities in the numerics class ---*/
 

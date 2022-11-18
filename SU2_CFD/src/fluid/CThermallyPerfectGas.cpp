@@ -50,7 +50,7 @@ CThermallyPerfectGas::CThermallyPerfectGas(const CConfig* config, su2double R, b
   for(i = 0; i < ns; i++) MolarMass[i] = 1000* mix->speciesMw(i);
 
   
-  Gamma = config->GetGamma();
+  Gamma = 1.4;
   Gamma_Minus_One = Gamma - 1.0;
   Gas_Constant = R;
   Cp = Gamma / Gamma_Minus_One * Gas_Constant;
@@ -65,9 +65,7 @@ void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
   for (i = 0; i < ns; i++) rhos[i] = rho* cs[i];
   rhoenergy[0] = rho*e; //- 300811.74424616753822
   mix->setState(rhos.data(), rhoenergy.data(), 0);
-  
-  Gamma = 1.4;
-  //Gamma = mix->mixtureFrozenGamma();
+  Gamma = mix->mixtureFrozenGamma();
   //Gamma = ComputeGamma(rhos);
   Gamma_Minus_One = Gamma - 1;
   Cp = Gamma / Gamma_Minus_One * Gas_Constant;
@@ -76,11 +74,11 @@ void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
   StaticEnergy = e;
   //cout << endl << "e =" << e << endl;
 
-  //mix->getTemperatures(temp.data());
-  //Temperature = temp[0]; //
-  Temperature = Gamma_Minus_One * StaticEnergy / Gas_Constant;
-  Pressure = Gamma_Minus_One * Density * StaticEnergy;
-  //Pressure = mix->pressure(Temperature, rho, cs);//Gamma_Minus_One * Density * StaticEnergy;
+  mix->getTemperatures(temp.data());
+  Temperature = temp[0]; //Gamma_Minus_One * StaticEnergy / Gas_Constant;
+
+  Pressure = mix->pressure(Temperature, rho, cs);//Gamma_Minus_One * Density * StaticEnergy;
+
   //cout << "SetTDState_rhoe P=" << Pressure << endl;
   ////
   //cout << "SetTDState_rhoe rho=" << rho << endl;
@@ -125,16 +123,12 @@ void CThermallyPerfectGas::SetTDState_PT(su2double P, su2double T) {
   Cp = Gamma / Gamma_Minus_One * Gas_Constant;
   Cv = Cp - Gas_Constant;
 
-  //mix->mixtureEnergies(energy.data());
-  //su2double e = energy[0];//T * Gas_Constant / Gamma_Minus_One;
-  su2double e = T * Gas_Constant / Gamma_Minus_One;
+  mix->mixtureEnergies(energy.data());
+  su2double e = energy[0];//T * Gas_Constant / Gamma_Minus_One;
   //cout << "SetTDState_PT e=" << e << endl;
   //su2double rho = P / (T * Gas_Constant);
   SetTDState_rhoe(rho, e);
 }
-
-void CThermallyPerfectGas::SetEnergy_Prho(su2double P, su2double rho) { StaticEnergy = P / (rho * Gamma_Minus_One); }
-
 
 // WE CAN IGNORE FOR THERMALLY PERFECT GAS
 void CThermallyPerfectGas::SetTDState_Prho(su2double P, su2double rho) {
@@ -155,10 +149,8 @@ void CThermallyPerfectGas::SetEnergy_Prho(su2double rho, su2double P, su2double 
   Cp = Gamma / Gamma_Minus_One * Gas_Constant;
   Cv = Cp - Gas_Constant;
 
-  //mix->mixtureEnergies(energy.data());
-  //StaticEnergy = energy[0];//P / (rho * Gamma_Minus_One); 
-
-  StaticEnergy = P/ (rho * Gamma_Minus_One);
+  mix->mixtureEnergies(energy.data());
+  StaticEnergy = energy[0];//P / (rho * Gamma_Minus_One); 
 }
 
 // WE CAN IGNORE FOR THERMALLY PERFECT GAS
@@ -221,3 +213,11 @@ void CThermallyPerfectGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho
 //
 //
 //}
+
+
+void CThermallyPerfectGas::SetEnergy_Prho(su2double P, su2double rho) {
+
+  std::cout<<"Wrong energy"<<std::endl; std::exit(1);
+ StaticEnergy = P / (rho * Gamma_Minus_One); 
+
+}

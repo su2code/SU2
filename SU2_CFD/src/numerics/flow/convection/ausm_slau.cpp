@@ -863,7 +863,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Gamma_Minus_One_i = Gamma_i - 1;
-  SoundSpeed_i = sqrt(fabs(Gamma_i*Gamma_Minus_One_i*(Energy_i-0.5*sq_vel)));
+  SoundSpeed_i = sqrt(Gamma_i*Pressure_i/Density_i);//sqrt(fabs(Gamma_i*Gamma_Minus_One_i*(Energy_i-0.5*sq_vel)));
 
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -876,7 +876,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   Gamma_Minus_One_j = Gamma_j - 1;
-  SoundSpeed_j = sqrt(fabs(Gamma_j*Gamma_Minus_One_j*(Energy_j-0.5*sq_vel)));
+  SoundSpeed_j = sqrt(Gamma_j*Pressure_j/Density_j);//sqrt(fabs(Gamma_j*Gamma_Minus_One_j*(Energy_j-0.5*sq_vel)));
 
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -911,8 +911,8 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
                       -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitNormal[iDim]*pF;
   Flux[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Flux[iVar] *= Area;
+  for (iVar = 0; iVar < nVar; iVar++){
+    Flux[iVar] *= Area;}
 
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
