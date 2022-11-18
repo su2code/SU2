@@ -493,6 +493,15 @@ void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
+                                 su2double**& Turb_Properties_val, unsigned short& nTurb_Properties) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Inlet_Turb, Marker_Inlet_Turb,
+                                                             Turb_Properties_val, nTurb_Properties);
+  option_map.insert(pair<string, COptionBase*>(name, val));
+}
+
 template <class Tenum>
 void CConfig::addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -1507,7 +1516,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
-
+  /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
+   Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
+   ViscosityRatio2, ...) */
+  addInletTurbOption("MARKER_INLET_TURBULENT", nMarker_Inlet_Turb, Marker_Inlet_Turb, Turb_PropertiesVal, nTurb_Properties);
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
