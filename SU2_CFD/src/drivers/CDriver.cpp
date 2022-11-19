@@ -168,11 +168,16 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
             /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
              based data structure is constructed, i.e. node and cell neighbors are
              identified and linked, face areas and volumes of the dual mesh cells are
-             computed, and the multigrid levels are created using an agglomeration procedure. ---*/
+             computed, and the multi-grid levels are created using an agglomeration procedure. ---*/
             
             Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
             
         }
+    }
+
+    /*--- Read free-form deformation design variables data. --- */
+    if (main_config->GetnFFDBox()) {
+      ReadFFDInfo(main_geometry, main_config, FFDBox[ZONE_0], main_config->GetMesh_FileName());
     }
     
     /*--- Before we proceed with the zone loop we have to compute the wall distances.
@@ -350,6 +355,7 @@ void CDriver::SetContainers_Null(){
     for (iZone = 0; iZone < nZone; iZone++) {
         interface_types[iZone] = new unsigned short[nZone];
         nInst[iZone] = 1;
+        FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     }
     
     strcpy(runtime_file_name, "runtime.dat");
@@ -869,7 +875,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
         
         geometry[iMGlevel]->FindNormal_Neighbor(config);
         
-        /*--- Store our multigrid index. ---*/
+        /*--- Store our multi-grid index. ---*/
         
         geometry[iMGlevel]->SetMGLevel(iMGlevel);
         

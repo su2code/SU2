@@ -64,6 +64,7 @@ threads="1"
 
 namespace std {
    %template() vector<bool>;
+   %template() vector<unsigned short>;
    %template() vector<unsigned long>;
    %template() vector<vector<unsigned long>>;
    %template() vector<double>;
