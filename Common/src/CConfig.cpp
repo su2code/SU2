@@ -2896,9 +2896,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Sensors for mesh adaptation */
   addStringListOption("ADAP_SENSOR", nAdap_Sensor, Adap_Sensor);
 
-  /* DESCRIPTION: Weights for mesh adaptation sensors */
-  addDoubleListOption("ADAP_SENSOR_WEIGHTS", nAdap_Sensor_Weights, Adap_Sensor_Weights);
-
   /* DESCRIPTION: Lp-norm for mesh adaptation */
   addDoubleOption("ADAP_NORM", Adap_Norm, 1.0);
 
@@ -5366,20 +5363,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Checks for mesh adaptation ---*/
   if (Compute_Metric) {
     /*--- Check that sensor is valid ---*/
-    vector<string> Sensor_Avail{"GOAL", "MACH", "PRES"};
+    vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "ENERGY", "DENSITY"};
     for (auto iSensor = 0; iSensor < nAdap_Sensor; iSensor++) {
       if (find(begin(Sensor_Avail), end(Sensor_Avail), Adap_Sensor[iSensor]) != end(Sensor_Avail)) {
         /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
         if (Adap_Sensor[iSensor] == "GOAL") {
           if (nAdap_Sensor != 1)
             SU2_MPI::Error("Adaptation sensor GOAL cannot be used with other sensors.", CURRENT_FUNCTION);
-
-          /*--- Set weight to 1 ---*/
-          if (!OptionIsSet("ADAP_SENSOR_WEIGHTS")) {
-            Adap_Sensor_Weights = new su2double[1];
-          }
-          nAdap_Sensor_Weights = 1;
-          Adap_Sensor_Weights[0] = 1.0;
 
           if (!DiscreteAdjoint)
             SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
@@ -5389,10 +5379,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, or PRES."), CURRENT_FUNCTION);
       }
     }
-
-    /*--- Check that we have a weight for each sensor ---*/
-    if (nAdap_Sensor != nAdap_Sensor_Weights)
-      SU2_MPI::Error("Number of adaptation sensors must be equal to number of weights.", CURRENT_FUNCTION);
   }
 
 }

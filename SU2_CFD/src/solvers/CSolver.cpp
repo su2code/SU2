@@ -5044,22 +5044,13 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
     bool check_hess = true;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       if (EigVal[iDim] != EigVal[iDim] || fabs(EigVal[iDim]) < 1.0e-16) {
+        EigVal[iDim] = 1.0e-16;
         check_hess = false;
       }
+      EigVal[iDim] = fabs(EigVal[iDim]);
     }
 
-    if (check_hess){
-      for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
-      CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-    }
-    else {
-      for(auto iDim = 0; iDim < nDim; ++iDim) {
-        for (auto jDim = 0; jDim < nDim; ++jDim) {
-          A[iDim][jDim] = 0.0;
-        }
-        A[iDim][iDim] = 1.0e-16;
-      }
-    }
+    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- Store upper half of Hessian matrix
     base_nodes->SetHessianMat(iPoint, iVar, A, 1.0);
@@ -5081,7 +5072,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
 
   unsigned short nSensor = config->GetnAdap_Sensor();
 
-  //--- Compute weights for Hessians
+  //--- Compute hessian weights for goal-oriented metric
   vector<vector<double> > weights(3, vector<double>(nVarTot));
   for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
     for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
@@ -5109,15 +5100,15 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
       if (turb && goal) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
 
       //--- Add Hessians
-      SumWeightedHessians(solver, geometry, config, iPoint, iSensor, weights);
+      if (goal) SetMetric(solver, geometry, config, iPoint, weights);
     }
 
     //--- Apply correction to wall boundary
     // CorrectBoundMetric(geometry, config);
   }
 
+  //--- Compute Lp-normalization of the metric tensor field
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
-    //--- Compute Lp-normalization of the metric tensor field
     SU2_OMP_MASTER
     if (goal)
       NormalizeMetric<double, metric::goal>(geometry, config, iSensor);
@@ -5127,18 +5118,16 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
     SU2_OMP_BARRIER
   }
 
-  /*--- Add together feature-based ---*/
+  /*--- Intersect and store feature-based metrics ---*/
   if (!goal) {
     auto varFlo = solver[FLOW_SOL]->GetNodes();
     const unsigned short nMet = 3*(nDim-1);
-    for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
-      const double sensorWeight = SU2_TYPE::GetValue(config->GetAdap_Sensor_Weight(iSensor));
-      for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-        for (auto iMet = 0; iMet < nMet; ++iMet) {
-          const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iSensor, iMet));
-          varFlo->AddMetric(iPoint, iMet, sensorWeight*hess);
-        }
-      }
+    if (nSensor > 1) {
+      for (auto jSensor = 1u; jSensor < nSensor; ++jSensor)
+        IntersectMetrics(geometry, config, jSensor);
+    }
+    for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      SetMetric(solver, geometry, config, iPoint, weights);
     }
   }
 
@@ -5169,8 +5158,8 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
   }
 }
 
-void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
-                                  unsigned long iPoint, unsigned short iSensor, vector<vector<double> > &weights) {
+void CSolver::SetMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                                  unsigned long iPoint, vector<vector<double> > &weights) {
 
   auto varFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -5203,5 +5192,79 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
         }
       }
     }
+  }
+  else {
+    for (auto iMet = 0; iMet < nMet; ++iMet) {
+      const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, 0, iMet));
+      varFlo->SetMetric(iPoint, iMet, hess);
+    }
+  }
+}
+
+void CSolver::IntersectMetrics(const CGeometry *geometry, const CConfig *config, unsigned short jSensor) {
+  su2double A[MAXNDIM][MAXNDIM], B[MAXNDIM][MAXNDIM], Ainv[MAXNDIM][MAXNDIM], N[MAXNDIM][MAXNDIM];
+  su2double EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+  su2double d, dinv, l, m;
+  for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+    base_nodes->GetHessianMat(iPoint, 0, A);
+    base_nodes->GetHessianMat(iPoint, jSensor, B);
+
+    //--- N = (M1)^-1 * M2
+    switch( nDim ) {
+      case 2: {
+        d = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+        dinv = 1.0 / d;
+
+        Ainv[0][0] = A[1][1] * dinv;
+        Ainv[0][1] =-A[0][1] * dinv;
+        Ainv[1][0] =-A[1][0] * dinv;
+        Ainv[1][1] = A[0][0] * dinv;
+        break;
+      }
+      case 3: {
+        d = A[0][0] * (A[1][1] * A[2][2] - A[2][1] * A[1][2]) -
+            A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0]) +
+            A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+        dinv = 1.0 / d;
+
+        Ainv[0][0] = (A[1][1] * A[2][2] - A[2][1] * A[1][2]) * dinv;
+        Ainv[0][1] = (A[0][2] * A[2][1] - A[0][1] * A[2][2]) * dinv;
+        Ainv[0][2] = (A[0][1] * A[1][2] - A[0][2] * A[1][1]) * dinv;
+        Ainv[1][0] = (A[1][2] * A[2][0] - A[1][0] * A[2][2]) * dinv;
+        Ainv[1][1] = (A[0][0] * A[2][2] - A[0][2] * A[2][0]) * dinv;
+        Ainv[1][2] = (A[1][0] * A[0][2] - A[0][0] * A[1][2]) * dinv;
+        Ainv[2][0] = (A[1][0] * A[2][1] - A[2][0] * A[1][1]) * dinv;
+        Ainv[2][1] = (A[2][0] * A[0][1] - A[0][0] * A[2][1]) * dinv;
+        Ainv[2][2] = (A[0][0] * A[1][1] - A[1][0] * A[0][1]) * dinv;
+        break;
+      }
+    }
+
+    for (auto i = 0; i < nDim; i++) {
+      for (auto j = 0; j < nDim; j++) {
+        N[i][j] = 0.0;
+        for (auto p = 0; p < nDim; p++) {
+          N[i][j] += Ainv[i][p] * B[p][j];
+        }
+      }
+    }
+
+    //--- Lambda = R * M1 * R^T, Mu = R * M2 * R^T, R = (r1 | r2 | r3)
+    //--- intersect(M1, M2) = R^T * diag(max(l1,m1), max(l2,m2), max(l3,m3)) * R
+    //--- Compute diag(max(li, mi))
+    CBlasStructure::EigenDecomposition(N, EigVec, EigVal, nDim, work);
+    for (auto p = 0; p < nDim; p++) {
+      l = 0.0;
+      m = 0.0;
+      for (auto i = 0; i < nDim; i++) {
+        for (auto j = 0; j < nDim; j++) {
+          l += EigVec[p][i] * A[i][j] * EigVec[p][j];
+          m += EigVec[p][i] * B[i][j] * EigVec[p][j];
+        }
+      }
+      EigVal[p] = max(l, m);
+    }
+    CBlasStructure::EigenRecomposition(N, EigVec, EigVal, nDim);
+    base_nodes->SetHessianMat(iPoint, 0, N, 1.0);
   }
 }

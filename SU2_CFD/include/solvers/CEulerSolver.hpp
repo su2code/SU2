@@ -278,11 +278,23 @@ protected:
     else {
       //--- store mach and/or pressure in aux vector
       const auto nAdapSensor = config->GetnAdap_Sensor();
+      su2double aux = 0.0;
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
         for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
-          su2double aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
-          if (config->GetAdap_Sensor(iSensor) == "PRES") {
+          if (config->GetAdap_Sensor(iSensor) == "MACH") {
+            aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "PRESSURE") {
             aux = nodes->GetPressure(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE") {
+            aux = nodes->GetTemperature(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "ENERGY") {
+            aux = nodes->GetEnergy(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "DENSITY") {
+            aux = nodes->GetDensity(iPoint);
           }
           nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
         }

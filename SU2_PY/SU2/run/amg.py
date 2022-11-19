@@ -75,7 +75,7 @@ def amg(config):
     flow_cfl  = su2amg.get_flow_cfl(config)
 
     adap_sensors = su2amg.get_adap_sensors(config)
-    sensor_avail = ['MACH', 'PRES', 'GOAL']
+    sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'ENERGY', 'DENSITY']
 
     for sensor in adap_sensors:
         if sensor not in sensor_avail:

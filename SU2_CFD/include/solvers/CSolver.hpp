@@ -4463,8 +4463,8 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void SumWeightedHessians(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                           unsigned long iPoint, unsigned short iSensor, vector<vector<double> > &weights);
+  void SetMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                 unsigned long iPoint, vector<vector<double> > &weights);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric.
@@ -4558,6 +4558,8 @@ public:
       cout << "Mesh complexity: " << globalTotComplex << "." << endl;
     }
   }
+
+  void IntersectMetrics(const CGeometry *geometry, const CConfig *config, unsigned short jSensor);
 
 protected:
   /*!

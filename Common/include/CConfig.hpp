@@ -1193,10 +1193,8 @@ private:
   /*--- Mesh adaptation options ---*/
   bool Compute_Metric;            /*!< \brief Determines if error estimation is taking place */
   unsigned short Kind_Hessian_Method;  /*!< \brief Numerical method for computation of Hessians. */
-  unsigned short nAdap_Sensor,         /*!< \brief Number of sensors to use for adaptation. */
-                 nAdap_Sensor_Weights; /*!< \brief Number of sensor weights to use for adaptation (should equal nAdap_Sensor). */
+  unsigned short nAdap_Sensor;         /*!< \brief Number of sensors to use for adaptation. */
   string *Adap_Sensor;                 /*!< \brief Sensors to use for adaptation. */
-  su2double *Adap_Sensor_Weights;      /*!< \brief Weights of sensors for adaptation. */
   su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
             Adap_Hmax,                 /*!< \brief Maximum cell size */
             Adap_Hmin,                 /*!< \brief Minimum cell size */
@@ -9755,11 +9753,6 @@ public:
    * \brief Get number of adaptation sensors
    */
   unsigned short GetnAdap_Sensor(void) const { return nAdap_Sensor; }
-
-  /*!
-   * \brief Get adaptation sensor
-   */
-  su2double GetAdap_Sensor_Weight(unsigned short iSens) const { return Adap_Sensor_Weights[iSens]; }
 
   /*!
    * \brief Get adaptation norm value (Lp)
