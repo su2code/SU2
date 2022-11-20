@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -848,6 +849,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -1927,6 +1929,12 @@ public:
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
@@ -2563,6 +2571,12 @@ public:
    * \param[in] val_omega_freestream - Value of the freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
+
+  /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
 
   /*!
    * \brief Set the non-dimensional freestream energy.
@@ -3738,6 +3752,11 @@ public:
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+
+  /*!
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.

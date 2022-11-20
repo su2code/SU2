@@ -1,7 +1,7 @@
 /*!
  * \file CTransLMVariable.cpp
  * \brief Definition of the solution fields.
- * \author A. Aranake
+ * \author A. Aranake, S. Kang
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,18 +28,30 @@
 
 #include "../../include/variables/CTransLMVariable.hpp"
 
-
-CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim,
-                                   unsigned long nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
+CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) 
+  : CTurbVariable(npoint, ndim, nvar, config) {
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
-    Solution_Old(iPoint,0) = Solution(iPoint,0) = intermittency;
-    Solution_Old(iPoint,1) = Solution(iPoint,1) = REth;
+    Solution(iPoint,0) = Intermittency;
+    Solution(iPoint,1) = ReThetaT;
   }
 
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
+  Solution_Old = Solution;
 
-  gamma_sep.resize(nPoint);
+  /*--- Setting CTransLMVariable of intermittency_Eff---*/
+  Intermittency_Eff.resize(nPoint) = gammaEff;
+  Intermittency_Sep.resize(nPoint) = gammaSep;
+  
+}
+
+void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) {
+
+  /*--- Effective intermittency ---*/
+  Intermittency_Eff(iPoint) = max(Solution(iPoint,0), val_Intermittency_sep);
+
+}
+
+void CTransLMVariable::SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {
+  Intermittency_Sep(iPoint) = val_Intermittency_sep;
 }
