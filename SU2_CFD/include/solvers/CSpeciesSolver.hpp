@@ -179,7 +179,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     BC_Fluid_Interface_impl(
       [&](unsigned long iPoint) {
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
-        //visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
       },
       geometry, solver_container, conv_numerics, visc_numerics, config);
   }
