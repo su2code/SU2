@@ -542,69 +542,54 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   bool UpdateMesh = false;
 
-  int donorSolver = -1, targetSolver = -1;
-
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
 
-  switch(interface_types[donorZone][targetZone]) {
+  auto BroadcastData = [&](int donorSol, int targetSol) {
+    interface_container[donorZone][targetZone]->BroadcastData(
+      *interpolator_container[donorZone][targetZone].get(),
+      solver_container[donorZone][INST_0][MESH_0][donorSol],
+      solver_container[targetZone][INST_0][MESH_0][targetSol],
+      geometry_container[donorZone][INST_0][MESH_0],
+      geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone],
+      config_container[targetZone]);
+  };
+
+  switch (interface_types[donorZone][targetZone]) {
 
     case SLIDING_INTERFACE:
-    {
-      donorSolver  = FLOW_SOL;
-      targetSolver = FLOW_SOL;
+      BroadcastData(FLOW_SOL, FLOW_SOL);
 
       /*--- Additional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
-          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS)
-      {
-        interface_container[donorZone][targetZone]->BroadcastData(
-          *interpolator_container[donorZone][targetZone].get(),
-          solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
-          solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-          geometry_container[donorZone][INST_0][MESH_0],
-          geometry_container[targetZone][INST_0][MESH_0],
-          config_container[donorZone],
-          config_container[targetZone]);
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
+        BroadcastData(TURB_SOL, TURB_SOL);
+      }
+
+      /*--- Additional transfer for species variables. ---*/
+      if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        BroadcastData(SPECIES_SOL, SPECIES_SOL);
       }
       break;
-    }
     case CONJUGATE_HEAT_FS:
-    {
-      donorSolver  = FLOW_SOL;
-      targetSolver = HEAT_SOL;
+      BroadcastData(FLOW_SOL, HEAT_SOL);
       break;
-    }
     case CONJUGATE_HEAT_WEAKLY_FS:
-    {
-      donorSolver  = HEAT_SOL;
-      targetSolver = HEAT_SOL;
+      BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
-    }
     case CONJUGATE_HEAT_SF:
-    {
-      donorSolver  = HEAT_SOL;
-      targetSolver = FLOW_SOL;
+      BroadcastData(HEAT_SOL, FLOW_SOL);
       break;
-    }
     case CONJUGATE_HEAT_WEAKLY_SF:
-    {
-      donorSolver  = HEAT_SOL;
-      targetSolver = HEAT_SOL;
+      BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
-    }
     case BOUNDARY_DISPLACEMENTS:
-    {
-      donorSolver  = FEA_SOL;
-      targetSolver = MESH_SOL;
+      BroadcastData(FEA_SOL, MESH_SOL);
       UpdateMesh = true;
       break;
-    }
     case FLOW_TRACTION:
-    {
-      donorSolver  = FLOW_SOL;
-      targetSolver = FEA_SOL;
+      BroadcastData(FLOW_SOL, FEA_SOL);
       break;
-    }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
@@ -614,17 +599,6 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
         cout << "WARNING: One of the intended interface transfer routines is not "
              << "known to the chosen driver and has not been executed." << endl;
       break;
-  }
-
-  if(donorSolver >= 0 && targetSolver >= 0) {
-    interface_container[donorZone][targetZone]->BroadcastData(
-      *interpolator_container[donorZone][targetZone].get(),
-      solver_container[donorZone][INST_0][MESH_0][donorSolver],
-      solver_container[targetZone][INST_0][MESH_0][targetSolver],
-      geometry_container[donorZone][INST_0][MESH_0],
-      geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone],
-      config_container[targetZone]);
   }
 
   return UpdateMesh;
