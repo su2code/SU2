@@ -848,7 +848,7 @@ void CConfig::SetPointersNull(void) {
 
   Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
   Marker_SymWall              = nullptr;    Marker_PerBound             = nullptr;
-  Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;
+  Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;    Marker_Inlet_Turb          = nullptr;
   Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr;    Marker_Fluid_Load          = nullptr;
   Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;    Marker_Inlet_Species       = nullptr;
   Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet    = nullptr;    Marker_Smoluchowski_Maxwell= nullptr;
@@ -875,7 +875,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
-  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    //Inlet_TurbVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -1519,7 +1519,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
    Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
    ViscosityRatio2, ...) */
-  addInletTurbOption("MARKER_INLET_TURBULENT", nMarker_Inlet_Turb, Marker_Inlet_Turb, Turb_PropertiesVal, nTurb_Properties);
+  addInletTurbOption("MARKER_INLET_TURBULENT", nMarker_Inlet_Turb, Marker_Inlet_Turb, Inlet_TurbVal, nTurb_Properties);
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -5357,6 +5357,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       nTurbVar = 2; break;
   }
 
+  /* if Turbulent Inlet is not provided, marker inlet for turbulent will be filled with the turbulent properties
+   provided in the .cfg file in order to recover default implementation in SU2*/
+
+  if (Marker_Inlet_Turb == nullptr && Kind_Turb_Model != TURB_MODEL::NONE) {
+    Marker_Inlet_Turb = Marker_Inlet;
+    nMarker_Inlet_Turb = nMarker_Inlet;
+    Inlet_TurbVal = new su2double*[nMarker_Inlet_Turb];
+    for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Turb; iMarker++) {
+      Inlet_TurbVal[iMarker] = new su2double[nTurb_Properties]();
+      Inlet_TurbVal[iMarker][0] = TurbulenceIntensity_FreeStream;
+    }
+  }
+
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
@@ -8807,6 +8820,13 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
+}
+
+const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
+  unsigned short iMarker_Inlet_Turb;
+  for (iMarker_Inlet_Turb = 0; iMarker_Inlet_Turb < nMarker_Inlet_Turb; iMarker_Inlet_Turb++)
+    if (Marker_Inlet_Turb[iMarker_Inlet_Turb] == val_marker) break;
+  return Inlet_TurbVal[iMarker_Inlet_Turb];
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

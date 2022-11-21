@@ -286,7 +286,7 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
-  su2double **Turb_PropertiesVal;            /*!< \brief Specified turbulent intensity for inlet boundaries. */
+  su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;                /*!< \brief Specified fan face pressure for nacelle boundaries. */
@@ -6655,6 +6655,13 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(string val_index) const;
+
+  /*!
+   * \brief Get the turbulent properties values at an inlet boundary
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet turbulent values.
+   */
+  const su2double* GetInlet_TurbVal(string val_index) const;
 
   /*!
    * \brief Get the total pressure at an nacelle boundary.
