@@ -1271,9 +1271,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
           numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
         
         /*--- Define bounded turbulent scalar problem ---*/
-        if(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR){
-          numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(true);
-        }else numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(false);
+        numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR);
       }
       break;
     default:
@@ -1327,10 +1325,8 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
                                                                                     config);
     }
 
-    if(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR){
-        numerics[iMGlevel][TURB_SOL][conv_bound_term]->SetBoundedScalar(true);
-      }else numerics[iMGlevel][TURB_SOL][conv_bound_term]->SetBoundedScalar(false);
-    }
+    numerics[iMGlevel][TURB_SOL][conv_term]->SetBoundedScalar(config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR);
+  }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(

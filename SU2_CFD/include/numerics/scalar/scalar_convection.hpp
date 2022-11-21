@@ -134,10 +134,10 @@ class CUpwScalar : public CNumerics {
       }
     }
     
-    if(bounded_scalar){
+    if (bounded_scalar) {
       a0 = max(0.0, MassFlux) / V_i[idx.Density()];
       a1 = min(0.0, MassFlux) / V_j[idx.Density()];
-    }else{
+    } else {
       a0 = 0.5 * (q_ij + fabs(q_ij));
       a1 = 0.5 * (q_ij - fabs(q_ij));
     }

@@ -119,7 +119,6 @@ template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
-
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -180,6 +179,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
       numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
       /*--- Primitive variables w/o reconstruction ---*/
 
       const auto V_i = flowNodes->GetPrimitive(iPoint);
