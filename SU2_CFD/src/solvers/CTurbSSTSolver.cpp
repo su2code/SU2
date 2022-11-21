@@ -253,7 +253,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetViscous_Wall(config->GetMarker_All_KindBC(iMarker))) {
+      if (config->GetViscous_Wall(iMarker)) {
           SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
           for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
