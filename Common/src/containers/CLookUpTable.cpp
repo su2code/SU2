@@ -31,14 +31,14 @@
 
 using namespace std;
 
-CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_prog, const string& name_enth) {
+CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x, const string& name_y) {
   file_name_lut = var_file_name_lut;
 
   rank = SU2_MPI::GetRank();
 
   LoadTableRaw(var_file_name_lut);
 
-  FindTableLimits(name_prog, name_enth);
+  FindTableLimits(name_x, name_y);
 
   if (rank == MASTER_NODE)
     cout << "Detecting all unique edges and setting edge to triangle connectivity "
@@ -53,11 +53,11 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
   PrintTableInfo();
 
   if (rank == MASTER_NODE)
-    cout << "Building a trapezoidal map for the (progress variable, enthalpy) "
+    cout << "Building a trapezoidal map for the (x, y) "
             "space ..."
          << endl;
 
-  trap_map_prog_enth = CTrapezoidalMap(GetDataP(name_prog), GetDataP(name_enth), table_data.cols(), edges, edge_to_triangle);
+  trap_map_x_y = CTrapezoidalMap(GetDataP(name_x), GetDataP(name_y), table_data.cols(), edges, edge_to_triangle);
 
   if (rank == MASTER_NODE) 
     cout << " done." << endl;
@@ -66,7 +66,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
     cout << "Precomputing interpolation coefficients..." << endl;
   
 
-  ComputeInterpCoeffs(name_prog, name_enth);
+  ComputeInterpCoeffs(name_x, name_y);
 
   if (rank == MASTER_NODE) 
     cout << "LUT fluid model ready for use" << endl;
@@ -95,15 +95,15 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
     cout << " done." << endl;
 }
 
-void CLookUpTable::FindTableLimits(const string& name_prog, const string& name_enth) {
-  int ixEnth = GetIndexOfVar(name_enth);
-  int ixProg = GetIndexOfVar(name_prog);
+void CLookUpTable::FindTableLimits(const string& name_x, const string& name_y) {
+  int ixy = GetIndexOfVar(name_y);
+  int ixx = GetIndexOfVar(name_x);
 
-  /* we find the lowest and highest value of enthalpy and progress variable in the table */
-  limits_table_enth[0] = *min_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
-  limits_table_enth[1] = *max_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
-  limits_table_prog[0] = *min_element(&table_data[ixProg][0], &table_data[ixProg][0]+table_data.cols());
-  limits_table_prog[1] = *max_element(&table_data[ixProg][0], &table_data[ixProg][0]+table_data.cols());
+  /* we find the lowest and highest value of y and x in the table */
+  limits_table_y[0] = *min_element(&table_data[ixy][0], &table_data[ixy][0]+table_data.cols());
+  limits_table_y[1] = *max_element(&table_data[ixy][0], &table_data[ixy][0]+table_data.cols());
+  limits_table_x[0] = *min_element(&table_data[ixx][0], &table_data[ixx][0]+table_data.cols());
+  limits_table_x[1] = *max_element(&table_data[ixx][0], &table_data[ixx][0]+table_data.cols());
 
 }
 
@@ -122,10 +122,10 @@ void CLookUpTable::PrintTableInfo() {
     cout << "| Number of triangles:" << setw(44) << right << n_triangles << " |" << endl;
     cout << "| Number of edges:" << setw(48) << right << edges.size() << " |" << endl;
     cout << "+------------------------------------------------------------------+" << endl;
-    cout << "| Minimum enthalpy:" << setw(47) << right << limits_table_enth[0] << " |" << endl;
-    cout << "| Maximum enthalpy:" << setw(47) << right << limits_table_enth[1] << " |" << endl;
-    cout << "| Minimum progress variable:" << setw(38) << right << limits_table_prog[0] << " |" << endl;
-    cout << "| Maximum progress variable:" << setw(38) << right << limits_table_prog[1] << " |" << endl;
+    cout << "| Minimum y:" << setw(47) << right << limits_table_y[0] << " |" << endl;
+    cout << "| Maximum y:" << setw(47) << right << limits_table_y[1] << " |" << endl;
+    cout << "| Minimum x:" << setw(38) << right << limits_table_x[0] << " |" << endl;
+    cout << "| Maximum x:" << setw(38) << right << limits_table_x[1] << " |" << endl;
     cout << "+------------------------------------------------------------------+" << endl;
     cout << "| Variable names:                                                  |" << endl;
     cout << "|                                                                  |" << endl;
@@ -243,13 +243,13 @@ void CLookUpTable::IdentifyUniqueEdges() {
   }
 }
 
-void CLookUpTable::ComputeInterpCoeffs(const string& name_prog, const string& name_enth) {
-  /* build KD tree for enthalpy, progress variable space */
+void CLookUpTable::ComputeInterpCoeffs(const string& name_x, const string& name_y) {
+  /* build KD tree for y, x space */
 
   std::array<unsigned long, 3> next_triangle;
 
-  const su2double* prog = GetDataP(name_prog);
-  const su2double* enth = GetDataP(name_enth);
+  const su2double* x = GetDataP(name_x);
+  const su2double* y = GetDataP(name_y);
 
   /* calculate weights for each triangle (basically a distance function) and
    * build inverse interpolation matrices */
@@ -259,9 +259,9 @@ void CLookUpTable::ComputeInterpCoeffs(const string& name_prog, const string& na
       next_triangle[p] = triangles[i_triangle][p];
     }
 
-    su2activematrix prog_interp_mat_inv(3, 3);
-    GetInterpMatInv(prog, enth, next_triangle, prog_interp_mat_inv);
-    interp_mat_inv_prog_enth.push_back(prog_interp_mat_inv);
+    su2activematrix x_interp_mat_inv(3, 3);
+    GetInterpMatInv(x, y, next_triangle, x_interp_mat_inv);
+    interp_mat_inv_x_y.push_back(x_interp_mat_inv);
   }
 }
 
@@ -291,8 +291,8 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2double *val_var, su2double val_prog,
-                                            su2double val_enth, const string& name_prog, const string& name_enth) {
+unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val_var, su2double val_x,
+                                            su2double val_y, const string& name_x, const string& name_y) {
   unsigned long exit_code = 0;
 
   if (val_name_var.compare("NULL") == 0) {
@@ -301,17 +301,17 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
     return exit_code;
   }
 
-  /* check if progress variable and enthalpy value is in table range */
-  if ((val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) &&
-      (val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1])){
+  /* check if x and y value is in table range */
+  if ((val_x >= limits_table_x[0] && val_x <= limits_table_x[1]) &&
+      (val_y >= limits_table_y[0] && val_y <= limits_table_y[1])){
 
-    /* find the triangle that holds the (prog, enth) point */
-    unsigned long id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
+    /* find the triangle that holds the (x, y) point */
+    unsigned long id_triangle = trap_map_x_y.GetTriangle(val_x, val_y);
 
-    if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
+    if (IsInTriangle(val_x, val_y, id_triangle, name_x, name_y)) {
       /* get interpolation coefficients for point on triangle */
       std::array<su2double,3> interp_coeffs{0};
-      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
+      GetInterpCoeffs(val_x, val_y, interp_mat_inv_x_y[id_triangle], interp_coeffs);
 
       /* first, copy the single triangle from the large triangle list*/
       std::array<unsigned long,3> triangle{0};
@@ -322,67 +322,67 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
-      unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
+      unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_x, val_y, name_x, name_y);
       *val_var = GetDataP(val_name_var)[nearest_neighbor];
       exit_code = 1;
     }
   } else {
     /* lookup is outside of table bounding box */
-    unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
+    unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_x, val_y, name_x, name_y);
     *val_var = GetDataP(val_name_var)[nearest_neighbor];
     exit_code = 1;
   }
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var, vector<su2double>& val_vars,
-                                            su2double val_prog, su2double val_enth, const string& name_prog,
-                                            const string& name_enth) {
+unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
+                                            su2double val_x, su2double val_y, const string& name_x,
+                                            const string& name_y) {
   vector<su2double*> look_up_data;
 
   for (long unsigned int i_var = 0; i_var < val_vars.size(); ++i_var) {
     look_up_data.push_back(&val_vars[i_var]);
   }
 
-  unsigned long exit_code = LookUp_ProgEnth(val_names_var, look_up_data, val_prog, val_enth, name_prog, name_enth);
+  unsigned long exit_code = LookUp_XY(val_names_var, look_up_data, val_x, val_y, name_x, name_y);
 
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var, vector<su2double*>& val_vars,
-                                            su2double val_prog, su2double val_enth, const string& name_prog,
-                                            const string& name_enth) {
+unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
+                                            su2double val_x, su2double val_y, const string& name_x,
+                                            const string& name_y) {
   unsigned long exit_code = 0;
   unsigned long nearest_neighbor = 0;
   unsigned long id_triangle;
   std::array<su2double,3> interp_coeffs{0};
   std::array<unsigned long,3> triangle{0};
 
-  /* check if progress variable value is in progress variable table range
-   * and if enthalpy is in enthalpy table range */
-  if (val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1] && val_enth >= limits_table_enth[0] &&
-      val_enth <= limits_table_enth[1]) {
-    /* if so, try to find the triangle that holds the (prog, enth) point */
-    id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
+  /* check if x value is in x table range
+   * and if y is in y table range */
+  if (val_x >= limits_table_x[0] && val_x <= limits_table_x[1] && val_y >= limits_table_y[0] &&
+      val_y <= limits_table_y[1]) {
+    /* if so, try to find the triangle that holds the (x, y) point */
+    id_triangle = trap_map_x_y.GetTriangle(val_x, val_y);
 
     /* check if point is inside a triangle (if table domain is non-rectangular,
      * the previous range check might be true but the point could still be outside of the domain) */
-    if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
+    if (IsInTriangle(val_x, val_y, id_triangle, name_x, name_y)) {
       /* if so, get interpolation coefficients for point in  the triangle */
-      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
+      GetInterpCoeffs(val_x, val_y, interp_mat_inv_x_y[id_triangle], interp_coeffs);
 
       /* exit_code 0 means point was in triangle */
       exit_code = 0;
 
     } else {
       /* if point is not inside a triangle (outside table domain) search nearest neighbor */
-      nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
+      nearest_neighbor = FindNearestNeighborOnHull(val_x, val_y, name_x, name_y);
       exit_code = 1;
     }
 
   } else {
     /* if point is outside of table ranges, find nearest neighbor */
-    nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
+    nearest_neighbor = FindNearestNeighborOnHull(val_x, val_y, name_x, name_y);
     exit_code = 1;
   }
 
@@ -433,27 +433,27 @@ su2double CLookUpTable::Interpolate(const su2double* val_samples, std::array<uns
   return result;
 }
 
-unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2double val_enth, const string& name_prog,
-                                                      const string& name_enth) {
+unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_x, su2double val_y, const string& name_x,
+                                                      const string& name_y) {
   su2double min_distance = 1.e99;
   su2double next_distance = 1.e99;
-  su2double next_prog_norm;
-  su2double next_enth_norm;
+  su2double next_x_norm;
+  su2double next_y_norm;
   unsigned long neighbor_id = 0;
 
-  const su2double* prog_table = GetDataP(name_prog);
-  const su2double* enth_table = GetDataP(name_enth);
+  const su2double* x_table = GetDataP(name_x);
+  const su2double* y_table = GetDataP(name_y);
 
-  su2double norm_coeff_prog = 1. / (limits_table_prog[1] - limits_table_prog[0]);
-  su2double norm_coeff_enth = 1. / (limits_table_enth[1] - limits_table_enth[0]);
-  su2double val_prog_norm = val_prog / (limits_table_prog[1] - limits_table_prog[0]);
-  su2double val_enth_norm = val_enth / (limits_table_enth[1] - limits_table_enth[0]);
+  su2double norm_coeff_x = 1. / (limits_table_x[1] - limits_table_x[0]);
+  su2double norm_coeff_y = 1. / (limits_table_y[1] - limits_table_y[0]);
+  su2double val_x_norm = val_x / (limits_table_x[1] - limits_table_x[0]);
+  su2double val_y_norm = val_y / (limits_table_y[1] - limits_table_y[0]);
 
   for (unsigned long i_point = 0; i_point < n_hull_points; ++i_point) {
-    next_prog_norm = prog_table[hull[i_point]] * norm_coeff_prog;
-    next_enth_norm = enth_table[hull[i_point]] * norm_coeff_enth;
+    next_x_norm = x_table[hull[i_point]] * norm_coeff_x;
+    next_y_norm = y_table[hull[i_point]] * norm_coeff_y;
 
-    next_distance = sqrt(pow(val_prog_norm - next_prog_norm, 2) + pow(val_enth_norm - next_enth_norm, 2));
+    next_distance = sqrt(pow(val_x_norm - next_x_norm, 2) + pow(val_y_norm - next_y_norm, 2));
 
     if (next_distance < min_distance) {
       min_distance = next_distance;
@@ -463,22 +463,22 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
   return neighbor_id;
 }
 
-bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned long val_id_triangle, const string& name_prog,
-                                const string& name_enth) {
-  su2double tri_prog_0 = GetDataP(name_prog)[triangles[val_id_triangle][0]];
-  su2double tri_enth_0 = GetDataP(name_enth)[triangles[val_id_triangle][0]];
+bool CLookUpTable::IsInTriangle(su2double val_x, su2double val_y, unsigned long val_id_triangle, const string& name_x,
+                                const string& name_y) {
+  su2double tri_x_0 = GetDataP(name_x)[triangles[val_id_triangle][0]];
+  su2double tri_y_0 = GetDataP(name_y)[triangles[val_id_triangle][0]];
 
-  su2double tri_prog_1 = GetDataP(name_prog)[triangles[val_id_triangle][1]];
-  su2double tri_enth_1 = GetDataP(name_enth)[triangles[val_id_triangle][1]];
+  su2double tri_x_1 = GetDataP(name_x)[triangles[val_id_triangle][1]];
+  su2double tri_y_1 = GetDataP(name_y)[triangles[val_id_triangle][1]];
   
-  su2double tri_prog_2 = GetDataP(name_prog)[triangles[val_id_triangle][2]];
-  su2double tri_enth_2 = GetDataP(name_enth)[triangles[val_id_triangle][2]];
+  su2double tri_x_2 = GetDataP(name_x)[triangles[val_id_triangle][2]];
+  su2double tri_y_2 = GetDataP(name_y)[triangles[val_id_triangle][2]];
 
-  su2double area_tri = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
+  su2double area_tri = TriArea(tri_x_0, tri_y_0, tri_x_1, tri_y_1, tri_x_2, tri_y_2);
 
-  su2double area_0 = TriArea(val_prog, val_enth, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
-  su2double area_1 = TriArea(tri_prog_0, tri_enth_0, val_prog, val_enth, tri_prog_2, tri_enth_2);
-  su2double area_2 = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, val_prog, val_enth);
+  su2double area_0 = TriArea(val_x, val_y, tri_x_1, tri_y_1, tri_x_2, tri_y_2);
+  su2double area_1 = TriArea(tri_x_0, tri_y_0, val_x, val_y, tri_x_2, tri_y_2);
+  su2double area_2 = TriArea(tri_x_0, tri_y_0, tri_x_1, tri_y_1, val_x, val_y);
 
   return (abs(area_tri - (area_0 + area_1 + area_2)) < area_tri * 1e-10);
 }
