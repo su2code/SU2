@@ -30,6 +30,8 @@
 
 #include "CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
+
 /*!
  * \class CDataDrivenFluid
  * \brief Template class for fluid model definition using multi-layer perceptrons for 
@@ -39,26 +41,35 @@
 class CDataDrivenFluid : public CFluidModel {
  protected:
 
-  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;
-  size_t idx_rho,
-         idx_e;
+  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;       // Interpolation method for data set evaluation
 
-  su2double Newton_Relaxation,
-            rho_start,
-            e_start;
+  size_t idx_rho,    // Interpolator index for density input
+         idx_e;      // Interpolator index for energy input
 
-  string input_filename;
+  su2double Newton_Relaxation,     // Relaxation factor for Newton solvers.
+            rho_start,             // Initial value for the density in Newton solver processes.
+            e_start;               // Initial value for the energy in Newton solver processes.
 
-  vector<string> input_names_rhoe,
-                 output_names_rhoe;
-
-  vector<su2double*> outputs_rhoe;
-
-  MLPToolbox::CLookUp_ANN * lookup_mlp;
-  MLPToolbox::CIOMap * iomap_rhoe;
-  vector<su2double> MLP_inputs;
-
+  string input_filename;    // Data-driven method input file name.
   
+  su2double dsde_rho, dsdrho_e, d2sde2, d2sdedrho, d2sdrho2;
+  
+  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
+  su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
+  su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
+  
+  vector<string> input_names_rhoe,        // Data-driven method input variable names of the independent variables (density, energy).
+                 output_names_rhoe;       // Output variable names listed in the data-driven method input file name.
+
+  vector<su2double*> outputs_rhoe;        // Pointers to output variables.
+
+  /*--- Class variables for the multi-layer perceptron method ---*/
+  MLPToolbox::CLookUp_ANN * lookup_mlp;   // multi-layer perceptron collection.
+  MLPToolbox::CIOMap * iomap_rhoe;        // input-output map.
+  vector<su2double> MLP_inputs;           // inputs for the multi-layer perceptron look-up operation.
+
+  /*--- Class variables for the look-up table method ---*/
+  CLookUpTable *lookup_table;
 
   void MapInputs_to_Outputs();
 
@@ -71,29 +82,49 @@ class CDataDrivenFluid : public CFluidModel {
   ~CDataDrivenFluid();
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
-   * \param[in] rho - first thermodynamic variable.
-   * \param[in] e - second thermodynamic variable.
+   * \param[in] rho - first thermodynamic variable (density).
+   * \param[in] e - second thermodynamic variable (static energy).
    */
   void SetTDState_rhoe(su2double rho, su2double e) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure  and Temperature
-   * \param[in] P - first thermodynamic variable.
-   * \param[in] T - second thermodynamic variable.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] T - second thermodynamic variable (temperature).
    */
   void SetTDState_PT(su2double P, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
-   * \param[in] P - first thermodynamic variable.
-   * \param[in] rho - second thermodynamic variable.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] rho - second thermodynamic variable (density).
    */
   void SetTDState_Prho(su2double P, su2double rho) override;
 
   /*!
    * \brief Set the Dimensionless Internal Energy using Pressure and Density
-   * \param[in] P - first thermodynamic variable.
-   * \param[in] rho - second thermodynamic variable.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] rho - second thermodynamic variable (density).
    */
   void SetEnergy_Prho(su2double P, su2double rho) override;
+
+  /*!
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density
+   * \param[in] rho - second thermodynamic variable (density).
+   */
+  void SetTDState_rhoT(su2double rho, su2double T) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy and Entropy
+   * \param[in] h - first thermodynamic variable (h).
+   * \param[in] s - second thermodynamic variable (s).
+   */
+  void SetTDState_hs(su2double h, su2double s) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Entropy
+   * \param[in] P - first thermodynamic variable (P).
+   * \param[in] s - second thermodynamic variable (s).
+   */
+  void SetTDState_Ps(su2double P, su2double s) override;
 };

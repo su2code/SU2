@@ -44,6 +44,9 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   case ENUM_DATADRIVEN_METHOD::MLP:
     lookup_mlp = new MLPToolbox::CLookUp_ANN(input_filename);
     break;
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    lookup_table = new CLookUpTable(input_filename, "Density", "Energy");
+    break;
   default:
     break;
   }
@@ -66,7 +69,9 @@ CDataDrivenFluid::~CDataDrivenFluid(){
     delete iomap_rhoe;
     delete lookup_mlp;
     break;
-  
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    delete lookup_table;
+    break;
   default:
     break;
   }
@@ -80,23 +85,19 @@ void CDataDrivenFluid::MapInputs_to_Outputs(){
   input_names_rhoe.push_back("Energy");
   idx_e = 1;
 
-  /*--- Required outputs for the interpolation method are primary and secondary thermodynamic variables. ---*/
-  output_names_rhoe.push_back("Temperature");
-  outputs_rhoe.push_back(&Temperature);
-  output_names_rhoe.push_back("Pressure");
-  outputs_rhoe.push_back(&Pressure);
-  output_names_rhoe.push_back("SoundSpeed2");
-  outputs_rhoe.push_back(&SoundSpeed2);
-  output_names_rhoe.push_back("dPdrho_e");
-  outputs_rhoe.push_back(&dPdrho_e);
-  output_names_rhoe.push_back("dPde_rho");
-  outputs_rhoe.push_back(&dPde_rho);
-  output_names_rhoe.push_back("dTdrho_e");
-  outputs_rhoe.push_back(&dTdrho_e);
-  output_names_rhoe.push_back("dTde_rho");
-  outputs_rhoe.push_back(&dTde_rho);
-  output_names_rhoe.push_back("Entropy");
+  /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and density ---*/
+  output_names_rhoe.push_back("s");
   outputs_rhoe.push_back(&Entropy);
+  output_names_rhoe.push_back("dsde_rho");
+  outputs_rhoe.push_back(&dsde_rho);
+  output_names_rhoe.push_back("dsdrho_e");
+  outputs_rhoe.push_back(&dsdrho_e);
+  output_names_rhoe.push_back("d2sde2");
+  outputs_rhoe.push_back(&d2sde2);
+  output_names_rhoe.push_back("d2sdedrho");
+  outputs_rhoe.push_back(&d2sdedrho);
+  output_names_rhoe.push_back("d2sdrho2");
+  outputs_rhoe.push_back(&d2sdrho2);
 
   /*--- Further preprocessing of input and output variables ---*/
   switch (Kind_DataDriven_Method)
@@ -125,15 +126,37 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
     /* --- Evaluate MLP --- */
     lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
     break;
-  
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    lookup_table->LookUp_ProgEnth(output_names_rhoe, outputs_rhoe, rho, e, "Density", "Energy");
   default:
     break;
   }
 
+  su2double blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
+  su2double green_term = (- pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
+  
+  SoundSpeed2 = - rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
+
+  Temperature = 1.0 / dsde_rho;
+  Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
+  Density = rho;
+  StaticEnergy = e;
+  
+  dTde_rho = -pow(dsde_rho, -2)*d2sde2;
+  dTdrho_e = 0.0;
+
+  dPde_rho = -pow(rho, 2) * dTde_rho * dsdrho_e;
+  dPdrho_e = -2*rho*Temperature*dsdrho_e - pow(rho, 2)*Temperature*d2sdrho2;
+
+  Cp = (1 / dTde_rho) * ( 1 + (1 / Density)*dPde_rho) + (1/Density)*(1/dTdrho_e)*(dPdrho_e - Pressure / Density);
+  Cv = 1 / dTde_rho;
+  Gamma = Cp / Cv;
+  Gamma_Minus_One = Gamma - 1;
+  Gas_Constant = Cp - Cv;
+  
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
-  /*--- Newton solver for */
 
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, 
@@ -152,6 +175,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
             delta_e,      // Energy step size
             determinant;  // Jacobian determinant
 
+  /*--- Initiating Newton solver ---*/
   while(!converged && (Iter < iter_max)){
 
     /*--- Determine thermodynamic state based on current density and energy*/
@@ -220,12 +244,157 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
       /*--- Compute step size for energy ---*/
       delta_e = delta_P / dPde_rho;
 
-      /*--- Update density and energy values ---*/
-      e -= Newton_Relaxation * delta_e;
+      /*--- energy value ---*/
+      e += Newton_Relaxation * delta_e;
     }
     Iter ++;
   }
 
   /*--- Setting static energy as the converged value ---*/
   StaticEnergy = e;
+}
+
+void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
+
+  /*--- Setting initial values for density and energy ---*/
+  su2double e = e_start;
+
+  su2double tolerance_T = 1;  // Tolerance for temperature solution
+
+  bool converged = false;         // Convergence flag
+  unsigned long iter_max = 1000,  // Maximum number of iterations
+                Iter = 0;       
+
+  su2double delta_T,      // Temperature residual
+            delta_e;  // Energy increment
+
+  /*--- Initiating Newton solver ---*/
+  while(!converged && (Iter < iter_max)){
+
+    /*--- Determine thermodynamic state based on current density and energy*/
+    SetTDState_rhoe(rho ,e);
+
+    /*--- Determine temperature residual ---*/
+    delta_T = Temperature - T;
+
+    /*--- Continue iterative process if residuals are outside tolerances ---*/
+    if((abs(delta_T) < tolerance_T)){
+      converged = true;
+    }else{
+      
+
+      delta_e = delta_T / dTde_rho;
+
+      /*--- Update energy value ---*/
+      e += Newton_Relaxation * delta_e;
+    }
+    Iter ++;
+  }
+
+  /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
+  SetTDState_rhoe(rho, e);
+}
+
+void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
+
+  /*--- Setting initial values for density and energy ---*/
+  su2double rho = rho_start, 
+            e = e_start;
+
+  su2double tolerance_h = 10, // Tolerance for enthalpy solution
+            tolerance_s = 1;  // Tolerance for entropy solution
+
+  bool converged = false;         // Convergence flag
+  unsigned long iter_max = 1000,  // Maximum number of iterations
+                Iter = 0;       
+
+  su2double delta_h,      // Enthalpy
+            delta_s,      // Entropy residual
+            delta_rho,    // Density step size
+            delta_e,      // Energy step size
+            determinant;  // Jacobian determinant
+
+  /*--- Initiating Newton solver ---*/
+  while(!converged && (Iter < iter_max)){
+
+    /*--- Determine thermodynamic state based on current density and energy*/
+    SetTDState_rhoe(rho ,e);
+
+    su2double Enthalpy = e + Pressure / rho;
+    /*--- Determine pressure and temperature residuals ---*/
+    delta_h = Enthalpy - h;
+    delta_s = Entropy - s;
+
+    /*--- Continue iterative process if residuals are outside tolerances ---*/
+    if((abs(delta_h) < tolerance_h) && (abs(delta_s) < tolerance_s)){
+      converged = true;
+    }else{
+      
+      su2double dh_de = 1 + dPde_rho / rho;
+      su2double dh_drho = -Pressure*pow(rho, -2) + dPdrho_e / rho;
+
+      determinant = dh_drho * dsde_rho - dh_de * dsdrho_e;
+      delta_rho = (dsde_rho * delta_h - dh_de * delta_s) / determinant;
+      delta_e = (-dsdrho_e * delta_h + dh_drho * delta_s) / determinant;
+
+      /*--- Update density and energy values ---*/
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
+    }
+    Iter ++;
+  }
+
+  /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
+  SetTDState_rhoe(rho, e);
+}
+
+void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
+  
+  /*--- Setting initial values for density and energy ---*/
+  su2double rho = rho_start, 
+            e = e_start;
+
+  su2double tolerance_P = 10, // Tolerance for pressure solution
+            tolerance_s = 1;  // Tolerance for entropy solution
+
+  bool converged = false;         // Convergence flag
+  unsigned long iter_max = 1000,  // Maximum number of iterations
+                Iter = 0;       
+
+  su2double delta_P,      // Enthalpy
+            delta_s,      // Entropy residual
+            delta_rho,    // Density step size
+            delta_e,      // Energy step size
+            determinant;  // Jacobian determinant
+
+  /*--- Initiating Newton solver ---*/
+  while(!converged && (Iter < iter_max)){
+
+    /*--- Determine thermodynamic state based on current density and energy*/
+    SetTDState_rhoe(rho ,e);
+
+    /*--- Determine pressure and temperature residuals ---*/
+    delta_P = Pressure - P;
+    delta_s = Entropy - s;
+
+    /*--- Continue iterative process if residuals are outside tolerances ---*/
+    if((abs(delta_P) < tolerance_P) && (abs(delta_s) < tolerance_s)){
+      converged = true;
+    }else{
+
+       /*--- Compute step size for density and energy ---*/
+      determinant = dPdrho_e * dsde_rho - dPde_rho * dsdrho_e;
+
+      delta_rho = (dsde_rho * delta_P - dPde_rho * delta_s) / determinant;
+      delta_e = (-dsdrho_e * delta_P + dPdrho_e * delta_s) / determinant;
+
+      /*--- Update density and energy values ---*/
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
+    }
+    Iter ++;
+  }
+
+  /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
+  SetTDState_rhoe(rho, e);
 }

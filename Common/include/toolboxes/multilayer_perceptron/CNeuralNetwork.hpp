@@ -83,6 +83,9 @@ public:
             delete total_layers.at(i);
         }
         delete [] ANN_outputs;
+        delete [] inputLayer;
+        delete [] outputLayer;
+        delete [] activation_function_types;
     };
     void defineInputLayer(unsigned long n_neurons);
     void defineOutputLayer(unsigned long n_neurons);
