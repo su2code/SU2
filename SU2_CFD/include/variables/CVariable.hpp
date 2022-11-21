@@ -1740,15 +1740,15 @@ public:
 
 
   /*!
-   * \brief Set the value of the eddy viscosity.
-   * \param[in] val_muT
+   * \brief Set the value of the turbulence index.
+   * \param[in] val_turb_index - turbulence index
    */
   inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
 
 
   /*!
-   * \brief Set the value of the eddy viscosity.
-   * \param[in] val_muT
+   * \brief Get the value of the turbulence index.
+   * \return val_turb_index - turbulence index
    */
   inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 

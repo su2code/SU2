@@ -252,10 +252,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case ISOTHERMAL:
-        case HEAT_FLUX:
-        case HEAT_TRANSFER:
+      if (config->GetViscous_Wall(config->GetMarker_All_KindBC(iMarker))) {
           SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
           for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -379,7 +376,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Store the intermittency ---*/
 
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
-      nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
+      nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
     /*--- Subtract residual and the Jacobian ---*/

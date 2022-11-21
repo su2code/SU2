@@ -1094,8 +1094,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
-  /*!\brief KIND_TRANS_CORRELATION \n DESCRIPTION: Specify transition correlation OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: MENTER_LANGTRY \ingroup Config*/
-  addEnumOption("KIND_TRANS_CORRELATION", Kind_Trans_Correlation, Trans_Correlation_Map, TURB_TRANS_CORRELATION::DEFAULT);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("LM_OPTIONS", nLM_Options, LM_Options, LM_Options_Map);
   /*!\brief CONVERTSA2SST \n DESCRIPTION: Define if SA has to be converted into SST for transition \n DEFAULT: NO \ingroup Config*/
   //addBoolOption("CONVERTSA2SST", ConvertSA2SST, NO);
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
@@ -3440,13 +3440,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
-  /*--- Set the default correlation functions ---*/
-  if (Kind_Trans_Correlation == TURB_TRANS_CORRELATION::DEFAULT){
-    if (Kind_Turb_Model == TURB_MODEL::SST) {
-      Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
-    } else if (Kind_Turb_Model == TURB_MODEL::SA) {
-      Kind_Trans_Correlation = TURB_TRANS_CORRELATION::MALAN;
-    }
+  /*--- Postprocess LM_OPTIONS into structure. ---*/
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM){
+    lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -6061,13 +6057,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }        
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
-          case TURB_TRANS_MODEL::LM:    cout << "Transition model: Langtry and Menter's 4 equation model (2009)" << endl; break;       
-          case TURB_TRANS_MODEL::LM2015:    cout << "Transition model: Langtry and Menter's 4 equation model w/ cross-flow corrections (2015)" << endl; break;        
+          case TURB_TRANS_MODEL::LM:{
+            cout << "Transition model: Langtry and Menter's 4 equation model"; 
+            if (lmParsedOptions.LM2015){
+              cout << " w/ cross-flow corrections (2015)" << endl;
+            } else {
+              cout << " (2009)" << endl;
+            }
+            break; 
+          }          
         }
-        if(Kind_Trans_Model == TURB_TRANS_MODEL::LM || Kind_Trans_Model == TURB_TRANS_MODEL::LM2015) {
+        if(Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
           cout << "Correlation Functions: ";
-          switch (Kind_Trans_Correlation) {
+          switch (lmParsedOptions.Correlation) {
             case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;

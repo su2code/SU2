@@ -725,8 +725,7 @@ public:
    * \brief Get the value of the effective intermittency for the transition model.
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
-  su2double GetIntermittencyEff() const {return intermittency_eff_i;}
-
+  su2double GetIntermittencyEff() const {return intermittency_eff_i; }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

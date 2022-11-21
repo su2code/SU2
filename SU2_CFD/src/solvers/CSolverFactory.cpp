@@ -377,7 +377,6 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
     switch (kindTransModel) {      
       case TURB_TRANS_MODEL::LM :
-      case TURB_TRANS_MODEL::LM2015 :
         transSolver = new CTransLMSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);

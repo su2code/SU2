@@ -62,7 +62,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nDim = geometry->GetnDim();
 
   /*--- Define variables needed for transition from config file */
-  TransCorrelation = config->GetKind_Trans_Correlation();
+  options = config->GetLMParsedOptions();
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
   /*--- Single grid simulation ---*/
@@ -339,7 +339,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
-    if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015){
+    if(options.LM2015){
       /*--- Set local grid length (for LM2015)*/
       numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint), 0.0);
     }

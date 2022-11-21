@@ -88,7 +88,7 @@ class CSourceBase_TurbSA : public CNumerics {
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
-        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -745,7 +745,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     su2double eff_intermittency = 1.0;
 
-    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       AD::SetPreaccIn(intermittency_eff_i);
       eff_intermittency = intermittency_eff_i;
     }
@@ -825,7 +825,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
-      if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+      if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
         dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }

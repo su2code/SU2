@@ -256,10 +256,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case ISOTHERMAL:
-        case HEAT_FLUX:
-        case HEAT_TRANSFER:
+      if (config->GetViscous_Wall(config->GetMarker_All_KindBC(iMarker))) {
           SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
           for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -292,7 +289,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
             }
           }
           END_SU2_OMP_FOR
-          break;
       }
   }
 

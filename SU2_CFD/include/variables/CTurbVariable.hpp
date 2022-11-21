@@ -74,27 +74,31 @@ public:
 
   /*!
     * \brief Set the value of the turbulence index.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_turb_index - Value of the turbulence index.
    */
-  inline void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) override { turb_index(iPoint) = val_turb_index; }
+  inline void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) final { turb_index(iPoint) = val_turb_index; }
 
   /*!
    * \brief Get the value of the turbulence index.
+   * \param[in] iPoint - Point index.
+   * \return Value of the intermittency of the turbulence index.
    */
-  inline su2double GetTurbIndex(unsigned long iPoint) const override { return turb_index(iPoint); }
+  inline su2double GetTurbIndex(unsigned long iPoint) const final { return turb_index(iPoint); }
 
   /*!
    * \brief Get the intermittency of the transition model.
    * \param[in] iPoint - Point index.
    * \return Value of the intermittency of the transition model.
    */
-  inline su2double GetIntermittency(unsigned long iPoint) const override { return intermittency(iPoint); }
+  inline su2double GetIntermittency(unsigned long iPoint) const final { return intermittency(iPoint); }
 
   /*!
    * \brief Set the intermittency of the transition model.
    * \param[in] iPoint - Point index.
-   * \param[in] val_gamma - New value of the intermittency.
+   * \param[in] val_intermittency - New value of the intermittency.
    */
-  inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) override { intermittency(iPoint) = val_intermittency; }
+  inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
 
 };
 

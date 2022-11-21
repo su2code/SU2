@@ -39,14 +39,14 @@
 class CTransLMSolver final : public CTurbSolver {
 private:
 
-  TURB_TRANS_CORRELATION TransCorrelation;
+  LM_ParsedOptions options;
   TURB_FAMILY TurbFamily;
 
   su2double ReThetaC_Correlations(const su2double Tu, const su2double Re_Theta_t){
 
     su2double rethetac = 0.0;
 
-      switch (TransCorrelation) {
+      switch (options.Correlation) {
       case TURB_TRANS_CORRELATION::MALAN: {
         rethetac = min(0.615 * Re_Theta_t + 61.5, Re_Theta_t);
         break;

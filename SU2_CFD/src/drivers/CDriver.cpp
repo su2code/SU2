@@ -1345,7 +1345,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int conv_bound_term = CONV_BOUND_TERM + offset;
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
-  const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015;
+  const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
 
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -1514,7 +1514,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
@@ -1531,7 +1531,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015);
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
       species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::FEM_EULER:
@@ -3562,7 +3562,7 @@ void CHBDriver::ResetConvergence() {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
       integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
       if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
+      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:

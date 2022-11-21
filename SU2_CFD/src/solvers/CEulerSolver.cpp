@@ -1290,7 +1290,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
         Unit.str("");
-        if (config-> GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config-> GetKind_Trans_Model() == TURB_TRANS_MODEL::LM2015) {
+        if (config-> GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
           NonDimTable << "Intermittency"  << "-" << "-" << "-" << config->GetIntermittency_FreeStream();
           Unit.str("");
           NonDimTable << "Moment. Thick. Re"  << "-" << "-" << "-" << config->GetReThetaT_FreeStream();

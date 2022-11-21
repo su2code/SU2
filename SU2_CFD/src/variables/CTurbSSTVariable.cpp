@@ -85,7 +85,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   F2(iPoint) = tanh(pow(arg2, 2.0));
 
   /*--- LM model for F1 ---*/
-  if (trans_model == TURB_TRANS_MODEL::LM || trans_model == TURB_TRANS_MODEL::LM2015) {
+  if (trans_model == TURB_TRANS_MODEL::LM) {
     su2double Ry = val_density*val_dist*sqrt(Solution(iPoint,0))/val_viscosity;
     su2double F3 = exp(-pow(Ry/120.0, 8.0));
     F1(iPoint) = max(F1(iPoint), F3);
