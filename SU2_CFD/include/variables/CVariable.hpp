@@ -1143,7 +1143,7 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
+   * \return Sets Effective intermittency
    */
   inline virtual void SetGammaEff(unsigned long iPoint) {}
 
@@ -1403,27 +1403,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] Gamma - Ratio of Specific heats
    */
-  inline virtual void SetDeltaPressure(unsigned long iPoint, const su2double *val_velocity, su2double Gamma) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Gamma - Ratio of specific heats.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double Gamma) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, CConfig *config) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint) { return false; }
+  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }
 
   /*!
    * \brief A virtual member.
