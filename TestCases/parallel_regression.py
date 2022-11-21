@@ -1401,7 +1401,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [0.000000]
+    species3_multizone_restart.test_vals = [-4.773393, -4.254100]
     species3_multizone_restart.new_output = True
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
