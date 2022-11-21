@@ -1,7 +1,7 @@
 /*!
  * \file CLookupTable.hpp
  * \brief tabulation of fluid properties
- * \author D. Mayer, T. Economon
+ * \author D. Mayer, T. Economon, E.C.Bunschoten
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -47,16 +47,19 @@ class CLookUpTable {
   std::string file_name_lut;
   std::string version_lut;
   std::string version_reader;
-  unsigned long n_points;
-  unsigned long n_triangles;
+  unsigned long *n_points;
+  unsigned long *n_triangles;
   unsigned long n_variables;
-  unsigned long n_hull_points;
+  unsigned long *n_hull_points;
+  unsigned long n_table_levels = 1;
+  su2double *z_values_levels;
 
   /*! 
-   * \brief the lower and upper limits of the y and x.
+   * \brief the lower and upper limits of the z, y and x variable.
    */
-  su2double limits_table_y[2];
-  su2double limits_table_x[2];
+  std::pair<su2double, su2double> limits_table_z;
+  std::pair<su2double, su2double> *limits_table_y;
+  std::pair<su2double, su2double> *limits_table_x;
 
   /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data
@@ -67,25 +70,25 @@ class CLookUpTable {
    * Holds all data stored in the table. First index addresses the variable
    * while second index addresses the point.
    */
-  su2activematrix table_data;
+  su2activematrix *table_data;
 
-  su2matrix<unsigned long> triangles;
+  su2matrix<unsigned long> *triangles;
 
   /* we do not know this size in advance until we go through the entire lookup table */
-  std::vector<std::vector<unsigned long> > edges;
-  std::vector<std::vector<unsigned long> > edge_to_triangle;
+  std::vector<std::vector<unsigned long> > *edges;
+  std::vector<std::vector<unsigned long> > *edge_to_triangle;
 
   /*! \brief 
    * The hull contains the boundary of the lookup table.
    */
-  std::vector<unsigned long> hull;
+  std::vector<unsigned long> *hull;
 
-  CTrapezoidalMap trap_map_x_y;
+  CTrapezoidalMap *trap_map_x_y;
 
   /*! \brief 
    * vector of all the weight factors for the interpolation.
    */
-  std::vector<su2activematrix> interp_mat_inv_x_y;
+  std::vector<su2activematrix> *interp_mat_inv_x_y;
 
   /*! \brief 
    * returns the index to the variable in the lookup table.
@@ -106,13 +109,13 @@ class CLookUpTable {
    * \brief Get the pointer to the column data of the table (density, temperature, source terms, ...).
    * \returns pointer to the column data.
    */
-  inline const su2double* GetDataP(const std::string& name_var) const {
-    return table_data[GetIndexOfVar(name_var)];
+  inline const su2double* GetDataP(const std::string& name_var, unsigned long i_level=0) const {
+    return table_data[i_level][GetIndexOfVar(name_var)];
   }
 
   /*!
    * \brief find the table limits, i.e. the minimum and maximum values of the 2 independent.
-   * controlling variables (x and y). We put the values in the variables.
+   * controlling variables. We put the values in the variables.
    * limits_table_x[2] and limit_table_y[2].
    * \param[in] name_x - the string name for the first controlling variable.
    * \param[in] name_y - the string name of the second controlling variable.
@@ -131,16 +134,16 @@ class CLookUpTable {
   void LoadTableRaw(const std::string& file_name_lut);
 
   /*!
-   * \brief compute vector of all (inverse) interpolation coefficients "interp_mat_inv_prog_enth" of all triangles.
-   * \param[in] name_prog - the string name of the first controlling variable (x).
-   * \param[in] name_enth - the string name of the second controlling variable (y).
+   * \brief compute vector of all (inverse) interpolation coefficients "interp_mat_inv_x_y" of all triangles.
+   * \param[in] name_x - the string name of the first controlling variable.
+   * \param[in] name_y - the string name of the second controlling variable.
   */
   void ComputeInterpCoeffs(const std::string& name_x, const std::string& name_y);
 
   /*!
    * \brief compute the inverse matrix for interpolation.
-   * \param[in] vec_x - pointer to first coordinate (x).
-   * \param[in] vec_y - pointer to second coordinate (y).
+   * \param[in] vec_x - pointer to first coordinate (progress variable).
+   * \param[in] vec_y - pointer to second coordinate (enthalpy).
    * \param[in] point_ids - single triangle data.
    * \param[out] interp_mat_inv - inverse matrix for interpolation.
   */
@@ -149,8 +152,8 @@ class CLookUpTable {
 
   /*!
    * \brief compute the interpolation coefficients for the triangular interpolation.
-   * \param[in] val_x - value of first coordinate (x).
-   * \param[in] val_y - value of second coordinate (y).
+   * \param[in] val_x - value of first coordinate (progress variable).
+   * \param[in] val_y - value of second coordinate (enthalpy).
    * \param[in] interp_mat_inv - inverse matrix for interpolation.
    * \param[out] interp_coeffs - interpolation coefficients.
   */
@@ -167,27 +170,29 @@ class CLookUpTable {
   su2double Interpolate(const su2double* val_samples, std::array<unsigned long,3>& val_triangle,
                         std::array<su2double,3>& val_interp_coeffs);
 
+  void Linear_Interpolation(su2double val_z, std::pair<unsigned long, unsigned long> &inclusion_levels, std::vector<su2double>&lower_values,std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals);
+
   /*!
    * \brief find the point on the hull (boundary of the table) that is closest to the point P(val_x,val_y).
    * \param[in] val_x - first coordinate of point P(val_x,val_y) to check.
    * \param[in] val_y - second coordinate of point P(val_x,val_y) to check.
-   * \param[in] name_prog - string name of the first controlling variable.
-   * \param[in] name_enth - string name of the second controlling variable.
+   * \param[in] name_x - string name of the first controlling variable.
+   * \param[in] name_y - string name of the second controlling variable.
    * \returns point id of the nearest neighbor on the hull.
    */
-  unsigned long FindNearestNeighborOnHull(su2double val_x, su2double val_y, const std::string& name_x, const std::string& name_y);
+  unsigned long FindNearestNeighborOnHull(su2double val_x, su2double val_y, const std::string& name_x, const std::string& name_y, unsigned long i_level=0);
 
   /*!
    * \brief determine if a point P(val_x,val_y) is inside the triangle val_id_triangle.
    * \param[in] val_x - first coordinate of point P(val_x,val_y) to check.
    * \param[in] val_y - second coordinate of point P(val_x,val_y) to check.
    * \param[in] val_id_triangle - ID of the triangle to check.
-   * \param[in] name_prog - string name of the first controlling variable.
-   * \param[in] name_enth - string name of the second controlling variable.
+   * \param[in] name_x - string name of the first controlling variable.
+   * \param[in] name_y - string name of the second controlling variable.
    * \returns true if the point is in the triangle, false if it is outside.
    */
   bool IsInTriangle(su2double val_x, su2double val_y, unsigned long val_id_triangle, const std::string& name_x,
-                    const std::string& name_y);
+                    const std::string& name_y, unsigned long i_level=0);
 
   /*!
    * \brief compute the area of a triangle given the 3 points of the triangle.
@@ -205,7 +210,7 @@ class CLookUpTable {
 
  public:
   CLookUpTable(const std::string& file_name_lut, const std::string& name_x, const std::string& name_y);
-
+  ~CLookUpTable();
 
   /*!
    * \brief print information to screen.
@@ -213,60 +218,79 @@ class CLookUpTable {
   void PrintTableInfo();
 
   /*!
-   * \brief lookup 1 value of the single variable "val_name_var" using controlling variable values(val_prog,val_enth)
-   *  whose controlling variable names are "name_x" and "name_y".
+   * \brief lookup 1 value of the single variable "val_name_var" using controlling variable values(val_x,val_y)
+   *  whose controlling variable names are "name_prog" and "name_enth".
    * \param[in] val_name_var - string name of the variable to look up.
    * \param[out] val_var - the stored value of the variable to look up.
-   * \param[in] val_x - value of controlling variable 1 (x).
-   * \param[in] val_y - value of controlling variable 2 (y).
-   * \param[in] name_x - string name of controlling variable 1 (x).
-   * \param[in] name_y - string name of controlling variable 2 (y).
+   * \param[in] val_x - value of controlling variable 1.
+   * \param[in] val_y - value of controlling variable 2.
+   * \param[in] name_x - string name of controlling variable 1.
+   * \param[in] name_y - string name of controlling variable 2.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::string& val_name_var, su2double* val_var, su2double val_x, su2double val_y,
-                                const std::string& name_x, const std::string& name_y);
+                                const std::string& name_x, const std::string& name_y, unsigned long i_level=0);
 
   /*!
    * \brief lookup 1 value for each of the variables in "val_name_var" using controlling variable values(val_x,val_y)
    *  whose controlling variable names are "name_x" and "name_y".
    * \param[in] val_names_var - vector of string names of the variables to look up.
    * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
-   * \param[in] val_x - value of controlling variable 1 (x).
-   * \param[in] val_y - value of controlling variable 2 (y).
-   * \param[in] name_x - string name of controlling variable 1 (x).
-   * \param[in] name_y - string name of controlling variable 2 (y).
+   * \param[in] val_x - value of controlling variable 1.
+   * \param[in] val_y - value of controlling variable 2.
+   * \param[in] name_x - string name of controlling variable 1.
+   * \param[in] name_y - string name of controlling variable 2.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_x,
-                                su2double val_y, const std::string& name_x, const std::string& name_y);
+                                su2double val_y, const std::string& name_x, const std::string& name_y, unsigned long i_level=0);
 
   /*!
    * \brief lookup the value of the variable "val_name_var" using controlling variable values(val_x,val_y)
    *  whose controlling variable names are "name_x" and "name_y".
    * \param[in] val_name_var - string name of the variable to look up.
    * \param[out] val_var - the stored value of the variable to look up.
-   * \param[in] val_x - value of controlling variable 1 (x).
-   * \param[in] val_y - value of controlling variable 2 (y).
-   * \param[in] name_x - string name of controlling variable 1 (x).
-   * \param[in] name_y - string name of controlling variable 2 (y).
+   * \param[in] val_x - value of controlling variable 1.
+   * \param[in] val_y - value of controlling variable 2.
+   * \param[in] name_x - string name of controlling variable 1.
+   * \param[in] name_y - string name of controlling variable 2.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars, su2double val_x,
-                                su2double val_y, const std::string& name_x, const std::string& name_y);
+                                su2double val_y, const std::string& name_x, const std::string& name_y, unsigned long i_level=0);
 
   /*!
-   * \brief determine the minimum and maximum value of the y (controlling variable 2).
+   * \brief lookup the value of the variable "val_name_var" using controlling variable values(val_x,val_y,val_z)
+   *  whose controlling variable names are "name_x" and "name_y".
+   * \param[in] val_name_var - string name of the variable to look up.
+   * \param[out] val_var - the stored value of the variable to look up.
+   * \param[in] val_x - value of controlling variable 1.
+   * \param[in] val_y - value of controlling variable 2.
+   * \param[in] name_x - string name of controlling variable 1.
+   * \param[in] name_y - string name of controlling variable 2.
+   * \param[in] val_z - value of controlling variable 3.
+   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   */
+  unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_x,
+                                su2double val_y, const std::string& name_x, const std::string& name_y, su2double val_z=0);
+  
+  std::pair<unsigned long, unsigned long> FindInclusionLevels(su2double val_z, bool *within_limits);
+
+  /*!
+   * \brief determine the minimum and maximum value of the second controlling variable.
    * \returns pair of minimum and maximum value of controlling variable 2.
    */
-  inline std::pair<su2double, su2double> GetTableLimitsY() const {
-    return std::make_pair(limits_table_y[0], limits_table_y[1]);
+  inline std::pair<su2double, su2double> GetTableLimitsY(unsigned long i_level = 0) const {
+    return limits_table_y[i_level];
   }
 
   /*!
-   * \brief determine the minimum and maximum value of the x (controlling variable 1).
+   * \brief determine the minimum and maximum value of the first controlling variable.
    * \returns pair of minimum and maximum value of controlling variable 1.
    */
-  inline std::pair<su2double, su2double> GetTableLimitsX() const {
-    return std::make_pair(limits_table_x[0], limits_table_x[1]);
+  inline std::pair<su2double, su2double> GetTableLimitsX(unsigned long i_level = 0) const {
+    return limits_table_x[i_level];
   }
+
+  
 };

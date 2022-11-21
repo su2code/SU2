@@ -42,11 +42,13 @@ class CFileReaderLUT {
  protected:
   int rank;
 
+  unsigned short table_dim = 2;
   std::string version_lut;
   std::string version_reader;
-  unsigned long n_points;
-  unsigned long n_triangles;
-  unsigned long n_hull_points;
+  unsigned long n_levels = 1;
+  unsigned long *n_points;
+  unsigned long *n_triangles;
+  unsigned long *n_hull_points;
   unsigned long n_variables;
 
   /*! \brief Holds the variable names stored in the table file. 
@@ -57,11 +59,11 @@ class CFileReaderLUT {
   /*! \brief Holds all data stored in the table. 
    * First index addresses the variable while second index addresses the point.
    */
-  su2activematrix table_data;
+  su2activematrix *table_data;
 
-  su2matrix<unsigned long> triangles;
+  su2matrix<unsigned long> *triangles;
 
-  std::vector<unsigned long> hull;
+  std::vector<unsigned long> *hull;
 
   /*! \brief Searches for the position of flag in file_stream and 
    *         sets the stream position of file_stream to that position.
@@ -82,18 +84,21 @@ class CFileReaderLUT {
   
   inline const std::string& GetVersionLUT() const { return version_lut; }
   inline const std::string& GetVersionReader() const { return version_reader; }
-  inline unsigned long GetNPoints() const { return n_points; }
-  inline unsigned long GetNTriangles() const { return n_triangles; }
-  inline unsigned long GetNHullPoints() const { return n_hull_points; }
+  inline unsigned long GetNPoints(std::size_t i_level=0) const { return n_points[i_level]; }
+  inline unsigned long GetNTriangles(std::size_t i_level=0) const { return n_triangles[i_level]; }
+  inline unsigned long GetNHullPoints(std::size_t i_level=0) const { return n_hull_points[i_level]; }
   inline unsigned long GetNVariables() const { return n_variables; }
+  inline unsigned long GetNLevels() const { return n_levels; }
 
   inline const std::vector<std::string>& GetNamesVar() const { return names_var; }
 
-  inline const su2activematrix& GetTableData() const { return table_data; }
+  inline const su2activematrix& GetTableData(std::size_t i_level=0) const { return table_data[i_level]; }
 
-  inline const su2matrix<unsigned long>& GetTriangles() const { return triangles; };
+  inline const su2matrix<unsigned long>& GetTriangles(std::size_t i_level=0) const { return triangles[i_level]; }
 
-  inline const std::vector<unsigned long>& GetHull() const { return hull; };
+  inline const std::vector<unsigned long>& GetHull(std::size_t i_level=0) const { return hull[i_level]; }
+
+  inline const unsigned short GetTableDim() const { return table_dim; }
 
   void ReadRawLUT(const std::string& file_name);
 };
