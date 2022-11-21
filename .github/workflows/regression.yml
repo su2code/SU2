@@ -26,7 +26,7 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-tests=true --warnlevel=2 --werror'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
@@ -52,12 +52,12 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup 
-        uses: docker://ghcr.io/su2code/su2/build-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build 
-        uses: docker://ghcr.io/su2code/su2/build-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
@@ -68,7 +68,7 @@ jobs:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -128,7 +128,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c feature_cat_wall -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:

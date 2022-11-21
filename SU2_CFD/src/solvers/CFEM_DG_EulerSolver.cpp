@@ -31,6 +31,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CCoolProp.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -879,6 +880,21 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case COOLPROP:
+
+      FluidModel = new CCoolProp(config->GetFluid_Name());
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+      break;
+
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -1063,6 +1079,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
+    case COOLPROP:
+      FluidModel = new CCoolProp(config->GetFluid_Name());
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1184,11 +1204,23 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    if (config->GetKind_FluidModel() == COOLPROP) {
+      CCoolProp auxFluidModel(config->GetFluid_Name());
+      NonDimTable << "Gas Constant" << auxFluidModel.GetGas_Constant() << config->GetGas_Constant_Ref()
+                  << Unit.str() << auxFluidModel.GetGas_Constant()/config->GetGas_Constant_Ref();
+    }
+    else {
+        NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    }
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    if (config->GetKind_FluidModel() == COOLPROP) {
+      NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
+    }
+    else {
+      NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    }
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
@@ -1204,6 +1236,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     case PR_GAS:
       ModelTable << "PR_GAS";
       break;
+    case COOLPROP:
+      ModelTable << "CoolProp library";
+      break;
     }
 
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
@@ -1211,6 +1246,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit.str("");
         Unit << "K";
         NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
+        Unit.str("");
+    }
+    if (config->GetKind_FluidModel() == COOLPROP) {
+        CCoolProp auxFluidModel(config->GetFluid_Name());
+        NonDimTable << "Critical Pressure" << auxFluidModel.GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << auxFluidModel.GetPressure_Critical() /config->GetPressure_Ref();
+        Unit.str("");
+        Unit << "K";
+        NonDimTable << "Critical Temperature" << auxFluidModel.GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << auxFluidModel.GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
     }
     NonDimTable.PrintFooter();

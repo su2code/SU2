@@ -82,6 +82,8 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
+  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
+  su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
@@ -709,6 +711,14 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+   * \brief Set the value of the effective intermittency for the LM model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  void SetIntermittencyEff(su2double val_intermittency_eff_i) {
+    intermittency_eff_i = val_intermittency_eff_i;
+  }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

@@ -93,6 +93,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
     case MAIN_SOLVER::RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[TRANS_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::INC_RANS:
@@ -212,6 +213,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
   CSolver *genericSolver = nullptr;
 
   TURB_MODEL kindTurbModel = config->GetKind_Turb_Model();
+  TURB_TRANS_MODEL kindTransModel = config->GetKind_Trans_Model();
 
   SolverMetaData metaData;
 
@@ -288,7 +290,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::TRANSITION:
-      genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
+      genericSolver = CreateTransSolver(kindTransModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::SPECIES:
@@ -366,6 +368,26 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
   }
 
   return turbSolver;
+}
+
+CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
+
+  CSolver *transSolver = nullptr;  
+
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    switch (kindTransModel) {      
+      case TURB_TRANS_MODEL::LM :
+        transSolver = new CTransLMSolver(geometry, config, iMGLevel);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        transSolver->Postprocessing(geometry, solver, config, iMGLevel);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        break;      
+      case TURB_TRANS_MODEL::NONE:        
+        break;
+    }
+  }  
+  
+  return transSolver;
 }
 
 CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){

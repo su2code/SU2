@@ -1136,20 +1136,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
-   */
-  inline virtual void SetGammaSep(unsigned long iPoint, su2double gamma_sep) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
-   */
-  inline virtual void SetGammaEff(unsigned long iPoint) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return Returns intermittency
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
@@ -1410,27 +1396,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] Gamma - Ratio of Specific heats
    */
-  inline virtual void SetDeltaPressure(unsigned long iPoint, const su2double *val_velocity, su2double Gamma) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Gamma - Ratio of specific heats.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double Gamma) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, CConfig *config) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint) { return false; }
+  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }
 
   /*!
    * \brief A virtual member.
@@ -1679,7 +1646,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
@@ -1701,6 +1668,30 @@ public:
    * \return the value of the eddy viscosity.
    */
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the separation intermittency.
+   * \return the value of the separation intermittency.
+   */
+  inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Set the separation intermittency(gamma).   
+   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   */
+  inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
+
+  /*!
+   * \brief Get the value of the effective intermittency.
+   * \return the value of the effective intermittency.
+   */
+  inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the effective intermittency(gamma).   
+   * \param[in] Value of the effective intermittency(gamma).
+   */
+  inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
   /*!
    * \brief Set the value of the eddy viscosity.

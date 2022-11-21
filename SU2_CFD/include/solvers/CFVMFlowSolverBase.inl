@@ -584,7 +584,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -611,23 +611,21 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     /*--- Strain Magnitude ---*/
 
+    const su2double vy = nodes->GetVelocity(iPoint, 1);
+    const su2double y = geometry->nodes->GetCoord(iPoint, 1);
     AD::StartPreacc();
     AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += VelocityGradient(iDim, iDim);
-    Div /= 3.0;
+    AD::SetPreaccIn(vy, y);
 
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim), 2);
     }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(Div, 2);
+    if (config.GetAxisymmetric() && y > EPS) {
+      StrainMag(iPoint) += pow(vy / y, 2);
     }
 
     /*--- Add off diagonals ---*/

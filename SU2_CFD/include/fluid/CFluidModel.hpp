@@ -85,7 +85,7 @@ class CFluidModel {
    * \brief Instantiate the right type of conductivity model based on config.
    */
   static unique_ptr<CConductivityModel> MakeThermalConductivityModel(const CConfig* config, unsigned short iSpecies);
-  
+
   /*!
    * \brief Instantiate the right type of mass diffusivity model based on config.
    */
@@ -205,7 +205,7 @@ class CFluidModel {
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }
-  
+
   /*!
    * \brief Get fluid pressure partial derivative.
    */
@@ -280,7 +280,7 @@ class CFluidModel {
    * \brief Set thermal conductivity model.
    */
   virtual void SetThermalConductivityModel(const CConfig* config);
-  
+
   /*!
    * \brief Set mass diffusivity model.
    */
