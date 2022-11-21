@@ -39,56 +39,6 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
     k = 0.37464 + 1.54226 * w - 0.26992 * w * w;
   else
     k = 0.379642 + 1.48503 * w - 0.164423 * w * w + 0.016666 * w * w * w;
-
-  vector<string> call_input_variables;
-  vector<string> call_output_variables;
-  vector<su2double> call_inputs;
-  vector<su2double*> call_outputs;
-  call_input_variables.push_back("Progress_Variable");
-  call_inputs.push_back(-5.74934292655689e-01);
-  call_input_variables.push_back("Enthalpy");
-  call_inputs.push_back(+2.22692201641688e+03);
-  call_input_variables.push_back("Mixture_Fraction");
-  call_inputs.push_back(0.0144045);
-
-  call_output_variables.push_back("Temperature");
-  call_outputs.push_back(&Temperature);
-  call_output_variables.push_back("Density");
-  call_outputs.push_back(&Density);
-
-  vector<string> call_inputvars_lean;
-  call_inputvars_lean.push_back("Progress_Variable_lean");
-  call_inputvars_lean.push_back("Enthalpy_lean");
-  call_inputvars_lean.push_back("Mixture_Fraction_lean");
-
-  vector<string> call_inputvars_rich;
-  call_inputvars_rich.push_back("Progress_Variable_rich");
-  call_inputvars_rich.push_back("Enthalpy_rich");
-  call_inputvars_rich.push_back("Mixture_Fraction_rich");
-
-  MLPToolbox::CLookUp_ANN * test_mlp = new MLPToolbox::CLookUp_ANN("MLP_collection.mlp");
-  MLPToolbox::CIOMap * test_map = new MLPToolbox::CIOMap(test_mlp, call_input_variables, call_output_variables);
-  MLPToolbox::CIOMap * lean_map = new MLPToolbox::CIOMap(test_mlp, call_inputvars_lean, call_output_variables);
-  MLPToolbox::CIOMap * rich_map = new MLPToolbox::CIOMap(test_mlp, call_inputvars_rich, call_output_variables);
-
-
-  test_mlp->Predict_ANN(test_map, call_inputs, call_outputs);
-  cout << "in flame zone: " << Density << " " << Temperature << endl;
-  call_inputs[0] = -7.36;
-  call_inputs[1] = 26468.5;
-  call_inputs[2] = 1.0;
-  test_mlp->Predict_ANN(rich_map, call_inputs, call_outputs);
-  cout << "rich: " << Density << " " << Temperature << endl;
-  call_inputs[0] = -0.4753;
-  call_inputs[1] = 3144.6;
-  call_inputs[2] = 0.0;
-  test_mlp->Predict_ANN(lean_map, call_inputs, call_outputs);
-  cout << "lean: " << Density << " " << Temperature << endl;
-
-  delete test_mlp;
-  delete test_map;
-  delete rich_map;
-  delete lean_map;
 }
 
 su2double CPengRobinson::alpha2(su2double T) const {
