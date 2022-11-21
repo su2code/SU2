@@ -128,6 +128,7 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       break;
     case DIFFUSIVITYMODEL::FLAMELET:
       /* do nothing. Diffusivity is obtained from the table and set in setTDState_T */
+      return nullptr;
       break;
     default:
       SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);

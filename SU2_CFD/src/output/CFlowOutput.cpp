@@ -1082,7 +1082,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       break;
   }
 
-<<<<<<< HEAD
+  switch (config->GetKind_Trans_Model()) {    
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
+      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
@@ -1109,23 +1120,6 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
   
       break;
-=======
-  switch (config->GetKind_Trans_Model()) {    
-    case TURB_TRANS_MODEL::LM:
-      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
-      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
-      break;
-
-    case TURB_TRANS_MODEL::NONE:
-      break;
-  }
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
->>>>>>> develop
   }
 }
 
@@ -1144,7 +1138,6 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       break;
   }
 
-<<<<<<< HEAD
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
@@ -1159,7 +1152,8 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       break;
     case SPECIES_MODEL::NONE:
       break;
-=======
+  }
+
   switch (config->GetKind_Trans_Model()) {    
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
@@ -1168,12 +1162,6 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 
     case TURB_TRANS_MODEL::NONE:
       break;
-  }
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
->>>>>>> develop
   }
 }
 
