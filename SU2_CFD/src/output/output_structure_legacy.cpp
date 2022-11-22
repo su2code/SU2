@@ -3311,6 +3311,13 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
+          case VISCOSITYMODEL::FLAMELET:
+            Breakdown_file << "Viscosity Model: FLAMELET  "<< "\n";
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+            Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
+            break;
+
           case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
@@ -3356,6 +3363,12 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             case CONDUCTIVITYMODEL::CONSTANT:
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+              Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
+              break;
+
+            case CONDUCTIVITYMODEL::FLAMELET:
+              Breakdown_file << "Conductivity Model: FLAMELET "<< "\n";
+              Breakdown_file << "Molecular Conductivity units: " << " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
               break;
 
