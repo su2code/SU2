@@ -30,6 +30,10 @@
 #include <Accelerate/Accelerate.h>
 #endif
 
+//#if defined(HAVE_LAPACK)
+//extern "C" void dgels_(const char*, const int*, const int*, const int*, double*, const int*, double*, const int*, double*, const int*, int*);
+//#endif
+
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
@@ -989,10 +993,12 @@ class CFVMFlowSolverBase : public CSolver {
     unsigned long m       = Mask.size() * nVar;
     unsigned short nsnaps = TrialBasis[0].size();
     vector<su2double> r(m,0.0);
+    vector<su2double> r_ns(m,0.0);  // not scaled residual
     
-    /*--- Update and obtain residual ---*/
+    /*--- Obtain hyper-reduced residual ---*/
     
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    unsigned long InnerIter = config->GetInnerIter();
     unsigned long index = 0;
     //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
@@ -1004,12 +1010,31 @@ class CFVMFlowSolverBase : public CSolver {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         
         su2double Res = -(Residual[iVar] + Res_TruncError[iVar]);
-        r[index] = Res;
-      
+        r_ns[index] = Res;
+        
+        /*-- Compute weights for scaled residuals --*/
+        if (InnerIter == 0) {
+          if (iPoint_mask == 0) Weights.push_back(0);
+          //Weights[iVar] += abs(r_ns[index]) / nPointDomain;
+          Weights[iVar] += r_ns[index] * r_ns[index];
+        }
         index++;
       }
     }
     END_SU2_OMP_FOR
+    
+    
+    /*-- Compute scaled residuals --*/
+    
+    index = 0;
+    for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        r[index] = r_ns[index] / sqrt(Weights[iVar]);
+        //r[index] = (1.0) * r_ns[index];
+        index++;
+      }
+    }
+    
     
     // DO ROM ITERATION:
     
@@ -1033,7 +1058,7 @@ class CFVMFlowSolverBase : public CSolver {
           
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-              unsigned short index_jik         = kVar*nVar + iVar;
+              unsigned short index_jik = kVar*nVar + iVar;
               
               fs << setprecision(10) << J_ik[index_jik] << "," ;
             }
@@ -1059,18 +1084,18 @@ class CFVMFlowSolverBase : public CSolver {
           
           /*--- Compute this block of W_ij = J_ik * Phi_kj, i = 0:nVar, j = jPoint, k = 0:nVar ---*/
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
             for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-              unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
-              unsigned long total_index_phikj = kVar + kPoint*nVar;
-              unsigned long index_jik         = kVar*nVar + iVar;
+              unsigned long total_index_phik = kVar + kPoint*nVar;
+              unsigned long index_jik        = kVar*nVar + iVar;
               
-              TestBasis[total_index_wij] += TrialBasis[total_index_phikj][jPoint] * J_ik[index_jik];
+              TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
               
               /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
               if (kNeigh == 0) {
                 unsigned long k = iPoint;
-                unsigned long total_index_phikj = kVar + k*nVar;
-                TestBasis[total_index_wij] += TrialBasis[total_index_phikj][jPoint] * J_ii[index_jik];
+                unsigned long total_index_phik = kVar + k*nVar;
+                TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii[index_jik];
               }
             }
           } // end compute of W_ij
@@ -1107,18 +1132,15 @@ class CFVMFlowSolverBase : public CSolver {
     
     if (true) {
       unsigned long InnerIter = config->GetInnerIter();
-      writeROMfiles(InnerIter, r, r_red);
+      writeROMfiles(InnerIter, r_ns, r_red);
       
-      //ofstream fs;
-      //std::string fname = "check_testbasis.csv";
-      //fs.open(fname);
-      //for(unsigned long i=0; i < m; i++){
-      //  for(unsigned long j=0; j < nsnaps; j++){
-      //    fs << setprecision(10) << TestBasis[i +j*m] << "," ;
-      //  }
-      //  fs << "\n";
-      //}
-      //fs.close();
+      ofstream fs;
+      std::string fname = "check_res_unweighted.csv";
+      fs.open(fname);
+      for(unsigned long i=0; i < m; i++){
+        fs << setprecision(10) << r_ns[i] << "," ;
+      }
+      fs.close();
       //
       //std::string fname1 = "check_trialbasis.csv";
       //fs.open(fname1);
@@ -1135,29 +1157,34 @@ class CFVMFlowSolverBase : public CSolver {
     
     char TRANS = 'N';
     int NRHS = 1;
-    int LWORK = nsnaps + nsnaps;
     int M = (int)m;
     int N = (int)nsnaps;
-    vector<double> WORK(LWORK,0.0);
-    int INFO = 1;
+    int info = 1;
     
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-    dgels_(&TRANS, &M, &N, &NRHS, TestBasis.data(), &M, r.data(), &M, WORK.data(), &LWORK, &INFO);
+    /*--- Query the optimum work size. ---*/
+    int query = -1; double tmp;
+    dgels_(&TRANS, &M, &N, &NRHS, TestBasis.data(), &M, r.data(), &M, &tmp, &query, &info);
+    query = static_cast<int>(tmp);
+    vector<double> work(query);
+    
+    dgels_(&TRANS, &M, &N, &NRHS, TestBasis.data(), &M, r.data(), &M, work.data(), &query, &info);
 #else
     SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);
 #endif
-    if (INFO != 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
+    if (info != 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
     
     /*--- Update ROM solution ---*/
     
-    double a = 1000000000.0;
+    double a = 10000000000.0;
+    
     for (int i = 0; i < nsnaps; i++) {
-      GenCoordsY[i] += a * r[i];
+      GenCoordsY[i] += a * r[i] ;
     }
     
     vector<double> allMaskedNodes(Mask);
     allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
-    //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (unsigned long iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
       unsigned long iPoint = allMaskedNodes[iPoint_mask];

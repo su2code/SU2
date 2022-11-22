@@ -200,7 +200,7 @@ public:
 
   vector<std::vector<su2double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
   vector<su2double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
-  vector<su2double> Weights;
+  vector<su2double> Weights;                   /*!< \brief vector to store weights for scaling the residual. (rom)  */
   vector<su2double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
   set<unsigned long> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */

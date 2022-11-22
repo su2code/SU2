@@ -4535,6 +4535,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (desired_nodes == 0) use_all_nodes = true;
   
+  /*--- If selected nodes already contained in file, do not re-compute ---*/
   ifstream in_hypernodes(hypernodes_filename);
   if (in_hypernodes) read_mask_from_file = true;
   
@@ -4563,8 +4564,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
   
   // TODO: Use all modes (since this is "offline") or only use truncated # modes?
-  unsigned long nsnaps = Phi.size();
-  //unsigned long nsnaps = 10;
+  //unsigned long nsnaps = Phi.size();
+  unsigned long nsnaps = 20;
   unsigned long j, k, ii, imask, inode, nodewithMax;
   
   /*--- compute PhiNodes, the norm of Phi at each node ---*/
@@ -4695,8 +4696,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (!read_mask_from_file) {
   ofstream fs;
-  std::string fname = "masked_nodes_"+to_string(desired_nodes)+".csv";
-  fs.open(fname);
+  //std::string fname = "masked_nodes_"+to_string(desired_nodes)+".csv";
+  fs.open(hypernodes_filename);
   for(unsigned long i=0; i < Mask.size(); i++){
     fs << Mask[i] << "," ;
   }
@@ -4772,7 +4773,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   }
   
   ofstream fs;
-  std::string fname = "masked_nodes_neighs_allphi_"+to_string(desired_nodes)+".csv";
+  std::string fname = "masked_nodes_neighs_greedy_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   set <unsigned long> :: iterator itr;
   for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
@@ -4901,8 +4902,8 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
     else {
       if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
 
-      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
-                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
+      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTimeND(),
+                                    1.0e-2, config->GetDelta_UnstTimeND()*nTimeIter, true).setDebugMode(false);
       incremental = true;
     }
 
@@ -4920,14 +4921,14 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
         for (unsigned long iDim = 0; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
-        f << globalPoint << "\n";
+        f << globalPoint << ", " << iPoint << "\n";
       }
     f.close();
   }
 
   if (unsteady && (TimeIter % save_freq == 0)) {
     // give solution and time steps to libROM:
-    su2double dt = config->GetDelta_UnstTime();
+    su2double dt = config->GetDelta_UnstTimeND();
     su2double t =  config->GetCurrent_UnstTime();
     u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
   }
@@ -4944,6 +4945,7 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
     }
 
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      // Getting snapshot matrix for incremental SVD not implemented.
       u_basis_generator->writeSnapshot();
     }
 
