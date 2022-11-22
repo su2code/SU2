@@ -1118,7 +1118,8 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
           AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
         }
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
-
+      break;
+    case SPECIES_MODEL::NONE:
       break;
   }
 }
