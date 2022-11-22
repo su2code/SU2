@@ -1622,13 +1622,13 @@ public:
    * \brief Set bounded scalar transport problem
    * \param[in] is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
-  inline void SetBoundedScalar(const bool is_bounded_scalar) {bounded_scalar = is_bounded_scalar; }
+  inline void SetBoundedScalar(const bool is_bounded_scalar) { bounded_scalar = is_bounded_scalar; }
 
   /*!
    * \brief Obtain information on bounded scalar problem
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
-  inline bool GetBoundedScalar() const {return bounded_scalar;}
+  inline bool GetBoundedScalar() const { return bounded_scalar;}
 };
 
 /*!

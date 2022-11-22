@@ -4792,8 +4792,9 @@ public:
    *       during the computation.
    * \return Bounded scalar problem for turbulence or species transport.
    */
-  bool GetBounded_Scalar() const { return ((Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR) 
-                                            || (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR)); }
+  bool GetBounded_Scalar() const {
+    return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR) || (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR);
+  }
 
   /*!
    * \brief Get bounded scalar problem for species transport.
