@@ -58,41 +58,97 @@ class CFluidFlamelet final : public CFluidModel {
 
   ~CFluidFlamelet();
 
+  /*!
+   * \brief Set the thermodynamioc state
+   * \param[in] val_temperature - temperature
+   * \param[in] val_scalars - pointer to species mass fractions
+   */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
+  /*!
+   * \brief Set the reaction source terms for the transported species equations
+   * \param[in] val_scalars - pointer to species mass fractions
+   * \param[out] exit_code = error code
+   */
   unsigned long SetScalarSources(su2double* val_scalars);
 
+  /*!
+   * \brief Retrieve and set the lookup values for the species
+   * \param[in] val_scalars - pointer to species mass fractions
+   */
   unsigned long SetScalarLookups(su2double* val_scalars);
 
-  void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
+  //void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
 
+   /*!
+   * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
+   * \param[in/out] enthalpy - total enthalpy
+   * \param[in] val_prog - progress variable
+   * \param[in] val_temp - temperature
+   * \param[out] exit_code = error code
+   */
   unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp);
 
+  /*!
+   * \brief return a pointer to the lookup table
+   * \param[out] look_up_table - pointer to lookup table
+   */
   inline CLookUpTable* GetLookUpTable() { return look_up_table; }
 
   // inline su2double GetSourceEnergy() { return source_energy; }
 
+  /*!
+   * \brief Get the mass diffusivity of the species
+   * \param[in] iVar - index to the species
+   * \param[out] mass_diffusivity - value of the mass diffusivity
+   */
   inline su2double GetMassDiffusivity(int iVar) override { return mass_diffusivity; }
 
+  /*!
+   * \brief Get the thermal conductivity of the species
+   * \param[in] iVar - index to the species
+   * \param[out] Kt - value of the thermal conductivity
+   */
   inline su2double GetThermalConductivity() { return Kt; }
 
+  /*!
+   * \brief Get the laminar viscosity of the species
+   * \param[in] iVar - index to the species
+   * \param[out] Mu - value of the laminar viscosity
+   */
   inline su2double GetLaminarViscosity() { return Mu; }
 
+  /*!
+   * \brief Get the enthalpy range in the lookup table
+   */
   inline pair<su2double, su2double> GetTableLimitsEnth() { return look_up_table->GetTableLimitsEnth(); }
 
+  /*!
+   * \brief Get the progress variable range in the lookup table
+   */
   inline pair<su2double, su2double> GetTableLimitsProg() { return look_up_table->GetTableLimitsProg(); }
 
-  inline su2double GetdDensitydPV() { return dDensitydPV; }
+  /*!
+   * \brief Get the reaction source term of a species equation
+   * \param[in] iVar - index to the species
+   */
+  inline su2double GetScalarSources(int iVar) { return source_scalar.at(iVar); }
 
-  inline su2double GetdSourcePVdPV() { return dSourcePVdPV; }
-
-  inline su2double GetdDensitydEnth() { return dDensitydEnth; }
-
-  inline su2double GetScalarSources(int i_scalar) { return source_scalar.at(i_scalar); }
-
+  /*!
+   * \brief Get the reaction source term of all species equations
+   */
   inline su2double* GetScalarSources() { return &source_scalar[0]; }
 
-  inline unsigned short GetNScalars() { return n_scalars; }
-
+  /*!
+   * \brief Get the value of the looked up variable
+   * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
+   */
   inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar.at(i_scalar); }
+
+  //remove?
+  //inline su2double GetdDensitydPV() { return dDensitydPV; }
+  //inline su2double GetdSourcePVdPV() { return dSourcePVdPV; }
+  //inline su2double GetdDensitydEnth() { return dDensitydEnth; }
+  // already in config file?
+  //inline unsigned short GetNScalars() { return n_scalars; }
 };
