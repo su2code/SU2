@@ -1310,10 +1310,12 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       }
       break;
     }
+
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       unsigned long n_sources = config->GetNLUTSources();
-      su2double scalars[n_sources];
+      //nijso: change to vector or something
+      su2double* scalars = new su2double[n_sources];
       for (unsigned short isource = 0; isource < n_sources; isource++) {
         scalars[isource] = Node_Species->GetSolution(iPoint,isource);
       }
