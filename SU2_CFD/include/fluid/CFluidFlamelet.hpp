@@ -30,23 +30,20 @@
 #include "../../Common/include/containers/CLookUpTable.hpp"
 #include "CFluidModel.hpp"
 
-
 class CFluidFlamelet final : public CFluidModel {
-
-protected:
-
+ protected:
   int rank;
 
   unsigned short n_scalars;
   unsigned short n_lookups;
-  unsigned short n_table_sources; 
+  unsigned short n_table_sources;
 
-  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  vector<string> table_lookup_names;    /*!< \brief vector to store names of look up variables.   */
+  vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
+  vector<string> table_source_names; /*!< \brief vector to store names of scalar source variables.   */
+  vector<string> table_lookup_names; /*!< \brief vector to store names of look up variables.   */
 
   su2double mass_diffusivity;
-  //su2double source_energy;
+  // su2double source_energy;
   su2double dDensitydPV;
   su2double dSourcePVdPV;
   su2double dDensitydEnth;
@@ -54,26 +51,26 @@ protected:
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
 
-  CLookUpTable *look_up_table;
+  CLookUpTable* look_up_table;
 
  public:
-  CFluidFlamelet(CConfig *config, su2double value_pressure_operating);
+  CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 
   ~CFluidFlamelet();
 
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
-  unsigned long SetScalarSources(su2double *val_scalars);
+  unsigned long SetScalarSources(su2double* val_scalars);
 
-  unsigned long SetScalarLookups(su2double *val_scalars);
+  unsigned long SetScalarLookups(su2double* val_scalars);
 
   void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
 
-  unsigned long GetEnthFromTemp(su2double *enthalpy, su2double val_prog, su2double val_temp);
+  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp);
 
-  inline CLookUpTable* GetLookUpTable() {return look_up_table; }
+  inline CLookUpTable* GetLookUpTable() { return look_up_table; }
 
-  //inline su2double GetSourceEnergy() { return source_energy; }
+  // inline su2double GetSourceEnergy() { return source_energy; }
 
   inline su2double GetMassDiffusivity(int iVar) override { return mass_diffusivity; }
 
@@ -93,10 +90,9 @@ protected:
 
   inline su2double GetScalarSources(int i_scalar) { return source_scalar.at(i_scalar); }
 
-  inline su2double *GetScalarSources(){ return &source_scalar[0]; }
+  inline su2double* GetScalarSources() { return &source_scalar[0]; }
 
   inline unsigned short GetNScalars() { return n_scalars; }
 
   inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar.at(i_scalar); }
-
 };

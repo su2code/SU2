@@ -120,7 +120,7 @@ private:
   /*!
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
-  inline void ResidualAxisymmetric(void){
+  inline void ResidualAxisymmetric(void) {
     su2double yinv,Density_i,Velocity_i[3];
     if (Coord_i[1] > EPS) {
 
@@ -133,12 +133,12 @@ private:
       Density_i = V_i[nDim+2];
 
       /*--- Set primitive variables at points iPoint. ---*/
-    
+
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Velocity_i[iDim] = V_i[iDim+1];
 
       /*--- Inviscid component of the source term. ---*/
-    
+
       for (auto iVar=0u; iVar < nVar; iVar++)
         Residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
 
@@ -149,7 +149,7 @@ private:
       }
 
       /*--- Add the viscous terms if necessary. ---*/
-    
+
       if (viscous) {
         Laminar_Viscosity_i    = V_i[nDim+4];
         Eddy_Viscosity_i       = V_i[nDim+5];
@@ -162,26 +162,26 @@ private:
       // nijso TODO In case of flamelet, diffusion_coeff is actually rho*D
       // remember (rho*cp*D) = k when Le=1
       // and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
-        for (auto iVar=0u; iVar < nVar; iVar++){
+        for (auto iVar=0u; iVar < nVar; iVar++) {
           if (flamelet)
             Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
           else
             Residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
-        } 
+        }
       }
 
     } else {
-    
+
       for (auto iVar=0u; iVar < nVar; iVar++)
         Residual[iVar] = 0.0;
-  
+
       if (implicit) {
         for (auto iVar=0u; iVar < nVar; iVar++) {
           for (auto jVar=0u; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
         }
       }
-    
+
     }
 
   }

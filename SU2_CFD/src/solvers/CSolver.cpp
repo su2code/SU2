@@ -3666,8 +3666,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         /*--- auxiliary species transport equations ---*/
         columnName << "CO         " << setw(24) << "NOX        " << setw(24);
         columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[2] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[3]<<"\t";
-         
-        break; 
+        break;
     }
 
     columnNames.push_back(columnName.str());

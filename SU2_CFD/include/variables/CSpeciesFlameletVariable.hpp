@@ -33,14 +33,11 @@
  * \class CSpeciesFlameletVariable
  * \brief Base class for defining the variables of the flamelet model.
  */
-class CSpeciesFlameletVariable final: public CSpeciesVariable {
+class CSpeciesFlameletVariable final : public CSpeciesVariable {
  protected:
-  //MatrixType source_prog;            /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  MatrixType source_scalar;          /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  MatrixType lookup_scalar;          /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  //MatrixType source_scalar_rescaled; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  //MatrixType scalar_table_paraview;  /*!< \brief Vector of the values of the scalar from the lookup table for visualization */
-  
+  MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+  MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -51,28 +48,15 @@ class CSpeciesFlameletVariable final: public CSpeciesVariable {
    * \param[in] config - Definition of the particular problem.
    */
   CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                   const CConfig* config);
-  
+                           const CConfig* config);
+
   /*!
    * \brief Set the value of the transported scalar source term
    * \param[in] val_- the .
    * \param[in] val_ivar        - eqn. index to the .
    */
-  //inline void SetSourceScalar(unsigned long  iPoint,
-  //                            su2double      val_source_scalar,
-  //                            unsigned short val_ivar) override {
-  //  source_scalar(iPoint,val_ivar) = val_source_scalar;
-  //}
-  
-  /*!
-   * \brief Set the value of the transported scalar source term
-   * \param[in] val_- the .
-   * \param[in] val_ivar        - eqn. index to the .
-   */
-  inline void SetLookupScalar(unsigned long  iPoint,
-                            su2double      val_lookup_scalar,
-                            unsigned short val_ivar) override {
-    lookup_scalar(iPoint,val_ivar) = val_lookup_scalar;
+  inline void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
+    lookup_scalar(iPoint, val_ivar) = val_lookup_scalar;
   }
 
   /*!
@@ -80,36 +64,28 @@ class CSpeciesFlameletVariable final: public CSpeciesVariable {
    * \param[in] val_ivar - eqn. index to the transported scalar source term
    * \return Value of the progress variable source term
    */
-  inline su2double GetScalarSources(unsigned long  iPoint,
-                                 unsigned short val_ivar) override {
-    return source_scalar(iPoint,val_ivar);
+  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) override {
+    return source_scalar(iPoint, val_ivar);
   }
 
-   /*!
+  /*!
    * \brief Get the value of the looked up scalar field
    * \param[in] val_ivar - eqn. index to the looked up scalar field
    * \return Value of the looked up scalar field
    */
-  inline su2double GetScalarLookups(unsigned long  iPoint,
-                                 unsigned short val_ivar) override {
-    return lookup_scalar(iPoint,val_ivar);
+  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) override {
+    return lookup_scalar(iPoint, val_ivar);
   }
-  
 
   /*!
    * \brief Get the value of the transported scalars source term
    * \return Pointer to the transported scalars source term
    */
-  inline su2double *GetScalarSources(unsigned long iPoint) override {
-    return source_scalar[iPoint];
-  }
+  inline su2double* GetScalarSources(unsigned long iPoint) override { return source_scalar[iPoint]; }
 
   /*!
    * \brief Get the value of the looked up table based on the transported scalar
    * \return Pointer to the transported scalars source term
    */
-  inline su2double *GetScalarLookups(unsigned long iPoint) override {
-    return lookup_scalar[iPoint];
-  }
-
+  inline su2double* GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
 };

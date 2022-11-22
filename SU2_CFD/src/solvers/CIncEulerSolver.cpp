@@ -331,7 +331,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
-    case FLUID_FLAMELET:{
+    case FLUID_FLAMELET:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
@@ -339,7 +339,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
-    }
 
     default:
 
@@ -491,11 +490,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
-      case FLUID_FLAMELET:{
+      case FLUID_FLAMELET:
         fluidModel = new CFluidFlamelet(config, Pressure_ThermodynamicND);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
-      }
+
       case INC_IDEAL_GAS_POLY:
         fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
         if (viscous) {
@@ -2900,7 +2899,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-            su2double AxiFactor = 1.0; 
+            su2double AxiFactor = 1.0;
             if (axisymmetric) {
               if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
@@ -2911,7 +2910,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                   }
                 }
               }
-            } 
+            }
 
             V_outlet = nodes->GetPrimitive(iPoint);
 

@@ -55,7 +55,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Jacobian_j;
 
   const bool turbulence;
-  const bool flamelet; 
+  const bool flamelet;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -70,7 +70,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
-    su2double Diffusivity_Lam=0.0;
+    su2double Diffusivity_Lam = 0.0;
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
 
@@ -79,7 +79,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
       if (flamelet)
         /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D--- */
         Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
-      else 
+      else
         Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
       su2double Diffusivity_Turb = 0.0;

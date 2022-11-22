@@ -27,13 +27,11 @@
 
 #include "../../include/variables/CSpeciesFlameletVariable.hpp"
 
-CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim,
-                                   unsigned long nvar, const CConfig* config)
+CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint,
+                                                   unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CSpeciesVariable(species_inf, npoint, ndim, nvar, config) {
-
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Solution(iPoint, iVar) = species_inf[iVar];
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution(iPoint, iVar) = species_inf[iVar];
 
   Solution_Old = Solution;
 
@@ -48,12 +46,10 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
 
   /*--- Allocate residual structures ---*/
 
-  // nijso asks: should we move this up to CScalarVariable.cpp?
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
+  Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
 
   /* Allocate space for the source and scalars for visualization */
-  
+
   source_scalar.resize(nPoint, config->GetNScalars()) = su2double(0.0);
   lookup_scalar.resize(nPoint, config->GetNLookups()) = su2double(0.0);
-  
 }

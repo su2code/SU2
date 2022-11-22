@@ -148,32 +148,32 @@ class CFluidModel {
    * \brief flamelet LUT - Get the source term of the transported scalar
    * \param[in] val_ix - Index of the scalar.
    */
-  virtual inline su2double GetScalarSources(int val_ix){ return 37; }
-  
+  virtual inline su2double GetScalarSources(int val_ix){ return 0; }
+
   /*!
   * \brief flamelet LUT - Get the number of transported scalars
   */
-  virtual inline unsigned short GetNScalars() {return 73; }
+  virtual inline unsigned short GetNScalars() {return 0; }
 
   /*!
    * \brief flamelet LUT - Get the looked up scalar field for combustion
    */
-  virtual inline su2double GetScalarLookups(int){ return 37; }
+  virtual inline su2double GetScalarLookups(int){ return 0; }
 
   /*!
-   * \brief flamelet LUT - Get the actual lookup table 
+   * \brief flamelet LUT - Get the actual lookup table
    */
-  virtual CLookUpTable* GetLookUpTable() {return look_up_table; }
+  virtual CLookUpTable* GetLookUpTable() { return look_up_table; }
 
   /*!
    * \brief flamelet LUT - Get the total enthalpy from the temperature (reverse lookup)
    */
-  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy, 
-                                               su2double  val_prog, 
-                                               su2double  val_temp) { return 73; }
+  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
+                                               su2double  val_prog,
+                                               su2double  val_temp) { return 0; }
 
-  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(73,37); }
-  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(73,37); }
+  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
+  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
 
   /*!
    * \brief Get fluid dynamic viscosity.
@@ -362,9 +362,9 @@ class CFluidModel {
   /*!
    * \brief Virtual member. nijso: todo: is this really necessary?
    */
-  virtual unsigned long SetScalarSources(su2double *val_scalars) {return 0;}
+  virtual unsigned long SetScalarSources(su2double *val_scalars) { return 0; }
 
-  virtual unsigned long SetScalarLookups(su2double *val_scalars) {return 0;}
+  virtual unsigned long SetScalarLookups(su2double *val_scalars) { return 0; }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
