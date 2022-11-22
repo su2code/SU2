@@ -28,6 +28,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -322,8 +323,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     /*--- Effective Intermittency ---*/
-    
-    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {      
+
+    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
     }
 
@@ -590,6 +591,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       Jacobian_i_correction[iVar][jVar] = 0.0;
     }
   }
+  const CPrimitiveIndices<unsigned short> prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+                                                   config->GetNEMOProblem(), nDim, config->GetnSpecies());
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -621,13 +624,38 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
       su2double Inlet_Vars[MAXNVAR];
-      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
       if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
-        Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+        /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+        Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0] / pow(config->GetVelocity_Ref(), 2);
+        Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
+                        (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+      } else {
+        /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+        CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+        /*--- Obtain flow velocity vector at inlet boundary node ---*/
+
+        const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
+        su2double Density_Inlet;
+        if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+          Density_Inlet = V_inlet[prim_idx.Density()];
+          FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+        } else {
+          const su2double* Scalar_Inlet = nullptr;
+          if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+          }
+          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+          Density_Inlet = FluidModel->GetDensity();
+        }
+        const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+        const su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+        const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
+
+        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST

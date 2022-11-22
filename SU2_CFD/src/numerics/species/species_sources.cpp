@@ -41,6 +41,7 @@ CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     jacobian[iVar] = new su2double[nVar]();
   }
+  bounded_scalar = config->GetBounded_Species();
 }
 
 CSourceBase_Species::~CSourceBase_Species() {

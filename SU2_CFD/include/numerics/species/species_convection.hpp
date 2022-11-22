@@ -86,5 +86,5 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Species(); }
 };

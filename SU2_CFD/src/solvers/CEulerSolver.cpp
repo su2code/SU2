@@ -1739,8 +1739,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
-  const bool bounded_scalar   = ((config->GetKind_Upwind_Species() == UPWIND::BOUNDED_SCALAR) || 
-                                 (config->GetKind_Upwind_Turb() == UPWIND::BOUNDED_SCALAR));
+  const bool bounded_scalar   = config->GetBounded_Scalar();
+  
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER

@@ -48,6 +48,7 @@ private:
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::implicit;
+  using Base::bounded_scalar;
 
   /*!
    * \brief Adds any extra variables to AD.
@@ -75,7 +76,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Turb(); }
 };
 
 /*!
@@ -100,6 +101,7 @@ private:
   using Base::ScalarVar_j;
   using Base::implicit;
   using Base::idx;
+  using Base::bounded_scalar;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -137,5 +139,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Turb(); }
 };

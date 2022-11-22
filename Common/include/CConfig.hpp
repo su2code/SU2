@@ -4796,6 +4796,18 @@ public:
                                             || (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR)); }
 
   /*!
+   * \brief Get bounded scalar problem for species transport.
+   * \return Bounded scalar problem for species transport.
+   */
+  bool GetBounded_Species() const { return (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Get bounded scalar problem for turbulent transport.
+   * \return Bounded scalar problem for turbulent transport.
+   */
+  bool GetBounded_Turb() const { return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR); }
+  
+  /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
