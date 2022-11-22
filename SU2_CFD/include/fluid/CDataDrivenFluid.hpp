@@ -127,4 +127,16 @@ class CDataDrivenFluid : public CFluidModel {
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_Ps(su2double P, su2double s) override;
+
+  /*!
+  * \brief Set the initial guess for the density in Newton solvers
+  * \param[in] rho - Initial value for density.
+  */
+  void SetDensity(su2double rho) override {rho_start = rho;}
+
+  /*!
+  * \brief Set the initial guess for the static energy in Newton solvers
+  * \param[in] e - Initial value for static energy.
+  */
+  void SetEnergy(su2double e) override {e_start = e;}
 };

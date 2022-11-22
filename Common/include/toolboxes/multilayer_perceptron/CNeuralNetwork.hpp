@@ -83,8 +83,6 @@ public:
             delete total_layers.at(i);
         }
         delete [] ANN_outputs;
-        delete [] inputLayer;
-        delete [] outputLayer;
         delete [] activation_function_types;
     };
     void defineInputLayer(unsigned long n_neurons);
@@ -101,7 +99,6 @@ public:
 
     unsigned long getNNeurons(unsigned long iLayer){;
     return total_layers.at(iLayer)->getNNeurons();}
-    //unsigned long getNNeurons(unsigned long iLayer, unsigned long iNeuron){return weights.at(iLayer).at(iNeuron).size();}
 
     void predict(std::vector<su2double> &inputs);
 

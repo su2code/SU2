@@ -60,6 +60,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Set initial values for density and energy based on config options ---*/
   rho_start = config->GetDensity_Init_DataDriven();
   e_start   = config->GetEnergy_Init_DataDriven();
+  
 }
 
 CDataDrivenFluid::~CDataDrivenFluid(){
@@ -148,7 +149,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dPde_rho = -pow(rho, 2) * dTde_rho * dsdrho_e;
   dPdrho_e = -2*rho*Temperature*dsdrho_e - pow(rho, 2)*Temperature*d2sdrho2;
 
-  Cp = (1 / dTde_rho) * ( 1 + (1 / Density)*dPde_rho) + (1/Density)*(1/dTdrho_e)*(dPdrho_e - Pressure / Density);
+  Cp = (1 / dTde_rho) * ( 1 + (1 / Density)*dPde_rho);
   Cv = 1 / dTde_rho;
   Gamma = Cp / Cv;
   Gamma_Minus_One = Gamma - 1;
@@ -174,7 +175,6 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
             delta_rho,    // Density step size
             delta_e,      // Energy step size
             determinant;  // Jacobian determinant
-
   /*--- Initiating Newton solver ---*/
   while(!converged && (Iter < iter_max)){
 
@@ -184,7 +184,6 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
     /*--- Determine pressure and temperature residuals ---*/
     delta_P = Pressure - P;
     delta_T = Temperature - T;
-
     /*--- Continue iterative process if residuals are outside tolerances ---*/
     if((abs(delta_P) < tolerance_P) && (abs(delta_T) < tolerance_T)){
       converged = true;
@@ -199,6 +198,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
       /*--- Update density and energy values ---*/
       rho -= Newton_Relaxation * delta_rho;
       e -= Newton_Relaxation * delta_e;
+      
     }
     Iter ++;
   }
@@ -210,6 +210,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
   /*--- Computing static energy according to pressure and density ---*/
   SetEnergy_Prho(P, rho);
+  
 
   /*--- Calculate thermodynamic state based on converged value for energy ---*/
   SetTDState_rhoe(rho, StaticEnergy);
@@ -245,7 +246,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
       delta_e = delta_P / dPde_rho;
 
       /*--- energy value ---*/
-      e += Newton_Relaxation * delta_e;
+      e -= Newton_Relaxation * delta_e;
     }
     Iter ++;
   }
@@ -286,7 +287,7 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
       delta_e = delta_T / dTde_rho;
 
       /*--- Update energy value ---*/
-      e += Newton_Relaxation * delta_e;
+      e -= Newton_Relaxation * delta_e;
     }
     Iter ++;
   }
@@ -343,7 +344,6 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
     }
     Iter ++;
   }
-
   /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
   SetTDState_rhoe(rho, e);
 }

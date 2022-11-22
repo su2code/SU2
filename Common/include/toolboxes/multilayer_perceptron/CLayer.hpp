@@ -126,9 +126,6 @@ public:
     */
     string getActivationType(){return activation_type;}
     
-    ~CLayer(){
-        delete [] neurons;
-    };
 };
 
 }

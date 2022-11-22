@@ -325,4 +325,16 @@ class CFluidModel {
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+  /*!
+  * \brief Set the initial guess for the density in Newton solvers
+  * \param[in] rho - Initial value for density.
+  */
+  virtual void SetDensity(su2double rho) {}
+
+  /*!
+  * \brief Set the initial guess for the static energy in Newton solvers
+  * \param[in] e - Initial value for static energy.
+  */
+  virtual void SetEnergy(su2double e) {}
 };
