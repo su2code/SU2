@@ -50,6 +50,7 @@ class CFileReaderLUT {
   unsigned long *n_triangles;
   unsigned long *n_hull_points;
   unsigned long n_variables;
+  su2double *table_levels = nullptr;
 
   /*! \brief Holds the variable names stored in the table file. 
    * Order is in sync with tableFlamelet.
@@ -81,7 +82,7 @@ class CFileReaderLUT {
 
  public:
   CFileReaderLUT(){};
-  
+  ~CFileReaderLUT();
   inline const std::string& GetVersionLUT() const { return version_lut; }
   inline const std::string& GetVersionReader() const { return version_reader; }
   inline unsigned long GetNPoints(std::size_t i_level=0) const { return n_points[i_level]; }
@@ -98,6 +99,8 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull(std::size_t i_level=0) const { return hull[i_level]; }
 
+  inline const su2double GetTableLevel(std::size_t i_level) const { return table_levels[i_level]; }
+  
   inline const unsigned short GetTableDim() const { return table_dim; }
 
   void ReadRawLUT(const std::string& file_name);
