@@ -5352,7 +5352,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
-        Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS &&
+        Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
 
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/

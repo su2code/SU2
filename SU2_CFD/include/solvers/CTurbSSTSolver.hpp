@@ -249,6 +249,26 @@ public:
                  unsigned short val_marker) override;
 
   /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final {
+    BC_Fluid_Interface_impl(
+      [&](unsigned long iPoint) {
+        visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
+      },
+      geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
+
+  /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
    */

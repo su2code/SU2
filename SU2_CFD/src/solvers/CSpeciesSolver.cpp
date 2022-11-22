@@ -135,6 +135,16 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
+
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
+    }
+  }
+
   /*--- Set the column number for species in inlet-files.
    * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
   Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
@@ -641,7 +651,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
-  
+
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       /*--- Set primitive variables w/o reconstruction ---*/
@@ -662,23 +672,23 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Axisymmetry source term for the scalar equation. ---*/
       /*--- Set y coordinate ---*/
-      
+
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
-      
+
       /*--- Set gradients ---*/
-      
+
       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
       auto residual = numerics->ComputeResidual(config);
 
       /*--- Add Residual ---*/
-    
+
       LinSysRes.SubtractBlock(iPoint, residual);
-    
+
       /*--- Implicit part ---*/
-    
+
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-    
+
     }
     END_SU2_OMP_FOR
   }

@@ -2114,7 +2114,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     else
       InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                               solver[MESH_0][TRANS_SOL], numerics);
-  }  
+  }
 
   /*--- Solver definition for the species transport problem ---*/
 
@@ -3132,16 +3132,19 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
-    solver_container[donorZone][INST_0][MESH_0][FLOW_SOL], solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-    geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
-    config_container[donorZone], config_container[targetZone]);
-
-  if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS) {
+  auto BroadcastData = [&](unsigned int solIdx) {
     interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
-      solver_container[donorZone][INST_0][MESH_0][TURB_SOL], solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+      solver_container[donorZone][INST_0][MESH_0][solIdx], solver_container[targetZone][INST_0][MESH_0][solIdx],
       geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
       config_container[donorZone], config_container[targetZone]);
+  };
+  BroadcastData(FLOW_SOL);
+
+  if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS) {
+    BroadcastData(TURB_SOL);
+  }
+  if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    BroadcastData(SPECIES_SOL);
   }
 }
 
