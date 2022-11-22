@@ -149,7 +149,6 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
 
   delete[] table_sources;
 
-  /*--- not used at the moment ---*/
   return exit_code;
 }
 
@@ -163,7 +162,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   vector<string> look_up_tags;
   vector<su2double*> look_up_data;
 
-  /* add all quantities and their address to the look up vectors */
+  /*--- add all quantities and their address to the look up vectors ---*/
   // nijso TODO: check if these exist in the lookup table
 
   look_up_tags.push_back("Temperature");
@@ -179,8 +178,12 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   look_up_tags.push_back("Diffusivity");
   look_up_data.push_back(&mass_diffusivity);
 
-  /* perform table look ups */
   unsigned long exit_code = look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, val_prog, val_enth, name_prog, name_enth);
+
+  /*--- ---*/
+  if (exit_code != 0) {
+    cout << "lookup was outside of the table" << endl;
+  }
 
   // nijso: is Cv used somewhere?
   // according to cristopher, yes!
