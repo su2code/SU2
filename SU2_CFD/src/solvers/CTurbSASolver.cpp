@@ -528,14 +528,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   bool bounded_scalar = conv_numerics->GetBoundedScalar();
 
   su2double EdgeMassFlux = 0.0;
-  su2double **Jacobian_i_correction;
-  Jacobian_i_correction = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    Jacobian_i_correction[iVar] = new su2double[nVar];
-    for(unsigned short jVar=0; jVar<nVar; jVar++){
-      Jacobian_i_correction[iVar][jVar] = 0.0;
-    }
-  }
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -588,7 +580,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       if(bounded_scalar){
         /*--- Obtain flow velocity vector at inlet boundary node ---*/
         su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet;
-        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = V_inlet[iDim + 1];//solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
         
         /*--- Obtain density at inlet boundary node ---*/
         density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -615,9 +607,8 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
           su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
 
           LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);
         }
-      }if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i_correction);
+      }if (implicit) Jacobian.AddVal2Diag(iPoint, max(0.0, EdgeMassFlux));
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -648,27 +639,14 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Delete jacobian correction variable ---*/
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    delete [] Jacobian_i_correction[iVar];
-  }
-  delete [] Jacobian_i_correction;
 }
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   const bool bounded_scalar = conv_numerics->GetBoundedScalar();
+
   su2double EdgeMassFlux = 0.0;
-  su2double **Jacobian_i_correction;
-  Jacobian_i_correction = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    Jacobian_i_correction[iVar] = new su2double[nVar];
-    for(unsigned short jVar=0; jVar<nVar; jVar++){
-      Jacobian_i_correction[iVar][jVar] = 0.0;
-    }
-  }
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -715,7 +693,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       if(bounded_scalar){
         /*--- Obtain flow velocity vector at inlet boundary node ---*/
         su2double Velocity_Outlet[MAXNDIM] = {0.0}, density_outlet;
-        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Outlet[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Outlet[iDim] = V_outlet[iDim + 1];
         
         /*--- Obtain density at inlet boundary node ---*/
         density_outlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -741,9 +719,8 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
           su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
 
           LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);
         }
-      }if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i_correction);
+      }if (implicit) Jacobian.AddVal2Diag(iPoint, max(0.0, EdgeMassFlux));
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -774,12 +751,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Delete jacobian correction variable ---*/
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    delete [] Jacobian_i_correction[iVar];
-  }
-  delete [] Jacobian_i_correction;
 }
 
 void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,

@@ -70,6 +70,10 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
     lowerlimit[iVar] = std::numeric_limits<su2double>::lowest();
     upperlimit[iVar] = std::numeric_limits<su2double>::max();
   }
+
+  // /*--- Setting size for bounded scalar Jacobian correction ---*/
+  // Jacobian_correction_i.resize(nVar, nVar);
+  // Jacobian_correction_j.resize(nVar, nVar);
 }
 
 template <class VariableType>
@@ -151,18 +155,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     pausePreacc = AD::PausePreaccumulation();
   else
     AD::StartNoSharedReading();
-
-  su2double **Jacobian_i_correction, **Jacobian_j_correction;
-  Jacobian_i_correction = new su2double*[nVar];
-  Jacobian_j_correction = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; iVar++){
-    Jacobian_i_correction[iVar] = new su2double[nVar];
-    Jacobian_j_correction[iVar] = new su2double[nVar];
-    for(unsigned short jVar=0; jVar<nVar; jVar++){
-      Jacobian_i_correction[iVar][jVar] = 0.0;
-      Jacobian_j_correction[iVar][jVar] = 0.0;
-    }
-  }
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -292,15 +284,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
           LinSysRes(iPoint, iVar) -= FluxCorrection_i;
           LinSysRes(jPoint, iVar) += FluxCorrection_j;
-
-          //Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);;
-          //Jacobian_j_correction[iVar][iVar] = min(0.0, EdgeMassFlux);
-          //Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
-          //Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
         }
         Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
         Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
-      }if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i_correction, Jacobian_j_correction);
+      }
       /*--- Viscous contribution. ---*/
 
       Viscous_Residual(iEdge, geometry, solver_container,
@@ -317,13 +304,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     SumEdgeFluxes(geometry);
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
-
-  for(unsigned short iVar=0; iVar<nVar; iVar++){
-    delete [] Jacobian_i_correction[iVar];
-    delete [] Jacobian_j_correction[iVar];
-  }
-  delete [] Jacobian_i_correction;
-  delete [] Jacobian_j_correction;
 }
 
 template <class VariableType>
