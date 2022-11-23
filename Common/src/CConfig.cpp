@@ -8830,6 +8830,13 @@ const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
   return Inlet_TurbVal[iMarker_Inlet_Turb];
 }
 
+void CConfig::SetInlet_TurbVal(su2double * val_turbProp, string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Turb; iMarker_Inlet++)
+    if (Marker_Inlet[iMarker_Inlet] == val_marker)
+      Inlet_TurbVal[iMarker_Inlet] = val_turbProp;
+}
+
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)

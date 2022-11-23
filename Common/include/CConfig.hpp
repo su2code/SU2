@@ -6664,6 +6664,14 @@ public:
   const su2double* GetInlet_TurbVal(string val_index) const;
 
   /*!
+   * \brief Set the inlet turbulent properties when marker_inlet_turb is not provided.
+   * \param[in] val_turbProp - Turbulence properties values at the inlet boundary.
+   * \param[in] val_marker - Index corresponding to the inlet boundary.
+   */
+
+  void SetInlet_TurbVal(su2double * val_turbProp, string val_marker);
+
+  /*!
    * \brief Get the total pressure at an nacelle boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
