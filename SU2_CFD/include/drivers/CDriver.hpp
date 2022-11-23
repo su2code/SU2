@@ -28,14 +28,12 @@
 
 #pragma once
 
-#include "../../../Common/include/parallelization/mpi_structure.hpp"
-
-#include "../integration/CIntegration.hpp"
-#include "../solvers/CSolver.hpp"
-#include "../interfaces/CInterface.hpp"
-
-#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/drivers/CDriverBase.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../integration/CIntegration.hpp"
+#include "../interfaces/CInterface.hpp"
+#include "../solvers/CSolver.hpp"
 
 using namespace std;
 
@@ -66,23 +64,23 @@ protected:
     su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
     su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
     
-    ofstream **ConvHist_file;                     /*!< \brief Convergence history file.*/
-    ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
+    ofstream **ConvHist_file;                      /*!< \brief Convergence history file.*/
+    ofstream FSIHist_file;                         /*!< \brief FSI convergence history file.*/
     
     bool StopCalc,                                /*!< \brief Stop computation flag.*/
     mixingplane,                                  /*!< \brief mixing-plane simulation flag.*/
     fsi,                                          /*!< \brief FSI simulation flag.*/
     fem_solver;                                   /*!< \brief FEM fluid solver simulation flag. */
-    
+
     CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
     CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
-    vector<vector<unique_ptr<CInterpolator> > >
-    interpolator_container;                       /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
+    vector<vector<unique_ptr<CInterpolator>>>
+        interpolator_container;                   /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
     CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
     bool dry_run;                                 /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
-    
+
 public:
-    
+
     /*!
      * \brief Constructor of the class.
      * \param[in] confFile - Configuration file name.
@@ -117,7 +115,7 @@ protected:
     void Input_Preprocessing(CConfig **&config, CConfig *&driver_config);
     
     /*!
-     * \brief Construction of the edge-based data structure and the multigrid structure.
+     * \brief Construction of the edge-based data structure and the multi-grid structure.
      */
     void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry, bool dummy);
     
@@ -295,12 +293,12 @@ protected:
     virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
     
     /*!
-     * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
+     * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
      */
     virtual void Run_GaussSeidel(){}
     
     /*!
-     * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
+     * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
      */
     virtual void Run_Jacobi(){}
     
@@ -323,7 +321,7 @@ public:
     virtual void StartSolver() {}
     
     /*!
-     * \brief Deallocation routine
+     * \brief Deallocation routine.
      */
     void Postprocessing();
     
@@ -335,38 +333,48 @@ public:
     /*!
      * \brief Perform some pre-processing before an iteration of the physics.
      */
-    virtual void Preprocess(unsigned long TimeIter){ }
-    
+    virtual void Preprocess(unsigned long TimeIter) {}
+
     /*!
      * \brief Monitor the computation.
      */
-    virtual bool Monitor(unsigned long TimeIter){ return false; }
-    
+    virtual bool Monitor(unsigned long TimeIter) { return false; }
+
     /*!
      * \brief Output the solution in solution file.
      */
-    virtual void Output(unsigned long TimeIter){ }
-    
+    virtual void Output(unsigned long TimeIter) {}
+
     /*!
-     * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
+     * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid structure.
      */
-    virtual void DynamicMeshUpdate(unsigned long TimeIter) { }
-    
+    virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
+
     /*!
-     * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
+     * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid structure.
      */
-    virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) { }
-    
+    virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
+
     /*!
      * \brief Perform a mesh deformation as initial condition.
      */
-    virtual void SetInitialMesh() { }
-    
+    virtual void SetInitialMesh() {}
+
     /*!
-     * \brief Process the boundary conditions and update the multigrid structure.
+     * \brief Process the boundary conditions and update the multi-grid structure.
      */
     void UpdateBoundaryConditions();
-    
+
+    /*!
+     * \brief Update the geometry (i.e. dual grid).
+     */
+    void UpdateGeometry();
+
+    /*!
+     * \brief Update the primal far-field variables.
+     */
+    void UpdateFarfield();
+
     /*!
      * \brief Get the total drag force or drag coefficient.
      * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
@@ -1361,7 +1369,6 @@ public:
             offset += solver->GetnVar();
         }
     }
-    
 };
 
 /*!
@@ -1424,7 +1431,7 @@ public:
     void Preprocess(unsigned long Iter) override;
     
     /*!
-     * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+     * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multi-grid structure (multiple zone).
      */
     void DynamicMeshUpdate(unsigned long TimeIter) override;
     
@@ -1532,7 +1539,7 @@ public:
     void SetHarmonicBalance(unsigned short iZone);
     
     /*!
-     * \brief Precondition Harmonic Balance source term for stability
+     * \brief Precondition Harmonic Balance source term for stability.
      * \author J. Howison
      */
     void StabilizeHarmonicBalance();
