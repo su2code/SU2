@@ -26,10 +26,44 @@
  */
 
 #include "catch.hpp"
+#include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
 TEST_CASE("LookUp ANN test", "[LookUpANN]"){
-  CLookUp_ANN ANN("mlp_collection.mlp");
 
+  MLPToolbox::CLookUp_ANN ANN("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/mlp_collection.mlp");
+  std::vector<std::string> MLP_input_names,
+                           MLP_output_names;
+  std::vector<su2double> MLP_inputs;
+  std::vector<su2double*> MLP_outputs;
+  su2double x,y,z;
+
+  /*--- Define MLP inputs and outputs ---*/
+  MLP_input_names.push_back("x");
+  MLP_input_names.push_back("y");
+  MLP_inputs.resize(2);
+
+  MLP_output_names.push_back("z");
+  MLP_outputs.push_back(&z);
+
+  /*--- Generate input-output map ---*/
+  MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);
+
+  /*--- MLP evaluation on point in the middle of the training data range ---*/
+  x = 1.0;
+  y = -0.5;
+
+  MLP_inputs[0] = x;
+  MLP_inputs[1] = y;
+  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  CHECK(z == Approx(0.344829));
+
+  /*--- MLP evaluation on point outside the training data range ---*/
+  x = 3.0;
+  y = -10;
+  MLP_inputs[0] = x;
+  MLP_inputs[1] = y;
+  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  CHECK(z == Approx(0.012737));
 }

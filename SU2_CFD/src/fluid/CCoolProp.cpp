@@ -37,34 +37,6 @@ CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
   Pressure_Critical = fluid_entity->p_critical();
   Temperature_Critical = fluid_entity->T_critical();
   acentric_factor = fluid_entity->acentric_factor();
-
-  su2double p = 5e4;
-  su2double T = 250;
-  su2double p_max = 2e6;
-  su2double T_max = 600;
-  su2double delta_p = (p_max - p)/500;
-  su2double delta_T = (T_max - T)/500;
-  cout << "rho, e, s, dsde_rho, dsdrho_e, d2sde2, d2sdedrho, d2sdrho2, pressure, temperature, soundspeed2" << endl;
-  for(unsigned long i=0;i<500;i++){
-    p = 5e4;
-    for(unsigned long j=0; j<500;j++){
-      fluid_entity->update(CoolProp::PT_INPUTS, p, T);
-      cout << fluid_entity->rhomass() << ", "
-           << fluid_entity->umass() << ", "
-           << fluid_entity->smass() << ", "
-           << fluid_entity->first_partial_deriv(CoolProp::iSmass, CoolProp::iUmass, CoolProp::iDmass) << ", "
-           << fluid_entity->first_partial_deriv(CoolProp::iSmass, CoolProp::iDmass, CoolProp::iUmass) << ", "
-           << fluid_entity->second_partial_deriv(CoolProp::iSmass, CoolProp::iUmass, CoolProp::iDmass, CoolProp::iUmass, CoolProp::iDmass) << ", "
-           << fluid_entity->second_partial_deriv(CoolProp::iSmass, CoolProp::iUmass, CoolProp::iDmass, CoolProp::iDmass, CoolProp::iUmass) << ", "
-           << fluid_entity->second_partial_deriv(CoolProp::iSmass, CoolProp::iDmass, CoolProp::iUmass, CoolProp::iDmass, CoolProp::iUmass) << ", "
-           << p << ", "
-           << T << ", "
-           << pow(fluid_entity->speed_sound(), 2) << endl;
-      p += delta_p;
-    }
-    T += delta_T;
-
-  }
 }
 
 CCoolProp::~CCoolProp() {}

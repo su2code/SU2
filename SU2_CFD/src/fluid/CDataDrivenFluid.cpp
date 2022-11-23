@@ -1,7 +1,7 @@
 /*!
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
- * \author E.Bunschoten
+ * \author E.Bunschoten M.Mayer A.Capiello
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -133,16 +133,19 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
     break;
   }
 
+  /*--- Compute speed of sound ---*/
   su2double blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
   su2double green_term = (- pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
   
   SoundSpeed2 = - rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
 
+  /*--- Compute primary flow variables ---*/
   Temperature = 1.0 / dsde_rho;
   Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
   Density = rho;
   StaticEnergy = e;
   
+  /*--- Compute secondary flow variables ---*/
   dTde_rho = -pow(dsde_rho, -2)*d2sde2;
   dTdrho_e = 0.0;
 
