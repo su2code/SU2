@@ -33,6 +33,7 @@
 #ifdef USE_COOLPROP
 #include "CoolProp.h"
 #include "AbstractState.h"
+#endif
 /*!
 * \class CCoolPropViscosity
 * \brief Defines CoolProp viscosity model.
@@ -40,7 +41,9 @@
 */
 class CCoolPropViscosity final : public CViscosityModel {
  private:
+#ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /* \brief fluid entity */
+#endif
   /* \brief list of fluids whose viscosity model is available in CoolProp */
   vector<string> fluidNameList = {"Air", "Ammonia", "Argon", "Benzene", "CarbonDioxide", "CycloHexane", "Cyclopentane", "DimethylEther",
                               "Ethane", "Ethanol", "HeavyWater", "Helium", "Hydrogen", "HydrogenSulfide", "IsoButane", "Isopentane",
@@ -54,10 +57,14 @@ public:
   * \brief Constructor of the class.
   */
  CCoolPropViscosity (string fluidname) {
+#ifdef USE_COOLPROP
    fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
    if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()){
        SU2_MPI::Error("Viscosity model not available for this fluid in CoolProp library.", CURRENT_FUNCTION);
    }
+#else
+     SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
+#endif
  }
 
 
@@ -65,8 +72,9 @@ public:
   * \brief Set Viscosity.
   */
  void SetViscosity(su2double t, su2double rho) override {
+#ifdef USE_COOLPROP
    fluid_entity->update(CoolProp::DmassT_INPUTS, rho, t);
      mu_ = fluid_entity->viscosity();
+#endif
  }
 };
-#endif

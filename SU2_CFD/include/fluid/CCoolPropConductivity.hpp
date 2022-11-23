@@ -34,7 +34,7 @@
 #ifdef USE_COOLPROP
 #include "CoolProp.h"
 #include "AbstractState.h"
-
+#endif
 /*!
 * \class CCoolPropConductivity
 * \brief Defines conductivity model from CoolProp.
@@ -42,7 +42,9 @@
 */
 class CCoolPropConductivity final : public CConductivityModel {
  private:
+#ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+#endif
   /*!< \brief list of fluids whose conductivity model is available in CoolProp */
   vector<string> fluidNameList = {"Air", "Ammonia", "Argon", "Benzene", "CarbonDioxide", "Cyclopentane", "EthylBenzene",
                               "Ethane", "Ethanol", "HeavyWater", "Helium", "Hydrogen", "IsoButane", "Isopentane",
@@ -56,18 +58,23 @@ public:
   * \brief Constructor of the class.
   */
  CCoolPropConductivity (string fluidname) {
+#ifdef USE_COOLPROP
    fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
    if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()){
        SU2_MPI::Error("Conductivity model not available for this fluid in CoolProp library.", CURRENT_FUNCTION);
    }
+#else
+     SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
+#endif
  }
 
  /*!
   * \brief Set thermal conductivity.
   */
  void SetConductivity(su2double t, su2double rho, su2double, su2double, su2double, su2double, su2double) override {
+#ifdef USE_COOLPROP
    fluid_entity->update(CoolProp::DmassT_INPUTS, rho, t);
      kt_ = fluid_entity->conductivity();
+#endif
  }
 };
-#endif
