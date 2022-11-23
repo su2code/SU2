@@ -193,7 +193,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   if (rank == MASTER_NODE) cout << "loading data block" << endl;
 
   SkipToFlag(file_stream, line, "<Data>");
-  unsigned long i_level = 0;
   bool eoLevel = true;
   unsigned long pointCounter = 0;
   unsigned long levelCounter = 0;
@@ -238,7 +237,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   if (rank == MASTER_NODE) cout << "loading connectivity block" << endl;
 
   SkipToFlag(file_stream, line, "<Connectivity>");
-  i_level = 0;
   unsigned long triCounter = 0;
   eoLevel = true;
   levelCounter = 0;
@@ -292,7 +290,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   if (rank == MASTER_NODE) cout << "loading hull block" << endl;
 
   SkipToFlag(file_stream, line, "<Hull>");
-  i_level = 0;
   unsigned long hullCounter = 0;
   eoLevel = true;
   levelCounter = 0;
