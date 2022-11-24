@@ -917,9 +917,9 @@ def main():
     # Rarefaction Q1D nozzle coolprop_nozzle
     coolprop_nozzle           = TestCase('coolprop_nozzle')
     coolprop_nozzle.cfg_dir   = "nicf/coolprop"
-    coolprop_nozzle.cfg_file  = "coolprop_nozzle.cfg"
+    coolprop_nozzle.cfg_file  = "coolprop.cfg"
     coolprop_nozzle.test_iter = 10
-    coolprop_nozzle.test_vals = [-4.692149, -1.965079, 3.428130, 0.000000, 0.000000]
+    coolprop_nozzle.test_vals = [3.355600, 1.002021, 7.055921, -3.456001, 0.925622]
     test_list.append(coolprop_nozzle)
 
     ######################################
