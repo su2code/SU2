@@ -111,7 +111,6 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
           thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
                                  *donor_config->GetViscosity_Ref();
           break;
-
         case CONDUCTIVITYMODEL::POLYNOMIAL:
           SU2_MPI::Error("Polynomial Conductivity model not implemented for CHT interface.", CURRENT_FUNCTION);
           break;

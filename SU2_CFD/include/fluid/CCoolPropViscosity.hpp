@@ -115,7 +115,7 @@ class CCoolPropViscosity final : public CViscosityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CCoolPropViscosity(const string& fluidname) {
+  CCoolPropViscosity(const string &fluidname) {
 #ifdef USE_COOLPROP
     fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
     if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()) {
