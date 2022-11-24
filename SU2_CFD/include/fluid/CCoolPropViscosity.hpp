@@ -45,20 +45,6 @@ class CCoolPropViscosity final : public CViscosityModel {
   std::unique_ptr<CoolProp::AbstractState> fluid_entity; /* \brief fluid entity */
 #endif
   /* \brief list of fluids whose viscosity model is available in CoolProp */
-<<<<<<< HEAD
-  vector<string> fluidNameList = {"Air", "Ammonia", "Argon", "Benzene", "CarbonDioxide", "CycloHexane", "Cyclopentane", "DimethylEther",
-                              "Ethane", "Ethanol", "HeavyWater", "Helium", "Hydrogen", "HydrogenSulfide", "IsoButane", "Isopentane",
-                              "Methane", "Methanol", "Nitrogen", "Oxygen", "Propylene", "R11", "R116" , "R12", "R123", "R1233zd(E)",
-                              "R1234yf", "R1234ze(E)", "R124", "R125", "R13", "R134a", "R14", "R141b", "R142b", "R143a", "R152A",
-                              "R218", "R22", "R227EA", "R23", "R236EA", "R236FA", "R245fa", "R32", "R404A", "R407C", "R410A",  "R507A",
-                              "RC318",  "SulfurHexafluoride", "Toluene", "Water", "m-Xylene", "n-Butane", "n-Decane", "n-Dodecane", "n-Heptane",
-                              "n-Hexane", "n-Nonane", "n-Octane", "n-Pentane", "n-Propane", "o-Xylene", "p-Xylene"};
-public:
- /*!
-  * \brief Constructor of the class.
-  */
- CCoolPropViscosity (const string& fluidname) {
-=======
   vector<string> fluidNameList = {"Air",
                                   "Ammonia",
                                   "Argon",
@@ -130,7 +116,6 @@ public:
    * \brief Constructor of the class.
    */
   CCoolPropViscosity(const string& fluidname) {
->>>>>>> e673611876 (git  fetch)
 #ifdef USE_COOLPROP
     fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
     if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()) {

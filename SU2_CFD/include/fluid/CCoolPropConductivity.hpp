@@ -45,29 +45,6 @@ class CCoolPropConductivity final : public CConductivityModel {
   std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
 #endif
   /*!< \brief list of fluids whose conductivity model is available in CoolProp */
-<<<<<<< HEAD
-  vector<string> fluidNameList = {"Air", "Ammonia", "Argon", "Benzene", "CarbonDioxide", "Cyclopentane", "EthylBenzene",
-                              "Ethane", "Ethanol", "HeavyWater", "Helium", "Hydrogen", "IsoButane", "Isopentane",
-                              "Methane", "Methanol", "Nitrogen", "Oxygen", "Propylene", "ParaHydrogen", "R11", "R116" , "R12", "R123",
-                              "R1234yf", "R1234ze(E)", "R124", "R125", "R13", "R134a", "R14", "R141b", "R142b", "R143a", "R152A",
-                              "R218", "R22", "R227EA", "R23", "R236EA", "R236FA", "R245fa", "R32", "R404A", "R407C", "R410A",  "R507A",
-                              "RC318",  "SulfurHexafluoride", "Toluene", "Water", "m-Xylene", "n-Butane", "n-Decane", "n-Dodecane", "n-Heptane",
-                              "n-Hexane", "n-Nonane", "n-Octane", "n-Pentane", "n-Propane", "o-Xylene", "p-Xylene"};
-public:
- /*!
-  * \brief Constructor of the class.
-  */
- CCoolPropConductivity (const string& fluidname) {
-#ifdef USE_COOLPROP
-   fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
-   if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()){
-       SU2_MPI::Error("Conductivity model not available for this fluid in CoolProp library.", CURRENT_FUNCTION);
-   }
-#else
-     SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
-#endif
- }
-=======
   vector<string> fluidNameList = {
       "Air",      "Ammonia",  "Argon",      "Benzene",   "CarbonDioxide", "Cyclopentane", "EthylBenzene",
       "Ethane",   "Ethanol",  "HeavyWater", "Helium",    "Hydrogen",      "IsoButane",    "Isopentane",
@@ -78,7 +55,6 @@ public:
       "R32",      "R404A",    "R407C",      "R410A",     "R507A",         "RC318",        "SulfurHexafluoride",
       "Toluene",  "Water",    "m-Xylene",   "n-Butane",  "n-Decane",      "n-Dodecane",   "n-Heptane",
       "n-Hexane", "n-Nonane", "n-Octane",   "n-Pentane", "n-Propane",     "o-Xylene",     "p-Xylene"};
->>>>>>> e673611876 (git  fetch)
 
  public:
   /*!
