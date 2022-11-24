@@ -2404,10 +2404,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp  \n";
-          file << "Laminar Viscosity: " << "--";
-          if (si_units) file << " N.s/m^2.\n";
-          else file << " lbf.s/ft^2.\n";
-          file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
         case VISCOSITYMODEL::SUTHERLAND:
