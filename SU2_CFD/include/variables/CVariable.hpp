@@ -1688,7 +1688,6 @@ public:
    */
   inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
 
-
   /*!
    * \brief Get the value of the separation intermittency.
    * \return the value of the separation intermittency.

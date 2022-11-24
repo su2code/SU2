@@ -157,8 +157,7 @@ protected:
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
   su2double 
-  LocalGridLength_i, /*!< \brief Local grid length at point i. */
-  LocalGridLength_j; /*!< \brief Local grid length at point j. */
+  LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -397,9 +396,8 @@ public:
    * \param[in] val_transvar_i - Value of the turbulent variable at point i.
    * \param[in] val_transvar_j - Value of the turbulent variable at point j.
    */
-  inline void SetLocalGridLength(const su2double val_localGridLength_i, const su2double val_localGridLength_j) {
+  inline void SetLocalGridLength(const su2double val_localGridLength_i) {
     LocalGridLength_i = val_localGridLength_i;
-    LocalGridLength_j = val_localGridLength_j;
   }
 
   /*!

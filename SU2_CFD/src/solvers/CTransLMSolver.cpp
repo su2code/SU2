@@ -341,7 +341,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     if(options.LM2015){
       /*--- Set local grid length (for LM2015)*/
-      numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint), 0.0);
+      numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
     }
     
     /*--- Compute the source term ---*/

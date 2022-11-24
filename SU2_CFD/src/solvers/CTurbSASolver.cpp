@@ -267,6 +267,9 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
               const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
               su2double FrictionVelocity = 0.0;
+              /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|) 
+              (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the 
+              standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
               if(nDim == 2){
                 su2double shearStress = 0.0;
                 for(auto iDim = 0u; iDim < nDim; iDim++) {

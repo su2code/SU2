@@ -945,7 +945,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   }
 
   switch (config->GetKind_Trans_Model()) {    
-    case TURB_TRANS_MODEL::LM:  
+    case TURB_TRANS_MODEL::LM:
       /// DESCRIPTION: Maximum residual of the intermittency (LM model).
       AddHistoryOutput("BGS_INTERMITTENCY", "bgs[LM_1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
