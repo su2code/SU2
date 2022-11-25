@@ -90,7 +90,7 @@ CLookUpTable::~CLookUpTable()
   delete [] edge_to_triangle;
   delete [] limits_table_x;
   delete [] limits_table_y;
-  if(z_values_levels != nullptr) delete z_values_levels;
+  if(z_values_levels != nullptr) delete [] z_values_levels;
 }
 
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
@@ -455,7 +455,7 @@ void CLookUpTable::Linear_Interpolation(su2double val_z, std::pair<unsigned long
   su2double factor_upper = (val_z - val_z_lower) / (val_z_upper - val_z_lower);
   su2double factor_lower = (val_z_upper - val_z) / (val_z_upper - val_z_lower);
 
-  for(unsigned short iVar=0; iVar<var_vals.size(); iVar++){
+  for(size_t iVar=0; iVar<var_vals.size(); iVar++){
     *var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
   }
 }
