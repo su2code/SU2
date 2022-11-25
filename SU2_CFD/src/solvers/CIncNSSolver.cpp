@@ -43,11 +43,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
-  /*--- Sizing edge mass flux array ---*/  
-  if(config->GetBounded_Scalar())
-    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
-
-
   /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {
@@ -314,7 +309,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
       scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     }
-  
+
     /*--- Incompressible flow, primitive variables --- */
 
     bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
@@ -738,7 +733,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         const su2double U_Plus = VelTangMod / U_Tau;
 
         /*--- Y+ defined by White & Christoph ---*/
- 
+
         const su2double kUp = kappa * U_Plus;
 
         // incompressible adiabatic result

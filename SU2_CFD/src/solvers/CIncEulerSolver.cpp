@@ -223,7 +223,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CommunicateInitialState(geometry, config);
 
   /*--- Sizing edge mass flux array ---*/
-  if(config->GetBounded_Scalar())
+  if (config->GetBounded_Scalar())
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 
   /*--- Add the solver name (max 8 characters) ---*/
@@ -1055,8 +1055,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, jPoint;
 
-  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1103,6 +1104,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Compute residuals, and Jacobians ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Update residual value ---*/
 
@@ -1159,7 +1162,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
-  const bool bounded_scalar   = (config->GetBounded_Scalar());
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1278,6 +1281,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     auto residual = numerics->ComputeResidual(config);
 
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
@@ -1298,9 +1303,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
-
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
-    
 
   }
   END_SU2_OMP_FOR
@@ -2895,7 +2897,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-            su2double AxiFactor = 1.0; 
+            su2double AxiFactor = 1.0;
             if (axisymmetric) {
               if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
@@ -2906,7 +2908,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                   }
                 }
               }
-            } 
+            }
 
             Density      = V_outlet[prim_idx.Density()];
 

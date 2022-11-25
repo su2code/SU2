@@ -30,6 +30,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -3000,11 +3001,10 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
-   * \brief A virtual member 
-   * \param[in] iEdge - Index of the edge.
-   * \return The mass flux across the edge.
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
    */
-  inline virtual su2double GetEdgeMassFlux(const unsigned long iEdge) const { return 0; }
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
 
   /*!
    * \brief A virtual member.

@@ -543,15 +543,15 @@ private:
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
-  
-  
+
+
   FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
   BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
 
-  UPWIND 
+  UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
@@ -4787,27 +4787,20 @@ public:
   UPWIND GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
 
   /*!
-   * \brief Get bounded scalar problem for species or turbulence
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Bounded scalar problem for turbulence or species transport.
-   */
-  bool GetBounded_Scalar() const {
-    return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR) || (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR);
-  }
-
-  /*!
-   * \brief Get bounded scalar problem for species transport.
-   * \return Bounded scalar problem for species transport.
+   * \brief Returns true if bounded scalar mode is on for species transport.
    */
   bool GetBounded_Species() const { return (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR); }
 
   /*!
-   * \brief Get bounded scalar problem for turbulent transport.
-   * \return Bounded scalar problem for turbulent transport.
+   * \brief Returns true if bounded scalar mode is on for turbulence transport.
    */
   bool GetBounded_Turb() const { return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR); }
-  
+
+  /*!
+   * \brief Returns true if bounded scalar mode is used for any equation.
+   */
+  bool GetBounded_Scalar() const { return GetBounded_Species() || GetBounded_Turb(); }
+
   /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
    * \note This value is obtained from the config file, and it is constant

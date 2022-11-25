@@ -70,10 +70,6 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
     lowerlimit[iVar] = std::numeric_limits<su2double>::lowest();
     upperlimit[iVar] = std::numeric_limits<su2double>::max();
   }
-
-  // /*--- Setting size for bounded scalar Jacobian correction ---*/
-  // Jacobian_correction_i.resize(nVar, nVar);
-  // Jacobian_correction_j.resize(nVar, nVar);
 }
 
 template <class VariableType>
@@ -137,6 +133,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto& edgeMassFluxes = *(solver_container[FLOW_SOL]->GetEdgeMassFluxes());
 
   /*--- Pick one numerics object per thread. ---*/
   auto* numerics = numerics_container[CONV_TERM + omp_get_thread_num() * MAX_TERMS];
@@ -199,8 +196,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           Vector_ij[iDim] = 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
         }
 
-        if (musclFlow) {
-          /*--- Reconstruct mean flow primitive variables. ---*/
+        if (musclFlow && !bounded_scalar) {
+          /*--- Reconstruct mean flow primitive variables, note that in bounded scalar mode this is
+           * not necessary because the edge mass flux is read directly from the flow solver, instead
+           * of being computed from the primitive flow variables. ---*/
 
           auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
           auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
@@ -260,11 +259,12 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       /*--- Convective flux ---*/
       su2double EdgeMassFlux = 0.0;
       if (bounded_scalar) {
-        EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+        EdgeMassFlux = edgeMassFluxes[iEdge];
         numerics->SetMassFlux(EdgeMassFlux);
       }
-    
+
       /*--- Update convective residual value ---*/
+
       auto residual = numerics->ComputeResidual(config);
 
       if (ReducerStrategy) {
@@ -276,18 +276,24 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
-      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
-      if(bounded_scalar){
-        for(iVar=0; iVar<nVar; iVar++){
-          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
-          su2double FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
+      /*--- Apply convective flux correction to negate the effects of flow divergence.
+       * If the ReducerStrategy is used, the corrections need to be applied in a loop over nodes
+       * to avoid race conditions in accessing nodes shared by edges handled by different threads. ---*/
+
+      if (bounded_scalar && !ReducerStrategy) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          const su2double FluxCorrection_i = nodes->GetSolution(iPoint, iVar) * EdgeMassFlux;
+          const su2double FluxCorrection_j = nodes->GetSolution(jPoint, iVar) * EdgeMassFlux;
 
           LinSysRes(iPoint, iVar) -= FluxCorrection_i;
           LinSysRes(jPoint, iVar) += FluxCorrection_j;
         }
-        Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux); 
-        Jacobian.AddVal2Diag(jPoint, EdgeMassFlux); 
+        if (implicit) {
+          Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux);
+          Jacobian.AddVal2Diag(jPoint, EdgeMassFlux);
+        }
       }
+
       /*--- Viscous contribution. ---*/
 
       Viscous_Residual(iEdge, geometry, solver_container,
@@ -303,6 +309,26 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
+
+    /*--- Bounded scalar correction that cannot be applied in the edge loop when using the ReducerStrategy. ---*/
+    if (bounded_scalar) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        const auto* solution = nodes->GetSolution(iPoint);
+        su2double divergence = 0;
+
+        for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+          const auto sign = (iPoint == geometry->edges->GetNode(iEdge,0)) ? 1 : -1;
+          const su2double EdgeMassFlux = sign * edgeMassFluxes[iEdge];
+          divergence += EdgeMassFlux;
+          LinSysRes.AddBlock(iPoint, solution, -EdgeMassFlux);
+        }
+        if (implicit) {
+          Jacobian.AddVal2Diag(iPoint, -divergence);
+        }
+      }
+      END_SU2_OMP_FOR
+    }
   }
 }
 

@@ -56,10 +56,7 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i[idx.Density()]);
-    AD::SetPreaccIn(V_j[idx.Density()]);
-  };
+  void ExtraADPreaccIn() override {}
 
   /*!
    * \brief Species transport specific steps in the ComputeResidual method

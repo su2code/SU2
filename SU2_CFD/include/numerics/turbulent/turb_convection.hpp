@@ -106,10 +106,7 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i[idx.Density()]);
-    AD::SetPreaccIn(V_j[idx.Density()]);
-  }
+  void ExtraADPreaccIn() override {}
 
   /*!
    * \brief SST specific steps in the ComputeResidual method

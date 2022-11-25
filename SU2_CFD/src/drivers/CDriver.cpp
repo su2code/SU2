@@ -1269,7 +1269,6 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
         }
         else if (menter_sst)
           numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
-        
       }
       break;
     default:
@@ -1322,8 +1321,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
       numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, false,
                                                                                     config);
     }
-
-    }
+  }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(

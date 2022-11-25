@@ -2405,10 +2405,8 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Get the mass flux across an edge (computed and stored during the discretization of convective fluxes).
-   * \param[in] iEdge - Index of the edge.
-   * \return The mass flux across the edge.
+   * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
    */
-  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const final { return EdgeMassFluxes[iEdge]; }
+  inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
 
 };

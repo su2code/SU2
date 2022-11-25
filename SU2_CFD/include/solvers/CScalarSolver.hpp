@@ -61,10 +61,6 @@ class CScalarSolver : public CSolver {
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
   vector<vector<int> > SlidingStateNodes;
 
-  /*!< \brief Jacobian correction terms for bounded scalar problems. */
-  // su2activematrix Jacobian_correction_i,
-  //                 Jacobian_correction_j; 
-
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP

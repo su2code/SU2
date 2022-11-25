@@ -339,9 +339,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
-
-  if(config->GetBounded_Scalar())
-    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -1739,8 +1736,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
-  const bool bounded_scalar   = config->GetBounded_Scalar();
-  
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1928,7 +1923,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual.residual[0];
     /*--- Viscous contribution. ---*/
 
     Viscous_Residual(iEdge, geometry, solver_container,
