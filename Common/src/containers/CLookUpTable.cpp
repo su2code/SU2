@@ -88,6 +88,9 @@ CLookUpTable::~CLookUpTable()
   delete [] interp_mat_inv_x_y;
   delete [] edges;
   delete [] edge_to_triangle;
+  delete [] limits_table_x;
+  delete [] limits_table_y;
+  if(z_values_levels != nullptr) delete z_values_levels;
 }
 
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
