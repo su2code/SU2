@@ -252,47 +252,47 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 
   /*--- Compute turbulence index ---*/
-  if(config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE || config->GetSAParsedOptions().bc) {
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE || config->GetSAParsedOptions().bc) {
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
-    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetViscous_Wall(iMarker)) {
-          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (!config->GetViscous_Wall(iMarker)) continue;
 
-            /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            if (geometry->nodes->GetDomain(iPoint)) {
-              const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-              su2double FrictionVelocity = 0.0;
-              /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|) 
-              (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the 
-              standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
-              if(nDim == 2){
-                su2double shearStress = 0.0;
-                for(auto iDim = 0u; iDim < nDim; iDim++) {
-                  shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
-                }
-                shearStress = sqrt(shearStress);
+        if (geometry->nodes->GetDomain(iPoint)) {
+          const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-                FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
-              } else {
-                su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
-                FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
-              }
-
-              const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
-              const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
-              const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
-
-              nodes->SetTurbIndex(iPoint, turbulence_index);
-
+          su2double FrictionVelocity = 0.0;
+          /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|) 
+          (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the 
+          standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
+          if(nDim == 2){
+            su2double shearStress = 0.0;
+            for(auto iDim = 0u; iDim < nDim; iDim++) {
+              shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
             }
+            shearStress = sqrt(shearStress);
+
+            FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+          } else {
+            su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+            FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
           }
-          END_SU2_OMP_FOR
+
+          const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+          const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
+          const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
+
+          nodes->SetTurbIndex(iPoint, turbulence_index);
+        }
       }
+      END_SU2_OMP_FOR
+    }
   }
 
   AD::EndNoSharedReading();

@@ -1096,8 +1096,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("LM_OPTIONS", nLM_Options, LM_Options, LM_Options_Map);
-  /*!\brief CONVERTSA2SST \n DESCRIPTION: Define if SA has to be converted into SST for transition \n DEFAULT: NO \ingroup Config*/
-  //addBoolOption("CONVERTSA2SST", ConvertSA2SST, NO);
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
@@ -3448,7 +3446,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess LM_OPTIONS into structure. ---*/
-  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM){
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
     lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
   }
 
@@ -6064,9 +6062,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
-          case TURB_TRANS_MODEL::LM:{
+          case TURB_TRANS_MODEL::LM: {
             cout << "Transition model: Langtry and Menter's 4 equation model"; 
-            if (lmParsedOptions.LM2015){
+            if (lmParsedOptions.LM2015) {
               cout << " w/ cross-flow corrections (2015)" << endl;
             } else {
               cout << " (2009)" << endl;
@@ -6074,7 +6072,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             break; 
           }          
         }
-        if(Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
           cout << "Correlation Functions: ";
           switch (lmParsedOptions.Correlation) {

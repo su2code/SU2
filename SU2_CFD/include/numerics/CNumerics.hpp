@@ -394,7 +394,6 @@ public:
   /*!
    * \brief Set the value of the turbulent variable.
    * \param[in] val_transvar_i - Value of the turbulent variable at point i.
-   * \param[in] val_transvar_j - Value of the turbulent variable at point j.
    */
   inline void SetLocalGridLength(const su2double val_localGridLength_i) {
     LocalGridLength_i = val_localGridLength_i;
@@ -723,7 +722,7 @@ public:
    * \brief Get the value of the effective intermittency for the transition model.
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
-  su2double GetIntermittencyEff() const {return intermittency_eff_i; }
+  su2double GetIntermittencyEff() const { return intermittency_eff_i; }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

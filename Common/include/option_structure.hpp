@@ -1218,12 +1218,11 @@ enum class TURB_TRANS_CORRELATION {
   DEFAULT    /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
-
 /*!
- * \brief Structure containing parsed SA options.
+ * \brief Structure containing parsed LM options.
  */
 struct LM_ParsedOptions {
-  LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief SA base model. */
+  LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
   bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
   TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
 };
