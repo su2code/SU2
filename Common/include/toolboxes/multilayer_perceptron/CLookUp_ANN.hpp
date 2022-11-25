@@ -55,7 +55,7 @@ class CLookUp_ANN
 
     private:
     int rank{0};
-    std::vector<CNeuralNetwork*> NeuralNetworks;  /*!< std::vector containing all loaded neural networks. */
+    su2vector<CNeuralNetwork*> NeuralNetworks;  /*!< std::vector containing all loaded neural networks. */
 
     std::vector<std::string> ANN_filenames;       /*!< Filenames containing ANN architecture information. */
 
@@ -96,10 +96,10 @@ class CLookUp_ANN
     * \param[in] inputs - input values
     * \param[in] outputs - pointers to output variables
     */
-    void Predict_ANN(CIOMap *input_output_map, std::vector<su2double> &inputs, std::vector<su2double*> &outputs);
+    void Predict_ANN(CIOMap *input_output_map, su2vector<su2double> &inputs, su2vector<su2double*> &outputs);
 
     ~CLookUp_ANN(){for(std::size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
-        delete NeuralNetworks.at(i_ANN);
+        delete NeuralNetworks[i_ANN];
     };
 
     /*!
@@ -113,21 +113,21 @@ class CLookUp_ANN
     * \param[in] output_names - output variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Duplicate_Outputs(std::vector<std::string> &output_names, CIOMap *input_output_map) const;
+    bool Check_Duplicate_Outputs(su2vector<std::string> &output_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Check if all output variables are present in the loaded ANNs
     * \param[in] output_names - output variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Use_of_Outputs(std::vector<std::string> &output_names, CIOMap *input_output_map) const;
+    bool Check_Use_of_Outputs(su2vector<std::string> &output_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Check if all input variables are present in the loaded ANNs
     * \param[in] input_names - input variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Use_of_Inputs(std::vector<std::string> &input_names, CIOMap *input_output_map) const;
+    bool Check_Use_of_Inputs(su2vector<std::string> &input_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Map variable names to ANN inputs or outputs
@@ -135,7 +135,7 @@ class CLookUp_ANN
     * \param[in] variable_names - variable names to map to ANN inputs or outputs
     * \param[in] input - map to inputs (true) or outputs (false)
     */
-    std::vector<pair<std::size_t, std::size_t>> FindVariable_Indices(std::size_t i_ANN, std::vector<std::string> variable_names, bool input) const;
+    std::vector<pair<std::size_t, std::size_t>> FindVariable_Indices(std::size_t i_ANN, su2vector<std::string> variable_names, bool input) const;
     
 };  
 

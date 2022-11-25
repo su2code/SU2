@@ -49,15 +49,15 @@ private:
     CLayer *inputLayer,     // Pointer to network input layer.
            *outputLayer;    // Pointer to network output layer.
 
-    std::vector<CLayer*> hiddenLayers,  // Hidden layer collection.
-                         total_layers;  // Hidden layers plus in/output layers
+    std::vector<CLayer*> hiddenLayers;  // Hidden layer collection.
+    su2vector<CLayer*>   total_layers;  // Hidden layers plus in/output layers
 
-    std::vector<su2activematrix> weights_mat;   // Weights of synapses connecting layers
+    su2vector<su2activematrix> weights_mat;   // Weights of synapses connecting layers
 
-    std::vector<std::pair<su2double, su2double>> input_norm,    // Normalization factors for network inputs
+    su2vector<std::pair<su2double, su2double>> input_norm,    // Normalization factors for network inputs
                                                  output_norm;   // Normalization factors for network outputs
 
-    std::vector<su2double> last_inputs; // Inputs from previous lookup operation. Evaluation of the network 
+    su2vector<su2double> last_inputs; // Inputs from previous lookup operation. Evaluation of the network 
                                         // is skipped if current inputs are the same as the last inputs.
 
     su2double* ANN_outputs; // Pointer to network outputs
@@ -121,7 +121,7 @@ public:
     * \param[in] i_neuron - Neuron index of current layer.
     * \param[in] value - Bias value.
     */
-    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers.at(i_layer)->setBias(i_neuron, value);}
+    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers[i_layer]->setBias(i_neuron, value);}
 
     /*!
     * \brief Set layer activation function.
@@ -144,7 +144,7 @@ public:
     * \brief Size the vector of previous inputs.
     * \param[in] n_inputs - Number of inputs.
     */
-    void sizeInputs(unsigned long n_inputs) { last_inputs.resize(n_inputs); for(unsigned long iInput=0; iInput<n_inputs; iInput++) last_inputs.at(iInput) = 0.0; }
+    void sizeInputs(unsigned long n_inputs) { last_inputs.resize(n_inputs); for(unsigned long iInput=0; iInput<n_inputs; iInput++) last_inputs[iInput] = 0.0; }
     
     /*!
     * \brief Get the number of connecting regions in the network.
@@ -163,12 +163,12 @@ public:
     * \param[in] iLayer - Layer index.
     * \returns number of neurons in the layer.
     */
-    unsigned long getNNeurons(unsigned long iLayer) { return total_layers.at(iLayer)->getNNeurons(); }
+    unsigned long getNNeurons(unsigned long iLayer) { return total_layers[iLayer]->getNNeurons(); }
 
     /*!
     * \brief Evaluate the network.
     */
-    void predict(std::vector<su2double> &inputs);
+    void predict(su2vector<su2double> &inputs);
 
     /*!
     * \brief Set the normalization factors for the input layer
@@ -176,7 +176,7 @@ public:
     * \param[in] input_min - Minimum input value.
     * \param[in] input_max - Maximum input value.
     */
-    void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max) { input_norm.at(iInput) = make_pair(input_min, input_max); }
+    void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max) { input_norm[iInput] = make_pair(input_min, input_max); }
 
     /*!
     * \brief Set the normalization factors for the output layer
@@ -184,7 +184,7 @@ public:
     * \param[in] input_min - Minimum output value.
     * \param[in] input_max - Maximum output value.
     */
-    void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){ output_norm.at(iOutput) = make_pair(output_min, output_max); }
+    void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){ output_norm[iOutput] = make_pair(output_min, output_max); }
     
     /*!
     * \brief Add an output variable name to the network.

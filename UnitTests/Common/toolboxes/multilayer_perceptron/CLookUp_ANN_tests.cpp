@@ -33,19 +33,22 @@
 TEST_CASE("LookUp ANN test", "[LookUpANN]"){
 
   MLPToolbox::CLookUp_ANN ANN("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/mlp_collection.mlp");
-  std::vector<std::string> MLP_input_names,
+  su2vector<std::string> MLP_input_names,
                            MLP_output_names;
-  std::vector<su2double> MLP_inputs;
-  std::vector<su2double*> MLP_outputs;
+  su2vector<su2double> MLP_inputs;
+  su2vector<su2double*> MLP_outputs;
   su2double x,y,z;
 
   /*--- Define MLP inputs and outputs ---*/
-  MLP_input_names.push_back("x");
-  MLP_input_names.push_back("y");
+  MLP_input_names.resize(2);
+  MLP_input_names[0] = "x";
+  MLP_input_names[1] = "y";
   MLP_inputs.resize(2);
 
-  MLP_output_names.push_back("z");
-  MLP_outputs.push_back(&z);
+  MLP_outputs.resize(1);
+  MLP_output_names.resize(1);
+  MLP_output_names[0] = "z";
+  MLP_outputs[0] = &z;
 
   /*--- Generate input-output map ---*/
   MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);

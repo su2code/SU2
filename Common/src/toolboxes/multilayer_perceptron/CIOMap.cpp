@@ -32,7 +32,7 @@
 #include <cmath>
 #include <fstream>
 
-MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*MLP_collection, vector<string> &inputs, vector<string> &outputs){
+MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*MLP_collection, su2vector<std::string> &inputs, su2vector<std::string> &outputs){
     /* Generate an input-output map given a set of call inputs and call outputs. These inputs are 
     mapped to the inputs of the loaded MLPs in the MLP_collection object. The call outputs are 
     then matched to the MLPs with matching inputs.
@@ -51,7 +51,7 @@ MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*MLP_collection, vector<string> &inputs, v
         //MLP_collection->Check_Duplicate_Outputs(outputs, this);
     }
 }
-void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN*MLP_collection, vector<string> &inputs, vector<string> &outputs){
+void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN*MLP_collection, su2vector<std::string> &inputs, su2vector<std::string> &outputs){
     /*
     In this function, the call inputs and outputs are matched to those within the MLP collection. 
     */
@@ -61,13 +61,13 @@ void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN*MLP_collection, vecto
     for(size_t i_MLP=0; i_MLP<MLP_collection->GetNANNs(); i_MLP++){
 
         // Mapped call inputs to MLP inputs
-        vector<pair<size_t, size_t>> Input_Indices = MLP_collection->FindVariable_Indices(i_MLP, inputs, true);
+        std::vector<pair<size_t, size_t>> Input_Indices = MLP_collection->FindVariable_Indices(i_MLP, inputs, true);
         isInput = Input_Indices.size() > 0;
 
         if(isInput){
             // Only when the MLP inputs match with a portion of the call inputs are the output variable checks performed
 
-            vector<pair<size_t, size_t>> Output_Indices = MLP_collection->FindVariable_Indices(i_MLP, outputs, false);
+            std::vector<pair<size_t, size_t>> Output_Indices = MLP_collection->FindVariable_Indices(i_MLP, outputs, false);
             isOutput = Output_Indices.size() > 0;
 
             if(isOutput){

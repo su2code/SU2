@@ -58,15 +58,15 @@ class CDataDrivenFluid : public CFluidModel {
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
   
-  vector<string> input_names_rhoe,        // Data-driven method input variable names of the independent variables (density, energy).
+  su2vector<string> input_names_rhoe,        // Data-driven method input variable names of the independent variables (density, energy).
                  output_names_rhoe;       // Output variable names listed in the data-driven method input file name.
 
-  vector<su2double*> outputs_rhoe;        // Pointers to output variables.
+  su2vector<su2double*> outputs_rhoe;        // Pointers to output variables.
 
   /*--- Class variables for the multi-layer perceptron method ---*/
   MLPToolbox::CLookUp_ANN * lookup_mlp;   // multi-layer perceptron collection.
   MLPToolbox::CIOMap * iomap_rhoe;        // input-output map.
-  vector<su2double> MLP_inputs;           // inputs for the multi-layer perceptron look-up operation.
+  su2vector<su2double> MLP_inputs;           // inputs for the multi-layer perceptron look-up operation.
 
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable *lookup_table;

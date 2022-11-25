@@ -81,24 +81,34 @@ CDataDrivenFluid::~CDataDrivenFluid(){
 void CDataDrivenFluid::MapInputs_to_Outputs(){
 
   /*--- Inputs of the data-driven method are density and internal energy. ---*/
-  input_names_rhoe.push_back("Density");
+  input_names_rhoe.resize(2);
   idx_rho = 0;
-  input_names_rhoe.push_back("Energy");
   idx_e = 1;
+  input_names_rhoe[idx_rho] = "Density";
+  input_names_rhoe[idx_e] = "Energy";
 
   /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and density ---*/
-  output_names_rhoe.push_back("s");
-  outputs_rhoe.push_back(&Entropy);
-  output_names_rhoe.push_back("dsde_rho");
-  outputs_rhoe.push_back(&dsde_rho);
-  output_names_rhoe.push_back("dsdrho_e");
-  outputs_rhoe.push_back(&dsdrho_e);
-  output_names_rhoe.push_back("d2sde2");
-  outputs_rhoe.push_back(&d2sde2);
-  output_names_rhoe.push_back("d2sdedrho");
-  outputs_rhoe.push_back(&d2sdedrho);
-  output_names_rhoe.push_back("d2sdrho2");
-  outputs_rhoe.push_back(&d2sdrho2);
+  size_t n_outputs = 6;
+  size_t idx_s = 0, 
+         idx_dsde_rho = 1, 
+         idx_dsdrho_e = 2,
+         idx_d2sde2 = 3,
+         idx_d2sdedrho = 4,
+         idx_d2sdrho2 = 5;
+
+  output_names_rhoe.resize(n_outputs); 
+  output_names_rhoe[idx_s] = "s";
+  outputs_rhoe[idx_s] = &Entropy;
+  output_names_rhoe[idx_dsde_rho] = "dsde_rho";
+  outputs_rhoe[idx_dsde_rho] = &dsde_rho;
+  output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
+  outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
+  output_names_rhoe[idx_d2sde2] = "d2sde2";
+  outputs_rhoe[idx_d2sde2] = &d2sde2;
+  output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
+  outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
+  output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
+  outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
 
   /*--- Further preprocessing of input and output variables ---*/
   switch (Kind_DataDriven_Method)
@@ -117,6 +127,8 @@ void CDataDrivenFluid::MapInputs_to_Outputs(){
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   Density = rho;
   StaticEnergy = e;
+  std::vector<std::string> output_names_rhoe_LUT;
+  std::vector<su2double*> outputs_LUT;
   switch (Kind_DataDriven_Method)
   {
   case ENUM_DATADRIVEN_METHOD::MLP:
@@ -128,7 +140,14 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
     lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
     break;
   case ENUM_DATADRIVEN_METHOD::LUT:
-    lookup_table->LookUp_ProgEnth(output_names_rhoe, outputs_rhoe, rho, e, "Density", "Energy");
+
+    output_names_rhoe_LUT.resize(output_names_rhoe.size());
+    for(size_t iOutput=0; iOutput<output_names_rhoe.size(); iOutput++) { output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput]; }
+
+    outputs_LUT.resize(outputs_rhoe.size());
+    for(size_t iOutput=0; iOutput<outputs_rhoe.size(); iOutput++) { outputs_LUT[iOutput] = outputs_rhoe[iOutput]; }
+
+    lookup_table->LookUp_ProgEnth(output_names_rhoe_LUT, outputs_LUT, rho, e, "Density", "Energy");
   default:
     break;
   }
