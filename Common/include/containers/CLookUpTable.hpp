@@ -67,7 +67,7 @@ class CLookUpTable {
   /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data
    */
-  std::vector<std::string> names_var;
+  su2vector<std::string> names_var;
 
   /*! \brief
    * Holds all data stored in the table. First index addresses the variable
@@ -77,21 +77,20 @@ class CLookUpTable {
 
   su2matrix<unsigned long> *triangles;
 
-  /* we do not know this size in advance until we go through the entire lookup table */
-  std::vector<std::vector<unsigned long> > *edges;
-  std::vector<std::vector<unsigned long> > *edge_to_triangle;
+  std::vector<su2vector<unsigned long> > *edges;
+  su2vector<std::vector<unsigned long> > *edge_to_triangle;
 
   /*! \brief 
    * The hull contains the boundary of the lookup table.
    */
-  std::vector<unsigned long> *hull;
+  su2vector<unsigned long> *hull;
 
   CTrapezoidalMap *trap_map_x_y;
 
   /*! \brief 
    * vector of all the weight factors for the interpolation.
    */
-  std::vector<su2activematrix> *interp_mat_inv_x_y;
+  su2vector<su2activematrix> *interp_mat_inv_x_y;
 
   /*! \brief 
    * returns the index to the variable in the lookup table.

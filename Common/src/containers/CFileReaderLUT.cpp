@@ -138,12 +138,12 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
-      
+      names_var.resize(n_variables);
       for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var.push_back(line.substr(line.find(":")+1)); 
+        names_var[i] = line.substr(line.find(":")+1); 
       }
     }
 
@@ -182,7 +182,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
     triangles[i_level].resize(GetNTriangles(i_level), 3);
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points, size = " << GetNHullPoints() << endl;
-  hull = new vector<unsigned long>[n_levels];
+  hull = new su2vector<unsigned long>[n_levels];
   for(unsigned long i_level=0; i_level<n_levels; i_level++)
     hull[i_level].resize(GetNHullPoints(i_level));
 

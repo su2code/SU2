@@ -55,7 +55,7 @@ class CFileReaderLUT {
   /*! \brief Holds the variable names stored in the table file. 
    * Order is in sync with tableFlamelet.
    */
-  std::vector<std::string> names_var;
+  su2vector<std::string> names_var;
 
   /*! \brief Holds all data stored in the table. 
    * First index addresses the variable while second index addresses the point.
@@ -64,8 +64,7 @@ class CFileReaderLUT {
 
   su2matrix<unsigned long> *triangles;
 
-  std::vector<unsigned long> *hull;
-
+  su2vector<unsigned long> *hull;
   /*! \brief Searches for the position of flag in file_stream and 
    *         sets the stream position of file_stream to that position.
    */
@@ -91,13 +90,13 @@ class CFileReaderLUT {
   inline unsigned long GetNVariables() const { return n_variables; }
   inline unsigned long GetNLevels() const { return n_levels; }
 
-  inline const std::vector<std::string>& GetNamesVar() const { return names_var; }
+  inline const su2vector<std::string>& GetNamesVar() const { return names_var; }
 
   inline const su2activematrix& GetTableData(std::size_t i_level=0) const { return table_data[i_level]; }
 
   inline const su2matrix<unsigned long>& GetTriangles(std::size_t i_level=0) const { return triangles[i_level]; }
 
-  inline const std::vector<unsigned long>& GetHull(std::size_t i_level=0) const { return hull[i_level]; }
+  inline const su2vector<unsigned long>& GetHull(std::size_t i_level=0) const { return hull[i_level]; }
 
   inline su2double GetTableLevel(std::size_t i_level) const { return table_levels[i_level]; }
   

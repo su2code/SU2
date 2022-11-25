@@ -38,12 +38,12 @@ using namespace std;
  * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
-                                 vector<vector<unsigned long> > const& edges,
-                                 vector<vector<unsigned long> > const& val_edge_to_triangle) {
+                                 vector<su2vector<unsigned long> > const& edges,
+                                 su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
   su2double startTime = SU2_MPI::Wtime();
 
-  edge_to_triangle = vector<vector<unsigned long> >(val_edge_to_triangle);
+  edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 
   unique_bands_x.assign(samples_x,samples_x+size);
 

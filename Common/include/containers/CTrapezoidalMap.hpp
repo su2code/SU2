@@ -49,11 +49,11 @@
   su2activematrix edge_limits_x;
   su2activematrix edge_limits_y;
 
-  std::vector<std::vector<unsigned long> > edge_to_triangle;
+  su2vector<std::vector<unsigned long> > edge_to_triangle;
 
   /* The value that each edge which intersects the band takes within that
    * same band. Used to sort the edges */
-  std::vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
+  su2vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
  public:
 
@@ -62,8 +62,8 @@
   CTrapezoidalMap(const su2double* samples_x,
                   const su2double* samples_y,
                   const unsigned long size,
-                  const std::vector<std::vector<unsigned long> >& edges,
-                  const std::vector<std::vector<unsigned long> >& edge_to_triangle);
+                  const std::vector<su2vector<unsigned long> >& edges,
+                  const su2vector<std::vector<unsigned long> >& edge_to_triangle);
 
   /*!
    * \brief return the index to the triangle that contains the coordinates (val_x,val_y) 

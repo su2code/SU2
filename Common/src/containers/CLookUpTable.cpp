@@ -104,11 +104,11 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   n_triangles         = new unsigned long[n_table_levels];
   n_hull_points       = new unsigned long[n_table_levels];
   table_data          = new su2activematrix[n_table_levels];
-  hull                = new std::vector<unsigned long>[n_table_levels];
+  hull                = new su2vector<unsigned long>[n_table_levels];
   triangles           = new su2matrix<unsigned long>[n_table_levels];
-  interp_mat_inv_x_y  = new std::vector<su2activematrix>[n_table_levels];
-  edges               = new std::vector<std::vector<unsigned long> >[n_table_levels];
-  edge_to_triangle    = new std::vector<std::vector<unsigned long> >[n_table_levels];
+  interp_mat_inv_x_y  = new su2vector<su2activematrix>[n_table_levels];
+  edges               = new std::vector<su2vector<unsigned long> >[n_table_levels];
+  edge_to_triangle    = new su2vector<std::vector<unsigned long> >[n_table_levels];
 
   for(unsigned long i_level=0; i_level<n_table_levels; i_level++){
     n_points[i_level] = file_reader.GetNPoints(i_level);
@@ -261,7 +261,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
       /* Store the edge so that the lower index of the pair is always first. */
       if (iPoint < GlobalIndex) {
-        vector<unsigned long> edge(2);
+        su2vector<unsigned long> edge(2);
         edge[0] = iPoint;
         edge[1] = GlobalIndex;
         edges[i_level].push_back(edge);
@@ -305,6 +305,7 @@ void CLookUpTable::ComputeInterpCoeffs() {
 
     /* calculate weights for each triangle (basically a distance function) and
     * build inverse interpolation matrices */
+    interp_mat_inv_x_y[i_level].resize(n_triangles[i_level]);
     for (unsigned long i_triangle = 0; i_triangle < n_triangles[i_level]; i_triangle++) {
 
       for (int p = 0; p < 3; p++) {
@@ -313,7 +314,7 @@ void CLookUpTable::ComputeInterpCoeffs() {
 
       su2activematrix x_interp_mat_inv(3, 3);
       GetInterpMatInv(val_x, val_y, next_triangle, x_interp_mat_inv);
-      interp_mat_inv_x_y[i_level].push_back(x_interp_mat_inv);
+      interp_mat_inv_x_y[i_level][i_triangle] = x_interp_mat_inv;
     }
   }
 }
