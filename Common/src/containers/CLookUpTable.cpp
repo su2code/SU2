@@ -134,9 +134,9 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
     cout << " done." << endl;
 }
 
-void CLookUpTable::FindTableLimits(const string& name_x, const string& name_y) {
-  int idx_X = GetIndexOfVar(name_x);
-  int idx_Y = GetIndexOfVar(name_y);
+void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv2) {
+  int idx_X = GetIndexOfVar(name_cv1);
+  int idx_Y = GetIndexOfVar(name_cv2);
   limits_table_x = new pair<su2double, su2double>[n_table_levels];
   limits_table_y = new pair<su2double, su2double>[n_table_levels];
 

@@ -55,7 +55,7 @@ class CLookUpTable {
   unsigned long n_variables;
   unsigned long *n_hull_points;
   unsigned long n_table_levels = 1;
-  su2double *z_values_levels;
+  su2double *z_values_levels = nullptr;
 
   /*! 
    * \brief the lower and upper limits of the z, y and x variable.

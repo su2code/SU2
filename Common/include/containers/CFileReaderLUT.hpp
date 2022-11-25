@@ -99,9 +99,9 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull(std::size_t i_level=0) const { return hull[i_level]; }
 
-  inline const su2double GetTableLevel(std::size_t i_level) const { return table_levels[i_level]; }
+  inline su2double GetTableLevel(std::size_t i_level) const { return table_levels[i_level]; }
   
-  inline const unsigned short GetTableDim() const { return table_dim; }
+  inline unsigned short GetTableDim() const { return table_dim; }
 
   void ReadRawLUT(const std::string& file_name);
 };
