@@ -345,10 +345,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  /*--- Bounded scalar problem ---*/
-  bool bounded_scalar = conv_numerics->GetBoundedScalar();
-
-  su2double EdgeMassFlux = 0.0;
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -375,8 +372,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-
       conv_numerics->SetNormal(Normal);
 
       /*--- Allocate the value at the inlet ---*/
@@ -400,37 +395,20 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      if(bounded_scalar){
-        /*--- Obtain flow velocity vector at inlet boundary node ---*/
-        su2double Velocity_Inlet[MAXNDIM] = {0.0}, density_inlet;
-        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Inlet[iDim] = V_inlet[iDim + 1];//solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-        
-        /*--- Obtain density at inlet boundary node ---*/
-        density_inlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-        /*--- Compute mass flux on current node ---*/
-        EdgeMassFlux = density_inlet * GeometryToolbox::DotProduct(nDim, Velocity_Inlet, Normal);
-      
-        /*--- Communicate inlet mass flux to numerics ---*/
-        conv_numerics->SetMassFlux(EdgeMassFlux);
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
       /*--- Compute the residual using an upwind scheme ---*/
+
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
-      if(bounded_scalar){
-        for(unsigned short iVar=0; iVar<nVar; iVar++){
-          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
-
-          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-        }
-      }if (implicit) Jacobian.AddVal2Diag(iPoint, max(0.0, EdgeMassFlux));
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
 
@@ -517,10 +495,8 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  
-  const bool bounded_scalar = conv_numerics->GetBoundedScalar();
 
-  su2double EdgeMassFlux = 0.0;
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -548,7 +524,6 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       }
     } else {  // weak BC
 
-      
       /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
@@ -575,18 +550,10 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      if(bounded_scalar){
-        /*--- Obtain flow velocity vector at inlet boundary node ---*/
-        su2double Velocity_Outlet[MAXNDIM] = {0.0}, density_outlet;
-        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity_Outlet[iDim] = V_outlet[iDim + 1];
-        
-        /*--- Obtain density at inlet boundary node ---*/
-        density_outlet = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-        /*--- Compute mass flux on current node ---*/
-        EdgeMassFlux = density_outlet * GeometryToolbox::DotProduct(nDim, Velocity_Outlet, Normal);
-      
-        conv_numerics->SetMassFlux(EdgeMassFlux);
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -594,20 +561,10 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
-      if(bounded_scalar){
-        for(unsigned short iVar=0; iVar<nVar; iVar++){
-          su2double FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
-
-          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-        }
-      }if(implicit) Jacobian.AddVal2Diag(iPoint, max(0.0, EdgeMassFlux));
-
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
-      
+
     }
   }
   END_SU2_OMP_FOR

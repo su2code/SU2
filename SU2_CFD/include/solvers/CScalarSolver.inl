@@ -31,7 +31,9 @@
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
-    : CSolver(), Conservative(conservative) {
+    : CSolver(), Conservative(conservative),
+      prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+               config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
@@ -281,13 +283,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
        * to avoid race conditions in accessing nodes shared by edges handled by different threads. ---*/
 
       if (bounded_scalar && !ReducerStrategy) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          const su2double FluxCorrection_i = nodes->GetSolution(iPoint, iVar) * EdgeMassFlux;
-          const su2double FluxCorrection_j = nodes->GetSolution(jPoint, iVar) * EdgeMassFlux;
+        LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -EdgeMassFlux);
+        LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), EdgeMassFlux);
 
-          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-          LinSysRes(jPoint, iVar) += FluxCorrection_j;
-        }
         if (implicit) {
           Jacobian.AddVal2Diag(iPoint, -EdgeMassFlux);
           Jacobian.AddVal2Diag(jPoint, EdgeMassFlux);
@@ -361,6 +359,67 @@ void CScalarSolver<VariableType>::BC_Periodic(CGeometry* geometry, CSolver** sol
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
+}
+
+template <class VariableType>
+void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** solver_container,
+                                               CNumerics* conv_numerics, CNumerics*, CConfig *config,
+                                               unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+
+      /*--- Allocate the value at the infinity ---*/
+
+      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Grid Movement ---*/
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
+
+      /*--- Set Normal (it is necessary to change the sign) ---*/
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+      conv_numerics->SetNormal(Normal);
+
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_infty[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
+
+      /*--- Compute residuals and Jacobians ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Add residuals and Jacobians ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 template <class VariableType>
