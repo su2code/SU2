@@ -45,7 +45,7 @@ class CCoolPropConductivity final : public CConductivityModel {
   std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
 #endif
   /*!< \brief list of fluids whose conductivity model is available in CoolProp */
-  vector<string> fluidNameList = {
+  const vector<string> fluidNameList = {
       "Air",      "Ammonia",  "Argon",      "Benzene",   "CarbonDioxide", "Cyclopentane", "EthylBenzene",
       "Ethane",   "Ethanol",  "HeavyWater", "Helium",    "Hydrogen",      "IsoButane",    "Isopentane",
       "Methane",  "Methanol", "Nitrogen",   "Oxygen",    "Propylene",     "ParaHydrogen", "R11",
@@ -60,7 +60,7 @@ class CCoolPropConductivity final : public CConductivityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CCoolPropConductivity(const string &fluidname) {
+  CCoolPropConductivity(const string& fluidname) {
 #ifdef USE_COOLPROP
     fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
     if (std::find(fluidNameList.begin(), fluidNameList.end(), fluidname) == fluidNameList.end()) {

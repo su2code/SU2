@@ -914,13 +914,21 @@ def main():
     edge_PPR.test_vals = [-5.400790, 0.739723, -0.000035, 0.000000]
     test_list.append(edge_PPR)
 
-    # Rarefaction Q1D nozzle coolprop_nozzle
-    coolprop_nozzle           = TestCase('coolprop_nozzle')
-    coolprop_nozzle.cfg_dir   = "nicf/coolprop"
-    coolprop_nozzle.cfg_file  = "coolprop.cfg"
-    coolprop_nozzle.test_iter = 10
-    coolprop_nozzle.test_vals = [3.355600, 1.002021, 7.055921, -3.456001, 0.925622]
-    test_list.append(coolprop_nozzle)
+    # Rarefaction Q1D nozzle, include CoolProp fluid model
+    coolprop_fluidModel           = TestCase('coolprop_fluidModel')
+    coolprop_fluidModel.cfg_dir   = "nicf/coolprop"
+    coolprop_fluidModel.cfg_file  = "fluidModel.cfg"
+    coolprop_fluidModel.test_iter = 5
+    coolprop_fluidModel.test_vals = [-4.525458, -1.578441, 3.439057, 0.000000, 0.000000]
+    test_list.append(coolprop_fluidModel)
+
+    # Rarefaction Q1D nozzle, include CoolProp transport model
+    coolprop_transportModel           = TestCase('coolprop_transportModel')
+    coolprop_transportModel.cfg_dir   = "nicf/coolprop"
+    coolprop_transportModel.cfg_file  = "transportModel.cfg"
+    coolprop_transportModel.test_iter = 5
+    coolprop_transportModel.test_vals = [-4.527922, -1.308741, 4.630469, 0.000000, 0.000000]
+    test_list.append(coolprop_transportModel)
 
     ######################################
     ### Turbomachinery                 ###

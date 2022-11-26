@@ -2438,8 +2438,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
         case CONDUCTIVITYMODEL::COOLPROP:
           file << "Conductivity Model: COOLPROP \n";
-          file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
-          file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
           break;
         default:
           break;
@@ -2734,10 +2732,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp \n";
-          file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
-          if (si_units) file << " N.s/m^2.\n";
-          else file << " lbf.s/ft^2.\n";
-          file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
         case VISCOSITYMODEL::SUTHERLAND:
@@ -2787,8 +2781,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             break;
           case CONDUCTIVITYMODEL::COOLPROP:
             file << "Conductivity Model: COOLPROP \n";
-            file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
-            file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:

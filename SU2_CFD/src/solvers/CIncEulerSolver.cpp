@@ -631,7 +631,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         ModelTable << "COOLPROP_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -687,7 +687,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       case CONDUCTIVITYMODEL::COOLPROP:
         ModelTable << "COOLPROP";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
