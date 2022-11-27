@@ -100,115 +100,6 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
   }
 }
 
-void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics, CConfig *config) {
-
-  const bool sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-  const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
-  su2double *PrimVar_j = new su2double[nPrimVar];
-  su2double solution_j[MAXNVAR] = {0.0};
-
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
-
-    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-      const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-      const auto nDonorVertex = GetnSlidingStates(iMarker,iVertex);
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
-
-      su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      auto Jacobian_i = Jacobian.GetBlock(iPoint,iPoint);
-
-      /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
-
-      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
-
-        for (auto iVar = 0u; iVar < nPrimVar; iVar++)
-          PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
-
-        /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
-
-        const su2double weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
-
-        /*--- Set primitive variables ---*/
-
-        conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-
-        /*--- Set the turbulent variable states ---*/
-
-        for (auto iVar = 0u; iVar < nVar; ++iVar)
-          solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
-
-        conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-
-        /*--- Set the normal vector ---*/
-
-        conv_numerics->SetNormal(Normal);
-
-        if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
-
-        auto residual = conv_numerics->ComputeResidual(config);
-
-        /*--- Accumulate the residuals to compute the average ---*/
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          LinSysRes(iPoint,iVar) += weight*residual[iVar];
-          for (auto jVar = 0u; jVar < nVar; jVar++)
-            Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
-        }
-      }
-
-      /*--- Set the normal vector and the coordinates ---*/
-
-      visc_numerics->SetNormal(Normal);
-      su2double Coord_Reflected[MAXNDIM];
-      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-
-      /*--- Primitive variables ---*/
-
-      visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-
-      /*--- Turbulent variables and their gradients ---*/
-
-      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
-
-      /*--- Menter's first blending function ---*/
-
-      if(sst) visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
-
-      /*--- Compute and update residual ---*/
-
-      auto residual = visc_numerics->ComputeResidual(config);
-
-      LinSysRes.SubtractBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
-    }
-    END_SU2_OMP_FOR
-  }
-
-  delete [] PrimVar_j;
-
-}
-
 void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                               bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
@@ -279,7 +170,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
-  if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
                                             RUNTIME_FLOW_SYS, false);
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);

@@ -51,9 +51,6 @@ CBlasStructure::CBlasStructure(void)
 #endif
 {}
 
-/* Destructor. Nothing to be done. */
-CBlasStructure::~CBlasStructure(void) {}
-
 /* Dense matrix multiplication, gemm functionality. */
 void CBlasStructure::gemm(const int M,        const int N,        const int K,
                           const su2double *A, const su2double *B, su2double *C,

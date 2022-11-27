@@ -39,7 +39,7 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CFlowVariable {
-public:
+ public:
   static constexpr size_t MAXNVAR = 12;
 
   template <class IndexType>

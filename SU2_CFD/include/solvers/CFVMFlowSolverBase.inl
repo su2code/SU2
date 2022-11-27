@@ -325,12 +325,6 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     }
-
-    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
-        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
-      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
-    }
   }
 
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
@@ -590,7 +584,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -617,23 +611,21 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     /*--- Strain Magnitude ---*/
 
+    const su2double vy = nodes->GetVelocity(iPoint, 1);
+    const su2double y = geometry->nodes->GetCoord(iPoint, 1);
     AD::StartPreacc();
     AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += VelocityGradient(iDim, iDim);
-    Div /= 3.0;
+    AD::SetPreaccIn(vy, y);
 
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim), 2);
     }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(Div, 2);
+    if (config.GetAxisymmetric() && y > EPS) {
+      StrainMag(iPoint) += pow(vy / y, 2);
     }
 
     /*--- Add off diagonals ---*/
@@ -1575,10 +1567,21 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
-                                                const CConfig *config) {
+                                                CConfig *config) {
   if (!edgeNumerics) {
+    if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
+        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
+    }
     InstantiateEdgeNumerics(solvers, config);
   }
+
+  /*--- Non-physical counter. ---*/
+  unsigned long counterLocal = 0;
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1604,20 +1607,15 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       } else {
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
+      if (MGLevel == MESH_0) {
+        for (auto j = 0ul; j < Double::Size; ++j)
+          counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
+      }
     }
     END_SU2_OMP_FOR
   }
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
-      Jacobian.SetDiagonalAsColumnSum();
-    }
-  }
+  FinalizeResidualComputation(geometry, pausePreacc, counterLocal, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -2437,9 +2435,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+            Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
@@ -2520,6 +2519,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
         }
         Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+        if (nemo) Grad_Temp_ve[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature_ve(), iDim);
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
@@ -2591,35 +2591,53 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      /// TODO: Move these ifs to specialized functions.
+      su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+
       if (!nemo){
 
         if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
         if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
-          if (energy)
-            GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
-
+          if (!energy) dTdn = 0.0;
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
 
       } else {
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        
+        const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
+  
+        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
+        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
-        su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature()], UnitNormal);
-        su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature_ve()], UnitNormal);
+        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
+        bool catalytic = config->GetCatalytic_Wall(iMarker);
+        if (catalytic){
 
-        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
-        enthalpy transport due to mass diffusion ---*/
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+          const auto nSpecies = config->GetnSpecies();
+          const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+          const auto& PrimVar = nodes->GetPrimitive(iPoint);
+          const auto& Ds = nodes->GetDiffusionCoeff(iPoint);
+          const auto& hs = nodes->GetEnthalpys(iPoint);
+          const su2double rho = PrimVar[prim_idx.Density()];
+
+          su2double sumJhs = 0.0;
+          for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[prim_idx.Density()][iDim]/rho);
+              sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
+            }
+          }
+          /*--- Surface energy balance: mass diffusion ---*/
+          HeatFlux[iMarker][iVertex] += sumJhs;
+
+        }
       }
 
       /*--- Note that heat is computed at the

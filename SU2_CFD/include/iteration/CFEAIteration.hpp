@@ -32,6 +32,7 @@
 
 /*!
  * \class CFEAIteration
+ * \ingroup Drivers
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
  * \version 7.4.0 "Blackbird"

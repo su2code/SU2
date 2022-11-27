@@ -34,6 +34,10 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
+/*!
+ * \brief File reader for look up tables.
+ * \ingroup LookUpInterp
+ */
 class CFileReaderLUT {
  protected:
   int rank;
@@ -59,7 +63,19 @@ class CFileReaderLUT {
 
   std::vector<unsigned long> hull;
 
-  std::string SkipToFlag(std::ifstream* file_stream, const std::string& flag);
+  /*! \brief Searches for the position of flag in file_stream and 
+   *         sets the stream position of file_stream to that position.
+   */
+  void SkipToFlag(std::ifstream& file_stream, const std::string& current_line, const std::string& flag) const;
+
+  /*! \brief Extracts the next non-empty characters from file_stream and stores them into line.
+   */
+  bool GetNextNonEmptyLine(std::ifstream& file_stream, std::string& line) const;
+  
+  /*! \brief Extracts characters from file_stream, removes trailing control characters,
+   *         and stores them into line.
+   */
+  bool GetStrippedLine(std::ifstream& file_stream, std::string& line) const;
 
  public:
   CFileReaderLUT(){};
@@ -79,5 +95,5 @@ class CFileReaderLUT {
 
   inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
-  void ReadRawDRG(const std::string& file_name);
+  void ReadRawLUT(const std::string& file_name);
 };

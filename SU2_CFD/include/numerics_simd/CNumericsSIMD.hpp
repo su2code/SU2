@@ -58,6 +58,7 @@ using SparseMatrixType = CSysMatrix<su2mixedfloat>;
 
 /*!
  * \class CNumericsSIMD
+ * \ingroup ConvDiscr
  * \brief Base class to define the interface.
  * \note See CNumericsEmptyDecorator.
  */
