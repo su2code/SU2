@@ -2272,8 +2272,14 @@ public:
   //inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
   inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
 
-  inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
-  inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
+
+  inline virtual void SetInsideTable(unsigned long iPoint, unsigned short inside) { }
+
+  inline virtual unsigned short GetInsideTable(unsigned long iPoint) const { return 0; }
+
+  inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+  inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
   
   inline virtual su2double *GetScalarSources(unsigned long iPoint) { return nullptr; }
   inline virtual su2double *GetScalarLookups(unsigned long iPoint) { return nullptr; }

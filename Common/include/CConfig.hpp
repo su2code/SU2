@@ -1208,12 +1208,15 @@ private:
   unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
   unsigned short n_lookups;             /* number of lookud up variables */
   unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
+  unsigned short n_reactants;
+  unsigned short n_controlling_variables;
 
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
   string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
   string file_name_lut;                 /*!< \brief file name of the look up table. */
-
+  string* reactant_names;
+  su2double *reactant_Lewis_numbers;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -2124,9 +2127,31 @@ public:
   void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
 
   /*!
+   * \brief Set the number of controllign variables for the combustion problem.
+   */
+  void SetNControllingVars(unsigned short n_CV) { this->n_controlling_variables = n_CV; }
+
+  unsigned short GetNControllingVars(void) const { return n_controlling_variables; }
+
+  /*!
    * \brief Get the number of transported scalars for combustion
    */
   unsigned short GetNScalars(void) const { return n_scalars; }
+
+  /*!
+   * \brief Get the number of passive reactants in combustion simulation  
+   */
+  unsigned short GetNReactants(void) const { return n_reactants; }
+
+  /*!
+   * \brief Get the name of the passive reactant.
+   */
+  string GetReactantName(unsigned short i_reactant) const { if(n_reactants > 0)return reactant_names[i_reactant];else return "NONE"; }
+
+  /*!
+   * \brief Get the Lewis number of reactant i_reactant
+   */
+  su2double GetReactantLewis(unsigned short i_reactant) const { return reactant_Lewis_numbers[i_reactant]; }
 
   /*!
    * \brief Get the number of transported scalars for combustion

@@ -1206,8 +1206,6 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
-  I_CO,
-  I_NOX,
 };
 
 /*! 

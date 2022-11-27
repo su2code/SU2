@@ -37,6 +37,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
  protected:
   MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+  su2vector<unsigned short> inside_table; /*!< \brief Vector of solutions inside the lookup table. */
 
  public:
   /*!
@@ -60,11 +61,21 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   }
 
   /*!
+   * \brief Set a source term for the specie transport equation.
+   * \param[in] iPoint - Node index.
+   * \param[in] val_ivar - Species index.
+   * \param[in] val_source - Source term value.
+  */
+  inline void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) override {
+    source_scalar(iPoint, val_ivar) = val_source;
+  }
+
+  /*!
    * \brief Get the value of the transported scalar source term
    * \param[in] val_ivar - eqn. index to the transported scalar source term
    * \return Value of the progress variable source term
    */
-  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) override {
+  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override {
     return source_scalar(iPoint, val_ivar);
   }
 
@@ -73,7 +84,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] val_ivar - eqn. index to the looked up scalar field
    * \return Value of the looked up scalar field
    */
-  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) override {
+  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const override {
     return lookup_scalar(iPoint, val_ivar);
   }
 
@@ -88,4 +99,8 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \return Pointer to the transported scalars source term
    */
   inline su2double* GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
+
+  inline void SetInsideTable(unsigned long iPoint, unsigned short inside) override { inside_table[iPoint] = inside; }
+
+  inline unsigned short GetInsideTable(unsigned long iPoint) const override { return inside_table[iPoint]; }
 };

@@ -52,4 +52,5 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
 
   source_scalar.resize(nPoint, config->GetNScalars()) = su2double(0.0);
   lookup_scalar.resize(nPoint, config->GetNLookups()) = su2double(0.0);
+  inside_table.resize(nPoint) = 0;
 }

@@ -891,8 +891,10 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      AddHistoryOutput("RMS_CO", "rms[Y_CO]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the CO mass fraction equation." , HistoryFieldType::RESIDUAL);
-      AddHistoryOutput("RMS_NOX", "rms[Y_NOx]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the NOx mass fraction equation.", HistoryFieldType::RESIDUAL);
+      for(auto i_specie=0u; i_specie < config->GetNReactants(); i_specie++){
+        string specie_name = config->GetReactantName(i_specie);
+        AddHistoryOutput("RMS_"+specie_name, "rms[Y_"+specie_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+specie_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
       break;
     }
     case SPECIES_MODEL::NONE: break;
@@ -1054,8 +1056,10 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_RMS(I_PROGVAR)));
       SetHistoryOutputValue("RMS_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_RMS(I_ENTH)));
       /*--- auxiliary species transport ---*/
-      SetHistoryOutputValue("RMS_CO", log10(solver[SPECIES_SOL]->GetRes_RMS(I_CO)));
-      SetHistoryOutputValue("RMS_NOX", log10(solver[SPECIES_SOL]->GetRes_RMS(I_NOX)));
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        SetHistoryOutputValue("RMS_" + specie_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControllingVars() + iReactant)));
+      }
 
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
@@ -1103,20 +1107,26 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
       /*--- auxiliary species ---*/
-      AddVolumeOutput("Y_CO", "Y_CO", "SOLUTION", "CO Mass fraction solution" );
-      AddVolumeOutput("Y_NOX", "Y_NOx", "SOLUTION", "NOx Mass fraction solution");
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        AddVolumeOutput("Y_" + specie_name, "Y_" + specie_name, "SOLUTION", specie_name + "Mass fraction solution");
+      }
 
       AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
       /*--- no source term for enthalpy ---*/
       /*--- auxiliary species source terms ---*/
-      AddVolumeOutput("SOURCE_Y_CO", "Source_Y_CO", "SOURCE", "Source Y_CO");
-      AddVolumeOutput("SOURCE_Y_NOX", "Source_Y_NOx", "SOURCE", "Source Y_NOx");
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        AddVolumeOutput("SOURCE_Y_" + specie_name, "Source_Y_" + specie_name, "SOURCE", "Source Y_" + specie_name);
+      }
 
-      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
         if (config->GetLUTLookupName(i_lookup) != "NULL") {
           string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
           AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
         }
+      }
+        
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       break;
     case SPECIES_MODEL::NONE:
@@ -1148,8 +1158,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "SOLUTION", "Residual of progress variable");
       AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "SOLUTION", "Residual of total enthalpy");
       /*--- residuals for auxiliary species transport equations ---*/
-      AddVolumeOutput("RES_Y_CO", "Residual_Y_CO", "RESIDUAL", "Residual of the Y_CO equation");
-      AddVolumeOutput("RES_Y_NOX", "Residual_Y_NOx", "RESIDUAL", "Residual of the Y_NOx equation");
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        AddVolumeOutput("RES_Y_" + specie_name, "Residual_Y_" + specie_name, "RESIDUAL", "Residual of the Y_" + specie_name + " equation");
+      }
       break;
     case SPECIES_MODEL::NONE:
       break;
@@ -1193,8 +1205,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
         AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "SOLUTION", "Limiter of progress variable");
         AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "SOLUTION", "Limiter of total enthalpy");
         /*--- limiter for auxiliary species transport ---*/
-        AddVolumeOutput("LIMITER_Y_CO", "Limiter_Y_CO", "LIMITER", "Limiter value for the Y_CO equation");
-        AddVolumeOutput("LIMITER_Y_NOX", "Limiter_Y_NOx", "LIMITER", "Limiter value for the Y_NOx equation");
+        for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+          string specie_name = config->GetReactantName(iReactant);
+          AddVolumeOutput("LIMITER_Y_" + specie_name, "LIMITER_Y_" + specie_name, "LIMITER", "Limiter value for the Y_" + specie_name + " equation");
+        }
       break;
       case SPECIES_MODEL::NONE:
         break;
@@ -1314,50 +1328,52 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       unsigned long n_sources = config->GetNLUTSources();
-      //nijso: change to vector or something
-      su2double* scalars = new su2double[n_sources];
-      for (unsigned short isource = 0; isource < n_sources; isource++) {
-        scalars[isource] = Node_Species->GetSolution(iPoint,isource);
-      }
 
       // nijso: TODO don't know why it does not work like this, ask P.
       //su2double *scalars = Node_Species->GetSolution(iPoint);
       //su2double scalar = Node_Species->GetSolution(iPoint,0);
 
-      unsigned long table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarSources(scalars);
-      SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, 1));
+      //unsigned long table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarSources(scalars);
+      SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, I_PROGVAR));
+      SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, I_ENTH));
       /*--- values from auxiliary species transport ---*/
-      SetVolumeOutputValue("Y_CO", iPoint, Node_Species->GetSolution(iPoint, I_CO));
-      SetVolumeOutputValue("Y_NOX", iPoint, Node_Species->GetSolution(iPoint, I_NOX));
-
-      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_PROGVAR));
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        SetVolumeOutputValue("Y_" + specie_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControllingVars() + iReactant));
+      }
+      
+      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
       /*--- no source term for enthalpy ---*/
       /*--- source terms for auxiliary species transport ---*/
-      SetVolumeOutputValue("SOURCE_Y_CO", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_CO));
-      SetVolumeOutputValue("SOURCE_Y_NOX", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_NOX));
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        SetVolumeOutputValue("SOURCE_Y_" + specie_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControllingVars() + iReactant));
+      }
 
-      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
-      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));
+      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
+      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
       /*--- residual for auxiliary species transport equations ---*/
-      SetVolumeOutputValue("RES_Y_CO", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_CO));
-      SetVolumeOutputValue("RES_Y_NOX", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_NOX));
+      for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+        string specie_name = config->GetReactantName(iReactant);
+        SetVolumeOutputValue("RES_Y_" + specie_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControllingVars() + iReactant));
+      }
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE){
-        SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, 0));
-        SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, 1));
+        SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, I_PROGVAR));
+        SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, I_ENTH));
         /*--- limiter for auxiliary species transport equations ---*/
-        SetVolumeOutputValue("LIMITER_Y_CO", iPoint, Node_Species->GetLimiter(iPoint, I_CO));
-        SetVolumeOutputValue("LIMITER_Y_NOX", iPoint, Node_Species->GetLimiter(iPoint, I_NOX));
-       }
+        for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
+          string specie_name = config->GetReactantName(iReactant);
+          SetVolumeOutputValue("LIMITER_Y_" + specie_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControllingVars() + iReactant));
+        }
+      }
 
       /*--- variables that we look up from the LUT ---*/
-      table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
         if (config->GetLUTLookupName(i_lookup)!="NULL")
-          SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarLookups(i_lookup));
+          SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint, i_lookup));
       }
-      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)table_misses);
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
 
 
       break;

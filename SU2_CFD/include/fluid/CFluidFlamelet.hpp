@@ -37,21 +37,30 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_scalars;
   unsigned short n_lookups;
   unsigned short n_table_sources;
+  unsigned short n_reactants; /*!< \brief number of passive reactant species. */
+  unsigned short n_CV;        /*!< \brief number of controlling variables. */
 
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names; /*!< \brief vector to store names of scalar source variables.   */
   vector<string> table_lookup_names; /*!< \brief vector to store names of look up variables.   */
 
+  vector<su2double> table_sources;
+
   su2double mass_diffusivity;
-  // su2double source_energy;
-  su2double dDensitydPV;
-  su2double dSourcePVdPV;
-  su2double dDensitydEnth;
 
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
 
   CLookUpTable* look_up_table;
+
+  vector<string> varnames_TD;     // Lookup names for thermodynamic state variables.
+  vector<su2double*> val_vars_TD; // References to thermodynamic state variables.
+
+  vector<string> varnames_Sources;      // Lookup names for scalar source terms.
+  vector<su2double*> val_vars_Sources;  // References to scalar sources.
+
+  vector<string> varnames_LookUp;     // Lookup names for passive lookup variables.
+  vector<su2double*> val_vars_LookUp; // References to lookup variables.
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -87,7 +96,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_temp - temperature
    * \param[out] exit_code = error code
    */
-  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp);
+  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp, su2double initial_value=0);
 
   /*!
    * \brief return a pointer to the lookup table
@@ -132,7 +141,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Get the reaction source term of a species equation
    * \param[in] iVar - index to the species
    */
-  inline su2double GetScalarSources(int iVar) { return source_scalar.at(iVar); }
+  inline su2double GetScalarSources(int iVar) { return source_scalar[iVar]; }
 
   /*!
    * \brief Get the reaction source term of all species equations
@@ -143,8 +152,11 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Get the value of the looked up variable
    * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
    */
-  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar.at(i_scalar); }
+  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
 
+  void PreprocessLookUp();
+
+  inline unsigned short GetNControllingVariables() { return n_CV; }
   //remove?
   //inline su2double GetdDensitydPV() { return dDensitydPV; }
   //inline su2double GetdSourcePVdPV() { return dSourcePVdPV; }

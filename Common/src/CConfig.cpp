@@ -2082,6 +2082,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
+  /* DESCRIPTION: Names of the reactants solved in flamelet problem. */
+  addStringListOption("PASSIVE_REACTANT_NAMES", n_reactants, reactant_names);
+  /* DESCRIPTION: Average lewis numbers of the reactants solved in the flamelet problem. */
+  addDoubleListOption("PASSIVE_REACTANT_LEWIS", n_reactants, reactant_Lewis_numbers);
+
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
