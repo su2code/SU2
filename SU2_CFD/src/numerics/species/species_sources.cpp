@@ -103,7 +103,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
-    /*--- Inviscid component of the source term. ---*/
+    /*--- Inviscid component of the source term. When div(v)=0, this term does not occur ---*/
+
     if (!bounded_scalar) {
       for (auto iVar = 0u; iVar < nVar; iVar++)
         residual[iVar] -= yinv * Volume * Density_i * ScalarVar_i[iVar] * Velocity_i[1];

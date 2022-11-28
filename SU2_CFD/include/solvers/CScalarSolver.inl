@@ -278,7 +278,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
-      /*--- Apply convective flux correction to negate the effects of flow divergence.
+      /*--- Apply convective flux correction to negate the effects of flow divergence in case of incompressible flow.
+       * Note that for the bounded scalar model, we explicitly put div(v)=0.
        * If the ReducerStrategy is used, the corrections need to be applied in a loop over nodes
        * to avoid race conditions in accessing nodes shared by edges handled by different threads. ---*/
 

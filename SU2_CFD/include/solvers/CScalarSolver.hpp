@@ -267,7 +267,7 @@ class CScalarSolver : public CSolver {
   /*!
    * \brief Applies a convective flux correction to negate the effects of flow divergence at a BC node.
    * \note This function should be used for nodes that are part of a boundary marker, it computes a mass flux
-   * from density and velocity at the node, and the outward-poiting normal (-1 * normal of vertex).
+   * from density and velocity at the node, and the outward-pointing normal (-1 * normal of vertex).
    * \return The mass flux.
    */
   inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,

@@ -3013,10 +3013,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
           }
 
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
-
+          su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+          cout << "Outlet mass flow (kg/s): " << setprecision(5) << Outlet_mDot << endl;
+          cout << "target mass flow (kg/s): " << setprecision(5) << Outlet_mDot_Target << endl;
+          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
         }
       }
 
