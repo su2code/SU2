@@ -4689,7 +4689,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
-   0.1m ---*/
+   1.0m ---*/
 
   RefElemLength = 1.0;
   if (SystemMeasurements == US) RefElemLength /= 0.3048;
