@@ -1154,6 +1154,15 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -1189,6 +1198,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
