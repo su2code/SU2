@@ -710,17 +710,16 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-<<<<<<< HEAD
       case CONDUCTIVITYMODEL::FLAMELET:
         ModelTable << "FLAMELET";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
-=======
+        break;
+        
       case CONDUCTIVITYMODEL::COOLPROP:
         ModelTable << "COOLPROP";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
->>>>>>> 73538a1d9cf18f0f75a5f36f8f1740fca8d5fc62
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -3063,19 +3062,10 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
           cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
           su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
-<<<<<<< HEAD
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
-          cout << "target mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot_Target << endl;
-          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
-          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
-
-
-=======
           cout << "Outlet mass flow (kg/s): " << setprecision(5) << Outlet_mDot << endl;
           cout << "target mass flow (kg/s): " << setprecision(5) << Outlet_mDot_Target << endl;
           su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
           cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
->>>>>>> 73538a1d9cf18f0f75a5f36f8f1740fca8d5fc62
         }
       }
 
