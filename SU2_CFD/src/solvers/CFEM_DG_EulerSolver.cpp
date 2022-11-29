@@ -1155,6 +1155,15 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -1190,6 +1199,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -8907,7 +8924,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
   /* Make a distinction between the several Riemann solvers. */
   switch( config->GetRiemann_Solver_FEM() ) {
 
-    case ROE: {
+    case UPWIND::ROE: {
 
       /* Roe's approximate Riemann solver. Easier storage of the cut off
          value for the entropy correction. */
@@ -9152,7 +9169,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
 
     /*------------------------------------------------------------------------*/
 
-    case LAX_FRIEDRICH: {
+    case UPWIND::LAX_FRIEDRICH: {
 
       /* Local Lax-Friedrich (Rusanov) flux Make a distinction between two and
          three space dimensions in order to have the most efficient code. */

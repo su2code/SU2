@@ -41,6 +41,7 @@ CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     jacobian[iVar] = new su2double[nVar]();
   }
+  bounded_scalar = config->GetBounded_Species();
 }
 
 CSourceBase_Species::~CSourceBase_Species() {
@@ -67,13 +68,11 @@ CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_n
 
 template <class T>
 CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const CConfig* config) {
-  
-
   /*--- Preaccumulation ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(ScalarVar_i, nVar);
-  AD::SetPreaccIn(Volume); 
-  
+  AD::SetPreaccIn(Volume);
+
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
   }
@@ -94,29 +93,31 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
     AD::SetPreaccIn(Coord_i[1]);
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
-    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);      
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
 
     const su2double yinv = 1.0 / Coord_i[1];
 
     const su2double Density_i = V_i[idx.Density()];
-    
+
     su2double Velocity_i[3];
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[idx.Velocity() + iDim];
 
-    /*--- Inviscid component of the source term. ---*/
-    
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      residual[iVar] -= yinv * Volume * Density_i * ScalarVar_i[iVar] * Velocity_i[1];
+    /*--- Inviscid component of the source term. When div(v)=0, this term does not occur ---*/
 
-    if (implicit) {
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        jacobian[iVar][iVar] -= yinv * Volume * Velocity_i[1];
+    if (!bounded_scalar) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        residual[iVar] -= yinv * Volume * Density_i * ScalarVar_i[iVar] * Velocity_i[1];
+
+      if (implicit) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          jacobian[iVar][iVar] -= yinv * Volume * Velocity_i[1];
+        }
       }
     }
 
     /*--- Add the viscous terms if necessary. ---*/
-    
+
     if (config->GetViscous()) {
       su2double Mass_Diffusivity_Tur = 0.0;
       if (turbulence)
@@ -124,10 +125,11 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
       for (auto iVar=0u; iVar < nVar; iVar++){
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
-      } 
+      }
     }
+
   }
-  
+
   AD::SetPreaccOut(residual, nVar);
   AD::EndPreacc();
 

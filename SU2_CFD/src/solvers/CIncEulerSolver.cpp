@@ -223,6 +223,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array ---*/
+  if (config->GetBounded_Scalar())
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "INC.FLOW";
 
@@ -647,6 +651,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
         NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        break;
+        
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP_VISCOSITY";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -699,10 +710,17 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
+<<<<<<< HEAD
       case CONDUCTIVITYMODEL::FLAMELET:
         ModelTable << "FLAMELET";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+=======
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+>>>>>>> 73538a1d9cf18f0f75a5f36f8f1740fca8d5fc62
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -915,7 +933,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
 
   /*--- Set the primitive variables ---*/
@@ -1083,8 +1101,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, jPoint;
 
-  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1131,6 +1150,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Compute residuals, and Jacobians ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Update residual value ---*/
 
@@ -1187,6 +1208,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1305,6 +1327,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     auto residual = numerics->ComputeResidual(config);
 
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
@@ -1325,6 +1349,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -3038,12 +3063,19 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
           cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
           su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+<<<<<<< HEAD
           cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
           cout << "target mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot_Target << endl;
           su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
           cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
 
 
+=======
+          cout << "Outlet mass flow (kg/s): " << setprecision(5) << Outlet_mDot << endl;
+          cout << "target mass flow (kg/s): " << setprecision(5) << Outlet_mDot_Target << endl;
+          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
+>>>>>>> 73538a1d9cf18f0f75a5f36f8f1740fca8d5fc62
         }
       }
 
