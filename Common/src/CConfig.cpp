@@ -5359,12 +5359,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    provided in the .cfg file in order to recover default implementation in SU2*/
 
   if (Marker_Inlet_Turb == nullptr && Kind_Turb_Model != TURB_MODEL::NONE) {
-    Marker_Inlet_Turb = Marker_Inlet;
-    nMarker_Inlet_Turb = nMarker_Inlet;
+    /*--- Compute the total number of markers in the config file ---*/
+    string * Inlet_Options[5] = {Marker_Inlet, Marker_Riemann, Marker_Giles, Marker_Supersonic_Inlet, Marker_ActDiskInlet};
+    for (unsigned short i=0; i < 5; i++){
+      if(Inlet_Options[i]!= nullptr) Marker_Inlet_Turb = Inlet_Options[i];
+    }
+    nMarker_Inlet_Turb = nMarker_Inlet + nMarker_Riemann + nMarker_Giles + nMarker_Supersonic_Inlet + nMarker_ActDiskInlet;
     Inlet_TurbVal = new su2double*[nMarker_Inlet_Turb];
     for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Turb; iMarker++) {
-      Inlet_TurbVal[iMarker] = new su2double[nTurb_Properties]();
-      Inlet_TurbVal[iMarker][0] = TurbulenceIntensity_FreeStream;
+      if (Kind_Turb_Model == TURB_MODEL::SST){
+        Inlet_TurbVal[iMarker] = new su2double[2]();
+        Inlet_TurbVal[iMarker][0] = TurbulenceIntensity_FreeStream;
+        Inlet_TurbVal[iMarker][1] = Turb2LamViscRatio_FreeStream;
+      }else{
+        Inlet_TurbVal[iMarker] = new su2double[1]();
+        Inlet_TurbVal[iMarker][0] = NuFactor_FreeStream;
+      }
     }
   }
 
