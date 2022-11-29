@@ -191,7 +191,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
-    unsigned short n_CV = fluid_model_local->GetNControllingVariables();
+    int n_CV = fluid_model_local->GetNControllingVariables();
 
     /*--- Compute scalar source terms ---*/
     unsigned long exit_code = fluid_model_local->SetScalarSources(scalars);
@@ -212,7 +212,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /* evert: SetTDState_T is not needed here, it's already evaluated by the flow solver. */
     su2double Conductivity = flowNodes->GetThermalConductivity(i_point);
     su2double Cp = flowNodes->GetSpecificHeatCp(i_point);
-    for (auto i_scalar = 0u; i_scalar < nVar - n_CV; ++i_scalar) {
+    for (auto i_scalar = 0; i_scalar < nVar - n_CV; ++i_scalar) {
       nodes->SetDiffusivity(i_point, Conductivity / Cp, i_scalar);
     }
     /*--- Diffusivity of passive reactants divided by respective average Lewis number. ---*/
@@ -272,7 +272,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
-    su2double scalar_init[nVar];
+    su2double* scalar_init = new su2double[nVar];
     su2double* flame_offset = config->GetFlameOffset();
     su2double* flame_normal = config->GetFlameNormal();
 
@@ -375,6 +375,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
            << " !!!" << endl;
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0)) cout << endl;
+    delete [] scalar_init;
   }
 }
 
@@ -455,8 +456,6 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
-
-  CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
@@ -685,10 +684,11 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         /*--- Compute the normal gradient in temperature using Twall ---*/
 
         su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+
         /*--- Get thermal conductivity ---*/
 
         su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
-        su2double Cp = flowNodes->GetSpecificHeatCp(iPoint);
+
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
 
@@ -712,6 +712,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   su2double enth_wall, prog_wall;
   unsigned long n_not_iterated = 0;
 
@@ -725,27 +726,61 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      /*--- Set enthalpy on the wall ---*/
 
-      prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-      n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
+      if(config->GetSpecies_StrongBC()){
+        /*--- Set enthalpy on the wall ---*/
 
-      /*--- Impose the value of the enthalpy as a strong boundary
-      condition (Dirichlet) and remove any
-      contribution to the residual at this node. ---*/
+        prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
 
-      nodes->SetSolution(iPoint, I_ENTH, enth_wall);
-      nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
+        /*--- Impose the value of the enthalpy as a strong boundary
+        condition (Dirichlet) and remove any
+        contribution to the residual at this node. ---*/
 
-      LinSysRes(iPoint, I_ENTH) = 0.0;
+        nodes->SetSolution(iPoint, I_ENTH, enth_wall);
+        nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
 
-      nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
+        LinSysRes(iPoint, I_ENTH) = 0.0;
 
-      if (implicit) {
-        total_index = iPoint * nVar + I_ENTH;
+        nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 
-        Jacobian.DeleteValsRowi(total_index);
+        if (implicit) {
+          total_index = iPoint * nVar + I_ENTH;
+
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }else{
+        /*--- Weak BC formulation ---*/
+        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+        su2double Edge_Vector[MAXNDIM];
+        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+        su2double dist_ij = sqrt(dist_ij_2);
+
+        /*--- Compute the normal gradient in temperature using Twall ---*/
+
+        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+
+        /*--- Get thermal conductivity ---*/
+
+        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+
+        /*--- Apply a weak boundary condition for the energy equation.
+        Compute the residual due to the prescribed heat flux. ---*/
+
+        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
       }
+      
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {

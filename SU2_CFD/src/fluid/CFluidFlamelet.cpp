@@ -39,7 +39,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     cout << "n_scalars = " << n_scalars << endl;
   }
 
-  bool PreferentialDiffusion = false;
   /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
   n_reactants = config->GetNReactants();
   n_CV = 2;
@@ -151,7 +150,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
   /*--- add all quantities and their address to the look up vectors ---*/
 
-  unsigned long exit_code = look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, val_enth, name_prog, name_enth);
+  look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, val_enth, name_prog, name_enth);
 
   /*--- ---*/
   // evert: this check is performed in the flamelet solver during preprocessing

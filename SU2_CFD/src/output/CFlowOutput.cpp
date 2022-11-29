@@ -1327,7 +1327,6 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-      unsigned long n_sources = config->GetNLUTSources();
 
       // nijso: TODO don't know why it does not work like this, ask P.
       //su2double *scalars = Node_Species->GetSolution(iPoint);
