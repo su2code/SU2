@@ -217,21 +217,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double Intermittency = nodes->GetSolution(iPoint,0);
     const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
-    const su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
-    const su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-
-    su2double Corr_Rec = 0.0;
-    if(Re_t <= 1870){
-     Corr_Rec = Re_t - (396.035e-02 + (-120.656e-04)*Re_t + (868.230e-06)*pow(Re_t, 2.)
-                                +( -696.506e-09)*pow(Re_t, 3.) + (174.105e-12)*pow(Re_t, 4.));
-    } else {
-     Corr_Rec = Re_t - ( 593.11 + (Re_t - 1870.0) * 0.482);
-    }
-
-    const su2double R_t = rho*k/ mu/ omega;
-    const su2double f_reattach = exp(-pow(R_t/20,4));
-    const su2double re_omega = rho*omega*dist*dist/mu;
-    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
@@ -264,7 +249,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     }
     if(TurbFamily == TURB_FAMILY::SA)
       f_wake = 1.0;
-      
+
     const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
     const su2double delta_bl   = 7.5*theta_bl;
     const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
