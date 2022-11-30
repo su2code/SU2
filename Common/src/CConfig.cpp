@@ -5368,11 +5368,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "to be equal to 1 : Nu Factor",
         CURRENT_FUNCTION);
 
-  /* if Turbulent Inlet is not provided, marker inlet for turbulent will be filled with the turbulent properties
+  /* if Turbulent Inlet is not provided, MARKER_INLET_TURBULENT will be filled with the turbulent properties
    provided in the .cfg file in order to recover default implementation in SU2*/
 
   if (Marker_Inlet_Turb == nullptr && Kind_Turb_Model != TURB_MODEL::NONE) {
-    /*--- Compute the total number of markers in the config file ---*/
+    
     string* Inlet_Options[5] = {Marker_Inlet, Marker_Riemann, Marker_Giles, Marker_Supersonic_Inlet,
                                 Marker_ActDiskInlet};
     for (unsigned short i = 0; i < 5; i++) {
