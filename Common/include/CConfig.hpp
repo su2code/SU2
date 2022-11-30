@@ -531,28 +531,34 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
+  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+
+  CENTERED
   Kind_Centered,                /*!< \brief Centered scheme. */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
-  Kind_Centered_Template,       /*!< \brief Centered scheme for the template model. */
+  Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
+
+
+  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
+  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
+  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
+  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+
+  UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
-  Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
-  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
-  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
-  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
-  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
-  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+  Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -1107,7 +1113,7 @@ private:
   hs_axes[3],            /*!< \brief principal axes (x, y, z) of the ellipsoid containing the heat source. */
   hs_center[3];          /*!< \brief position of the center of the heat source. */
 
-  unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
+  UPWIND Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
@@ -1279,7 +1285,7 @@ private:
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
-  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field);
+  void addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field);
 
   void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field);
 
@@ -2305,8 +2311,8 @@ public:
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
-  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
+  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
+                             UPWIND val_kind_upwind,        LIMITER val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
 
   /*!
@@ -3693,7 +3699,7 @@ public:
    */
   bool GetAUSMMethod(void) const {
     switch (Kind_Upwind_Flow) {
-      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS:
+      case UPWIND::AUSM : case UPWIND::AUSMPLUSUP: case UPWIND::AUSMPLUSUP2: case UPWIND::AUSMPWPLUS:
         return true;
       default:
         return false;
@@ -4358,7 +4364,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of center scheme for the convective terms.
    */
-  unsigned short GetKind_Centered(void) const { return Kind_Centered; }
+  CENTERED GetKind_Centered(void) const { return Kind_Centered; }
 
   /*!
    * \brief Get kind of upwind scheme for the convective terms.
@@ -4367,7 +4373,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetKind_Upwind(void) const { return Kind_Upwind; }
+  UPWIND GetKind_Upwind(void) const { return Kind_Upwind; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
@@ -4538,7 +4544,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the flow equations.
    */
-  ENUM_CENTERED GetKind_Centered_Flow(void) const { return static_cast<ENUM_CENTERED>(Kind_Centered_Flow); }
+  CENTERED GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -4554,7 +4560,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the flow equations.
    */
-  unsigned short GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
+  UPWIND GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
 
   /*!
    * \brief Get the kind of finite element convective numerical scheme for the flow equations.
@@ -4683,7 +4689,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
+  CENTERED GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint flow equations.
@@ -4691,7 +4697,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
+  UPWIND GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the high order method (center scheme).
@@ -4735,7 +4741,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
+  CENTERED GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the turbulence equations.
@@ -4743,7 +4749,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
+  UPWIND GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4787,7 +4793,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Centered_Species() const { return Kind_Centered_Species; }
+  CENTERED GetKind_Centered_Species() const { return Kind_Centered_Species; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the Species equations.
@@ -4795,7 +4801,22 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+  UPWIND GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for species transport.
+   */
+  bool GetBounded_Species() const { return (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for turbulence transport.
+   */
+  bool GetBounded_Turb() const { return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is used for any equation.
+   */
+  bool GetBounded_Scalar() const { return GetBounded_Species() || GetBounded_Turb(); }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
@@ -4811,7 +4832,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
+  CENTERED GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint turbulence equations.
@@ -4819,7 +4840,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
+  UPWIND GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
 
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
@@ -8915,7 +8936,7 @@ public:
    * \note This value is obtained from the config file, and it is constant during the computation.
    * \return Kind of Riemann solver for the DG method (FEM flow solver).
    */
-  unsigned short GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
+  UPWIND GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
 
   /*!
    * \brief Get the factor applied during quadrature of straight elements.

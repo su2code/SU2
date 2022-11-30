@@ -323,7 +323,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
-  bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
+  bool center_jst     = (config->GetKind_Centered_AdjFlow() == CENTERED::JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 

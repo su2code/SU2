@@ -914,13 +914,21 @@ def main():
     edge_PPR.test_vals = [-5.400790, 0.739723, -0.000035, 0.000000]
     test_list.append(edge_PPR)
 
-    # Rarefaction Q1D nozzle coolprop_nozzle
-    coolprop_nozzle           = TestCase('coolprop_nozzle')
-    coolprop_nozzle.cfg_dir   = "nicf/coolprop"
-    coolprop_nozzle.cfg_file  = "coolprop_nozzle.cfg"
-    coolprop_nozzle.test_iter = 10
-    coolprop_nozzle.test_vals = [-4.692149, -1.965079, 3.428130, 0.000000, 0.000000]
-    test_list.append(coolprop_nozzle)
+    # Rarefaction Q1D nozzle, include CoolProp fluid model
+    coolprop_fluidModel           = TestCase('coolprop_fluidModel')
+    coolprop_fluidModel.cfg_dir   = "nicf/coolprop"
+    coolprop_fluidModel.cfg_file  = "fluidModel.cfg"
+    coolprop_fluidModel.test_iter = 5
+    coolprop_fluidModel.test_vals = [-4.525458, -1.578441, 3.439057, 0.000000, 0.000000]
+    test_list.append(coolprop_fluidModel)
+
+    # Rarefaction Q1D nozzle, include CoolProp transport model
+    coolprop_transportModel           = TestCase('coolprop_transportModel')
+    coolprop_transportModel.cfg_dir   = "nicf/coolprop"
+    coolprop_transportModel.cfg_file  = "transportModel.cfg"
+    coolprop_transportModel.test_iter = 5
+    coolprop_transportModel.test_vals = [-4.527922, -1.308741, 4.630469, 0.000000, 0.000000]
+    test_list.append(coolprop_transportModel)
 
     ######################################
     ### Turbomachinery                 ###
@@ -1334,6 +1342,15 @@ def main():
     species2_primitiveVenturi_mixingmodel.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
+    # 2 species (1 eq) primitive venturi mixing using mixing model and bounded scalar transport
+    species2_primitiveVenturi_mixingmodel_boundedscalar           = TestCase('species2_primitiveVenturi_mixingmodel_boundedscalar')
+    species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_file  = "species2_primitiveVenturi_mixingmodel_boundedscalar.cfg"
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.419758, -4.490843, -4.496264, -5.724852, -0.120393, -5.693152, 5.000000, -1.766881, 5.000000, -4.958352, 5.000000, -2.150266, 0.000300, 0.000300, 0.000000, 0.000000]
+    species2_primitiveVenturi_mixingmodel_boundedscalar.new_output = True
+    test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
+
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1376,6 +1393,15 @@ def main():
     species2_primitiveVenturi.new_output = True
     test_list.append(species2_primitiveVenturi)
 
+    # 2 species (1 eq) primitive venturi mixing with bounded scalar transport
+    species_primitiveVenturi_boundedscalar             = TestCase('species2_primitiveVenturi_bounded_scalar')
+    species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
+    species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
+    species_primitiveVenturi_boundedscalar.test_iter   = 50
+    species_primitiveVenturi_boundedscalar.test_vals   = [-5.297585, -4.397797, -4.377086, -5.593131, -1.011782, -5.623540, 5.000000, -1.775123, 5.000000, -4.086339, 5.000000, -2.080187, 0.000424, 0.000424, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.new_output  = True
+    test_list.append(species_primitiveVenturi_boundedscalar)
+
     # 3 species (2 eq) primitive venturi mixing with inlet files.
     # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
     species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
@@ -1395,6 +1421,16 @@ def main():
     species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10, -4.585464, 8, -5.19335, 0.18661, 0]
     species_passive_val.new_output = True
     test_list.append(species_passive_val)
+
+    # species transport, 3 species with multizone (2 fluid regions)
+    species3_multizone_restart           = TestCase('species3_multizone_restart')
+    species3_multizone_restart.cfg_dir   = "species_transport/multizone"
+    species3_multizone_restart.cfg_file  = "configMaster.cfg"
+    species3_multizone_restart.test_iter = 5
+    species3_multizone_restart.test_vals = [-4.773393, -4.254100]
+    species3_multizone_restart.new_output = True
+    species3_multizone_restart.multizone = True
+    test_list.append(species3_multizone_restart)
 
     ######################################
     ### RUN TESTS                      ###
