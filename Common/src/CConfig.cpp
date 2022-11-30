@@ -5354,24 +5354,39 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     case TURB_FAMILY::KW:
       nTurbVar = 2; break;
   }
+  /*--- Check whether the number of entries of the MARKER_INLET_TURBULENT equals the number of turbulent properties
+       used for the respective turbulent model. nTurb_Properties must be equal to 1 or 2 depending on whether SA or
+       SST model are used.--- */
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SST && nTurb_Properties != 2)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SST Model is used \n"
+        "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
+        CURRENT_FUNCTION);
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SA && nTurb_Properties != 1)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SA Model is used \n"
+        "to be equal to 1 : Nu Factor",
+        CURRENT_FUNCTION);
 
   /* if Turbulent Inlet is not provided, marker inlet for turbulent will be filled with the turbulent properties
    provided in the .cfg file in order to recover default implementation in SU2*/
 
   if (Marker_Inlet_Turb == nullptr && Kind_Turb_Model != TURB_MODEL::NONE) {
     /*--- Compute the total number of markers in the config file ---*/
-    string * Inlet_Options[5] = {Marker_Inlet, Marker_Riemann, Marker_Giles, Marker_Supersonic_Inlet, Marker_ActDiskInlet};
-    for (unsigned short i=0; i < 5; i++){
-      if(Inlet_Options[i]!= nullptr) Marker_Inlet_Turb = Inlet_Options[i];
+    string* Inlet_Options[5] = {Marker_Inlet, Marker_Riemann, Marker_Giles, Marker_Supersonic_Inlet,
+                                Marker_ActDiskInlet};
+    for (unsigned short i = 0; i < 5; i++) {
+      if (Inlet_Options[i] != nullptr) Marker_Inlet_Turb = Inlet_Options[i];
     }
-    nMarker_Inlet_Turb = nMarker_Inlet + nMarker_Riemann + nMarker_Giles + nMarker_Supersonic_Inlet + nMarker_ActDiskInlet;
+    nMarker_Inlet_Turb =
+        nMarker_Inlet + nMarker_Riemann + nMarker_Giles + nMarker_Supersonic_Inlet + nMarker_ActDiskInlet;
     Inlet_TurbVal = new su2double*[nMarker_Inlet_Turb];
     for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Turb; iMarker++) {
-      if (Kind_Turb_Model == TURB_MODEL::SST){
+      if (Kind_Turb_Model == TURB_MODEL::SST) {
         Inlet_TurbVal[iMarker] = new su2double[2]();
         Inlet_TurbVal[iMarker][0] = TurbulenceIntensity_FreeStream;
         Inlet_TurbVal[iMarker][1] = Turb2LamViscRatio_FreeStream;
-      }else{
+      } else {
         Inlet_TurbVal[iMarker] = new su2double[1]();
         Inlet_TurbVal[iMarker][0] = NuFactor_FreeStream;
       }
@@ -8841,13 +8856,6 @@ const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
   for (iMarker_Inlet_Turb = 0; iMarker_Inlet_Turb < nMarker_Inlet_Turb; iMarker_Inlet_Turb++)
     if (Marker_Inlet_Turb[iMarker_Inlet_Turb] == val_marker) break;
   return Inlet_TurbVal[iMarker_Inlet_Turb];
-}
-
-void CConfig::SetInlet_TurbVal(su2double * val_turbProp, string val_marker) {
-  unsigned short iMarker_Inlet;
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Turb; iMarker_Inlet++)
-    if (Marker_Inlet[iMarker_Inlet] == val_marker)
-      Inlet_TurbVal[iMarker_Inlet] = val_turbProp;
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {
