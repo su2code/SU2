@@ -2988,6 +2988,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
+          case VISCOSITYMODEL::COOLPROP:
+            Breakdown_file << "Viscosity Model: CoolProp"<< "\n";
+            break;
+
           default:
             break;
 
@@ -3003,6 +3007,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
+            break;
+
+          case CONDUCTIVITYMODEL::COOLPROP:
+            Breakdown_file << "Conductivity Model: COOLPROP "<< "\n";
             break;
 
           default:
@@ -3354,6 +3362,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << ")." << endl;
             break;
 
+          case VISCOSITYMODEL::COOLPROP:
+            Breakdown_file << "Viscosity Model: CoolProp"<< "\n";
+            break;
+
         }
 
         if (energy) {
@@ -3368,6 +3380,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
+              break;
+
+            case CONDUCTIVITYMODEL::COOLPROP:
+              Breakdown_file << "Conductivity Model: COOLPROP "<< "\n";
               break;
 
             case CONDUCTIVITYMODEL::POLYNOMIAL:

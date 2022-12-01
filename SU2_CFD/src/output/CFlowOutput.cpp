@@ -2453,6 +2453,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp  \n";
+          break;
+
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
           file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -2483,7 +2487,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
           file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
           break;
-
+        case CONDUCTIVITYMODEL::COOLPROP:
+          file << "Conductivity Model: COOLPROP \n";
+          break;
         default:
           break;
       }
@@ -2775,6 +2781,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp \n";
+          break;
+
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
           file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -2819,6 +2829,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             file << "Conductivity Model: CONSTANT \n";
             file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
             file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
+            break;
+          case CONDUCTIVITYMODEL::COOLPROP:
+            file << "Conductivity Model: COOLPROP \n";
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:

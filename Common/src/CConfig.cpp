@@ -414,7 +414,7 @@ void CConfig::addStringListOption(const string name, unsigned short & num_marker
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) {
+void CConfig::addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
@@ -2311,7 +2311,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the finite element flow solver---*/
 
   /* DESCRIPTION: Riemann solver used for DG (ROE, LAX-FRIEDRICH, AUSM, AUSMPW+, HLLC, VAN_LEER) */
-  addEnumOption("RIEMANN_SOLVER_FEM", Riemann_Solver_FEM, Upwind_Map, ROE);
+  addEnumOption("RIEMANN_SOLVER_FEM", Riemann_Solver_FEM, Upwind_Map, UPWIND::ROE);
   /* DESCRIPTION: Constant factor applied for quadrature with straight elements (2.0 by default) */
   addDoubleOption("QUADRATURE_FACTOR_STRAIGHT_FEM", Quadrature_Factor_Straight, 2.0);
   /* DESCRIPTION: Constant factor applied for quadrature with curved elements (3.0 by default) */
@@ -3897,18 +3897,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      CURRENT_FUNCTION);
     }
 
-    if (!ideal_gas && !nemo) {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-        SU2_MPI::Error(
-            "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids",
-            CURRENT_FUNCTION);
-      }
+  if (!ideal_gas && !nemo) {
+    if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
+      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
     }
+  }
 
-    if (nemo) {
-      if (Kind_Upwind_Flow == AUSMPWPLUS)
-        SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-    }
+  if (nemo){
+    if (Kind_Upwind_Flow == UPWIND::AUSMPWPLUS)
+      SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+  }
 
     if (GetBoolTurbomachinery()) {
       nBlades = new su2double[nZone];
@@ -4691,7 +4689,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
-   0.1m ---*/
+   1.0m ---*/
 
   RefElemLength = 1.0;
   if (SystemMeasurements == US) RefElemLength /= 0.3048;
@@ -5439,6 +5437,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
+
+  if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
+    SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
+  }
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -6602,7 +6604,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == LAX) {
+        if (Kind_Centered_Flow == CENTERED::LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms.\n";
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << ".\n";
           cout << "First order integration." << endl;
@@ -6615,21 +6617,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-        if (Kind_Upwind_Flow == ROE)    cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSM)   cout << "AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SW)     cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == L2ROE)  cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == LMROE)  cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SLAU)   cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::ROE)    cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSM)   cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SW)     cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::L2ROE)  cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::LMROE)  cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SLAU)   cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == MAIN_SOLVER::EULER         || Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER ||
             Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
@@ -6655,7 +6657,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
-        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
+        if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
         if (MUSCL_Turb) {
           PrintLimiterInfo(Kind_SlopeLimit_Turb);
         } else {
@@ -6667,21 +6669,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if ((Kind_Solver == MAIN_SOLVER::ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS)) {
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) {
-        if (Kind_Centered_AdjFlow == JST) {
+        if (Kind_Centered_AdjFlow == CENTERED::JST) {
           cout << "Jameson-Schmidt-Turkel scheme for the adjoint inviscid terms."<< endl;
           cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
           << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
           cout << "Second order integration." << endl;
         }
-        if (Kind_Centered_AdjFlow == LAX) {
+        if (Kind_Centered_AdjFlow == CENTERED::LAX) {
           cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
           cout << "First order integration." << endl;
         }
       }
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
-        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
+        if (Kind_Upwind_AdjFlow == UPWIND::ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
           PrintLimiterInfo(Kind_SlopeLimit_AdjFlow);
         } else {
@@ -6695,7 +6697,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::ADJ_RANS) && (!Frozen_Visc_Cont)) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
-        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
+        if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
         if (MUSCL_AdjTurb) {
           PrintLimiterInfo(Kind_SlopeLimit_AdjTurb);
         } else {
@@ -6754,10 +6756,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Discontinuous Galerkin Finite element solver" << endl;
 
         switch( Riemann_Solver_FEM ) {
-          case ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
-          case LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
-          case AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
-          case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          case UPWIND::ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
+          case UPWIND::LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
+          case UPWIND::AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
+          case UPWIND::HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          default: break;
         }
 
         if(Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_EULER) {
@@ -8295,7 +8298,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 }
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
-                                    unsigned short val_kind_centered, unsigned short val_kind_upwind,
+                                    CENTERED val_kind_centered, UPWIND val_kind_upwind,
                                     LIMITER val_kind_slopelimit, bool val_muscl,
                                     unsigned short val_kind_fem) {
   Kind_ConvNumScheme = val_kind_convnumscheme;
@@ -8362,7 +8365,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       SetSpeciesParam();
 
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8378,7 +8381,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8411,7 +8414,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8421,7 +8424,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, LIMITER::NONE , NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE , NONE, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;
