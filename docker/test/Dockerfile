@@ -4,4 +4,4 @@ FROM su2code/build-su2:20191029
 COPY runTests.sh /runTests.sh
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
-ENTRYPOINT ["/runTests.sh"]
+ENTRYPOINT ["/runTests.sh -c feature_multilayer_perceptron"]
