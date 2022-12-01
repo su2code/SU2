@@ -85,7 +85,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) final;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
 
   /*!
    * \overload

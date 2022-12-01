@@ -206,35 +206,35 @@ su2double CMutationTCLib::GetViscosity(){
   return Mu;
 }
 
-vector<su2double>& CMutationTCLib::GetThermalConductivities(su2double eddy_visc){
+vector<su2double>& CMutationTCLib::GetThermalConductivities(){
 
   mix->frozenThermalConductivityVector(ThermalConductivities.data());
 
   // Scale k's for turbulence.
-  if (eddy_visc != 0.0){
+  //if (eddy_visc != 0.0){
 
-    /*--- Compute mixture quantities ---*/
-    su2double mass = 0.0, rho = 0.0;
-    for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
-    for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+  //  /*--- Compute mixture quantities ---*/
+  //  su2double mass = 0.0, rho = 0.0;
+  // for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+  //  for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
 
-    su2double Cvtr = ComputerhoCvtr()/rho;
-    su2double Cvve = ComputerhoCvve()/rho;
+  //  su2double Cvtr = ComputerhoCvtr()/rho;
+  //  su2double Cvve = ComputerhoCvve()/rho;
 
-    /*--- Compute simple Kve scaling factor ---*/
-    su2double scl  = Cvve/Cvtr;
+  //  /*--- Compute simple Kve scaling factor ---*/
+  //  su2double scl  = Cvve/Cvtr;
 
-    su2double Pr_turb = 0.90; //TODO
-    su2double Mu_e    = eddy_visc;
+  //  su2double Pr_turb = 0.90; //TODO
+  //  su2double Mu_e    = eddy_visc;
 
-    su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double Cptr = Cvtr + Ru/mass;
-    su2double Cpve = scl * Cvve;
+  //  su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
+  //  su2double Cptr = Cvtr + Ru/mass;
+  //  su2double Cpve = scl * Cvve;
 
-    ThermalConductivities[0] += Mu_e*Cptr/Pr_turb;
-    ThermalConductivities[1] += Mu_e*Cpve/Pr_turb;
+  //  ThermalConductivities[0] += Mu_e*Cptr/Pr_turb;
+  //  ThermalConductivities[1] += Mu_e*Cpve/Pr_turb;
 
-  }
+  //}
 
 
   return ThermalConductivities;

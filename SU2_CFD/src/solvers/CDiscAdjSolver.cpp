@@ -236,7 +236,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     direct_solver->SetTemperature_Inf(Temperature);
     config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
-    direct_solver->ResetNodeInfty(Density, MassFrac, config->GetVelocity_FreeStreamND(), Energy, Energy_ve,
+    direct_solver->ResetNodeInfty(Pressure, MassFrac, Mvec_Inf, Temperature, Temperature_ve,
                                   config);
   }
 

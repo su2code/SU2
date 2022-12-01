@@ -133,7 +133,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     /*--- Compressible flow, primitive variables. ---*/
 
-    bool nonphysical = nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -283,6 +283,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
     /*--- Set the residual on the boundary with the specified heat flux ---*/
+    // TODO: Look into this!
     // Note: Contributions from qtr and qve are used for proportional control
     //       to drive the solution toward the specified heatflux more quickly.
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);

@@ -76,13 +76,12 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
 
 }
 
-bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                              Cvves[iPoint], turb_ke);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
@@ -90,8 +89,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
-    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                 Cvves[iPoint], turb_ke);
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   /*--- Set additional point quantities ---*/
@@ -113,7 +111,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
-  const auto& thermalconductivities = fluidmodel->GetThermalConductivities(eddy_visc);
+  const auto& thermalconductivities = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 

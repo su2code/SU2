@@ -1684,14 +1684,14 @@ su2double CSU2TCLib::GetViscosity(){
 
 }
 
-vector<su2double>& CSU2TCLib::GetThermalConductivities(su2double eddy_visc){
+vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
-    ThermalConductivitiesWBE(eddy_visc);
+    ThermalConductivitiesWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
-    ThermalConductivitiesGY(eddy_visc);
+    ThermalConductivitiesGY();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
-    ThermalConductivitiesSuth(eddy_visc);
+    ThermalConductivitiesSuth();
 
   return ThermalConductivities;
 
@@ -1791,7 +1791,7 @@ void CSU2TCLib::ViscosityWBE(){
   }
 }
 
-void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
+void CSU2TCLib::ThermalConductivitiesWBE(){
 
   vector<su2double> ks, kves;
 
@@ -1813,27 +1813,27 @@ void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
     ThermalCond_ve += MolarFracWBE[iSpecies]*kves[iSpecies]/phis[iSpecies];
   }
 
-  if (eddy_visc != 0.0){
-    /*--- Compute mixture quantities ---*/
-    su2double mass = 0.0, rho = 0.0;
-    for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
-    for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+  //if (eddy_visc != 0.0){
+  //  /*--- Compute mixture quantities ---*/
+  //  su2double mass = 0.0, rho = 0.0;
+  //  for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+  //  for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
 
-    su2double Cvtr = ComputerhoCvtr()/rho;
-    su2double Cvve = ComputerhoCvve()/rho;
+  //  su2double Cvtr = ComputerhoCvtr()/rho;
+  //  su2double Cvve = ComputerhoCvve()/rho;
 
-    /*--- Compute simple Kve scaling factor ---*/
-    su2double scl  = Cvve/Cvtr;
-    su2double Pr_lam  = 0.72; //TODO
-    su2double Pr_turb = 0.90; //TODO
+  //  /*--- Compute simple Kve scaling factor ---*/
+  //  su2double scl  = Cvve/Cvtr;
+  //  su2double Pr_lam  = 0.72; //TODO
+  //  su2double Pr_turb = 0.90; //TODO
 
-    su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double Cptr = Cvtr + Ru/mass;
-    su2double Cpve = scl * Cvve;
+  //  su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
+  //  su2double Cptr = Cvtr + Ru/mass;
+  //  su2double Cpve = scl * Cvve;
 
-    ThermalCond_tr += Cptr*eddy_visc/Pr_turb;
-    ThermalCond_ve += Cpve*eddy_visc/Pr_turb;
-  }
+  //  ThermalCond_tr += Cptr*eddy_visc/Pr_turb;
+  //  ThermalCond_ve += Cpve*eddy_visc/Pr_turb;
+  //}
 
   ThermalConductivities[0] = ThermalCond_tr;
   ThermalConductivities[1] = ThermalCond_ve;
@@ -2001,7 +2001,7 @@ void CSU2TCLib::ViscosityGY(){
   // }
 }
 
-void CSU2TCLib::ThermalConductivitiesGY(su2double eddy_visc){
+void CSU2TCLib::ThermalConductivitiesGY(){
 
   su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
 
@@ -2087,7 +2087,7 @@ void CSU2TCLib::ViscositySuth(){
 
 }
 
-void CSU2TCLib::ThermalConductivitiesSuth(su2double eddy_visc){
+void CSU2TCLib::ThermalConductivitiesSuth(){
 
   /*--- Compute mixture quantities ---*/
   su2double mass = 0.0, rho = 0.0;

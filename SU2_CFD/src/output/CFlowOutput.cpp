@@ -1995,7 +1995,10 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
 
     if (( config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_EULER ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
-          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NEMO_EULER ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
     }
 

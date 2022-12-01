@@ -3355,8 +3355,8 @@ public:
   /*!
    * \brief Reset Node Infty for discrete adjoint
    */
-  virtual void ResetNodeInfty(su2double density_inf, const su2double *massfrac_inf, su2double *velocity_inf, su2double energy_inf,
-                              su2double energy_ve_inf, CConfig *config) { }
+  virtual void ResetNodeInfty(su2double pressure_inf, const su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                              su2double temperature_ve_inf, CConfig *config) { }
 
   /*!
    * \brief A virtual member.

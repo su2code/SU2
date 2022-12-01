@@ -220,7 +220,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  node_infty->SetPrimVar(0, 0.0, Tke_Inf, FluidModel);
+  node_infty->SetPrimVar(0, FluidModel);
 
   /*--- Initial comms. ---*/
 
@@ -330,7 +330,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    nonphysical = nodes->SetPrimVar(iPoint, 0.0, 0.0, FluidModel);
+    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -2528,7 +2528,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Compute the residual using an upwind scheme ---*/
+      /*--- Compute the residual using an upwind schemes ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
@@ -2543,14 +2543,14 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
 }
 
-void CNEMOEulerSolver::ResetNodeInfty(su2double density_inf, const su2double *massfrac_inf, su2double *velocity_inf, su2double energy_inf,
-                                      su2double energy_ve_inf, CConfig *config){
+void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, const su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                                      su2double temperature_ve_inf, CConfig *config){
   su2double check_infty;
   if (node_infty != nullptr) delete node_infty;
 
-  node_infty = new CNEMOEulerVariable(density_inf, massfrac_inf, velocity_inf, energy_inf,
-                                      energy_ve_inf, 1, nDim, nVar,
+  node_infty = new CNEMOEulerVariable(pressure_inf, massfrac_inf, mvec_inf, temperature_inf,
+                                      temperature_ve_inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, GetFluidModel());
 
-  check_infty = node_infty->SetPrimVar(0,0.0,0.0,GetFluidModel());
+  check_infty = node_infty->SetPrimVar(0,GetFluidModel());
 }
