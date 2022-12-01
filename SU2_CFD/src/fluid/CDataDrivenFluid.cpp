@@ -96,6 +96,7 @@ void CDataDrivenFluid::MapInputs_to_Outputs(){
          idx_d2sdedrho = 4,
          idx_d2sdrho2 = 5;
 
+  outputs_rhoe.resize(n_outputs);
   output_names_rhoe.resize(n_outputs); 
   output_names_rhoe[idx_s] = "s";
   outputs_rhoe[idx_s] = &Entropy;

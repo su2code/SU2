@@ -46,7 +46,7 @@ private:
 public:
     CLayer();
     CLayer(unsigned long n_neurons);
-    ~CLayer(){delete neurons;}
+    ~CLayer(){delete [] neurons;}
     /*!
     * \brief Set current layer neuron count
     * \param[in] n_neurons - Number of neurons in this layer
