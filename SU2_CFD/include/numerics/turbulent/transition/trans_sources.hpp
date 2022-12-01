@@ -322,22 +322,25 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
     if (dist_i > 1e-10) {
 
-      su2double H_L; 
+      su2double u_e;
       if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
-		/*--- Estimate of the equivalent flow velocity at the edge of the boundary layer ---*/
+    	/*--- Estimate of the equivalent flow velocity at the edge of the boundary layer based on compressible Bernoulli's equation ---*/
 		const su2double G_over_Gminus_one = Gamma/(Gamma-1);
 
-		su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
+		const su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
 
-		const su2double u_e = sqrt(2*(G_over_Gminus_one*(pInf/rhoInf) + (velInf2/2) - G_over_Gminus_one*(p/rho_e)));
-
-		/*--- Local pressure-gradient parameter for the boundary layer shape factor. Minimum value of 0.328 for stability ---*/
-		H_L = max(((StrainMag_i*dist_i)/u_e),0.328);
+		u_e = sqrt(2*(G_over_Gminus_one*(pInf/rhoInf) + (velInf2/2) - G_over_Gminus_one*(p/rho_e)));
 
       } else {
-    	SU2_MPI::Error("Sa-FT2-eN Transition model for incompressible flow is under production", CURRENT_FUNCTION);
+
+    	/*--- Inviscid edge velocity based on incompressible Bernoulli's equation---*/
+    	u_e = sqrt((rhoInf*velInf2 + 2*(p-pInf))/rho);
+
       }
+
+      /*--- Local pressure-gradient parameter for the boundary layer shape factor. Minimum value of 0.328 for stability ---*/
+      const su2double H_L 		= max(((StrainMag_i*dist_i)/u_e),0.328);
 
       /*--- Integral shape factor ---*/
       const su2double H_12 		= 13.9766*pow(H_L,4) - 22.9166*pow(H_L,3) + 13.7227*pow(H_L,2) - 1.0023*H_L + 1.6778;
@@ -374,7 +377,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
       Residual = P_amplification * Volume;
 
       /*--- Implicit part ---*/
-	  Jacobian_i[0] =0.0; //(rho*VorticityMag*F_crit*F_growth) * Volume;
+	  Jacobian_i[0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
 	  
     }
 

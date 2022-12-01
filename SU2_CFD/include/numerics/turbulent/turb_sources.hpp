@@ -160,10 +160,13 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute ft2 term. Also includes boolean for e^N transition model that modifies the ft2 term ---*/
 	  if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
-	    var.transEN = true;
-		var.amplification = amplification_factor_i;
-		var.ct4 = 0.05;
-		var.Ncrit = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
+	    var.transEN 		= true;
+	    var.Ncrit 			= -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
+		var.amplification 	= min(amplification_factor_i, var.Ncrit);
+
+		/*--- Slight deviation from theory to obtain better results. Coder et al: Ct4 = 0.05  ---*/
+	    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) var.ct4 = 0.025;
+	    else var.ct4 = 0.045;
 	  }
 
       ft2::get( var);
