@@ -186,6 +186,9 @@ public:
     */
     void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){ output_norm[iOutput] = make_pair(output_min, output_max); }
     
+    std::pair<su2double, su2double> GetInputNorm(unsigned long iInput) const { return input_norm[iInput]; }
+
+    std::pair<su2double, su2double> GetOutputNorm(unsigned long iOutput) const { return output_norm[iOutput]; }
     /*!
     * \brief Add an output variable name to the network.
     * \param[in] input - Input variable name.

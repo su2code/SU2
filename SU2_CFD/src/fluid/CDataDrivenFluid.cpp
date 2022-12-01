@@ -130,6 +130,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   StaticEnergy = e;
   std::vector<std::string> output_names_rhoe_LUT;
   std::vector<su2double*> outputs_LUT;
+  unsigned long exit_code;
   switch (Kind_DataDriven_Method)
   {
   case ENUM_DATADRIVEN_METHOD::MLP:
@@ -138,7 +139,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
     MLP_inputs[idx_e]   = StaticEnergy;
 
     /* --- Evaluate MLP --- */
-    lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+    exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
     break;
   case ENUM_DATADRIVEN_METHOD::LUT:
 
@@ -177,7 +178,8 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   Gamma = Cp / Cv;
   Gamma_Minus_One = Gamma - 1;
   Gas_Constant = Cp - Cv;
-  
+
+  within_range = exit_code;
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {

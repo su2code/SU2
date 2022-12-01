@@ -71,6 +71,8 @@ class CDataDrivenFluid : public CFluidModel {
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable *lookup_table;
 
+  unsigned long within_range;
+
   void MapInputs_to_Outputs();
 
  public:

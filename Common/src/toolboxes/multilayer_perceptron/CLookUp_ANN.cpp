@@ -72,16 +72,31 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
     return variable_indices;
 }
 
-void MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs){
+unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs){
+    bool within_range,
+         MLP_was_evaluated = false;
     for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
+        within_range = true;
         size_t i_ANN = input_output_map->GetMLPIndex(i_map);
         su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
-        NeuralNetworks[i_ANN]->predict(ANN_inputs);
-        for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
-            *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
+        
+        for(size_t i_input=0; i_input < ANN_inputs.size(); i_input++) {
+            std::pair<su2double, su2double> ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
+            if((ANN_inputs[i_input] < ANN_input_limits.first) || (ANN_inputs[i_input] > ANN_input_limits.second)) {
+                within_range = false;
+            }
+        }
+        if(within_range){
+            NeuralNetworks[i_ANN]->predict(ANN_inputs);
+            MLP_was_evaluated = true;
+            for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
+                *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
+            }
         }
     }
+    return MLP_was_evaluated ? 0 : 1;
 }
+
 void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
 {
     CReadNeuralNetwork Reader = CReadNeuralNetwork(fileName);

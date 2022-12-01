@@ -95,8 +95,9 @@ class CLookUp_ANN
     * \param[in] input_output_map - input-output map coupling desired inputs and outputs to loaded ANNs
     * \param[in] inputs - input values
     * \param[in] outputs - pointers to output variables
+    * \returns Within output normalization range.
     */
-    void Predict_ANN(CIOMap *input_output_map, su2vector<su2double> &inputs, su2vector<su2double*> &outputs);
+    unsigned long Predict_ANN(CIOMap *input_output_map, su2vector<su2double> &inputs, su2vector<su2double*> &outputs);
 
     ~CLookUp_ANN(){for(std::size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
         delete NeuralNetworks[i_ANN];
