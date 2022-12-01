@@ -254,9 +254,15 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3)
      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
+    AddVolumeOutput("THERMAL_TR",       "Thermal_tr",       "PRIMITIVE", "thermal tr");
+    AddVolumeOutput("THERMAL_VE",       "Thermal_ve",       "PRIMITIVE", "thermal vib");
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
+  }
+
+  if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
   //Residuals
@@ -332,6 +338,12 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+
+  SetVolumeOutputValue("THERMAL_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
+  SetVolumeOutputValue("THERMAL_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
+  }
+  if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)

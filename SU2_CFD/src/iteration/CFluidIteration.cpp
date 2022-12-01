@@ -79,6 +79,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case MAIN_SOLVER::INC_EULER:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
     case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:
       main_solver = MAIN_SOLVER::EULER;
       break;
 
@@ -87,6 +88,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case MAIN_SOLVER::INC_NAVIER_STOKES:
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
       main_solver = MAIN_SOLVER::NAVIER_STOKES;
       break;
 
@@ -94,6 +96,8 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case MAIN_SOLVER::DISC_ADJ_RANS:
     case MAIN_SOLVER::INC_RANS:
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::NEMO_RANS:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
       main_solver = MAIN_SOLVER::RANS;
       break;
 
@@ -208,8 +212,8 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
     /*--- Update dual time solver for the turbulence model ---*/
 
     if ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS)) {
+        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NEMO_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                       solver[val_iZone][val_iInst][MESH_0][TURB_SOL],
                                                                       config[val_iZone], MESH_0);

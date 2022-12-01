@@ -1684,14 +1684,14 @@ su2double CSU2TCLib::GetViscosity(){
 
 }
 
-vector<su2double>& CSU2TCLib::GetThermalConductivities(){
+vector<su2double>& CSU2TCLib::GetThermalConductivities(su2double eddy_visc){
 
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
-    ThermalConductivitiesWBE();
+    ThermalConductivitiesWBE(eddy_visc);
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
-    ThermalConductivitiesGY();
+    ThermalConductivitiesGY(eddy_visc);
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
-    ThermalConductivitiesSuth();
+    ThermalConductivitiesSuth(eddy_visc);
 
   return ThermalConductivities;
 
@@ -1791,7 +1791,7 @@ void CSU2TCLib::ViscosityWBE(){
   }
 }
 
-void CSU2TCLib::ThermalConductivitiesWBE(){
+void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
 
   vector<su2double> ks, kves;
 
@@ -1811,6 +1811,28 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ThermalCond_tr += MolarFracWBE[iSpecies]*ks[iSpecies]/phis[iSpecies];
     ThermalCond_ve += MolarFracWBE[iSpecies]*kves[iSpecies]/phis[iSpecies];
+  }
+
+  if (eddy_visc != 0.0){
+    /*--- Compute mixture quantities ---*/
+    su2double mass = 0.0, rho = 0.0;
+    for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+    for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+
+    su2double Cvtr = ComputerhoCvtr()/rho;
+    su2double Cvve = ComputerhoCvve()/rho;
+
+    /*--- Compute simple Kve scaling factor ---*/
+    su2double scl  = Cvve/Cvtr;
+    su2double Pr_lam  = 0.72; //TODO
+    su2double Pr_turb = 0.90; //TODO
+
+    su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
+    su2double Cptr = Cvtr + Ru/mass;
+    su2double Cpve = scl * Cvve;
+
+    ThermalCond_tr += Cptr*eddy_visc/Pr_turb;
+    ThermalCond_ve += Cpve*eddy_visc/Pr_turb;
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
@@ -1979,7 +2001,7 @@ void CSU2TCLib::ViscosityGY(){
   // }
 }
 
-void CSU2TCLib::ThermalConductivitiesGY(){
+void CSU2TCLib::ThermalConductivitiesGY(su2double eddy_visc){
 
   su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
 
@@ -2065,7 +2087,7 @@ void CSU2TCLib::ViscositySuth(){
 
 }
 
-void CSU2TCLib::ThermalConductivitiesSuth(){
+void CSU2TCLib::ThermalConductivitiesSuth(su2double eddy_visc){
 
   /*--- Compute mixture quantities ---*/
   su2double mass = 0.0, rho = 0.0;
@@ -2105,9 +2127,9 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
-  const su2double Tvemin = 50.0; const su2double Tvemax = 8E4;
-  su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
+  const su2double Tmin   = 5.0; const su2double Tmax   = 8E4;
+  const su2double Tvemin = 5.0; const su2double Tvemax = 8E4;
+  su2double Tve_o  = 5.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
   if (Tve_old < 1) Tve_old = T;                           //For first fluid iteration
@@ -2118,7 +2140,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
   const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
   const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
-  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const unsigned short maxNIter = 150;       // Maximum Newton-Raphson iterations
   const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
   /*--- Execute a Newton-Raphson root-finding method for Tve ---*/

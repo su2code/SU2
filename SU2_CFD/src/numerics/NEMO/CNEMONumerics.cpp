@@ -247,6 +247,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   }
 
   /*--- Rename variables for convenience ---*/
+  const auto& Ms = fluidmodel->GetSpeciesMolarMass();
   const auto& Ds  = val_diffusioncoeff;
   const su2double mu  = val_lam_viscosity+val_eddy_viscosity;
   su2double ktr = val_therm_conductivity;
@@ -256,6 +257,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   const su2double Tve = val_primvar[TVE_INDEX];
   const auto& V   = val_primvar;
   const auto& GV  = val_gradprimvar;
+  const su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
 
   /*--- Pre-compute mixture quantities ---*/  //TODO
@@ -267,7 +269,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   }
 
   /*--- Compute the viscous stress tensor ---*/
-  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
+  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu, rho, su2double(0.0));
 
   /*--- Populate entries in the viscous flux vector ---*/
   for (auto iDim = 0; iDim < nDim; iDim++) {

@@ -34,6 +34,7 @@
 #include "../../include/output/CFlowCompOutput.hpp"
 #include "../../include/output/CNEMOCompOutput.hpp"
 #include "../../include/output/CAdjFlowCompOutput.hpp"
+#include "../../include/output/CAdjNEMOCompOutput.hpp"
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 #include "../../include/output/CFlowIncOutput.hpp"
 #include "../../include/output/CAdjFlowIncOutput.hpp"
@@ -51,7 +52,7 @@ COutput* COutputFactory::CreateOutput(MAIN_SOLVER kindSolver, CConfig* config, i
     case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
-    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
       output = new CNEMOCompOutput(config, nDim);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
@@ -63,6 +64,9 @@ COutput* COutputFactory::CreateOutput(MAIN_SOLVER kindSolver, CConfig* config, i
     case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
     case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
       output = new CAdjFlowCompOutput(config, nDim);
+      break;
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
+      output = new CAdjNEMOCompOutput(config, nDim);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       output = new CAdjFlowIncOutput(config, nDim);

@@ -46,6 +46,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     case MAIN_SOLVER::NEMO_EULER:
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
     case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::NEMO_RANS:
     case MAIN_SOLVER::FEM_EULER:
     case MAIN_SOLVER::FEM_NAVIER_STOKES:
     case MAIN_SOLVER::FEM_RANS:
@@ -55,6 +56,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
     case MAIN_SOLVER::DISC_ADJ_FEM_NS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
       direct = true;
       break;
     default:

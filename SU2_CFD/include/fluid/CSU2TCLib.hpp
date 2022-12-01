@@ -188,7 +188,7 @@ public:
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
-  vector<su2double>& GetThermalConductivities() final;
+  vector<su2double>& GetThermalConductivities(su2double eddy_visc) final;
 
   /*!
    * \brief Compute translational and vibrational temperatures vector.
@@ -222,7 +222,7 @@ public:
   /*!
    * \brief Calculate T-R and V-E thermal conductivities vector with Wilke/Blottner/Eucken transport model.
    */
-  void ThermalConductivitiesWBE();
+  void ThermalConductivitiesWBE(su2double eddy_visc);
 
   /*!
    * \brief Calculate species diffusion coefficients with Gupta-Yos transport model.
@@ -237,7 +237,7 @@ public:
   /*!
    * \brief Calculate T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
    */
-  void ThermalConductivitiesGY();
+  void ThermalConductivitiesGY(su2double eddy_visc);
 
   /*!
    * \brief Calculate viscosity with Sutherland's transport model.
@@ -247,7 +247,7 @@ public:
   /*!
    * \brief Calculate T-R and V-E thermal conductivities vector with Sutherland's transport model.
    */
-  void ThermalConductivitiesSuth();
+  void ThermalConductivitiesSuth(su2double eddy_visc);
 
   /*!
    * \brief Get reference temperature.

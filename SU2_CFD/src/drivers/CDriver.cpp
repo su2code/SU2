@@ -1506,14 +1506,22 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:
       NEMO_euler = compressible = true; break;
 
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
       NEMO_ns = compressible = true; break;
 
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
+
+    case MAIN_SOLVER::NEMO_RANS:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
+      NEMO_ns = compressible = turbulent = true;
       transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
@@ -3119,7 +3127,8 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
   };
   BroadcastData(FLOW_SOL);
 
-  if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS) {
+  if ((config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
+      (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS)){
     BroadcastData(TURB_SOL);
   }
   if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -3171,7 +3180,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
     case MAIN_SOLVER::HEAT_EQUATION:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
@@ -3180,6 +3189,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
     case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
     case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
     default:
@@ -3434,12 +3444,13 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
   case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
   case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
-  case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+  case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence();
     break;
   case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
   case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
+  case MAIN_SOLVER::DISC_ADJ_NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence();
     break;
   default:

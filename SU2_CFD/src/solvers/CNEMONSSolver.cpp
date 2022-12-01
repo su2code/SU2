@@ -41,6 +41,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
+  Tke_Inf            = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(config->GetDirectDiff()) {
@@ -114,25 +115,25 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  //const bool tkeNeeded = (turb_model == TURB_MODEL::SST); 
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST); 
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
-    su2double eddy_visc = 0.0; //su2double turb_ke = 0.0;
+    su2double eddy_visc = 0.0, turb_ke = 0.0;
 
     if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      //if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
 
     /*--- Compressible flow, primitive variables. ---*/
 
-    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -262,6 +263,8 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
+  const unsigned short RHO_INDEX     = nodes->GetRhoIndex();
+  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -280,7 +283,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
     /*--- Set the residual on the boundary with the specified heat flux ---*/
-    // TODO: Look into this!
     // Note: Contributions from qtr and qve are used for proportional control
     //       to drive the solution toward the specified heatflux more quickly.
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);
@@ -532,12 +534,17 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
+
+  /*--- Extract required indices ---*/
+  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+  const unsigned short RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;
@@ -604,6 +611,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                  (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
     Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
+    
+    //Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
     if (implicit) {
