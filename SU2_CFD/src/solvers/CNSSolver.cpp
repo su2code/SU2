@@ -69,7 +69,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                              unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
@@ -144,12 +144,12 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
     su2double eddy_visc = 0.0, turb_ke = 0.0;
 
-    if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
-      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+    if (turb_model != TURB_MODEL::NONE && solver_container[SOLVER_TYPE::TURB] != nullptr) {
+      eddy_visc = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(iPoint);
+      if (tkeNeeded) turb_ke = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
-        su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        su2double DES_LengthScale = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
     }

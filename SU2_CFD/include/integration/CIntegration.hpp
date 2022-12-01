@@ -64,7 +64,7 @@ protected:
    */
   void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep,
-                         unsigned short RunTime_EqSystem);
+                         RUNTIME_TYPE RunTime_EqSystem);
 
   /*!
    * \brief Do the time integration (explicit or implicit) of the numerical system.
@@ -75,7 +75,7 @@ protected:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iRKStep, unsigned short RunTime_EqSystem);
+                        unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem);
 
 public:
   /*!
@@ -149,7 +149,7 @@ public:
    */
   virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                    CNumerics ******numerics_container, CConfig **config,
-                                   unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+                                   RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
    * \brief A virtual member.
@@ -161,7 +161,7 @@ public:
    */
   virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                     CNumerics ******numerics_container, CConfig **config,
-                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+                                    RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
    * \brief A virtual member.
@@ -173,6 +173,6 @@ public:
    */
   virtual void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                     CNumerics ******numerics_container, CConfig **config,
-                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+                                    RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
 };

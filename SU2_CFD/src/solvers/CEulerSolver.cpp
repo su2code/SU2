@@ -354,8 +354,8 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   if (config->Low_Mach_Correction())
     SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
 
-  if (solver_container[TURB_SOL])
-    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[TURB_SOL]->GetNodes());
+  if (solver_container[SOLVER_TYPE::TURB])
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[SOLVER_TYPE::TURB]->GetNodes());
   else
     edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel);
 
@@ -449,7 +449,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
   //bool ActDisk_Perimeter;
-  bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) && (solver_container[TURB_SOL] != nullptr);
+  bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) && (solver_container[SOLVER_TYPE::TURB] != nullptr);
 
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
@@ -604,7 +604,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
             }
             if (rans) {
-              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
             }
 
@@ -827,7 +827,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   switch (config->GetKind_FluidModel()) {
 
-    case STANDARD_AIR:
+    case FLUIDMODEL::STANDARD_AIR:
 
       switch (config->GetSystemMeasurements()) {
         case SI: config->SetGas_Constant(287.058); break;
@@ -842,23 +842,23 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       }
       break;
 
-    case IDEAL_GAS:
+    case FLUIDMODEL::IDEAL_GAS:
 
       auxFluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
       break;
 
-    case VW_GAS:
+    case FLUIDMODEL::VW_GAS:
 
       auxFluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
                  config->GetPressure_Critical(), config->GetTemperature_Critical());
       break;
 
-    case PR_GAS:
+    case FLUIDMODEL::PR_GAS:
 
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
-    case COOLPROP:
+    case FLUIDMODEL::COOLPROP:
 
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
       break;
@@ -1069,28 +1069,28 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     switch (config->GetKind_FluidModel()) {
 
-      case STANDARD_AIR:
+      case FLUIDMODEL::STANDARD_AIR:
         FluidModel[thread] = new CIdealGas(1.4, Gas_ConstantND);
         break;
 
-      case IDEAL_GAS:
+      case FLUIDMODEL::IDEAL_GAS:
         FluidModel[thread] = new CIdealGas(Gamma, Gas_ConstantND);
         break;
 
-      case VW_GAS:
+      case FLUIDMODEL::VW_GAS:
         FluidModel[thread] = new CVanDerWaalsGas(Gamma, Gas_ConstantND,
                                                  config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                  config->GetTemperature_Critical() / config->GetTemperature_Ref());
         break;
 
-      case PR_GAS:
+      case FLUIDMODEL::PR_GAS:
         FluidModel[thread] = new CPengRobinson(Gamma, Gas_ConstantND,
                                                config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
         break;
 
-      case COOLPROP:
+      case FLUIDMODEL::COOLPROP:
         FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
     }
@@ -1236,7 +1236,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
       CCoolProp auxFluidModel(config->GetFluid_Name());
       NonDimTable << "Gas Constant" << auxFluidModel.GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << auxFluidModel.GetGas_Constant()/config->GetGas_Constant_Ref();
     }
@@ -1246,7 +1246,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
       NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
     }
     else {
@@ -1255,31 +1255,31 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
-    case STANDARD_AIR:
+    case FLUIDMODEL::STANDARD_AIR:
       ModelTable << "STANDARD_AIR";
       break;
-    case IDEAL_GAS:
+    case FLUIDMODEL::IDEAL_GAS:
       ModelTable << "IDEAL_GAS";
       break;
-    case VW_GAS:
+    case FLUIDMODEL::VW_GAS:
       ModelTable << "VW_GAS";
       break;
-    case PR_GAS:
+    case FLUIDMODEL::PR_GAS:
       ModelTable << "PR_GAS";
       break;
-    case COOLPROP:
+    case FLUIDMODEL::COOLPROP:
       ModelTable << "CoolProp library";
       break;
     }
 
-    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
+    if (config->GetKind_FluidModel() == FLUIDMODEL::VW_GAS || config->GetKind_FluidModel() == FLUIDMODEL::PR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
         Unit << "K";
         NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
     }
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
       CCoolProp auxFluidModel(config->GetFluid_Name());
       NonDimTable << "Critical Pressure" << auxFluidModel.GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << auxFluidModel.GetPressure_Critical() /config->GetPressure_Ref();
       Unit.str("");
@@ -1450,7 +1450,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
-      auto FlowNodes = solver_container[iMesh][FLOW_SOL]->GetNodes();
+      auto FlowNodes = solver_container[iMesh][SOLVER_TYPE::FLOW]->GetNodes();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -1530,7 +1530,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 }
 
 void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                       unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                       unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
@@ -1616,7 +1616,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                 unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1734,8 +1734,8 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool ideal_gas = (config->GetKind_FluidModel() == FLUIDMODEL::STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == FLUIDMODEL::IDEAL_GAS);
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
@@ -2017,8 +2017,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
-  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                                (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool ideal_gas        = (config->GetKind_FluidModel() == FLUIDMODEL::STANDARD_AIR) ||
+                                (config->GetKind_FluidModel() == FLUIDMODEL::IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
   /*--- Pick one numerics object per thread. ---*/
@@ -2122,7 +2122,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Set turbulence kinetic energy ---*/
         if (rans){
-          CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+          CVariable* turbNodes = solver_container[SOLVER_TYPE::TURB]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
         }
       }
@@ -4520,8 +4520,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Turbulent kinetic energy ---*/
 
         if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Compute and update viscous residual ---*/
 
@@ -5008,8 +5008,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Turbulent kinetic energy ---*/
 
         if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Compute and update residual ---*/
 
@@ -5522,8 +5522,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           /*--- Turbulent kinetic energy ---*/
 
           if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                                solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+            visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                                solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
           /*--- Compute and update residual ---*/
 
@@ -6429,8 +6429,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         /*--- Turbulent kinetic energy ---*/
 
         if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Compute and update residual ---*/
 
@@ -6761,8 +6761,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -6932,8 +6932,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -7141,8 +7141,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -7361,8 +7361,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -7612,8 +7612,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -8048,8 +8048,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Compute and update residual ---*/
 //
@@ -8705,11 +8705,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                 if(turbulent){
                   if(menter_sst){
-                    Kine = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-                    Omega = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+                    Kine = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
+                    Omega = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,1);
                   }
                   if(spalart_allmaras){
-                    Nu = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                    Nu = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
                   }
 
                   TotalKine   += Kine;
@@ -8780,11 +8780,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                   if(turbulent){
                     if(menter_sst){
-                      Kine  = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-                      Omega = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+                      Kine  = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
+                      Omega = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,1);
                     }
                     if(spalart_allmaras){
-                      Nu    = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                      Nu    = solver[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
                     }
 
                     TotalKine   += Kine;

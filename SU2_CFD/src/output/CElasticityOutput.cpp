@@ -104,7 +104,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
-  CSolver* fea_solver = solver[FEA_SOL];
+  CSolver* fea_solver = solver[SOLVER_TYPE::FEA];
 
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -147,7 +147,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
   }
   /*--- Keep this as last, since it uses the history values that were set. ---*/
-  SetCustomAndComboObjectives(FEA_SOL, config, solver);
+  SetCustomAndComboObjectives(SOLVER_TYPE::FEA, config, solver);
 
 }
 
@@ -190,7 +190,7 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
+  CVariable* Node_Struc = solver[SOLVER_TYPE::FEA]->GetNodes();
   CPoint*    Node_Geo  = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));

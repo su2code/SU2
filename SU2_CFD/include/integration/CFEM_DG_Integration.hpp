@@ -51,7 +51,7 @@ public:
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                             CNumerics ******numerics_container, CConfig **config,
-                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+                            RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
 private:
   /*!
@@ -66,7 +66,7 @@ private:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem);
+                         unsigned short iMesh, unsigned short iStep, RUNTIME_TYPE RunTime_EqSystem);
 
   /*!
    * \brief Perform the time integration (explicit or implicit) of the numerical system.
@@ -79,5 +79,5 @@ private:
    * \param[in] Iteration - Current iteration.
    */
   void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iStep, unsigned short RunTime_EqSystem);
+                        unsigned short iStep, RUNTIME_TYPE RunTime_EqSystem);
 };

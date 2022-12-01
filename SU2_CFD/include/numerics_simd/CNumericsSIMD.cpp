@@ -89,8 +89,8 @@ CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CV
 template<int nDim>
 CNumericsSIMD* createNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
-  const bool ideal_gas = (config.GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config.GetKind_FluidModel() == IDEAL_GAS);
+  const bool ideal_gas = (config.GetKind_FluidModel() == FLUIDMODEL::STANDARD_AIR) ||
+                         (config.GetKind_FluidModel() == FLUIDMODEL::IDEAL_GAS);
 
   switch (config.GetKind_ConvNumScheme_Flow()) {
     case SPACE_UPWIND:

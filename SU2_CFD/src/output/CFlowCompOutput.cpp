@@ -287,7 +287,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const auto* Node_Flow = solver[SOLVER_TYPE::FLOW]->GetNodes();
   auto* Node_Geo  = geometry->nodes;
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
@@ -313,21 +313,21 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
-  const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
+  const su2double factor = solver[SOLVER_TYPE::FLOW]->GetReferenceDynamicPressure();
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[SOLVER_TYPE::FLOW]->GetPressure_Inf())/factor);
 
   if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
 
-  SetVolumeOutputValue("RES_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
-  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
-  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+  SetVolumeOutputValue("RES_DENSITY", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 0));
+  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 1));
+  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
+    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 4));
   } else {
-    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 3));
   }
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
@@ -356,8 +356,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
 void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
-  CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
+  CSolver* flow_solver = solver[SOLVER_TYPE::FLOW];
+  CSolver* mesh_solver = solver[SOLVER_TYPE::MESH];
 
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
@@ -445,7 +445,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetCustomOutputs(solver, geometry, config);
 
-  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+  SetCustomAndComboObjectives(SOLVER_TYPE::FLOW, config, solver);
 
 }
 

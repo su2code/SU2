@@ -187,10 +187,10 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
 void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  CSolver* adjflow_solver = solver[ADJFLOW_SOL];
-  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
-  CSolver* adjrad_solver = solver[ADJRAD_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
+  CSolver* adjflow_solver = solver[SOLVER_TYPE::ADJFLOW];
+  CSolver* adjheat_solver = solver[SOLVER_TYPE::ADJHEAT];
+  CSolver* adjrad_solver = solver[SOLVER_TYPE::ADJRAD];
+  CSolver* mesh_solver = solver[SOLVER_TYPE::MESH];
 
   SetHistoryOutputValue("RMS_ADJ_PRESSURE", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_VELOCITY-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -338,16 +338,16 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
+  CVariable* Node_AdjFlow = solver[SOLVER_TYPE::ADJFLOW]->GetNodes();
   CVariable* Node_AdjHeat = nullptr;
   CVariable* Node_AdjRad  = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
 
   if (weakly_coupled_heat){
-    Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
+    Node_AdjHeat = solver[SOLVER_TYPE::ADJHEAT]->GetNodes();
   }
   if (config->GetKind_RadiationModel() != RADIATION_MODEL::NONE){
-    Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
+    Node_AdjRad = solver[SOLVER_TYPE::ADJRAD]->GetNodes();
   }
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
@@ -400,7 +400,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
 
 void CAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
+  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[SOLVER_TYPE::ADJFLOW]->GetCSensitivity(iMarker, iVertex));
 
 }
 

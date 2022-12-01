@@ -815,7 +815,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   switch (config->GetKind_FluidModel()) {
 
-    case STANDARD_AIR:
+    case FLUIDMODEL::STANDARD_AIR:
 
       if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
       else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
@@ -833,7 +833,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
-    case IDEAL_GAS:
+    case FLUIDMODEL::IDEAL_GAS:
 
       FluidModel = new CIdealGas(Gamma, config->GetGas_Constant(), config->GetCompute_Entropy());
       if (free_stream_temp) {
@@ -848,7 +848,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
-    case VW_GAS:
+    case FLUIDMODEL::VW_GAS:
 
       FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
                                        config->GetPressure_Critical(), config->GetTemperature_Critical());
@@ -864,7 +864,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
-    case PR_GAS:
+    case FLUIDMODEL::PR_GAS:
 
       FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                      config->GetTemperature_Critical(), config->GetAcentric_Factor());
@@ -880,7 +880,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
-    case COOLPROP:
+    case FLUIDMODEL::COOLPROP:
 
       FluidModel = new CCoolProp(config->GetFluid_Name());
       if (free_stream_temp) {
@@ -1057,29 +1057,29 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   switch (config->GetKind_FluidModel()) {
 
-    case STANDARD_AIR:
+    case FLUIDMODEL::STANDARD_AIR:
       FluidModel = new CIdealGas(1.4, Gas_ConstantND, config->GetCompute_Entropy());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
-    case IDEAL_GAS:
+    case FLUIDMODEL::IDEAL_GAS:
       FluidModel = new CIdealGas(Gamma, Gas_ConstantND, config->GetCompute_Entropy());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
-    case VW_GAS:
+    case FLUIDMODEL::VW_GAS:
       FluidModel = new CVanDerWaalsGas(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                        config->GetTemperature_Critical()/config->GetTemperature_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
-    case PR_GAS:
+    case FLUIDMODEL::PR_GAS:
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
-    case COOLPROP:
+    case FLUIDMODEL::COOLPROP:
       FluidModel = new CCoolProp(config->GetFluid_Name());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
@@ -1220,7 +1220,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
       CCoolProp auxFluidModel(config->GetFluid_Name());
       NonDimTable << "Gas Constant" << auxFluidModel.GetGas_Constant() << config->GetGas_Constant_Ref()
                   << Unit.str() << auxFluidModel.GetGas_Constant()/config->GetGas_Constant_Ref();
@@ -1231,7 +1231,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
       NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
     }
     else {
@@ -1240,31 +1240,31 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
-    case STANDARD_AIR:
+    case FLUIDMODEL::STANDARD_AIR:
       ModelTable << "STANDARD_AIR";
       break;
-    case IDEAL_GAS:
+    case FLUIDMODEL::IDEAL_GAS:
       ModelTable << "IDEAL_GAS";
       break;
-    case VW_GAS:
+    case FLUIDMODEL::VW_GAS:
       ModelTable << "VW_GAS";
       break;
-    case PR_GAS:
+    case FLUIDMODEL::PR_GAS:
       ModelTable << "PR_GAS";
       break;
-    case COOLPROP:
+    case FLUIDMODEL::COOLPROP:
       ModelTable << "CoolProp library";
       break;
     }
 
-    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
+    if (config->GetKind_FluidModel() == FLUIDMODEL::VW_GAS || config->GetKind_FluidModel() == FLUIDMODEL::PR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
         Unit << "K";
         NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
     }
-    if (config->GetKind_FluidModel() == COOLPROP) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::COOLPROP) {
         CCoolProp auxFluidModel(config->GetFluid_Name());
         NonDimTable << "Critical Pressure" << auxFluidModel.GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << auxFluidModel.GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
@@ -3181,7 +3181,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   }
 }
 
-void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
+void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
 
@@ -3465,7 +3465,7 @@ void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_c
 
 void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                                  CNumerics **numerics, CConfig *config,
-                                                 unsigned short iMesh, unsigned short RunTime_EqSystem) {
+                                                 unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) {
 
   /* Write a message that the Jacobian is being computed. */
   if(rank == MASTER_NODE) {
@@ -4143,7 +4143,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
-                                                    unsigned short iMesh, unsigned short RunTime_EqSystem) {
+                                                    unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) {
   /* Preprocessing. */
   Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
   TolerancesADERPredictorStep();

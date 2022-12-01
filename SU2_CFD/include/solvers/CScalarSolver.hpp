@@ -103,7 +103,7 @@ class CScalarSolver : public CSolver {
                                          CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[SOLVER_TYPE::FLOW]->GetNodes());
 
     /*--- Points in edge ---*/
 
@@ -156,7 +156,7 @@ class CScalarSolver : public CSolver {
   void BC_Fluid_Interface_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, CGeometry *geometry,
                                CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config) {
-    const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+    const auto nPrimVar = solver_container[SOLVER_TYPE::FLOW]->GetnPrimVar();
     su2activevector PrimVar_j(nPrimVar);
     su2double solution_j[MAXNVAR] = {0.0};
 
@@ -178,7 +178,7 @@ class CScalarSolver : public CSolver {
         for (auto iDim = 0u; iDim < nDim; iDim++)
           Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
 
-        su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+        su2double* PrimVar_i = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
         auto* Jacobian_i = Jacobian.GetBlock(iPoint, iPoint);
 
@@ -187,11 +187,11 @@ class CScalarSolver : public CSolver {
         for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
           for (auto iVar = 0u; iVar < nPrimVar; iVar++)
-            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            PrimVar_j[iVar] = solver_container[SOLVER_TYPE::FLOW]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
 
           /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
 
-          const su2double weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+          const su2double weight = solver_container[SOLVER_TYPE::FLOW]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
           /*--- Set primitive variables ---*/
 
@@ -213,7 +213,7 @@ class CScalarSolver : public CSolver {
 
           if (conv_numerics->GetBoundedScalar()) {
             const su2double* velocity = &PrimVar_j[prim_idx.Velocity()];
-            const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+            const su2double density = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
             conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, true, density, velocity, Normal));
           }
 
@@ -478,7 +478,7 @@ class CScalarSolver : public CSolver {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) final;
+                            unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) final;
 
   /*!
    * \brief Load a solution from a restart file.

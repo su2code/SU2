@@ -529,7 +529,7 @@ public:
                      CConfig *config,
                      unsigned short iMesh,
                      unsigned short iRKStep,
-                     unsigned short RunTime_EqSystem,
+                     RUNTIME_TYPE RunTime_EqSystem,
                      bool Output) override;
 
   /*!
@@ -636,7 +636,7 @@ public:
                             CConfig *config,
                             unsigned short iRKStep,
                             unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
+                            RUNTIME_TYPE RunTime_EqSystem) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.

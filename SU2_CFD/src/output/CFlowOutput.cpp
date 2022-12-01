@@ -156,8 +156,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
-  const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
-  const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
+  const auto flow_nodes = solver[SOLVER_TYPE::FLOW]->GetNodes();
+  const CVariable* species_nodes = species ? solver[SOLVER_TYPE::SPECIES]->GetNodes() : nullptr;
 
   vector<su2double> Surface_MassFlow          (nMarker,0.0);
   vector<su2double> Surface_Mach              (nMarker,0.0);
@@ -258,8 +258,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_MassFlow[iMarker]         += MassFlow;
           Surface_MassFlow_Abs[iMarker]     += abs(MassFlow);
 
-          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
-          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          if (Kind_Average == AVERAGE_TYPE::MASSFLUX_WEIGHTED) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_TYPE::AREA_WEIGHTED) Weight = abs(Area);
           else Weight = 1.0;
 
           Surface_Mach[iMarker]             += Mach*Weight;
@@ -385,8 +385,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
-    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
-    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    if (Kind_Average == AVERAGE_TYPE::MASSFLUX_WEIGHTED) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_TYPE::AREA_WEIGHTED) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
     else Weight = 1.0;
 
     if (Weight != 0.0) {
@@ -646,8 +646,8 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
-  const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
-  const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
+  const auto flow_nodes = solver[SOLVER_TYPE::FLOW]->GetNodes();
+  const CVariable* species_nodes = species ? solver[SOLVER_TYPE::SPECIES]->GetNodes() : nullptr;
 
   /*--- Compute Variance of species on the analyze markers. This is done after the rest as the average species value is
    * necessary. The variance is computed for all species together and not for each species alone. ---*/
@@ -685,8 +685,8 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
           Area= sqrt(Area);
 
           su2double Weight;
-          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
-          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          if (Kind_Average == AVERAGE_TYPE::MASSFLUX_WEIGHTED) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_TYPE::AREA_WEIGHTED) Weight = abs(Area);
           else Weight = 1.0;
 
           for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
@@ -724,8 +724,8 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
     su2double Weight;
-    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
-    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    if (Kind_Average == AVERAGE_TYPE::MASSFLUX_WEIGHTED) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_TYPE::AREA_WEIGHTED) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
     else Weight = 1.0;
 
     if (Weight != 0.0) {
@@ -749,7 +749,7 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
-  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[SOLVER_TYPE::FLOW]->GetNodes());
 
   for (auto& output : customOutputs) {
     if (output.varIndices.empty()) {
@@ -819,7 +819,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
             if (i < CustomOutput::NOT_A_VARIABLE) {
               const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
               const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-              if (solIdx == FLOW_SOL) {
+              if (solIdx == SOLVER_TYPE::FLOW) {
                 return flowNodes->GetPrimitive(iPoint, varIdx);
               } else {
                 return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
@@ -983,21 +983,21 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
 void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
-      SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
-      SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
+      SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[SOLVER_TYPE::TURB]->GetRes_RMS(0)));
+      SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[SOLVER_TYPE::TURB]->GetRes_Max(0)));
       if (multiZone) {
-        SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[SOLVER_TYPE::TURB]->GetRes_BGS(0)));
       }
       break;
 
     case TURB_FAMILY::KW:
-      SetHistoryOutputValue("RMS_TKE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_DISSIPATION",log10(solver[TURB_SOL]->GetRes_RMS(1)));
-      SetHistoryOutputValue("MAX_TKE", log10(solver[TURB_SOL]->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_DISSIPATION", log10(solver[TURB_SOL]->GetRes_Max(1)));
+      SetHistoryOutputValue("RMS_TKE", log10(solver[SOLVER_TYPE::TURB]->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_DISSIPATION",log10(solver[SOLVER_TYPE::TURB]->GetRes_RMS(1)));
+      SetHistoryOutputValue("MAX_TKE", log10(solver[SOLVER_TYPE::TURB]->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_DISSIPATION", log10(solver[SOLVER_TYPE::TURB]->GetRes_Max(1)));
       if (multiZone) {
-        SetHistoryOutputValue("BGS_TKE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_DISSIPATION", log10(solver[TURB_SOL]->GetRes_BGS(1)));
+        SetHistoryOutputValue("BGS_TKE", log10(solver[SOLVER_TYPE::TURB]->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_DISSIPATION", log10(solver[SOLVER_TYPE::TURB]->GetRes_BGS(1)));
       }
       break;
 
@@ -1005,19 +1005,19 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-    SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
+    SetHistoryOutputValue("LINSOL_ITER_TURB", solver[SOLVER_TYPE::TURB]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[SOLVER_TYPE::TURB]->GetResLinSolver()));
   }
 
   switch (config->GetKind_Trans_Model()) {    
     case TURB_TRANS_MODEL::LM:
-      SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
-      SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_Max(1)));
+      SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[SOLVER_TYPE::TRANS]->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[SOLVER_TYPE::TRANS]->GetRes_RMS(1)));
+      SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[SOLVER_TYPE::TRANS]->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[SOLVER_TYPE::TRANS]->GetRes_Max(1)));
       if (multiZone) {
-        SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
+        SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[SOLVER_TYPE::TRANS]->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[SOLVER_TYPE::TRANS]->GetRes_BGS(1)));
       }
       break;
 
@@ -1026,15 +1026,15 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SOLVER_TYPE::SPECIES]->GetRes_RMS(iVar)));
+      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SOLVER_TYPE::SPECIES]->GetRes_Max(iVar)));
       if (multiZone) {
-        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SOLVER_TYPE::SPECIES]->GetRes_BGS(iVar)));
       }
     }
 
-    SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+    SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SOLVER_TYPE::SPECIES]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SOLVER_TYPE::SPECIES]->GetResLinSolver()));
   }
 }
 
@@ -1154,9 +1154,9 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
 
 void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
-  const auto* turb_solver = solver[TURB_SOL];
-  const auto* trans_solver = solver[TRANS_SOL];
-  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const auto* turb_solver = solver[SOLVER_TYPE::TURB];
+  const auto* trans_solver = solver[SOLVER_TYPE::TRANS];
+  const auto* Node_Flow = solver[SOLVER_TYPE::FLOW]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
@@ -1225,11 +1225,11 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+    const auto Node_Species = solver[SOLVER_TYPE::SPECIES]->GetNodes();
 
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SOLVER_TYPE::SPECIES]->LinSysRes(iPoint, iVar));
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
         SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
@@ -1241,14 +1241,14 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   if (!config->GetViscous_Wall(iMarker)) return;
 
   const auto heat_sol = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-                         config->GetWeakly_Coupled_Heat() ? HEAT_SOL : FLOW_SOL;
+                         config->GetWeakly_Coupled_Heat() ? SOLVER_TYPE::HEAT : SOLVER_TYPE::FLOW;
 
-  SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+  SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[SOLVER_TYPE::FLOW]->GetCSkinFriction(iMarker, iVertex, 0));
+  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[SOLVER_TYPE::FLOW]->GetCSkinFriction(iMarker, iVertex, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[SOLVER_TYPE::FLOW]->GetCSkinFriction(iMarker, iVertex, 2));
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[heat_sol]->GetHeatFlux(iMarker, iVertex));
-  SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+  SetVolumeOutputValue("Y_PLUS", iPoint, solver[SOLVER_TYPE::FLOW]->GetYPlus(iMarker, iVertex));
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
@@ -1954,7 +1954,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
   }
 
   if (config->GetWrt_ForcesBreakdown()){
-    WriteForcesBreakdown(config, solver_container[FLOW_SOL]);
+    WriteForcesBreakdown(config, solver_container[SOLVER_TYPE::FLOW]);
   }
 
 }
@@ -2335,7 +2335,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     file << "-- Input conditions:\n";
 
     switch (config->GetKind_FluidModel()) {
-      case STANDARD_AIR:
+      case FLUIDMODEL::STANDARD_AIR:
         file << "Fluid Model: STANDARD_AIR \n";
         file << "Specific gas constant: " << config->GetGas_Constant();
         if (si_units) file << " N.m/kg.K.\n";
@@ -2344,14 +2344,14 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Specific Heat Ratio: 1.4000 \n";
         break;
 
-      case IDEAL_GAS:
+      case FLUIDMODEL::IDEAL_GAS:
         file << "Fluid Model: IDEAL_GAS \n";
         file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
         file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
         file << "Specific Heat Ratio: " << config->GetGamma() << "\n";
         break;
 
-      case VW_GAS:
+      case FLUIDMODEL::VW_GAS:
         file << "Fluid Model: Van der Waals \n";
         file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
         file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
@@ -2364,7 +2364,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
         break;
 
-      case PR_GAS:
+      case FLUIDMODEL::PR_GAS:
         file << "Fluid Model: Peng-Robinson \n";
         file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
         file << "Specific gas constant(non-dim): " << config->GetGas_ConstantND() << "\n";
@@ -2377,7 +2377,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
         break;
 
-      case COOLPROP: {
+      case FLUIDMODEL::COOLPROP: {
         CCoolProp auxFluidModel(config->GetFluid_Name());
         file << "Fluid Model: CoolProp library \n";
         file << "Specific gas constant: " << auxFluidModel.GetGas_Constant()<< " N.m/kg.K.\n";
@@ -2628,7 +2628,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     file << "The initial value of the dynamic pressure is 0.\n";
 
     file << "Mach number: " << config->GetMach();
-    if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::CONSTANT_DENSITY) {
       file << ", computed using the Bulk modulus.\n";
     } else {
       file << ", computed using fluid speed of sound.\n";
@@ -2663,7 +2663,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     file << "-- Input conditions:\n";
 
     switch (config->GetKind_FluidModel()) {
-      case CONSTANT_DENSITY:
+      case FLUIDMODEL::CONSTANT_DENSITY:
         file << "Fluid Model: CONSTANT_DENSITY \n";
         if (energy) {
           file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K.\n";
@@ -2672,7 +2672,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Thermodynamic pressure not required.\n";
         break;
 
-      case INC_IDEAL_GAS:
+      case FLUIDMODEL::INC_IDEAL_GAS:
         file << "Fluid Model: INC_IDEAL_GAS \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
         file << "Density is a function of temperature (constant thermodynamic pressure).\n";
@@ -2684,7 +2684,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         else file << " psf.\n";
         break;
 
-      case FLUID_MIXTURE:
+      case FLUIDMODEL::FLUID_MIXTURE:
         file << "Fluid Model: FLUID_MIXTURE \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
         file << "Density is a function of temperature (constant thermodynamic pressure).\n";
@@ -2696,7 +2696,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         else file << " psf.\n";
         break;
 
-      case INC_IDEAL_GAS_POLY:
+      case FLUIDMODEL::INC_IDEAL_GAS_POLY:
         file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
         file << "Density is a function of temperature (constant thermodynamic pressure).\n";
@@ -2815,7 +2815,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       }
     }
 
-    if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::CONSTANT_DENSITY) {
       file << "Bulk modulus: " << config->GetBulk_Modulus();
       if (si_units) file << " Pa.\n";
       else file << " psf.\n";
@@ -2876,7 +2876,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
     file << "-- Reference values:\n";
 
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
+    if (config->GetKind_FluidModel() != FLUIDMODEL::CONSTANT_DENSITY) {
       file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
       if (si_units) file << " N.m/kg.K.\n";
       else file << " lbf.ft/slug.R.\n";
@@ -2926,7 +2926,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       file << "Reynolds number (per m): " << config->GetReynolds() << "\n";
     }
 
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
+    if (config->GetKind_FluidModel() != FLUIDMODEL::CONSTANT_DENSITY) {
       file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
       file << "Initial thermodynamic pressure (non-dim): " << config->GetPressure_ThermodynamicND() << "\n";
     } else {

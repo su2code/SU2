@@ -186,7 +186,7 @@ CHeatSolver::~CHeatSolver(void) {
   delete nodes;
 }
 
-void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   SU2_OMP_MASTER
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
   END_SU2_OMP_MASTER
@@ -277,10 +277,10 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::HEAT]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::HEAT]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
+  solver[MESH_0][SOLVER_TYPE::HEAT]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::HEAT, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -293,19 +293,19 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][SOLVER_TYPE::HEAT]->GetNodes()->GetSolution(Point_Fine);
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+      solver[iMesh][SOLVER_TYPE::HEAT]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
 
-    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::HEAT]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::HEAT]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-    solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
+    solver[iMesh][SOLVER_TYPE::HEAT]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TYPE::HEAT, false);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
@@ -323,7 +323,7 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
 
   if(flow) {
 
-    nVarFlow = solver_container[FLOW_SOL]->GetnVar();
+    nVarFlow = solver_container[SOLVER_TYPE::FLOW]->GetnVar();
 
     for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -333,8 +333,8 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
       numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
-      const auto V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-      const auto V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+      const auto V_i = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
+      const auto V_j = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(jPoint);
 
       const auto Temp_i = nodes->GetTemperature(iPoint);
       const auto Temp_j = nodes->GetTemperature(jPoint);
@@ -370,7 +370,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   if(flow) {
 
-    nVarFlow = solver_container[FLOW_SOL]->GetnVar();
+    nVarFlow = solver_container[SOLVER_TYPE::FLOW]->GetnVar();
 
     /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
     vector<su2double> Primitive_Flow_i(nVarFlow, 0.0);
@@ -384,8 +384,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
-      V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-      V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+      V_i = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
+      V_j = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(jPoint);
 
       const auto Temp_i_Grad = nodes->GetGradient(iPoint);
       const auto Temp_j_Grad = nodes->GetGradient(jPoint);
@@ -402,8 +402,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
           Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
         }
 
-        const auto Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-        const auto Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+        const auto Gradient_i = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Reconstruction(jPoint);
         const auto Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
         const auto Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
 
@@ -493,8 +493,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Eddy viscosity to compute thermal conductivity ---*/
     if (flow) {
       if (turb) {
-        eddy_viscosity_i = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-        eddy_viscosity_j = solver_container[TURB_SOL]->GetNodes()->GetmuT(jPoint);
+        eddy_viscosity_i = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(iPoint);
+        eddy_viscosity_j = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(jPoint);
       }
       thermal_diffusivity_i = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_i/Prandtl_Turb);
       thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
@@ -689,14 +689,14 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve solution at this boundary node ---*/
 
-        V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+        V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
         /*--- Retrieve the specified velocity for the inlet. ---*/
 
         Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
         auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
-        V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+        V_inlet = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
         for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
@@ -785,13 +785,13 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve solution at this boundary node ---*/
 
-        V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+        V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
         /*--- Retrieve the specified velocity for the inlet. ---*/
 
-        V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+        V_outlet = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
         for (auto iDim = 0u; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(Point_Normal, iDim);
+          V_outlet[iDim+1] = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetVelocity(Point_Normal, iDim);
 
         conv_numerics->SetPrimitive(V_domain, V_outlet);
 
@@ -1060,9 +1060,9 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     /*--- Inviscid contribution ---*/
 
     if (flow) {
-      Mean_ProjVel = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetProjVel(iPoint,Normal) + solver_container[FLOW_SOL]->GetNodes()->GetProjVel(jPoint,Normal));
-      Mean_BetaInc2 = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint) + solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(jPoint));
-      Mean_DensityInc = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint) + solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint));
+      Mean_ProjVel = 0.5 * (solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetProjVel(iPoint,Normal) + solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetProjVel(jPoint,Normal));
+      Mean_BetaInc2 = 0.5 * (solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetBetaInc2(iPoint) + solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetBetaInc2(jPoint));
+      Mean_DensityInc = 0.5 * (solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint) + solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(jPoint));
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
@@ -1075,7 +1075,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     thermal_diffusivity = config->GetThermalDiffusivity();
     if(flow) {
       if(turb) {
-        eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+        eddy_viscosity = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(iPoint);
       }
 
       thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
@@ -1101,9 +1101,9 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       /*--- Inviscid contribution ---*/
 
       if (flow) {
-        Mean_ProjVel = solver_container[FLOW_SOL]->GetNodes()->GetProjVel(iPoint, Normal);
-        Mean_BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-        Mean_DensityInc = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        Mean_ProjVel = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetProjVel(iPoint, Normal);
+        Mean_BetaInc2 = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetBetaInc2(iPoint);
+        Mean_DensityInc = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
@@ -1115,7 +1115,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       thermal_diffusivity = config->GetThermalDiffusivity();
       if(flow) {
         if(turb) {
-          eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+          eddy_viscosity = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(iPoint);
         }
 
         thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
@@ -1148,7 +1148,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       /*--- Time step setting method ---*/
 
       if (config->GetKind_TimeStep_Heat() == BYFLOW && flow) {
-        Local_Delta_Time = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
+        Local_Delta_Time = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDelta_Time(iPoint);
       }
       else if (config->GetKind_TimeStep_Heat() == MINIMUM) {
         Local_Delta_Time = min(Local_Delta_Time_Inv, Local_Delta_Time_Visc);
@@ -1376,15 +1376,15 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
         for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
           Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
           Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-          Solution_Fine = solver_container[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+          Solution_Fine = solver_container[iMesh-1][SOLVER_TYPE::HEAT]->GetNodes()->GetSolution(Point_Fine);
           for (auto iVar = 0u; iVar < nVar; iVar++) {
             Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
           }
         }
-        solver_container[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
+        solver_container[iMesh][SOLVER_TYPE::HEAT]->GetNodes()->SetSolution(iPoint,Solution);
       }
-      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][SOLVER_TYPE::HEAT]->InitiateComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][SOLVER_TYPE::HEAT]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
   }
 
@@ -1396,8 +1396,8 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
      for a 1st-order restart or when simply intitializing to freestream. ---*/
 
     for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-      solver_container[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
-      solver_container[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1();
+      solver_container[iMesh][SOLVER_TYPE::HEAT]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][SOLVER_TYPE::HEAT]->GetNodes()->Set_Solution_time_n1();
     }
 
     if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
@@ -1405,19 +1405,19 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
 
-      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
+      solver_container[MESH_0][SOLVER_TYPE::HEAT]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
 
       /*--- Push back this new solution to time level N. ---*/
 
       for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-        solver_container[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
+        solver_container[iMesh][SOLVER_TYPE::HEAT]->GetNodes()->Set_Solution_time_n();
       }
     }
   }
 }
 
 void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                       unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+                                       unsigned short iRKStep, unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) {
 
   /*--- Local variables ---*/
 

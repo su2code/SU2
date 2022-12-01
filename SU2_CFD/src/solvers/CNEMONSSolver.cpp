@@ -55,7 +55,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                              unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
@@ -123,9 +123,9 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     su2double eddy_visc = 0.0; //su2double turb_ke = 0.0;
 
-    if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
-      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      //if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+    if (turb_model != TURB_MODEL::NONE && solver_container[SOLVER_TYPE::TURB] != nullptr) {
+      eddy_visc = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetmuT(iPoint);
+      //if (tkeNeeded) turb_ke = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
 
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }

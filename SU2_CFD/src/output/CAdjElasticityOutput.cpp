@@ -117,21 +117,21 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_RMS(0)));
-  SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_RMS(1)));
+  SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_RMS(0)));
+  SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_RMS(1)));
   if (nVar_FEM == 3){
-    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));
+    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_RMS(2)));
   }
 
   su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;
   if (config->GetnElasticityMod() == 1) {
-    Total_SensE = solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
-    Total_SensNu = solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+    Total_SensE = solver[SOLVER_TYPE::ADJFEA]->GetGlobal_Sens_E(0);
+    Total_SensNu = solver[SOLVER_TYPE::ADJFEA]->GetGlobal_Sens_Nu(0);
   }
   else {
     for (unsigned short iVar = 0; iVar < config->GetnElasticityMod(); iVar++){
-      Total_SensE += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_E(iVar),2);
-      Total_SensNu += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar),2);
+      Total_SensE += pow(solver[SOLVER_TYPE::ADJFEA]->GetGlobal_Sens_E(iVar),2);
+      Total_SensNu += pow(solver[SOLVER_TYPE::ADJFEA]->GetGlobal_Sens_Nu(iVar),2);
     }
     Total_SensE = sqrt(Total_SensE);
     Total_SensNu = sqrt(Total_SensNu);
@@ -139,21 +139,21 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
   SetHistoryOutputValue("SENS_E", Total_SensE);
   SetHistoryOutputValue("SENS_NU", Total_SensNu);
 
-  SetHistoryOutputValue("LINSOL_ITER", solver[ADJFEA_SOL]->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[ADJFEA_SOL]->GetResLinSolver()));
+  SetHistoryOutputValue("LINSOL_ITER", solver[SOLVER_TYPE::ADJFEA]->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[SOLVER_TYPE::ADJFEA]->GetResLinSolver()));
 
   if (multiZone) {
-    SetHistoryOutputValue("BGS_ADJ_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_ADJ_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_BGS(1)));
+    SetHistoryOutputValue("BGS_ADJ_DISP_X", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_ADJ_DISP_Y", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_BGS(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputValue("BGS_ADJ_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_BGS(2)));
+      SetHistoryOutputValue("BGS_ADJ_DISP_Z", log10(solver[SOLVER_TYPE::ADJFEA]->GetRes_BGS(2)));
     }
   }
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Struc = solver[ADJFEA_SOL]->GetNodes();
+  CVariable* Node_Struc = solver[SOLVER_TYPE::ADJFEA]->GetNodes();
   CPoint*    Node_Geo  = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));

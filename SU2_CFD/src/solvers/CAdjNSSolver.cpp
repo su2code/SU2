@@ -308,11 +308,11 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Use the flow solution to update the time step
    *    The time step depends on the characteristic velocity, which is the same
    *    for the adjoint and flow solutions, albeit in the opposite direction. ---*/
-  solver_container[FLOW_SOL]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+  solver_container[SOLVER_TYPE::FLOW]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
 
 }
 
-void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
@@ -374,8 +374,8 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute gradients adj for viscous term coupling ---*/
 
   if ((config->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[SOLVER_TYPE::ADJTURB]->SetSolution_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[SOLVER_TYPE::ADJTURB]->SetSolution_Gradient_LS(geometry, config);
   }
 
   /*--- Artificial dissipation for centered schemes ---*/
@@ -422,8 +422,8 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Primitive variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint),
-                           solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint));
+    numerics->SetPrimitive(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint),
+                           solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(jPoint));
 
     numerics->SetAdjointVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
 
@@ -469,9 +469,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Primitive variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+    numerics->SetPrimitive(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), nullptr);
+    numerics->SetPrimVarGradient(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint), nullptr);
 
     /*--- Gradient of adjoint variables ---*/
 
@@ -487,15 +487,15 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
+      numerics->SetScalarVar(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetScalarVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
+      numerics->SetScalarVarGradient(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Turbulent adjoint variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
+      numerics->SetTurbAdjointVar(solver_container[SOLVER_TYPE::ADJTURB]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
+      numerics->SetTurbAdjointGradient(solver_container[SOLVER_TYPE::ADJTURB]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Set distance to the surface ---*/
 
@@ -527,28 +527,28 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Conservative variables w/o reconstruction ---*/
 
-      second_numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint),
-                                     solver_container[FLOW_SOL]->GetNodes()->GetSolution(jPoint));
+      second_numerics->SetConservative(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint),
+                                     solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(jPoint));
 
       /*--- Gradient of primitive variables w/o reconstruction ---*/
 
-      second_numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint),
-                                        solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(jPoint));
+      second_numerics->SetPrimVarGradient(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint),
+                                        solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(jPoint));
 
       /*--- Viscosity ---*/
 
-      second_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint),
-                                         solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint));
+      second_numerics->SetLaminarViscosity(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint),
+                                         solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(jPoint));
 
       /*--- Turbulent variables w/o reconstruction ---*/
 
-      second_numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint),
-                                solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
+      second_numerics->SetScalarVar(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint),
+                                solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(jPoint));
 
       /*--- Turbulent adjoint variables w/o reconstruction ---*/
 
-      second_numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->GetNodes()->GetSolution(iPoint),
-                                       solver_container[ADJTURB_SOL]->GetNodes()->GetSolution(jPoint));
+      second_numerics->SetTurbAdjointVar(solver_container[SOLVER_TYPE::ADJTURB]->GetNodes()->GetSolution(iPoint),
+                                       solver_container[SOLVER_TYPE::ADJTURB]->GetNodes()->GetSolution(jPoint));
 
       /*--- Set distance to the surface ---*/
 
@@ -696,9 +696,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         if (geometry->nodes->GetDomain(iPoint)) {
 
           const auto PsiVar_Grad = nodes->GetGradient(iPoint);
-          const auto PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+          const auto PrimVar_Grad = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint);
 
-          Laminar_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+          Laminar_Viscosity = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint);
 
           heat_flux_factor = Cp * Laminar_Viscosity / Prandtl_Lam;
 
@@ -767,15 +767,15 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           if (grid_movement) {
 
             Psi = nodes->GetSolution(iPoint);
-            U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+            U = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint);
             Density = U[0];
-            Pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
-            Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
+            Pressure = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPressure(iPoint);
+            Enthalpy = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEnthalpy(iPoint);
 
             /*--- Turbulent kinetic energy ---*/
             /// TODO: This does not seem to be consistent with the primal treatment.
             if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-              val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+              val_turb_ke = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
             else
               val_turb_ke = 0.0;
 
@@ -921,7 +921,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
         if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
-          U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+          U = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           Mach_Inf   = config->GetMach();
@@ -1075,7 +1075,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         if (geometry->nodes->GetDomain(iPoint)) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          p = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+          p = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPressure(iPoint);
 
           Mach_Inf   = config->GetMach();
           if (grid_movement) Mach_Inf = config->GetMach_Motion();
@@ -1294,11 +1294,11 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Get some additional quantities from the flow solution ---*/
 
-        Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        Pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
-        Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
-        Laminar_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-        Eddy_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint); // Should be zero at the wall
+        Density = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
+        Pressure = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPressure(iPoint);
+        Enthalpy = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEnthalpy(iPoint);
+        Laminar_Viscosity = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint);
+        Eddy_Viscosity = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEddyViscosity(iPoint); // Should be zero at the wall
 
         ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
         XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
@@ -1658,12 +1658,12 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
 
       /*--- Get transport coefficient information ---*/
-      Laminar_Viscosity    = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-      Eddy_Viscosity       = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint);
+      Laminar_Viscosity    = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint);
+      Eddy_Viscosity       = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEddyViscosity(iPoint);
       Thermal_Conductivity = Cp * ( Laminar_Viscosity/Prandtl_Lam
                                    +Eddy_Viscosity/Prandtl_Turb);
 
-//      GradV = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+//      GradV = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint);
 
       /*--- Calculate Dirichlet condition for energy equation ---*/
       if (!heat_flux_obj) {
@@ -1674,13 +1674,13 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         /*--- Temperature gradient term ---*/
-        GradT = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)[0];
+        GradT = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint)[0];
         kGTdotn = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           kGTdotn += Cp * Laminar_Viscosity/Prandtl_Lam*GradT[iDim]*Normal[iDim]/Area;
         // Cp * Viscosity/Prandtl_Lam matches term used in solver_direct_mean
         /*--- constant term to multiply max heat flux objective ---*/
-        Xi = solver_container[FLOW_SOL]->GetTotal_HeatFlux(); // versions for max heat flux
+        Xi = solver_container[SOLVER_TYPE::FLOW]->GetTotal_HeatFlux(); // versions for max heat flux
         Xi = pow(Xi, 1.0/pnorm-1.0)/pnorm;
 
         /*--- Boundary condition value ---*/
@@ -1701,12 +1701,12 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Acquire gradient information ---*/
       auto PsiVar_Grad = nodes->GetGradient(iPoint);
-      GradP    = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)[nVar-1];
-      GradDens = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)[nVar];
+      GradP    = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint)[nVar-1];
+      GradDens = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetGradient_Primitive(iPoint)[nVar];
 
       /*--- Acqure flow information ---*/
-      rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+      rho = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
+      pressure = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPressure(iPoint);
       invrho3 = (1.0/rho)*(1.0/rho)*(1.0/rho);
 
       /*--- Calculate supporting quantities ---*/
@@ -1743,16 +1743,16 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
           force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
 
       /*--- \partial \mu_dyn \partial T ---*/
-      //        mu_dyn = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-      //        Temp = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+      //        mu_dyn = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint);
+      //        Temp = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetTemperature(iPoint);
       dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
 
       /*--- \Sigma_5 Check Area computation for Res_Conv[0] ---*/
       Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
 
       /*--- Imposition of residuals ---*/
-      rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+      rho = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
+      pressure = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPressure(iPoint);
       Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
 
       /*--- Flux contribution and Jacobian contributions for moving
@@ -1764,7 +1764,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         GridVel = geometry->nodes->GetGridVel(iPoint);
 
         /*--- Get the enthalpy from the direct solution ---*/
-        Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
+        Enthalpy = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEnthalpy(iPoint);
 
         /*--- Compute projections, velocity squared divided by two, and
            other inner products. Note that we are imposing v = u_wall from
@@ -1794,9 +1794,9 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 
         /*--- Viscous flux contributions at the wall node ---*/
-        U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
-        Laminar_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-        Eddy_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint); // Should be zero at the wall
+        U = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint);
+        Laminar_Viscosity = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetLaminarViscosity(iPoint);
+        Eddy_Viscosity = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetEddyViscosity(iPoint); // Should be zero at the wall
         Density = U[0];
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = GridVel[iDim];

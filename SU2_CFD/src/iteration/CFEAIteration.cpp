@@ -45,21 +45,21 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   /*--- Loads applied in steps (not used for discrete adjoint). ---*/
   const bool incremental_load = config[val_iZone]->GetIncrementalLoad() && !disc_adj_fem;
 
-  CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
-  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  CIntegration* feaIntegration = integration[val_iZone][val_iInst][SOLVER_TYPE::FEA];
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FEA];
 
   /*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
   feaIntegration->SetConvergence(false);
 
   /*--- FEA equations ---*/
-  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_TYPE::FEA);
 
   if (linear) {
     /*--- Run the (one) iteration ---*/
 
     config[val_iZone]->SetInnerIter(0);
 
-    feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+    feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_TYPE::FEA, val_iZone, val_iInst);
 
     if (!disc_adj_fem) {
       Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
@@ -81,7 +81,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
     for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
       config[val_iZone]->SetInnerIter(IntIter);
 
-      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_TYPE::FEA, val_iZone, val_iInst);
 
       /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
       if (disc_adj_fem) {
@@ -108,7 +108,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
     for (IntIter = 0; IntIter < 2; ++IntIter) {
       config[val_iZone]->SetInnerIter(IntIter);
 
-      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_TYPE::FEA, val_iZone, val_iInst);
 
       StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
                          FFDBox, val_iZone, INST_0);
@@ -131,7 +131,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
       for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
         config[val_iZone]->SetInnerIter(IntIter);
 
-        feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+        feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_TYPE::FEA, val_iZone, val_iInst);
 
         StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
                            FFDBox, val_iZone, INST_0);
@@ -168,7 +168,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
         for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
           config[val_iZone]->SetInnerIter(IntIter);
 
-          feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone,
+          feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_TYPE::FEA, val_iZone,
                                                val_iInst);
 
           StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
@@ -191,22 +191,22 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
   const bool dynamic = (config[val_iZone]->GetTime_Domain());
   const bool fsi = config[val_iZone]->GetFSI_Simulation();
 
-  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FEA];
 
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
-        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
+    integration[val_iZone][val_iInst][SOLVER_TYPE::FEA]->SetDualTime_Solver(
+        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FEA], config[val_iZone],
         MESH_0);
-    integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
+    integration[val_iZone][val_iInst][SOLVER_TYPE::FEA]->SetConvergence(false);
 
     /*--- Verify convergence criteria (based on total time) ---*/
 
     const su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
     const su2double Physical_t = (TimeIter + 1) * Physical_dt;
     if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
-      integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
+      integration[val_iZone][val_iInst][SOLVER_TYPE::FEA]->SetConvergence(true);
 
   } else if (fsi) {
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
@@ -221,7 +221,7 @@ void CFEAIteration::Predictor(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FEA];
 
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 }
@@ -230,7 +230,7 @@ void CFEAIteration::Relaxation(COutput* output, CIntegration**** integration, CG
                                CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FEA];
 
   /*-------------------- Aitken's relaxation ------------------------*/
 
@@ -274,5 +274,5 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
   }
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
-  integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
+  integration[val_iZone][val_iInst][SOLVER_TYPE::FEA]->SetConvergence(false);
 }

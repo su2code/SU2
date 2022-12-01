@@ -293,13 +293,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   switch (config->GetKind_FluidModel()) {
 
-    case CONSTANT_DENSITY:
+    case FLUIDMODEL::CONSTANT_DENSITY:
 
       auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       break;
 
-    case INC_IDEAL_GAS:
+    case FLUIDMODEL::INC_IDEAL_GAS:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
@@ -309,7 +309,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
-    case INC_IDEAL_GAS_POLY:
+    case FLUIDMODEL::INC_IDEAL_GAS_POLY:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
@@ -325,7 +325,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
-    case FLUID_MIXTURE:
+    case FLUIDMODEL::FLUID_MIXTURE:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
@@ -411,7 +411,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Compute Mach number ---*/
 
-  if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+  if (config->GetKind_FluidModel() == FLUIDMODEL::CONSTANT_DENSITY) {
     Mach = ModVel_FreeStream / sqrt(config->GetBulk_Modulus()/Density_FreeStream);
   } else {
     Mach = 0.0;
@@ -470,21 +470,21 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     switch (config->GetKind_FluidModel()) {
 
-      case CONSTANT_DENSITY:
+      case FLUIDMODEL::CONSTANT_DENSITY:
         fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
         break;
 
-      case INC_IDEAL_GAS:
+      case FLUIDMODEL::INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
-      case FLUID_MIXTURE:
+      case FLUIDMODEL::FLUID_MIXTURE:
         fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
-      case INC_IDEAL_GAS_POLY:
+      case FLUIDMODEL::INC_IDEAL_GAS_POLY:
         fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
         if (viscous) {
           /*--- Variable Cp model via polynomial. ---*/
@@ -561,7 +561,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << "The initial value of the dynamic pressure is 0." << endl;
 
     cout << "Mach number: "<< config->GetMach();
-    if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+    if (config->GetKind_FluidModel() == FLUIDMODEL::CONSTANT_DENSITY) {
       cout << ", computed using the Bulk modulus." << endl;
     } else {
       cout << ", computed using fluid speed of sound." << endl;
@@ -713,7 +713,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     }
 
     switch (config->GetKind_FluidModel()){
-    case CONSTANT_DENSITY:
+    case FLUIDMODEL::CONSTANT_DENSITY:
       ModelTable << "CONSTANT_DENSITY";
       if (energy){
         Unit << "N.m/kg.K";
@@ -731,7 +731,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
-    case INC_IDEAL_GAS:
+    case FLUIDMODEL::INC_IDEAL_GAS:
       ModelTable << "INC_IDEAL_GAS";
       Unit << "N.m/kg.K";
       NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
@@ -748,7 +748,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
-    case FLUID_MIXTURE:
+    case FLUIDMODEL::FLUID_MIXTURE:
       ModelTable << "FLUID_MIXTURE";
       Unit << "N.m/kg.K";
       NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp() / config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
@@ -765,7 +765,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
-    case INC_IDEAL_GAS_POLY:
+    case FLUIDMODEL::INC_IDEAL_GAS_POLY:
       ModelTable << "INC_IDEAL_GAS_POLY";
       Unit.str("");
       Unit << "g/mol";
@@ -900,7 +900,7 @@ void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
 }
 
 void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                          unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                          unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -955,7 +955,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 }
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                    unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1563,7 +1563,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Store the radiation source term ---*/
 
-      second_numerics->SetRadVarSource(solver_container[RAD_SOL]->GetNodes()->GetRadiative_SourceTerm(iPoint));
+      second_numerics->SetRadVarSource(solver_container[SOLVER_TYPE::RAD]->GetNodes()->GetRadiative_SourceTerm(iPoint));
 
       /*--- Set control volume ---*/
 
@@ -1583,7 +1583,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       if (vol_heat) {
 
-        if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
+        if(solver_container[SOLVER_TYPE::RAD]->GetNodes()->GetVol_HeatSource(iPoint)) {
 
           auto Volume = geometry->nodes->GetVolume(iPoint);
 
@@ -2140,8 +2140,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     /*--- Turbulent kinetic energy ---*/
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Compute and update viscous residual ---*/
 
@@ -2395,8 +2395,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Turbulent kinetic energy ---*/
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Compute and update residual ---*/
 
@@ -2593,8 +2593,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Turbulent kinetic energy ---*/
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Compute and update residual ---*/
 
@@ -2612,7 +2612,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+                                        unsigned short iRKStep, unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) {
 
   /*--- Local variables ---*/
 

@@ -122,7 +122,7 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 
 void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
+  CSolver* adjheat_solver = solver[SOLVER_TYPE::ADJHEAT];
 
   SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
 
@@ -138,8 +138,8 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjheat_solver->GetResLinSolver()));
 
   if (config->GetDeform_Mesh()) {
-    SetHistoryOutputValue("DEFORM_ITER", solver[MESH_SOL]->System.GetIterations());
-    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(solver[MESH_SOL]->System.GetResidual()));
+    SetHistoryOutputValue("DEFORM_ITER", solver[SOLVER_TYPE::MESH]->System.GetIterations());
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(solver[SOLVER_TYPE::MESH]->System.GetResidual()));
   }
 
 }
@@ -180,7 +180,7 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
+  CVariable* Node_AdjHeat = solver[SOLVER_TYPE::ADJHEAT]->GetNodes();
   CPoint*    Node_Geo     = geometry->nodes;
 
 
@@ -203,7 +203,7 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
 void CAdjHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJHEAT_SOL]->GetCSensitivity(iMarker, iVertex));
+  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[SOLVER_TYPE::ADJHEAT]->GetCSensitivity(iMarker, iVertex));
 
 }
 

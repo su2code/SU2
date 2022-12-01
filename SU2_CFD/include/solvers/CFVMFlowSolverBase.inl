@@ -403,7 +403,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded) turbNodes = solver_container[SOLVER_TYPE::TURB]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -909,15 +909,15 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::FLOW]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::FLOW]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
    *    species solver does all the Pre-/Postprocessing. ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
       config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    solver[MESH_0][SOLVER_TYPE::FLOW]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -932,22 +932,22 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(Point_Fine);
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+      solver[iMesh][SOLVER_TYPE::FLOW]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
     END_SU2_OMP_FOR
 
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::FLOW]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::FLOW]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver[iMesh][SOLVER_TYPE::FLOW]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
     }
   }
 
@@ -1006,7 +1006,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
-        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+        su2double *solDOF     = solver_container[iMesh][SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint);
 
         /* Set the solution in this DOF to the initial condition provided by
            the verification solution class. This can be the exact solution,
@@ -1036,11 +1036,11 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
    for a 1st-order restart or when simply intitializing to freestream. ---*/
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+    solver_container[iMesh][SOLVER_TYPE::FLOW]->GetNodes()->Set_Solution_time_n();
+    solver_container[iMesh][SOLVER_TYPE::FLOW]->GetNodes()->Set_Solution_time_n1();
     if (rans) {
-      solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-      solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
+      solver_container[iMesh][SOLVER_TYPE::TURB]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][SOLVER_TYPE::TURB]->GetNodes()->Set_Solution_time_n1();
     }
 
     if (dynamic_grid) {
@@ -1058,17 +1058,17 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 
     /*--- Load an additional restart file for a 2nd-order restart. ---*/
 
-    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
+    solver_container[MESH_0][SOLVER_TYPE::FLOW]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
 
     /*--- Load an additional restart file for the turbulence model. ---*/
     if (rans)
-      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
+      solver_container[MESH_0][SOLVER_TYPE::TURB]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
     /*--- Push back this new solution to time level N. ---*/
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-      if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][SOLVER_TYPE::FLOW]->GetNodes()->Set_Solution_time_n();
+      if (rans) solver_container[iMesh][SOLVER_TYPE::TURB]->GetNodes()->Set_Solution_time_n();
 
       geometry[iMesh]->nodes->SetVolume_n();
       if (config->GetGrid_Movement()) geometry[iMesh]->nodes->SetCoord_n();
@@ -1304,8 +1304,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
         /*--- Turbulent kinetic energy. ---*/
         if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint, 0),
+                                              solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint, 0));
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
               following routine based upon the velocity-component gradients. ---*/
@@ -1393,7 +1393,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
             if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
+              if (!(config->GetKind_FluidModel() == FLUIDMODEL::STANDARD_AIR || config->GetKind_FluidModel() == FLUIDMODEL::IDEAL_GAS)) {
                 auto Secondary_i = nodes->GetSecondary(iPoint);
 
                 P_static = PrimVar_j[nDim + 1];
@@ -1470,8 +1470,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               /*--- Turbulent kinetic energy ---*/
 
               if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                                    solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
+                visc_numerics->SetTurbKineticEnergy(solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint, 0),
+                                                    solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint, 0));
 
               /*--- Compute and update residual ---*/
 
@@ -1639,7 +1639,7 @@ void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container,
                                                              CConfig *config, unsigned short iRKStep, unsigned short iMesh,
-                                                             unsigned short RunTime_EqSystem) {
+                                                             RUNTIME_TYPE RunTime_EqSystem) {
   /*--- Local variables ---*/
 
   unsigned short iVar, iMarker, iDim, iNeigh;

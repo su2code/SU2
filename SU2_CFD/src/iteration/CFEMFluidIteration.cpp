@@ -37,7 +37,7 @@ void CFEMFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 
   /*--- Set the initial condition if this is not a restart. ---*/
   if (TimeIter == 0 && !restart)
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(
+    solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->SetInitialCondition(
         geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
 }
 
@@ -48,21 +48,21 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
   /*--- Update global parameters ---*/
 
   if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_EULER || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_EULER, RUNTIME_FLOW_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_EULER, RUNTIME_TYPE::FLOW);
 
   if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES ||
       config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_NS)
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_TYPE::FLOW);
 
   if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_RANS, RUNTIME_FLOW_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_RANS, RUNTIME_TYPE::FLOW);
 
-  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_LES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_LES, RUNTIME_TYPE::FLOW);
 
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 
-  integration[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                    RUNTIME_FLOW_SYS, val_iZone, val_iInst);
+  integration[val_iZone][val_iInst][SOLVER_TYPE::FLOW]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                    RUNTIME_TYPE::FLOW, val_iZone, val_iInst);
 }
 
 void CFEMFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,

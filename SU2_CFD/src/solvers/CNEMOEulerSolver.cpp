@@ -244,7 +244,7 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 }
 
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                           unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -290,7 +290,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
 void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
-                                     unsigned short RunTime_EqSystem, bool Output) {
+                                     RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   const unsigned long InnerIter = config->GetInnerIter();
   const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
@@ -868,7 +868,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 
         /*--- Set turbulence kinetic energy ---*/
         if (rans){
-          CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+          CVariable* turbNodes = solver_container[SOLVER_TYPE::TURB]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), 0.0);
         }
       }
@@ -1038,7 +1038,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
-  case MUTATIONPP:
+  case FLUIDMODEL::MUTATIONPP:
    #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
      FluidModel = new CMutationTCLib(config, nDim);
    #else
@@ -1046,7 +1046,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
      CURRENT_FUNCTION);
    #endif
    break;
-  case SU2_NONEQ:
+  case FLUIDMODEL::SU2_NONEQ:
    FluidModel = new CSU2TCLib(config, nDim, viscous);
    break;
   }
@@ -1283,10 +1283,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     ModelTable << config->GetGasModel();
 
     switch(config->GetKind_FluidModel()){
-    case SU2_NONEQ:
+    case FLUIDMODEL::SU2_NONEQ:
       ModelTable << "SU2 NonEq";
       break;
-    case MUTATIONPP:
+    case FLUIDMODEL::MUTATIONPP:
       ModelTable << "Mutation++ NonEq";
       break;
     }

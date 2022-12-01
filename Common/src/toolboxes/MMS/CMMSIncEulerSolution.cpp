@@ -73,7 +73,7 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
     SU2_MPI::Error("Euler equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+  if(config->GetKind_FluidModel() != FLUIDMODEL::CONSTANT_DENSITY)
     SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 

@@ -1149,7 +1149,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
-  addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
+  addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, FLUIDMODEL::STANDARD_AIR);
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
@@ -2101,7 +2101,7 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
    *  \n Use with MARKER_ANALYZE. \ingroup Config*/
-  addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
+  addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, MASSFLUX_WEIGHTED);
   /*!\brief COMM_LEVEL
    *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
   addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
@@ -3317,15 +3317,15 @@ void CConfig::SetnZone(){
 void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_izone, unsigned short val_nDim) {
 
   unsigned short iCFL, iMarker;
-  bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
-                    (Kind_FluidModel == IDEAL_GAS) ||
-                    (Kind_FluidModel == INC_IDEAL_GAS) ||
-                    (Kind_FluidModel == FLUID_MIXTURE) ||
-                    (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
-                    (Kind_FluidModel == CONSTANT_DENSITY));
-  bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
-                    (Kind_FluidModel == SU2_NONEQ));
-  bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
+  bool ideal_gas = ((Kind_FluidModel == FLUIDMODEL::STANDARD_AIR) ||
+                    (Kind_FluidModel == FLUIDMODEL::IDEAL_GAS) ||
+                    (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS) ||
+                    (Kind_FluidModel == FLUIDMODEL::FLUID_MIXTURE) ||
+                    (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS_POLY) ||
+                    (Kind_FluidModel == FLUIDMODEL::CONSTANT_DENSITY));
+  bool noneq_gas = ((Kind_FluidModel == FLUIDMODEL::MUTATIONPP) ||
+                    (Kind_FluidModel == FLUIDMODEL::SU2_NONEQ));
+  bool standard_air = ((Kind_FluidModel == FLUIDMODEL::STANDARD_AIR));
   bool nemo = GetNEMOProblem();
 
   if (nZone > 1){
@@ -3386,7 +3386,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 #endif
 
   /*--- Check if CoolProp is used with non-dimensionalization. ---*/
-  if (Kind_FluidModel == COOLPROP && Ref_NonDim != DIMENSIONAL) {
+  if (Kind_FluidModel == FLUIDMODEL::COOLPROP && Ref_NonDim != DIMENSIONAL) {
     SU2_MPI::Error("CoolProp can not be used with non-dimensionalization.", CURRENT_FUNCTION);
   }
 
@@ -3796,7 +3796,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
-    if (Kind_FluidModel == FLUID_MIXTURE) {
+    if (Kind_FluidModel == FLUIDMODEL::FLUID_MIXTURE) {
       /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
        equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models.
        * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active.--- */
@@ -3887,11 +3887,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
     }
 
-    if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
+    if (Kind_FluidModel == FLUIDMODEL::SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
       SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
     }
 
-    if (Kind_FluidModel == MUTATIONPP &&
+    if (Kind_FluidModel == FLUIDMODEL::MUTATIONPP &&
         (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
       SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.",
                      CURRENT_FUNCTION);
@@ -4841,7 +4841,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
     if ((Kind_DensityModel == INC_DENSITYMODEL::CONSTANT) || (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ))
-      Kind_FluidModel = CONSTANT_DENSITY;
+      Kind_FluidModel = FLUIDMODEL::CONSTANT_DENSITY;
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
@@ -4856,20 +4856,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
+    if (Kind_FluidModel != FLUIDMODEL::INC_IDEAL_GAS && Kind_FluidModel != FLUIDMODEL::INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUIDMODEL::FLUID_MIXTURE) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
-    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_IDEAL_GAS) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+    if ((Kind_FluidModel == FLUIDMODEL::CONSTANT_DENSITY) || (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS) || (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_IDEAL_GAS/INC_IDEAL_GAS_POLY are for incompressible only.", CURRENT_FUNCTION);
     }
   }
 
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
     if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
-      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLUID_MIXTURE)) {
+      if ((Kind_FluidModel != FLUIDMODEL::INC_IDEAL_GAS) && (Kind_FluidModel != FLUIDMODEL::INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLUIDMODEL::FLUID_MIXTURE)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
@@ -4878,12 +4878,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check the coefficients for the polynomial models. ---*/
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
-    if ((Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL) || (Kind_ConductivityModel == CONDUCTIVITYMODEL::POLYNOMIAL) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+    if ((Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL) || (Kind_ConductivityModel == CONDUCTIVITYMODEL::POLYNOMIAL) || (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
     }
   }
 
-  if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == FLUIDMODEL::INC_IDEAL_GAS_POLY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetCp_PolyCoeff(iVar);
@@ -6073,14 +6073,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if (Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == FLUIDMODEL::SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if (Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == FLUIDMODEL::SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
@@ -6826,7 +6826,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if (Kind_FluidModel == MUTATIONPP)
+          if (Kind_FluidModel == FLUIDMODEL::MUTATIONPP)
             SU2_MPI::Error("Implicit time scheme is not yet implemented with Mutation++. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
@@ -8270,23 +8270,25 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
   return Filename;
 }
 
-unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
+SOLVER_TYPE CConfig::GetContainerPosition(RUNTIME_TYPE val_eqsystem) {
 
   switch (val_eqsystem) {
-    case RUNTIME_FLOW_SYS:      return FLOW_SOL;
-    case RUNTIME_TURB_SYS:      return TURB_SOL;
-    case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_SPECIES_SYS:   return SPECIES_SOL;
-    case RUNTIME_HEAT_SYS:      return HEAT_SOL;
-    case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
-    case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
-    case RUNTIME_ADJSPECIES_SYS:return ADJSPECIES_SOL;
-    case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
-    case RUNTIME_RADIATION_SYS: return RAD_SOL;
-    case RUNTIME_MULTIGRID_SYS: return 0;
+    case RUNTIME_TYPE::FLOW:      return SOLVER_TYPE::FLOW;
+    case RUNTIME_TYPE::TURB:      return SOLVER_TYPE::TURB;
+    case RUNTIME_TYPE::TRANS:     return SOLVER_TYPE::TRANS;
+    case RUNTIME_TYPE::SPECIES:   return SOLVER_TYPE::SPECIES;
+    case RUNTIME_TYPE::HEAT:      return SOLVER_TYPE::HEAT;
+    case RUNTIME_TYPE::FEA:       return SOLVER_TYPE::FEA;
+    //case RUNTIME_TYPE::FEA:       return SOLVER_TYPE::FLOW; // main solver
+    case RUNTIME_TYPE::ADJFLOW:   return SOLVER_TYPE::ADJFLOW;
+    case RUNTIME_TYPE::ADJTURB:   return SOLVER_TYPE::ADJTURB;
+    case RUNTIME_TYPE::ADJSPECIES:return SOLVER_TYPE::ADJSPECIES;
+    case RUNTIME_TYPE::ADJFEA:    return SOLVER_TYPE::ADJFEA;
+    //case RUNTIME_TYPE::ADJFEA:    return SOLVER_TYPE::ADJFLOW; // main solver
+    case RUNTIME_TYPE::RADIATION: return SOLVER_TYPE::RAD;
+    case RUNTIME_TYPE::MULTIGRID: return SOLVER_TYPE::NO_SOLVER;
   }
-  return 0;
+  return SOLVER_TYPE::NO_SOLVER;
 }
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
@@ -8303,7 +8305,7 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
 }
 
 void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
-                             unsigned short val_system) {
+                             RUNTIME_TYPE val_system) {
 
   /*--- Set the simulation global time ---*/
 
@@ -8313,7 +8315,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   /*--- Set the solver methods ---*/
 
   auto SetFlowParam = [&]() {
-    if (val_system == RUNTIME_FLOW_SYS) {
+    if (val_system == RUNTIME_TYPE::FLOW) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                             Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                             MUSCL_Flow, NONE);
@@ -8322,7 +8324,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   };
 
   auto SetTurbParam = [&]() {
-    if (val_system == RUNTIME_TURB_SYS) {
+    if (val_system == RUNTIME_TYPE::TURB) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                             Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                             MUSCL_Turb, NONE);
@@ -8331,7 +8333,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   };
 
   auto SetSpeciesParam = [&]() {
-    if (val_system == RUNTIME_SPECIES_SYS) {
+    if (val_system == RUNTIME_TYPE::SPECIES) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
                             Kind_Upwind_Species, Kind_SlopeLimit_Species,
                             MUSCL_Species, NONE);
@@ -8340,7 +8342,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   };
 
   auto SetAdjFlowParam = [&]() {
-    if (val_system == RUNTIME_ADJFLOW_SYS) {
+    if (val_system == RUNTIME_TYPE::ADJFLOW) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                             Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                             MUSCL_AdjFlow, NONE);
@@ -8356,7 +8358,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       SetFlowParam();
       SetSpeciesParam();
 
-      if (val_system == RUNTIME_HEAT_SYS) {
+      if (val_system == RUNTIME_TYPE::HEAT) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
@@ -8366,13 +8368,13 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       SetTurbParam();
       SetSpeciesParam();
 
-      if (val_system == RUNTIME_TRANS_SYS) {
+      if (val_system == RUNTIME_TYPE::TRANS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               MUSCL_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
-      if (val_system == RUNTIME_HEAT_SYS) {
+      if (val_system == RUNTIME_TYPE::HEAT) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
@@ -8380,7 +8382,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     case MAIN_SOLVER::FEM_EULER:
     case MAIN_SOLVER::FEM_NAVIER_STOKES:
     case MAIN_SOLVER::FEM_LES:
-      if (val_system == RUNTIME_FLOW_SYS) {
+      if (val_system == RUNTIME_TYPE::FLOW) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               MUSCL_Flow, Kind_FEM_Flow);
@@ -8397,7 +8399,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       SetTurbParam();
       SetAdjFlowParam();
 
-      if (val_system == RUNTIME_ADJTURB_SYS) {
+      if (val_system == RUNTIME_TYPE::ADJTURB) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               MUSCL_AdjTurb, NONE);
@@ -8405,7 +8407,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
-      if (val_system == RUNTIME_HEAT_SYS) {
+      if (val_system == RUNTIME_TYPE::HEAT) {
         SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
@@ -8415,7 +8417,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
-      if (val_system == RUNTIME_FEA_SYS) {
+      if (val_system == RUNTIME_TYPE::FEA) {
         SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE , NONE, NONE);
         SetKind_TimeIntScheme(NONE);
       }

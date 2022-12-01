@@ -51,7 +51,7 @@ protected:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+                           unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output);
 
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -233,7 +233,7 @@ public:
                     CConfig *config,
                     unsigned short iMesh,
                     unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
+                    RUNTIME_TYPE RunTime_EqSystem,
                     bool Output) override;
 
   /*!
@@ -246,8 +246,8 @@ public:
     Total_ComboObj = EvaluateCommonObjFunc(*config);
 
     if (config->GetWeakly_Coupled_Heat()) {
-      solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
-      Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
+      solver[SOLVER_TYPE::HEAT]->Evaluate_ObjFunc(config, solver);
+      Total_ComboObj += solver[SOLVER_TYPE::HEAT]->GetTotal_ComboObj();
     }
   }
 
@@ -361,7 +361,7 @@ public:
                             CConfig *config,
                             unsigned short iRKStep,
                             unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
+                            RUNTIME_TYPE RunTime_EqSystem) final;
 
   /*!
    * \brief Load a solution from a restart file.

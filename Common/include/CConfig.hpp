@@ -493,8 +493,8 @@ private:
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
-  unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
-  Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
+  FLUIDMODEL Kind_FluidModel;  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
+  unsigned short Kind_InitOption,  /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,           /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,           /*!< \brief Kind of the dynamic mesh movement. */
@@ -3757,7 +3757,7 @@ public:
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
    */
-  unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+  FLUIDMODEL GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
@@ -6300,7 +6300,7 @@ public:
    * \param[in] val_eqsystem - Equation that is being solved.
    * \return Index on the solution container.
    */
-  unsigned short GetContainerPosition(unsigned short val_eqsystem);
+  SOLVER_TYPE GetContainerPosition(RUNTIME_TYPE val_eqsystem);
 
   /*!
    * \brief Value of the minimum residual value (log10 scale).
@@ -6427,7 +6427,7 @@ public:
    * \param[in] val_solver - Solver of the simulation.
    * \param[in] val_system - Runtime system that we are solving.
    */
-  void SetGlobalParam(MAIN_SOLVER val_solver, unsigned short val_system);
+  void SetGlobalParam(MAIN_SOLVER val_solver, RUNTIME_TYPE val_system);
 
   /*!
    * \brief Center of rotation for a rotational periodic boundary.

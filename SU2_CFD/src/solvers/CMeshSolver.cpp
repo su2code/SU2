@@ -816,8 +816,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Communicate the loaded displacements. ---*/
-  solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::MESH]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::MESH]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- Init the linear system solution. ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {

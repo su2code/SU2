@@ -46,7 +46,7 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
-  void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void SetRestricted_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
@@ -60,7 +60,7 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
-  void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void SetRestricted_EddyVisc(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 public:
@@ -79,6 +79,6 @@ public:
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                             CNumerics ******numerics_container, CConfig **config,
-                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+                            RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
 };

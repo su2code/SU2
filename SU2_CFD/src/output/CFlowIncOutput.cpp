@@ -195,10 +195,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
 void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* heat_solver = solver[HEAT_SOL];
-  CSolver* rad_solver  = solver[RAD_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
+  CSolver* flow_solver = solver[SOLVER_TYPE::FLOW];
+  CSolver* heat_solver = solver[SOLVER_TYPE::HEAT];
+  CSolver* rad_solver  = solver[SOLVER_TYPE::RAD];
+  CSolver* mesh_solver = solver[SOLVER_TYPE::MESH];
 
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
@@ -280,7 +280,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetCustomOutputs(solver, geometry, config);
 
-  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+  SetCustomAndComboObjectives(SOLVER_TYPE::FLOW, config, solver);
 
 }
 
@@ -368,13 +368,13 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const auto* Node_Flow = solver[SOLVER_TYPE::FLOW]->GetNodes();
   const CVariable* Node_Heat = nullptr;
   const CVariable* Node_Rad = nullptr;
   auto* Node_Geo = geometry->nodes;
 
   if (weakly_coupled_heat){
-    Node_Heat = solver[HEAT_SOL]->GetNodes();
+    Node_Heat = solver[SOLVER_TYPE::HEAT]->GetNodes();
   }
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
@@ -390,7 +390,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   // Radiation solver
   if (config->AddRadiation()){
-    Node_Rad = solver[RAD_SOL]->GetNodes();
+    Node_Rad = solver[SOLVER_TYPE::RAD]->GetNodes();
     SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
   }
 
@@ -401,21 +401,21 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
 
-  const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
+  const su2double factor = solver[SOLVER_TYPE::FLOW]->GetReferenceDynamicPressure();
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[SOLVER_TYPE::FLOW]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
 
-  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
-  SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
-  SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 0));
+  SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 1));
+  SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 2));
   if (nDim == 3)
-    SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, 3));
   if (config->GetEnergy_Equation())
-    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[SOLVER_TYPE::FLOW]->LinSysRes(iPoint, nDim+1));
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));

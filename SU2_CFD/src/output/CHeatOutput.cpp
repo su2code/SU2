@@ -75,7 +75,7 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(conf
 
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  CSolver* heat_solver = solver[HEAT_SOL];
+  CSolver* heat_solver = solver[SOLVER_TYPE::HEAT];
 
   SetHistoryOutputValue("TOTAL_HEATFLUX", heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("MAXIMUM_HEATFLUX", heat_solver->GetTotal_MaxHeatFlux());
@@ -90,7 +90,7 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
-  SetCustomAndComboObjectives(HEAT_SOL, config, solver);
+  SetCustomAndComboObjectives(SOLVER_TYPE::HEAT, config, solver);
 }
 
 
@@ -132,7 +132,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
+  CVariable* Node_Heat = solver[SOLVER_TYPE::HEAT]->GetNodes();
   const auto Node_Geo  = geometry->nodes;
 
   // Grid coordinates
@@ -142,7 +142,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Residuals
-  SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes(iPoint, 0));
+  SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[SOLVER_TYPE::HEAT]->LinSysRes(iPoint, 0));
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 }
@@ -152,7 +152,7 @@ void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   if (!config->GetViscous_Wall(iMarker)) return;
 
   /* Heat flux value at each surface grid node. */
-  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));
+  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[SOLVER_TYPE::HEAT]->GetHeatFlux(iMarker, iVertex));
 
 }
 

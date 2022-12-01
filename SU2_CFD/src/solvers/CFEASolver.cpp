@@ -554,7 +554,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
 }
 
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
-                               unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
+                               unsigned short iMesh, unsigned long Iteration, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
   const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);

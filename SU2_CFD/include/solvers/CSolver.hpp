@@ -437,7 +437,7 @@ public:
                                            CConfig *config,
                                            unsigned short iRKStep,
                                            unsigned short iMesh,
-                                           unsigned short RunTime_EqSystem) { }
+                                           RUNTIME_TYPE RunTime_EqSystem) { }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -648,7 +648,7 @@ public:
                                                 CNumerics **numerics,
                                                 CConfig *config,
                                                 unsigned short iMesh,
-                                                unsigned short RunTime_EqSystem) {}
+                                                RUNTIME_TYPE RunTime_EqSystem) {}
 
   /*!
    * \brief A virtual member.
@@ -660,7 +660,7 @@ public:
    */
   inline virtual void ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                              CNumerics **numerics, CConfig *config,
-                                             unsigned short iMesh, unsigned short RunTime_EqSystem) {}
+                                             unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) {}
 
   /*!
    * \brief A virtual member.
@@ -730,7 +730,7 @@ public:
                                     CConfig *config,
                                     unsigned short iMesh,
                                     unsigned short iRKStep,
-                                    unsigned short RunTime_EqSystem,
+                                    RUNTIME_TYPE RunTime_EqSystem,
                                     bool Output) { }
 
   /*!
@@ -749,7 +749,7 @@ public:
                                     CNumerics **numerics,
                                     unsigned short iMesh,
                                     unsigned long Iteration,
-                                    unsigned short RunTime_EqSystem,
+                                    RUNTIME_TYPE RunTime_EqSystem,
                                     bool Output) { }
 
   /*!

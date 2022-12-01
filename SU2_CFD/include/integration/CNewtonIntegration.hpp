@@ -152,10 +152,10 @@ private:
       (*preconditioner)(u, v);
       return 0;
     }
-    auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+    auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[SOLVER_TYPE::FLOW]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    iters = solvers[SOLVER_TYPE::FLOW]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
     eps = eps_t;
     return iters;
   }
@@ -204,7 +204,7 @@ public:
    */
   void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                            CNumerics ******numerics_container, CConfig **config,
-                           unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+                           RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Implementation of matrix-vector product with the real Jacobian of the nonlinear residuals.

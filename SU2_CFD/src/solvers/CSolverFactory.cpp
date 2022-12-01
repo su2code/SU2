@@ -63,135 +63,135 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
 
   switch (kindMainSolver) {
     case MAIN_SOLVER::TEMPLATE_SOLVER:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TEMPLATE, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::TEMPLATE, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::INC_EULER:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::EULER:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::NEMO_EULER:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::INC_NAVIER_STOKES:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::NAVIER_STOKES:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::RANS:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      solver[TRANS_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TURB] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TRANS] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::INC_RANS:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TURB] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
-      solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::ADJ_EULER:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_EULER, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::ADJ_RANS:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TURB]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJTURB] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_EULER:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
-      solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJSPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_RANS:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
-      solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TURB]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJTURB] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJSPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
-      solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJRAD]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
-      solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
-      solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJHEAT] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJRAD]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJSPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
-      solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
-      solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
-      solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJHEAT] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::SPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJSPECIES] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::TURB]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJTURB] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::RAD]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJRAD]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
     break;
     case MAIN_SOLVER::DISC_ADJ_HEAT:
-      solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::HEAT]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJHEAT] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::FEM_ELASTICITY:
-      solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FEA] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      solver[FEA_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
-      solver[ADJFEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FEA]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFEA] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::FEM_EULER:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_LES:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::FEM_RANS:
       SU2_MPI::Error("FEM RANS not available", CURRENT_FUNCTION);
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM_NS:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::FLOW]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[SOLVER_TYPE::ADJFLOW] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       SU2_MPI::Error("Adjoint FEM RANS not available", CURRENT_FUNCTION);
@@ -200,8 +200,8 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver = nullptr;
   }
 
-  solver[MESH_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::MESH, solver, geometry, config, iMGLevel);
-  solver[ADJMESH_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
+  solver[SOLVER_TYPE::MESH]    = CreateSubSolver(SUB_SOLVER_TYPE::MESH, solver, geometry, config, iMGLevel);
+  solver[SOLVER_TYPE::ADJMESH] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
 
   return solver;
 
@@ -244,7 +244,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FEA:
-      genericSolver = new CDiscAdjFEASolver(geometry, config, solver[FEA_SOL], RUNTIME_FEA_SYS, iMGLevel);
+      genericSolver = new CDiscAdjFEASolver(geometry, config, solver[SOLVER_TYPE::FEA], RUNTIME_TYPE::FEA, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_MESH:
@@ -252,7 +252,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FLOW:
-      genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+      genericSolver = new CDiscAdjSolver(geometry, config, solver[SOLVER_TYPE::FLOW], RUNTIME_TYPE::FLOW, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::EULER:
@@ -318,7 +318,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_RADIATION:
       if (config->AddRadiation()){
-        genericSolver = new CDiscAdjSolver(geometry, config, solver[RAD_SOL], RUNTIME_RADIATION_SYS, iMGLevel);
+        genericSolver = new CDiscAdjSolver(geometry, config, solver[SOLVER_TYPE::RAD], RUNTIME_TYPE::RADIATION, iMGLevel);
       }
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
@@ -341,15 +341,15 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
   if (!adjoint){
     switch (TurbModelFamily(kindTurbModel)) {
       case TURB_FAMILY::SA:
-        turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[SOLVER_TYPE::FLOW]->GetFluidModel());
+        solver[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
       case TURB_FAMILY::KW:
         turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
         break;
       case TURB_FAMILY::NONE:
         SU2_MPI::Error("Trying to create TurbSolver container but TURB_MODEL=NONE.", CURRENT_FUNCTION);
@@ -359,7 +359,7 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
 
     if (config->GetDiscrete_Adjoint()){
       if (!config->GetFrozen_Visc_Disc())
-        turbSolver = new CDiscAdjSolver(geometry, config, solver[TURB_SOL], RUNTIME_TURB_SYS, iMGLevel);
+        turbSolver = new CDiscAdjSolver(geometry, config, solver[SOLVER_TYPE::TURB], RUNTIME_TYPE::TURB, iMGLevel);
     } else {
       if (!config->GetFrozen_Visc_Cont())
         turbSolver = new CAdjTurbSolver(geometry, config, iMGLevel);
@@ -377,9 +377,9 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
     switch (kindTransModel) {      
       case TURB_TRANS_MODEL::LM :
         transSolver = new CTransLMSolver(geometry, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
         break;      
       case TURB_TRANS_MODEL::NONE:        
         break;
@@ -395,7 +395,7 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     if (adjoint){
-      speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
+      speciesSolver = new CDiscAdjSolver(geometry, config, solver[SOLVER_TYPE::SPECIES], RUNTIME_TYPE::SPECIES, iMGLevel);
     } else {
       speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
     }
@@ -413,7 +413,7 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
   if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()){
     if (adjoint){
       if (config->GetDiscrete_Adjoint()){
-        heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
+        heatSolver = new CDiscAdjSolver(geometry, config, solver[SOLVER_TYPE::HEAT], RUNTIME_TYPE::HEAT, iMGLevel);
       }
       else {
         SU2_MPI::Error("No continuous adjoint heat solver available.", CURRENT_FUNCTION);
@@ -436,7 +436,7 @@ CSolver* CSolverFactory::CreateMeshSolver(CSolver **solver, CGeometry *geometry,
       meshSolver = new CMeshSolver(geometry, config);
     }
     if (adjoint && config->GetDiscrete_Adjoint()){
-      meshSolver = new CDiscAdjMeshSolver(geometry, config, solver[MESH_SOL]);
+      meshSolver = new CDiscAdjMeshSolver(geometry, config, solver[SOLVER_TYPE::MESH]);
     }
   }
   return meshSolver;
@@ -473,14 +473,14 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
   switch (kindFlowSolver) {
     case SUB_SOLVER_TYPE::EULER:
       flowSolver = new CEulerSolver(geometry, config, iMGLevel);
-      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
       break;
     case SUB_SOLVER_TYPE::NAVIER_STOKES:
       flowSolver = new CNSSolver(geometry, config, iMGLevel);
       break;
     case SUB_SOLVER_TYPE::INC_EULER:
       flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
-      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
       break;
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
       flowSolver = new CIncNSSolver(geometry, config, iMGLevel);

@@ -30,7 +30,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_sol,
-                               unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+                               RUNTIME_TYPE Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   /*-- Store some information about direct solver ---*/
 
@@ -91,19 +91,19 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nodes->AllocateAdjointSolutionExtra(nVarExtra);
 
   switch(KindDirect_Solver){
-  case RUNTIME_FLOW_SYS:
+  case RUNTIME_TYPE::FLOW:
     SolverName = "ADJ.FLOW";
     break;
-  case RUNTIME_HEAT_SYS:
+  case RUNTIME_TYPE::HEAT:
     SolverName = "ADJ.HEAT";
     break;
-  case RUNTIME_TURB_SYS:
+  case RUNTIME_TYPE::TURB:
     SolverName = "ADJ.TURB";
     break;
-  case RUNTIME_SPECIES_SYS:
+  case RUNTIME_TYPE::SPECIES:
     SolverName = "ADJ.SPECIES";
     break;
-  case RUNTIME_RADIATION_SYS:
+  case RUNTIME_TYPE::RADIATION:
     SolverName = "ADJ.RAD";
     break;
   default:
@@ -182,7 +182,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+  if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TYPE::FLOW && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -222,7 +222,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
-  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TYPE::FLOW) && config->GetBoolTurbomachinery()){
 
     BPressure = config->GetPressureOut_BC();
     Temperature = config->GetTotalTemperatureIn_BC();
@@ -239,7 +239,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
   /*--- Register incompressible initialization values as input ---*/
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      ((KindDirect_Solver == RUNTIME_FLOW_SYS &&
+      ((KindDirect_Solver == RUNTIME_TYPE::FLOW &&
         (!config->GetBoolTurbomachinery())))) {
 
     /*--- Access the velocity (or pressure) and temperature at the
@@ -271,7 +271,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
   /*--- Register incompressible radiation values as input ---*/
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      ((KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+      ((KindDirect_Solver == RUNTIME_TYPE::RADIATION &&
         (!config->GetBoolTurbomachinery())))) {
 
     /*--- Access the nondimensional freestream temperature. ---*/
@@ -388,7 +388,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TYPE::FLOW) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
@@ -402,7 +402,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TYPE::FLOW) && config->GetBoolTurbomachinery()){
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
@@ -413,7 +413,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      (KindDirect_Solver == RUNTIME_FLOW_SYS &&
+      (KindDirect_Solver == RUNTIME_TYPE::FLOW &&
        (!config->GetBoolTurbomachinery()))) {
 
     su2double Local_Sens_ModVel, Local_Sens_BPress, Local_Sens_Temp;
@@ -428,7 +428,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
-      (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+      (KindDirect_Solver == RUNTIME_TYPE::RADIATION &&
        (!config->GetBoolTurbomachinery()))) {
 
     su2double Local_Sens_Temp_Rad;
@@ -579,7 +579,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                   unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+                                   unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   SU2_OMP_MASTER
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
   END_SU2_OMP_MASTER
@@ -616,20 +616,20 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver == RUNTIME_TURB_SYS) {
+  if (KindDirect_Solver == RUNTIME_TYPE::TURB) {
     skipVars += nDim + 2;
   }
 
-  if (KindDirect_Solver == RUNTIME_SPECIES_SYS) {
+  if (KindDirect_Solver == RUNTIME_TYPE::SPECIES) {
     // Skip the number of Flow Vars and Turb Vars to get to the adjoint species vars
     skipVars += nDim + 2;
-    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
+    if (rans) skipVars += solver[MESH_0][SOLVER_TYPE::TURB]->GetnVar();
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/
-  if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
+  if (KindDirect_Solver == RUNTIME_TYPE::RADIATION) {
     skipVars += nDim + 2;
-    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
+    if (rans) skipVars += solver[MESH_0][SOLVER_TYPE::TURB]->GetnVar();
   }
 
   BasicLoadRestart(geometry[MESH_0], config, restart_filename, skipVars);
@@ -638,7 +638,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
 
-    const auto& fineSol = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution();
+    const auto& fineSol = solver[iMesh-1][SOLVER_TYPE::ADJFLOW]->GetNodes()->GetSolution();
 
     for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -650,7 +650,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
         for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] += weight * fineSol(Point_Fine, iVar);
       }
-      solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
+      solver[iMesh][SOLVER_TYPE::ADJFLOW]->GetNodes()->SetSolution(iPoint, Solution);
     }
   }
 }

@@ -33,7 +33,7 @@ CSingleGridIntegration::CSingleGridIntegration() : CIntegration() { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,
-                                                  unsigned short RunTime_EqSystem, unsigned short iZone,
+                                                  RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
 
   const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
@@ -76,13 +76,13 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
-  if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
-    SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
+  if (RunTime_EqSystem == RUNTIME_TYPE::HEAT) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[SOLVER_TYPE::HEAT]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
 
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+  if (RunTime_EqSystem == RUNTIME_TYPE::TURB) {
 
     for (unsigned short iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
 
@@ -107,7 +107,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   END_SU2_OMP_PARALLEL
 }
 
-void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CSingleGridIntegration::SetRestricted_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iChildren;
@@ -150,7 +150,7 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 
 }
 
-void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CSingleGridIntegration::SetRestricted_EddyVisc(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 
   unsigned long iVertex, Point_Fine, Point_Coarse;

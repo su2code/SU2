@@ -39,7 +39,7 @@
 class CDiscAdjFEASolver final : public CSolver {
 private:
   static constexpr size_t MAXNVAR = 9;  /*!< \brief Max number of variables, for static arrays. */
-  unsigned short KindDirect_Solver = 0;
+  RUNTIME_TYPE KindDirect_Solver;
   CSolver *direct_solver = nullptr;
 
   /*!
@@ -129,7 +129,7 @@ public:
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
    */
-  CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+  CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver* solver, RUNTIME_TYPE Kind_Solver, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
@@ -335,7 +335,7 @@ public:
                     CConfig *config,
                     unsigned short iMesh,
                     unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
+                    RUNTIME_TYPE RunTime_EqSystem,
                     bool Output) override;
 
   /*!

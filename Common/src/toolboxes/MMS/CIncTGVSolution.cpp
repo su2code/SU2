@@ -78,7 +78,7 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Navier Stokes equations must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+  if(config->GetKind_FluidModel() != FLUIDMODEL::CONSTANT_DENSITY)
     SU2_MPI::Error("Constant density fluid model must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 

@@ -71,8 +71,8 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
   unsigned long iPoint;
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
-  auto dirNodes = solvers0[FEA_SOL]->GetNodes();
-  auto adjNodes = solvers0[ADJFEA_SOL]->GetNodes();
+  auto dirNodes = solvers0[SOLVER_TYPE::FEA]->GetNodes();
+  auto adjNodes = solvers0[SOLVER_TYPE::ADJFEA]->GetNodes();
 
   /*--- For the dynamic adjoint, load direct solutions from restart files. ---*/
 
@@ -108,7 +108,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
     }
   }
 
-  solvers0[ADJFEA_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
+  solvers0[SOLVER_TYPE::ADJFEA]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, 0, RUNTIME_TYPE::ADJFEA, false);
 
 }
 
@@ -122,7 +122,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && iZone == ZONE_0)
       cout << " Loading FEA solution from direct iteration " << val_DirectIter << "." << endl;
-    solver[iZone][iInst][MESH_0][FEA_SOL]->LoadRestart(
+    solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->LoadRestart(
         geometry[iZone][iInst], solver[iZone][iInst], config[iZone], val_DirectIter, update_geo);
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
@@ -130,10 +130,10 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
       cout << " Setting static conditions at direct iteration " << val_DirectIter << "." << endl;
     /*--- Push solution back to correct array ---*/
     for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < solver[iZone][iInst][MESH_0][FEA_SOL]->GetnVar(); iVar++) {
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution(iPoint, iVar, 0.0);
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Accel(iPoint, iVar, 0.0);
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Vel(iPoint, iVar, 0.0);
+      for (iVar = 0; iVar < solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->GetnVar(); iVar++) {
+        solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->GetNodes()->SetSolution(iPoint, iVar, 0.0);
+        solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->GetNodes()->SetSolution_Accel(iPoint, iVar, 0.0);
+        solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->GetNodes()->SetSolution_Vel(iPoint, iVar, 0.0);
       }
     }
   }
@@ -144,10 +144,10 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone],
+  solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone],
                                                                     CrossTerm);
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+  solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
@@ -155,15 +155,15 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
   if (kind_recording != RECORDING::MESH_COORDS) {
     /*--- Register structural displacements as input ---*/
 
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
     /*--- Register variables as input ---*/
 
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   } else {
     /*--- Register topology optimization densities (note direct solver) ---*/
 
-    solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
 
     /*--- Register mesh coordinates for geometric sensitivities ---*/
 
@@ -174,10 +174,10 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                            CConfig** config, unsigned short iZone, unsigned short iInst,
                                            RECORDING kind_recording) {
-  auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
-  auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
+  auto dir_solver = solver[iZone][iInst][MESH_0][SOLVER_TYPE::FEA];
+  auto adj_solver = solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA];
   auto structural_geometry = geometry[iZone][iInst][MESH_0];
-  auto structural_numerics = numerics[iZone][iInst][MESH_0][FEA_SOL];
+  auto structural_numerics = numerics[iZone][iInst][MESH_0][SOLVER_TYPE::FEA];
 
   /*--- Some numerics are only instanciated under these conditions ---*/
   const bool fsi = config[iZone]->GetFSI_Simulation() || config[iZone]->GetMultizone_Problem();
@@ -293,14 +293,14 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
                                           unsigned short iZone, unsigned short iInst) {
   /*--- Register conservative variables as output of the iteration ---*/
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+  solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                              unsigned short iZone, unsigned short iInst) {
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  solver[iZone][iInst][MESH_0][SOLVER_TYPE::ADJFEA]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,
@@ -337,23 +337,23 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     myfile_res << config[iZone]->GetTimeIter() << "\t";
 
-    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone], solvers0);
-    myfile_res << scientific << solvers0[FEA_SOL]->GetTotal_ComboObj() << "\t";
+    solvers0[SOLVER_TYPE::FEA]->Evaluate_ObjFunc(config[iZone], solvers0);
+    myfile_res << scientific << solvers0[SOLVER_TYPE::FEA]->GetTotal_ComboObj() << "\t";
 
     for (iVar = 0; iVar < config[iZone]->GetnElasticityMod(); iVar++)
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
+      myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_E(iVar) << "\t";
     for (iVar = 0; iVar < config[iZone]->GetnPoissonRatio(); iVar++)
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
+      myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_Nu(iVar) << "\t";
     if (dynamic) {
       for (iVar = 0; iVar < config[iZone]->GetnMaterialDensity(); iVar++)
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
+        myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_Rho(iVar) << "\t";
     }
     if (de_effects) {
       for (iVar = 0; iVar < config[iZone]->GetnElectric_Field(); iVar++)
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
+        myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_EField(iVar) << "\t";
     }
-    for (iVar = 0; iVar < solvers0[ADJFEA_SOL]->GetnDVFEA(); iVar++) {
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
+    for (iVar = 0; iVar < solvers0[SOLVER_TYPE::ADJFEA]->GetnDVFEA(); iVar++) {
+      myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_DVFEA(iVar) << "\t";
     }
 
     myfile_res << endl;
@@ -392,7 +392,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     if (outputDVFEA) {
       unsigned short iDV;
-      unsigned short nDV = solvers0[ADJFEA_SOL]->GetnDVFEA();
+      unsigned short nDV = solvers0[SOLVER_TYPE::ADJFEA]->GetnDVFEA();
 
       myfile_res << "INDEX"
                  << "\t"
@@ -403,7 +403,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
       for (iDV = 0; iDV < nDV; iDV++) {
         myfile_res << iDV;
         myfile_res << "\t";
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
+        myfile_res << scientific << solvers0[SOLVER_TYPE::ADJFEA]->GetTotal_Sens_DVFEA(iDV);
         myfile_res << endl;
       }
 

@@ -45,7 +45,7 @@ protected:
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  unsigned short KindDirect_Solver;
+  RUNTIME_TYPE KindDirect_Solver;
   CSolver *direct_solver;
   vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
   vector<su2double> Sens_Geo;    /*!< \brief Total shape sensitivity for each monitored boundary. */
@@ -82,7 +82,7 @@ public:
    * \param[in] Kind_Solver - The kind of direct solver.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+  CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, RUNTIME_TYPE Kind_Solver, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
@@ -241,7 +241,7 @@ public:
                     CConfig *config,
                     unsigned short iMesh,
                     unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
+                    RUNTIME_TYPE RunTime_EqSystem,
                     bool Output) override;
 
   /*!

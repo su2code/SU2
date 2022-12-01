@@ -461,7 +461,7 @@ public:
                                  CNumerics      **numerics,
                                  CConfig        *config,
                                  unsigned short iMesh,
-                                 unsigned short RunTime_EqSystem) final;
+                                 RUNTIME_TYPE RunTime_EqSystem) final;
 
   /*!
    * \brief Function, which controls the computation of the spatial Jacobian.
@@ -476,7 +476,7 @@ public:
                               CNumerics      **numerics,
                               CConfig        *config,
                               unsigned short iMesh,
-                              unsigned short RunTime_EqSystem) final;
+                              RUNTIME_TYPE RunTime_EqSystem) final;
 
   /*!
    * \brief Function, which determines the values of the tolerances in
@@ -622,7 +622,7 @@ public:
                     CConfig        *config,
                     unsigned short iMesh,
                     unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
+                    RUNTIME_TYPE RunTime_EqSystem,
                     bool           Output) final;
 
   /*!

@@ -1079,7 +1079,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
+                            unsigned short iMesh, RUNTIME_TYPE RunTime_EqSystem) override;
 
   /*!
    * \brief Set a uniform inlet profile

@@ -74,7 +74,7 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+  if(config->GetKind_FluidModel() != FLUIDMODEL::CONSTANT_DENSITY)
     SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 

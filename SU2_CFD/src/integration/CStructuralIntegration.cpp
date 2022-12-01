@@ -32,10 +32,10 @@ CStructuralIntegration::CStructuralIntegration() : CIntegration() { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,
-                                                  unsigned short RunTime_EqSystem, unsigned short iZone,
+                                                  RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
 
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  SOLVER_TYPE SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   CSolver* solver = solver_container[iZone][iInst][MESH_0][SolContainer_Position];
 
@@ -68,7 +68,7 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
 
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,
                                                    CNumerics **numerics, CConfig *config,
-                                                   unsigned short RunTime_EqSystem) {
+                                                   RUNTIME_TYPE RunTime_EqSystem) {
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const auto IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
@@ -126,7 +126,7 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
 }
 
 void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
-                                                  CConfig *config, unsigned short RunTime_EqSystem) {
+                                                  CConfig *config, RUNTIME_TYPE RunTime_EqSystem) {
   unsigned short iMarker;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);

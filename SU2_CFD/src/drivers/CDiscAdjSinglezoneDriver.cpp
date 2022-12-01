@@ -80,7 +80,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       SecondaryVariables = RECORDING::MESH_DEFORM;
     }
     else { SecondaryVariables = RECORDING::MESH_COORDS; }
-    MainSolver = ADJFLOW_SOL;
+    MainSolver = SOLVER_TYPE::ADJFLOW;
     break;
 
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER : case MAIN_SOLVER::DISC_ADJ_FEM_NS : case MAIN_SOLVER::DISC_ADJ_FEM_RANS :
@@ -90,7 +90,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_EULER, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
-    MainSolver = ADJFLOW_SOL;
+    MainSolver = SOLVER_TYPE::ADJFLOW;
     break;
 
   case MAIN_SOLVER::DISC_ADJ_FEM:
@@ -100,7 +100,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_ELASTICITY, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
-    MainSolver = ADJFEA_SOL;
+    MainSolver = SOLVER_TYPE::ADJFEA;
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
@@ -110,7 +110,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::HEAT_EQUATION, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
-    MainSolver = ADJHEAT_SOL;
+    MainSolver = SOLVER_TYPE::ADJHEAT;
     break;
 
   default:
@@ -359,12 +359,12 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
-    ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+    ObjFunc += solver[SOLVER_TYPE::FLOW]->GetTotal_ComboObj();
 
     /*--- These calls to be moved to a generic framework at a next stage        ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
     if (config->GetBoolTurbomachinery()) {
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
+      output_legacy->ComputeTurboPerformance(solver[SOLVER_TYPE::FLOW], geometry, config);
 
       unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
       unsigned short nSpanSections = config->GetnSpanWiseSections();
@@ -388,15 +388,15 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_HEAT:
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
-    ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
+    ObjFunc = solver[SOLVER_TYPE::HEAT]->GetTotal_ComboObj();
     break;
 
   case MAIN_SOLVER::DISC_ADJ_FEM:
-    solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+    solver[SOLVER_TYPE::FEA]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][SOLVER_TYPE::FEA], true);
 
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                    config->GetOuterIter(), config->GetInnerIter());
-    ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
+    ObjFunc = solver[SOLVER_TYPE::FEA]->GetTotal_ComboObj();
     break;
 
   default:
@@ -474,7 +474,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
     solver[MainSolver]->SetSensitivity(geometry, config);
   }
   else { // MESH_DEFORM
-    solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
+    solver[SOLVER_TYPE::ADJMESH]->SetSensitivity(geometry, config, solver[MainSolver]);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/

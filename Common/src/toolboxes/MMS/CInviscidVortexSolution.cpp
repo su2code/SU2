@@ -78,8 +78,8 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
     SU2_MPI::Error("Euler equations must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 
-  if((config->GetKind_FluidModel() != STANDARD_AIR) &&
-     (config->GetKind_FluidModel() != IDEAL_GAS))
+  if((config->GetKind_FluidModel() != FLUIDMODEL::STANDARD_AIR) &&
+     (config->GetKind_FluidModel() != FLUIDMODEL::IDEAL_GAS))
     SU2_MPI::Error("Standard air or ideal gas must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 

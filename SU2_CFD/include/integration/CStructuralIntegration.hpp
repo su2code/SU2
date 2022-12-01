@@ -50,7 +50,7 @@ public:
    */
   void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                             CNumerics ******numerics_container, CConfig **config,
-                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+                            RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Save the solution at different time steps, and reset certain fields for the next timestep.
@@ -70,7 +70,7 @@ private:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
-                             CConfig *config, unsigned short RunTime_EqSystem);
+                             CConfig *config, RUNTIME_TYPE RunTime_EqSystem);
 
   /*!
    * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework.
@@ -81,5 +81,5 @@ private:
    * \param[in] Iteration - Current iteration.
    */
   void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
-                            CConfig *config, unsigned short RunTime_EqSystem);
+                            CConfig *config, RUNTIME_TYPE RunTime_EqSystem);
 };

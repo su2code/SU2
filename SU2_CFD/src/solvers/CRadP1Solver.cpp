@@ -135,7 +135,7 @@ CRadP1Solver::~CRadP1Solver(void) {
 
 }
 
-void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
 
@@ -170,7 +170,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     Energy = nodes->GetSolution(iPoint, 0);
 
     /*--- Retrieve temperature from the flow solver ---*/
-    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+    Temperature = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetTemperature(iPoint);
 
     /*--- Compute the divergence of the radiative flux ---*/
     SourceTerm = Absorption_Coeff*(Energy - 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0));
@@ -234,7 +234,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+    numerics->SetPrimitive(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
     /*--- Radiation variables w/o reconstruction ---*/
 
@@ -455,7 +455,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Retrieve temperature from the flow solver ---*/
-      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+      Temperature = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetTemperature(iPoint);
 
       /*--- Compute the blackbody intensity at the wall. ---*/
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0);

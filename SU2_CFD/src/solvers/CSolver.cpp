@@ -1729,8 +1729,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Store the mean flow, and turbulence solvers more clearly. */
 
-    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
-    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    CSolver *solverFlow = solver_container[iMesh][SOLVER_TYPE::FLOW];
+    CSolver *solverTurb = solver_container[iMesh][SOLVER_TYPE::TURB];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -3549,10 +3549,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   auto profile_filename = config->GetInlet_FileName();
 
   const auto turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
-  const unsigned short nVar_Turb = turbulence ? solver[MESH_0][TURB_SOL]->GetnVar() : 0;
+  const unsigned short nVar_Turb = turbulence ? solver[MESH_0][SOLVER_TYPE::TURB]->GetnVar() : 0;
 
   const auto species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
-  const unsigned short nVar_Species = species ? solver[MESH_0][SPECIES_SOL]->GetnVar() : 0;
+  const unsigned short nVar_Species = species ? solver[MESH_0][SOLVER_TYPE::SPECIES]->GetnVar() : 0;
 
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;

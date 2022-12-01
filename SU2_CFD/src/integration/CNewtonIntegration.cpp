@@ -74,7 +74,7 @@ void CNewtonIntegration::Setup() {
   fullTolResidual = dparam[2];
   finDiffStepND = SU2_TYPE::GetValue(dparam[3]);
 
-  const auto nVar = solvers[FLOW_SOL]->GetnVar();
+  const auto nVar = solvers[SOLVER_TYPE::FLOW]->GetnVar();
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
 
@@ -93,7 +93,7 @@ void CNewtonIntegration::Setup() {
 
   const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
 
-  preconditioner = CPreconditioner<MixedScalar>::Create(kindPrec, solvers[FLOW_SOL]->Jacobian, geometry, config);
+  preconditioner = CPreconditioner<MixedScalar>::Create(kindPrec, solvers[SOLVER_TYPE::FLOW]->Jacobian, geometry, config);
 
   if (!std::is_same<Scalar,MixedScalar>::value) {
     precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
@@ -110,8 +110,8 @@ void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar m
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
     SU2_OMP_SIMD
-    for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
-      solvers[FLOW_SOL]->GetNodes()->AddSolution(iPoint,iVar, mag*dir(iPoint,iVar));
+    for (auto iVar = 0ul; iVar < solvers[SOLVER_TYPE::FLOW]->GetnVar(); ++iVar)
+      solvers[SOLVER_TYPE::FLOW]->GetNodes()->AddSolution(iPoint,iVar, mag*dir(iPoint,iVar));
   }
   END_SU2_OMP_FOR
 }
@@ -124,13 +124,13 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_EXPLICIT);)
   }
 
-  solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solvers[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
 
   if (type == ResEvalType::DEFAULT) {
-    solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
+    solvers[SOLVER_TYPE::FLOW]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
   }
 
-  Space_Integration(geometry, solvers, numerics[FLOW_SOL], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS);
+  Space_Integration(geometry, solvers, numerics[SOLVER_TYPE::FLOW], config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::FLOW);
 
   /*--- Restore default. ---*/
   if (type == ResEvalType::EXPLICIT) {
@@ -150,8 +150,8 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint)
-    for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
-      rmsSol_loc += pow(solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint,iVar), 2);
+    for (auto iVar = 0ul; iVar < solvers[SOLVER_TYPE::FLOW]->GetnVar(); ++iVar)
+      rmsSol_loc += pow(solvers[SOLVER_TYPE::FLOW]->GetNodes()->GetSolution(iPoint,iVar), 2);
   END_SU2_OMP_FOR
 
   atomicAdd(rmsSol_loc, rmsSol);
@@ -166,7 +166,7 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 }
 
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
-                                             CConfig **config_, unsigned short EqSystem, unsigned short iZone,
+                                             CConfig **config_, RUNTIME_TYPE EqSystem, unsigned short iZone,
                                              unsigned short iInst) {
   config = config_[iZone];
   solvers = solvers_[iZone][iInst][MESH_0];
@@ -175,11 +175,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (!setup) { Setup(); setup = true; }
 
-  SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers[SOLVER_TYPE::FLOW]->GetHasHybridParallel())) {
 
   /*--- Save the current solution to be able to perturb it. ---*/
 
-  solvers[FLOW_SOL]->Set_OldSolution();
+  solvers[SOLVER_TYPE::FLOW]->Set_OldSolution();
 
   /*--- Current residual. ---*/
 
@@ -187,18 +187,18 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   /*--- Compute the approximate Jacobian for preconditioning. ---*/
 
-  solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
+  solvers[SOLVER_TYPE::FLOW]->PrepareImplicitIteration(geometry, solvers, config);
 
   if (preconditioner) preconditioner->Build();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
-    LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
+    LinSysRes[i] = SU2_TYPE::GetValue(solvers[SOLVER_TYPE::FLOW]->LinSysRes[i]);
   END_SU2_OMP_FOR
 
   su2double residual = 0.0;
   for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar)
-    residual += log10(solvers[FLOW_SOL]->GetRes_RMS(iVar)) / LinSysRes.GetNVar();
+    residual += log10(solvers[SOLVER_TYPE::FLOW]->GetRes_RMS(iVar)) / LinSysRes.GetNVar();
 
   /*--- Check if startup period should end after this iteration. ---*/
 
@@ -228,7 +228,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   auto iter = config->GetLinear_Solver_Iter();
   Scalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
 
-  auto& linSysSol = GetSolutionVec(solvers[FLOW_SOL]->LinSysSol);
+  auto& linSysSol = GetSolutionVec(solvers[SOLVER_TYPE::FLOW]->LinSysSol);
 
   if (startupPeriod) {
     iter = Preconditioner_impl(LinSysRes, linSysSol, iter, eps);
@@ -242,11 +242,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     /*--- Scale back the residual to trick the CFL adaptation. ---*/
     eps /= toleranceFactor;
   }
-  SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
+  SetSolutionResult(solvers[SOLVER_TYPE::FLOW]->LinSysSol);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    solvers[FLOW_SOL]->SetIterLinSolver(iter);
-    solvers[FLOW_SOL]->SetResLinSolver(eps);
+    solvers[SOLVER_TYPE::FLOW]->SetIterLinSolver(iter);
+    solvers[SOLVER_TYPE::FLOW]->SetResLinSolver(eps);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -254,18 +254,18 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   /*--- Update solution. ---*/
 
-  solvers[FLOW_SOL]->CompleteImplicitIteration(geometry, solvers, config);
+  solvers[SOLVER_TYPE::FLOW]->CompleteImplicitIteration(geometry, solvers, config);
 
   /*--- Call the various post processings. ---*/
 
-  solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+  solvers[SOLVER_TYPE::FLOW]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::FLOW, true);
 
-  solvers[FLOW_SOL]->Postprocessing(geometry, solvers, config, MESH_0);
+  solvers[SOLVER_TYPE::FLOW]->Postprocessing(geometry, solvers, config, MESH_0);
 
   SU2_OMP_MASTER {
-    solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
-    solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
-    solvers[FLOW_SOL]->Friction_Forces(geometry, config);
+    solvers[SOLVER_TYPE::FLOW]->Pressure_Forces(geometry, config);
+    solvers[SOLVER_TYPE::FLOW]->Momentum_Forces(geometry, config);
+    solvers[SOLVER_TYPE::FLOW]->Friction_Forces(geometry, config);
   }
   END_SU2_OMP_MASTER
 
@@ -279,7 +279,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     END_SU2_OMP_MASTER
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint)
-      solvers[FLOW_SOL]->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(MESH_0));
+      solvers[SOLVER_TYPE::FLOW]->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(MESH_0));
     END_SU2_OMP_FOR
   }
 
@@ -301,10 +301,10 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
     su2double delta = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
-                      max(EPS, solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+                      max(EPS, solvers[SOLVER_TYPE::FLOW]->GetNodes()->GetDelta_Time(iPoint));
     SU2_OMP_SIMD
     for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar) {
-      Scalar perturbRes = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes(iPoint,iVar));
+      Scalar perturbRes = SU2_TYPE::GetValue(solvers[SOLVER_TYPE::FLOW]->LinSysRes(iPoint,iVar));
 
       /*--- The global residual had its sign flipped, so we add to get the difference. ---*/
       v(iPoint,iVar) = (perturbRes + LinSysRes(iPoint,iVar)) * factor;
@@ -334,7 +334,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
-      su2double delta = (solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) + dt) /
+      su2double delta = (solvers[SOLVER_TYPE::FLOW]->GetNodes()->GetDelta_Time(iPoint) + dt) /
                         (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
       SU2_OMP_SIMD
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)

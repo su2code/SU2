@@ -160,7 +160,7 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
 
   unsigned short iDim;
 
-  unsigned short nVar = solver[FLOW_SOL]->GetnVar();
+  unsigned short nVar = solver[SOLVER_TYPE::FLOW]->GetnVar();
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -172,12 +172,12 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   /*--- Get a pointer to the fluid model class from the DG-FEM solver
    so that we can access the states below. ---*/
 
-  CFluidModel *DGFluidModel = solver[FLOW_SOL]->GetFluidModel();
+  CFluidModel *DGFluidModel = solver[SOLVER_TYPE::FLOW]->GetFluidModel();
 
   /* Set the pointers for the solution for this element. */
 
   const unsigned long offset = nVar*volElem[iElem].offsetDOFsSolLocal;
-  su2double *solDOFs         = solver[FLOW_SOL]->GetVecSolDOFs() + offset;
+  su2double *solDOFs         = solver[SOLVER_TYPE::FLOW]->GetVecSolDOFs() + offset;
 
   /*--- Get the conservative variables for this particular DOF. ---*/
 
@@ -229,7 +229,7 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
 
 void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  CSolver* flow_solver = solver[FLOW_SOL];
+  CSolver* flow_solver = solver[SOLVER_TYPE::FLOW];
 
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));

@@ -28,7 +28,7 @@
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
-                                     unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+                                     RUNTIME_TYPE Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   adjoint = true;
 
@@ -184,7 +184,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
   unsigned short iVar;
 
-  if (KindDirect_Solver == RUNTIME_FEA_SYS) {
+  if (KindDirect_Solver == RUNTIME_TYPE::FEA) {
 
     const bool pseudo_static = config->GetPseudoStatic();
 
@@ -286,7 +286,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  if (KindDirect_Solver != RUNTIME_FEA_SYS) return;
+  if (KindDirect_Solver != RUNTIME_TYPE::FEA) return;
 
   /*--- Sensitivities of material properties and design variables. ---*/
 
@@ -343,7 +343,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   }
 }
 
-void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
+void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output){
 
   if (config_container->GetTime_Domain()) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)

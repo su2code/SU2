@@ -33,9 +33,9 @@ void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, 
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Average quantities at the inflow and outflow boundaries ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+  solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+  solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
 }
 
@@ -44,12 +44,12 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Average quantities at the inflow and outflow boundaries ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+  solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+  solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
 
   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone],
+  solver[val_iZone][val_iInst][MESH_0][SOLVER_TYPE::FLOW]->GatherInOutAverageValues(config[val_iZone],
                                                                            geometry[val_iZone][val_iInst][MESH_0]);
 }

@@ -34,12 +34,12 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                CSolver *****solver_container,
                                                CNumerics ******numerics_container,
                                                CConfig **config,
-                                               unsigned short RunTime_EqSystem,
+                                               RUNTIME_TYPE RunTime_EqSystem,
                                                unsigned short iZone,
                                                unsigned short iInst) {
 
   unsigned short iMesh, iStep, iLimit = 1;
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  SOLVER_TYPE SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
   /*--- For now, we assume no geometric multigrid. ---*/
@@ -146,7 +146,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             CNumerics **numerics,
                                             CConfig *config, unsigned short iMesh,
                                             unsigned short iStep,
-                                            unsigned short RunTime_EqSystem) {
+                                            RUNTIME_TYPE RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -166,7 +166,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 }
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
-                                    unsigned short RunTime_EqSystem) {
+                                    RUNTIME_TYPE RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

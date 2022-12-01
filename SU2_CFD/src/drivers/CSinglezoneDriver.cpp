@@ -96,7 +96,7 @@ void CSinglezoneDriver::StartSolver() {
 
     /*--- Save iteration solution for libROM ---*/
     if (config_container[MESH_0]->GetSave_libROM()) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+      solver_container[ZONE_0][INST_0][MESH_0][SOLVER_TYPE::FLOW]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                      config_container[ZONE_0], StopCalc);
     }
 
@@ -131,13 +131,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+    solver_container[ZONE_0][INST_0][MESH_0][SOLVER_TYPE::FLOW]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
   }
   else if (config_container[ZONE_0]->GetHeatProblem()) {
     /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
-    solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+    solver_container[ZONE_0][INST_0][MESH_0][SOLVER_TYPE::HEAT]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
   }

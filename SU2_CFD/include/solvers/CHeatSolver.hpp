@@ -93,7 +93,7 @@ public:
                     CConfig *config,
                     unsigned short iMesh,
                     unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
+                    RUNTIME_TYPE RunTime_EqSystem,
                     bool Output) override;
 
   /*!
@@ -390,7 +390,7 @@ public:
                             CConfig *config,
                             unsigned short iRKStep,
                             unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) override;
+                            RUNTIME_TYPE RunTime_EqSystem) override;
 
   /*!
    * \brief Get the heat flux.

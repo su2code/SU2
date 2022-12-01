@@ -235,13 +235,13 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, the initial conditions are set, after the mesh has been moved. --------------------------------------*/
     if (!fsi && config_container[iZone]->GetFluidProblem()) {
-      solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+      solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FLOW]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
     else if (!fsi && config_container[iZone]->GetHeatProblem()) {
       /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
-      solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+      solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::HEAT]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                               solver_container[iZone][INST_0],
                                                                               config_container[iZone], TimeIter);
     }
@@ -552,37 +552,37 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
   switch (interface_types[donorZone][targetZone]) {
 
     case SLIDING_INTERFACE:
-      BroadcastData(FLOW_SOL, FLOW_SOL);
+      BroadcastData(SOLVER_TYPE::FLOW, SOLVER_TYPE::FLOW);
 
       /*--- Additional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
           config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
-        BroadcastData(TURB_SOL, TURB_SOL);
+        BroadcastData(SOLVER_TYPE::TURB, SOLVER_TYPE::TURB);
       }
 
       /*--- Additional transfer for species variables. ---*/
       if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-        BroadcastData(SPECIES_SOL, SPECIES_SOL);
+        BroadcastData(SOLVER_TYPE::SPECIES, SOLVER_TYPE::SPECIES);
       }
       break;
     case CONJUGATE_HEAT_FS:
-      BroadcastData(FLOW_SOL, HEAT_SOL);
+      BroadcastData(SOLVER_TYPE::FLOW, SOLVER_TYPE::HEAT);
       break;
     case CONJUGATE_HEAT_WEAKLY_FS:
-      BroadcastData(HEAT_SOL, HEAT_SOL);
+      BroadcastData(SOLVER_TYPE::HEAT, SOLVER_TYPE::HEAT);
       break;
     case CONJUGATE_HEAT_SF:
-      BroadcastData(HEAT_SOL, FLOW_SOL);
+      BroadcastData(SOLVER_TYPE::HEAT, SOLVER_TYPE::FLOW);
       break;
     case CONJUGATE_HEAT_WEAKLY_SF:
-      BroadcastData(HEAT_SOL, HEAT_SOL);
+      BroadcastData(SOLVER_TYPE::HEAT, SOLVER_TYPE::HEAT);
       break;
     case BOUNDARY_DISPLACEMENTS:
-      BroadcastData(FEA_SOL, MESH_SOL);
+      BroadcastData(SOLVER_TYPE::FEA, SOLVER_TYPE::MESH);
       UpdateMesh = true;
       break;
     case FLOW_TRACTION:
-      BroadcastData(FLOW_SOL, FEA_SOL);
+      BroadcastData(SOLVER_TYPE::FLOW, SOLVER_TYPE::FEA);
       break;
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:

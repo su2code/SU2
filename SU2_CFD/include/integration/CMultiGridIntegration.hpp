@@ -51,7 +51,7 @@ public:
    */
   void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                            CNumerics ******numerics_container, CConfig **config,
-                           unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+                           RUNTIME_TYPE RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
 private:
   /*!
@@ -67,7 +67,7 @@ private:
    */
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
-                       unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
+                       unsigned short iMesh, unsigned short mu, RUNTIME_TYPE RunTime_EqSystem,
                        unsigned short iZone, unsigned short iInst);
 
   /*!
@@ -105,7 +105,7 @@ private:
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void SetRestricted_Gradient(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
@@ -118,7 +118,7 @@ private:
    * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
    */
   void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
-                                 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
+                                 CConfig *config, unsigned short FinestMesh, RUNTIME_TYPE RunTime_EqSystem,
                                  su2double *monitor);
 
   /*!
@@ -130,7 +130,7 @@ private:
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void SetProlongated_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
@@ -141,7 +141,7 @@ private:
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void GetProlongated_Correction(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
@@ -153,7 +153,7 @@ private:
    * \param[in] val_smooth_coeff - Relaxation factor.
    * \param[in] config - Definition of the particular problem.
    */
-  void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
+  void SmoothProlongated_Correction(RUNTIME_TYPE RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                                     unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
 
   /*!
@@ -167,7 +167,7 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
-  void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+  void SetRestricted_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
@@ -179,6 +179,6 @@ private:
    * \param[in] Iteration - Current iteration.
    */
   void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-                     unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+                     RUNTIME_TYPE RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 };

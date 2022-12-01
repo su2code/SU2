@@ -196,7 +196,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     /*--- Skip flow variables and turbulence variables. ---*/
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar() + config->GetnTurbVar();
+    unsigned short skipVars = nDim + solver[MESH_0][SOLVER_TYPE::FLOW]->GetnVar() + config->GetnTurbVar();
 
     /*--- Adjust the number of solution variables in the incompressible
      restart. We always carry a space in nVar for the energy equation in the
@@ -245,19 +245,19 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][SPECIES_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][SPECIES_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::SPECIES]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::SPECIES]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   // Flow-Pre computes/sets mixture properties
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                          RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][SOLVER_TYPE::FLOW]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                          RUNTIME_TYPE::FLOW, false);
   // Update eddy-visc which needs correct mixture density and mixture lam-visc. Note that after this, another Flow-Pre
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+    solver[MESH_0][SOLVER_TYPE::TURB]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   // For feature_multicomp this Scalar-Pre only computes the laminar contribution to mass diffusivity
-  solver[MESH_0][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                             RUNTIME_SPECIES_SYS, false);
+  solver[MESH_0][SOLVER_TYPE::SPECIES]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                             RUNTIME_TYPE::SPECIES, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -271,27 +271,27 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][SPECIES_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][SOLVER_TYPE::SPECIES]->GetNodes()->GetSolution(Point_Fine);
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
+      solver[iMesh][SOLVER_TYPE::SPECIES]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
     }
     END_SU2_OMP_FOR
 
-    solver[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::SPECIES]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::SPECIES]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
+    solver[iMesh][SOLVER_TYPE::FLOW]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TYPE::FLOW,
                                            false);
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-      solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+      solver[iMesh][SOLVER_TYPE::TURB]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
-    solver[iMesh][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                              RUNTIME_SPECIES_SYS, false);
+    solver[iMesh][SOLVER_TYPE::SPECIES]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                              RUNTIME_TYPE::SPECIES, false);
   }
 
   /*--- Go back to single threaded execution. ---*/
@@ -307,7 +307,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 }
 
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
+                                   unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem,
                                    bool Output) {
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
@@ -315,8 +315,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
-      su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
+      solver_container[SOLVER_TYPE::FLOW]->GetFluidModel()->SetMassDiffusivityModel(config);
+      su2double mass_diffusivity = solver_container[SOLVER_TYPE::FLOW]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
 
@@ -376,11 +376,11 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       /*--- Allocate the value at the inlet ---*/
 
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_inlet = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -397,7 +397,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_inlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double density = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
@@ -525,11 +525,11 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     } else {  // weak BC
 
       /*--- Allocate the value at the outlet ---*/
-      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_outlet = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -552,7 +552,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_outlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double density = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
@@ -583,7 +583,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       /*--- Set primitive variables w/o reconstruction ---*/
 
-      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+      numerics->SetPrimitive(solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
       /*--- Set scalar variables w/o reconstruction ---*/
 

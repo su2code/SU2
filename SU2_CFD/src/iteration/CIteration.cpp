@@ -95,7 +95,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
       /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
 
-      solver[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry[MESH_0], config, TimeIter);
+      solver[MESH_0][SOLVER_TYPE::FLOW]->Aeroelastic(surface_movement, geometry[MESH_0], config, TimeIter);
 
       /*--- Deform the volume grid around the new boundary locations ---*/
 
@@ -163,11 +163,11 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
   /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
 
-  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+  solver[SOLVER_TYPE::MESH]->SetMesh_Stiffness(geometry, numerics[SOLVER_TYPE::MESH], config);
 
   /*--- Deform the volume grid around the new boundary locations ---*/
 
-  solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
+  solver[SOLVER_TYPE::MESH]->DeformMesh(geometry, numerics[SOLVER_TYPE::MESH], config);
 
   /*--- Continue recording. ---*/
   AD::EndPassive(wasActive);

@@ -35,7 +35,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CSolver *****solver_container,
                                                 CNumerics ******numerics_container,
                                                 CConfig **config,
-                                                unsigned short RunTime_EqSystem,
+                                                RUNTIME_TYPE RunTime_EqSystem,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
 
@@ -129,7 +129,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             CConfig **config_container,
                                             unsigned short iMesh,
                                             unsigned short RecursiveParam,
-                                            unsigned short RunTime_EqSystem,
+                                            RUNTIME_TYPE RunTime_EqSystem,
                                             unsigned short iZone,
                                             unsigned short iInst) {
 
@@ -302,7 +302,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
 }
 
-void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CMultiGridIntegration::GetProlongated_Correction(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iMarker, iChildren, iVar;
@@ -377,7 +377,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
 }
 
-void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
+void CMultiGridIntegration::SmoothProlongated_Correction(RUNTIME_TYPE RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                                                          unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
 
   /*--- Check if there is work to do. ---*/
@@ -481,7 +481,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
 }
 
-void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CMultiGridIntegration::SetProlongated_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iChildren;
@@ -557,7 +557,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 
 }
 
-void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CMultiGridIntegration::SetRestricted_Solution(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 
   unsigned long iVertex, Point_Fine, Point_Coarse;
@@ -607,7 +607,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        if (Solver_Position == FLOW_SOL) {
+        if (Solver_Position == SOLVER_TYPE::FLOW) {
 
           /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
 
@@ -623,7 +623,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
         }
 
-        if (Solver_Position == ADJFLOW_SOL) {
+        if (Solver_Position == SOLVER_TYPE::ADJFLOW) {
           sol_coarse->GetNodes()->SetVelSolutionDVector(Point_Coarse);
         }
 
@@ -639,7 +639,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
 }
 
-void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+void CMultiGridIntegration::SetRestricted_Gradient(RUNTIME_TYPE RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iDim, iChildren;
@@ -681,51 +681,51 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 
 void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container,
                                                       CNumerics ****numerics_container, CConfig *config,
-                                                      unsigned short FinestMesh, unsigned short RunTime_EqSystem,
+                                                      unsigned short FinestMesh, RUNTIME_TYPE RunTime_EqSystem,
                                                       su2double *monitor) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
-    case RUNTIME_FLOW_SYS:
+    case RUNTIME_TYPE::FLOW:
 
       /*--- Calculate the inviscid and viscous forces ---*/
 
-      solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][SOLVER_TYPE::FLOW]->Pressure_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][SOLVER_TYPE::FLOW]->Momentum_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][SOLVER_TYPE::FLOW]->Friction_Forces(geometry[FinestMesh], config);
 
       break;
 
-    case RUNTIME_ADJFLOW_SYS:
+    case RUNTIME_TYPE::ADJFLOW:
 
       /*--- Calculate the inviscid and viscous sensitivities ---*/
 
-      solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                 numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+      solver_container[FinestMesh][SOLVER_TYPE::ADJFLOW]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                 numerics_container[FinestMesh][SOLVER_TYPE::ADJFLOW][CONV_BOUND_TERM], config);
 
-      solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                 numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+      solver_container[FinestMesh][SOLVER_TYPE::ADJFLOW]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                 numerics_container[FinestMesh][SOLVER_TYPE::ADJFLOW][CONV_BOUND_TERM], config);
 
       /*--- Smooth the inviscid and viscous sensitivities ---*/
 
       if (config->GetKind_SensSmooth() != NONE)
-        solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                   numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+        solver_container[FinestMesh][SOLVER_TYPE::ADJFLOW]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                   numerics_container[FinestMesh][SOLVER_TYPE::ADJFLOW][CONV_BOUND_TERM], config);
       break;
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-                                          unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+                                          RUNTIME_TYPE RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
 
-  if ((RunTime_EqSystem != RUNTIME_ADJFLOW_SYS) || (Iteration != 0)) return;
+  if ((RunTime_EqSystem != RUNTIME_TYPE::ADJFLOW) || (Iteration != 0)) return;
 
   for (unsigned short iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
 
     /*--- Set the time step in all the MG levels ---*/
 
-    solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel],
+    solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW]->SetTime_Step(geometry[iZone][INST_0][iMGLevel],
                                                                       solver_container[iZone][INST_0][iMGLevel],
                                                                       config[iZone], iMGLevel, Iteration);
 
@@ -733,25 +733,25 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
-      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
-      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
-      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
-      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
+      solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FLOW]->GetTotal_CD());
+      solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FLOW]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FLOW]->GetTotal_CT());
+      solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FLOW]->GetTotal_CQ());
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Restrict solution and gradients to the coarse levels ---*/
 
     if (iMGLevel != config[iZone]->GetnMGLevels()) {
-      SetRestricted_Solution(RUNTIME_FLOW_SYS,
-                             solver_container[iZone][INST_0][iMGLevel][FLOW_SOL],
-                             solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+      SetRestricted_Solution(RUNTIME_TYPE::FLOW,
+                             solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW],
+                             solver_container[iZone][INST_0][iMGLevel+1][SOLVER_TYPE::FLOW],
                              geometry[iZone][INST_0][iMGLevel],
                              geometry[iZone][INST_0][iMGLevel+1],
                              config[iZone]);
 //        ToDo: The flow solvers do not use the conservative variable gradients
-//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL],
-//                               solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//        SetRestricted_Gradient(RUNTIME_TYPE::FLOW, solver_container[iZone][INST_0][iMGLevel][SOLVER_TYPE::FLOW],
+//                               solver_container[iZone][INST_0][iMGLevel+1][SOLVER_TYPE::FLOW],
 //                               geometry[iZone][INST_0][iMGLevel],
 //                               geometry[iZone][INST_0][iMGLevel+1],
 //                               config[iZone]);

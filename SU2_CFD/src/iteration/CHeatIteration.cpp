@@ -35,10 +35,10 @@ void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Update global parameters ---*/
 
-  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_TYPE::HEAT);
 
-  integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                    RUNTIME_HEAT_SYS, val_iZone, val_iInst);
+  integration[val_iZone][val_iInst][SOLVER_TYPE::HEAT]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                    RUNTIME_TYPE::HEAT, val_iZone, val_iInst);
 }
 
 void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
@@ -51,15 +51,15 @@ void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeom
       (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
 
     for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
-                                                                      solver[val_iZone][val_iInst][iMesh][HEAT_SOL],
+      integration[val_iZone][val_iInst][SOLVER_TYPE::HEAT]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
+                                                                      solver[val_iZone][val_iInst][iMesh][SOLVER_TYPE::HEAT],
                                                                       config[val_iZone], iMesh);
 
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
-                                                                        solver[val_iZone][val_iInst][iMesh][MESH_SOL],
+      integration[val_iZone][val_iInst][SOLVER_TYPE::HEAT]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
+                                                                        solver[val_iZone][val_iInst][iMesh][SOLVER_TYPE::MESH],
                                                                         config[val_iZone], iMesh);
 
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
+      integration[val_iZone][val_iInst][SOLVER_TYPE::HEAT]->SetConvergence(false);
     }
   }
 }

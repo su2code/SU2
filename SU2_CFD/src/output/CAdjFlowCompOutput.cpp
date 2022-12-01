@@ -168,8 +168,8 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
 void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
 
-  CSolver* adjflow_solver = solver[ADJFLOW_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
+  CSolver* adjflow_solver = solver[SOLVER_TYPE::ADJFLOW];
+  CSolver* mesh_solver = solver[SOLVER_TYPE::MESH];
 
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -276,7 +276,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
+  CVariable* Node_AdjFlow = solver[SOLVER_TYPE::ADJFLOW]->GetNodes();
   CPoint*    Node_Geo     = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
@@ -315,7 +315,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
 
 void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
+  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[SOLVER_TYPE::ADJFLOW]->GetCSensitivity(iMarker, iVertex));
 
 }
 

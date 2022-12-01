@@ -159,7 +159,7 @@ protected:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+                           unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output);
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -418,7 +418,7 @@ public:
                      CConfig *config,
                      unsigned short iMesh,
                      unsigned short iRKStep,
-                     unsigned short RunTime_EqSystem,
+                     RUNTIME_TYPE RunTime_EqSystem,
                      bool Output) override;
 
   /*!

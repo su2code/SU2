@@ -221,7 +221,7 @@ protected:
 
     auto IndexOfVariable = [&](const FlowIndices& idx, const std::string& var) {
       /*--- Primitives of the flow solver. ---*/
-      const auto flow_offset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+      const auto flow_offset = static_cast<const long uint>(SOLVER_TYPE::FLOW) * CustomOutput::MAX_VARS_PER_SOLVER;
 
       if ("TEMPERATURE" == var) return flow_offset + idx.Temperature();
       if ("TEMPERATURE_VE" == var) return flow_offset + idx.Temperature_ve();
@@ -241,9 +241,9 @@ protected:
         /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
         return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
       };
-      if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
-      if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
-      if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+      if (var.rfind("SPECIES", 0) == 0) return static_cast<const long uint>(SOLVER_TYPE::SPECIES) * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+      if (var.rfind("TURB", 0) == 0) return static_cast<const long uint>(SOLVER_TYPE::TURB) * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+      if (var.rfind("RAD", 0) == 0) return static_cast<const long uint>(SOLVER_TYPE::RAD) * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
 
       return CustomOutput::NOT_A_VARIABLE;
     };

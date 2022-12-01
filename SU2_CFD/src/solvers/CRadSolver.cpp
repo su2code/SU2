@@ -112,7 +112,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Skip turbulent variables ---*/
 
-  if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
+  if (rans) skipVars += solver[MESH_0][SOLVER_TYPE::TURB]->GetnVar();
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -149,14 +149,14 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   }
 
   /*--- MPI communication ---*/
-  solver[MESH_0][RAD_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][RAD_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::RAD]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::RAD]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- Preprocess the fluid solver to compute the primitive variables ---*/
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][SOLVER_TYPE::FLOW]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TYPE::FLOW, false);
 
   /*--- Postprocess the radiation solver to compute the source term that goes into the fluid equations ---*/
-  solver[MESH_0][RAD_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+  solver[MESH_0][SOLVER_TYPE::RAD]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 

@@ -128,8 +128,8 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarLinsol(const CConfig* confi
 // clang-format on
 
 void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver) {
-  const auto adjturb_solver = solver[ADJTURB_SOL];
-  const auto adjspecies_solver = solver[ADJSPECIES_SOL];
+  const auto adjturb_solver = solver[SOLVER_TYPE::ADJTURB];
+  const auto adjspecies_solver = solver[SOLVER_TYPE::ADJSPECIES];
 
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {
@@ -232,9 +232,9 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* conf
 void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver,
                                               const unsigned long iPoint) {
   const auto Node_AdjTurb =
-      ((turb_model != TURB_MODEL::NONE) && !frozen_visc) ? solver[ADJTURB_SOL]->GetNodes() : nullptr;
+      ((turb_model != TURB_MODEL::NONE) && !frozen_visc) ? solver[SOLVER_TYPE::ADJTURB]->GetNodes() : nullptr;
   const auto Node_AdjSpecies =
-      (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) ? solver[ADJSPECIES_SOL]->GetNodes() : nullptr;
+      (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) ? solver[SOLVER_TYPE::ADJSPECIES]->GetNodes() : nullptr;
 
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {

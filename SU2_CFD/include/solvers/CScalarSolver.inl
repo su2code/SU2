@@ -134,8 +134,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool limiterFlow =
       (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE);
 
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  const auto& edgeMassFluxes = *(solver_container[FLOW_SOL]->GetEdgeMassFluxes());
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[SOLVER_TYPE::FLOW]->GetNodes());
+  const auto& edgeMassFluxes = *(solver_container[SOLVER_TYPE::FLOW]->GetEdgeMassFluxes());
 
   /*--- Pick one numerics object per thread. ---*/
   auto* numerics = numerics_container[CONV_TERM + omp_get_thread_num() * MAX_TERMS];
@@ -211,7 +211,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
-          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          for (iVar = 0; iVar < solver_container[SOLVER_TYPE::FLOW]->GetnPrimVarGrad(); iVar++) {
             su2double Project_Grad_i = 0.0;
             su2double Project_Grad_j = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -380,11 +380,11 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 
       /*--- Allocate the value at the infinity ---*/
 
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_infty = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Grid Movement ---*/
 
@@ -406,7 +406,7 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_infty[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double density = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetDensity(iPoint);
         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
@@ -426,7 +426,7 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 template <class VariableType>
 void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                            CConfig* config) {
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const auto flowNodes = solver_container[SOLVER_TYPE::FLOW]->GetNodes();
 
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
@@ -476,7 +476,7 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
                                                             CConfig* config) {
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const auto flowNodes = solver_container[SOLVER_TYPE::FLOW]->GetNodes();
 
   ComputeUnderRelaxationFactor(config);
 
@@ -547,7 +547,7 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                           CConfig* config) {
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const auto flowNodes = solver_container[SOLVER_TYPE::FLOW]->GetNodes();
 
   /*--- Local residual variables for current thread ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
@@ -578,7 +578,7 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
 template <class VariableType>
 void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                                        unsigned short iRKStep, unsigned short iMesh,
-                                                       unsigned short RunTime_EqSystem) {
+                                                       RUNTIME_TYPE RunTime_EqSystem) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -586,7 +586,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
   /*--- Flow solution, needed to get density. ---*/
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver_container[SOLVER_TYPE::FLOW]->GetNodes();
 
   /*--- Store the physical time step ---*/
 

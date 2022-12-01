@@ -113,7 +113,7 @@ struct UnitQuadTestCase {
    */
   ~UnitQuadTestCase() {
     if (solver != nullptr)
-      delete solver[FLOW_SOL];
+      delete solver[SOLVER_TYPE::FLOW];
     delete[] solver;
   }
 };

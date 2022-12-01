@@ -214,12 +214,12 @@ enum ANSWER {
  * \brief Average method for marker analyze
  */
 enum AVERAGE_TYPE {
-  AVERAGE_AREA = 1,     /*!< \brief Area-weighted average. */
-  AVERAGE_MASSFLUX = 2  /*!< \brief Mass-flux weighted average. */
+  AREA_WEIGHTED=0,     /*!< \brief Area-weighted average. */
+  MASSFLUX_WEIGHTED=1  /*!< \brief Mass-flux weighted average. */
 };
 static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
-  MakePair("AREA", AVERAGE_AREA)
-  MakePair("MASSFLUX", AVERAGE_MASSFLUX)
+  MakePair("AREA", AVERAGE_TYPE::AREA_WEIGHTED)
+  MakePair("MASSFLUX", AVERAGE_TYPE::MASSFLUX_WEIGHTED)
 };
 
 /*!
@@ -428,9 +428,14 @@ enum ENUM_TRANSFER {
  * \brief different regime modes
  */
 enum class ENUM_REGIME {
-  COMPRESSIBLE = 0,   /*!< \brief Definition of compressible solver. */
-  INCOMPRESSIBLE = 1, /*!< \brief Definition of incompressible solver. */
-  NO_FLOW = 2
+  COMPRESSIBLE,   /*!< \brief Definition of compressible solver. */
+  INCOMPRESSIBLE, /*!< \brief Definition of incompressible solver. */
+  NO_FLOW
+};
+static const MapType<std::string, ENUM_REGIME> Regime_Map = {
+  MakePair("COMPRESSIBLE", ENUM_REGIME::COMPRESSIBLE)
+  MakePair("INCOMPRESSIBLE", ENUM_REGIME::INCOMPRESSIBLE)
+  MakePair("NO_FLOW", ENUM_REGIME::NO_FLOW)
 };
 
 /*!
@@ -468,45 +473,100 @@ static const MapType<std::string, ENUM_MEASUREMENTS> Measurements_Map = {
 /*!
  * \brief different types of systems
  */
-enum RUNTIME_TYPE {
-  RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
-  RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
-  RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
-  RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
-  RUNTIME_FEA_SYS = 20,       /*!< \brief One-physics case, the code is solving the FEA equation. */
-  RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
-  RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
-  RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the transition model. */
-  RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
-  RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
-  RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
-  RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
+enum class RUNTIME_TYPE {
+  FLOW,      /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
+  TURB,      /*!< \brief One-physics case, the code is solving the turbulence model. */
+  ADJFLOW,   /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
+  ADJTURB,   /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
+  MULTIGRID, /*!< \brief Full Approximation Storage Multigrid system of equations. */
+  FEA,       /*!< \brief One-physics case, the code is solving the FEA equation. */
+  ADJFEA,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
+  HEAT,      /*!< \brief One-physics case, the code is solving the heat equation. */
+  ADJHEAT,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
+  TRANS,     /*!< \brief One-physics case, the code is solving the transition model. */
+  RADIATION, /*!< \brief One-physics case, the code is solving the radiation model. */
+  ADJRAD,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  SPECIES,   /*!< \brief One-physics case, the code is solving the species model. */
+  ADJSPECIES,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
-const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
-const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+static const MapType<std::string, RUNTIME_TYPE> Runtime_Map = {
+  MakePair("FLOW", RUNTIME_TYPE::FLOW)
+  MakePair("TURB", RUNTIME_TYPE::TURB)
+  MakePair("ADJFLOW", RUNTIME_TYPE::ADJFLOW)
+  MakePair("ADJTURB", RUNTIME_TYPE::ADJTURB)
+  MakePair("MULTIGRID", RUNTIME_TYPE::MULTIGRID)
+  MakePair("FEA", RUNTIME_TYPE::FEA)
+  MakePair("ADJFEA", RUNTIME_TYPE::ADJFEA)
+  MakePair("HEAT", RUNTIME_TYPE::HEAT)
+  MakePair("ADJHEAT", RUNTIME_TYPE::ADJHEAT)
+  MakePair("TRANS", RUNTIME_TYPE::TRANS)
+  MakePair("RADIATION", RUNTIME_TYPE::RADIATION)
+  MakePair("ADJRAD", RUNTIME_TYPE::ADJRAD)
+  MakePair("SPECIES", RUNTIME_TYPE::SPECIES)
+  MakePair("ADJSPECIES", RUNTIME_TYPE::ADJSPECIES)
+};
 
-const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
-const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+enum SOLVER_TYPE {
+  FLOW,
+  ADJFLOW,
+  TURB,
+  ADJTURB,
+  TRANS,
+  HEAT,
+  ADJHEAT,
+  RAD,
+  ADJRAD,
+  MESH,
+  ADJMESH,
+  SPECIES,
+  ADJSPECIES,
+  FEA,
+  ADJFEA,
+  TEMPLATE,
+  NO_SOLVER
+};
 
-const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
-const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
-const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+// note that FEA and ADJFEA were added
+static const MapType<std::string, SOLVER_TYPE> SolverType_Map = {
+  MakePair("FLOW", SOLVER_TYPE::FLOW)
+  MakePair("ADJFLOW", SOLVER_TYPE::ADJFLOW)
+  MakePair("TURB", SOLVER_TYPE::TURB)
+  MakePair("ADJTURB", SOLVER_TYPE::ADJTURB)
+  MakePair("TRANS", SOLVER_TYPE::TRANS)
+  MakePair("HEAT", SOLVER_TYPE::HEAT)
+  MakePair("ADJHEAT", SOLVER_TYPE::ADJHEAT)
+  MakePair("RAD", SOLVER_TYPE::RAD)
+  MakePair("ADJRAD", SOLVER_TYPE::ADJRAD)
+  MakePair("MESH", SOLVER_TYPE::MESH)
+  MakePair("ADJMESH", SOLVER_TYPE::ADJMESH)
+  MakePair("SPECIES", SOLVER_TYPE::SPECIES)
+  MakePair("ADJSPECIES", SOLVER_TYPE::ADJSPECIES)
+  MakePair("FEA", SOLVER_TYPE::FEA)  
+  MakePair("ADJFEA", SOLVER_TYPE::ADJFEA)
+  MakePair("TEMPLATE", SOLVER_TYPE::TEMPLATE)
+  MakePair("NONE", SOLVER_TYPE::NO_SOLVER)
+};
 
-const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+//const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
+//const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+//const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
+//const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+//const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
+//const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
+//const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+//const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
+//const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+//const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
+//const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+//const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
+//const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
 
-const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
-const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
+// nijso: we add FEA_SOL to the enum so FEA does not have index 0 anymore
+//const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
+//const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
-const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
-const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
-
-const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
+//const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
 
 const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */
 const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */
@@ -558,31 +618,31 @@ static const MapType<std::string, ENUM_SPACE> Space_Map = {
 /*!
  * \brief Types of fluid model
  */
-enum ENUM_FLUIDMODEL {
-  STANDARD_AIR = 0,       /*!< \brief Standard air gas model. */
-  IDEAL_GAS = 1,          /*!< \brief Ideal gas model. */
-  VW_GAS = 2,             /*!< \brief Van Der Waals gas model. */
-  PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
-  CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
-  INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
-  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
-  FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
-  COOLPROP = 10,          /*!< \brief Thermodynamics library. */
+enum class FLUIDMODEL {
+  STANDARD_AIR,       /*!< \brief Standard air gas model. */
+  IDEAL_GAS,          /*!< \brief Ideal gas model. */
+  VW_GAS,             /*!< \brief Van Der Waals gas model. */
+  PR_GAS,             /*!< \brief Perfect Real gas model. */
+  CONSTANT_DENSITY,   /*!< \brief Constant density gas model. */
+  INC_IDEAL_GAS,      /*!< \brief Incompressible ideal gas model. */
+  INC_IDEAL_GAS_POLY, /*!< \brief Inc. ideal gas, polynomial gas model. */
+  MUTATIONPP,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
+  SU2_NONEQ,          /*!< \brief User defined gas model for nonequilibrium flow. */
+  FLUID_MIXTURE,      /*!< \brief Species mixture model. */
+  COOLPROP,          /*!< \brief Thermodynamics library. */
 };
-static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
-  MakePair("STANDARD_AIR", STANDARD_AIR)
-  MakePair("IDEAL_GAS", IDEAL_GAS)
-  MakePair("VW_GAS", VW_GAS)
-  MakePair("PR_GAS", PR_GAS)
-  MakePair("CONSTANT_DENSITY", CONSTANT_DENSITY)
-  MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
-  MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
-  MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("SU2_NONEQ", SU2_NONEQ)
-  MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
-  MakePair("COOLPROP", COOLPROP)
+static const MapType<std::string, FLUIDMODEL> FluidModel_Map = {
+  MakePair("STANDARD_AIR", FLUIDMODEL::STANDARD_AIR)
+  MakePair("IDEAL_GAS", FLUIDMODEL::IDEAL_GAS)
+  MakePair("VW_GAS", FLUIDMODEL::VW_GAS)
+  MakePair("PR_GAS", FLUIDMODEL::PR_GAS)
+  MakePair("CONSTANT_DENSITY", FLUIDMODEL::CONSTANT_DENSITY)
+  MakePair("INC_IDEAL_GAS", FLUIDMODEL::INC_IDEAL_GAS)
+  MakePair("INC_IDEAL_GAS_POLY", FLUIDMODEL::INC_IDEAL_GAS_POLY)
+  MakePair("MUTATIONPP", FLUIDMODEL::MUTATIONPP)
+  MakePair("SU2_NONEQ", FLUIDMODEL::SU2_NONEQ)
+  MakePair("FLUID_MIXTURE", FLUIDMODEL::FLUID_MIXTURE)
+  MakePair("COOLPROP", FLUIDMODEL::COOLPROP)
 };
 
 /*!

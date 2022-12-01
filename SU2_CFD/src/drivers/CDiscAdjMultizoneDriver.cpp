@@ -535,9 +535,9 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
     auto geometry = geometry_container[iZone][INST_0][MESH_0];
 
     int IDX_SOL = -1;
-    if (config->GetFluidProblem()) IDX_SOL = ADJFLOW_SOL;
-    else if (config->GetHeatProblem()) IDX_SOL = ADJHEAT_SOL;
-    else if (config->GetStructuralProblem()) IDX_SOL = ADJFEA_SOL;
+    if (config->GetFluidProblem()) IDX_SOL = SOLVER_TYPE::ADJFLOW;
+    else if (config->GetHeatProblem()) IDX_SOL = SOLVER_TYPE::ADJHEAT;
+    else if (config->GetStructuralProblem()) IDX_SOL = SOLVER_TYPE::ADJFEA;
     else {
       if (rank == MASTER_NODE)
         cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
@@ -545,7 +545,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
     }
 
     if (Has_Deformation(iZone))
-      solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[IDX_SOL]);
+      solvers[SOLVER_TYPE::ADJMESH]->SetSensitivity(geometry, config, solvers[IDX_SOL]);
     else
       solvers[IDX_SOL]->SetSensitivity(geometry, config);
 
@@ -721,28 +721,28 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
       case MAIN_SOLVER::DISC_ADJ_EULER:     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:     case MAIN_SOLVER::DISC_ADJ_RANS:
       case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
-        solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
-        solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
-        solvers[FLOW_SOL]->Friction_Forces(geometry, config);
+        solvers[SOLVER_TYPE::FLOW]->Pressure_Forces(geometry, config);
+        solvers[SOLVER_TYPE::FLOW]->Momentum_Forces(geometry, config);
+        solvers[SOLVER_TYPE::FLOW]->Friction_Forces(geometry, config);
 
         if(config->GetWeakly_Coupled_Heat()) {
-          solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+          solvers[SOLVER_TYPE::HEAT]->Heat_Fluxes(geometry, solvers, config);
         }
 
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-        ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
+        ObjFunc += solvers[SOLVER_TYPE::FLOW]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
-        solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        solvers[SOLVER_TYPE::HEAT]->Heat_Fluxes(geometry, solvers, config);
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-        ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
+        ObjFunc += solvers[SOLVER_TYPE::HEAT]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
-        solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
+        solvers[SOLVER_TYPE::FEA]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][SOLVER_TYPE::FEA], true);
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
+        ObjFunc += solvers[SOLVER_TYPE::FEA]->GetTotal_ComboObj();
         break;
 
       default:

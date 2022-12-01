@@ -42,7 +42,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CNumerics **numerics,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
-                                     unsigned short RunTime_EqSystem) {
+                                     RUNTIME_TYPE RunTime_EqSystem) {
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -164,7 +164,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case CHT_WALL_INTERFACE:
-        if ((MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+        if ((MainSolver == SOLVER_TYPE::HEAT) || ((MainSolver == SOLVER_TYPE::FLOW) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
         }
         else {
@@ -190,7 +190,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                    unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+                                    unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

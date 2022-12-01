@@ -175,7 +175,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+         unsigned short iMesh, unsigned short iRKStep, RUNTIME_TYPE RunTime_EqSystem, bool Output) {
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   /*--- Upwind second order reconstruction and gradients ---*/
@@ -194,7 +194,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::StartNoSharedReading();
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[SOLVER_TYPE::FLOW]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -209,8 +209,8 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double Intermittecy = nodes->GetSolution(iPoint,0);
     const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
-    const su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
-    const su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+    const su2double omega = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,1);
+    const su2double k = solver_container[SOLVER_TYPE::TURB]->GetNodes()->GetSolution(iPoint,0);
 
     su2double Corr_Rec = 0.0;
     if(Re_t <= 1870){
@@ -265,9 +265,9 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  //auto* turbNodes = su2staticcast_p<CFlowVariable*>(solver_container[TURB_SOL]->GetNodes());
-  CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[SOLVER_TYPE::FLOW]->GetNodes());
+  //auto* turbNodes = su2staticcast_p<CFlowVariable*>(solver_container[SOLVER_TYPE::TURB]->GetNodes());
+  CVariable* turbNodes = solver_container[SOLVER_TYPE::TURB]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
   auto* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -353,11 +353,11 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Allocate the value at the infinity ---*/
 
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_infty = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
@@ -424,11 +424,11 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Allocate the value at the inlet ---*/
 
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_inlet = solver_container[SOLVER_TYPE::FLOW]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver_container[SOLVER_TYPE::FLOW]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -490,7 +490,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     /*--- Skip flow variables ---*/
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar() + solver[MESH_0][TURB_SOL] ->GetnVar();
+    unsigned short skipVars = nDim + solver[MESH_0][SOLVER_TYPE::FLOW]->GetnVar() + solver[MESH_0][SOLVER_TYPE::TURB] ->GetnVar();
 
     /*--- Adjust the number of solution variables in the incompressible
      restart. We always carry a space in nVar for the energy equation in the
@@ -540,15 +540,15 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::TRANS]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SOLVER_TYPE::TRANS]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                            RUNTIME_FLOW_SYS, false);
-    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
-    solver[MESH_0][TRANS_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+    solver[MESH_0][SOLVER_TYPE::FLOW]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                            RUNTIME_TYPE::FLOW, false);
+    solver[MESH_0][SOLVER_TYPE::TURB]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+    solver[MESH_0][SOLVER_TYPE::TRANS]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -563,23 +563,23 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][SOLVER_TYPE::TURB]->GetNodes()->GetSolution(Point_Fine);
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
+      solver[iMesh][SOLVER_TYPE::TURB]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
     }
     END_SU2_OMP_FOR
 
-    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::TURB]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SOLVER_TYPE::TURB]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
+      solver[iMesh][SOLVER_TYPE::FLOW]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TYPE::FLOW,
                                             false);
-      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+      solver[iMesh][SOLVER_TYPE::TURB]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }
 
