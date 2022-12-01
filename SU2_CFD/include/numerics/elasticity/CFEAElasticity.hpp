@@ -32,11 +32,11 @@
 
 /*!
  * \class CFEAElasticity
+ * \ingroup Elasticity_Equations
  * \brief Abstract class for computing the tangent matrix and the residual for structural problems.
  * \note  At the next level of abstraction (linear or not) a class must define the constitutive term.
  *        The methods we override in this class with an empty implementation are here just to better
  *        document the public interface of this class hierarchy.
- * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */

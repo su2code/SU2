@@ -32,6 +32,7 @@
 
 /*!
  * \class CFEMFluidIteration
+ * \ingroup Drivers
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
  * \version 7.4.0 "Blackbird"

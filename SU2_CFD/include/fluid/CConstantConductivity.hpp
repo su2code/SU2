@@ -39,36 +39,12 @@ class CConstantConductivity final : public CConductivityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CConstantConductivity(su2double kt_const) : kt_(kt_const) {}
-
-  /*!
-   * \brief return conductivity value.
-   */
-  su2double GetConductivity() const override { return kt_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
+  CConstantConductivity(su2double kt_const) {
+    kt_ = kt_const;
+  }
 
   /*!
    * \brief Set thermal conductivity.
    */
-  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {}
-
-  /*!
-   * \brief Set thermal conductivity derivatives.
-   */
-  void SetDerConductivity(su2double t, su2double rho, su2double dmudrho_t, su2double dmudt_rho, su2double cp) override {
-  }
-
- private:
-  su2double kt_{0.0};        /*!< \brief Thermal conductivity. */
-  su2double dktdrho_t_{0.0}; /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0}; /*!< \brief DktDT_rho. */
+  void SetConductivity(su2double, su2double, su2double, su2double, su2double, su2double, su2double) override {}
 };

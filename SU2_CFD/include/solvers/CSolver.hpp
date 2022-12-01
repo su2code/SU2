@@ -30,6 +30,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -3000,6 +3001,12 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
+   */
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -3145,6 +3152,18 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
+
+  /*!
+   * \brief Get value of the Intermittency.
+   * \return Value of the Intermittency.
+   */
+  inline virtual su2double GetIntermittency_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the momentum thickness Reynolds number.
+   * \return Value of the momentum thickness Reynolds number.
+   */
+  inline virtual su2double GetReThetaT_Inf() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4311,7 +4330,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:

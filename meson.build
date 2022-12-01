@@ -21,7 +21,8 @@ if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
     default_warning_flags += ['-Wno-empty-body']
   endif
-  desired_warnings = ['-Wno-unused-parameter',
+  desired_warnings = ['-Wno-ignored-qualifiers',
+                      '-Wno-unused-parameter',
                       '-Wno-deprecated-declarations',
                       '-Wno-error=cast-function-type',
                       '-Wno-cast-function-type',
@@ -235,6 +236,22 @@ if get_option('enable-mpp')
   su2_cpp_args += '-DHAVE_MPP'
 endif
 
+if get_option('enable-coolprop')
+  cmake = import('cmake')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'COOLPROP_STATIC_LIBRARY': true,
+    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
+  coolprop_dep = coolprop_subproj.dependency('CoolProp')
+  su2_deps     += coolprop_dep
+  su2_cpp_args += '-DHAVE_COOLPROP'
+endif
+
+
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
   p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
@@ -284,6 +301,7 @@ message('''---------------------------------------------------------------------
          PaStiX:         @9@
          Mixed Float:    @10@
          libROM:         @11@
+         CoolProp:       @12@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -295,10 +313,11 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @12@ install' to compile and install SU2
+         Use './ninja -C @13@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
+           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:

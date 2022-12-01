@@ -63,7 +63,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
 
-  /* --- Setting up iteration values depending on if this is a
+  /*--- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
 
   const auto InnerIter = config[val_iZone]->GetInnerIter();
@@ -110,12 +110,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
   if ((main_solver == MAIN_SOLVER::RANS) && !frozen_visc) {
-    /*--- Solve the turbulence model ---*/
-
-    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
-    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
-
+    
     /*--- Solve transition model ---*/
 
     if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -123,6 +118,12 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
+    
+    /*--- Solve the turbulence model ---*/
+
+    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
+    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);    
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){

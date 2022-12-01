@@ -35,7 +35,7 @@
  *        This class does not implement a particular model, that will be done by its children.
  * \note  In addition to Compute_Constitutive_Matrix, derived classes MUST further implement
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
  * \version 7.4.0 "Blackbird"
  */
