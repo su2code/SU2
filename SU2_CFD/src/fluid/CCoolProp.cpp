@@ -70,7 +70,6 @@ CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
 CCoolProp::~CCoolProp() {}
 
 void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
-  //cout<<"p "<<Pressure<<"Pc "<<Pressure_Critical<<"T "<<Temperature<<"Tc"<<Temperature_Critical<<endl;
   Density = rho;
   StaticEnergy = e;
   fluid_entity->update(CoolProp::DmassUmass_INPUTS, Density, StaticEnergy);

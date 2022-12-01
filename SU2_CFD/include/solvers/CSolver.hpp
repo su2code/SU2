@@ -30,6 +30,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -3000,6 +3001,12 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
+   */
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -4323,7 +4330,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:
