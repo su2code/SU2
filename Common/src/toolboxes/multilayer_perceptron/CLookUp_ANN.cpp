@@ -47,15 +47,15 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(string inputFileName)
     ReadANNInputFile(inputFileName);
     for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++){
         
-        NeuralNetworks.at(i_ANN) = new CNeuralNetwork;
+        NeuralNetworks[i_ANN] = new CNeuralNetwork;
         if(rank == MASTER_NODE)
             cout << "Generating neural network for " << ANN_filenames.at(i_ANN) << endl;
-        GenerateANN(NeuralNetworks.at(i_ANN), ANN_filenames.at(i_ANN));
+        GenerateANN(NeuralNetworks[i_ANN], ANN_filenames.at(i_ANN));
     }
 }
 
 
-vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_t i_ANN, vector<string> variable_names, bool input) const {
+vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_t i_ANN, su2vector<string> variable_names, bool input) const {
     vector<pair<size_t, size_t>> variable_indices;
     size_t nVar = input ? NeuralNetworks[i_ANN]->GetnInputs() : NeuralNetworks[i_ANN]->GetnOutputs();
 
@@ -63,7 +63,7 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
         for(size_t jVar=0; jVar<variable_names.size(); jVar++){
             string ANN_varname = input ? NeuralNetworks[i_ANN]->GetInputName(iVar) : NeuralNetworks[i_ANN]->GetOutputName(iVar);
             
-            if(variable_names.at(jVar).compare(ANN_varname) == 0){
+            if(variable_names[jVar].compare(ANN_varname) == 0){
                 variable_indices.push_back(make_pair(jVar, iVar));
                 //cout << variable_names[jVar] << " : " << jVar << " | " << ANN_varname << " : " << iVar << endl;
             }
@@ -72,10 +72,10 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
     return variable_indices;
 }
 
-void MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, vector<su2double>& inputs, vector<su2double*>& outputs){
+void MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs){
     for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
         size_t i_ANN = input_output_map->GetMLPIndex(i_map);
-        vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
+        su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
         NeuralNetworks[i_ANN]->predict(ANN_inputs);
         for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
             *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
@@ -181,7 +181,7 @@ string MLPToolbox::CLookUp_ANN::SkipToFlag(ifstream *file_stream, string flag) {
 }
 
 
-bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(vector<string> &output_names, CIOMap *input_output_map) const {
+bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(su2vector<string> &output_names, CIOMap *input_output_map) const {
     unsigned short n_occurances;
     bool duplicate{false};
     vector<string> duplicate_variables;
@@ -208,7 +208,7 @@ bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(vector<string> &output_nam
 }
 
 
-bool MLPToolbox::CLookUp_ANN::Check_Use_of_Inputs(vector<string> &input_names, CIOMap *input_output_map) const {
+bool MLPToolbox::CLookUp_ANN::Check_Use_of_Inputs(su2vector<string> &input_names, CIOMap *input_output_map) const {
 vector<string> missing_inputs;
 bool inputs_are_present{true};
 for(size_t iInput=0; iInput<input_names.size(); iInput ++){
@@ -234,7 +234,7 @@ if(missing_inputs.size() > 0){
 return inputs_are_present;
 }
 
-bool MLPToolbox::CLookUp_ANN::Check_Use_of_Outputs(vector<string> &output_names, CIOMap * input_output_map) const {
+bool MLPToolbox::CLookUp_ANN::Check_Use_of_Outputs(su2vector<string> &output_names, CIOMap * input_output_map) const {
     /* Check wether all output variables are in the loaded MLPs */
     
     vector<string> missing_outputs;     

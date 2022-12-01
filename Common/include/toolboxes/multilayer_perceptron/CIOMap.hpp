@@ -95,7 +95,7 @@ namespace MLPToolbox
         * \param[in] inputs - Input names for the call function. These should match with at least one of the MLP inputs.
         * \param[in] outputs - Output names for the call function. These should match with at least one of the MLP outputs.
         */
-        CIOMap(CLookUp_ANN*MLP_collection, std::vector<std::string> &inputs, std::vector<std::string> &outputs);
+        CIOMap(CLookUp_ANN*MLP_collection, su2vector<std::string> &inputs, su2vector<std::string> &outputs);
 
         /*!
         * \brief Set MLP index in IO map
@@ -110,7 +110,7 @@ namespace MLPToolbox
         * \param[in] inputs - vector with call input variable names
         * \param[in] outputs - vector with call output variable names
         */
-        void PairVariableswithMLPs(CLookUp_ANN * MLP_collection, std::vector<std::string> &inputs, std::vector<std::string> &outputs);
+        void PairVariableswithMLPs(CLookUp_ANN * MLP_collection, su2vector<std::string> &inputs, su2vector<std::string> &outputs);
 
         /*!
         * \brief Get the number of MLPs in the current IO map
@@ -175,8 +175,8 @@ namespace MLPToolbox
         * \param[in] inputs - call inputs
         * \return Vector with call inputs in the correct order of the loaded MLP
         */
-        std::vector<su2double> GetMLP_Inputs(std::size_t i_Map, std::vector<su2double>&inputs) const {
-            std::vector<su2double> MLP_input;
+        su2vector<su2double> GetMLP_Inputs(std::size_t i_Map, su2vector<su2double>&inputs) const {
+            su2vector<su2double> MLP_input;
             MLP_input.resize(Input_Map[i_Map].size());
 
             for(std::size_t i_Input=0; i_Input<Input_Map[i_Map].size(); i_Input++){

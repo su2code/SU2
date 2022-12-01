@@ -41,27 +41,28 @@ namespace MLPToolbox{
 class CNeuralNetwork
 {
 private:
-    std::vector<std::string> input_names,
-                   output_names;
+    std::vector<std::string> input_names,   // MLP input variable names.
+                             output_names;  // MLP output variable names.
 
-    unsigned long n_hidden_layers;
+    unsigned long n_hidden_layers;  // Number of hidden layers (layers between input and output layer).
 
-    CLayer *inputLayer,
-           *outputLayer;
+    CLayer *inputLayer,     // Pointer to network input layer.
+           *outputLayer;    // Pointer to network output layer.
 
-    std::vector<CLayer*> hiddenLayers,
-                    total_layers;
+    std::vector<CLayer*> hiddenLayers;  // Hidden layer collection.
+    su2vector<CLayer*>   total_layers;  // Hidden layers plus in/output layers
 
-    //std::vector<std::vector<std::vector<su2double>>> weights;
-    std::vector<su2activematrix> weights_mat;
-    std::vector<std::vector<su2double>> values;
+    su2vector<su2activematrix> weights_mat;   // Weights of synapses connecting layers
 
-    std::vector<std::pair<su2double, su2double>> input_norm,
-                                       output_norm;
-    std::vector<su2double> last_inputs;
+    su2vector<std::pair<su2double, su2double>> input_norm,    // Normalization factors for network inputs
+                                                 output_norm;   // Normalization factors for network outputs
 
-    su2double* ANN_outputs;
+    su2vector<su2double> last_inputs; // Inputs from previous lookup operation. Evaluation of the network 
+                                        // is skipped if current inputs are the same as the last inputs.
 
+    su2double* ANN_outputs; // Pointer to network outputs
+
+    /*--- Activation function types that are currently supported ---*/
     enum ENUM_ACTIVATION_FUNCTION {
         NONE=0,
         LINEAR=1,
@@ -79,46 +80,169 @@ private:
 public:
     CNeuralNetwork();
     ~CNeuralNetwork(){
-        for(std::size_t i=0; i<total_layers.size(); i++){
-            delete total_layers.at(i);
+        delete inputLayer;
+        delete outputLayer;
+        for(std::size_t i=1; i<total_layers.size()-1; i++){
+            delete total_layers[i];
         }
         delete [] ANN_outputs;
         delete [] activation_function_types;
     };
+    /*!
+    * \brief Set the input layer of the network.
+    * \param[in] n_neurons - Number of inputs
+    */
     void defineInputLayer(unsigned long n_neurons);
+
+    /*!
+    * \brief Set the output layer of the network.
+    * \param[in] n_neurons - Number of outputs
+    */
     void defineOutputLayer(unsigned long n_neurons);
+
+    /*!
+    * \brief Add a hidden layer to the network
+    * \param[in] n_neurons - Hidden layer size.
+    */
     void push_hidden_layer(unsigned long n_neurons);
+
+    /*!
+    * \brief Set the weight value of a specific synapse.
+    * \param[in] i_layer - current layer.
+    * \param[in] i_neuron - neuron index in current layer.
+    * \param[in] j_neuron - neuron index of connecting neuron.
+    * \param[in] value - weight value.
+    */
     void setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value);
-    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers.at(i_layer)->setBias(i_neuron, value);}
+
+    /*!
+    * \brief Set bias value at a specific neuron.
+    * \param[in] i_layer - Layer index.
+    * \param[in] i_neuron - Neuron index of current layer.
+    * \param[in] value - Bias value.
+    */
+    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers[i_layer]->setBias(i_neuron, value);}
+
+    /*!
+    * \brief Set layer activation function.
+    * \param[in] i_layer - Layer index.
+    * \param[in] input - Activation function name.
+    */
     void setActivationFunction(unsigned long i_layer, std::string input);
+
+    /*!
+    * \brief Display the network architecture in the terminal.
+    */
     void displayNetwork();
+
+    /*!
+    * \brief Size the weight layers in the network according to its architecture.
+    */
     void sizeWeights();
-    void sizeInputs(unsigned long n_inputs){last_inputs.resize(n_inputs); for(unsigned long iInput=0; iInput<n_inputs; iInput++) last_inputs.at(iInput) = 0.0;}
+
+    /*!
+    * \brief Size the vector of previous inputs.
+    * \param[in] n_inputs - Number of inputs.
+    */
+    void sizeInputs(unsigned long n_inputs) { last_inputs.resize(n_inputs); for(unsigned long iInput=0; iInput<n_inputs; iInput++) last_inputs[iInput] = 0.0; }
+    
+    /*!
+    * \brief Get the number of connecting regions in the network.
+    * \returns number of spaces in between layers.
+    */
     unsigned long getNWeightLayers(){return total_layers.size()-1;}
+
+    /*!
+    * \brief Get the total number of layers in the network
+    * \returns number of netowork layers.
+    */
     unsigned long getNLayers(){return total_layers.size();}
 
-    unsigned long getNNeurons(unsigned long iLayer){;
-    return total_layers.at(iLayer)->getNNeurons();}
+    /*!
+    * \brief Get neuron count in a layer.
+    * \param[in] iLayer - Layer index.
+    * \returns number of neurons in the layer.
+    */
+    unsigned long getNNeurons(unsigned long iLayer) { return total_layers[iLayer]->getNNeurons(); }
 
-    void predict(std::vector<su2double> &inputs);
+    /*!
+    * \brief Evaluate the network.
+    */
+    void predict(su2vector<su2double> &inputs);
 
+    /*!
+    * \brief Set the normalization factors for the input layer
+    * \param[in] iInput - Input index.
+    * \param[in] input_min - Minimum input value.
+    * \param[in] input_max - Maximum input value.
+    */
+    void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max) { input_norm[iInput] = make_pair(input_min, input_max); }
 
-    void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max){input_norm.at(iInput) = make_pair(input_min, input_max);}
-    void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){output_norm.at(iOutput) = make_pair(output_min, output_max);}
+    /*!
+    * \brief Set the normalization factors for the output layer
+    * \param[in] iOutput - Input index.
+    * \param[in] input_min - Minimum output value.
+    * \param[in] input_max - Maximum output value.
+    */
+    void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){ output_norm[iOutput] = make_pair(output_min, output_max); }
     
-    void PushOutputName(std::string input){output_names.push_back(input);}
-    void PushInputName(std::string input){input_names.push_back(input);}
+    /*!
+    * \brief Add an output variable name to the network.
+    * \param[in] input - Input variable name.
+    */
+    void PushOutputName(std::string input) { output_names.push_back(input); }
+
+    /*!
+    * \brief Add an input variable name to the network.
+    * \param[in] output - Output variable name.
+    */
+    void PushInputName(std::string input) { input_names.push_back(input); }
    
-    std::string GetInputName(std::size_t iInput){return input_names[iInput];}
-    std::string GetOutputName(std::size_t iOutput){return output_names[iOutput];}
+    /*!
+    * \brief Get network input variable name.
+    * \param[in] iInput - Input variable index.
+    * \returns input variable name.
+    */
+    std::string GetInputName(std::size_t iInput) { return input_names[iInput]; }
 
-    std::size_t GetnInputs(){return input_names.size();}
-    std::size_t GetnOutputs(){return output_names.size();}
+    /*!
+    * \brief Get network output variable name.
+    * \param[in] iOutput - Output variable index.
+    * \returns output variable name.
+    */
+    std::string GetOutputName(std::size_t iOutput) { return output_names[iOutput]; }
 
-    su2double GetANN_Output(std::size_t iOutput){return ANN_outputs[iOutput];}
-    void SizeActivationFunctions(unsigned long n_layers){activation_function_types = new ENUM_ACTIVATION_FUNCTION[n_layers]; 
-    }
+    /*!
+    * \brief Get network number of inputs.
+    * \returns Number of network inputs
+    */
+    std::size_t GetnInputs() { return input_names.size(); }
 
+    /*!
+    * \brief Get network number of outputs.
+    * \returns Number of network outputs
+    */
+    std::size_t GetnOutputs() { return output_names.size(); }
+
+    /*!
+    * \brief Get network evaluation output.
+    * \param[in] iOutput - output index.
+    * \returns Prediction value.
+    */
+    su2double GetANN_Output(std::size_t iOutput) { return ANN_outputs[iOutput]; }
+
+    /*!
+    * \brief Set the activation function array size.
+    * \param[in] n_layers - network layer count.
+    */
+    void SizeActivationFunctions(unsigned long n_layers) { activation_function_types = new ENUM_ACTIVATION_FUNCTION[n_layers]; }
+
+    /*!
+    * \brief Compute neuron activation function input.
+    * \param[in] iLayer - Network layer index.
+    * \param[in] iNeuron - Layer neuron index.
+    * \returns Neuron activation function input.
+    */
     su2double ComputeX(std::size_t iLayer, std::size_t iNeuron){
         su2double x;
         x = total_layers[iLayer]->getBias(iNeuron);

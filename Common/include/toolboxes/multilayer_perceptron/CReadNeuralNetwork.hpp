@@ -37,11 +37,13 @@ namespace MLPToolbox{
 
 class CReadNeuralNetwork {
     private:
-    std::vector<std::string> input_names;
-    std::vector<std::string> output_names;
+    std::vector<std::string> input_names,   // Network input variable names.
+                             output_names;  // Network output variable names.
 
-    std::string filename;
-    unsigned long n_layers;
+    std::string filename;       // Network input filename.
+
+    unsigned long n_layers;     // Number of layers in the network.
+    
     std::vector<unsigned long> n_neurons;
     std::vector<std::vector<std::vector<su2double>>> weights;
     std::vector<std::vector<su2double>> biases;

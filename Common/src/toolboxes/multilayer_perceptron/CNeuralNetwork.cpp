@@ -32,7 +32,7 @@
 using namespace std;
 
 
-void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
+void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
     su2double x, x_norm, y, y_norm;
     size_t iNeuron, iLayer, nNeurons_current;
     bool same_point{true};
@@ -182,11 +182,11 @@ void MLPToolbox::CNeuralNetwork::push_hidden_layer(unsigned long n_neurons){
 void MLPToolbox::CNeuralNetwork::sizeWeights(){
     
     total_layers.resize(n_hidden_layers + 2);
-    total_layers.at(0) = inputLayer;
+    total_layers[0] = inputLayer;
     for(size_t iLayer=0; iLayer<n_hidden_layers; iLayer++){
-        total_layers.at(iLayer + 1) = hiddenLayers.at(iLayer);
+        total_layers[iLayer + 1] = hiddenLayers.at(iLayer);
     }
-    total_layers.at(total_layers.size()-1) = outputLayer;
+    total_layers[total_layers.size()-1] = outputLayer;
 
     weights_mat.resize(n_hidden_layers+1);
     weights_mat[0].resize(hiddenLayers[0]->getNNeurons(), inputLayer->getNNeurons());
