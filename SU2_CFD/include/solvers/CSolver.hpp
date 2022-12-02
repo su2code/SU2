@@ -4399,11 +4399,6 @@ public:
   void CorrectBoundMetric(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Make the eigenvalues of the Hessians positive.
-   */
-  void SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint);
-
-  /*!
    * \brief Compute the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4465,6 +4460,41 @@ public:
    */
   void SetMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                  unsigned long iPoint, vector<vector<double> > &weights);
+
+
+  /*!
+   * \brief Make the eigenvalues of the metrics positive.
+   */
+  template<class MetType, class Metric>
+  void SetPositiveDefiniteMetric(const CGeometry *geometry, const CConfig *config, unsigned short iSensor) {
+    const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+    MetType A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      //--- Get full metric tensor
+      Metric::get(*base_nodes, iPoint, iSensor, A);
+
+      //--- Compute eigenvalues and eigenvectors
+      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+      //--- If NaN detected, set values to zero.
+      //--- Otherwise, store recombined matrix.
+      bool check_hess = true;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if (EigVal[iDim] != EigVal[iDim] || fabs(EigVal[iDim]) < 1.0e-16) {
+          EigVal[iDim] = 1.0e-16;
+          check_hess = false;
+        }
+        EigVal[iDim] = fabs(EigVal[iDim]);
+      }
+
+      CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+      //--- Store upper half of metric tensor
+      Metric::set(*base_nodes, iPoint, iSensor, A, 1.0);
+    }
+  }
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric.

@@ -2891,7 +2891,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief NUM_METHOD_HESS
    *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
-  addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, L2_PROJECTION);
+  addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
 
   /* DESCRIPTION: Sensors for mesh adaptation */
   addStringListOption("ADAP_SENSOR", nAdap_Sensor, Adap_Sensor);

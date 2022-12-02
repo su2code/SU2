@@ -5026,37 +5026,6 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
   }// iMarker
 }
 
-void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint) {
-
-  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
-
-  unsigned short nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
-
-  for(auto iVar = 0; iVar < nHess; iVar++){
-    //--- Get full Hessian matrix
-    base_nodes->GetHessianMat(iPoint, iVar, A);
-
-    //--- Compute eigenvalues and eigenvectors
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-
-    //--- If NaN detected, set values to zero.
-    //--- Otherwise, store recombined matrix.
-    bool check_hess = true;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      if (EigVal[iDim] != EigVal[iDim] || fabs(EigVal[iDim]) < 1.0e-16) {
-        EigVal[iDim] = 1.0e-16;
-        check_hess = false;
-      }
-      EigVal[iDim] = fabs(EigVal[iDim]);
-    }
-
-    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-    //--- Store upper half of Hessian matrix
-    base_nodes->SetHessianMat(iPoint, iVar, A, 1.0);
-  }
-}
-
 void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
 
   const unsigned long nPointDomain = geometry->GetnPointDomain();
@@ -5079,7 +5048,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
       for (auto& w : weights) std::fill(w.begin(), w.end(), 0.0);
       if (goal) {
         //--- Objective function terms
-        ObjectiveError(solver, geometry, config, iPoint, weights);
+        // ObjectiveError(solver, geometry, config, iPoint, weights);
 
         //--- Convective terms
         solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
@@ -5095,10 +5064,6 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
         }
       }
 
-      //--- Make Hessians positive definite
-      SetPositiveDefiniteHessian(geometry, config, iPoint);
-      if (turb && goal) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
-
       //--- Add Hessians
       if (goal) SetMetric(solver, geometry, config, iPoint, weights);
     }
@@ -5110,10 +5075,14 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
   //--- Compute Lp-normalization of the metric tensor field
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
     SU2_OMP_MASTER
-    if (goal)
+    if (goal) {
+      SetPositiveDefiniteMetric<double, metric::goal>(geometry, config, iSensor);
       NormalizeMetric<double, metric::goal>(geometry, config, iSensor);
-    else
+    }
+    else {
+      SetPositiveDefiniteMetric<su2double, metric::feature>(geometry, config, iSensor);
       NormalizeMetric<su2double, metric::feature>(geometry, config, iSensor);
+    }
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }

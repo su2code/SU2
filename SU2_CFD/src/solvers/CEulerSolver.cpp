@@ -9542,7 +9542,6 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
     varAdjTur = solver[ADJTURB_SOL]->GetNodes();
   }
 
-  unsigned short iDim, iVar, jVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   double A[5][5] = {0.0}, B[5][5] = {0.0}, C[5][5] = {0.0};
@@ -9610,15 +9609,13 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
     }
   }
 
-  for (iVar = 0; iVar < nVarFlo; ++iVar) {
-    for (jVar = 0; jVar < nVarFlo; ++jVar) {
-      const double adjx = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 0));
-      const double adjy = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 1));
+  for (auto jVar = 0; jVar < nVarFlo; ++jVar) {
+    const double adjx = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 0));
+    const double adjy = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 1));
+    const double adjz = (nDim == 3)? SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 2)): 0.0;
+    for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
       weights[1][iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
-      if(nDim == 3) {
-        const double adjz = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 2));
-        weights[1][iVar] += -C[iVar][jVar]*adjz;
-      }
+      if(nDim == 3) weights[1][iVar] += -C[iVar][jVar]*adjz;
     }
   }
 
@@ -9626,7 +9623,7 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
   if(turb) {
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     if (sst) {
-      for (iVar = 0; iVar < nVarTur; ++iVar){
+      for (auto iVar = 0; iVar < nVarTur; ++iVar){
         const double adjx = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, iVar, 0));
         const double adjy = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, iVar, 1));
         const double val  = SU2_TYPE::GetValue(varTur->GetPrimitive(iPoint, iVar));
@@ -9644,7 +9641,7 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
 
       //--- Contribution of k to dp/d(rk)
       //--- Momentum equation
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         const double adj = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, iDim));
         weights[1][nVarFlo+0] += (g-1.)*adj;
       }
