@@ -73,19 +73,35 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
 }
 
 unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs){
-    bool within_range,
-         MLP_was_evaluated = false;
+    /*--- Evaluate MLP based on target input and output variables ---*/
+    bool within_range,              // Within MLP training set range.
+         MLP_was_evaluated = false; // MLP was evaluated within training set range.
+
+    // If queries lie outside the training data set, the nearest MLP will be evaluated through extrapolation.
+    su2double distance_to_query = 1e20; // Overall smallest distance between training data set middle and query.
+    size_t i_ANN_nearest = 0,           // Index of nearest MLP.
+           i_map_nearest = 0;           // Index of nearest iomap index.
+
     for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
         within_range = true;
         size_t i_ANN = input_output_map->GetMLPIndex(i_map);
         su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
         
+        su2double distance_to_query_i = 0;
         for(size_t i_input=0; i_input < ANN_inputs.size(); i_input++) {
             std::pair<su2double, su2double> ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
-            if((ANN_inputs[i_input] < ANN_input_limits.first) || (ANN_inputs[i_input] > ANN_input_limits.second)) {
+
+            /* Check if query input lies within MLP training range */
+            if(!((ANN_inputs[i_input] > ANN_input_limits.first) && (ANN_inputs[i_input] < ANN_input_limits.second))) {
                 within_range = false;
             }
+
+            /* Calculate distance between MLP training range center point and query */
+            su2double middle = 0.5*(ANN_input_limits.second - ANN_input_limits.first);
+            distance_to_query_i += pow((ANN_inputs[i_input] - middle)/(ANN_input_limits.second - ANN_input_limits.first), 2);
         }
+        
+        /* Evaluate MLP when query inputs lie within training data range */
         if(within_range){
             NeuralNetworks[i_ANN]->predict(ANN_inputs);
             MLP_was_evaluated = true;
@@ -93,7 +109,23 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
                 *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
             }
         }
+
+        /* Update minimum distance to query */
+        if(sqrt(distance_to_query_i) < distance_to_query){
+            i_ANN_nearest = i_ANN;
+            distance_to_query = distance_to_query_i;
+            i_map_nearest = i_map;
+        }
     }
+    /* Evaluate nearest MLP in case no query data within range is found */
+    if(!MLP_was_evaluated) {
+        su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map_nearest, inputs);
+        NeuralNetworks[i_ANN_nearest]->predict(ANN_inputs);
+        for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map_nearest); i++){
+            *outputs[input_output_map->GetOutputIndex(i_map_nearest, i)] = NeuralNetworks[i_ANN_nearest]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map_nearest, i));
+        }
+    }
+
     return MLP_was_evaluated ? 0 : 1;
 }
 

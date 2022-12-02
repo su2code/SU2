@@ -72,6 +72,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     WindGust.resize(nPoint,nDim);
     WindGustDer.resize(nPoint,nDim+1);
   }
+
+  if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    Dataset_Extrapolation.resize(nPoint) = 0;
+    nIter_Newtonsolver.resize(nPoint) = 0;
+    FluidEntropy.resize(nPoint) = 0.0;
+  }
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

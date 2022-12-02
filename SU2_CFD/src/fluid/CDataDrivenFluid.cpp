@@ -31,10 +31,6 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 
   Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
 
-  /*--- For this branch, only MLP's are supported for data-driven fluid model. ---*/
-  if(Kind_DataDriven_Method != ENUM_DATADRIVEN_METHOD::MLP)
-    SU2_MPI::Error("Only multi-layer perceptrons are currently accepted for data-driven fluid models.", CURRENT_FUNCTION);
-
   /*--- Retrieve interpolation method file name. ---*/
   input_filename = config->GetDataDriven_Filename();
 
@@ -128,31 +124,8 @@ void CDataDrivenFluid::MapInputs_to_Outputs(){
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   Density = rho;
   StaticEnergy = e;
-  std::vector<std::string> output_names_rhoe_LUT;
-  std::vector<su2double*> outputs_LUT;
-  unsigned long exit_code;
-  switch (Kind_DataDriven_Method)
-  {
-  case ENUM_DATADRIVEN_METHOD::MLP:
-    /* --- Set MLP input vector values --- */
-    MLP_inputs[idx_rho] = Density;
-    MLP_inputs[idx_e]   = StaticEnergy;
 
-    /* --- Evaluate MLP --- */
-    exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
-    break;
-  case ENUM_DATADRIVEN_METHOD::LUT:
-
-    output_names_rhoe_LUT.resize(output_names_rhoe.size());
-    for(size_t iOutput=0; iOutput<output_names_rhoe.size(); iOutput++) { output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput]; }
-
-    outputs_LUT.resize(outputs_rhoe.size());
-    for(size_t iOutput=0; iOutput<outputs_rhoe.size(); iOutput++) { outputs_LUT[iOutput] = outputs_rhoe[iOutput]; }
-
-    lookup_table->LookUp_ProgEnth(output_names_rhoe_LUT, outputs_LUT, rho, e, "Density", "Energy");
-  default:
-    break;
-  }
+  Evaluate_Dataset(rho, e);
 
   /*--- Compute speed of sound ---*/
   su2double blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
@@ -172,14 +145,6 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   dPde_rho = -pow(rho, 2) * dTde_rho * dsdrho_e;
   dPdrho_e = -2*rho*Temperature*dsdrho_e - pow(rho, 2)*Temperature*d2sdrho2;
-
-  Cp = (1 / dTde_rho) * ( 1 + (1 / Density)*dPde_rho);
-  Cv = 1 / dTde_rho;
-  Gamma = Cp / Cv;
-  Gamma_Minus_One = Gamma - 1;
-  Gas_Constant = Cp - Cv;
-
-  within_range = exit_code;
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -230,6 +195,8 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 
   /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
   SetTDState_rhoe(rho, e);
+
+  nIter_Newton = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
@@ -278,6 +245,8 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
 
   /*--- Setting static energy as the converged value ---*/
   StaticEnergy = e;
+
+  nIter_Newton = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
@@ -319,6 +288,8 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
 
   /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
   SetTDState_rhoe(rho, e);
+
+  nIter_Newton = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
@@ -371,6 +342,8 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   }
   /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
   SetTDState_rhoe(rho, e);
+
+  nIter_Newton = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
@@ -422,4 +395,46 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 
   /*--- Calculate thermodynamic state based on converged values for density and energy ---*/
   SetTDState_rhoe(rho, e);
+
+  nIter_Newton = Iter;
+}
+
+unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
+  unsigned long exit_code;
+  MLP_inputs[idx_rho] = rho;
+  MLP_inputs[idx_e] = e;
+  exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  dsdrho_e = -exp(dsdrho_e);
+  d2sdrho2 = exp(d2sdrho2);
+
+  return exit_code;
+}
+
+unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
+  unsigned long exit_code;
+  std::vector<std::string> output_names_rhoe_LUT;
+  std::vector<su2double*> outputs_LUT;
+  output_names_rhoe_LUT.resize(output_names_rhoe.size());
+    for(size_t iOutput=0; iOutput<output_names_rhoe.size(); iOutput++) { output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput]; }
+
+  outputs_LUT.resize(outputs_rhoe.size());
+  for(size_t iOutput=0; iOutput<outputs_rhoe.size(); iOutput++) { outputs_LUT[iOutput] = outputs_rhoe[iOutput]; }
+
+  exit_code = lookup_table->LookUp_ProgEnth(output_names_rhoe_LUT, outputs_LUT, rho, e, "Density", "Energy");
+  return exit_code;
+}
+
+void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
+  /*--- Evaluate dataset based on regression method ---*/
+  switch (Kind_DataDriven_Method)
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    outside_dataset = Predict_LUT(rho, e);
+    break;
+  case ENUM_DATADRIVEN_METHOD::MLP:
+    outside_dataset = Predict_MLP(rho, e);
+    break;
+  default:
+    break;
+  }
 }

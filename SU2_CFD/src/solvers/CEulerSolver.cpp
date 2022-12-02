@@ -1674,6 +1674,12 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     bool physical = nodes->SetPrimVar(iPoint, GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
+    /*--- Update en---*/
+    if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+      nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
+      nodes->SetEntropy(iPoint, GetFluidModel()->GetEntropy());
+    }
+
     /* Check for non-realizable states for reporting. */
 
     if (!physical) nonPhysicalPoints++;
@@ -4865,6 +4871,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       Energy_b = u_b[nVar-1]/Density_b;
       StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        GetNodes()->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
+
       Pressure_b = GetFluidModel()->GetPressure();
       Temperature_b = GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;

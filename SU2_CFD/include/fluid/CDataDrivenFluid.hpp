@@ -71,9 +71,36 @@ class CDataDrivenFluid : public CFluidModel {
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable *lookup_table;
 
-  unsigned long within_range;
+  unsigned long outside_dataset, // Density-energy combination lies outside data set.
+                nIter_Newton;    // Number of Newton solver iterations.
 
+  /*!
+  * \brief Map dataset variables to specific look-up operations
+  */
   void MapInputs_to_Outputs();
+
+  /*!
+  * \brief Evaluate dataset through multi-layer perceptron.
+  * \param[in] rho - Density value.
+  * \param[in] e - Static energy value.
+  * \return Query point lies outside MLP normalization range (0 is inside, 1 is outside).
+  */
+  unsigned long Predict_MLP(su2double rho, su2double e);
+
+  /*!
+  * \brief Evaluate dataset through look-up table.
+  * \param[in] rho - Density value.
+  * \param[in] e - Static energy value.
+  * \return Query point lies outside table data range (0 is inside, 1 is outside).
+  */
+  unsigned long Predict_LUT(su2double rho, su2double e);
+
+  /*!
+  * \brief Evaluate the data set.
+  * \param[in] rho - Density value.
+  * \param[in] e - Static energy value.
+  */
+  void Evaluate_Dataset(su2double rho, su2double e);
 
  public:
   /*!
@@ -141,4 +168,16 @@ class CDataDrivenFluid : public CFluidModel {
   * \param[in] e - Initial value for static energy.
   */
   void SetEnergy(su2double e) override {e_start = e;}
+
+  /*!
+  * \brief Get fluid model extrapolation instance
+  * \return Query point lies outside fluid model data range.
+  */
+  unsigned long GetExtrapolation() override { return outside_dataset; }
+
+  /*!
+  * \brief Get number of Newton solver iterations.
+  * \return Newton solver iteration count at termination.
+  */
+  unsigned long GetnIter_Newton() override { return nIter_Newton; }
 };
