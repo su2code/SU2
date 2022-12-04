@@ -42,6 +42,7 @@ class CFluidScalar final : public CFluidModel {
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
   const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
+  const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
 
   const bool wilke;
