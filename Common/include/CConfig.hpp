@@ -1068,6 +1068,7 @@ private:
   su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
+  su2double darcy_number;               /*!< \brief Darcy Number for viscous flow prolbem (topology Optimization) */
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
@@ -1144,7 +1145,8 @@ private:
   bool Wrt_ZoneConv;              /*!< \brief Write the convergence history of each individual zone to screen. */
   bool Wrt_ZoneHist;              /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,             /*!< \brief Determines if the special output is written. */
-  Wrt_ForcesBreakdown;            /*!< \brief Determines if the forces breakdown file is written. */
+  Wrt_ForcesBreakdown,            /*!< \brief Determines if the forces breakdown file is written. */
+  Wrt_PorosityFile;               /*!< \brief Determines if the porosity file has to be written. */
   string *ScreenOutput,           /*!< \brief Kind of the screen output. */
   *HistoryOutput, *VolumeOutput;  /*!< \brief Kind of the output printed to the history file. */
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
@@ -9181,6 +9183,24 @@ public:
   void GetTopology_Optim_Projection(ENUM_PROJECTION_FUNCTION &type, su2double &param) const {
     type = top_optim_proj_type;  param = top_optim_proj_param;
   }
+
+  /*!
+   * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
+   * \return Damping factor applied to velocity updates at incompressible pressure inlets.
+   */
+  su2double GetDarcy_Number(void) const {return darcy_number; }
+
+  /*!
+   * \brief Get information about writing a template porosity file.
+   * \return <code>TRUE</code> means that a template porosity file will be written.
+   */
+  bool GetWrt_PorosityFile(void) const {return Wrt_PorosityFile; }
+
+  /*!
+   * \brief Set information about writing a template porosity file.
+   * \param[in] val_wrt_inletfile - flag for whether to write a template porosity file.
+   */
+  void SetWrt_PorosityFile(bool val_wrt_inletfile) { Wrt_PorosityFile = val_wrt_inletfile; }
 
   /*!
    * \brief Get the filenames of the individual config files

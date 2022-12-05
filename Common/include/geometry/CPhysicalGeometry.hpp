@@ -787,4 +787,6 @@ public:
    * \return A pointer to the reference node coordinate vector.
    */
   inline const su2double* GetStreamwise_Periodic_RefNode(void) const final { return Streamwise_Periodic_RefNode;}
+
+  void ReadPorosity(const CConfig *config) final;
 };

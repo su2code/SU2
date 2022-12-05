@@ -40,6 +40,7 @@ class CIncNSVariable final : public CIncEulerVariable {
 private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
+  VectorType Porosity;         /*!< \brief Porosity Variable for Topology Optimization */
 
 public:
   /*!
@@ -131,5 +132,13 @@ public:
    * \return Value of the DES length Scale.
    */
   inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
+
+inline void SetPorosity(unsigned long iPoint, su2double val_Porosity) override { Porosity[iPoint] = val_Porosity; }
+
+inline su2double GetPorosity(unsigned long iPoint) const { return Porosity[iPoint]; }
+
+inline su2double GetAdjointPorosity(unsigned long iPoint) const { return SU2_TYPE::GetDerivative(Porosity[iPoint]); }
+
+inline void RegisterPorosity(unsigned long iPoint) override { AD::RegisterInput(Porosity[iPoint]); }
 
 };

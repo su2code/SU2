@@ -1711,5 +1711,12 @@ public:
    * \return A pointer to the reference node coordinate vector.
    */
   inline virtual const su2double* GetStreamwise_Periodic_RefNode() const { return nullptr; }
+
+  /*!
+  * \brief A virtual member.
+  * \param config - Config
+  */
+  inline virtual void ReadPorosity(const CConfig *config) {}
+
 };
 

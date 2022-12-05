@@ -10886,3 +10886,148 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   }
   END_SU2_OMP_PARALLEL
 }
+
+void CPhysicalGeometry::ReadPorosity(const CConfig *config) {
+
+  /*--- This routine allows SU2 to read in the porosities for fluid
+   topology optimization from a simple ASCII file in the following
+   format:
+
+   x0, y0, z0, p0
+   x1, y1, z1, p1
+   ...
+   xN, yN, zN, pN
+
+   where x, y, z, are the coordinates of the grid nodes, and p is the
+   porosity value at that node, and N being the number of grid points.
+   Note that the nodes can be in any order in the file. ---*/
+
+  unsigned short iDim;
+  unsigned long iPoint, pointID;
+  unsigned long unmatched = 0, iPoint_Found = 0, iPoint_Ext = 0;
+
+  su2double Coor_External[3] = {0.0,0.0,0.0}, Porosity_External;
+  su2double dist;
+  int rankID;
+
+  string filename, text_line;
+  ifstream external_file;
+  ofstream sens_file;
+
+  if (rank == MASTER_NODE)
+    cout << "Reading nodal porosity values from file."<< endl;
+
+  /*--- Get the filename for the porosity file input. ---*/
+
+  filename = "porosity.dat";
+  external_file.open(filename.data(), ios::in);
+  if (external_file.fail()) {
+    SU2_MPI::Error(string("There is no porosity file ") +
+                   filename, CURRENT_FUNCTION);
+  }
+
+  /*--- Allocate the vectors to hold node coordinates and its local ID. ---*/
+
+  vector<su2double>     Coords(nDim*nPointDomain);
+  vector<unsigned long> PointIDs(nPointDomain);
+
+  /*--- Retrieve and store the coordinates of owned interior nodes
+   and their local point IDs. ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    PointIDs[iPoint] = iPoint;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Coords[iPoint*nDim + iDim] = nodes->GetCoord(iPoint, iDim);
+  }
+
+  /*--- Build the ADT of all interior nodes. ---*/
+
+  CADTPointsOnlyClass VertexADT(nDim, nPointDomain,
+                                Coords.data(), PointIDs.data(), true);
+
+  /*--- Loop over all interior mesh nodes owned by this rank and find the
+   matching point with minimum distance. Once we have the match, store the
+   porosity from the file for that node. ---*/
+
+  if (VertexADT.IsEmpty()) {
+
+    SU2_MPI::Error("No external points given to ADT.", CURRENT_FUNCTION);
+
+  } else {
+
+    /*--- Read the input sensitivity file and locate the point matches
+     using the ADT search, on a line-by-line basis. ---*/
+
+    iPoint_Found = 0; iPoint_Ext  = 0;
+    while (getline (external_file, text_line)) {
+
+      /*--- First, check that the line has nDim + 1 entries (the coords and
+       the porosity values), otherwise throw out. ---*/
+
+      istringstream point_line(text_line);
+      vector<string> tokens((istream_iterator<string>(point_line)),
+                            istream_iterator<string>());
+
+      if (tokens.size() == (nDim + 1)) {
+
+        istringstream point_line(text_line);
+
+        /*--- Get the coordinates and porosity for this line. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++) point_line >> Coor_External[iDim];
+
+        point_line >> Porosity_External;
+
+        /*--- Locate the nearest node to this external point. If it is on
+         our rank, then store the sensitivity value. ---*/
+
+        VertexADT.DetermineNearestNode(&Coor_External[0], dist,
+                                       pointID, rankID);
+
+        if (rankID == rank) {
+
+          /*--- Store porosity at the matched local node. ---*/
+
+          nodes->SetAuxVar(pointID, Porosity_External);
+
+          /*--- Keep track of how many points we match. ---*/
+
+          iPoint_Found++;
+
+          /*--- Keep track of points with poor matches for reporting. ---*/
+
+          if (dist > 1e-10) unmatched++;
+
+        }
+
+        /*--- Increment counter for total points in the external file. ---*/
+
+        iPoint_Ext++;
+
+      }
+    }
+
+    /*--- Close the external file. ---*/
+
+    external_file.close();
+
+    /*--- We have not received all nodes in the input file. Throw an error. ---*/
+
+    if ((iPoint_Ext < GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
+      SU2_MPI::Error("Not enough points in the porosity file.",
+                     CURRENT_FUNCTION);
+    }
+
+    /*--- Check for points with a poor match and report the count. ---*/
+
+    unsigned long myUnmatched = unmatched; unmatched = 0;
+    SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1,
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    if ((unmatched > 0) && (rank == MASTER_NODE)) {
+      cout << " Warning: there are " << unmatched;
+      cout << " points with a match distance > 1e-10." << endl;
+    }
+
+  }
+
+}

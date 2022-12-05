@@ -83,6 +83,8 @@ private:
   su2activematrix GridVel;                /*!< \brief Velocity of the grid for dynamic mesh cases. */
   CVectorOfMatrix GridVel_Grad;           /*!< \brief Gradient of the grid velocity for dynamic meshes. */
 
+  su2vector<unsigned long> Aux_Var;       /*!< \brief Auxillary Variable for topology optimization (pseudo density). */
+
   su2vector<unsigned long> Parent_CV;          /*!< \brief Index of the parent control volume in the agglomeration process. */
   su2vector<unsigned short> nChildren_CV;      /*!< \brief Number of children in the agglomeration process. */
   vector<vector<unsigned long> > Children_CV;  /*!< \brief Index of the children control volumes in the agglomeration process. */
@@ -878,5 +880,17 @@ public:
       }
     }
   }
+
+  /*!
+  * \brief Set the value of an auxiliary variable at a node.
+  * \param[in] val_auxvar - Input value of the auxiliary variable.
+  */
+  inline void SetAuxVar(unsigned long iPoint, su2double val_auxvar) { Aux_Var[iPoint] = val_auxvar; }
+
+  /*!
+   * \brief Get the value of an auxiliary variable at a node.
+   * \return Value of the auxiliary variable.
+   */
+  su2double GetAuxVar(unsigned long iPoint) const { return Aux_Var[iPoint]; }
 
 };
