@@ -504,6 +504,11 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
   return exit_code;
 }
 
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog, 
+                                            su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_name_var, val_var, val_prog, val_enth);
+}
+
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
                                             su2double val_x, su2double val_y, unsigned long i_level) {
   vector<su2double*> look_up_data;
@@ -515,6 +520,11 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   unsigned long exit_code = LookUp_XY(val_names_var, look_up_data, val_x, val_y, i_level);
 
   return exit_code;
+}
+
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_prog,
+                                su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
 }
 
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
@@ -572,6 +582,10 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   return exit_code;
 }
 
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars, su2double val_prog,
+                                su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
+}
 void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
                                    std::array<su2double,3>& interp_coeffs) {
 
