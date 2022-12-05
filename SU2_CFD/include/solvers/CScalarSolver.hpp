@@ -437,6 +437,17 @@ class CScalarSolver : public CSolver {
   }
 
   /*!
+   * \brief This base implementation simply copies the time step of the flow solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration) override;
+
+  /*!
    * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -466,7 +477,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -478,7 +489,7 @@ class CScalarSolver : public CSolver {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) final;
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Load a solution from a restart file.

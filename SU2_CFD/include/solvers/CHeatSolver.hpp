@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CSolver.hpp"
+#include "CScalarSolver.hpp"
 #include "../variables/CHeatVariable.hpp"
 
 /*!
@@ -36,7 +36,7 @@
  * \author O. Burghardt
  * \version 7.4.0 "Blackbird"
  */
-class CHeatSolver final : public CSolver {
+class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
@@ -44,7 +44,7 @@ protected:
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
   const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
-  unsigned short nVarFlow, nMarker;
+  unsigned short nVarFlow;
   vector<vector<su2double> > HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
@@ -52,19 +52,12 @@ protected:
   vector<su2double> AverageT_per_Marker;
   su2double Total_AverageT;
   su2double AllBound_AverageT;
-  vector<su2double>  Primitive_Flow_i;
+  vector<su2double> Primitive_Flow_i;
   vector<su2double> Primitive_Flow_j;
   vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
-
-  CHeatVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 
@@ -72,11 +65,6 @@ public:
    * \brief Constructor of the class.
    */
   CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -248,15 +236,6 @@ public:
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
-
-  /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
@@ -329,26 +308,6 @@ public:
         Total_ComboObj = 0.0;
     }
   }
-
-  /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
-
-  /*!
-   * \brief Update the solution using an explicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ExplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
 
   /*!
    * \brief A virtual member.

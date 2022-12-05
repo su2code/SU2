@@ -27,12 +27,14 @@
 
 #include "../../include/solvers/CHeatSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CScalarSolver.inl"
 
-CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver(),
-             flow(config->GetFluidProblem()), heat_equation(config->GetHeatProblem()) {
+/*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
+template class CScalarSolver<CHeatVariable>;
 
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = config->GetDynamic_Grid();
+CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+  : CScalarSolver<CHeatVariable>(geometry, config, false),
+    flow(config->GetFluidProblem()), heat_equation(config->GetHeatProblem()) {
 
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
 
@@ -47,13 +49,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
-  nMarker = config->GetnMarker_All();
-
-  /*--- Store the number of vertices on each marker for deallocation later ---*/
-
-  nVertex.resize(nMarker);
-  for (auto iMarker = 0u; iMarker < nMarker; iMarker++)
-    nVertex[iMarker] = geometry->nVertex[iMarker];
 
   /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -179,11 +174,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   /*--- Add the solver name (max 8 characters) ---*/
 
   SolverName = "HEAT";
-}
-
-CHeatSolver::~CHeatSolver(void) {
-
-  delete nodes;
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -874,20 +864,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   }
 }
 
-void CHeatSolver::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                                           CConfig* config) {
-  /*--- Complete residuals for periodic boundary conditions. We loop over
-   the periodic BCs in matching pairs so that, in the event that there are
-   adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. For implicit calculations
-   the Jacobians and linear system are also correctly adjusted here. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
-  }
-}
-
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned long iPointNormal;
@@ -1215,130 +1191,6 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   }
 }
 
-void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-
-  SetResToZero();
-
-  /*--- Update the solution ---*/
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->nodes->GetVolume(iPoint);
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
-
-    if (!config->GetContinuous_Adjoint()) {
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        nodes->AddSolution(iPoint,iVar, -Res*Delta);
-        Residual_RMS[iVar] += Res*Res;
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
-    }
-
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-}
-
-
-void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  /*--- Set maximum residual to zero ---*/
-
-  SetResToZero();
-
-  /*--- Build implicit system ---*/
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Read the residual ---*/
-
-    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-    const su2double dt = nodes->GetDelta_Time(iPoint);
-    if (dt != 0.0) {
-      /*--- For nodes on periodic boundaries, add the respective partner volume. ---*/
-      // Identical for flow and heat
-      const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-      Jacobian.AddVal2Diag(iPoint, Vol / dt);
-
-    } else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        const auto total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
-      }
-    }
-
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      const auto total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-    }
-  }
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      const auto total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-  }
-
-  /*--- Solve or smooth the linear system ---*/
-
-  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-  /*--- Store the the number of iterations of the linear solver ---*/
-  SetIterLinSolver(iter);
-
-  /*--- Store the value of the residual. ---*/
-  SetResLinSolver(System.GetResidual());
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
-    }
-  }
-
-  /*--- Synchronize the solution between master and passive periodic nodes after the linear solve. ---*/
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-}
-
 void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -1388,67 +1240,57 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
 void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
-
-  /*--- Local variables ---*/
-
-  const su2double *U_time_n, *U_time_nP1, *U_time_nM1;
-  su2double Volume_nP1;
-
+  if (flow) {
+    CScalarSolver<CHeatVariable>::SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
+    return;
+  }
   const bool first_order  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Store the physical time step ---*/
 
   const su2double TimeStep = config->GetDelta_UnstTimeND();
 
-  /*--- Compute the dual time-stepping source term for static meshes ---*/
+  /*--- Compute the dual time-stepping source term ---*/
+  /*--- Loop over all nodes (excluding halos) ---*/
 
-  if (!dynamic_grid) {
+  AD::StartNoSharedReading();
 
-    /*--- Loop over all nodes (excluding halos) ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+      we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+      previous solutions that are stored in memory. ---*/
 
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
+    const auto* U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+    const auto* U_time_n = nodes->GetSolution_time_n(iPoint);
+    const auto* U_time_nP1 = nodes->GetSolution(iPoint);
 
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n   = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
+    /*--- CV volume at time n+1. As we are on a static mesh, the volume
+      of the CV will remained fixed for all time steps. ---*/
 
-      /*--- CV volume at time n+1. As we are on a static mesh, the volume
-       of the CV will remained fixed for all time steps. ---*/
+    const su2double Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
+    /*--- Compute the dual time-stepping source term based on the chosen
+      time discretization scheme (1st- or 2nd-order).---*/
 
-      /*--- Compute the dual time-stepping source term based on the chosen
-       time discretization scheme (1st- or 2nd-order).---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      if (first_order)
+        LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * Volume_nP1 / TimeStep;
+      if (second_order)
+        LinSysRes(iPoint, iVar) += (3.0 * U_time_nP1[iVar] - 4.0 * U_time_n[iVar] +
+                                    1.0 * U_time_nM1[iVar]) * Volume_nP1 / (2.0 * TimeStep);
+    }
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        if (first_order)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-        if (second_order)
-          Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
-                            +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
-      }
-
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          for (auto jVar = 0u; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (first_order)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (second_order)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
-
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-      }
+    /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
+    if (implicit) {
+      if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1 / TimeStep);
+      if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1 * 3.0) / (2.0 * TimeStep));
     }
   }
+  END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 }
