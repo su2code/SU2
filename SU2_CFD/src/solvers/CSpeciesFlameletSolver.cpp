@@ -513,6 +513,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
+  enth_inlet = inlet_scalar_original[I_ENTH];
   fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet, inlet_scalar_original[I_ENTH]);
   inlet_scalar[I_ENTH] = enth_inlet;
 
@@ -630,7 +631,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  su2double enth_wall, prog_wall;
+  su2double enth_init, enth_wall, prog_wall;
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -645,7 +646,13 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
       if(config->GetSpecies_StrongBC()){
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
+
+        /*--- Initial guess for enthalpy value ---*/
+
+        enth_init = nodes->GetSolution(iPoint, I_ENTH);
+        enth_wall = enth_init;
+        
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any
@@ -713,7 +720,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
   su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  su2double enth_wall, prog_wall;
+  su2double enth_wall, enth_init, prog_wall;
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -728,10 +735,16 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
     if (geometry->nodes->GetDomain(iPoint)) {
 
       if(config->GetSpecies_StrongBC()){
+
+        /*--- Initial guess for enthalpy ---*/
+
+        enth_init = nodes->GetSolution(iPoint, I_ENTH);
+        enth_wall = enth_init;
+
         /*--- Set enthalpy on the wall ---*/
 
         prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any

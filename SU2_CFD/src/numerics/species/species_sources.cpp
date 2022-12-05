@@ -167,6 +167,7 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
 
 CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_general(void){
   delete [] Residual;
+  delete [] scalar_sources;
    if (Jacobian_i != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
