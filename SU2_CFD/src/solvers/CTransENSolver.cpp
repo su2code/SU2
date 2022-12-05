@@ -107,7 +107,7 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
     nInf = -20;
   }
   else {
-    lowlimit = 1e-4;
+    lowlimit = 1e-30;
     nInf = 0;
   }
 
