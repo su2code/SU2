@@ -2273,7 +2273,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_TRANS_MODEL::NONE: break;        
         case TURB_TRANS_MODEL::LM:     
           file << "Langtry and Menter's transition";
-          if (config->GetLMParsedOptions().LM2015){
+          if (config->GetLMParsedOptions().LM2015) {
             file << " w/ cross-flow corrections (2015)\n";
           } else {
             file << " (2009)\n";
@@ -2411,6 +2411,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp  \n";
+          break;
+
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
           file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -2441,7 +2445,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
           file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
           break;
-
+        case CONDUCTIVITYMODEL::COOLPROP:
+          file << "Conductivity Model: COOLPROP \n";
+          break;
         default:
           break;
       }
@@ -2733,6 +2739,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp \n";
+          break;
+
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
           file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -2777,6 +2787,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             file << "Conductivity Model: CONSTANT \n";
             file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
             file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
+            break;
+          case CONDUCTIVITYMODEL::COOLPROP:
+            file << "Conductivity Model: COOLPROP \n";
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:

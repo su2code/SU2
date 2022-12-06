@@ -923,25 +923,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
-    }
-    END_SU2_OMP_FOR
-
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
@@ -2610,9 +2593,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        
+
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
-  
+
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
         HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
