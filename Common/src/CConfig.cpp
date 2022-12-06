@@ -1361,7 +1361,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbIntensityAndViscRatioFreeStream[0], 0.05);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
@@ -1371,7 +1371,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("INITIAL_BCTHRUST", Initial_BCThrust, 4000.0);
   /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", TurbIntensityAndViscRatioFreeStream[1], 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
   addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /*!\brief AOA  \n DESCRIPTION: Angle of attack (degrees, only for compressible flows) \ingroup Config*/
@@ -8822,19 +8822,11 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
 }
 
 const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
-  /* if Turbulent Inlet is not provided, Inlet_TurbVal will be filled with the turbulent properties
-   provided in the .cfg file when SST model is used in order to recover default implementation in SU2*/
-  if (Marker_Inlet_Turb == nullptr) {
-    su2double* Inlet_TurbVal = new su2double[2]();
-    Inlet_TurbVal[0] = TurbulenceIntensity_FreeStream;
-    Inlet_TurbVal[1] = Turb2LamViscRatio_FreeStream;
-    return Inlet_TurbVal;
-  } else {
-    unsigned short iMarker_Inlet_Turb;
-    for (iMarker_Inlet_Turb = 0; iMarker_Inlet_Turb < nMarker_Inlet_Turb; iMarker_Inlet_Turb++)
-      if (Marker_Inlet_Turb[iMarker_Inlet_Turb] == val_marker) break;
-    return Inlet_TurbVal[iMarker_Inlet_Turb];
+  /*--- If Turbulent Inlet is not provided for the marker, return free stream values. ---*/
+  for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {
+    if (Marker_Inlet_Turb[iMarker] == val_marker) return Inlet_TurbVal[iMarker];
   }
+  return TurbIntensityAndViscRatioFreeStream;
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

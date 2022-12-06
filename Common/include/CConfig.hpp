@@ -852,6 +852,7 @@ private:
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  su2double TurbIntensityAndViscRatioFreeStream[2]; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
@@ -860,8 +861,6 @@ private:
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
-  TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
-  Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
@@ -1311,7 +1310,7 @@ private:
   void addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
 
-  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string * & Marker_Inlet_Turb, 
+  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string * & Marker_Inlet_Turb,
                           su2double** & Turb_Properties, unsigned short & nTurb_Properties);
 
   template <class Tenum>
@@ -1951,7 +1950,7 @@ public:
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
-  su2double GetTurbulenceIntensity_FreeStream(void) const { return TurbulenceIntensity_FreeStream; }
+  su2double GetTurbulenceIntensity_FreeStream(void) const { return TurbIntensityAndViscRatioFreeStream[0]; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
@@ -1987,7 +1986,7 @@ public:
    * \brief Get the value of the turbulent to laminar viscosity ratio.
    * \return Ratio of turbulent to laminar viscosity ratio.
    */
-  su2double GetTurb2LamViscRatio_FreeStream(void) const { return Turb2LamViscRatio_FreeStream;}
+  su2double GetTurb2LamViscRatio_FreeStream(void) const { return TurbIntensityAndViscRatioFreeStream[1]; }
 
   /*!
    * \brief Get the value of the Reynolds length.
