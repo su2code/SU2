@@ -637,20 +637,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Interpolate solution on coarse grids ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    const auto& fineSol = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution();
-
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      su2double Solution[MAXNVAR] = {0.0};
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-
-      for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double weight = geometry[iMesh-1]->nodes->GetVolume(Point_Fine) / Area_Parent;
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] += weight * fineSol(Point_Fine, iVar);
-      }
-      solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
-    }
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
   }
 }
