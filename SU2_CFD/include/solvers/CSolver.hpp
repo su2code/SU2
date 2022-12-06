@@ -4339,6 +4339,35 @@ public:
    */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
+  /*!
+   * \brief Interpolate variables to a coarser grid level.
+   * \note Halo values are not communicated in this function.
+   * \param[in] geoFine - Fine grid.
+   * \param[in] varsFine - Matrix of variables on the fine grid.
+   * \param[in] geoCoarse - Coarse grid.
+   * \param[in] varsCoarse - Matrix of variables interpolated to the coarse grid.
+   */
+  inline static void MultigridRestriction(const CGeometry& geoFine, const su2activematrix& varsFine,
+                                          const CGeometry& geoCoarse, su2activematrix& varsCoarse) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geoCoarse.GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPointCoarse = 0ul; iPointCoarse < geoCoarse.GetnPointDomain(); ++iPointCoarse) {
+
+      for (auto iVar = 0ul; iVar < varsCoarse.cols(); iVar++) {
+        varsCoarse(iPointCoarse, iVar) = 0.0;
+      }
+      const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
+
+      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+        const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
+        for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
+          varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
