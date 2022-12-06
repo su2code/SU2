@@ -30,6 +30,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -3048,6 +3049,12 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
+   */
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -4371,8 +4378,37 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
+
+  /*!
+   * \brief Interpolate variables to a coarser grid level.
+   * \note Halo values are not communicated in this function.
+   * \param[in] geoFine - Fine grid.
+   * \param[in] varsFine - Matrix of variables on the fine grid.
+   * \param[in] geoCoarse - Coarse grid.
+   * \param[in] varsCoarse - Matrix of variables interpolated to the coarse grid.
+   */
+  inline static void MultigridRestriction(const CGeometry& geoFine, const su2activematrix& varsFine,
+                                          const CGeometry& geoCoarse, su2activematrix& varsCoarse) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geoCoarse.GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPointCoarse = 0ul; iPointCoarse < geoCoarse.GetnPointDomain(); ++iPointCoarse) {
+
+      for (auto iVar = 0ul; iVar < varsCoarse.cols(); iVar++) {
+        varsCoarse(iPointCoarse, iVar) = 0.0;
+      }
+      const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
+
+      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+        const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
+        for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
+          varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
 
 protected:
   /*!

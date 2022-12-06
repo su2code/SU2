@@ -577,6 +577,7 @@ enum ENUM_FLUIDMODEL {
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
+  COOLPROP = 10,          /*!< \brief Thermodynamics library. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -589,6 +590,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
+  MakePair("COOLPROP", COOLPROP)
 };
 
 /*!
@@ -678,11 +680,13 @@ enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
+  COOLPROP, /*!< \brief CoolProp viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+  MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
 };
 
 /*!
@@ -704,11 +708,13 @@ enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
+  COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
+  MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
 };
 
 /*!
@@ -811,69 +817,71 @@ static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
 /*!
  * \brief Types of centered spatial discretizations
  */
-enum ENUM_CENTERED {
-  NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
-  JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
-  LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
-  JST_MAT = 3,        /*!< \brief JST with matrix dissipation. */
-  JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+enum class CENTERED {
+  NONE,           /*!< \brief No centered scheme is used. */
+  JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
+  LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
+  JST_MAT,        /*!< \brief JST with matrix dissipation. */
+  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
-static const MapType<std::string, ENUM_CENTERED> Centered_Map = {
-  MakePair("NONE", NO_CENTERED)
-  MakePair("JST", JST)
-  MakePair("JST_KE", JST_KE)
-  MakePair("JST_MAT", JST_MAT)
-  MakePair("LAX-FRIEDRICH", LAX)
+static const MapType<std::string, CENTERED> Centered_Map = {
+  MakePair("NONE", CENTERED::NONE)
+  MakePair("JST", CENTERED::JST)
+  MakePair("JST_KE", CENTERED::JST_KE)
+  MakePair("JST_MAT", CENTERED::JST_MAT)
+  MakePair("LAX-FRIEDRICH", CENTERED::LAX)
 };
 
 
-// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
+// If you add to UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief Types of upwind spatial discretizations
  */
-enum ENUM_UPWIND {
-  NO_UPWIND = 0,              /*!< \brief No upwind scheme is used. */
-  ROE = 1,                    /*!< \brief Roe's upwind numerical method. */
-  SCALAR_UPWIND = 2,          /*!< \brief Scalar upwind numerical method. */
-  AUSM = 3,                   /*!< \brief AUSM numerical method. */
-  HLLC = 4,                   /*!< \brief HLLC numerical method. */
-  SW = 5,                     /*!< \brief Steger-Warming method. */
-  MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
-  TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
-  SLAU = 8,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
-  L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
-  LMROE = 12,                 /*!< \brief Rieper's Low Mach ROE numerical method . */
-  SLAU2 = 13,                 /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
-  FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
-  LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
-  AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17,           /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS = 18,            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
-  ISMAIL_ROE = 19             /*!< \brief Entropy stable flux function of Ismail and Roe. */
+enum class UPWIND {
+  NONE,                   /*!< \brief No upwind scheme is used. */
+  ROE,                    /*!< \brief Roe's upwind numerical method. */
+  SCALAR_UPWIND,          /*!< \brief Scalar upwind numerical method. */
+  AUSM,                   /*!< \brief AUSM numerical method. */
+  HLLC,                   /*!< \brief HLLC numerical method. */
+  SW,                     /*!< \brief Steger-Warming method. */
+  MSW,                    /*!< \brief Modified Steger-Warming method. */
+  TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
+  SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
+  CUSP,                   /*!< \brief Convective upwind and split pressure numerical method. */
+  CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
+  L2ROE,                  /*!< \brief L2ROE numerical method . */
+  LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2,                  /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
+  FDS,                    /*!< \brief Flux difference splitting upwind method (incompressible flows). */
+  LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
+  ISMAIL_ROE,             /*!< \brief Entropy stable flux function of Ismail and Roe. */
+  AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
+  AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
-static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
-  MakePair("NONE", NO_UPWIND)
-  MakePair("ROE", ROE)
-  MakePair("TURKEL_PREC", TURKEL)
-  MakePair("AUSM", AUSM)
-  MakePair("AUSMPLUSUP", AUSMPLUSUP)
-  MakePair("AUSMPLUSUP2", AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", AUSMPWPLUS)
-  MakePair("SLAU", SLAU)
-  MakePair("HLLC", HLLC)
-  MakePair("SW", SW)
-  MakePair("MSW", MSW)
-  MakePair("CUSP", CUSP)
-  MakePair("SCALAR_UPWIND", SCALAR_UPWIND)
-  MakePair("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
-  MakePair("L2ROE", L2ROE)
-  MakePair("LMROE", LMROE)
-  MakePair("SLAU2", SLAU2)
-  MakePair("FDS", FDS)
-  MakePair("LAX-FRIEDRICH", LAX_FRIEDRICH)
-  MakePair("ISMAIL-ROE", ISMAIL_ROE)
+static const MapType<std::string, UPWIND> Upwind_Map = {
+  MakePair("NONE", UPWIND::NONE)
+  MakePair("ROE", UPWIND::ROE)
+  MakePair("TURKEL_PREC", UPWIND::TURKEL)
+  MakePair("AUSM", UPWIND::AUSM)
+  MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
+  MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
+  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("SLAU", UPWIND::SLAU)
+  MakePair("HLLC", UPWIND::HLLC)
+  MakePair("SW", UPWIND::SW)
+  MakePair("MSW", UPWIND::MSW)
+  MakePair("CUSP", UPWIND::CUSP)
+  MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
+  MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
+  MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
+  MakePair("L2ROE", UPWIND::L2ROE)
+  MakePair("LMROE", UPWIND::LMROE)
+  MakePair("SLAU2", UPWIND::SLAU2)
+  MakePair("FDS", UPWIND::FDS)
+  MakePair("LAX-FRIEDRICH", UPWIND::LAX_FRIEDRICH)
+  MakePair("ISMAIL-ROE", UPWIND::ISMAIL_ROE)
 };
 
 /*!

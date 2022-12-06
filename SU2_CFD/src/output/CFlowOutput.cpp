@@ -35,6 +35,7 @@
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/variables/CNEMOEulerVariable.hpp"
+#include "../../include/fluid/CCoolProp.hpp"
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
   CFVMOutput(config, nDim, fem_output),
@@ -2376,6 +2377,20 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Critical Temperature (non-dim) :  "
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
         break;
+
+      case COOLPROP: {
+        CCoolProp auxFluidModel(config->GetFluid_Name());
+        file << "Fluid Model: CoolProp library \n";
+        file << "Specific gas constant: " << auxFluidModel.GetGas_Constant()<< " N.m/kg.K.\n";
+        file << "Specific gas constant(non-dim): " << config->GetGas_ConstantND() << "\n";
+        file << "Specific Heat Ratio: "<< auxFluidModel.GetGamma() << "\n";
+        file << "Critical Pressure:   " << auxFluidModel.GetPressure_Critical() << " Pa.\n";
+        file << "Critical Temperature:  " << auxFluidModel.GetTemperature_Critical()<< " K.\n";
+        file << "Critical Pressure (non-dim):   " << auxFluidModel.GetPressure_Critical()/ config->GetPressure_Ref()
+            << "\n";
+        file << "Critical Temperature (non-dim) :  "
+            << auxFluidModel.GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
+        } break;
     }
 
     if (viscous) {
@@ -2386,6 +2401,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           if (si_units) file << " N.s/m^2.\n";
           else file << " lbf.s/ft^2.\n";
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
+          break;
+
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp  \n";
           break;
 
         case VISCOSITYMODEL::SUTHERLAND:
@@ -2418,7 +2437,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
           file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
           break;
-
+        case CONDUCTIVITYMODEL::COOLPROP:
+          file << "Conductivity Model: COOLPROP \n";
+          break;
         default:
           break;
       }
@@ -2710,6 +2731,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
 
+        case VISCOSITYMODEL::COOLPROP:
+          file << "Viscosity Model: CoolProp \n";
+          break;
+
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
           file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
@@ -2754,6 +2779,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             file << "Conductivity Model: CONSTANT \n";
             file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant() << " W/m^2.K.\n";
             file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
+            break;
+          case CONDUCTIVITYMODEL::COOLPROP:
+            file << "Conductivity Model: COOLPROP \n";
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:
