@@ -1407,7 +1407,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.029768, -1.660429, -1.423789, -0.973401, 1.574315, -3.769095, 19.000000, -5.128233,  10.000000, -5.564100, 3.000000, -6.263100,  2.000000, 1.000000, 0.000000, 1.000000]
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.027781, -1.659548, -1.422200, -0.975604, 1.579089, -3.768887, 23.000000, -5.072148, 12.000000, -5.360480, 4.000000, -6.098307, 2.000000, 1.000000, 0.000000, 1.000000]
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.new_output = True
