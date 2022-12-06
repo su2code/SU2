@@ -156,6 +156,8 @@ class CScalarSolver : public CSolver {
   void BC_Fluid_Interface_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, CGeometry *geometry,
                                CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config) {
+    if (solver_container[FLOW_SOL] == nullptr) return;
+
     const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
     su2activevector PrimVar_j(nPrimVar);
     su2double solution_j[MAXNVAR] = {0.0};

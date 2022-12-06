@@ -484,8 +484,6 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
                                                             CConfig* config) {
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
   ComputeUnderRelaxationFactor(config);
 
   /*--- Update solution (system written in terms of increments) ---*/
@@ -494,6 +492,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     /*--- Update the scalar solution. For transport equations, where Solution is not equivalent with the transported
      * quantity, multiply the respective factor.  ---*/
     if (Conservative) {
+      const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
