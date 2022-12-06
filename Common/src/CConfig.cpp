@@ -4782,7 +4782,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_TYPE::SetDerivative(Reynolds, 1.0);
         break;
       case D_TURB2LAM:
-       SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
+       SU2_TYPE::SetDerivative(TurbIntensityAndViscRatioFreeStream[1], 1.0);
         break;
       default:
         /*--- All other cases are handled in the specific solver ---*/
