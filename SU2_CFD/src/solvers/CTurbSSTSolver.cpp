@@ -254,32 +254,31 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetViscous_Wall(iMarker)) {
-          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-            if (geometry->nodes->GetDomain(iPoint)) {
-              const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-              su2double shearStress = 0.0;
-              for(auto iDim = 0u; iDim < nDim; iDim++) {
-                shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
-              }
-              shearStress = sqrt(shearStress);
-
-              const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
-              const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
-              const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
-              const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
-
-              nodes->SetTurbIndex(iPoint, turbulence_index);
-
+            su2double shearStress = 0.0;
+            for(auto iDim = 0u; iDim < nDim; iDim++) {
+              shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
             }
+            shearStress = sqrt(shearStress);
+
+            const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+            const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+            const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
+            const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
+
+            nodes->SetTurbIndex(iPoint, turbulence_index);
+
           }
-          END_SU2_OMP_FOR
-          break;
+        }
+        END_SU2_OMP_FOR
       }
   }
 

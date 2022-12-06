@@ -200,7 +200,7 @@ class CSourceBase_TurbSA : public CNumerics {
         //var.intermittency = 1.0;
         // Is wrong the reference from NASA?
         // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
-        var.interDestrFactor = min(max(intermittency_eff_i, 0.5), 1.0);
+        var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
 
       } else {
         /*--- Do not modify the production. ---*/

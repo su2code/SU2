@@ -63,6 +63,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Define variables needed for transition from config file */
   options = config->GetLMParsedOptions();
+  TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
   /*--- Single grid simulation ---*/
@@ -233,7 +234,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     if(TurbFamily == TURB_FAMILY::SA)
       Tu = config->GetTurbulenceIntensity_FreeStream()*100;
 
-    const su2double Corr_Rec = ReThetaC_Correlations(Tu, Re_t);
+    const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
 
     su2double R_t = 1.0;
     if(TurbFamily == TURB_FAMILY::KW)

@@ -27,6 +27,7 @@
 #pragma once
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../scalar/scalar_sources.hpp"
+#include "./trans_correlations.hpp"
 
 /*!
  * \class CSourcePieceWise_TranLM
@@ -62,135 +63,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];  // Static storage for the Jacobian (which needs to be pointer for return type).
 
-  su2double ReThetaC_Correlations(const su2double Tu) const {
-    su2double rethetac = 0.0;
-
-    switch (options.Correlation) {
-      case TURB_TRANS_CORRELATION::MALAN: {
-        rethetac = min(0.615 * TransVar_i[1] + 61.5, TransVar_i[1]);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::SULUKSNA: {
-        rethetac = min(0.1 * exp(-0.0022 * TransVar_i[1] + 12), 300.0);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::KRAUSE: {
-        rethetac = 0.91 * TransVar_i[1] + 5.32;
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::KRAUSE_HYPER: {
-        const su2double FirstTerm = -0.042 * pow(Tu, 3);
-        const su2double SecondTerm = 0.4233 * pow(Tu, 2);
-        const su2double ThirdTerm = 0.0118 * pow(Tu, 1);
-        rethetac = TransVar_i[1] / (FirstTerm + SecondTerm + ThirdTerm + 1.0744);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
-        const su2double FirstTerm = 4.45 * pow(Tu, 3);
-        const su2double SecondTerm = 5.7 * pow(Tu, 2);
-        const su2double ThirdTerm = 1.37 * pow(Tu, 1);
-        rethetac = (FirstTerm - SecondTerm + ThirdTerm + 0.585) * TransVar_i[1];
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MEDIDA: {
-        rethetac = 0.62 * TransVar_i[1];
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
-        if (TransVar_i[1] <= 1870) {
-          const su2double FirstTerm = (-396.035 * pow(10, -2));
-          const su2double SecondTerm = (10120.656 * pow(10, -4)) * TransVar_i[1];
-          const su2double ThirdTerm = (-868.230 * pow(10, -6)) * pow(TransVar_i[1], 2);
-          const su2double ForthTerm = (696.506 * pow(10, -9)) * pow(TransVar_i[1], 3);
-          const su2double FifthTerm = (-174.105 * pow(10, -12)) * pow(TransVar_i[1], 4);
-          rethetac = FirstTerm + SecondTerm + ThirdTerm + ForthTerm + FifthTerm;
-        } else {
-          rethetac = TransVar_i[1] - (593.11 + 0.482 * (TransVar_i[1] - 1870.0));
-        }
-
-        break;
-      }
-      case TURB_TRANS_CORRELATION::DEFAULT:
-        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
-                       CURRENT_FUNCTION);
-        break;
-    }
-
-    return rethetac;
-  }
-
-  su2double FLength_Correlations(const su2double Tu) const {
-    su2double F_length1 = 0.0;
-
-    switch (options.Correlation) {
-      case TURB_TRANS_CORRELATION::MALAN: {
-        F_length1 = min(exp(7.168 - 0.01173 * TransVar_i[1]) + 0.5, 300.0);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::SULUKSNA: {
-        const su2double FirstTerm = -pow(0.025 * TransVar_i[1], 2) + 1.47 * TransVar_i[1] - 120.0;
-        F_length1 = min(max(FirstTerm, 125.0), TransVar_i[1]);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::KRAUSE: {
-        F_length1 = 3.39 * TransVar_i[1] + 55.03;
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::KRAUSE_HYPER: {
-        if (Tu <= 1.) {
-          F_length1 = log(TransVar_i[1] + 1) / Tu;
-        } else {
-          const su2double FirstTerm = 0.2337 * pow(Tu, 2);
-          const su2double SecondTerm = -1.3493 * pow(Tu, 1);
-          F_length1 = log(TransVar_i[1] + 1) * (FirstTerm + SecondTerm + 2.1449);
-        }
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: {
-        const su2double FirstTerm = 0.171 * pow(Tu, 2);
-        const su2double SecondTerm = 0.0083 * pow(Tu, 1);
-        F_length1 = (FirstTerm - SecondTerm + 0.0306);
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MEDIDA: {
-        F_length1 = 40;
-        break;
-      }
-
-      case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
-        if (TransVar_i[1] < 400) {
-          F_length1 = 39.8189 + (-119.270 * pow(10, -4)) * TransVar_i[1] +
-                      (-132.567 * pow(10, -6)) * TransVar_i[1] * TransVar_i[1];
-        } else if (TransVar_i[1] < 596) {
-          F_length1 = 263.404 + (-123.939 * pow(10, -2)) * TransVar_i[1] +
-                      (194.548 * pow(10, -5)) * pow(TransVar_i[1], 2) +
-                      (-101.695 * pow(10, -8)) * pow(TransVar_i[1], 3);
-        } else if (TransVar_i[1] < 1200) {
-          F_length1 = 0.5 - (3.0 * pow(10, -4)) * (TransVar_i[1] - 596.0);
-        } else {
-          F_length1 = 0.3188;
-        }
-        break;
-      }
-      case TURB_TRANS_CORRELATION::DEFAULT:
-        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
-                       CURRENT_FUNCTION);
-        break;
-    }
-
-    return F_length1;
-  }
+  TransLMCorrelations TransCorrelations;
 
  public:
   /*!
@@ -200,7 +73,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-      : CNumerics(val_nDim, 2, config), idx(val_nDim, config->GetnSpecies()), options(config->GetLMParsedOptions()) {
+      : CNumerics(val_nDim, 2, config), idx(val_nDim, config->GetnSpecies()), options(config->GetLMParsedOptions()){
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
@@ -208,6 +81,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
     hRoughness = config->GethRoughness();
+
+    TransCorrelations.SetOptions(options);
+    
   }
 
   /*!
@@ -258,10 +134,10 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::SA) Tu = config->GetTurbulenceIntensity_FreeStream() * 100;
 
       /*--- Corr_RetC correlation*/
-      const su2double Corr_Rec = ReThetaC_Correlations(Tu);
+      const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, TransVar_i[1]);
 
       /*--- F_length correlation*/
-      const su2double Corr_F_length = FLength_Correlations(Tu);
+      const su2double Corr_F_length = TransCorrelations.FLength_Correlations(Tu, TransVar_i[1]);
 
       /*--- F_length ---*/
       su2double F_length = 0.0;

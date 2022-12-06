@@ -82,7 +82,8 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
-  intermittency_eff_i; /*!< \brief effective intermittency at point i. */
+  intermittency_eff_i, /*!< \brief effective intermittency at point i. */
+  intermittency_i; /*!< \brief intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -717,6 +718,14 @@ public:
    */
   void SetIntermittencyEff(su2double val_intermittency_eff_i) {
     intermittency_eff_i = val_intermittency_eff_i;
+  }
+
+  /*!
+   * \brief Set the value of the intermittency for the LM model.
+   * \param[in] intermittency_i - Value of the intermittency at point i.
+   */
+  void SetIntermittency(su2double val_intermittency_i) {
+    intermittency_i = val_intermittency_i;
   }
 
   /*!
