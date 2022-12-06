@@ -1048,7 +1048,8 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
     }
   }
 
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+  // If the simulation is RANS or LES, set the eddy (or SGS) viscosity for output
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE || config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
@@ -1060,6 +1061,11 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+  }
+
+  // If the simulation is LES, set the wall-distance for output (this is almost ALWAYS useful in LES)
+  if (config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE){
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "LES", "Wall distance value");
   }
 
   if (config->GetViscous()) {
@@ -1118,7 +1124,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE || config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
@@ -1128,6 +1134,11 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+  }
+
+  // Wall distance almost always useful for LES
+  if (config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE){
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 

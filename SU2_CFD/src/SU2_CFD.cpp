@@ -81,6 +81,14 @@ int main(int argc, char *argv[]) {
   libxsmm_init();
 #endif
 
+int np, iam;
+
+#pragma omp parallel default(shared) private(iam, np)
+  {
+    np = omp_get_num_threads();
+    iam = omp_get_thread_num();
+    std::cout << "Hello from thread " << iam << " out of " << np << " on rank " << SU2_MPI::GetRank() << " of " << SU2_MPI::GetSize() << std::endl; 
+  }
   /*--- Create a pointer to the main SU2 Driver ---*/
 
   CDriver* driver = nullptr;

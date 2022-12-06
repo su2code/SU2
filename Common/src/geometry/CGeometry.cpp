@@ -3880,6 +3880,11 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
         wallDistanceNeeded[iZone] = true;
       }
 
+      TURB_SGS_MODEL kindSGS = config_container[iZone]->GetKind_SGS_Model();
+      if (kindSolver == MAIN_SOLVER::NAVIER_STOKES && kindSGS != TURB_SGS_MODEL::NONE){
+        wallDistanceNeeded[iZone] = true;
+      }
+
       /*--- Set the wall distances in all zones to the numerical limit.
      * This is necessary, because before a computed distance is set, it will be checked
      * whether the new distance is smaller than the currently stored one. ---*/
