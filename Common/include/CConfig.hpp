@@ -195,7 +195,7 @@ private:
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
-  nTurb_Properties,           /*!< \brief Number of turbulent intensities per inlet markers. */
+  nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
