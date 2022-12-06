@@ -875,7 +875,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
-  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    //Inlet_TurbVal = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -5363,25 +5363,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
         CURRENT_FUNCTION);
 
-  /* if Turbulent Inlet is not provided, MARKER_INLET_TURBULENT will be filled with the turbulent properties
-   provided in the .cfg file when SST model is used in order to recover default implementation in SU2*/
-
-  if (Marker_Inlet_Turb == nullptr && Kind_Turb_Model == TURB_MODEL::SST) {
-    string* Inlet_Options[5] = {Marker_Inlet, Marker_Riemann, Marker_Giles, Marker_Supersonic_Inlet,
-                                Marker_ActDiskInlet};
-    for (unsigned short i = 0; i < 5; i++) {
-      if (Inlet_Options[i] != nullptr) Marker_Inlet_Turb = Inlet_Options[i];
-    }
-    nMarker_Inlet_Turb =
-        nMarker_Inlet + nMarker_Riemann + nMarker_Giles + nMarker_Supersonic_Inlet + nMarker_ActDiskInlet;
-    Inlet_TurbVal = new su2double*[nMarker_Inlet_Turb];
-    for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Turb; iMarker++) {
-      Inlet_TurbVal[iMarker] = new su2double[2]();
-      Inlet_TurbVal[iMarker][0] = TurbulenceIntensity_FreeStream;
-      Inlet_TurbVal[iMarker][1] = Turb2LamViscRatio_FreeStream;
-    }
-  }
-
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
@@ -8841,10 +8822,19 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
 }
 
 const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
-  unsigned short iMarker_Inlet_Turb;
-  for (iMarker_Inlet_Turb = 0; iMarker_Inlet_Turb < nMarker_Inlet_Turb; iMarker_Inlet_Turb++)
-    if (Marker_Inlet_Turb[iMarker_Inlet_Turb] == val_marker) break;
-  return Inlet_TurbVal[iMarker_Inlet_Turb];
+  /* if Turbulent Inlet is not provided, Inlet_TurbVal will be filled with the turbulent properties
+   provided in the .cfg file when SST model is used in order to recover default implementation in SU2*/
+  if (Marker_Inlet_Turb == nullptr) {
+    su2double* Inlet_TurbVal = new su2double[2]();
+    Inlet_TurbVal[0] = TurbulenceIntensity_FreeStream;
+    Inlet_TurbVal[1] = Turb2LamViscRatio_FreeStream;
+    return Inlet_TurbVal;
+  } else {
+    unsigned short iMarker_Inlet_Turb;
+    for (iMarker_Inlet_Turb = 0; iMarker_Inlet_Turb < nMarker_Inlet_Turb; iMarker_Inlet_Turb++)
+      if (Marker_Inlet_Turb[iMarker_Inlet_Turb] == val_marker) break;
+    return Inlet_TurbVal[iMarker_Inlet_Turb];
+  }
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

@@ -579,8 +579,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
           Density_Inlet = FluidModel->GetDensity();
         }
         const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
-        const su2double Intensity = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker))[0];
-        const su2double viscRatio = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker))[1];
+        const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+        const su2double Intensity = Turb_Properties[0];
+        const su2double viscRatio = Turb_Properties[1];
         const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
         Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
