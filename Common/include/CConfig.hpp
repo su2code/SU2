@@ -1310,7 +1310,7 @@ private:
   void addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
 
-  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string * & Marker_Inlet_Turb,
+  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                           su2double** & Turb_Properties, unsigned short & nTurb_Properties);
 
   template <class Tenum>
