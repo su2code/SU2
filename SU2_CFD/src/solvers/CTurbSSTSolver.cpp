@@ -249,8 +249,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Compute turbulence index ---*/
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetViscous_Wall(iMarker)) {
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
