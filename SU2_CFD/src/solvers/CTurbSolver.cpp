@@ -179,25 +179,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
-    }
-    END_SU2_OMP_FOR
-
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][TURB_SOL]->GetNodes()->GetSolution());
     solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
