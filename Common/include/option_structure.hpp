@@ -1186,16 +1186,16 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  * \brief LM Options
  */
 enum class LM_OPTIONS {
-  NONE,     /*!< \brief No option / default. */
-  LM2015,      /*!< \brief Cross-flow corrections. */
-  MALAN,    /*!< \brief Kind of transition correlation model (Malan). */
-  SULUKSNA,    /*!< \brief Kind of transition correlation model (Suluksna). */
-  KRAUSE,    /*!< \brief Kind of transition correlation model (Krause). */
-  KRAUSE_HYPER,    /*!< \brief Kind of transition correlation model (Krause hypersonic). */
-  MEDIDA_BAEDER,    /*!< \brief Kind of transition correlation model (Medida-Baeder). */
-  MEDIDA,    /*!< \brief Kind of transition correlation model (Medida). */
-  MENTER_LANGTRY,    /*!< \brief Kind of transition correlation model (Menter-Langtry). */
-  DEFAULT    /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+  NONE,         /*!< \brief No option / default. */
+  LM2015,       /*!< \brief Cross-flow corrections. */
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */```
 };
 
 static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
