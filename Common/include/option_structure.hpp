@@ -1214,14 +1214,14 @@ static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
  * \brief Types of transition correlations
  */
 enum class TURB_TRANS_CORRELATION {
-  MALAN,    /*!< \brief Kind of transition correlation model (Malan). */
-  SULUKSNA,    /*!< \brief Kind of transition correlation model (Suluksna). */
-  KRAUSE,    /*!< \brief Kind of transition correlation model (Krause). */
-  KRAUSE_HYPER,    /*!< \brief Kind of transition correlation model (Krause hypersonic). */
-  MEDIDA_BAEDER,    /*!< \brief Kind of transition correlation model (Medida-Baeder). */
-  MEDIDA,    /*!< \brief Kind of transition correlation model (Medida). */
-  MENTER_LANGTRY,    /*!< \brief Kind of transition correlation model (Menter-Langtry). */
-  DEFAULT    /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
 /*!
