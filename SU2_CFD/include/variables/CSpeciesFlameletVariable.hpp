@@ -61,6 +61,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   }
 
   /*!
+
    * \brief Set a source term for the specie transport equation.
    * \param[in] iPoint - Node index.
    * \param[in] val_ivar - Species index.

@@ -485,28 +485,42 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
-const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
-const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-
-const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
-const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
-const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
-const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
-
-const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
-const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
-
-const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
-const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
-
-const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
+ enum SOLVER_TYPE : const int {
+   FLOW_SOL,       /*!< \brief Position of the mean flow solution in the solver container array. */
+   ADJFLOW_SOL,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+   TURB_SOL,       /*!< \brief Position of the turbulence model solution in the solver container array. */
+   ADJTURB_SOL,    /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   TRANS_SOL,      /*!< \brief Position of the transition model solution in the solver container array. */
+   HEAT_SOL,       /*!< \brief Position of the heat equation in the solution solver array. */
+   ADJHEAT_SOL,    /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+   RAD_SOL,        /*!< \brief Position of the radiation equation in the solution solver array. */
+   ADJRAD_SOL,     /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   MESH_SOL,       /*!< \brief Position of the mesh solver. */
+   ADJMESH_SOL,    /*!< \brief Position of the adjoint of the mesh solver. */
+   SPECIES_SOL,    /*!< \brief Position of the species solver. */
+   ADJSPECIES_SOL, /*!< \brief Position of the adjoint of the species solver. */
+   FEA_SOL,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
+   ADJFEA_SOL,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   TEMPLATE_SOL,   /*!< \brief Position of the template solution. */
+ };
+ static const MapType<std::string, SOLVER_TYPE> SolverType_Map = {
+   MakePair("FLOW_SOL", FLOW_SOL)
+   MakePair("ADJFLOW_SOL", ADJFLOW_SOL)
+   MakePair("TURB_SOL", TURB_SOL)
+   MakePair("ADJTURB_SOL", ADJTURB_SOL)
+   MakePair("FEA_SOL", FEA_SOL)
+   MakePair("ADJFEA_SOL", ADJFEA_SOL)
+   MakePair("TEMPLATE_SOL", TEMPLATE_SOL)
+   MakePair("TRANS_SOL", TRANS_SOL)
+   MakePair("HEAT_SOL", HEAT_SOL)
+   MakePair("ADJHEAT_SOL", ADJHEAT_SOL)
+   MakePair("RAD_SOL", RAD_SOL)
+   MakePair("ADJRAD_SOL", ADJRAD_SOL)
+   MakePair("MESH_SOL", MESH_SOL)
+   MakePair("ADJMESH_SOL", ADJMESH_SOL)
+   MakePair("SPECIES_SOL", SPECIES_SOL)
+   MakePair("ADJSPECIES_SOL", ADJSPECIES_SOL)
+ };
 
 const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */
 const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */

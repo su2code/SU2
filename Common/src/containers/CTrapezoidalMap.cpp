@@ -136,28 +136,25 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
 
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
-//unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) const {
   /* find x band in which val_x sits */
   pair<unsigned long, unsigned long> band = GetBand(val_x);
 
   /* within that band, find edges which enclose the (val_x, val_y) point */
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
-  /* identify the triangle using the two edges */
+  /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
-  
-  for (int i=0;i<2;i++)
-   triangles_edge_low[i] = edge_to_triangle[edges.first][i];
-   
+  for (int i = 0; i < edge_to_triangle[edges.first].size(); i++)
+    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
+
   std::array<unsigned long, 2> triangles_edge_up;
-  for (int i=0;i<2;i++)
-   triangles_edge_up[i] = edge_to_triangle[edges.second][i];
+  for (int i = 0; i < edge_to_triangle[edges.second].size(); i++)
+    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
 
-  // The intersection of the faces to which upper or lower belongs is
-  // the face that both belong to.
+  /* The intersection of the faces to which upper or lower belongs is the face that both belong to. */
   vector<unsigned long> triangle(1);
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
                    triangles_edge_low.end(), triangle.begin());

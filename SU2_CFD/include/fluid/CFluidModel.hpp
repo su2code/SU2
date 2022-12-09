@@ -368,9 +368,9 @@ class CFluidModel {
   /*!
    * \brief Virtual member. nijso: todo: is this really necessary?
    */
-  virtual unsigned long SetScalarSources(su2double *val_scalars) { return 0; }
+  virtual unsigned long SetScalarSources(su2double* val_scalars) { return 0; }
 
-  virtual unsigned long SetScalarLookups(su2double *val_scalars) { return 0; }
+  virtual unsigned long SetScalarLookups(su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

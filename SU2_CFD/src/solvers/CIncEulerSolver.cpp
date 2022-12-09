@@ -650,7 +650,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         ModelTable << "FLAMELET";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
         break;
         
       case VISCOSITYMODEL::COOLPROP:
@@ -713,7 +715,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       case CONDUCTIVITYMODEL::FLAMELET:
         ModelTable << "FLAMELET";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
         break;
         
       case CONDUCTIVITYMODEL::COOLPROP:
@@ -786,6 +789,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit.str("");
       Unit << "N.m/kg.K";
       NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+
+    case FLUID_FLAMELET:
+      ModelTable << "FLAMELET";
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << "--" << "--" << Unit.str() << config->GetSpecific_Heat_CpND();
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << "--" << "--" << Unit.str() << config->GetMolecular_Weight();
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << "--" << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
       Unit.str("");
       Unit << "Pa";
       NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();

@@ -201,3 +201,4 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
 };
+

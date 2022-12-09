@@ -441,6 +441,33 @@ public:
    */
   unsigned long GetNumberVertices(unsigned short iMarker) const;
 
+
+  /*!
+   * \brief Get the coordinates of the point on the mesh
+   * \param[in] iPoint -  Point index.
+   * \param[in] iMesh -  Mesh identifier.
+   * \return Number of points.
+   */
+  vector<passivedouble> GetCoords(unsigned long iPoint, unsigned short iMesh) const;
+
+  /*!
+   * \brief Get the number of conservative state variables.
+   * \return Number of conservative state variables.
+   */
+  unsigned long GetNumberStateVariables() const;
+ 
+   /*!
+   * \brief Get the number of conservative state variables.
+   * \return Number of conservative state variables.
+   */
+  unsigned long GetNumberStateVariables(const int SOLVER) const; 
+ 
+  /*!
+   * \brief Get the number of vertices in the mesh.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberVertices() const;
+ 
   /*!
    * \brief Get the number of halo vertices from a specified marker.
    * \param[in] iMarker - Marker identifier.
@@ -461,6 +488,13 @@ public:
    * \return Number of external iterations.
    */
   unsigned long GetnTimeIter() const;
+
+  /*!
+   * \brief Get the number of points on the mesh
+   * \param[in] iMesh -  Mesh identifier.
+   * \return Number of points.
+   */
+  unsigned long GetnPoints(unsigned short iMesh) const;
 
   /*!
    * \brief Get the current external iteration.
@@ -487,6 +521,13 @@ public:
    * \return Vertex global index.
    */
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get the global index of the solver
+   * \param[in] solverName - string of the solver name 
+   * \return index of the solver 
+   */
+  unsigned long GetSolverIndex(string solverName) const;
 
   /*!
    * \brief Get undeformed coordinates from the mesh solver.
@@ -716,6 +757,34 @@ public:
    * \param[in] pos_z - Position Z.
    */
   void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the conservative states at the mesh vertices.
+   * \param[in] values - Flow states (nPoint, nVar).
+   */
+  void SetStates(vector<vector<passivedouble>> values);
+    
+  /*!
+   * \brief Set the conservative states at a mesh vertex.
+   * \param[in] iPoint - Mesh vertex index.
+   * \param[in] values - Flow states (nVar).
+   */
+  void SetStates(unsigned long iPoint, vector<passivedouble> values);
+
+  /*!
+   * \brief Set the conservative states at the mesh vertices.
+   * \param[in] values - Flow states (nPoint, nVar).
+   * \param[in] SOLVER - solver type, e.g. FLOW_SOL, TURB_SOL
+   */
+  void SetStates(vector<vector<passivedouble>> values, const int SOLVER);
+    
+  /*!
+   * \brief Set the conservative states at a mesh vertex.
+   * \param[in] iPoint - Mesh vertex index.
+   * \param[in] values - Flow states (nVar).
+   * \param[in] SOLVER - solver type, e.g. FLOW_SOL, TURB_SOL
+   */
+  void SetStates(unsigned long iPoint, vector<passivedouble> values, const int SOLVER);
 
   /*!
    * \brief Set the direction of the inlet.

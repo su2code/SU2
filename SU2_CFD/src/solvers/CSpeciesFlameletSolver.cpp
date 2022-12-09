@@ -181,7 +181,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain = 0;
   unsigned long global_table_misses = 0;
-  
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   // const bool muscl = config->GetMUSCL_Species();
   // const bool limiter  = (config->GetKind_SlopeLimit_Species() != SLOPE_LIMITER::NO_LIMITER) &&
@@ -209,16 +209,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
 
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
-    /* evert: SetTDState_T is not needed here, it's already evaluated by the flow solver. */
-    su2double Conductivity = flowNodes->GetThermalConductivity(i_point);
-    su2double Cp = flowNodes->GetSpecificHeatCp(i_point);
-    for (auto i_scalar = 0; i_scalar < nVar - n_CV; ++i_scalar) {
-      nodes->SetDiffusivity(i_point, Conductivity / Cp, i_scalar);
+    for (auto i_scalar = 0; i_scalar < nVar; ++i_scalar) {
+      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
     }
     /*--- Diffusivity of passive reactants divided by respective average Lewis number. ---*/
-    for(auto i_scalar = n_CV; i_scalar < nVar; i_scalar++){
-      nodes->SetDiffusivity(i_point, Conductivity / (Cp * config->GetReactantLewis(i_scalar - n_CV)), i_scalar);
-    }
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
@@ -266,6 +260,12 @@ void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solve
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
   bool Restart = (config->GetRestart() || config->GetRestart_Flow());
+  
+  /*--- do not use initial condition when custom python is active ---*/
+  if (config->GetInitial_PyCustom()) {
+    if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
+    return;
+  }
 
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
@@ -366,6 +366,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0)) cout << endl;
+
 
     if (rank == MASTER_NODE && n_not_in_domain > 0)
       cout << " !!! Initial condition: Number of points outside of table domain: " << n_not_in_domain << " !!!" << endl;
@@ -503,9 +504,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  // nijso: remember that we now have progress variable and enthalpy as inlet values, but we want temperature as inlet
-  // (could be an additional keyword)
-
   su2double enth_inlet;
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
   const su2double* inlet_scalar_original = config->GetInlet_SpeciesVal(Marker_Tag);
@@ -513,6 +511,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
+  /*--- We compute inlet enthalpy from the temperature and progress variable ---*/
   enth_inlet = inlet_scalar_original[I_ENTH];
   fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet, inlet_scalar_original[I_ENTH]);
   inlet_scalar[I_ENTH] = enth_inlet;
@@ -563,7 +562,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
       /*--- Set the species variable state at the inlet. ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
-      // conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), inlet_scalar);
 
       /*--- Set various other quantities in the solver class ---*/
 
@@ -596,10 +594,11 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
 
     if (geometry->nodes->GetDomain(iPoint)) {
       /*--- Allocate the value at the outlet ---*/
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
-      nodes->SetSolution_Old(iPoint, Solution);
+
+     nodes->SetSolution_Old(iPoint, Solution);
 
       LinSysRes.SetBlock_Zero(iPoint);
 
@@ -801,3 +800,4 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
          << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
   }
 }
+

@@ -46,7 +46,8 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<su2double> table_sources;
 
-  su2double mass_diffusivity;
+  su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
+  su2double molar_weight; /*!< \brief local molar weight of the mixture */
 
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
@@ -89,7 +90,7 @@ class CFluidFlamelet final : public CFluidModel {
 
   //void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
 
-   /*!
+  /*!
    * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
    * \param[in/out] enthalpy - total enthalpy
    * \param[in] val_prog - progress variable
@@ -111,7 +112,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] iVar - index to the species
    * \param[out] mass_diffusivity - value of the mass diffusivity
    */
-  inline su2double GetMassDiffusivity(int iVar) override { return mass_diffusivity; }
+  inline su2double GetMassDiffusivity(int iVar) final { return mass_diffusivity; }
 
   /*!
    * \brief Get the thermal conductivity of the species
@@ -157,10 +158,4 @@ class CFluidFlamelet final : public CFluidModel {
   void PreprocessLookUp();
 
   inline unsigned short GetNControllingVariables() { return n_CV; }
-  //remove?
-  //inline su2double GetdDensitydPV() { return dDensitydPV; }
-  //inline su2double GetdSourcePVdPV() { return dSourcePVdPV; }
-  //inline su2double GetdDensitydEnth() { return dDensitydEnth; }
-  // already in config file?
-  //inline unsigned short GetNScalars() { return n_scalars; }
 };

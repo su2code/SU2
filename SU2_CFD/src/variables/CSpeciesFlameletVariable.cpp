@@ -30,6 +30,7 @@
 CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint,
                                                    unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CSpeciesVariable(species_inf, npoint, ndim, nvar, config) {
+
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution(iPoint, iVar) = species_inf[iVar];
 

@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+  #define ENABLE_MAPS
 
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
@@ -35,7 +35,7 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
   int rank = MASTER_NODE;
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
-  /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
+  /* --- Initialize boundary conditions customization, this is achieved through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
 
     if (config[iZone]->GetnMarker_PyCustom() > 0){
@@ -55,6 +55,11 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
         solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
       }
     }
+
+    if (config[iZone]->GetInitial_PyCustom() > 0){
+      if (rank == MASTER_NODE) cout << endl << "----------------- Python Initialization Preprocessing ( Zone "<< iZone <<" ) -----------------" << endl;
+    }
+
   }
 
 }
@@ -176,6 +181,24 @@ unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
 
 }
 
+/* coordinates of the point on the mesh*/
+vector<passivedouble> CDriver::GetCoords(unsigned long iPoint, unsigned short iMesh) const {
+  vector<su2double> coord(3,0.0);
+  vector<passivedouble> coord_passive(3, 0.0);
+
+  for (auto iDim = 0 ; iDim < nDim ; iDim++){
+    coord[iDim] = geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetCoord(iPoint,iDim);
+  }
+
+  coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
+  coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
+  coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
+  
+  return coord_passive;
+}
+
+unsigned long CDriver::GetNumberVertices() const { return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); }
+
 unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) const {
 
   unsigned long nHaloVertices, iVertex, iPoint;
@@ -209,6 +232,12 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
   if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint)) return false;
   else return true;
 
+}
+
+/*--- Get the index to the solver ---*/
+unsigned long CDriver::GetSolverIndex(string solverName) const {
+
+  return static_cast<unsigned long>(SolverType_Map.find(solverName)->second);
 }
 
 vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
@@ -266,6 +295,11 @@ vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned 
 unsigned long CDriver::GetnTimeIter() const {
 
   return config_container[ZONE_0]->GetnTime_Iter();
+}
+
+// number of points on the mesh
+unsigned long CDriver::GetnPoints(unsigned short iMesh) const {
+  return geometry_container[ZONE_0][INST_0][iMesh]->GetnPointDomain();
 }
 
 unsigned long CDriver::GetTime_Iter() const{
@@ -554,6 +588,66 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
 
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 
+}
+
+void CDriver::SetStates(vector<vector<passivedouble>> values) {
+  const auto nPoint = GetNumberVertices();
+
+  if (values.size() != nPoint) {
+    SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+  }
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    SetStates(iPoint, values[iPoint]);
+  }
+}
+
+void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values) {
+  const auto nVar = GetNumberStateVariables();
+
+  if (values.size() != nVar) {
+    SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+  }
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+  }
+}
+
+void CDriver::SetStates(vector<vector<passivedouble>> values, const int SOLVER) {
+  const auto nPoint = GetNumberVertices();
+
+  if (values.size() != nPoint) {
+    SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+  }
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    SetStates(iPoint, values[iPoint]);
+  }
+}
+
+void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values, const int SOLVER) {
+  const auto nVar = GetNumberStateVariables(SOLVER);
+  if (values.size() != nVar) {
+    SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+  }
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+  }
+}
+
+unsigned long CDriver::GetNumberStateVariables() const {
+  if (!config_container[ZONE_0]->GetFluidProblem()) {
+    SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+  }
+
+  return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+}
+
+unsigned long CDriver::GetNumberStateVariables(const int SOLVER) const {
+
+  return solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetnVar();
 }
 
 void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
@@ -893,3 +987,6 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
   return FlowLoad_passive;
 
 }
+
+ #undef ENABLE_MAPS
+
