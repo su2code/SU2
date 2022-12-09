@@ -53,6 +53,27 @@ def a_distribution (w0, Chi):
     a = (w0*pow(Chi,2))/(pow(Chi,2)+pow((1+(w0)),2))
     return a
 
+def write_su2_config_file():
+    """
+    Write the actuator disk configuration file
+    """
+    
+    with open('ActuatorDisk.cfg', 'w') as f:
+        f.write('% Automatic generated actuator disk configuration file.\n')
+        f.write('%\n')
+        f.write('% The first two elements of MARKER_ACTDISK must be filled.\n')
+        f.write('% An example of this file can be found in the TestCases directory.\n')
+        f.write('%\n')
+        f.write('% Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.\n')
+        f.write('% Theoretical and Applied Aerodynamic Research Group (TAARG),\n')
+        f.write('% University of Naples Federico II\n')
+        f.write('\n')
+        f.write('ACTDISK_TYPE = VARIABLE_LOAD\n')
+        f.write('ACTDISK_FILENAME = ActuatorDisk.dat\n')
+        f.write('MARKER_ACTDISK = ( , , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)\n')
+
+    print('SU2 file generated!')
+
 def write_external_file(CTrs, CPrs):
     """Function used to write the actuator disk input data file"""
     
@@ -337,27 +358,11 @@ print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 ##########################
 ###    File Writing    ###
 ##########################
-# Write the actuator disk configuration file
-file = open('ActuatorDisk.cfg', 'w')
 
-file.write('% Automatic generated actuator disk configuration file.\n')
-file.write('%\n')
-file.write('% The first two elements of MARKER_ACTDISK must be filled.\n')
-file.write('% An example of this file can be found in the TestCases directory.\n')
-file.write('%\n')
-file.write('% Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.\n')
-file.write('% Theoretical and Applied Aerodynamic Research Group (TAARG),\n')
-file.write('% University of Naples Federico II\n')
-file.write('\n')
-file.write('ACTDISK_TYPE = VARIABLE_LOAD\n')
-file.write('ACTDISK_FILENAME = ActuatorDisk.dat\n')
-file.write('MARKER_ACTDISK = ( , , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)\n')
-file.close()
+# Write the corresponding SU2 configuration file
+write_su2_config_file()
 
-print('SU2 file generated!')
-
-# Write the actuator disk data file.
-# This is the actuator disk input data file.
+# Write the actuator disk data file. This is the actuator disk input data file.
 write_external_file(dCt_optimal, dCp)
 
 ##########################
