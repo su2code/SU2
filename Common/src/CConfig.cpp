@@ -3450,7 +3450,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
 
     /*--- Check if problem is 2D and LM2015 has been selected ---*/
-    if(lmParsedOptions.LM2015 && val_nDim == 2){
+    if (lmParsedOptions.LM2015 && val_nDim == 2) {
       SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
     }
   }
