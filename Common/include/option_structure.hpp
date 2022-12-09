@@ -1183,7 +1183,7 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
 };
 
 /*!
- * \brief SA Options
+ * \brief LM Options
  */
 enum class LM_OPTIONS {
   NONE,     /*!< \brief No option / default. */
