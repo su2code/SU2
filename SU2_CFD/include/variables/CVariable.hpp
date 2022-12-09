@@ -1719,13 +1719,11 @@ public:
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
 
-
   /*!
    * \brief Set the value of the turbulence index.
    * \param[in] val_turb_index - turbulence index
    */
   inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
-
 
   /*!
    * \brief Get the value of the turbulence index.
