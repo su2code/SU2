@@ -73,7 +73,7 @@ def write_su2_config_file():
     print('SU2 file generated!')
 
 def write_external_file(CTrs, CPrs):
-    """Function used to write the actuator disk input data file"""
+    """Function to write the actuator disk input data file"""
     
     file = open('ActuatorDisk.dat', 'w')
     file.write('# Automatic generated actuator disk input data file using the Optimal Propeller code.\n')
@@ -127,8 +127,6 @@ print('')
 stations = int(input('Number of radial stations: '))
 print('')
 
-dStations = float(stations)
-
 # Resize the vectors using the number of radial stations.
 r = np.empty(stations)
 chi = np.empty(stations)
@@ -168,16 +166,14 @@ Vinf = float(input('Vinf (m/s): '))
 print('')
 
 # Asking if the tip loss Prandtl correction function needs to be used.
-Prandtl = input('Using tip loss Prandtl correction? (<y>/n): ')
+prandtl_input = input('Using tip loss Prandtl correction? (<y>/n): ')
 print('')
 
-if Prandtl == 'y' or Prandtl == 'Y' or Prandtl == '':
+if prandtl_input.lower() in ['yes', 'y', '']:
     # Number of propeller blades in input.
     N = int(input('N (number of propeller blades): '))
     print('')
-
     prandtl_correction = True
-
 else:
     prandtl_correction = False
 
