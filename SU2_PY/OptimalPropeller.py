@@ -48,15 +48,14 @@ import pylab as pl
 ###     Functions      ###
 ##########################
 def a_distribution (w0, Chi):
-
     """Function used to compute the value of the axial interference factor using the inviscid theory of the optimal propeller."""
 
     a = (w0*pow(Chi,2))/(pow(Chi,2)+pow((1+(w0)),2))
     return a
 
-def Print_external_file(CTrs, CPrs):
-
+def write_external_file(CTrs, CPrs):
     """Function used to write the actuator disk input data file"""
+    
     file = open('ActuatorDisk.dat', 'w')
     file.write('# Automatic generated actuator disk input data file using the Optimal Propeller code.\n')
     file.write('# Data file needed for the actuator disk VARIABLE_LOAD type.\n')
@@ -359,7 +358,7 @@ print('SU2 file generated!')
 
 # Write the actuator disk data file.
 # This is the actuator disk input data file.
-Print_external_file(dCt_optimal, dCp)
+write_external_file(dCt_optimal, dCp)
 
 ##########################
 ###        Plots       ###
