@@ -157,10 +157,10 @@ if Prandtl == 'y' or Prandtl == 'Y' or Prandtl == '':
     N = int(input('N (number of propeller blades): '))
     print('')
 
-    corr = True
+    prandtl_correction = True
 
 else:
-    corr = False
+    prandtl_correction = False
 
 # Computation of the non-dimensional hub radius.
 rs_hub = rhub/R
@@ -179,7 +179,7 @@ n = Vinf/(D*J)
 Omega = n*2*math.pi
 
 # Computation of the tip loss Prandtl correction function F.
-if corr == True:
+if prandtl_correction:
     for i in range(0, Stations):
         F[i] = (2/math.pi)*math.acos(math.exp(-0.5*N*(1-r[i])*math.sqrt(1+pow(Omega*R/Vinf,2))))
 
@@ -383,7 +383,7 @@ pl.xlabel('$\chi$')
 pl.ylabel('')
 pl.title("Interference Factors")
 
-if corr == True:
+if prandtl_correction:
     f1 = pl.figure(3)
     pl.plot(r, F, 'k', markersize=4)
     pl.grid(True)
