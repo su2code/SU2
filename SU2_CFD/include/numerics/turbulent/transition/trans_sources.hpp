@@ -239,7 +239,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         Retheta_Error = fabs(Retheta_old - Corr_Ret) / Retheta_old;
 
         if (Retheta_Error < 0.0000001) {
-          iter = 101;
+          break;
         }
 
         Retheta_old = Corr_Ret;
