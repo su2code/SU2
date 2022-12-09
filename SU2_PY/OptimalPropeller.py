@@ -54,9 +54,7 @@ def a_distribution (w0, Chi):
     return a
 
 def write_su2_config_file():
-    """
-    Write the actuator disk configuration file
-    """
+    """Write the actuator disk configuration file"""
     
     with open('ActuatorDisk.cfg', 'w') as f:
         f.write('% Automatic generated actuator disk configuration file.\n')
@@ -96,10 +94,10 @@ def write_external_file(CTrs, CPrs):
     file.write('AXIS= \n')
     file.write('RADIUS= '+str(R)+'\n')
     file.write('ADV_RATIO= '+str(J)+'\n')
-    file.write('NROW= '+str(Stations)+'\n')
+    file.write('NROW= '+str(stations)+'\n')
     file.write('# rs=r/R        dCT/drs       dCP/drs       dCR/drs\n')
 
-    for i in range(0, Stations):
+    for i in range(0, stations):
         file.write(f'  {r[i]:.7f}     {CTrs[i]:.7f}     {CPrs[i]:.7f}     0.0\n')
 
     file.close()
@@ -126,28 +124,28 @@ print('Warning: present version requires input in SI units.')
 print('')
 
 # Number of radial stations in input.
-Stations = int(input('Number of radial stations: '))
+stations = int(input('Number of radial stations: '))
 print('')
 
-dStations = float(Stations)
+dStations = float(stations)
 
 # Resize the vectors using the number of radial stations.
-r = np.empty(Stations)
-chi = np.empty(Stations)
-dCp = np.empty(Stations)
-w = np.empty(Stations)
-a_new = np.empty(Stations)
-a_old = np.empty(Stations)
-a_0 = np.empty(Stations)
-ap_old = np.empty(Stations)
-dCt_new = np.empty(Stations)
-dCt_old = np.empty(Stations)
-dCt_0 = np.empty(Stations)
-DeltaP = np.empty(Stations)
-F = np.empty(Stations)
-a_optimal = np.empty(Stations)
-ap_optimal = np.empty(Stations)
-dCt_optimal = np.empty(Stations)
+r = np.empty(stations)
+chi = np.empty(stations)
+dCp = np.empty(stations)
+w = np.empty(stations)
+a_new = np.empty(stations)
+a_old = np.empty(stations)
+a_0 = np.empty(stations)
+ap_old = np.empty(stations)
+dCt_new = np.empty(stations)
+dCt_old = np.empty(stations)
+dCt_0 = np.empty(stations)
+DeltaP = np.empty(stations)
+F = np.empty(stations)
+a_optimal = np.empty(stations)
+ap_optimal = np.empty(stations)
+dCt_optimal = np.empty(stations)
 
 # Thrust coefficient in input.
 Ct = float(input('CT (Renard definition): '))
@@ -187,8 +185,8 @@ else:
 rs_hub = rhub/R
 
 # Computation of the non-dimensional radial stations.
-for i in range(1,Stations+1):
-    r[i-1]=i/dStations
+for i in range(1,stations+1):
+    r[i-1]=i/float(stations)
     if r[i-1] <= rs_hub:
         i_hub = i-1
 
@@ -201,43 +199,43 @@ Omega = n*2*math.pi
 
 # Computation of the tip loss Prandtl correction function F.
 if prandtl_correction:
-    for i in range(0, Stations):
+    for i in range(0, stations):
         F[i] = (2/math.pi)*math.acos(math.exp(-0.5*N*(1-r[i])*math.sqrt(1+pow(Omega*R/Vinf,2))))
 
 else:
-    for i in range(0, Stations):
+    for i in range(0, stations):
         F[i] = 1.0
 
 # Computation of the non-dimensional radius chi=Omega*r/Vinf.
-for i in range(0, Stations):
+for i in range(0, stations):
     chi[i] = Omega*r[i]*R/Vinf
 
 eps = 5E-20
 # Computation of the propeller radial stations spacing.
-h = (1.0/Stations)
+h = (1.0/stations)
 
 # Computation of the first try induced velocity distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     w[i] = (2/math.pow(Vinf,2))*((-1/Vinf)+math.sqrt(1+((math.pow(D,4)*(Ct)*math.pow(n,2))/(math.pow(Vinf,2)*math.pi*r[i]))))
 
 # Computation of the first try Lagrange moltiplicator.
 w_0 = 0.0
-for i in range(0, Stations):
+for i in range(0, stations):
     w_0 += w[i]
 
-w_0 = w_0/(Vinf*Stations)
+w_0 = w_0/(Vinf*stations)
 
 # Computation of the first try axial interference factor distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     a_0[i] = a_distribution(w_0*F[i],chi[i])
 
 # Computation of the thrust coefficient distribution
-for i in range(0, Stations):
+for i in range(0, stations):
     dCt_0[i]= math.pi*J*J*r[i]*(1+a_0[i])*a_0[i]
 
 # Computation of the total thrust coefficient.
 Ct_0 = 0.0
-for i in range(i_hub, Stations):
+for i in range(i_hub, stations):
     Ct_0 += h*dCt_0[i]
 
 # Compute the error with respect to the thrust coefficient given in input.
@@ -249,16 +247,16 @@ print(err_0)
 w_old = w_0 + 0.1
 
 # Computation of the second try axial interference factor distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     a_old[i] = a_distribution(w_old*F[i],chi[i])
 
 # Computation of the thrust coefficient distribution
-for i in range(0, Stations):
+for i in range(0, stations):
     dCt_old[i]= math.pi*J*J*r[i]*(1+a_old[i])*a_old[i]
 
 # Computation of the total thrust coefficient.
 Ct_old = 0.0
-for i in range(i_hub, Stations):
+for i in range(i_hub, stations):
     Ct_old += h*dCt_old[i]
 
 # Compute the error with respect to the thrust coefficient given in input.
@@ -280,16 +278,16 @@ while math.fabs(err_new) >= eps and err_0 != err_old:
     w_new = (w_old*err_0 - w_0*err_old)/(err_0 - err_old)
 
     # Computation of the new axial interference factor distribution.
-    for i in range(0, Stations):
+    for i in range(0, stations):
         a_new[i] = a_distribution(w_new*F[i],chi[i])
 
     # Computation of the new thrust coefficient distribution.
-    for i in range(0, Stations):
+    for i in range(0, stations):
         dCt_new[i]= math.pi*J*J*r[i]*(1+a_new[i])*a_new[i]
 
     # Computation of the new total thrust coefficient.
     Ct_new = 0.0
-    for i in range(i_hub, Stations):
+    for i in range(i_hub, stations):
         Ct_new += h*dCt_new[i]
 
     # Computation of the total thrust coefficient error with respect to the input value.
@@ -305,16 +303,16 @@ while math.fabs(err_new) >= eps and err_0 != err_old:
     w_old = w_new
 
 # Computation of the correct axial and rotational interference factors (a and ap).
-for i in range(0, Stations):
+for i in range(0, stations):
     a_optimal[i] = a_distribution(w_new*F[i],chi[i])
     ap_optimal[i] = (w_new*F[i])*((1+w_new*F[i])/(chi[i]*chi[i]+math.pow(1+w_new*F[i],2)))
 
 # Computation of the correct thrust coefficient distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     dCt_optimal[i] = math.pi*J*J*r[i]*(1+a_optimal[i])*a_optimal[i]
 
 # Computation of the correct power coefficient distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     dCp[i] = (R*4*math.pi/(math.pow(n,3)*math.pow(D,5)))*(math.pow(Vinf,3)*math.pow(1+a_optimal[i],2)*a_optimal[i]*r[i]*R+math.pow(Omega,2)*Vinf*(1+a_optimal[i])*math.pow(ap_optimal[i],2)*math.pow(r[i]*R,3))
 
 ##########################
@@ -322,21 +320,21 @@ for i in range(0, Stations):
 ##########################
 # Computation of the total power coefficient.
 Cp = 0.0
-for i in range(i_hub, Stations):
+for i in range(i_hub, stations):
     Cp += h*dCp[i]
 
 # Computation of the total thrust coefficient.
 Ct_optimal = 0.0
-for i in range(i_hub, Stations):
+for i in range(i_hub, stations):
     Ct_optimal += h*dCt_optimal[i]
 
 # Computation of the static pressure jump distribution.
-for i in range(0, Stations):
+for i in range(0, stations):
     DeltaP[i] = (dCt_optimal[i])*(2*Vinf*Vinf)/(J*J*math.pi*r[i])
 
 # Computation of the thrust over density (T) using the static pressure jump distribution.
 T = 0.0
-for i in range(i_hub, Stations):
+for i in range(i_hub, stations):
     T += 2*math.pi*r[i]*math.pow(R,2)*h*DeltaP[i]
 
 # Computation of the thrust coefficient using T.
