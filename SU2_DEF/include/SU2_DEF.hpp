@@ -1,7 +1,6 @@
 /*!
  * \file SU2_DEF.hpp
  * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
  *
@@ -35,11 +34,11 @@
 #include "../../Common/include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "drivers/CDeformationDriver.hpp"
-
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
 #include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+
+#include "drivers/CDeformationDriver.hpp"
 
 using namespace std;

@@ -1,7 +1,6 @@
 /*!
  * \file SU2_DOT.hpp
  * \brief Headers of the main subroutines of the code SU2_DOT.
- *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
  *
@@ -32,14 +31,13 @@
 #include "../../Common/include/CConfig.hpp"
 #undef ENABLE_MAPS
 
+#include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
-
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 using namespace std;
