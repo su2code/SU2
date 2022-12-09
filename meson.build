@@ -1,11 +1,14 @@
 project('SU2', 'c', 'cpp',
-        version: '7.3.1 "Blackbird"',
+        version: '7.4.0 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
 
+if meson.version() != '0.61.1'
+  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+endif
 
 pymod = import('python')
 python = pymod.find_installation()
@@ -18,8 +21,22 @@ if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
     default_warning_flags += ['-Wno-empty-body']
   endif
-  default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-deprecated-declarations']
+  desired_warnings = ['-Wno-ignored-qualifiers',
+                      '-Wno-unused-parameter',
+                      '-Wno-deprecated-declarations',
+                      '-Wno-error=cast-function-type',
+                      '-Wno-cast-function-type',
+                      '-Wno-error=stringop-truncation',
+                      '-Wno-stringop-truncation',
+                      '-Wno-error=missing-field-initializers',
+                      '-Wno-missing-field-initializers',
+                      '-Wno-error=class-memaccess',
+                      '-Wno-class-memaccess']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      default_warning_flags += flag
+    endif
+  endforeach
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
@@ -219,6 +236,22 @@ if get_option('enable-mpp')
   su2_cpp_args += '-DHAVE_MPP'
 endif
 
+if get_option('enable-coolprop')
+  cmake = import('cmake')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'COOLPROP_STATIC_LIBRARY': true,
+    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
+  coolprop_dep = coolprop_subproj.dependency('CoolProp')
+  su2_deps     += coolprop_dep
+  su2_cpp_args += '-DHAVE_COOLPROP'
+endif
+
+
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
   p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
@@ -250,7 +283,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.3.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.4.0 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -268,6 +301,7 @@ message('''---------------------------------------------------------------------
          PaStiX:         @9@
          Mixed Float:    @10@
          libROM:         @11@
+         CoolProp:       @12@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -279,10 +313,11 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @12@ install' to compile and install SU2
+         Use './ninja -C @13@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
+           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
@@ -300,4 +335,8 @@ if get_option('enable-librom')
           
           '''.format(get_option('librom_root')))
 
+endif
+
+if get_option('enable-pywrapper') and get_option('enable-cgns') and not get_option('static-cgns-deps')
+  message(''' WARNING: If compilation fails with a message regarding "attempted static link of dynamic object", reconfigure with option -Dstatic-cgns-deps=true.''')
 endif

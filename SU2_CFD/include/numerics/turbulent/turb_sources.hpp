@@ -1,7 +1,7 @@
-﻿/*!
+/*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,11 +26,12 @@
 
 #pragma once
 
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../scalar/scalar_sources.hpp"
 
 /*!
  * \class CSAVariables
+ * \ingroup SourceDiscr
  * \brief Structure with SA common auxiliary functions and constants.
  */
 struct CSAVariables {
@@ -57,6 +58,7 @@ struct CSAVariables {
 
 /*!
  * \class CSourceBase_TurbSA
+ * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * The variables that are subject to change in each variation/correction have their own class.
  * \note Additional source terms (e.g. compressibility) are implemented as decorators.
@@ -71,8 +73,7 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const bool rotating_frame = false;
-  const bool transition = false;
+  const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
 
  public:
   /*!
@@ -80,11 +81,10 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceBase_TurbSA(unsigned short nDim, unsigned short, const CConfig* config)
+  CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-        rotating_frame(config->GetRotating_Frame()),
-        transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+        options(config->GetSAParsedOptions()) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -121,9 +121,8 @@ class CSourceBase_TurbSA : public CNumerics {
 
     Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
-    /*--- Dacles-Mariani et. al. rotation correction ("-R"), this is applied by
-     * default for rotating frame, but should be controled in the config. ---*/
-    if (rotating_frame) {
+    /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
+    if (options.rot) {
       var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
     }
 
@@ -173,7 +172,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
-      if (transition) {
+      if (options.bc) {
         /*--- BC transition model (2020 revision). This should only be used with SA-noft2.
          * TODO: Consider making this part of the "SourceTerms" template. ---*/
         const su2double chi_1 = 0.002;
@@ -221,13 +220,14 @@ namespace detail {
  * ============================================================================*/
 
 /*!
- * \brief Strain rate classes.
+ * \brief SA strain rate classes.
+ * \ingroup SourceDiscr
  * \param[in] vorticity: Vorticity array.
  * \param[in] nDim: Problem dimension.
  * \param[in] velocity_grad: Velocity gradients.
  * \param[out] var: Common SA variables struct (to set Omega).
  */
-namespace Omega {
+struct Omega {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -253,13 +253,14 @@ struct Edw {
     var.Omega = sqrt(max(Sbar, 0.0));
   }
 };
-}  // namespace Omega
+};
 
 /*!
- * \brief Classes to set the ft2 term and its derivative.
+ * \brief SA classes to set the ft2 term and its derivative.
+ * \ingroup SourceDiscr
  * \param[in,out] var: Common SA variables struct.
  */
-namespace ft2 {
+struct ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
@@ -277,15 +278,16 @@ struct Nonzero {
     var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
   }
 };
-}  // namespace ft2
+};
 
 /*!
- * \brief Classes to compute the modified vorticity (\tilde{S}) and its derivative.
+ * \brief SA classes to compute the modified vorticity (\tilde{S}) and its derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] nu: Laminar viscosity.
  * \param[in,out] var: Common SA variables struct.
  */
-namespace ModVort {
+struct ModVort {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -330,14 +332,15 @@ struct Neg {
      * No need for Sbar ---*/
   }
 };
-}  // namespace ModVort
+};
 
 /*!
- * \brief Auxiliary function r and its derivative.
+ * \brief SA auxiliary function r and its derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in,out] var: Common SA variables struct.
  */
-namespace r {
+struct r {
 
 /*! \brief Baseline. */
 struct Bsl {
@@ -358,10 +361,11 @@ struct Edw {
     var.d_r = (1 - pow(tanh(var.r), 2.0)) * (var.d_r) / tanh(1.0);
   }
 };
-}  // namespace r
+};
 
 /*!
- * \brief Source terms classes: production, destruction and cross-productions term and their derivative.
+ * \brief SA source terms classes: production, destruction and cross-productions term and their derivative.
+ * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
  * \param[out] production: Production term.
@@ -369,7 +373,7 @@ struct Edw {
  * \param[out] cross_production: CrossProduction term.
  * \param[out] jacobian: Derivative of the combined source term wrt nue.
  */
-namespace SourceTerms {
+struct SourceTerms {
 
 /*! \brief Baseline (Original SA model). */
 struct Bsl {
@@ -435,7 +439,7 @@ struct Neg {
     Bsl::ComputeCrossProduction(nue, var, cross_production, jacobian);
   }
 };
-}  // namespace SourceTerms
+};
 
 /* =============================================================================
  * SPALART-ALLMARAS ADDITIONAL SOURCE TERMS DECORATORS
@@ -443,6 +447,7 @@ struct Neg {
 
 /*!
  * \class CCompressibilityCorrection
+ * \ingroup SourceDiscr
  * \brief Mixing Layer Compressibility Correction (SA-comp).
  */
 template <class ParentClass>
@@ -466,8 +471,8 @@ class CCompressibilityCorrection final : public ParentClass {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCompressibilityCorrection(unsigned short nDim, unsigned short, const CConfig* config)
-      : ParentClass(nDim, 0, config) {}
+  CCompressibilityCorrection(unsigned short nDim, const CConfig* config)
+      : ParentClass(nDim, config) {}
 
   /*!
    * \brief Residual for source term integration.
@@ -498,61 +503,72 @@ class CCompressibilityCorrection final : public ParentClass {
   }
 };
 
-}  // namespace detail
-
 /* =============================================================================
- * SPALART-ALLMARAS CLASSES
+ * HELPERS TO INSTANTIATE THE SA BASE CLASS
  * ============================================================================*/
 
-/// TODO: Factory method to create combinations of the different variations based on the config.
-/// See PR #1413, the combinations exposed should follow https://turbmodels.larc.nasa.gov/spalart.html
+template <class FlowIndices>
+struct BaselineSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Bsl, Ft2, ModVort::Bsl, r::Bsl, SourceTerms::Bsl>;
+};
+
+template <class FlowIndices>
+struct NegativeSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Bsl, Ft2, ModVort::Neg, r::Bsl, SourceTerms::Neg>;
+};
+
+template <class FlowIndices>
+struct EdwardsSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Edw, Ft2, ModVort::Edw, r::Edw, SourceTerms::Bsl>;
+};
+
+template <class BaseType, class... Ts>
+CNumerics* AddCompressibilityCorrection(bool use_comp, Ts... args) {
+  if (use_comp) {
+    return new detail::CCompressibilityCorrection<BaseType>(args...);
+  } else {
+    return new BaseType(args...);
+  }
+}
+
+template <class BaseType, class... Ts>
+CNumerics* SAFactoryImpl(bool use_ft2, Ts... args) {
+  if (use_ft2) {
+    return AddCompressibilityCorrection<typename BaseType::template type<ft2::Nonzero>>(args...);
+  } else {
+    return AddCompressibilityCorrection<typename BaseType::template type<ft2::Zero>>(args...);
+  }
+}
+
+}  // namespace detail
 
 /*!
- * \class CSourcePieceWise_TurbSA
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \brief Creates an SA source based on the version and modifications/correction in the config.
+ * \ingroup SourceDiscr
  */
 template <class FlowIndices>
-using CSourcePieceWise_TurbSA = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
-                                                   detail::ModVort::Bsl, detail::r::Bsl, detail::SourceTerms::Bsl>;
+CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
+  const auto options = config->GetSAParsedOptions();
 
-/*!
- * \class CSourcePieceWise_TurbSA_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with compressibility correction.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_COMP = detail::CCompressibilityCorrection<CSourcePieceWise_TurbSA<FlowIndices>>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_E
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with Edwards modification.
- * \note From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
- * This form was developed primarily to improve the near-wall numerical behavior of the model (i.e. the goal was to
- * improve the convergence behavior). The reference is: Edwards, J. R. and Chandra, S. "Comparison of Eddy
- * Viscosity-Transport Turbulence Models for Three-Dimensional, Shock-Separated Flowfields," AIAA Journal, Vol. 34, No.
- * 4, 1996, pp. 756-763.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_E = CSourceBase_TurbSA<FlowIndices, detail::Omega::Edw, detail::ft2::Zero,
-                                                     detail::ModVort::Edw, detail::r::Edw, detail::SourceTerms::Bsl>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_E_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with Edwards modification
- *        and compressibility correction.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_E_COMP = detail::CCompressibilityCorrection<CSourcePieceWise_TurbSA_E<FlowIndices>>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_Neg
- * \brief Class for integrating the source terms of the negative Spalart-Allmaras model.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
-                                                       detail::ModVort::Neg, detail::r::Bsl, detail::SourceTerms::Neg>;
+  switch (options.version) {
+    case SA_OPTIONS::NONE:
+      return detail::SAFactoryImpl<detail::BaselineSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    case SA_OPTIONS::NEG:
+      return detail::SAFactoryImpl<detail::NegativeSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    case SA_OPTIONS::EDW:
+      return detail::SAFactoryImpl<detail::EdwardsSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    default:
+      break;
+  }
+  return nullptr;
+}
 
 /*!
  * \class CSourcePieceWise_TurbSST
+ * \ingroup SourceDiscr
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  */
 template <class FlowIndices>
@@ -564,6 +580,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
+  const su2double prod_lim_const;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -593,13 +610,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   }
 
   /*!
-   * \brief Add contribution due to axisymmetric formulation to 2D residual
+   * \brief Add contribution from convection and diffusion due to axisymmetric formulation to 2D residual
    */
-  inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
+  inline void ResidualAxisymmetricConvectionDiffusion(su2double alfa_blended, su2double zeta) {
     if (Coord_i[1] < EPS) return;
-
-    AD::SetPreaccIn(Coord_i[1]);
-    AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
 
     const su2double yinv = 1.0 / Coord_i[1];
     const su2double rhov = Density_i * V_i[idx.Velocity() + 1];
@@ -610,18 +624,20 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
     const su2double sigma_w_i = F1_i * sigma_w_1 + (1.0 - F1_i) * sigma_w_2;
 
-    /*--- Production ---*/
-    const su2double pk_axi = max(
-        0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[idx.Velocity() + 1] - PrimVar_Grad_i[idx.Velocity()+1][1] - PrimVar_Grad_i[idx.Velocity()][0]) / zeta - 1.0));
-    const su2double pw_axi = alfa_blended * zeta / k * pk_axi;
-
     /*--- Convection-Diffusion ---*/
     const su2double cdk_axi = rhov * k - (Laminar_Viscosity_i + sigma_k_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[0][1];
     const su2double cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
-    Residual[0] += yinv * Volume * (pk_axi - cdk_axi);
-    Residual[1] += yinv * Volume * (pw_axi - cdw_axi);
+ 
+    Residual[0] -= yinv * Volume * cdk_axi;
+    Residual[1] -= yinv * Volume * cdw_axi;
+
+    Jacobian_i[0][0] -= yinv * Volume * rhov;
+    Jacobian_i[0][1] -= 0.0; 
+    Jacobian_i[1][0] -= 0.0; 
+    Jacobian_i[1][1] -= yinv * Volume * rhov;
+
   }
 
  public:
@@ -637,7 +653,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
@@ -649,6 +664,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
+        prod_lim_const(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -699,6 +715,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+    AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
 
     Density_i = V_i[idx.Density()];
     Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
@@ -716,29 +733,72 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
+    su2double eff_intermittency = 1.0;
+
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+      AD::SetPreaccIn(intermittency_eff_i);
+      eff_intermittency = intermittency_eff_i;
+    }
+
     if (dist_i > 1e-10) {
-      /*--- Production ---*/
 
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
+      if (axisymmetric && Coord_i[1] > EPS) {
+        AD::SetPreaccIn(Coord_i[1]);
+        diverg += V_i[idx.Velocity() + 1] / Coord_i[1];
+      }
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
-      su2double StrainMag = StrainMag_i;
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+      su2double P_Base = 0;
 
-      if (using_uq) {
-        ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
+      /*--- Apply production term modifications ---*/
+      switch (sstParsedOptions.production) {
+        case SST_OPTIONS::UQ:
+          ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+          P_Base = PerturbedStrainMag(ScalarVar_i[0]);
+          break;
+
+        case SST_OPTIONS::V:
+          P_Base = VorticityMag;
+          break;
+
+        case SST_OPTIONS::KL:
+          P_Base = sqrt(StrainMag_i*VorticityMag);
+          break;
+
+        default:
+          /*--- Base production term for SST-1994 and SST-2003 ---*/
+          P_Base = StrainMag_i;
+          break;
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      /*--- Production limiter. ---*/
+      const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
+        P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      }
+      su2double pk = max(0.0, min(P, prod_limit));
+
+      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
+
+      /*--- Production limiter only for V2003, recompute for V1994. ---*/
+      su2double pw;
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
+        pw = alfa_blended * Density_i * max(pow(P_Base, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      } else {
+        pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
+      }
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -746,12 +806,22 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             where the sustaining terms are simply added. This latter approach could
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
-
-      if (sustaining_terms) {
+      if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
         pk = max(pk, sust_k);
         pw = max(pw, sust_w);
+      }
+
+      /*--- Dissipation ---*/
+
+      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
+
+      /*--- LM model coupling with production and dissipation term for k transport equation---*/
+      if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        pk = pk * eff_intermittency;
+        dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }
 
       /*--- Add the production terms to the residuals. ---*/
@@ -759,10 +829,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
-      /*--- Dissipation ---*/
+      /*--- Add the dissipation  terms to the residuals.---*/
 
-      Residual[0] -= beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Volume;
-      Residual[1] -= beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * Volume;
+      Residual[0] -= dk * Volume;
+      Residual[1] -= dw * Volume;
 
       /*--- Cross diffusion ---*/
 
@@ -770,7 +840,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
-      if (axisymmetric) ResidualAxisymmetric(alfa_blended, zeta);
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
 
       /*--- Implicit part ---*/
 

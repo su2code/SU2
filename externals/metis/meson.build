@@ -4,19 +4,25 @@ metis_default_warnings = []
 if build_machine.system() != 'windows'
   metis_default_warnings += ['-Wno-implicit-function-declaration']
   if meson.get_compiler('cpp').get_id() != 'intel'
-    metis_default_warnings += ['-Wno-unused-result',
-                               '-Wno-unused-parameter',
-                               '-Wno-unused-variable',
-                               '-Wno-unused-but-set-variable',
-                               '-Wno-macro-redefined',
-                               '-Wno-unknown-pragmas',
-                               '-Wno-sign-compare',
-                               '-Wno-clobbered',
-                               '-Wno-empty-body',
-                               '-Wno-unused-label',
-                               '-Wno-misleading-indentation',
-                               '-Wno-maybe-uninitialized',
-                               '-Wno-pedantic']
+    desired_warnings = ['-Wno-unused-result',
+                        '-Wno-unused-parameter',
+                        '-Wno-unused-variable',
+                        '-Wno-unused-but-set-variable',
+                        '-Wno-unknown-pragmas',
+                        '-Wno-sign-compare',
+                        '-Wno-clobbered',
+                        '-Wno-empty-body',
+                        '-Wno-unused-label',
+                        '-Wno-misleading-indentation',
+                        '-Wno-maybe-uninitialized',
+                        '-Wno-pedantic',
+                        '-Wno-error=absolute-value',
+                        '-Wno-absolute-value']
+    foreach flag : desired_warnings
+      if meson.get_compiler('cpp').has_argument(flag)
+        metis_default_warnings += flag
+      endif
+    endforeach
   endif
 endif
 

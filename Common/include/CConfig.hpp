@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -311,7 +312,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
-  su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
@@ -445,6 +445,7 @@ private:
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
+  string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -480,6 +481,7 @@ private:
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
+  MIXINGVISCOSITYMODEL Kind_MixingViscosityModel; /*!< \brief Kind of the mixing Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
@@ -529,28 +531,34 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
+  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+
+  CENTERED
   Kind_Centered,                /*!< \brief Centered scheme. */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
-  Kind_Centered_Template,       /*!< \brief Centered scheme for the template model. */
+  Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
+
+
+  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
+  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
+  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
+  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+
+  UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
-  Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
-  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
-  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
-  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
-  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
-  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+  Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -699,8 +707,12 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
-  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
+  unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;           /*!< \brief List of names for configuration files. */
+  SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
+  SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
+  unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -798,11 +810,10 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
-  Specific_Heat_Cp,           /*!< \brief Specific heat at constant pressure. */
-  Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
-  Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
+  *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
+  nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
+  su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
@@ -816,20 +827,24 @@ private:
   Pressure_Critical,     /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,      /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
-  Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
-  Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
-  Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
-  Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
-  Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
-  Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
-  Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
+  *Thermal_Conductivity_Constant,  /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
+  *Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
+  *Mu_S;                  /*!< \brief Reference S for Sutherland model.  */
+  unsigned short nMu_Constant,   /*!< \brief Number of species constant viscosities. */
+  nMu_Ref,                       /*!< \brief Number of species reference constants for Sutherland model. */
+  nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
+  nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
+  nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
+  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
+  nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
+  nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
+  su2double *Constant_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
@@ -840,6 +855,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -855,8 +871,8 @@ private:
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
   wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
   wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
-  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -1013,7 +1029,6 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
-  bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1094,7 +1109,7 @@ private:
   hs_axes[3],            /*!< \brief principal axes (x, y, z) of the ellipsoid containing the heat source. */
   hs_center[3];          /*!< \brief position of the center of the heat source. */
 
-  unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
+  UPWIND Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
@@ -1135,8 +1150,8 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-
-  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
+  SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -1161,19 +1176,24 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
+  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+
   /* other NEMO configure options*/
-  unsigned short nSpecies,                  /*!< \brief No of species present in flow */
-  iWall_Catalytic,
-  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
-  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
+  nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
-  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
+  monoatomic,                               /*!< \brief Flag for monoatomic mixture. */
+  Supercatalytic_Wall;                      /*!< \brief Flag for supercatalytic wall. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1183,7 +1203,6 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
-  unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1261,7 +1280,7 @@ private:
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
-  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field);
+  void addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field);
 
   void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field);
 
@@ -1605,31 +1624,19 @@ public:
    * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
    * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
    */
-  su2double GetMolecular_Weight(void) const { return Molecular_Weight; }
+  su2double GetMolecular_Weight(unsigned short val_index = 0) const { return Molecular_Weight[val_index]; }
 
   /*!
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
    */
-  su2double GetSpecific_Heat_Cp(void) const { return Specific_Heat_Cp; }
+  su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index]; }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
    * \return Value of the non-dim. constant: Cp
    */
-  su2double GetSpecific_Heat_CpND(void) const { return Specific_Heat_CpND; }
-
-  /*!
-   * \brief Get the value of specific heat at constant volume.
-   * \return Value of the constant: Cv
-   */
-  su2double GetSpecific_Heat_Cv(void) const { return Specific_Heat_Cv; }
-
-  /*!
-   * \brief Get the non-dimensional value of specific heat at constant volume.
-   * \return Value of the non-dim. constant: Cv
-   */
-  su2double GetSpecific_Heat_CvND(void) const { return Specific_Heat_CvND; }
+  su2double GetSpecific_Heat_CpND(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index] / Gas_Constant_Ref; }
 
   /*!
    * \brief Get the value of wall temperature.
@@ -1700,13 +1707,13 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  su2double GetPrandtl_Lam(void) const { return Prandtl_Lam; }
+  su2double GetPrandtl_Lam(unsigned short val_index = 0) const { return Prandtl_Lam[val_index]; }
 
   /*!
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
+  su2double GetPrandtl_Turb(unsigned short val_index = 0) const { return Prandtl_Turb[val_index]; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
@@ -1926,6 +1933,12 @@ public:
    * \return Non-dimensionalized freestream intermittency.
    */
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
+
+  /*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
@@ -2293,8 +2306,8 @@ public:
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
-  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
+  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
+                             UPWIND val_kind_upwind,        LIMITER val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
 
   /*!
@@ -2418,30 +2431,6 @@ public:
    * \param[in] val_gas_constant - Value of the gas-constant.
    */
   void SetGas_Constant(su2double val_gas_constant) { Gas_Constant = val_gas_constant; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cp - specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp = val_specific_heat_cp; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cpnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CpND(su2double val_specific_heat_cpnd) { Specific_Heat_CpND = val_specific_heat_cpnd; }
-
-  /*!
-   * \brief Set the value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cv - specific heat at constant volume.
-   */
-  void SetSpecific_Heat_Cv(su2double val_specific_heat_cv) { Specific_Heat_Cv = val_specific_heat_cv; }
-
-  /*!
-   * \brief Set the non-dimensional value of the specific heat at constant volume (incompressible fluids with energy equation).
-   * \param[in] val_specific_heat_cvnd - non-dim. specific heat at constant pressure.
-   */
-  void SetSpecific_Heat_CvND(su2double val_specific_heat_cvnd) { Specific_Heat_CvND = val_specific_heat_cvnd; }
 
   /*!
    * \brief Set the heat flux reference value.
@@ -2590,6 +2579,12 @@ public:
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
 
   /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
+
+  /*!
    * \brief Set the non-dimensional freestream energy.
    * \param[in] val_energy_freestreamnd - Value of the non-dimensional freestream energy.
    */
@@ -2694,7 +2689,12 @@ public:
    * \brief Set the number of multigrid levels.
    * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
    */
-  void SetMGLevels(unsigned short val_nMGLevels) { nMGLevels = val_nMGLevels; }
+  void SetMGLevels(unsigned short val_nMGLevels) {
+    nMGLevels = val_nMGLevels;
+    if (MGCycle == FULLMG_CYCLE) {
+      SetFinestMesh(val_nMGLevels);
+    }
+  }
 
   /*!
    * \brief Get the index of the finest grid.
@@ -3052,13 +3052,13 @@ public:
 
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
-   * \return: Number of periodic time instances for Harmonic Balance.
+   * \return Number of periodic time instances for Harmonic Balance.
    */
   unsigned short GetnTimeInstances(void) const { return nTimeInstances; }
 
   /*!
    * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
-   * \return: Period for Harmonic Balance.
+   * \return Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void) const { return HarmonicBalance_Period; }
 
@@ -3694,7 +3694,7 @@ public:
    */
   bool GetAUSMMethod(void) const {
     switch (Kind_Upwind_Flow) {
-      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS:
+      case UPWIND::AUSM : case UPWIND::AUSMPLUSUP: case UPWIND::AUSMPLUSUP2: case UPWIND::AUSMPWPLUS:
         return true;
       default:
         return false;
@@ -3748,10 +3748,21 @@ public:
   string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
 
   /*!
+   * \brief Get wall catalytic efficiency.
+   * \return wall catalytic efficiency value.
+   */
+  su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
+
+  /*!
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+
+  /*!
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.
@@ -3801,6 +3812,12 @@ public:
   VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
 
   /*!
+   * \brief Get the value of the mixing model for viscosity.
+   * \return Mixing Viscosity model.
+   */
+  MIXINGVISCOSITYMODEL GetKind_MixingViscosityModel() const { return Kind_MixingViscosityModel; }
+
+  /*!
    * \brief Get the value of the thermal conductivity model.
    * \return Conductivity model.
    */
@@ -3813,28 +3830,38 @@ public:
   CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  DIFFUSIVITYMODEL GetKind_Diffusivity_Model(void) const { return Kind_Diffusivity_Model; }
+
+  /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  su2double GetMu_Constant(void) const { return Mu_Constant; }
+  su2double GetMu_Constant(unsigned short val_index = 0) const { return Mu_Constant[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional constant viscosity.
    * \return Non-dimensional constant viscosity.
    */
-  su2double GetMu_ConstantND(void) const { return Mu_ConstantND; }
+  su2double GetMu_ConstantND(unsigned short val_index = 0) const { return Mu_Constant[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index];
+  }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
+  su2double GetThermal_Conductivity_ConstantND(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index] / Thermal_Conductivity_Ref;
+  }
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
@@ -3861,40 +3888,48 @@ public:
   su2double GetSchmidt_Number_Turbulent(void) const { return Schmidt_Number_Turbulent; }
 
   /*!
+   * \brief Get the value of the Lewis number for each species.
+   * \return Lewis Number.
+   */
+  su2double GetConstant_Lewis_Number(unsigned short val_index = 0) const { return Constant_Lewis_Number[val_index]; }
+
+  /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  su2double GetMu_Ref(void) const { return Mu_Ref; }
+  su2double GetMu_Ref(unsigned short val_index = 0) const { return Mu_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
    * \return The non-dimensional reference viscosity.
    */
-  su2double GetMu_RefND(void) const { return Mu_RefND; }
+  su2double GetMu_RefND(unsigned short val_index = 0) const { return Mu_Ref[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref; }
+  su2double GetMu_Temperature_Ref(unsigned short val_index = 0) const { return Mu_Temperature_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
    * \return The non-dimensional reference temperature.
    */
-  su2double GetMu_Temperature_RefND(void) const { return Mu_Temperature_RefND; }
+  su2double GetMu_Temperature_RefND(unsigned short val_index = 0) const {
+    return Mu_Temperature_Ref[val_index] / Temperature_Ref;
+  }
 
   /*!
    * \brief Get the value of the reference S for Sutherland model.
    * \return The reference S.
    */
-  su2double GetMu_S(void) const { return Mu_S; }
+  su2double GetMu_S(unsigned short val_index = 0) const { return Mu_S[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference S for Sutherland model.
    * \return The non-dimensional reference S.
    */
-  su2double GetMu_SND(void) const { return Mu_SND; }
+  su2double GetMu_SND(unsigned short val_index = 0) const { return Mu_S[val_index] / Temperature_Ref; }
 
   /*!
    * \brief Get the number of coefficients in the temperature polynomial models.
@@ -3955,31 +3990,6 @@ public:
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
   const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
-
-  /*!
-   * \brief Set the value of the non-dimensional constant viscosity.
-   */
-  void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional thermal conductivity.
-   */
-  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
-   */
-  void SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
-   */
-  void SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional S for Sutherland model.
-   */
-  void SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for specific heat Cp.
@@ -4337,7 +4347,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of center scheme for the convective terms.
    */
-  unsigned short GetKind_Centered(void) const { return Kind_Centered; }
+  CENTERED GetKind_Centered(void) const { return Kind_Centered; }
 
   /*!
    * \brief Get kind of upwind scheme for the convective terms.
@@ -4346,7 +4356,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetKind_Upwind(void) const { return Kind_Upwind; }
+  UPWIND GetKind_Upwind(void) const { return Kind_Upwind; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
@@ -4517,7 +4527,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the flow equations.
    */
-  ENUM_CENTERED GetKind_Centered_Flow(void) const { return static_cast<ENUM_CENTERED>(Kind_Centered_Flow); }
+  CENTERED GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -4533,7 +4543,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the flow equations.
    */
-  unsigned short GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
+  UPWIND GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
 
   /*!
    * \brief Get the kind of finite element convective numerical scheme for the flow equations.
@@ -4662,7 +4672,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
+  CENTERED GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint flow equations.
@@ -4670,7 +4680,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
+  UPWIND GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the high order method (center scheme).
@@ -4714,7 +4724,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
+  CENTERED GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the turbulence equations.
@@ -4722,7 +4732,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
+  UPWIND GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4766,7 +4776,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Centered_Species() const { return Kind_Centered_Species; }
+  CENTERED GetKind_Centered_Species() const { return Kind_Centered_Species; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the Species equations.
@@ -4774,7 +4784,22 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+  UPWIND GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for species transport.
+   */
+  bool GetBounded_Species() const { return (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for turbulence transport.
+   */
+  bool GetBounded_Turb() const { return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is used for any equation.
+   */
+  bool GetBounded_Scalar() const { return GetBounded_Species() || GetBounded_Turb(); }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
@@ -4790,7 +4815,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
+  CENTERED GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint turbulence equations.
@@ -4798,7 +4823,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
+  UPWIND GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
 
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
@@ -5216,6 +5241,11 @@ public:
   const string& GetCustomObjFunc() const { return CustomObjFunc; }
 
   /*!
+   * \brief Get the user expressions for custom outputs.
+   */
+  const string& GetCustomOutputs() const { return CustomOutputs; }
+
+  /*!
    * \brief Get the kind of sensitivity smoothing technique.
    * \return Kind of sensitivity smoothing technique.
    */
@@ -5230,22 +5260,22 @@ public:
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
-   * \brief Provides the number of species present in the plasma
-   * \return: The number of species present in the plasma, read from input file
+   * \brief Provides the number of species present in the gas mixture.
+   * \return The number of species present in the gas mixture.
    */
   unsigned short GetnSpecies() const { return nSpecies; }
 
-   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux.
-   */
-  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
-
   /*!
-   * \brief Provides the gas mass fractions of the flow
-   * \return: Gas Mass fractions
+   * \brief Provides the gas mass fractions of the flow.
+   * \return Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
+
+  /*!
+   * \brief Provides the gas mass fractions at the wall for supercat wall.
+   * \return Supercat wall gas mass fractions.
+   */
+  const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
   /*!
    * \brief Provides the restart information.
@@ -5322,6 +5352,11 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
+
+  /*!
+   * \brief Indicates whether supercatalytic wall is used.
+   */
+  bool GetSupercatalytic_Wall(void) const { return Supercatalytic_Wall; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
@@ -6236,16 +6271,29 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines whether a marker with index iMarker is a catalytic boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a catalytic boundary.
+   */
+  bool GetCatalytic_Wall(unsigned short iMarker) const;
+
+  /*!
+   * \brief Determines if problem is adjoint.
+   * \return true if Adjoint.
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
   /*!
-   * \brief Determines if problem is viscous
-   * \return true if Viscous
+   * \brief Determines if problem is viscous.
+   * \return true if Viscous.
    */
   bool GetViscous(void) const { return Viscous; }
+
+  /*!
+   * \brief Determines if problem has catalytic walls.
+   * \return true if catalytic walls are present.
+   */
+  bool GetCatalytic(void) const { return nWall_Catalytic > 0; }
 
   /*!
    * \brief Provides the index of the solution in the container.
@@ -8871,7 +8919,7 @@ public:
    * \note This value is obtained from the config file, and it is constant during the computation.
    * \return Kind of Riemann solver for the DG method (FEM flow solver).
    */
-  unsigned short GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
+  UPWIND GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
 
   /*!
    * \brief Get the factor applied during quadrature of straight elements.
@@ -8976,12 +9024,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return using_uq; }
-
-  /*!
    * \brief Get the amount of eigenvalue perturbation to be done
    * \return Value of the uq_delta_b parameter
    */
@@ -9057,11 +9099,6 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
-
-  /*!
-   * \brief Get QCR (SA-QCR2000).
-   */
-  bool GetQCR(void) const { return QCR;}
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
@@ -9617,10 +9654,22 @@ public:
    */
   unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
 
-    /*!
+  /*!
    * \brief Get max number of iterations of the for the gradient smoothing.
    * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get parsed SST option data structure.
+   * \return SST option data structure.
+   */
+  SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
+
+  /*!
+   * \brief Get parsed SA option data structure.
+   * \return SA option data structure.
+   */
+  SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
 
 };

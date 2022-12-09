@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.hpp
  * \brief Headers of the CFEM_DG_EulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -355,13 +355,6 @@ public:
    * \return Value of the pressure at the infinity.
    */
   inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
-
-  /*!
-   * \brief Compute the density multiply by velocity at the infinity.
-   * \param[in] val_dim - Index of the velocity vector.
-   * \return Value of the density multiply by the velocity at the infinity.
-   */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.

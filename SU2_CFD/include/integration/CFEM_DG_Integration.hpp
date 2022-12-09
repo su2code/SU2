@@ -2,7 +2,7 @@
  * \file CFEM_DG_Integration.hpp
  * \brief Declaration of class for integration with the FEM DG solver.
  * \author E. van der Weide, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,9 +29,10 @@
 
 /*!
  * \class CFEM_DG_Integration
+ * \ingroup Drivers
  * \brief Class for integration with the FEM DG solver.
  * \author E. van der Weide, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CFEM_DG_Integration final : public CIntegration {
 public:

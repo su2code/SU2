@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -920,7 +920,7 @@ void CMultiGridGeometry::MatchPeriodic(const CConfig *config, unsigned short val
 
 void CMultiGridGeometry::SetControlVolume(const CGeometry *fine_grid, unsigned short action) {
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   unsigned long iFinePoint, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
@@ -983,13 +983,12 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry *fine_grid, unsigned s
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CMultiGridGeometry::SetBoundControlVolume(const CGeometry *fine_grid, unsigned short action) {
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
   unsigned short iMarker, iChildren, iDim;
@@ -1027,8 +1026,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry *fine_grid, unsig
     }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CMultiGridGeometry::SetCoord(const CGeometry *fine_grid) {

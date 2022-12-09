@@ -1,9 +1,9 @@
 ﻿/*!
  * \file species_convection.hpp
- * \brief Delarations of numerics classes for discretization of
+ * \brief Declarations of numerics classes for discretization of
  *        convective fluxes in species problems.
  * \author T. Kattmann
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,14 +51,12 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::idx;
+  using Base::bounded_scalar;
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i[idx.Density()]);
-    AD::SetPreaccIn(V_j[idx.Density()]);
-  };
+  void ExtraADPreaccIn() override {}
 
   /*!
    * \brief Species transport specific steps in the ComputeResidual method
@@ -83,5 +81,5 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Species(); }
 };

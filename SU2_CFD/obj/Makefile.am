@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.1 "Blackbird"
+# \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -51,8 +51,10 @@ endif
 libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
+  ../src/fluid/CFluidScalar.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
+  ../src/fluid/CCoolProp.cpp \
   ../src/fluid/CNEMOGas.cpp \
   ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
@@ -85,6 +87,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
+  ../src/numerics/CLookUpTable.cpp \
+  ../src/numerics/CTrapezoidalMap.cpp \
+  ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
   ../src/numerics/flow/convection/fvs.cpp \
@@ -241,6 +246,11 @@ libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
 # endif
+
+
+su2_cfd_cxx_flags += @CoolProp_CXX@
+su2_cfd_ldadd += @CoolProp_LD@
+
 
 if BUILD_NORMAL
 libSU2Core_a_SOURCES = $(libSU2Core_sources)

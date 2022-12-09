@@ -1,8 +1,8 @@
 /*!
  * \file CTurbSSTSolver.cpp
- * \brief Main subrotuines of CTurbSSTSolver class
+ * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,6 +40,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   string text_line;
 
   bool multizone = config->GetMultizone_Problem();
+  sstParsedOptions = config->GetSSTParsedOptions();
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
@@ -58,7 +59,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -103,9 +104,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
+  if (sstParsedOptions.version == SST_OPTIONS::V1994){
+    constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+    constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+    constants[10] = 20.0; // production limiter constant
+  } else {
+    /* SST-V2003 */
+    constants[8] = 5.0 / 9.0;  //gamma_1
+    constants[9] = 0.44;  //gamma_2
+    constants[10] = 10.0; // production limiter constant
+  }
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;
@@ -184,7 +193,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
@@ -209,30 +218,30 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    su2double rho = flowNodes->GetDensity(iPoint);
-    su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
+    const su2double rho = flowNodes->GetDensity(iPoint);
+    const su2double mu = flowNodes->GetLaminarViscosity(iPoint);
 
-    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+    const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
+    const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+    const su2double StrainMag = max(nodes->GetStrainMag(iPoint), 1e-12);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho, config->GetKind_Trans_Model());
 
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
-
-    su2double F2 = nodes->GetF2blending(iPoint);
+    const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    su2double kine  = nodes->GetSolution(iPoint,0);
-    su2double omega = nodes->GetSolution(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    su2double muT   = max(rho*kine*zeta,0.0);
+    const su2double kine = nodes->GetSolution(iPoint,0);
+    const su2double omega = nodes->GetSolution(iPoint,1);
 
-    nodes->SetmuT(iPoint,muT);
+    const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
+    const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
+
+    nodes->SetmuT(iPoint, muT);
 
   }
   END_SU2_OMP_FOR
@@ -312,6 +321,12 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
+    /*--- Effective Intermittency ---*/
+
+    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
+      numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
+    }
+
     if (axisymmetric){
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
@@ -351,10 +366,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
   if (config->GetWall_Functions()) {
-    SU2_OMP_MASTER
-    SetTurbVars_WF(geometry, solver_container, config, val_marker);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTurbVars_WF(geometry, solver_container, config, val_marker);)
     return;
   }
 
@@ -455,6 +467,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    if (!geometry->nodes->GetDomain(iPoint_Neighbor)) continue;
 
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
     su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
@@ -505,61 +518,6 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      conv_numerics->SetPrimitive(V_domain, V_infty);
-
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
-
-      /*--- Set Normal (it is necessary to change the sign) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Grid Movement ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute residuals and Jacobians ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Add residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
-  }
-  END_SU2_OMP_FOR
-
-}
-
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
@@ -595,13 +553,38 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
       su2double Inlet_Vars[MAXNVAR];
-      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
       if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
-        Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+        /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+        Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0] / pow(config->GetVelocity_Ref(), 2);
+        Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
+                        (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+      } else {
+        /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+        CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+        /*--- Obtain flow velocity vector at inlet boundary node ---*/
+
+        const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
+        su2double Density_Inlet;
+        if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+          Density_Inlet = V_inlet[prim_idx.Density()];
+          FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+        } else {
+          const su2double* Scalar_Inlet = nullptr;
+          if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+          }
+          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+          Density_Inlet = FluidModel->GetDensity();
+        }
+        const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+        const su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+        const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
+
+        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST
@@ -615,6 +598,12 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
+
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -659,7 +648,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
   }
   END_SU2_OMP_FOR
-
 }
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -708,6 +696,12 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
+
       /*--- Compute the residual using an upwind scheme ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
@@ -750,7 +744,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
     }
   }
   END_SU2_OMP_FOR
-
 }
 
 

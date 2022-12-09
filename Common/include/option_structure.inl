@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -406,11 +406,11 @@ public:
 class COptionConvect : public COptionBase {
   string name; // identifier for the option
   unsigned short & space;
-  unsigned short & centered;
-  unsigned short & upwind;
+  CENTERED & centered;
+  UPWIND & upwind;
 
 public:
-  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
+  COptionConvect(string option_field_name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field)
     : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
   string SetValue(const vector<string>& option_value) override {
@@ -424,13 +424,13 @@ public:
     if (Centered_Map.count(option_value[0])) {
       this->space = Space_Map.find("SPACE_CENTERED")->second;
       this->centered = Centered_Map.find(option_value[0])->second;
-      this->upwind = NO_UPWIND;
+      this->upwind = UPWIND::NONE;
       return "";
     }
     if (Upwind_Map.count(option_value[0])) {
       this->space = Space_Map.find("SPACE_UPWIND")->second;
       this->upwind = Upwind_Map.find(option_value[0])->second;
-      this->centered = NO_CENTERED;
+      this->centered = CENTERED::NONE;
       return "";
     }
     // Make them defined in case something weird happens
@@ -440,8 +440,8 @@ public:
   }
 
   void SetDefault() override {
-    this->centered = NO_CENTERED;
-    this->upwind = NO_UPWIND;
+    this->centered = CENTERED::NONE;
+    this->upwind = UPWIND::NONE;
     this->space = NO_CONVECTIVE;
   }
 };

@@ -2,7 +2,7 @@
  * \file CTransLMVariable.hpp
  * \brief Declaration of the variables of the transition model.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,25 +33,27 @@
  * \class CTransLMVariable
  * \brief Transition model variables.
  * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \author A. Bueno, S. Kang.
  */
 
 class CTransLMVariable final : public CTurbVariable {
 protected:
-  VectorType gamma_sep;
+  VectorType Intermittency_Eff;
+  VectorType Intermittency_Sep;
 
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_intermittency
-   * \param[in] val_REth
+   * \param[in] Intermittency - intermittency(gamma) (initialization value).
+   * \param[in] ReThetaT - momentum thickness Reynolds number(ReThetaT)(initialization value).
+   * \param[in] gammaSep - separation intermittency(gamma) (initialization value).
+   * \param[in] gammaEff - effective intermittency(gamma) (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
-   * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -59,18 +61,23 @@ public:
   ~CTransLMVariable() override = default;
 
   /*!
-   * \brief ________________.
+   * \brief Set Separation intermittency.
    */
-  inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
+  void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) override;
+  
+  /*!
+   * \brief Set Effective intermittency.
+   */
+  void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) override;
 
   /*!
-   * \brief ________________.
-   * \param[in] gamma_sep_in
+   * \brief Calculate effective intermittency.
    */
-  inline void SetGammaSep(unsigned long iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
+  inline su2double GetIntermittencyEff(unsigned long iPoint) const override { return Intermittency_Eff(iPoint); }
 
   /*!
-   * \brief Correction for separation-induced transition.
+   * \brief Value of separation intermittency.
    */
-  inline void SetGammaEff(unsigned long iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
+  inline su2double GetIntermittencySep(unsigned long iPoint) const override { return Intermittency_Sep(iPoint); }
+
 };

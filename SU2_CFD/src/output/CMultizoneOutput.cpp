@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -173,7 +173,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
       auto* Marker = &Marker_Monitoring;
-      if (group == "FLOW_COEFF_SURF")
+      if ((group == "FLOW_COEFF_SURF") || (group == "SPECIES_COEFF_SURF"))
         Marker = &Marker_Analyze;
       else if (group != "AERO_COEFF_SURF" && group != "HEAT_SURF")
         SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);

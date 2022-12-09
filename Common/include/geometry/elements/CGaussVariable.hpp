@@ -2,7 +2,7 @@
  * \file CGaussVariable.hpp
  * \brief Light-weight class to store Gaussian point information.
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,9 @@
 
 /*!
  * \class CGaussVariable
+ * \ingroup FemAlgos
  * \brief Main class for defining the gaussian points.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CGaussVariable {
 protected:

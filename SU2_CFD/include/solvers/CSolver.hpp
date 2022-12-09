@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -2356,6 +2357,11 @@ public:
   inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline virtual su2double GetReferenceDynamicPressure() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -2995,6 +3001,12 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
+   */
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -3106,13 +3118,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_dim - Index of the adjoint velocity vector.
-   * \return Value of the density x velocity at the infinity.
-   */
-  inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
@@ -3147,6 +3152,18 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
+
+  /*!
+   * \brief Get value of the Intermittency.
+   * \return Value of the Intermittency.
+   */
+  inline virtual su2double GetIntermittency_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the momentum thickness Reynolds number.
+   * \return Value of the momentum thickness Reynolds number.
+   */
+  inline virtual su2double GetReThetaT_Inf() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4321,8 +4338,37 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
+
+  /*!
+   * \brief Interpolate variables to a coarser grid level.
+   * \note Halo values are not communicated in this function.
+   * \param[in] geoFine - Fine grid.
+   * \param[in] varsFine - Matrix of variables on the fine grid.
+   * \param[in] geoCoarse - Coarse grid.
+   * \param[in] varsCoarse - Matrix of variables interpolated to the coarse grid.
+   */
+  inline static void MultigridRestriction(const CGeometry& geoFine, const su2activematrix& varsFine,
+                                          const CGeometry& geoCoarse, su2activematrix& varsCoarse) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geoCoarse.GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPointCoarse = 0ul; iPointCoarse < geoCoarse.GetnPointDomain(); ++iPointCoarse) {
+
+      for (auto iVar = 0ul; iVar < varsCoarse.cols(); iVar++) {
+        varsCoarse(iPointCoarse, iVar) = 0.0;
+      }
+      const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
+
+      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+        const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
+        for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
+          varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
 
 protected:
   /*!
@@ -4377,13 +4423,12 @@ protected:
    * \brief Set the RMS and MAX residual to zero.
    */
   inline void SetResToZero() {
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       for (auto& r : Residual_RMS) r = 0;
       for (auto& r : Residual_Max) r = 0;
       for (auto& p : Point_Max) p = 0;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!

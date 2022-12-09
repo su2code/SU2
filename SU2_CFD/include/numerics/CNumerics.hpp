@@ -1,9 +1,9 @@
 ﻿/*!
  * \file CNumerics.hpp
- * \brief Delaration of the base numerics class, the
+ * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,6 +55,7 @@ protected:
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
+  su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
@@ -81,6 +82,8 @@ protected:
   su2double
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
+  su2double
+  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -180,14 +183,16 @@ protected:
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
-  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
 public:
   /*!
@@ -697,6 +702,14 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+   * \brief Set the value of the effective intermittency for the LM model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  void SetIntermittencyEff(su2double val_intermittency_eff_i) {
+    intermittency_eff_i = val_intermittency_eff_i;
+  }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1598,6 +1611,18 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief SetMassFlux
+   * \param[in] val_MassFlux: Mass flux across the edge
+   */
+  inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
+
+  /*!
+   * \brief Obtain information on bounded scalar problem
+   * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
+   */
+  inline bool GetBoundedScalar() const { return bounded_scalar;}
 };
 
 /*!

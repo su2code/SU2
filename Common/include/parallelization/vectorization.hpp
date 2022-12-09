@@ -2,7 +2,7 @@
  * \file vectorization.hpp
  * \brief Implementation of a portable SIMD type.
  * \author P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,8 @@
 #endif
 
 namespace simd {
+/// \addtogroup SIMD
+/// @{
 
 using namespace VecExpr;
 
@@ -56,8 +58,19 @@ constexpr size_t PREFERRED_SIZE = 8;
  */
 template<class T>
 constexpr size_t preferredLen() { return PREFERRED_SIZE / sizeof(T); }
+
 template<>
-constexpr size_t preferredLen<su2double>() { return PREFERRED_SIZE / sizeof(passivedouble); }
+constexpr size_t preferredLen<su2double>() {
+#ifdef CODI_REVERSE_TYPE
+  /*--- Use a SIMD size of 1 for reverse AD, larger sizes increase
+   * the pre-accumulation time with no performance benefit. ---*/
+  return 1;
+#else
+  /*--- For forward AD there is a performance benefit. This covers
+   * forward AD and primal mode (su2double == passivedouble). ---*/
+  return PREFERRED_SIZE / sizeof(passivedouble);
+#endif
+}
 
 /*!
  * \class Array
@@ -81,24 +94,24 @@ private:
   alignas(Size*sizeof(Scalar)) Scalar x_[N];
 
 public:
-#define ARRAY_BOILERPLATE                                                     \
-  /*!--- Access elements ---*/                                                \
-  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }                 \
-  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }     \
-  /*!--- Constructors ---*/                                                   \
-  FORCEINLINE Array() = default;                                              \
-  FORCEINLINE Array(Scalar x) { bcast(x); }                                   \
-  FORCEINLINE Array(std::initializer_list<Scalar> vals) {                     \
-    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }                    \
-  }                                                                           \
-  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }      \
-  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }                         \
-  template<class T>                                                           \
-  FORCEINLINE Array(const Scalar* beg, const T& off) { gather(beg,off); }     \
-  /*!--- Reduction operations ---*/                                           \
-  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s+=x_[k]; return s; } \
-  FORCEINLINE Scalar dot(const Array& other) const {                          \
-    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;                     \
+#define ARRAY_BOILERPLATE                                                         \
+  /*!--- Access elements ---*/                                                    \
+  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }                     \
+  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }         \
+  /*!--- Constructors ---*/                                                       \
+  FORCEINLINE Array() = default;                                                  \
+  FORCEINLINE Array(Scalar x) { bcast(x); }                                       \
+  FORCEINLINE Array(std::initializer_list<Scalar> vals) {                         \
+    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }                        \
+  }                                                                               \
+  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }          \
+  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }                             \
+  template<class T>                                                               \
+  FORCEINLINE Array(const Scalar* beg, const T& off) { gather(beg,off); }         \
+  /*!--- Reduction operations ---*/                                               \
+  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH { s+=x_[k]; } return s; } \
+  FORCEINLINE Scalar dot(const Array& other) const {                              \
+    Scalar s(0); FOREACH { s += x_[k] * other[k]; } return s;                     \
   }
 
 #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
@@ -131,11 +144,11 @@ public:
 
   /*--- Compound assignment operators. ---*/
 
-#define MAKE_COMPOUND(OP)                                                         \
-  FORCEINLINE Array& operator OP (Scalar x) { FOREACH x_[k] OP x; return *this; } \
-  template<class U>                                                               \
-  FORCEINLINE Array& operator OP (const CVecExpr<U,Scalar>& expr) {               \
-    FOREACH x_[k] OP expr.derived()[k]; return *this;                             \
+#define MAKE_COMPOUND(OP)                                                             \
+  FORCEINLINE Array& operator OP (Scalar x) { FOREACH { x_[k] OP x; } return *this; } \
+  template<class U>                                                                   \
+  FORCEINLINE Array& operator OP (const CVecExpr<U,Scalar>& expr) {                   \
+    FOREACH { x_[k] OP expr.derived()[k]; } return *this;                             \
   }
   MAKE_COMPOUND(=)
   MAKE_COMPOUND(+=)
@@ -303,4 +316,5 @@ FORCEINLINE __m512d sign_p(__m512d x) { return _mm512_or_pd(ones_8d, _mm512_and_
 
 #undef ARRAY_BOILERPLATE
 
+/// @}
 } // namespace

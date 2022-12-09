@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,8 @@
 #include <cmath>
 
 namespace GeometryToolbox {
+/// \addtogroup GeometryToolbox
+/// @{
 
 /*! \return ||a-b||^2 */
 template<class T, class U, typename Int>
@@ -204,5 +206,5 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
   for (Int iDim = 0; iDim < nDim; iDim++)
     proj[iDim] -= normalProj * vector[iDim];
 }
-
+/// @}
 }

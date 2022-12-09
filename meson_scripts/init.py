@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.3.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -44,11 +44,11 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
+  sha_version_codi = '96ac78ec5bcc5ac25b785e79b16ed76fca22d736'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_opdi = '6fb2691b8e4a8f00f47d2a27740fa890df0b5405'
+  sha_version_opdi = '1aabf5bd1ed77611742eb655002f2ac7a3dddef9'
   github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
   sha_version_meson = '41c650a040d50e0912d268af7a903a9ce1456dfa'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
@@ -56,6 +56,8 @@ def init_submodules(method = 'auto'):
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_mpp = '5ff579f43781cae07411e5ab46291c9971536be6'
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
+  sha_version_coolprop = '0ce42fcf3bb2c373512bc825a4f0c1973a78f307'
+  github_repo_coolprop = 'https://github.com/CoolProp/CoolProp.git'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
 
@@ -65,6 +67,7 @@ def init_submodules(method = 'auto'):
   meson_name = 'meson'
   ninja_name= 'ninja'
   mpp_name= 'Mutationpp'
+  coolprop_name= 'CoolProp'
   mel_name = 'MEL'
   base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
   alt_name_medi = base_path + 'medi'
@@ -74,6 +77,7 @@ def init_submodules(method = 'auto'):
   alt_name_ninja = base_path + 'ninja'
   alt_name_mel = base_path + 'mel'
   alt_name_mpp = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
+  alt_name_coolprop = cur_dir + os.path.sep + 'subprojects' + os.path.sep + 'CoolProp'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -94,6 +98,7 @@ def init_submodules(method = 'auto'):
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
     submodule_status(alt_name_mpp, sha_version_mpp)
+    submodule_status(alt_name_coolprop, sha_version_coolprop)
     submodule_status(alt_name_mel, sha_version_mel)
   # Otherwise download the zip file from git
   else:
@@ -103,6 +108,7 @@ def init_submodules(method = 'auto'):
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
+    download_module(coolprop_name, alt_name_coolprop, github_repo_coolprop, sha_version_coolprop)
     download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
 
 
@@ -117,20 +123,16 @@ def is_git_directory(path = '.'):
      return False
   return p == 0
 
-
 def submodule_status(path, sha_commit):
-
   if not os.path.exists(path + os.path.sep + sha_commit):
 
     # Check the status of the submodule
     status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
-
     # The first character of the output indicates the status of the submodule
     # '+' : The submodule does not match the SHA-1 currently in the index of the repository
     # '-' : The submodule is not initialized
     # ' ' : Correct version of submodule is initialized
     status_indicator = status[0][0]
-
     if status_indicator == '+':
       # Write a warning that the sha tags do not match
       sys.stderr.write('WARNING: the currently checked out submodule commit in '
@@ -140,8 +142,22 @@ def submodule_status(path, sha_commit):
       # Initialize the submodule if necessary 
       print('Initialize submodule ' + path + ' using git ... ')
       subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
-
-    # Check that the SHA tag stored in this file matches the one stored in the git index
+      # to update CoolProp external libraries
+    if sha_commit == '0ce42fcf3bb2c373512bc825a4f0c1973a78f307':
+      # update coolprop
+      original_path = os.getcwd()
+      print('update CoolProp')
+      absolute_path = sys.path[0]
+      relative_path = "subprojects/CoolProp"
+      full_path = os.path.join(absolute_path, relative_path)
+      os.chdir(full_path)
+      print(full_path)
+      subprocess.run(['git', 'submodule', 'init'])
+      subprocess.run(['git', 'submodule', 'update'])
+      print(original_path)
+      os.chdir(original_path)
+      print('CoolProp updated')
+      # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
       print('SHA-1 tag stored in index does not match SHA tag stored in this script.')

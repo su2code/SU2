@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,10 +77,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
-    SU2_OMP_MASTER
-    solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
@@ -112,45 +109,10 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long Point_Fine, Point_Coarse;
-  unsigned short iVar, iChildren;
-  su2double Area_Parent, Area_Children;
-  const su2double *Solution_Fine;
-
-  unsigned short nVar = sol_coarse->GetnVar();
-
-  su2double *Solution = new su2double[nVar];
-
-  /*--- Compute coarse solution from fine solution ---*/
-
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-
-    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
-
-    for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
-      Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-    }
-
-    sol_coarse->GetNodes()->SetSolution(Point_Coarse,Solution);
-
-  }
-  END_SU2_OMP_FOR
-
-  delete [] Solution;
-
-  /*--- MPI the new interpolated solution ---*/
-
+  CSolver::MultigridRestriction(*geo_fine, sol_fine->GetNodes()->GetSolution(),
+                                *geo_coarse, sol_coarse->GetNodes()->GetSolution());
   sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
   sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
-
 }
 
 void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,

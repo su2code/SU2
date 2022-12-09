@@ -77,6 +77,7 @@ Giulio Gori
 Guillaume Bâty
 Harichand M V
 HL Kline
+HL Zhi
 IndianaStokes
 J. Sinsay
 JSmith36
@@ -108,6 +109,7 @@ Patrick Mischke
 Paul Urbanczyk
 Paul Zhang
 Pedro Gomes
+Peng Yan
 Pete Bachant
 RaulFeijo55
 Ruben Sanchez
@@ -118,6 +120,7 @@ Samet Cakmakcioglu
 Scott Imlay
 Steffen Schotthöfer
 Steven Endres
+Sunoh Kang
 Teus van der Stelt
 Thomas D. Economon
 Tim Albring
@@ -125,6 +128,7 @@ TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+Zan Xu
 aaronyicongfu
 aeroamit
 anilvar
