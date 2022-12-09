@@ -37,7 +37,7 @@ class TransLMCorrelations {
 
   LM_ParsedOptions options;
 
-  public:
+ public:
 
   /*!
    * \brief Set LM options.
