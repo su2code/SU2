@@ -1000,6 +1000,9 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     unsigned long InnerIter = config->GetInnerIter();
     unsigned long index = 0;
+    
+    if (InnerIter == 0) SetAlpha_ROM(1000000000);
+    
     //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
@@ -1016,7 +1019,8 @@ class CFVMFlowSolverBase : public CSolver {
         if (InnerIter == 0) {
           if (iPoint_mask == 0) Weights.push_back(0);
           //Weights[iVar] += abs(r_ns[index]) / nPointDomain;
-          Weights[iVar] += r_ns[index] * r_ns[index];
+          // Weights[iVar] += r_ns[index] * r_ns[index];
+          Weights[iVar] = 1;
         }
         index++;
       }
@@ -1034,6 +1038,7 @@ class CFVMFlowSolverBase : public CSolver {
         index++;
       }
     }
+    
     
     
     // DO ROM ITERATION:
@@ -1128,6 +1133,12 @@ class CFVMFlowSolverBase : public CSolver {
     CheckROMConvergence(config, ReducedRes);
     if (RomConverged == true) std::cout << "ROM Converged." << std::endl;
     
+    /*--- If reduced residual increased, continue line search ---*/
+    
+    //if (ReducedRes > ReducedResNorm_Cur) {
+    //  // repeat line search and update old GenCoords
+    //}
+    
     /*--- Write some files before linear solve ---*/
     
     if (true) {
@@ -1176,7 +1187,7 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*--- Update ROM solution ---*/
     
-    double a = 10000000000.0;
+    su2double a = GetAlpha_ROM();
     
     for (int i = 0; i < nsnaps; i++) {
       GenCoordsY[i] += a * r[i] ;

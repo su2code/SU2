@@ -199,6 +199,7 @@ public:
 #endif
 
   vector<std::vector<su2double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  vector<su2double> GenCoordsY_Old;            /*!< \brief vector to store generalized coordinate solution of previous iteration. (rom) */
   vector<su2double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
   vector<su2double> Weights;                   /*!< \brief vector to store weights for scaling the residual. (rom)  */
   vector<su2double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
@@ -209,6 +210,7 @@ public:
   su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double Coord1_Old;                     /*!<\brief previous value of the reduced coordinate 1 (rom) */
   bool RomConverged;                        /*!<\brief whether or not the reduced order model has converged (rom) */
+  su2double alphaROM;                       /*!<\brief Step size for ROM line search. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
@@ -1438,6 +1440,27 @@ public:
   inline su2double GetRes_ROM(void) const { return ReducedResNorm_Cur; }
   
   /*!
+   * \brief Set the step size for ROM iteration.
+   * \return Value of the step size.
+   */
+  inline void SetAlpha_ROM(su2double alpha) { alphaROM = alpha;}
+  
+  /*!
+   * \brief Get the step size for ROM iteration.
+   * \return Value of the step size.
+   */
+  inline su2double GetAlpha_ROM(void) { return alphaROM; }
+  
+  /*!
+    * \brief Set the old generalized coordinates with the current.
+    */
+   inline void UpdateGenCoordsY_Old(void) {
+     for (unsigned long i = 0; i<GenCoordsY.size(); i++) {
+       GenCoordsY_Old[i] = GenCoordsY[i];
+     }
+   }
+  
+  /*!
     * \brief Set the current reduced residual, this is useful for the convergence history.
     * \param[in] val_residual - Value of the norm of the reduced residual to store.
     */
@@ -1489,6 +1512,13 @@ public:
    * \param[in] ReducedRes - Value of the reduced residual.
    */
   void CheckROMConvergence(CConfig *config, double ReducedRes);
+  
+  /*!
+   * \brief Check for ROM convergence
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ReducedRes - Value of the reduced residual.
+   */
+  void CheckLineSearch(CConfig *config, double ReducedRes);
   
   /*!
    * \brief Write a set of files for debugging purposes

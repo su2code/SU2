@@ -4276,7 +4276,13 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   
   ifstream in_phi(phi_filename);
   unsigned long index = 0;
-  if (nModes == 0) nModes = 10000;
+  if (nModes == 0) {
+    std::cout << "Using all POD modes." << std::endl;
+    nModes = 10000;
+  }
+  else {
+    std::cout << "Using " << nModes << " POD modes." << std::endl;
+  }
   
   if (in_phi) {
     std::string line;
@@ -4366,6 +4372,7 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         }
       }
       GenCoordsY.push_back(sum);
+      GenCoordsY_Old.push_back(0.0);
     }
   }
   else if (in_init_coord){
@@ -4536,8 +4543,10 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   if (desired_nodes == 0) use_all_nodes = true;
   
   /*--- If selected nodes already contained in file, do not re-compute ---*/
-  ifstream in_hypernodes(hypernodes_filename);
-  if (in_hypernodes) read_mask_from_file = true;
+  if (hypernodes_filename.compare("NONE") != 0) {
+    ifstream in_hypernodes(hypernodes_filename);
+    if (in_hypernodes) read_mask_from_file = true;
+  }
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   //TODO: make this a function
@@ -4823,6 +4832,8 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
     else if (ReducedRes > ReducedResNorm_Cur) {
       //RomConverged = true;
       std::cout << "ROM Residual Increased." << std::endl;
+      su2double a = GetAlpha_ROM();
+      SetAlpha_ROM(a * 0.5);
     }
     
     else {
@@ -4831,6 +4842,25 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   SetRes_ROM(ReducedRes);
   SetCoord1_Old(GenCoordsY[1]);
+}
+
+void CSolver::CheckLineSearch(CConfig *config, double ReducedRes) {
+  
+  if (ReducedRes > ReducedResNorm_Cur) {
+    // go back to old coordinates and try another alpha
+    for (unsigned long i = 0; i<GenCoordsY.size(); i++){
+      GenCoordsY[i] = GenCoordsY_Old[i];
+    }
+    
+    
+    
+  }
+  else {
+    UpdateGenCoordsY_Old();
+    
+  }
+  
+  
 }
 
 void CSolver::writeROMfiles(unsigned long InnerIter, vector<su2double> &r, vector<su2double> &r_red) {
