@@ -225,13 +225,37 @@ map<string, string> CDriverBase::GetMarkerTypes() const {
         type = "ISOTHERMAL";
         break;
       case HEAT_FLUX:
-        type = "HEATFLUX";
+        type = "HEAT_FLUX";
+        break;
+      case HEAT_TRANSFER:
+        type = "HEAT_TRANSFER";
         break;
       case INLET_FLOW:
         type = "INLET_FLOW";
         break;
       case OUTLET_FLOW:
         type = "OUTLET_FLOW";
+        break;
+      case SUPERSONIC_INLET:
+        type = "SUPERSONIC_INLET";
+        break;
+      case SUPERSONIC_OUTLET:
+        type = "SUPERSONIC_OUTLET";
+        break;
+      case RIEMANN_BOUNDARY:
+        type = "RIEMANN";
+        break;
+      case GILES_BOUNDARY:
+        type = "GILES";
+        break;
+      case DISPLACEMENT_BOUNDARY:
+        type = "DISPLACEMENT";
+        break;
+      case LOAD_BOUNDARY:
+        type = "LOAD";
+        break;
+      case PERIODIC_BOUNDARY:
+        type = "PERIODIC";
         break;
       case SYMMETRY_PLANE:
         type = "SYMMETRY";
