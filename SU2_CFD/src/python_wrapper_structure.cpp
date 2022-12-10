@@ -50,7 +50,12 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
             
             if ((config[iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) ||
                 (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
-                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS)) {
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) ||
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_EULER) ||
+                (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES)) {
                 
                 solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
             }
@@ -387,6 +392,7 @@ void CDriver::ResetConvergence() {
                 
             case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
             case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
+            case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
                 integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
                 if (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
                 if(config_container[iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
