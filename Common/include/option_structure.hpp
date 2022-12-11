@@ -1195,7 +1195,7 @@ enum class LM_OPTIONS {
   MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
   MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
   MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
-  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */```
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
 static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
