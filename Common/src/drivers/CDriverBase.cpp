@@ -885,7 +885,6 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
 
   unsigned short nFFDBox = 0;
   unsigned short nLevel = 0;
-  bool FFDBoxDefinition = false;
 
   mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
@@ -1231,10 +1230,6 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         nControlPoints[iFFDBox] = atoi(text_line.c_str());
 
         if (rank == MASTER_NODE) cout << "Control points: " << nControlPoints[iFFDBox] << ". ";
-
-        /*--- Method to identify if there is a FFDBox definition. ---*/
-
-        if (nControlPoints[iFFDBox] != 0) FFDBoxDefinition = true;
 
         /*--- Read the coordinates of the control points. ---*/
 
