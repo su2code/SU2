@@ -487,7 +487,7 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
       for (int p = 0; p < 3; p++) 
         triangle[p] = triangles[i_level][id_triangle][p]; 
 
-      *val_var = Interpolate(GetDataP(val_name_var), triangle, interp_coeffs);
+      *val_var = Interpolate(GetDataP(val_name_var, i_level), triangle, interp_coeffs);
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
@@ -573,7 +573,7 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) 
           triangle[p] = triangles[i_level][id_triangle][p]; 
-        *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var]), triangle, interp_coeffs);
+        *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
       }
       else
         *val_vars[i_var] = GetDataP(val_names_var[i_var], i_level)[nearest_neighbor];
