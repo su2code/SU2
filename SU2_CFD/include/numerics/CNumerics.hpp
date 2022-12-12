@@ -377,12 +377,6 @@ public:
   virtual void SetScalarSources(su2double *val_scalar_sources) {/* empty */}
 
   /*!
-   * \brief Set the values of the volumetric scalar sources for the progress variable in the flamelet LUT approach.
-   * \param[in] val_scalar_sources - Values of the scalar source of progress variable.
-   */
-  virtual void SetSourcePV(su2double val_sourcepv) {}
-
-  /*!
    * \brief Set the gradient of the scalar variables.
    * \param[in] val_scalarvar_grad_i - Gradient of the scalar variable at point i.
    * \param[in] val_scalarvar_grad_j - Gradient of the scalar variable at point j.

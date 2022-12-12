@@ -205,10 +205,6 @@ public:
       scalar_sources[i_var] = val_scalar_sources[i_var];
   }
 
-  //inline void SetSourcePV(su2double val_sourcepv) override {
-  //  source_pv = val_sourcepv;
-  //}
-
   /*!
    * \brief Destructor of the class.
    */

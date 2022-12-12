@@ -189,7 +189,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
-    int n_CV = fluid_model_local->GetNControllingVariables();
 
     /*--- Compute scalar source terms ---*/
     unsigned long exit_code = fluid_model_local->SetScalarSources(scalars);
