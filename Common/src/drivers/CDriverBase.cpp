@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class template for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser/ General Public
@@ -39,8 +39,8 @@ CDriverBase::~CDriverBase(void) {}
 
 void CDriverBase::SetContainers_Null() {
   /*--- Create pointers to all the classes that may be used by drivers. In general, the pointers are instantiated
-   down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
-   below. ---*/
+   * down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
+   * below. ---*/
 
   config_container = nullptr;
   output_container = nullptr;
@@ -225,13 +225,37 @@ map<string, string> CDriverBase::GetMarkerTypes() const {
         type = "ISOTHERMAL";
         break;
       case HEAT_FLUX:
-        type = "HEATFLUX";
+        type = "HEAT_FLUX";
+        break;
+      case HEAT_TRANSFER:
+        type = "HEAT_TRANSFER";
         break;
       case INLET_FLOW:
         type = "INLET_FLOW";
         break;
       case OUTLET_FLOW:
         type = "OUTLET_FLOW";
+        break;
+      case SUPERSONIC_INLET:
+        type = "SUPERSONIC_INLET";
+        break;
+      case SUPERSONIC_OUTLET:
+        type = "SUPERSONIC_OUTLET";
+        break;
+      case RIEMANN_BOUNDARY:
+        type = "RIEMANN";
+        break;
+      case GILES_BOUNDARY:
+        type = "GILES";
+        break;
+      case DISPLACEMENT_BOUNDARY:
+        type = "DISPLACEMENT";
+        break;
+      case LOAD_BOUNDARY:
+        type = "LOAD";
+        break;
+      case PERIODIC_BOUNDARY:
+        type = "PERIODIC";
         break;
       case SYMMETRY_PLANE:
         type = "SYMMETRY";
@@ -648,7 +672,6 @@ void CDriverBase::SetCoordinates(unsigned long iPoint, vector<passivedouble> val
   if (iPoint >= GetNumberVertices()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
-
   if (values.size() != nDim) {
     SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
   }
@@ -862,7 +885,6 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
 
   unsigned short nFFDBox = 0;
   unsigned short nLevel = 0;
-  bool FFDBoxDefinition = false;
 
   mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
@@ -870,7 +892,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
   }
 
   while (getline(mesh_file, text_line)) {
-    /*--- Read the inner elements ---*/
+    /*--- Read the inner elements. ---*/
 
     string::size_type position = text_line.find("NELEM=", 0);
     if (position != string::npos) {
@@ -881,7 +903,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
       }
     }
 
-    /*--- Read the inner points ---*/
+    /*--- Read the inner points. ---*/
 
     position = text_line.find("NPOIN=", 0);
     if (position != string::npos) {
@@ -892,7 +914,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
       }
     }
 
-    /*--- Read the boundaries  ---*/
+    /*--- Read the boundaries. ---*/
 
     position = text_line.find("NMARK=", 0);
     if (position != string::npos) {
@@ -909,7 +931,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
       }
     }
 
-    /*--- Read the FFDBox information  ---*/
+    /*--- Read the FFDBox information. ---*/
 
     position = text_line.find("FFD_NBOX=", 0);
     if (position != string::npos) {
@@ -929,12 +951,12 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
       if (rank == MASTER_NODE) cout << nLevel << " Free Form Deformation nested levels." << endl;
 
       for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) {
-        /*--- Read the name of the FFD box ---*/
+        /*--- Read the name of the FFD box. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 8);
 
-        /*--- Remove extra data from the FFDBox name ---*/
+        /*--- Remove extra data from the FFDBox name. ---*/
 
         string::size_type position;
         for (iChar = 0; iChar < 20; iChar++) {
@@ -950,7 +972,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
 
         if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox << ". ";
 
-        /*--- Read the level of the FFD box ---*/
+        /*--- Read the level of the FFD box. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 10);
@@ -958,7 +980,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
 
         if (rank == MASTER_NODE) cout << "FFD box level: " << LevelFFDBox << ". ";
 
-        /*--- Read the degree of the FFD box ---*/
+        /*--- Read the degree of the FFD box. ---*/
 
         if (nDim == 2) {
           if (polar) {
@@ -1048,7 +1070,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         FFDBox[iFFDBox]->SetTag(TagFFDBox);
         FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
-        /*--- Read the number of parents boxes ---*/
+        /*--- Read the number of parents boxes. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 12);
@@ -1057,7 +1079,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         for (iParentFFDBox = 0; iParentFFDBox < nParentFFDBox; iParentFFDBox++) {
           getline(mesh_file, text_line);
 
-          /*--- Remove extra data from the FFDBox name ---*/
+          /*--- Remove extra data from the FFDBox name. ---*/
 
           string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
@@ -1073,7 +1095,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
           FFDBox[iFFDBox]->SetParentFFDBox(ParentFFDBox);
         }
 
-        /*--- Read the number of children boxes ---*/
+        /*--- Read the number of children boxes. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 13);
@@ -1083,7 +1105,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         for (iChildFFDBox = 0; iChildFFDBox < nChildFFDBox; iChildFFDBox++) {
           getline(mesh_file, text_line);
 
-          /*--- Remove extra data from the FFDBox name ---*/
+          /*--- Remove extra data from the FFDBox name. ---*/
 
           string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
@@ -1099,7 +1121,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
           FFDBox[iFFDBox]->SetChildFFDBox(ChildFFDBox);
         }
 
-        /*--- Read the number of the corner points ---*/
+        /*--- Read the number of the corner points. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 18);
@@ -1107,7 +1129,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         if (rank == MASTER_NODE) cout << "Corner points: " << nCornerPoints[iFFDBox] << ". ";
         if (nDim == 2) nCornerPoints[iFFDBox] = nCornerPoints[iFFDBox] * SU2_TYPE::Int(2);
 
-        /*--- Read the coordinates of the corner points ---*/
+        /*--- Read the coordinates of the corner points. ---*/
 
         if (nDim == 2) {
           if (polar) {
@@ -1201,7 +1223,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
           }
         }
 
-        /*--- Read the number of the control points ---*/
+        /*--- Read the number of the control points. ---*/
 
         getline(mesh_file, text_line);
         text_line.erase(0, 19);
@@ -1209,11 +1231,7 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
 
         if (rank == MASTER_NODE) cout << "Control points: " << nControlPoints[iFFDBox] << ". ";
 
-        /*--- Method to identify if there is a FFDBox definition ---*/
-
-        if (nControlPoints[iFFDBox] != 0) FFDBoxDefinition = true;
-
-        /*--- Read the coordinates of the control points ---*/
+        /*--- Read the coordinates of the control points. ---*/
 
         for (iControlPoints = 0; iControlPoints < nControlPoints[iFFDBox]; iControlPoints++) {
           getline(mesh_file, text_line);
@@ -1232,8 +1250,8 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
         text_line.erase(0, 19);
         nSurfacePoints[iFFDBox] = atoi(text_line.c_str());
 
-        /*--- The surface points parametric coordinates, all the nodes read the FFD
-         information but they only store their part ---*/
+        /*--- The surface points parametric coordinates (all the nodes read the FFD
+         * information but they only store their part). ---*/
 
         my_nSurfPoints = 0;
         for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {

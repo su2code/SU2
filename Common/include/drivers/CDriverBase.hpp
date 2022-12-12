@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class template for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@ class CDriverBase {
  protected:
   int rank,               /*!< \brief MPI Rank. */
       size;               /*!< \brief MPI Size. */
-  char* config_file_name; /*!< \brief Configuration file name of the problem.*/
+  char* config_file_name; /*!< \brief Configuration file name of the problem. */
 
   su2double StartTime, /*!< \brief Start point of the timer for performance benchmarking.*/
       StopTime,        /*!< \brief Stop point of the timer for performance benchmarking.*/
@@ -47,13 +47,13 @@ class CDriverBase {
 
   unsigned long TimeIter;
 
-  unsigned short iMesh,  /*!< \brief Iterator on mesh levels.*/
-      iZone,             /*!< \brief Iterator on zones.*/
+  unsigned short iMesh,  /*!< \brief Iterator on mesh levels. */
+      iZone,             /*!< \brief Iterator on zones. */
       nZone,             /*!< \brief Total number of zones in the problem. */
-      nDim,              /*!< \brief Number of dimensions.*/
-      iInst,             /*!< \brief Iterator on instance levels.*/
+      nDim,              /*!< \brief Number of dimensions. */
+      iInst,             /*!< \brief Iterator on instance levels. */
       *nInst,            /*!< \brief Total number of instances in the problem (per zone). */
-      **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones.*/
+      **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones. */
 
   CConfig* driver_config; /*!< \brief Definition of the driver configuration. */
   COutput* driver_output; /*!< \brief Definition of the driver output. */
@@ -68,7 +68,7 @@ class CDriverBase {
   CVolumetricMovement*** grid_movement; /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
 
-  CConfig* main_config; /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
+  CConfig* main_config;     /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
   CGeometry* main_geometry; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
 
  public:
@@ -577,51 +577,64 @@ class CDriverBase {
                                                bool normalize = false) const;
 
   /*!
-   * \brief Communicate the boundary mesh displacements in a python call
+   * \brief Communicate the boundary mesh displacements.
    */
   void CommunicateMeshDisplacements(void);
 
-  /*!
-   * \brief Read the free-form deformation box information from the input mesh file.
-   */
-  void ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, string val_mesh_filename);
-
  protected:
   /*!
-   * \brief Initialize Containers
+   * \brief Initialize containers.
    */
   void SetContainers_Null();
 
   /*!
    * \brief Read in the config and mesh files.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] driver_config - Definition of the driver configuration.
    */
   void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
-   * \brief Construction of the edge-based data structure and the multigrid structure.
+   * \brief Construction of the edge-based data structure and the multi-grid structure.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] dummy - Definition of the dummy driver.
    */
   void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Definition and allocation of all solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
   void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Definition and allocation of all solver classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
   void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Preprocess the output container.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] driver_config - Definition of the driver configuration.
+   * \param[in] output_container - Container vector with all the outputs.
+   * \param[in] driver_output - Definition of the driver output.
    */
   void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
+
+  /*!
+   * \brief Read the free form deformation box information from the input mesh file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Definition of the FFD boxes of the problem.
+   * \param[in] val_mesh_filename - Name of the input mesh file.
+   */
+  void ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, string val_mesh_filename);
 };
