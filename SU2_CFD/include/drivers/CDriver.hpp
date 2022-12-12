@@ -87,8 +87,8 @@ class CDriver : public CDriverBase {
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
+   * \param[in] dummy_geo - Dummy geometric definition of the problem.
    */
   CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo);
 
@@ -110,53 +110,63 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Read in the config and mesh files.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] driver_config - Definition of the driver configuration.
    */
   void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] dummy - Definition of the dummy driver.
    */
   void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
    */
   void Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry**& geometry);
 
   /*!
    * \brief Geometrical_Preprocessing_FVM
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
    */
   void Geometrical_Preprocessing_FVM(CConfig* config, CGeometry**& geometry);
 
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
-   * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
+   * \param[in] iteration - Pointer to the iteration container to be instantiated.
    */
   void Iteration_Preprocessing(CConfig* config, CIteration*& iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
   void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Restart of the solvers from the restart files.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] update_geo - Boolean to indicate if geometry should be updated.
    */
   void Solver_Restart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iInst - Current solver instance.
    */
   void Solver_Postprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
 
@@ -164,21 +174,28 @@ class CDriver : public CDriverBase {
    * \brief Definition and allocation of all integration classes.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Container vector with all the solutions.
-   * \param[out] integration - Container vector with all the integration methods.
+   * \param[in] integration - Container vector with all the integration methods.
    */
   void Integration_Preprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iInst - Current solver instance.
    */
   void Integration_Postprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
                                   unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all interface classes.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] interface_types - Type of coupling between the distinct (physical) zones.
+   * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] interpolation -  Object defining the interpolation.
    */
   void Interface_Preprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
                                unsigned short** interface_types, CInterface*** interface,
@@ -186,10 +203,10 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Definition and allocation of all solver classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
   void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
@@ -215,44 +232,58 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Definition and allocation of all solver classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iInst - Current solver instance.
    */
   void Numerics_Postprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
                                unsigned short val_iInst);
 
   /*!
    * \brief GridMovement_Preprocessing
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iteration
-   * \param grid_movement
-   * \param surface_movement
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iteration - Container vector with all the iteration methods.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
    */
   void DynamicMesh_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
    * \brief Initialize Python interface functionalities
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
   void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] driver_config - Definition of the driver configuration.
+   * \param[in] output_container - Container vector with all the outputs.
+   * \param[in] driver_output - Definition of the driver output.
    */
   void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
    */
   void StaticMesh_Preprocessing(const CConfig* config, CGeometry** geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] interface - Class defining the physical transfer of information.
    */
   void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
@@ -694,7 +725,6 @@ class CFluidDriver : public CDriver {
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
@@ -762,8 +792,6 @@ class CTurbomachineryDriver : public CFluidDriver {
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
-   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CTurbomachineryDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
@@ -812,7 +840,6 @@ class CHBDriver : public CFluidDriver {
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CHBDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
