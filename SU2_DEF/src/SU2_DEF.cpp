@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,52 +29,54 @@
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
-    
-    char config_file_name[MAX_STRING_SIZE];
-    
-    /*--- Create a pointer to the main SU2_DEF Driver ---*/
-    
-    CDeformationDriver* driver = nullptr;
-    
-    /*--- MPI initialization ---*/
-    
-#if defined(HAVE_OMP) && defined(HAVE_MPI)
-    int provided;
-    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
-#else
-    SU2_MPI::Init(&argc, &argv);
-#endif
-    SU2_MPI::Comm comm = SU2_MPI::GetComm();
-    
-    /*--- Load in the number of zones and spatial dimensions in the mesh file
-     (if no config file is specified, default.cfg is used) ---*/
-    
-    if (argc == 2) { strcpy(config_file_name, argv[1]); }
-    else { strcpy(config_file_name, "default.cfg"); }
-    
-    /*--- Initialize the mesh deformation driver ---*/
-    
-    driver = new CDeformationDriver(config_file_name, comm);
-    
-    /*--- Pre-process the solver data. ---*/
-    
-    driver->Preprocess();
-    
-    /*--- Launch the main external loop of the solver. ---*/
-    
-    driver->Run();
-    
-    /*--- Postprocess all the containers, close history file, exit SU2. ---*/
-    
-    driver->Postprocessing();
-    
-    delete driver;
-    
-    /*--- Finalize MPI parallelization ---*/
-    SU2_MPI::Finalize();
-    
-    return EXIT_SUCCESS;
-    
-}
+int main(int argc, char* argv[]) {
 
+  char config_file_name[MAX_STRING_SIZE];
+
+  /*--- Create a pointer to the main SU2_DEF Driver ---*/
+
+  CDeformationDriver* driver = nullptr;
+
+  /*--- MPI initialization ---*/
+
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
+  int provided;
+  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#else
+  SU2_MPI::Init(&argc, &argv);
+#endif
+  SU2_MPI::Comm comm = SU2_MPI::GetComm();
+
+  /*--- Load in the number of zones and spatial dimensions in the mesh file
+   (if no config file is specified, default.cfg is used). ---*/
+
+  if (argc == 2) {
+    strcpy(config_file_name, argv[1]);
+  } else {
+    strcpy(config_file_name, "default.cfg");
+  }
+
+  /*--- Initialize the mesh deformation driver. ---*/
+
+  driver = new CDeformationDriver(config_file_name, comm);
+
+  /*--- Preprocess the solver data. ---*/
+
+  driver->Preprocess();
+
+  /*--- Launch the main external loop of the solver. ---*/
+
+  driver->Run();
+
+  /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
+
+  driver->Postprocessing();
+
+  delete driver;
+
+  /*--- Finalize MPI parallelization. ---*/
+
+  SU2_MPI::Finalize();
+
+  return EXIT_SUCCESS;
+}
