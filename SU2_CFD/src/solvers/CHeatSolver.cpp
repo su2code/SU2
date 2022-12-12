@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CHeatSolver.hpp"
+#include <cstddef>
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
 
@@ -170,6 +171,18 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
+
+  /*--- Store the initial CFL number for all grid points. ---*/
+
+  const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Turb();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  END_SU2_OMP_FOR
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
 
   /*--- Add the solver name (max 8 characters) ---*/
 
@@ -980,214 +993,215 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned long iPoint, jPoint;
-  su2double Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
-  su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
-  const su2double* Normal;
+  const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
+  const bool dual_time     = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const su2double K_v = 0.25;
 
-  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
-  const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const su2double prandtl_lam = config->GetPrandtl_Lam();
+  const su2double prandtl_turb = config->GetPrandtl_Turb();
+  const su2double constant_thermal_diffusivity = config->GetThermalDiffusivity();
 
-  eddy_viscosity    = 0.0;
-  laminar_viscosity = config->GetMu_ConstantND();
-  Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+  const CVariable* flow_nodes = solver_container[FLOW_SOL] ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
-  thermal_diffusivity = config->GetThermalDiffusivity();
+  /*--- Init thread-shared variables to compute min/max values.
+   *    Critical sections are used for this instead of reduction
+   *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    Min_Delta_Time = 1e30;
+    Max_Delta_Time = 0.0;
+    Global_Delta_UnstTimeND = 1e30;
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Compute spectral radius based on thermal conductivity ---*/
+  /*--- Loop domain points. ---*/
 
-  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
-  CFL_Reduction = config->GetCFLRedCoeff_Turb();
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    nodes->SetMax_Lambda_Inv(iPoint,0.0);
-    nodes->SetMax_Lambda_Visc(iPoint,0.0);
-  }
+    /*--- Set maximum eigenvalues to zero. ---*/
 
-  /*--- Loop interior edges ---*/
+    nodes->SetMax_Lambda_Visc(iPoint, 0.0);
 
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+    /*--- Loop over the neighbors of point i. ---*/
 
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+      const auto iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+      const auto* Normal = geometry->edges->GetNormal(iEdge);
+      const su2double Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
 
-    /*--- get the edge's normal vector to compute the edge's area ---*/
-    Normal = geometry->edges->GetNormal(iEdge);
-    Area = GeometryToolbox::Norm(nDim, Normal);
+      if (flow) {
+        const su2double laminar_viscosity = 0.5 * (flow_nodes->GetLaminarViscosity(iPoint) +
+                                                   flow_nodes->GetLaminarViscosity(jPoint));
+        const su2double eddy_viscosity = 0.5 * (flow_nodes->GetEddyViscosity(iPoint) +
+                                                flow_nodes->GetEddyViscosity(jPoint));
 
-    /*--- Inviscid contribution ---*/
-
-    if (flow) {
-      Mean_ProjVel = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetProjVel(iPoint,Normal) + solver_container[FLOW_SOL]->GetNodes()->GetProjVel(jPoint,Normal));
-      Mean_BetaInc2 = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint) + solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(jPoint));
-      Mean_DensityInc = 0.5 * (solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint) + solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint));
-      Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
-      if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint, Lambda);
-    }
-
-    /*--- Viscous contribution ---*/
-
-    thermal_diffusivity = config->GetThermalDiffusivity();
-    if(flow) {
-      if(turb) {
-        eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+        const su2double thermal_diffusivity = laminar_viscosity / prandtl_lam + eddy_viscosity / prandtl_turb;
+        nodes->AddMax_Lambda_Visc(iPoint, thermal_diffusivity * Area2);
+      } else {
+        nodes->AddMax_Lambda_Visc(iPoint, constant_thermal_diffusivity * Area2);
       }
-
-      thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
     }
-
-    Lambda = thermal_diffusivity*Area*Area;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
-
   }
+  END_SU2_OMP_FOR
 
   /*--- Loop boundary edges ---*/
 
-  for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
-    for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
-      /*--- Point identification, Normal vector and area ---*/
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+        /*--- Point identification, Normal vector and area ---*/
 
-      /*--- Inviscid contribution ---*/
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-      if (flow) {
-        Mean_ProjVel = solver_container[FLOW_SOL]->GetNodes()->GetProjVel(iPoint, Normal);
-        Mean_BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-        Mean_DensityInc = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
+        if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
-      }
+        const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
 
-      /*--- Viscous contribution ---*/
-
-      thermal_diffusivity = config->GetThermalDiffusivity();
-      if(flow) {
-        if(turb) {
-          eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+        if (flow) {
+          const su2double thermal_diffusivity = flow_nodes->GetLaminarViscosity(iPoint) / prandtl_lam +
+                                                flow_nodes->GetEddyViscosity(iPoint) / prandtl_turb;
+          nodes->AddMax_Lambda_Visc(iPoint, thermal_diffusivity * Area2);
+        } else {
+          nodes->AddMax_Lambda_Visc(iPoint, constant_thermal_diffusivity * Area2);
         }
-
-        thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
       }
-
-      Lambda = thermal_diffusivity*Area*Area;
-      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-
+      END_SU2_OMP_FOR
     }
   }
 
-  /*--- Each element uses their own speed, steady state simulation ---*/
+  /*--- Each element uses their own speed, steady state simulation. ---*/
+  {
+    /*--- Thread-local variables for min/max reduction. ---*/
+    su2double minDt = 1e30, maxDt = 0.0;
 
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->nodes->GetVolume(iPoint);
+      su2double local_delta_time = 0.0;
 
-    if (Vol != 0.0) {
+      const su2double Vol = geometry->nodes->GetVolume(iPoint);
+      if (Vol != 0.0) {
+        local_delta_time = nodes->GetLocalCFL(iPoint) * K_v * pow(Vol, 2) / nodes->GetMax_Lambda_Visc(iPoint);
+        if (flow) {
+          switch (config->GetKind_TimeStep_Heat()) {
+            case BYFLOW:
+            case CONVECTIVE:
+              local_delta_time = flow_nodes->GetDelta_Time(iPoint);
+              break;
+            case MINIMUM:
+              local_delta_time = min(local_delta_time, flow_nodes->GetDelta_Time(iPoint));
+              break;
+            case VISCOUS:
+              break;
+            default:
+              break;
+          }
+        }
+        minDt = min(minDt, local_delta_time);
+        maxDt = max(maxDt, local_delta_time);
+      } else {
+        nodes->SetDelta_Time(iPoint, 0.0);
+      }
+    }
+    END_SU2_OMP_FOR
+    /*--- Min/max over threads. ---*/
+    SU2_OMP_CRITICAL
+    {
+      Min_Delta_Time = min(Min_Delta_Time, minDt);
+      Max_Delta_Time = max(Max_Delta_Time, maxDt);
+      Global_Delta_Time = Min_Delta_Time;
+    }
+    END_SU2_OMP_CRITICAL
+  }
 
-      if(flow) {
-        Local_Delta_Time_Inv = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-        Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+  /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (config->GetComm_Level() == COMM_FULL) {
+      su2double rbuf_time;
+      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      Min_Delta_Time = rbuf_time;
+
+      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      Max_Delta_Time = rbuf_time;
+    }
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
+  if (time_stepping) {
+
+    /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
+     *    otherwise it computes the time step based on the unsteady CFL. ---*/
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      if (config->GetUnst_CFL() == 0.0) {
+        Global_Delta_Time = config->GetDelta_UnstTime();
       }
       else {
-        Local_Delta_Time_Inv = config->GetMax_DeltaTime();
-        Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
-        //Local_Delta_Time_Visc = 100.0*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+        Global_Delta_Time = Min_Delta_Time;
       }
+      Max_Delta_Time = Global_Delta_Time;
 
-      /*--- Time step setting method ---*/
-
-      if (config->GetKind_TimeStep_Heat() == BYFLOW && flow) {
-        Local_Delta_Time = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
-      }
-      else if (config->GetKind_TimeStep_Heat() == MINIMUM) {
-        Local_Delta_Time = min(Local_Delta_Time_Inv, Local_Delta_Time_Visc);
-      }
-      else if (config->GetKind_TimeStep_Heat() == CONVECTIVE) {
-        Local_Delta_Time = Local_Delta_Time_Inv;
-      }
-      else if (config->GetKind_TimeStep_Heat() == VISCOUS) {
-        Local_Delta_Time = Local_Delta_Time_Visc;
-      }
-
-      /*--- Min-Max-Logic ---*/
-
-      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-      if (Local_Delta_Time > config->GetMax_DeltaTime())
-        Local_Delta_Time = config->GetMax_DeltaTime();
-
-      nodes->SetDelta_Time(iPoint,CFL_Reduction*Local_Delta_Time);
+      config->SetDelta_UnstTimeND(Global_Delta_Time);
     }
-    else {
-      nodes->SetDelta_Time(iPoint,0.0);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
     }
+    END_SU2_OMP_FOR
+
   }
 
-  /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    Min_Delta_Time = rbuf_time;
+  /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+    * This is only done once because in dual time the time step cannot be variable. ---*/
 
-    sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    Max_Delta_Time = rbuf_time;
-#endif
-  }
+  if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 
-  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    Global_Delta_Time = rbuf_time;
-#endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      nodes->SetDelta_Time(iPoint,Global_Delta_Time);
-  }
+    /*--- Thread-local variable for reduction. ---*/
+    su2double glbDtND = 1e30;
 
-  /*--- Recompute the unsteady time step for the dual time strategy
-   if the unsteady CFL is diferent from 0 ---*/
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
+    }
+    END_SU2_OMP_FOR
+    SU2_OMP_CRITICAL
+    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+    END_SU2_OMP_CRITICAL
 
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      Global_Delta_UnstTimeND = glbDtND;
+
+      config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-  if (dual_time)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        cout << "Using unsteady time: " << config->GetDelta_UnstTimeND() << endl;
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-      }
+
+  if (dual_time && !implicit) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+      nodes->SetDelta_Time(iPoint, dt);
+    }
+    END_SU2_OMP_FOR
   }
 }
 

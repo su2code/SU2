@@ -44,6 +44,8 @@ protected:
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
   const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
+  su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
+
   unsigned short nVarFlow;
   vector<vector<su2double> > HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
