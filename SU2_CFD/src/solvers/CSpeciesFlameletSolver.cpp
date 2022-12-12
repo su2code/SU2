@@ -183,9 +183,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   unsigned long global_table_misses = 0;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  // const bool muscl = config->GetMUSCL_Species();
-  // const bool limiter  = (config->GetKind_SlopeLimit_Species() != SLOPE_LIMITER::NO_LIMITER) &&
-  //                       (config->GetInnerIter() <= config->GetLimiterIter());
+
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
@@ -208,11 +206,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     for(auto i_scalar=0u; i_scalar < nVar; i_scalar++)
       nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
 
+    su2double T = flowNodes->GetTemperature(i_point);
+    fluid_model_local->SetTDState_T(T,scalars);
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
-    for (auto i_scalar = 0; i_scalar < nVar; ++i_scalar) {
+    for (auto i_scalar = 0u; i_scalar < nVar; ++i_scalar) {
       nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
     }
-    /*--- Diffusivity of passive reactants divided by respective average Lewis number. ---*/
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
@@ -249,7 +248,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  // if (limiter && muscl) SetSolution_Limiter(geometry, config);
 }
 
 void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
@@ -282,7 +280,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     su2double burnt_thickness = config->GetFlameBurntThickness();
     su2double flamenorm = GeometryToolbox::Norm(nDim, flame_normal);
 
-    su2double temp_inlet = config->GetInc_Temperature_Init();  // should do reverse lookup of enthalpy
+    su2double temp_inlet = config->GetInc_Temperature_Init();
     su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR];
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
     if (rank == MASTER_NODE) {
@@ -345,9 +343,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(
             look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH], name_prog, name_enth);
 
-        // initialize other transported scalars  (not pv and enth)
-        // skip progress variable and enthalpy
-        // we can make an init based on the lookup table.
+        /*--- initialize the auxiliary transported scalars  (not controlling variables) ---*/
         for (int i_scalar = fluid_model_local->GetNControllingVariables(); i_scalar < config->GetNScalars(); ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
@@ -440,7 +436,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
         /*--- Add the extra Jacobian term to the scalar system. ---*/
 
-        su2double Jaccomp = scalar * dRhodC + Density;  // This is Gamma
+        su2double Jaccomp = scalar * dRhodC + Density;
         su2double JacTerm = Jaccomp * Delta;
 
         Jacobian.AddVal2Diag(iPoint, JacTerm);
@@ -540,7 +536,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
         auto total_index = iPoint * nVar + iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-    } else {  // weak BC
+    } else {
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
       su2double Normal[MAXNDIM] = {0.0};

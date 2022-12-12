@@ -111,6 +111,9 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   if (version_lut.compare(version_reader) != 0)
     SU2_MPI::Error("Version conflict between LUT reader and LUT library file.", CURRENT_FUNCTION);
 
+  if (eoHeader == false)
+    SU2_MPI::Error("</Header> is missing in LUT file.", CURRENT_FUNCTION);
+
   /*--- check header quantities ---*/
   if (n_points == 0 || n_triangles == 0 || n_variables == 0 || n_hull_points == 0)
     SU2_MPI::Error(

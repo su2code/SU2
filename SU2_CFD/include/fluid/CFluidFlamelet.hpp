@@ -54,14 +54,14 @@ class CFluidFlamelet final : public CFluidModel {
 
   CLookUpTable* look_up_table;
 
-  vector<string> varnames_TD;     // Lookup names for thermodynamic state variables.
-  vector<su2double*> val_vars_TD; // References to thermodynamic state variables.
+  vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
+  vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
-  vector<string> varnames_Sources;      // Lookup names for scalar source terms.
-  vector<su2double*> val_vars_Sources;  // References to scalar sources.
+  vector<string> varnames_Sources; /*!< \brief Lookup names for scalar source terms. */
+  vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
 
-  vector<string> varnames_LookUp;     // Lookup names for passive lookup variables.
-  vector<su2double*> val_vars_LookUp; // References to lookup variables.
+  vector<string> varnames_LookUp; /*!< \brief Lookup names for passive lookup variables. */
+  vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -88,8 +88,6 @@ class CFluidFlamelet final : public CFluidModel {
    */
   unsigned long SetScalarLookups(su2double* val_scalars);
 
-  //void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
-
   /*!
    * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
    * \param[in/out] enthalpy - total enthalpy
@@ -104,8 +102,6 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] look_up_table - pointer to lookup table
    */
   inline CLookUpTable* GetLookUpTable() { return look_up_table; }
-
-  // inline su2double GetSourceEnergy() { return source_energy; }
 
   /*!
    * \brief Get the mass diffusivity of the species

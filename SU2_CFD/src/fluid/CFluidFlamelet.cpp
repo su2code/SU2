@@ -213,7 +213,8 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- Thermodynamic state variables ---*/
   varnames_TD.resize(7);
   val_vars_TD.resize(7);
-  // nijso TODO: check if these exist in the lookup table
+
+  /* The string in varnames_TD is the actual string as it appears in the LUT file */
   varnames_TD[0] = "Temperature";
   val_vars_TD[0] = &Temperature;
   varnames_TD[1] = "Density";
@@ -224,7 +225,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   val_vars_TD[3] = &Mu;
   varnames_TD[4] = "Conductivity";
   val_vars_TD[4] = &Kt;
-  varnames_TD[5] = "Diffusivity";
+  varnames_TD[5] = "DiffusionCoefficient";
   val_vars_TD[5] = &mass_diffusivity;
   varnames_TD[6] = "MolarWeightMix";
   val_vars_TD[6] = &molar_weight;

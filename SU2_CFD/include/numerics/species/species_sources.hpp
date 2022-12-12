@@ -159,15 +159,8 @@ private:
         if (inc_rans)
           Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
 
-      // nijso TODO In case of flamelet, diffusion_coeff is actually rho*D
-      // remember (rho*cp*D) = k when Le=1
-      // and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
-        for (auto iVar=0u; iVar < nVar; iVar++) {
-          if (flamelet)
-            Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
-          else
-            Residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
-        }
+        for (auto iVar=0u; iVar < nVar; iVar++)
+          Residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
       }
 
     } else {
