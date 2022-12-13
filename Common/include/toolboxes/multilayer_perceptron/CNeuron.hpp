@@ -32,7 +32,6 @@
 #include <cstdlib>
 
 #include "../../CConfig.hpp"
-//#include "../../linear_algebra/blas_structure.hpp"
 
 namespace MLPToolbox{
 class CNeuron
@@ -45,67 +44,66 @@ private:
               bias{0};              /*!< Bias value at current neuron */
 
 public:
-    CNeuron(){};
 
     /*!
     * \brief Set neuron identification number
     * \param[in] input - Identification number
     */
-    void setNumber(unsigned long input){i_neuron = input;}
+    void setNumber(unsigned long input){ i_neuron = input; }
 
     /*!
     * \brief Get neuron identification number
     * \return Identification number
     */
-    unsigned long getNumber() const {return i_neuron;}
+    unsigned long getNumber() const { return i_neuron; }
 
     /*!
     * \brief Set neuron output value
     * \param[in] input - activation function output value
     */
-    void setOutput(su2double input){output = input;}
+    void setOutput(su2double input){ output = input; }
 
     /*!
     * \brief Get neuron output value
     * \return Output value
     */
-    su2double getOutput() const {return output;}
+    su2double getOutput() const { return output; }
 
     /*!
     * \brief Set neuron input value
     * \param[in] input - activation function input value
     */
-    void setInput(su2double x){input = x;}
+    void setInput(su2double x){ input = x; }
 
     /*!
     * \brief Get neuron input value
     * \return input value
     */
-    su2double getInput() const {return input;}
+    su2double getInput() const { return input; }
 
     /*!
     * \brief Set neuron bias
     * \param[in] input - bias value
     */
-    void setBias(su2double input){bias = input;}
+    void setBias(su2double input){ bias = input; }
 
     /*!
     * \brief Get neuron bias value
     * \return bias value
     */
-    su2double getBias() const {return bias;}
+    su2double getBias() const { return bias; }
 
     /*!
     * \brief Set neuron output gradient with respect to its input value
     * \param[in] input - Derivative of activation function with respect to input
     */
-    void setGradient(su2double input){doutput_dinput = input;}
+    void setGradient(su2double input){ doutput_dinput = input; }
 
     /*!
     * \brief Get neuron output gradient with respect to input value
     * \return output gradient wrt input value
     */
-    su2double getGradient() const {return doutput_dinput;}
+    su2double getGradient() const { return doutput_dinput; }
 };
 
 }

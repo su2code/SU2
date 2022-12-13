@@ -108,28 +108,24 @@ void CDataDrivenFluid::MapInputs_to_Outputs(){
   outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
 
   /*--- Further preprocessing of input and output variables ---*/
-  switch (Kind_DataDriven_Method)
-  {
-  case ENUM_DATADRIVEN_METHOD::MLP:
+  if(Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP){
     /*--- Map MLP inputs to outputs ---*/
     iomap_rhoe = new MLPToolbox::CIOMap(lookup_mlp, input_names_rhoe, output_names_rhoe);
     MLP_inputs.resize(2);
-    break;
-  
-  default:
-    break;
   }
 }
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
+  /*--- Compute thermodynamic state based on density and energy ---*/
+
   Density = rho;
   StaticEnergy = e;
 
   Evaluate_Dataset(rho, e);
 
   /*--- Compute speed of sound ---*/
-  su2double blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
-  su2double green_term = (- pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
+  auto blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
+  auto green_term = (- pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
   
   SoundSpeed2 = - rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
 
@@ -202,7 +198,6 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
   /*--- Computing static energy according to pressure and density ---*/
   SetEnergy_Prho(P, rho);
-  
 
   /*--- Calculate thermodynamic state based on converged value for energy ---*/
   SetTDState_rhoe(rho, StaticEnergy);
@@ -400,10 +395,14 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 }
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
-  unsigned long exit_code;
   MLP_inputs[idx_rho] = rho;
   MLP_inputs[idx_e] = e;
-  exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+
+  /* Evaluate MLP collection for the given values for density and energy */
+  unsigned long exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+
+  /* Apply exponential transformation to the MLP outputs for the first and second 
+     derivative of the entropy w.r.t density */
   dsdrho_e = -exp(dsdrho_e);
   d2sdrho2 = exp(d2sdrho2);
 
@@ -415,10 +414,16 @@ unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
   std::vector<std::string> output_names_rhoe_LUT;
   std::vector<su2double*> outputs_LUT;
   output_names_rhoe_LUT.resize(output_names_rhoe.size());
-    for(size_t iOutput=0; iOutput<output_names_rhoe.size(); iOutput++) { output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput]; }
+  for(auto iOutput=0u; iOutput<output_names_rhoe.size(); iOutput++) 
+  { 
+    output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput]; 
+  }
 
   outputs_LUT.resize(outputs_rhoe.size());
-  for(size_t iOutput=0; iOutput<outputs_rhoe.size(); iOutput++) { outputs_LUT[iOutput] = outputs_rhoe[iOutput]; }
+  for(auto iOutput=0u; iOutput<outputs_rhoe.size(); iOutput++) 
+  { 
+    outputs_LUT[iOutput] = outputs_rhoe[iOutput]; 
+  }
 
   exit_code = lookup_table->LookUp_ProgEnth(output_names_rhoe_LUT, outputs_LUT, rho, e, "Density", "Energy");
   return exit_code;

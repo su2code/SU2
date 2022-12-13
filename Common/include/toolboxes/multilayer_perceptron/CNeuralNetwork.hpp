@@ -121,7 +121,7 @@ public:
     * \param[in] i_neuron - Neuron index of current layer.
     * \param[in] value - Bias value.
     */
-    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){total_layers[i_layer]->setBias(i_neuron, value);}
+    void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value){ total_layers[i_layer]->setBias(i_neuron, value); }
 
     /*!
     * \brief Set layer activation function.
@@ -150,20 +150,20 @@ public:
     * \brief Get the number of connecting regions in the network.
     * \returns number of spaces in between layers.
     */
-    unsigned long getNWeightLayers(){return total_layers.size()-1;}
+    unsigned long getNWeightLayers() const { return total_layers.size()-1; }
 
     /*!
     * \brief Get the total number of layers in the network
     * \returns number of netowork layers.
     */
-    unsigned long getNLayers(){return total_layers.size();}
+    unsigned long getNLayers() const { return total_layers.size(); }
 
     /*!
     * \brief Get neuron count in a layer.
     * \param[in] iLayer - Layer index.
     * \returns number of neurons in the layer.
     */
-    unsigned long getNNeurons(unsigned long iLayer) { return total_layers[iLayer]->getNNeurons(); }
+    unsigned long getNNeurons(unsigned long iLayer) const { return total_layers[iLayer]->getNNeurons(); }
 
     /*!
     * \brief Evaluate the network.
@@ -206,33 +206,33 @@ public:
     * \param[in] iInput - Input variable index.
     * \returns input variable name.
     */
-    std::string GetInputName(std::size_t iInput) { return input_names[iInput]; }
+    std::string GetInputName(std::size_t iInput) const { return input_names[iInput]; }
 
     /*!
     * \brief Get network output variable name.
     * \param[in] iOutput - Output variable index.
     * \returns output variable name.
     */
-    std::string GetOutputName(std::size_t iOutput) { return output_names[iOutput]; }
+    std::string GetOutputName(std::size_t iOutput) const { return output_names[iOutput]; }
 
     /*!
     * \brief Get network number of inputs.
     * \returns Number of network inputs
     */
-    std::size_t GetnInputs() { return input_names.size(); }
+    std::size_t GetnInputs() const { return input_names.size(); }
 
     /*!
     * \brief Get network number of outputs.
     * \returns Number of network outputs
     */
-    std::size_t GetnOutputs() { return output_names.size(); }
+    std::size_t GetnOutputs() const { return output_names.size(); }
 
     /*!
     * \brief Get network evaluation output.
     * \param[in] iOutput - output index.
     * \returns Prediction value.
     */
-    su2double GetANN_Output(std::size_t iOutput) { return ANN_outputs[iOutput]; }
+    su2double GetANN_Output(std::size_t iOutput) const { return ANN_outputs[iOutput]; }
 
     /*!
     * \brief Set the activation function array size.
@@ -246,7 +246,7 @@ public:
     * \param[in] iNeuron - Layer neuron index.
     * \returns Neuron activation function input.
     */
-    su2double ComputeX(std::size_t iLayer, std::size_t iNeuron){
+    su2double ComputeX(std::size_t iLayer, std::size_t iNeuron) const {
         su2double x;
         x = total_layers[iLayer]->getBias(iNeuron);
         std::size_t nNeurons_previous = total_layers[iLayer - 1]->getNNeurons();
