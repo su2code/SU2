@@ -110,13 +110,6 @@ class CLookUp_ANN
     std::size_t GetNANNs() const {return NeuralNetworks.size();}
 
     /*!
-    * \brief Check if variables occur more than once in ANN outputs
-    * \param[in] output_names - output variable names to check
-    * \param[in] input_output_map - pointer to input-output map to be checked
-    */
-    bool Check_Duplicate_Outputs(su2vector<std::string> &output_names, CIOMap *input_output_map) const;
-
-    /*!
     * \brief Check if all output variables are present in the loaded ANNs
     * \param[in] output_names - output variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked

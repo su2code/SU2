@@ -33,28 +33,36 @@ using namespace std;
 
 
 void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
-    su2double x, x_norm, y, y_norm;
-    size_t iNeuron, iLayer, nNeurons_current;
+    /*--- Evaluate MLP for given inputs ---*/
+
+    su2double y, y_norm;
     bool same_point{true};
-    for(iNeuron=0; iNeuron<inputLayer->getNNeurons(); iNeuron++){
-        x_norm = (inputs[iNeuron] - input_norm[iNeuron].first)/(input_norm[iNeuron].second - input_norm[iNeuron].first);
+
+    /* Normalize input and check if inputs are the same w.r.t last evaluation */
+    for(auto iNeuron=0u; iNeuron<inputLayer->getNNeurons(); iNeuron++){
+        su2double x_norm = (inputs[iNeuron] - input_norm[iNeuron].first)/(input_norm[iNeuron].second - input_norm[iNeuron].first);
         if(abs(x_norm - inputLayer->getOutput(iNeuron)) > 0) same_point = false;
         inputLayer->setOutput(iNeuron, x_norm);
     }
     if(!same_point){
         su2double alpha=1.67326324;
         su2double lambda=1.05070098;
-        for(iLayer=1; iLayer<n_hidden_layers + 2; iLayer++){
-            nNeurons_current = total_layers[iLayer]->getNNeurons();
-
-            for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+        /* Traverse MLP and compute inputs and outputs for the neurons in each layer */
+        for(auto iLayer=1u; iLayer<n_hidden_layers + 2; iLayer++){
+            auto nNeurons_current = total_layers[iLayer]->getNNeurons(); // Neuron count of current layer
+            su2double x;    // Neuron input value
+            
+            /* Compute and store input value for each neuron */
+            for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                 x = ComputeX(iLayer, iNeuron);
                 total_layers[iLayer]->setInput(iNeuron, x);
             }
+
+            /* Compute and store neuron output based on activation function */
             switch (activation_function_types[iLayer])
                 {
                 case ENUM_ACTIVATION_FUNCTION::SMOOTH_SLOPE:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         if(x > 0){
                             y = x;
@@ -65,7 +73,7 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::ELU:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         if(x > 0){
                             y = x;
@@ -76,14 +84,14 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::LINEAR:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         y = x;
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::RELU:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         if(x > 0){
                             y = x;
@@ -94,28 +102,28 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::SWISH:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         y = x / (1 + exp(-x));
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::TANH:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         y = tanh(x);
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::SIGMOID:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         y = 1.0/(1 + exp(-x));
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::SELU:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
                         if(x > 0.0){
                             y = lambda * x;
@@ -126,8 +134,7 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::GELU:
-                    
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
 
                         y = 0.5 * x * (1 + tanh(sqrt(2 / PI_NUMBER) * (x + 0.044715 * pow(x, 3))));
@@ -135,22 +142,22 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
                     }
                     break;
                 case ENUM_ACTIVATION_FUNCTION::NONE:
-                    for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
+                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         y = 0.0;
                         total_layers[iLayer]->setOutput(iNeuron, y);
                     }
                     break;
                 default:
                     break;
-                }
-                
+                } // activation_function_types
         }
     }
-    for(iNeuron=0; iNeuron<outputLayer->getNNeurons(); iNeuron++){
+    /* Compute and de-normalize MLP output */
+    for(auto iNeuron=0u; iNeuron<outputLayer->getNNeurons(); iNeuron++){
         y_norm = outputLayer->getOutput(iNeuron);
         y = y_norm*(output_norm[iNeuron].second - output_norm[iNeuron].first) + output_norm[iNeuron].first;
         
-        // Setting output value
+        /* Storing output value */
         ANN_outputs[iNeuron] = y;
     }
 }
@@ -180,17 +187,19 @@ void MLPToolbox::CNeuralNetwork::push_hidden_layer(unsigned long n_neurons){
 }
 
 void MLPToolbox::CNeuralNetwork::sizeWeights(){
-    
+    /* Size weight matrices based on neuron counts in each layer */
+
+    /* Generate vector containing input, output, and hidden layer references */
     total_layers.resize(n_hidden_layers + 2);
     total_layers[0] = inputLayer;
-    for(size_t iLayer=0; iLayer<n_hidden_layers; iLayer++){
-        total_layers[iLayer + 1] = hiddenLayers.at(iLayer);
+    for(auto iLayer=0u; iLayer<n_hidden_layers; iLayer++){
+        total_layers[iLayer + 1] = hiddenLayers[iLayer];
     }
     total_layers[total_layers.size()-1] = outputLayer;
 
     weights_mat.resize(n_hidden_layers+1);
     weights_mat[0].resize(hiddenLayers[0]->getNNeurons(), inputLayer->getNNeurons());
-    for(size_t iLayer=1; iLayer<n_hidden_layers; iLayer++){
+    for(auto iLayer=1u; iLayer<n_hidden_layers; iLayer++){
         weights_mat[iLayer].resize(hiddenLayers[iLayer]->getNNeurons(), hiddenLayers[iLayer-1]->getNNeurons());
     }
     weights_mat[n_hidden_layers].resize(outputLayer->getNNeurons(), hiddenLayers[n_hidden_layers-1]->getNNeurons());
@@ -210,6 +219,7 @@ void MLPToolbox::CNeuralNetwork::displayNetwork(){
 
 void MLPToolbox::CNeuralNetwork::setActivationFunction(unsigned long i_layer, string input)
 {
+    /*--- Translate activation function name from input file to a number ---*/
     if(input.compare("linear") == 0){
         activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::LINEAR;
         return;

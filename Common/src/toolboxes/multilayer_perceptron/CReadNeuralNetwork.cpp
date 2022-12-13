@@ -41,8 +41,10 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
     }
 
     string line, word;
-    double input_min, input_max, output_min, output_max;
-    bool eoHeader{false}, found_layercount{false}, found_input_names{false}, found_output_names{false};
+    bool eoHeader = false, 
+         found_layercount = false, 
+         found_input_names = false, 
+         found_output_names = false;
 
     /* Read general architecture information from file header */
 
@@ -70,27 +72,26 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
           SU2_MPI::Error("No layer count provided before defining neuron count per layer", CURRENT_FUNCTION);
         }
         // Loop over layer count and size neuron count and bias count per layer accordingly
-        for(size_t iLayer=0; iLayer<n_layers; iLayer++){
+        for(auto iLayer=0u; iLayer<n_layers; iLayer++){
           getline(file_stream, line);
-          n_neurons.at(iLayer) = stoul(line);
-          biases.at(iLayer).resize(n_neurons.at(iLayer));
+          n_neurons[iLayer] = stoul(line);
+          biases[iLayer].resize(n_neurons[iLayer]);
         }
         // Loop over spaces between layers and size the weight matrices accordingly
-        for(size_t iLayer=0; iLayer<n_layers-1; iLayer++){
-          weights.at(iLayer).resize(n_neurons.at(iLayer));
-          for(size_t iNeuron=0; iNeuron<n_neurons.at(iLayer); iNeuron++){
-            weights.at(iLayer).at(iNeuron).resize(n_neurons.at(iLayer+1));
+        for(auto iLayer=0u; iLayer<n_layers-1; iLayer++){
+          weights[iLayer].resize(n_neurons[iLayer]);
+          for(size_t iNeuron=0; iNeuron<n_neurons[iLayer]; iNeuron++){
+            weights[iLayer][iNeuron].resize(n_neurons[iLayer+1]);
           }
         }
-        // Size input normalization according to number of inputs
-        input_norm.resize(n_neurons.at(0));
-        // Set default input normalization
-        for(size_t iNeuron=0; iNeuron<n_neurons.at(0); iNeuron++) input_norm.at(iNeuron) = make_pair(0, 1);
+        /* Size input and output normalization and set default values */
+        input_norm.resize(n_neurons[0]);
+        for(auto iNeuron=0u; iNeuron<n_neurons[0]; iNeuron++) 
+          input_norm[iNeuron] = make_pair(0, 1);
 
-        // Size output normalization according to number of outputs
-        output_norm.resize(n_neurons.at(n_neurons.size()-1));
-        // Set default output normalization
-        for(size_t iNeuron=0; iNeuron<n_neurons.at(n_neurons.size()-1); iNeuron++) output_norm.at(iNeuron) = make_pair(0, 1);
+        output_norm.resize(n_neurons[n_neurons.size()-1]);
+        for(auto iNeuron=0u; iNeuron<n_neurons[n_neurons.size()-1]; iNeuron++) 
+          output_norm[iNeuron] = make_pair(0, 1);
       }
 
       /* Read layer activation function types */
@@ -98,11 +99,11 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
         if(!found_layercount){
           SU2_MPI::Error("No layer count provided before providing layer activation functions", CURRENT_FUNCTION);
         }
-        for(size_t iLayer=0; iLayer<n_layers; iLayer++){
+        for(auto iLayer=0u; iLayer<n_layers; iLayer++){
           getline(file_stream, line);
           istringstream activation_stream(line);
           activation_stream >> word;
-          activation_functions.at(iLayer) = word;
+          activation_functions[iLayer] = word;
         }    
       }
 
@@ -115,22 +116,22 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
           getline(file_stream, line);
         }
 
-        if(input_names.size() != n_neurons.at(0)){
+        if(input_names.size() != n_neurons[0]){
           SU2_MPI::Error("Number of input variable names inconsistent with number of MLP inputs", CURRENT_FUNCTION);
         }
       }
 
       /* In case input normalization is applied, read upper and lower input bounds */
       if(line.compare("[input normalization]") == 0){
-        for(size_t iInput=0; iInput<input_norm.size(); iInput++){
+        for(auto iInput=0u; iInput<input_norm.size(); iInput++){
           getline(file_stream, line);
           if(line.compare("") != 0){
             istringstream input_norm_stream(line);
             input_norm_stream >> word;
-            input_min = stold(word);
+            su2double input_min = stold(word);
             input_norm_stream >> word;
-            input_max = stold(word);
-            input_norm.at(iInput) = make_pair(input_min, input_max);
+            su2double input_max = stold(word);
+            input_norm[iInput] = make_pair(input_min, input_max);
           }
         }
       }
@@ -144,22 +145,22 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
           getline(file_stream, line);
         }
 
-        if(output_names.size() != (n_neurons.at(n_neurons.size()-1))){
+        if(output_names.size() != (n_neurons[n_neurons.size()-1])){
           SU2_MPI::Error("Number of output variable names inconsistent with number of MLP outputs", CURRENT_FUNCTION);
         }
       }
 
       /* In case output normalization is applied, read upper and lower output bounds */
       if(line.compare("[output normalization]") == 0){
-        for(size_t iOutput=0; iOutput<output_norm.size(); iOutput++){
+        for(auto iOutput=0u; iOutput<output_norm.size(); iOutput++){
           getline(file_stream, line);
           if(line.compare("") != 0){
             istringstream output_norm_stream(line);
             output_norm_stream >> word;
-            output_min = stold(word);
+            su2double output_min = stold(word);
             output_norm_stream >> word;
-            output_max = stold(word);
-            output_norm.at(iOutput) = make_pair(output_min, output_max);
+            su2double output_max = stold(word);
+            output_norm[iOutput] = make_pair(output_min, output_max);
           }
         }
       }
@@ -177,14 +178,14 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
 
     /* Read weights for each layer */
     line = SkipToFlag(&file_stream, "[weights per layer]");
-    for(size_t iLayer=0; iLayer<n_layers-1; iLayer++){
+    for(auto iLayer=0u; iLayer<n_layers-1; iLayer++){
       getline(file_stream, line);
-      for(size_t iNeuron=0; iNeuron<n_neurons.at(iLayer); iNeuron++){
+      for(auto iNeuron=0u; iNeuron<n_neurons[iLayer]; iNeuron++){
         getline(file_stream, line);
         istringstream weight_stream(line);
-        for(size_t jNeuron=0; jNeuron<n_neurons.at(iLayer+1); jNeuron++){
+        for(auto jNeuron=0u; jNeuron<n_neurons[iLayer+1]; jNeuron++){
           weight_stream >> word;
-          weights.at(iLayer).at(iNeuron).at(jNeuron) = stold(word);
+          weights[iLayer][iNeuron][jNeuron] = stold(word);
         }
       }
       getline(file_stream, line);
@@ -192,12 +193,12 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
     
     /* Read biases for each neuron */
     line = SkipToFlag(&file_stream, "[biases per layer]");
-    for(size_t iLayer=0; iLayer<n_layers; iLayer++){
+    for(auto iLayer=0u; iLayer<n_layers; iLayer++){
       getline(file_stream, line);
       istringstream bias_stream(line);
-      for(size_t iNeuron=0; iNeuron<n_neurons.at(iLayer); iNeuron++){
+      for(auto iNeuron=0u; iNeuron<n_neurons[iLayer]; iNeuron++){
         bias_stream >> word;
-        biases.at(iLayer).at(iNeuron) = stold(word);
+        biases[iLayer][iNeuron] = stold(word);
       }
     }
 

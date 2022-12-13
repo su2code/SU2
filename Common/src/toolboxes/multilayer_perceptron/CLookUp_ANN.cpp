@@ -37,35 +37,35 @@ using namespace std;
 
 MLPToolbox::CLookUp_ANN::CLookUp_ANN(string inputFileName)
 {
-    
     #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     #endif
     if(rank == MASTER_NODE)
         cout << "Generating ANN collection" << endl;
 
+    /* Read MLP collection input file */
     ReadANNInputFile(inputFileName);
-    for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++){
-        
+
+    /* Generate a multi-layer perceptron for every file listed in the MLP collection file */
+    for(auto i_ANN=0u; i_ANN<number_of_variables; i_ANN++){
         NeuralNetworks[i_ANN] = new CNeuralNetwork;
         if(rank == MASTER_NODE)
-            cout << "Generating neural network for " << ANN_filenames.at(i_ANN) << endl;
-        GenerateANN(NeuralNetworks[i_ANN], ANN_filenames.at(i_ANN));
+            cout << "Generating neural network for " << ANN_filenames[i_ANN] << endl;
+        GenerateANN(NeuralNetworks[i_ANN], ANN_filenames[i_ANN]);
     }
 }
 
 
 vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_t i_ANN, su2vector<string> variable_names, bool input) const {
+    /* Find loaded MLPs that have the same input variable names as the variables listed in variable_names */
     vector<pair<size_t, size_t>> variable_indices;
-    size_t nVar = input ? NeuralNetworks[i_ANN]->GetnInputs() : NeuralNetworks[i_ANN]->GetnOutputs();
+    auto nVar = input ? NeuralNetworks[i_ANN]->GetnInputs() : NeuralNetworks[i_ANN]->GetnOutputs();
 
-    for(size_t iVar=0; iVar<nVar; iVar++){
-        for(size_t jVar=0; jVar<variable_names.size(); jVar++){
+    for(auto iVar=0u; iVar<nVar; iVar++){
+        for(auto jVar=0u; jVar<variable_names.size(); jVar++){
             string ANN_varname = input ? NeuralNetworks[i_ANN]->GetInputName(iVar) : NeuralNetworks[i_ANN]->GetOutputName(iVar);
-            
             if(variable_names[jVar].compare(ANN_varname) == 0){
                 variable_indices.push_back(make_pair(jVar, iVar));
-                //cout << variable_names[jVar] << " : " << jVar << " | " << ANN_varname << " : " << iVar << endl;
             }
         }
     }
@@ -82,14 +82,14 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
     size_t i_ANN_nearest = 0,           // Index of nearest MLP.
            i_map_nearest = 0;           // Index of nearest iomap index.
 
-    for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
+    for(auto i_map=0u; i_map<input_output_map->GetNMLPs(); i_map++){
         within_range = true;
-        size_t i_ANN = input_output_map->GetMLPIndex(i_map);
-        su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
+        auto i_ANN = input_output_map->GetMLPIndex(i_map);
+        auto ANN_inputs = input_output_map->GetMLP_Inputs(i_map, inputs);
         
         su2double distance_to_query_i = 0;
-        for(size_t i_input=0; i_input < ANN_inputs.size(); i_input++) {
-            std::pair<su2double, su2double> ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
+        for(auto i_input=0u; i_input < ANN_inputs.size(); i_input++) {
+            auto ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
 
             /* Check if query input lies within MLP training range */
             if(!((ANN_inputs[i_input] > ANN_input_limits.first) && (ANN_inputs[i_input] < ANN_input_limits.second))) {
@@ -105,7 +105,7 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
         if(within_range){
             NeuralNetworks[i_ANN]->predict(ANN_inputs);
             MLP_was_evaluated = true;
-            for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
+            for(auto i=0u; i < input_output_map->GetNMappedOutputs(i_map); i++){
                 *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
             }
         }
@@ -119,9 +119,9 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
     }
     /* Evaluate nearest MLP in case no query data within range is found */
     if(!MLP_was_evaluated) {
-        su2vector<su2double> ANN_inputs = input_output_map->GetMLP_Inputs(i_map_nearest, inputs);
+        auto ANN_inputs = input_output_map->GetMLP_Inputs(i_map_nearest, inputs);
         NeuralNetworks[i_ANN_nearest]->predict(ANN_inputs);
-        for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map_nearest); i++){
+        for(auto i=0u; i < input_output_map->GetNMappedOutputs(i_map_nearest); i++){
             *outputs[input_output_map->GetOutputIndex(i_map_nearest, i)] = NeuralNetworks[i_ANN_nearest]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map_nearest, i));
         }
     }
@@ -131,6 +131,9 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
 
 void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
 {
+    /*--- Generate MLP architecture based on information in MLP input file ---*/
+
+    /* Read MLP input file */
     CReadNeuralNetwork Reader = CReadNeuralNetwork(fileName);
     
     // Read MLP input file
@@ -139,14 +142,14 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     // Generate basic layer architectures
     ANN->defineInputLayer(Reader.GetNInputs());
     ANN->sizeInputs(Reader.GetNInputs());
-    for(size_t iInput=0; iInput<Reader.GetNInputs(); iInput++){
+    for(auto iInput=0u; iInput<Reader.GetNInputs(); iInput++){
         ANN->PushInputName(Reader.GetInputName(iInput));
     }
-    for(size_t iLayer=1; iLayer<Reader.GetNlayers()-1; iLayer++){
+    for(auto iLayer=1u; iLayer<Reader.GetNlayers()-1; iLayer++){
         ANN->push_hidden_layer(Reader.GetNneurons(iLayer));
     }
     ANN->defineOutputLayer(Reader.GetNOutputs());
-    for(size_t iOutput=0; iOutput<Reader.GetNOutputs(); iOutput++){
+    for(auto iOutput=0u; iOutput<Reader.GetNOutputs(); iOutput++){
         ANN->PushOutputName(Reader.GetOutputName(iOutput));
     }
 
@@ -155,10 +158,10 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
 
     // Define weights and activation functions
     ANN->SizeActivationFunctions(ANN->getNWeightLayers()+1);
-    for(size_t i_layer = 0; i_layer < ANN->getNWeightLayers(); i_layer++){
+    for(auto i_layer=0u; i_layer < ANN->getNWeightLayers(); i_layer++){
         ANN->setActivationFunction(i_layer, Reader.GetActivationFunction(i_layer));
-        for(size_t i_neuron=0; i_neuron < ANN->getNNeurons(i_layer); i_neuron++){
-            for(size_t j_neuron=0; j_neuron<ANN->getNNeurons(i_layer+1); j_neuron++){
+        for(auto i_neuron=0u; i_neuron < ANN->getNNeurons(i_layer); i_neuron++){
+            for(auto j_neuron=0u; j_neuron<ANN->getNNeurons(i_layer+1); j_neuron++){
                 ANN->setWeight(i_layer, i_neuron, j_neuron, Reader.GetWeight(i_layer, i_neuron, j_neuron));
             }
         }
@@ -168,17 +171,17 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     ANN->setActivationFunction(ANN->getNWeightLayers(), Reader.GetActivationFunction(ANN->getNWeightLayers()));
     
     // Set neuron biases
-    for(size_t i_layer=0; i_layer<ANN->getNWeightLayers()+1; i_layer++){
-        for(size_t i_neuron=0; i_neuron<ANN->getNNeurons(i_layer); i_neuron++){
+    for(auto i_layer=0u; i_layer<ANN->getNWeightLayers()+1; i_layer++){
+        for(auto i_neuron=0u; i_neuron<ANN->getNNeurons(i_layer); i_neuron++){
             ANN->setBias(i_layer, i_neuron, Reader.GetBias(i_layer, i_neuron));
         }
     }
     
     // Define input and output layer normalization values
-    for(unsigned long iInput=0; iInput<Reader.GetNInputs(); iInput++){
+    for(auto iInput=0u; iInput<Reader.GetNInputs(); iInput++){
         ANN->SetInputNorm(iInput, Reader.GetInputNorm(iInput).first, Reader.GetInputNorm(iInput).second);
     }
-    for(unsigned long iOutput=0; iOutput<Reader.GetNOutputs(); iOutput++){
+    for(auto iOutput=0u; iOutput<Reader.GetNOutputs(); iOutput++){
         ANN->SetOutputNorm(iOutput, Reader.GetOutputNorm(iOutput).first, Reader.GetOutputNorm(iOutput).second);
     }
     
@@ -227,76 +230,49 @@ string MLPToolbox::CLookUp_ANN::SkipToFlag(ifstream *file_stream, string flag) {
   return line;
 }
 
-
-bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(su2vector<string> &output_names, CIOMap *input_output_map) const {
-    unsigned short n_occurances;
-    bool duplicate{false};
-    vector<string> duplicate_variables;
-    for(size_t i_Output =0; i_Output < output_names.size(); i_Output++){
-        n_occurances = 0;
-        for(size_t i_map=0; i_map<input_output_map->GetNMLPs(); i_map++){
-            vector<pair<size_t, size_t>> output_map = input_output_map->GetOutputMapping(i_map);
-            for(size_t j_Output=0; j_Output<output_map.size(); j_Output++){
-                if(output_map[j_Output].first == i_Output) n_occurances++;
-            }
-        }
-        if(n_occurances > 1){
-            duplicate_variables.push_back(output_names[i_Output]);
-            duplicate = true;
-        }
-    }
-    if(duplicate){
-        string message{"Variables "};
-        for(size_t iVar=0; iVar<duplicate_variables.size(); iVar++) message += duplicate_variables[iVar] + " ";
-        SU2_MPI::Error(message + "occur more than once in the loaded ANN outputs.", CURRENT_FUNCTION);
-    }
-    
-    return duplicate;
-}
-
-
 bool MLPToolbox::CLookUp_ANN::Check_Use_of_Inputs(su2vector<string> &input_names, CIOMap *input_output_map) const {
-vector<string> missing_inputs;
-bool inputs_are_present{true};
-for(size_t iInput=0; iInput<input_names.size(); iInput ++){
-    bool found_input = false;
-    for(size_t i_map=0; i_map < input_output_map->GetNMLPs(); i_map++){
-        vector<pair<size_t, size_t>> input_map = input_output_map->GetInputMapping(i_map);
-        for(size_t jInput=0; jInput<input_map.size(); jInput++){
-            if(input_map[jInput].first == iInput){
-                found_input = true;
+    /*--- Check wether all input variables are in the loaded MLPs ---*/
+    vector<string> missing_inputs;
+    bool inputs_are_present{true};
+    for(auto iInput=0u; iInput<input_names.size(); iInput ++){
+        bool found_input = false;
+        for(auto i_map=0u; i_map < input_output_map->GetNMLPs(); i_map++){
+            auto input_map = input_output_map->GetInputMapping(i_map);
+            for(auto jInput=0u; jInput<input_map.size(); jInput++){
+                if(input_map[jInput].first == iInput){
+                    found_input = true;
+                }
             }
         }
+        if(!found_input){
+            missing_inputs.push_back(input_names[iInput]);
+            inputs_are_present = false;
+        };
     }
-    if(!found_input){
-        missing_inputs.push_back(input_names[iInput]);
-        inputs_are_present = false;
-    };
-}
-if(missing_inputs.size() > 0){
-    string message{"Inputs "};
-    for(size_t iVar=0; iVar<missing_inputs.size(); iVar++) message += missing_inputs[iVar] + " ";
-    SU2_MPI::Error(message + "are not present in any loaded ANN.", CURRENT_FUNCTION);
-}
-return inputs_are_present;
+    if(missing_inputs.size() > 0){
+        string message{"Inputs "};
+        for(size_t iVar=0; iVar<missing_inputs.size(); iVar++) message += missing_inputs[iVar] + " ";
+        SU2_MPI::Error(message + "are not present in any loaded ANN.", CURRENT_FUNCTION);
+    }
+    return inputs_are_present;
 }
 
 bool MLPToolbox::CLookUp_ANN::Check_Use_of_Outputs(su2vector<string> &output_names, CIOMap * input_output_map) const {
-    /* Check wether all output variables are in the loaded MLPs */
+    /*--- Check wether all output variables are in the loaded MLPs ---*/
     
     vector<string> missing_outputs;     
     bool outputs_are_present{true};
     /* Looping over the target outputs */
-    for(size_t iOutput=0; iOutput<output_names.size(); iOutput ++){
+    for(auto iOutput=0u; iOutput<output_names.size(); iOutput ++){
 
         bool found_output{false};
 
         /* Looping over all the selected ANNs */
-        for(size_t i_map=0; i_map < input_output_map->GetNMLPs(); i_map++){
-            vector<pair<size_t, size_t>> output_map = input_output_map->GetOutputMapping(i_map);
+        for(auto i_map=0u; i_map < input_output_map->GetNMLPs(); i_map++){
+            auto output_map = input_output_map->GetOutputMapping(i_map);
 
             /* Looping over the outputs of the output map of the current ANN */
-            for(size_t jOutput=0; jOutput<output_map.size(); jOutput++){
+            for(auto jOutput=0u; jOutput<output_map.size(); jOutput++){
                 if(output_map[jOutput].first == iOutput) found_output = true;
             }
         }
