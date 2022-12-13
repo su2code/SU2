@@ -2456,6 +2456,9 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("TOPOL_OPTIM_SEARCH_LIMIT", top_optim_search_lim, 0);
   addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, ENUM_PROJECTION_FUNCTION::NONE);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
+  
+  /*!\brief DARCY_NUMBER \n DESCRIPTION: Darcy number for viscous, incompressible flow (1e-5 by default). \ingroup Config*/
+  addDoubleOption("DARCY_NUMBER", Darcy_Number, 1e-5);
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/

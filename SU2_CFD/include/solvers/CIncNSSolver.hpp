@@ -176,4 +176,15 @@ public:
                                   CConfig *config,
                                   unsigned short val_marker) override;
 
+  /*!
+   * \brief Impose the (received) conjugate heat variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Power_Dissipation(const CGeometry* geometry, const CConfig* config) override;
+
+  void RegisterVariables(CGeometry* geometry, CConfig* config, bool reset) override;
+
+  void ExtractAdjoint_Variables(CGeometry* geometry, CConfig* config) override;
+
 };

@@ -4333,6 +4333,14 @@ public:
    */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
+  /*!
+   * \brief Adds the maximal residual for BGS subiterations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+
+  inline virtual void Power_Dissipation(const CGeometry* geometry, const CConfig* config) { }
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.

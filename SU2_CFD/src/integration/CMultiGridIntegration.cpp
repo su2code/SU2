@@ -694,6 +694,11 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
 
+      /*--- Calculate Power Dissipation only in the topology optimization active zone ---*/
+      if (config->GetTopology_Optimization()) {
+        solver_container[FinestMesh][FLOW_SOL]->Power_Dissipation(geometry[FinestMesh], config);
+      }
+
       break;
 
     case RUNTIME_ADJFLOW_SYS:

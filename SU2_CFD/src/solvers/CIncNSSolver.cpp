@@ -58,6 +58,27 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
     // Note during restarts, the flow.meta is read first. But that sets the cfg-value so we are good here.
     SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop();
+
+      /*--- Check for porosity for topology optimization, if the file is not
+   found, then the porosity values are initialized to zero and a template
+   file is written when the first output files are generated. ---*/
+
+  if (config->GetTopology_Optimization()) {
+
+    ifstream porosity_file;
+    porosity_file.open("porosity.dat", ios::in);
+    if (!porosity_file.fail()) {
+      if (iMesh == MESH_0) {
+        geometry->ReadPorosity(config);
+        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+          nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
+      }
+      config->SetWrt_PorosityFile(false);
+    } else {
+      config->SetWrt_PorosityFile(true);
+    }
+  }
+
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -816,5 +837,124 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
+
+}
+
+void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* config) {
+
+    su2double power_local = 0.0, porosity_comp = 0.0;
+
+    for (unsigned long iPoint=0; iPoint<geometry->GetnPointDomain(); iPoint++) {
+        auto VelGrad = nodes->GetVelocityGradient(iPoint);
+        auto Vel2 = nodes->GetVelocity2(iPoint);
+        su2double vel_comp = 0.0;
+        for (unsigned short iDim=0; iDim < nDim; iDim++){
+            for (unsigned short jDim=0; jDim < nDim; jDim++){
+                vel_comp += (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * nodes->GetLaminarViscosity(iPoint);
+            }
+        }
+
+        porosity_comp = Vel2 * nodes->GetPorosity(iPoint);
+
+        power_local += (vel_comp + porosity_comp) * geometry->nodes->GetVolume(iPoint);
+    }
+    cout << "Power Dissipation :: "<<power_local<<endl;
+    if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
+        ofstream file("power.dat");
+        file << setprecision(15);
+        file << std::scientific;
+        file << power_local << endl;
+        file.close();
+    }
+
+    Total_Custom_ObjFunc = power_local;
+}
+
+void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+
+  if (!reset) {
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        nodes->RegisterPorosity(iPoint);
+  }
+}
+
+void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+
+  if (!config->GetTopology_Optimization()) return;
+
+  unsigned long iPoint,
+  nPoint = geometry->GetnPoint(),
+  nPointDomain = geometry->GetGlobal_nPointDomain();
+
+  unsigned short nDim = geometry->GetnDim();
+  unsigned short vals_per_point = nDim+2;
+
+  /*--- Allocate and initialize an array onto which the derivatives of every partition
+   will be reduced, this is to output results in the correct order, it is not a very
+   memory efficient solution...  ---*/
+  su2double *send_buf = new su2double[nPointDomain*vals_per_point], *rec_buf = NULL;
+  for(iPoint=0; iPoint<nPointDomain*vals_per_point; ++iPoint) send_buf[iPoint] = 0.0;
+
+  unsigned long total_index;
+  for(iPoint=0; iPoint<nPoint; ++iPoint) {
+    unsigned long Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
+    total_index = Global_Index*vals_per_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      send_buf[total_index] = SU2_TYPE::GetValue(geometry->nodes->GetCoord(iPoint, iDim));
+      total_index++;
+    }
+    send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetAdjointPorosity(iPoint));
+    total_index++;
+    send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetPorosity(iPoint));
+  }
+
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) rec_buf = new su2double[nPointDomain*vals_per_point];
+  SU2_MPI::Reduce(send_buf,rec_buf,nPointDomain*vals_per_point,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#else
+  rec_buf = send_buf;
+#endif
+
+  /*--- The master writes the file ---*/
+  if (rank == MASTER_NODE) {
+    string filename = "of_grad_power.dat";
+    ofstream file;
+    file.open(filename.c_str());
+    file << setprecision(15);
+    file << std::scientific;
+    for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
+      unsigned long total_index = iPoint*vals_per_point;
+      for (unsigned long jPoint = 0; jPoint < vals_per_point; jPoint++) {
+        file << rec_buf[total_index];
+        if (jPoint < vals_per_point-1) file << "\t";
+        else file << endl;
+        total_index++;
+      }
+    }
+    file.close();
+  }
+
+//   /*--- The master writes the file ---*/
+//   if (rank == MASTER_NODE) {
+//     string filename = "porosity_new.dat";
+//     ofstream file;
+//     file.open(filename.c_str());
+//     file << setprecision(15);
+//     file << std::scientific;
+//     for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
+//       unsigned long total_index = iPoint*vals_per_point;
+//       for (unsigned long jPoint = 0; jPoint < vals_per_point-1; jPoint++) {
+//         file << rec_buf[total_index] << "\t";
+//         total_index++;
+//       }
+//       file << rec_buf[total_index+1]*0.9 + 0.1*min(max(rec_buf[total_index+1] - rec_buf[total_index], 0.0),1.0) << endl;
+//     }
+//     file.close();
+//   }
+
+  delete [] send_buf;
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) delete [] rec_buf;
+#endif
 
 }

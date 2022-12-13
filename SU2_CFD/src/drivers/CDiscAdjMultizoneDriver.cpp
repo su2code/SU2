@@ -725,6 +725,10 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
         solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
+        if (config->GetTopology_Optimization()) {
+            solvers[FLOW_SOL]->Power_Dissipation(geometry, config);
+        }
+
         if(config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }

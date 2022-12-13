@@ -2476,3 +2476,44 @@ void COutput::PrintVolumeFields(){
     VolumeFieldTable.PrintFooter();
   }
 }
+
+void COutput::Write_PorosityFile(CConfig *config, CGeometry *geometry, CSolver **solver) {
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  const unsigned short nDim = geometry->GetnDim();
+
+  /*--- Write the porosity template file. Note that we have previously merged
+   all of the coordinates in the MergeCoordinates() routine. ---*/
+
+  ofstream node_file("porosity.dat");
+  node_file << setprecision(15);
+  node_file << std::scientific;
+
+  /*--- Loop over all points and write a file with zero porosities. ---*/
+
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+    /*--- Write the grid coordinates first ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      // node_file << 0.0 << "\t"; 
+      node_file <<geometry->nodes->GetCoord(iPoint,iDim) << "\t";
+    }
+
+    /*--- Write the value of the porosity ---*/
+
+    node_file << geometry->nodes->GetAuxVar(iPoint) << endl;
+
+  }
+
+  node_file.close();
+
+  /*--- Print a message to inform the user about the template file. ---*/
+
+  cout << endl;
+  cout << "  Created a template porosity file with node coordinates" << endl;
+  cout << "  and zero initial porosity at `porosity.dat`." << endl;
+
+}

@@ -234,25 +234,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.", CURRENT_FUNCTION);
     
-
-  /*--- Check for porosity for topology optimization, if the file is not
-   found, then the porosity values are initialized to zero and a template
-   file is written when the first output files are generated. ---*/
-
-  if (config->GetTopology_Optimization()) {
-    ifstream porosity_file;
-    porosity_file.open("porosity.dat", ios::in);
-    if (!porosity_file.fail()) {
-      if (iMesh == MESH_0) {
-        geometry->ReadPorosity(config);
-        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-          nodes->SetPorosity(geometry->nodes->GetAuxVar(iPoint), iPoint);
-      }
-      config->SetWrt_PorosityFile(false);
-    } else {
-      config->SetWrt_PorosityFile(true);
-    }
-  }
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -1409,15 +1390,14 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   if (topology) {
     /*--- loop over points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
         su2double Volume = geometry->nodes->GetVolume(iPoint);
         su2double Density = nodes->GetDensity(iPoint);
-        su2double Velocity = 0.0;
         su2double alpha = nodes->GetPorosity(iPoint);
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            Velocity = nodes->GetVelocity(iPoint, iDim);
+            auto Velocity = nodes->GetVelocity(iPoint, iDim);
             LinSysRes(iPoint, iDim + 1) -= Volume * alpha * Density * Velocity;
         }
 

@@ -10988,7 +10988,7 @@ void CPhysicalGeometry::ReadPorosity(const CConfig *config) {
 
           /*--- Store porosity at the matched local node. ---*/
 
-          nodes->SetAuxVar(pointID, Porosity_External);
+           nodes->SetAuxVar(pointID, Porosity_External);
 
           /*--- Keep track of how many points we match. ---*/
 

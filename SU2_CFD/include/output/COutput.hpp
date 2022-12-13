@@ -946,4 +946,12 @@ protected:
    */
   inline virtual void SetAdditionalScreenOutput(const CConfig *config){}
 
+  /*!
+   * \brief Write a template porosity profile file for topology optimization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Solver container.
+   */
+  void Write_PorosityFile(CConfig *config, CGeometry *geometry, CSolver **solver);
+
 };

@@ -1068,7 +1068,7 @@ private:
   su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
-  su2double darcy_number;               /*!< \brief Darcy Number for viscous flow prolbem (topology Optimization) */
+  su2double Darcy_Number;               /*!< \brief Darcy Number for viscous flow prolbem (topology Optimization) */
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
@@ -9188,7 +9188,7 @@ public:
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
    * \return Damping factor applied to velocity updates at incompressible pressure inlets.
    */
-  su2double GetDarcy_Number(void) const {return darcy_number; }
+  su2double GetDarcy_Number(void) const {return Darcy_Number; }
 
   /*!
    * \brief Get information about writing a template porosity file.

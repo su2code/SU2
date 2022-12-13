@@ -290,6 +290,10 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  if (config->GetTopology_Optimization()) {
+    if (!reset) direct_solver->RegisterVariables(geometry, config, reset);
+  }
+
   /*--- Here it is possible to register other variables as input that influence the flow solution
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
@@ -442,6 +446,10 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
+
+  if (config->GetTopology_Optimization()) {
+    direct_solver->ExtractAdjoint_Variables(geometry, config);
+  }
 
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS

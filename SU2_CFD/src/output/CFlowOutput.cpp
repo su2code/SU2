@@ -1957,6 +1957,20 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
     WriteForcesBreakdown(config, solver_container[FLOW_SOL]);
   }
 
+  if (config->GetTopology_Optimization()) {
+        /*--- Write a template porosity file for topology optimization. ---*/
+
+    if (config->GetWrt_PorosityFile()) {
+    //   MergeCoordinates(config, geometry);
+
+      if (rank == MASTER_NODE  && size == SINGLE_NODE) {
+        Write_PorosityFile(config, geometry, solver_container);
+        // DeallocateCoordinates(config, geometry);
+      }
+      config->SetWrt_PorosityFile(false);
+    }
+  }
+
 }
 
 void CFlowOutput::WriteMetaData(const CConfig *config){
