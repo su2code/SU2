@@ -3374,21 +3374,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   bool nemo = GetNEMOProblem();
 
-  // nijso todo 
-  if (Kind_FluidModel == FLUID_FLAMELET){
-    if (rank == MASTER_NODE) {
-      cout << "************************************************" << endl;
-      cout << "***   setting all fluid models to FLAMELET   ***" << endl;
-      cout << "************************************************" << endl;
-    }
-    // nijso TODO these should be set by the user and we should check explicitly the config settings
-    Kind_Species_Model = SPECIES_MODEL::FLAMELET;
-    Kind_ViscosityModel = VISCOSITYMODEL::FLAMELET;
-    Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
-    Kind_Diffusivity_Model = DIFFUSIVITYMODEL::FLAMELET;
-  }
-
-
   if (nZone > 1){
     Multizone_Problem = YES;
   }
@@ -3941,13 +3926,35 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           break;
       }
     }
-    
-    // nijso TODO: add LUT flamelet model here
-    if (rank == MASTER_NODE) {
-      cout << "*******************************************************" << endl;
-      cout << "***   check the input for the flamelet model !!!!   ***" << endl;
-      cout << "*******************************************************" << endl;
+
+
+    if (Kind_Species_Model != SPECIES_MODEL::FLAMELET) {
+ 
+      if (Kind_FluidModel != FLUID_FLAMELET) {
+        SU2_MPI::Error("The use of SCALAR_MODEL= FLAMELET requires the FLUID_MODEL option to be FLUID_FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the CONDUCTIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the DIFFUSIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+     if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
     }
+
     /*--- Check for Measurement System ---*/
 
     if (SystemMeasurements == US && !standard_air) {
