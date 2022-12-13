@@ -101,8 +101,8 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
-  VectorType Dataset_Extrapolation; /*!< \brief Stores instances of dataset bounds violation when using datadriven fluid models. */
-  VectorType nIter_Newtonsolver;    /*!< \brief Stores number of Newton solver iterations when using datadriven fluid models. */
+  su2vector<unsigned short> Dataset_Extrapolation; /*!< \brief Stores instances of dataset bounds violation when using datadriven fluid models. */
+  su2vector<unsigned long> nIter_Newtonsolver;    /*!< \brief Stores number of Newton solver iterations when using datadriven fluid models. */
   VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the datadriven fluid model. */
 
  protected:

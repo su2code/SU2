@@ -76,7 +76,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
     Dataset_Extrapolation.resize(nPoint) = 0;
     nIter_Newtonsolver.resize(nPoint) = 0;
-    FluidEntropy.resize(nPoint) = 0.0;
+    FluidEntropy.resize(nPoint) = su2double(0.0);
   }
 }
 
