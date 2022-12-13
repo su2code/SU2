@@ -55,6 +55,7 @@ protected:
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
+  su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
@@ -81,6 +82,8 @@ protected:
   su2double
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
+  su2double
+  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -188,6 +191,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
 public:
   /*!
@@ -697,6 +702,14 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+   * \brief Set the value of the effective intermittency for the LM model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  void SetIntermittencyEff(su2double val_intermittency_eff_i) {
+    intermittency_eff_i = val_intermittency_eff_i;
+  }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1598,6 +1611,18 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief SetMassFlux
+   * \param[in] val_MassFlux: Mass flux across the edge
+   */
+  inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
+
+  /*!
+   * \brief Obtain information on bounded scalar problem
+   * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
+   */
+  inline bool GetBoundedScalar() const { return bounded_scalar;}
 };
 
 /*!
