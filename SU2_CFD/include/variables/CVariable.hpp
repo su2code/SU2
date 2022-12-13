@@ -465,7 +465,8 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) const { return Solution; }
+  inline const MatrixType& GetSolution() const { return Solution; }
+  inline MatrixType& GetSolution() { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1678,9 +1679,9 @@ public:
    * \return the value of the separation intermittency.
    */
   inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
-  
+
   /*!
-   * \brief Set the separation intermittency(gamma).   
+   * \brief Set the separation intermittency(gamma).
    * \param[in] val_dist - Value of the separation intermittency(gamma).
    */
   inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
@@ -1692,7 +1693,7 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the effective intermittency(gamma).   
+   * \brief Set the effective intermittency(gamma).
    * \param[in] Value of the effective intermittency(gamma).
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
