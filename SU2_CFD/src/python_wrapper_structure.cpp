@@ -1,8 +1,8 @@
 /*!
  * \file python_wrapper_structure.cpp
- * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
+ * \brief Driver subroutines that are used by the Python wrapper.
  * \author D. Thomas, H. Patel, A. Gastaldi
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@ void CDriver::PythonInterface_Preprocessing(CConfig** config, CGeometry**** geom
   int rank = MASTER_NODE;
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
-  /* --- Initialize boundary conditions customization, this is achieved through the Python wrapper --- */
+  /* --- Initialize boundary conditions customization, this is achieved through the Python wrapper. --- */
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config[iZone]->GetnMarker_PyCustom() > 0) {
       if (rank == MASTER_NODE) cout << "----------------- Python Interface Preprocessing ( Zone " << iZone << " ) -----------------" << endl;
@@ -46,7 +46,12 @@ void CDriver::PythonInterface_Preprocessing(CConfig** config, CGeometry**** geom
 
       if ((config[iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) ||
           (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS)) {
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) ||
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_EULER) ||
+          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES)) {
         solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
       }
     }
@@ -1265,6 +1270,28 @@ vector<passivedouble> CDriver::GetMarkerForcesDisplacementsSensitivities(unsigne
   return values;
 }
 
+void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+  }
+
+  const auto nPoint = GetNumberVertices();
+  const auto nVar = GetNumberStateVariables();
+
+  if (values.size() != nPoint * nVar) {
+    SU2_MPI::Error("Size does not match nPoint * nVar!", CURRENT_FUNCTION);
+  }
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_SourceTerm(iPoint, iVar, values[iPoint * nVar + iVar]);
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.).  */
 //////////////////////////////////////////////////////////////////////////////////
@@ -1383,7 +1410,7 @@ vector<passivedouble> CDriver::GetHeatFluxes(unsigned long iPoint) const {
   const auto Gas_Constant = main_config->GetGas_ConstantND();
   const auto Gamma = main_config->GetGamma();
   const auto Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
-  const auto laminar_viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
+  const auto laminar_viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
   const auto thermal_conductivity = Cp * (laminar_viscosity / Prandtl_Lam);
 
   for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -1424,7 +1451,7 @@ vector<passivedouble> CDriver::GetMarkerHeatFluxes(unsigned short iMarker, unsig
   const auto Gas_Constant = main_config->GetGas_ConstantND();
   const auto Gamma = main_config->GetGamma();
   const auto Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
-  const auto laminar_viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
+  const auto laminar_viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
   const auto thermal_conductivity = Cp * (laminar_viscosity / Prandtl_Lam);
 
   for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -1645,15 +1672,11 @@ unsigned long CDriver::GetNumberNonequilibriumStateVariables() const {
 }
 
 unsigned short CDriver::GetNumberNonequilibriumPrimitiveVariables() const {
-  unsigned short nPrim;
-
   if (main_config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) {
-    nPrim = GetNumberNonequilibriumSpecies() + nDim + 10;
+    return GetNumberNonequilibriumSpecies() + nDim + 10;
   } else {
-    nPrim = GetNumberNonequilibriumSpecies() + nDim + 8;
+    return GetNumberNonequilibriumSpecies() + nDim + 8;
   }
-
-  return nPrim;
 }
 
 vector<vector<passivedouble>> CDriver::GetNonequilibriumMassFractions() const {
@@ -1685,9 +1708,8 @@ vector<passivedouble> CDriver::GetNonequilibriumMassFractions(unsigned long iPoi
   for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
     auto rho_s = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iSpecies);
     auto rho_t = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    su2double value = rho_s / rho_t;
 
-    values.push_back(SU2_TYPE::GetValue(value));
+    values.push_back(SU2_TYPE::GetValue(rho_s / rho_t));
   }
 
   return values;
@@ -1763,7 +1785,7 @@ void CDriver::SetNonequilibriumStates(unsigned long iPoint, vector<passivedouble
 
 vector<passivedouble> CDriver::GetVibrationalTemperatures() const {
   if (!main_config->GetNEMOProblem()) {
-    return {};
+    SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
   }
 
   const auto nPoint = GetNumberVertices();
@@ -1813,9 +1835,7 @@ vector<string> CDriver::GetInletMarkerTags() const {
   vector<string> tags;
 
   for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
-    bool isCustomizable = main_config->GetMarker_All_PyCustom(iMarker);
-    bool isInlet = (main_config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-    if (isCustomizable && isInlet) {
+    if (main_config->GetMarker_All_PyCustom(iMarker) && main_config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
     }
   }
@@ -1851,6 +1871,8 @@ void CDriver::ResetConvergence() {
       case MAIN_SOLVER::INC_EULER:
       case MAIN_SOLVER::INC_NAVIER_STOKES:
       case MAIN_SOLVER::INC_RANS:
+      case MAIN_SOLVER::NEMO_EULER:
+      case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
         if (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS)
           integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
@@ -1887,11 +1909,10 @@ void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
 
   SU2_OMP_PARALLEL {
-    // Overwrite fictious velocities
     for (iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
       for (auto iPoint = 0ul; iPoint < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); iPoint++) {
-        /*--- Overwrite fictitious velocities ---*/
+        /*--- Overwrite fictitious velocities. ---*/
         su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
 
         /*--- Set the grid velocity for this coarse node. ---*/
@@ -1902,7 +1923,7 @@ void CSinglezoneDriver::SetInitialMesh() {
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
     }
-    /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
+    /*--- Push back the solution so that there is no fictitious velocity at the next step. ---*/
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
@@ -2000,7 +2021,7 @@ vector<passivedouble> CDriver::GetMarkerFEAVelocity(unsigned short iMarker) cons
     SU2_MPI::Error("Structural solver is not defined!", CURRENT_FUNCTION);
   }
   if (main_config->GetDynamic_Analysis() != DYNAMIC) {
-    return {};
+    SU2_MPI::Error("Structural solver is not set for dynamic analysis!", CURRENT_FUNCTION);
   }
 
   const auto nVertex = GetNumberMarkerVertices(iMarker);
@@ -2022,7 +2043,7 @@ vector<passivedouble> CDriver::GetMarkerCurrentFEAVelocity(unsigned short iMarke
     SU2_MPI::Error("Structural solver is not defined!", CURRENT_FUNCTION);
   }
   if (main_config->GetDynamic_Analysis() != DYNAMIC) {
-    return {};
+    SU2_MPI::Error("Structural solver is not set for dynamic analysis!", CURRENT_FUNCTION);
   }
 
   const auto nVertex = GetNumberMarkerVertices(iMarker);
@@ -2043,7 +2064,7 @@ vector<passivedouble> CDriver::GetMarkerCurrentFEAVelocity(unsigned short iMarke
 /* Functions related to adjoint finite element simulations.                    */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetMarkerForcesSensitivities(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetMarkerForceSensitivities(unsigned short iMarker) const {
   if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
   }
