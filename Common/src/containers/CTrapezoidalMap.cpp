@@ -40,9 +40,6 @@ using namespace std;
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                                  vector<su2vector<unsigned long> > const& edges,
                                  su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
-  int rank = SU2_MPI::GetRank();
-  su2double startTime = SU2_MPI::Wtime();
-
   edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 
   unique_bands_x.assign(samples_x,samples_x+size);
@@ -128,10 +125,6 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
 
     i_band++;
   }
-
-  su2double stopTime = SU2_MPI::Wtime();
-
-  if (rank == MASTER_NODE) cout << "Construction of trapezoidal map took " << stopTime-startTime << " seconds\n" << endl;
 }
 
 

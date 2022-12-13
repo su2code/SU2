@@ -34,7 +34,7 @@
 using namespace std;
 
 void CFileReaderLUT::ReadRawLUT(const string& file_name) {
-  version_reader = "1.0.1";
+  version_reader = "1.1.0";
 
   /*--- Store MPI rank. ---*/
   rank = SU2_MPI::GetRank();
@@ -280,12 +280,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
     
   }
 
-  if (n_triangles[0] != triCounter)
-    SU2_MPI::Error(
-        "Number of read triangles does not match number of points "
-        "specified in lookup table library header.",
-        CURRENT_FUNCTION);
-
   /*--- read hull points ---*/
   if (rank == MASTER_NODE) cout << "loading hull block" << endl;
 
@@ -327,12 +321,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
       }
       }
   }
-
-  if (n_hull_points[0] != hullCounter)
-    SU2_MPI::Error(
-        "Number of read hull points does not match number of points "
-        "specified in lookup table library header.",
-        CURRENT_FUNCTION);
 
   file_stream.close();
 
