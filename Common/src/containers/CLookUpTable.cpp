@@ -192,7 +192,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
     limits_table_y[i_level] = make_pair(min_y, max_y);
   }
 
-  if(table_dim = 3){
+  if(table_dim == 3){
     su2double min_z, max_z;
     min_z = *min_element(z_values_levels, z_values_levels + n_table_levels);
     max_z = *max_element(z_values_levels, z_values_levels + n_table_levels);
