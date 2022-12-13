@@ -80,13 +80,13 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     if(rank == MASTER_NODE){
       su2double progress = su2double(i_level) / n_table_levels;
       unsigned short barwidth = 65;
-      int pos = barwidth * progress;
+      auto pos = barwidth * progress;
       cout << "[";
       for(int iBar=0; iBar<barwidth; ++iBar){
           if(iBar < pos) cout << "=";
           else cout << " ";
       }
-      cout << "] "<< int(100*progress) << " %\r";
+      cout << "] "<< floor(100*progress) << " %\r";
       cout.flush();
     }
   }
