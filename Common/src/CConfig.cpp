@@ -8585,7 +8585,7 @@ su2double CConfig::GetActDisk_TempJump(string val_marker, unsigned short val_val
  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
- return ActDisk_TempJump[iMarker_ActDisk][val_value];;
+ return ActDisk_TempJump[iMarker_ActDisk][val_value];
 }
 
 su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value) const {
@@ -8593,7 +8593,7 @@ su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value)
  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
- return ActDisk_Omega[iMarker_ActDisk][val_value];;
+ return ActDisk_Omega[iMarker_ActDisk][val_value];
 }
 
 su2double CConfig::GetOutlet_MassFlow(string val_marker) const {
@@ -9983,86 +9983,87 @@ void CConfig::SetFreeStreamTurboNormal(const su2double* turboNormal){
 
 }
 
-void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* config_container){
+void CConfig::SetMultizone(const CConfig* driver_config, const CConfig* const* config_container) {
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+    if (config_container[iZone]->GetTime_Domain() != GetTime_Domain()) {
+      SU2_MPI::Error("Option TIME_DOMAIN must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetnTime_Iter() != GetnTime_Iter()) {
+      SU2_MPI::Error("Option TIME_ITER must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetnOuter_Iter() != GetnOuter_Iter()) {
+      SU2_MPI::Error("Option OUTER_ITER must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetTime_Step() != GetTime_Step()) {
+      SU2_MPI::Error("Option TIME_STEP must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetUnst_CFL() != 0.0) {
+      SU2_MPI::Error(
+          "Option UNST_CFL_NUMBER cannot be used in multizone problems (must be 0), use a fixed TIME_STEP instead.",
+          CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Problem() != GetMultizone_Problem()) {
+      SU2_MPI::Error("Option MULTIZONE must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()) {
+      SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetWnd_Cauchy_Crit() == true) {
+      SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
+    }
+  }
+  if (driver_config->GetWnd_Cauchy_Crit() == true) {
+    SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
+  }
 
- for (unsigned short iZone = 0; iZone < nZone; iZone++){
+  bool multiblockDriver = false;
+  for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++) {
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK) {
+      multiblockDriver = true;
+    }
+  }
 
-   if (config_container[iZone]->GetTime_Domain() != GetTime_Domain()){
-     SU2_MPI::Error("Option TIME_DOMAIN must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetnTime_Iter() != GetnTime_Iter()){
-     SU2_MPI::Error("Option TIME_ITER must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetnOuter_Iter() != GetnOuter_Iter()){
-     SU2_MPI::Error("Option OUTER_ITER must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetTime_Step() != GetTime_Step()){
-     SU2_MPI::Error("Option TIME_STEP must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetUnst_CFL() != 0.0){
-     SU2_MPI::Error("Option UNST_CFL_NUMBER cannot be used in multizone problems (must be 0),"
-         " use a fixed TIME_STEP instead.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetMultizone_Problem() != GetMultizone_Problem()){
-     SU2_MPI::Error("Option MULTIZONE must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
-     SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
-   }
-   if(config_container[iZone]->GetWnd_Cauchy_Crit() == true){
-     SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
-   }
- }
- if(driver_config->GetWnd_Cauchy_Crit() == true){
-   SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
- }
+  bool multiblockZone = false;
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+    multiblockZone = false;
+    for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++) {
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK) {
+        multiblockZone = true;
+      }
+    }
+    if (multiblockZone != multiblockDriver) {
+      SU2_MPI::Error(
+          "To enable PARAVIEW_MULTIBLOCK output, add it to OUTPUT_FILES option in main config and\n"
+          "remove option from sub-config files.",
+          CURRENT_FUNCTION);
+    }
+  }
 
- bool multiblockDriver = false;
- for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
-   if (driver_config->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
-     multiblockDriver = true;
-   }
- }
+  /*--- Fix the Time Step for all subdomains, for the case of time-dependent problems ---*/
+  if (driver_config->GetTime_Domain()) {
+    Delta_UnstTime = driver_config->GetTime_Step();
+    Delta_DynTime = driver_config->GetTime_Step();
 
- bool multiblockZone = false;
- for (unsigned short iZone = 0; iZone < nZone; iZone++){
-   multiblockZone = false;
-   for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
-     if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
-       multiblockZone = true;
-     }
-   }
-   if (multiblockZone != multiblockDriver){
-     SU2_MPI::Error("To enable PARAVIEW_MULTIBLOCK output, add it to OUTPUT_FILES option in main config and\n"
-         "remove option from sub-config files.", CURRENT_FUNCTION);
-   }
- }
+    Time_Domain = true;
+  }
 
- /*--- Fix the Time Step for all subdomains, for the case of time-dependent problems ---*/
- if (driver_config->GetTime_Domain()){
-   Delta_UnstTime = driver_config->GetTime_Step();
-   Delta_DynTime  = driver_config->GetTime_Step();
+  /*------------------------------------------------------------*/
+  /*------ Determine the special properties of the problem -----*/
+  /*------------------------------------------------------------*/
 
-   Time_Domain = true;
- }
+  bool fluid_zone = false;
+  bool structural_zone = false;
 
- /*------------------------------------------------------------*/
- /*------ Determine the special properties of the problem -----*/
- /*------------------------------------------------------------*/
+  /*--- If there is at least a fluid and a structural zone ---*/
+  for (auto iZone = 0u; iZone < nZone; iZone++) {
+    fluid_zone |= config_container[iZone]->GetFluidProblem();
+    structural_zone |= config_container[iZone]->GetStructuralProblem();
+  }
 
- bool fluid_zone = false;
- bool structural_zone = false;
+  if (structural_zone) Relaxation = true;
 
- /*--- If there is at least a fluid and a structural zone ---*/
- for (auto iZone = 0u; iZone < nZone; iZone++) {
-   fluid_zone |= config_container[iZone]->GetFluidProblem();
-   structural_zone |= config_container[iZone]->GetStructuralProblem();
- }
+  /*--- If the problem has FSI properties ---*/
+  FSI_Problem = fluid_zone && structural_zone;
 
- if (structural_zone) Relaxation = true;
-
- /*--- If the problem has FSI properties ---*/
- FSI_Problem = fluid_zone && structural_zone;
-
- Multizone_Residual = true;
+  Multizone_Residual = true;
 }

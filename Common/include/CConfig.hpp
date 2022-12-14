@@ -493,7 +493,7 @@ class CConfig {
       *MG_CorrecSmooth;        /*!< \brief Multi-grid Jacobi implicit smoothing of the correction. */
   su2double* LocationStations; /*!< \brief Airfoil sections in wing slicing subroutine. */
 
-  ENUM_multizone Kind_MZSolver;                       /*!< \brief Kind of multi-zone solver.  */
+  ENUM_MULTIZONE Kind_MZSolver;                       /*!< \brief Kind of multi-zone solver.  */
   INC_DENSITYMODEL Kind_DensityModel;                 /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;                     /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel;                 /*!< \brief Kind of the Viscosity Model*/
@@ -590,7 +590,7 @@ class CConfig {
   bool EulerPersson; /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing.
                       */
   bool FSI_Problem = false, /*!< \brief Boolean to determine whether the simulation is FSI or not. */
-      multizone_Problem;    /*!< \brief Boolean to determine whether we are solving a multi-zone problem. */
+      Multizone_Problem;    /*!< \brief Boolean to determine whether we are solving a multi-zone problem. */
   unsigned short nID_DV;    /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
   bool AD_Mode;                           /*!< \brief Algorithmic Differentiation support. */
@@ -1201,7 +1201,7 @@ class CConfig {
   unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
   unsigned long* VolumeOutputFrequencies;  /*!< \brief list containing the writing frequencies */
 
-  bool multizone_Mesh;               /*!< \brief Determines if the mesh contains multiple zones. */
+  bool Multizone_Mesh;               /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;             /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;                 /*!< \brief Write the convergence history of each individual zone to screen. */
   bool Wrt_ZoneHist;                 /*!< \brief Write the convergence history of each individual zone to file. */
