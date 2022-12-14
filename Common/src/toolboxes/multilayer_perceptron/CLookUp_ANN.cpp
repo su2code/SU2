@@ -92,12 +92,12 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
             auto ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
 
             /* Check if query input lies within MLP training range */
-            if(!((ANN_inputs[i_input] > ANN_input_limits.first) && (ANN_inputs[i_input] < ANN_input_limits.second))) {
+            if((ANN_inputs[i_input] < ANN_input_limits.first) || (ANN_inputs[i_input] > ANN_input_limits.second)) {
                 within_range = false;
             }
 
             /* Calculate distance between MLP training range center point and query */
-            su2double middle = 0.5*(ANN_input_limits.second - ANN_input_limits.first);
+            su2double middle = 0.5*(ANN_input_limits.second + ANN_input_limits.first);
             distance_to_query_i += pow((ANN_inputs[i_input] - middle)/(ANN_input_limits.second - ANN_input_limits.first), 2);
         }
         
