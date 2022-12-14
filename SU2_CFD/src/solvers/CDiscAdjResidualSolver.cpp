@@ -419,6 +419,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry* geometry, CCo
       END_SU2_OMP_FOR
     }
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjResidualSolver::ExtractAdjoint_Displacements(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,

@@ -308,7 +308,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* confi
   /*--- Thread-local residual variables. ---*/
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Set the old solution and compute residuals. ---*/
@@ -335,72 +334,17 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfig* confi
       }
     }
   }
-}
-END_SU2_OMP_FOR
-
-direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
-
-/*--- Residuals and time_n terms are not needed when evaluating multi-zone cross terms. ---*/
-
-if (CrossTerm) return;
-
-/*--- "Add" residuals from all threads to global residual variables. ---*/
-
-ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
-
-SU2_OMP_MASTER {
-  SetIterLinSolver(direct_solver->System.GetIterations());
-  SetResLinSolver(direct_solver->System.GetResidual());
-}
-END_SU2_OMP_MASTER
-
-/*--- Extract and store the adjoint of the primal solution at time n. ---*/
-
-if (time_n_needed) {
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    /*--- Extract the adjoint solution. ---*/
-
-    su2double Solution[MAXNVAR] = {0.0};
-    direct_solver->GetNodes()->GetAdjointSolution(iPoint, Solution);
-
-    /*--- Relax and store the adjoint solution, compute the residuals. ---*/
-
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      su2double residual = Solution[iVar] - nodes->GetSolution_Old(iPoint, iVar);
-      nodes->AddSolution(iPoint, iVar, relax * residual);
-
-      if (iPoint < nPointDomain) {
-        /*--- Update residual information for current thread. ---*/
-
-        resRMS[iVar] += residual * residual;
-        if (fabs(residual) > resMax[iVar]) {
-          resMax[iVar] = fabs(residual);
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
-      }
-    }
-  }
   END_SU2_OMP_FOR
+
+  direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multi-zone cross terms. ---*/
 
   if (CrossTerm) return;
 
-  SetResToZero();
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
 
-  /*--- Reduce residual information over all threads in this rank. ---*/
-
-  SU2_OMP_CRITICAL
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
-
-  SetResidual_RMS(geometry, config);
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 
   SU2_OMP_MASTER {
     SetIterLinSolver(direct_solver->System.GetIterations());
@@ -431,7 +375,6 @@ if (time_n_needed) {
     }
     END_SU2_OMP_FOR
   }
-}
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry* geometry, CConfig* config) {
