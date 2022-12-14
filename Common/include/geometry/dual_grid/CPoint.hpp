@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,6 +70,7 @@ private:
   su2vector<bool> Boundary;               /*!< \brief To see if a point belong to the boundary (including MPI). */
   su2vector<bool> PhysicalBoundary;       /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool> SolidBoundary;          /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  su2vector<bool> ViscousBoundary;        /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool> PeriodicBoundary;       /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
 
   su2activematrix Coord;                  /*!< \brief vector with the coordinates of the node. */
@@ -350,6 +351,20 @@ public:
    * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
    */
   inline bool GetSolidBoundary(unsigned long iPoint) const { return SolidBoundary(iPoint); }
+
+  /*!
+   * \brief Set if a point belong to the boundary.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+   */
+  inline void SetViscousBoundary(unsigned long iPoint, bool boundary) { ViscousBoundary(iPoint) = boundary; }
+
+  /*!
+   * \brief Provides information about if a point belong to the physical boundaries (without MPI).
+   * \param[in] iPoint - Index of the point.
+   * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
+   */
+  inline bool GetViscousBoundary(unsigned long iPoint) const { return ViscousBoundary(iPoint); }
 
   /*!
    * \brief Set if a point belongs to a periodic boundary.

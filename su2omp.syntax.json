@@ -4,7 +4,7 @@
     "\\file su2omp.syntax.json",
     "\\brief Definitions for the OpDiLib syntax checker",
     "\\author J. Blühdorn",
-    "\\version 7.3.0 \"Blackbird\"",
+    "\\version 7.4.0 \"Blackbird\"",
 
     "SU2 Project Website: https://su2code.github.io",
 
@@ -37,6 +37,7 @@
     "SU2_OMP_FOR_DYN": "END_SU2_OMP_FOR",
     "SU2_OMP_FOR_STAT": "END_SU2_OMP_FOR",
     "CSYSVEC_PARFOR": "END_CSYSVEC_PARFOR",
-    "CNEWTON_PARFOR": "END_CNEWTON_PARFOR"
+    "CNEWTON_PARFOR": "END_CNEWTON_PARFOR",
+    "BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS": "END_SU2_OMP_SAFE_GLOBAL_ACCESS"
   }
 }

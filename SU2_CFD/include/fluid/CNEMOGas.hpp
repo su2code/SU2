@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -83,6 +83,8 @@ protected:
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
+
+  su2matrix<int> CatRecombTable;         /*!< \brief Table for catalytic wall recombination pairs. */
 
 public:
 
@@ -177,7 +179,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
+  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel, su2double Tve_old) = 0;
 
   /*!
    * \brief Compute speed of sound.
@@ -258,4 +260,10 @@ public:
    * \brief Get species formation enthalpy.
    */
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;
+
+  /*!
+   * \brief Get catalytic wall recombination indices and constants.
+   */
+  inline const su2matrix<int>& GetCatalyticRecombination() const {return CatRecombTable;}
+
 };

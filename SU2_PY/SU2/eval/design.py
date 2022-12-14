@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.3.0 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -73,7 +73,7 @@ class Design(object):
             con_cieq(dvs)  - inequality constraints          : list
             con_dcieq(dvs) - inequality constraint gradients : list[list]
             
-            Fucntional Interface
+            Functional Interface
             The following methods take an objective function name for input.
             func(func_name)                  - function of specified name
             grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name

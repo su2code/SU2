@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -130,16 +130,17 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
    * for the turbulent part of tau. Otherwise both the laminar and turbulent
    * parts of tau can be computed with the total viscosity. --- */
 
-  if (using_uq){
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity);  // laminar part
+  if (sstParsedOptions.uq) {
+    // laminar part
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity);
     // add turbulent part which was perturbed
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] += (-Density) * MeanPerturbedRSM[iDim][jDim];
   } else {
-    // compute both parts in one step
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0)); // TODO why ignore turb_ke?
+    // turb_ke is not considered in the stress tensor, see #797
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
   }
 }
 
@@ -425,7 +426,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
@@ -435,7 +436,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
@@ -610,7 +611,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
@@ -619,7 +620,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Get projected flux tensor (viscous residual) ---*/
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
@@ -940,7 +941,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
@@ -950,7 +951,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,

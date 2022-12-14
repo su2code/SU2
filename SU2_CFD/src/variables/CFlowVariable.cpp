@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.cpp
  * \brief Definition of common solution fields for flow solvers.
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,7 +70,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     Limiter_Primitive.resize(nPoint, nPrimVarGrad) = su2double(0.0);
     Solution_Max.resize(nPoint, nPrimVarGrad) = su2double(0.0);
     Solution_Min.resize(nPoint, nPrimVarGrad) = su2double(0.0);

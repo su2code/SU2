@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.3.0 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -829,7 +829,7 @@ def read_config(filename):
 def write_config(filename,param_dict):
     """ updates an existing config file """
     
-    temp_filename = "temp.cfg"
+    temp_filename = filename+"_tmp"
     shutil.copy(filename,temp_filename)
     output_file = open(filename,"w")
 

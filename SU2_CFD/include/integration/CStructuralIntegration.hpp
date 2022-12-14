@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.hpp
  * \brief Declaration of class for numerical integration of structural problems.
  * \author R. Sanchez.
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 
 /*!
  * \class CStructuralIntegration
+ * \ingroup Drivers
  * \brief Class for numerical integration of structural problems.
  * \author R. Sanchez.
  */

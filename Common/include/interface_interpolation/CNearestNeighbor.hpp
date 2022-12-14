@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.hpp
  * \brief Nearest Neighbor interpolation class.
  * \author H. Kline
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,8 @@
  * \brief Nearest Neighbor(s) interpolation.
  * \note The closest k neighbors are used for IDW interpolation, the computational
  * cost of setting up the interpolation is O(N^2 log(k)), this can be improved
- * by using a kd-tree.
+ * by using an ADT.
+ * \ingroup Interfaces
  */
 class CNearestNeighbor final : public CInterpolator {
 private:

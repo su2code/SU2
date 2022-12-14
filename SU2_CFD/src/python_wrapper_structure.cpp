@@ -1,6 +1,6 @@
 /*!
  * \file python_wrapper_structure.cpp
- * \brief Driver subroutines that are used by the Python wrapper.
+ * \brief Driver subroutines that are used by the Python wrapper (usually called from an external Python environment).
  * \author D. Thomas, H. Patel, A. Gastaldi
  * \version 7.4.0 "Blackbird"
  *

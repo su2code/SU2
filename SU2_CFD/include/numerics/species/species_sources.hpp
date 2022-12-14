@@ -1,9 +1,9 @@
 ﻿/*!
  * \file species_sources.hpp
- * \brief Delarations of numerics classes for integration of source
+ * \brief Declarations of numerics classes for integration of source
  *        terms in species problems.
  * \author T. Kattmann
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,7 +68,11 @@ template <class FlowIndices>
 class CSourceAxisymmetric_Species : public CSourceBase_Species {
  protected:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
-  bool implicit;
+  const bool implicit;
+  const bool viscous;
+  const bool turbulence;
+  const bool incompressible;
+  const su2double Sc_t;
 
  public:
   /*!

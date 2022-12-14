@@ -2,7 +2,7 @@
  * \file CDiscAdjVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,8 @@
 
 /*!
  * \class CDiscAdjVariable
+ * \ingroup DiscAdj
  * \brief Main class for defining the variables of the adjoint solver.
- * \ingroup Discrete_Adjoint
  * \author T. Albring.
  */
 class CDiscAdjVariable : public CVariable {
@@ -54,9 +54,10 @@ public:
   CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief Allocate extra adjoint variables.
+   * \param[in] nVarExtra - Number of extra variables.
    */
-  ~CDiscAdjVariable() override = default;
+  void AllocateAdjointSolutionExtra(unsigned long nVarExtra);
 
   /*!
    * \brief Set the sensitivity at the node

@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -130,7 +130,7 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
   const bool time_domain = driver_config->GetTime_Domain();
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    /*--- Set current time iteration ---*/
+    /*--- Set current time iteration. ---*/
     config_container[iZone]->SetTimeIter(TimeIter);
 
     if (time_domain)
@@ -148,11 +148,13 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   if (TimeIter) {
     /*--- Reset cross-terms before new time iterations. ---*/
+
     for (auto& matOfMat : Cross_Terms)
       for (auto& vecOfMat : matOfMat)
         for (auto& mat : vecOfMat) mat = 0.0;
 
     /*--- Initialize external with dynamic contributions. ---*/
+
     Set_External_To_DualTimeDer();
   }
 }
@@ -173,10 +175,10 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   /*--- General setup. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolumeOutputFrequency(0));
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
-     * correctly as the first OF gradient will overwrite the solution. ---*/
+     correctly as the first OF gradient will overwrite the solution. ---*/
 
     Set_BGSSolution_k_To_Solution(iZone);
 
@@ -215,7 +217,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
   config_container[iZone]->SetInnerIter(iInnerIter);
 
   /*--- Evaluate the tape section belonging to solvers in iZone.
-   *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
+   Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
 
   eval_transfer = (eval_transfer || (iInnerIter == nInnerIter[iZone] - 1)) && !KrylovMode;
 
@@ -234,8 +236,8 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
     if (iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
   }
 
-  /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
-   *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
+  /*--- This is done explicitly here for multi-zone cases, only in inner iterations and not when
+   extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
 
   if (!KrylovMode) Set_SolutionOld_To_Solution(iZone);
 
@@ -247,9 +249,8 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 }
 
 void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
-  /*--- Use FGMRES to solve the adjoint system, the RHS is -External,
-   * the solution are the iZone adjoint variables + External,
-   * Recall that External also contains the OF gradient. ---*/
+  /*--- Use FGMRES to solve the adjoint system, the RHS is -External, the solution are the iZone adjoint
+   variables + External. Recall that External also contains the OF gradient. ---*/
 
   GetAdjointRHS(iZone, AdjRHS[iZone]);
 
@@ -261,6 +262,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
   const auto product = AdjointProduct(this, iZone);
 
   /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
+
   const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
   config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
   LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
@@ -277,21 +279,25 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
   }
 
   /*--- Store the solution and restore user settings. ---*/
+
   SetAllSolutions(iZone, true, AdjSol[iZone]);
   config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
 
   /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
+
   AdjSol[iZone] += AdjRHS[iZone];
   SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
 
   /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
-   * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
+   because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
+
   eval_transfer = true;
   Iterate(iZone, product.iInnerIter);
 
-  /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
+  /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES + Iterate once.
    * This is set without the "External" (by adding RHS above) so that it can be added
    * again in the next outer iteration with new contributions from other zones. ---*/
+
   SetAllSolutions(iZone, true, AdjSol[iZone]);
 }
 
@@ -300,7 +306,7 @@ void CDiscAdjMultizoneDriver::Run() {
   const bool time_domain = driver_config->GetTime_Domain();
 
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
-   * Unless in unsteady problems where there are other contributions to the RHS. ---*/
+   Unless in unsteady problems where there are other contributions to the RHS. ---*/
 
   const auto zeroGrad = EvaluateObjectiveFunctionGradient();
 
@@ -320,22 +326,21 @@ void CDiscAdjMultizoneDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
 
-    /*--- For the adjoint iteration we need the derivatives of the iteration function with
-     *    respect to the state (and possibly the mesh coordinate) variables.
-     *    Since these derivatives do not change in the steady state case we only have to record
-     *    if the current recording is different from them.
-     *
-     *    To set the tape appropriately, the following recording methods are provided:
-     *    (1) CLEAR_INDICES: All information from a previous recording is removed.
-     *    (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
-     *    (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
-     *    (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
-     *
-     *    By default, all (state and mesh coordinate variables) will be declared as output,
-     *    since it does not change the computational effort, just the memory consumption of the tape. ---*/
+    /*--- For the adjoint iteration we need the derivatives of the iteration function with respect to the
+     state (and possibly the mesh coordinate) variables. Since these derivatives do not change in the
+     steady state case we only have to record if the current recording is different from them.
+
+     To set the tape appropriately, the following recording methods are provided:
+     (1) CLEAR_INDICES: All information from a previous recording is removed.
+     (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
+     (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
+     (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
+
+     By default, all (state and mesh coordinate variables) will be declared as output,
+     since it does not change the computational effort, just the memory consumption of the tape. ---*/
 
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
-     *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
+     here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
     if (RecordingState != RECORDING::SOLUTION_VARIABLES) {
       SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
@@ -410,6 +415,7 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
+      Set_BGSSolution_k_To_Solution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
@@ -471,7 +477,7 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
 
 void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool force_writing) {
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   *    as argument ensures that all information from a previous recording is removed. ---*/
+   as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
 
@@ -480,7 +486,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
   SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-   *    of the current iteration. The values are passed to the AD tool. ---*/
+   of the current iteration. The values are passed to the AD tool. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
     Set_Solution_To_BGSSolution_k(iZone);
@@ -583,8 +589,8 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- In multi-physics, MESH_COORDS is an umbrella term for "geometric sensitivities",
-       *    if a zone has mesh deformation its recording type needs to change to MESH_DEFORM
-       *    as those sensitivities are managed by the adjoint mesh solver instead. ---*/
+       if a zone has mesh deformation its recording type needs to change to MESH_DEFORM
+       as those sensitivities are managed by the adjoint mesh solver instead. ---*/
 
       RECORDING type_recording = kind_recording;
 
@@ -607,8 +613,8 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   AD::Push_TapePosition();  /// DEPENDENCIES
 
   /*--- Extract the objective function and store it.
-   *    It is necessary to include data transfer and mesh updates in this section as some functions
-   *    computed in one zone depend explicitly on the variables of others through that path. --- */
+   It is necessary to include data transfer and mesh updates in this section as some functions
+   computed in one zone depend explicitly on the variables of others through that path. --- */
 
   if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == RECORDING::MESH_COORDS)) {
     HandleDataTransfer();
@@ -625,8 +631,8 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
     /*--- We do the communication here to not differentiate wrt updated boundary data.
-     *    For recording w.r.t. mesh coordinates the transfer was included before the
-     *    objective function, so we do not repeat it here. ---*/
+     For recording w.r.t. mesh coordinates the transfer was included before the
+     objective function, so we do not repeat it here. ---*/
 
     if (kind_recording != RECORDING::MESH_COORDS) {
       HandleDataTransfer();
@@ -668,12 +674,14 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 }
 
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING kind_recording) {
-  /*--- Do one iteration of the direct solver ---*/
+  /*--- Do one iteration of the direct solver. ---*/
+
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                               solver_container, numerics_container, config_container, surface_movement,
                                               grid_movement, FFDBox, iZone, INST_0);
 
-  /*--- Iterate the zone as a block a single time ---*/
+  /*--- Iterate the zone as a block a single time. ---*/
+
   direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                            solver_container, numerics_container, config_container, surface_movement,
                                            grid_movement, FFDBox, iZone, INST_0);
@@ -745,8 +753,9 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
   if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     if (TimeIter < IterAvg_Obj) {
-      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator
-      // equals 1.0
+      /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator
+      equals 1.0. ---*/
+
       auto windowEvaluator = CWindowingTools();
       su2double weight =
           windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj - 1);
@@ -769,7 +778,7 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ClearAdjoints();
 
-  /*--- Initialize the adjoints in iZone ---*/
+  /*--- Initialize the adjoints in iZone. ---*/
 
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone,
                                                         INST_0);
@@ -782,14 +791,14 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
   /*--- Compute adjoints of transfer and mesh deformation routines, only strictly needed
-   *    on the last inner iteration. Structural problems have some minor issue and we
-   *    need to evaluate this section on every iteration. ---*/
+   on the last inner iteration. Structural problems have some minor issue and we
+   need to evaluate this section on every iteration. ---*/
 
   if (eval_transfer || config_container[iZone]->GetStructuralProblem())
     AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
 
   /*--- Adjoints of dependencies, needed if derivatives of variables
-   *    are extracted (e.g. AoA, Mach, etc.) ---*/
+   are extracted (e.g. AoA, Mach, etc.). ---*/
 
   AD::ComputeAdjoint(DEPENDENCIES, START);
 }
@@ -803,7 +812,7 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
     for (auto jZone = 0u; jZone < nZone; jZone++) {
       if (iZone != jZone || interface_container[jZone][iZone] != nullptr) {
         /*--- If jZone contributes to iZone in the primal problem, then
-         *    iZone contributes to jZone in the adjoint problem. ---*/
+         iZone contributes to jZone in the adjoint problem. ---*/
 
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 

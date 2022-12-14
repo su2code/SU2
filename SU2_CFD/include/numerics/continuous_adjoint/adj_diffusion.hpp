@@ -1,9 +1,9 @@
 ﻿/*!
  * \file adj_diffusion.hpp
- * \brief Delarations of numerics classes for continuous adjoint
+ * \brief Declarations of numerics classes for continuous adjoint
  *        diffusion discretization. Implemented in adj_diffusion.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

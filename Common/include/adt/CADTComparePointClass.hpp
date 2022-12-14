@@ -2,7 +2,7 @@
  * \file CADTComparePointClass.hpp
  * \brief subroutines for comparing two points in an alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,7 @@
 
 /*!
  * \class CADTComparePointClass
+ * \ingroup ADT
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
  */

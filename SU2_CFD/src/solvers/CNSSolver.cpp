@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,8 +74,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
@@ -116,7 +116,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -133,7 +133,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   AD::StartNoSharedReading();
 
@@ -857,9 +857,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
 
-      const su2double P_Normal = nodes->GetPressure(Point_Normal);
-      const su2double T_Normal = nodes->GetTemperature(Point_Normal);
-
       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
       const su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
@@ -877,7 +874,10 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       const su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Initial value for wall temperature ---*/
+      su2double T_Wall = nodes->GetTemperature(iPoint);
+      const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
+
+      /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
 
       su2double q_w = 0.0;
 
@@ -888,14 +888,14 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       /*--- Extrapolate the pressure from the interior & compute the
        wall density using the equation of state ---*/
 
+      const su2double P_Normal = nodes->GetPressure(Point_Normal);
+      const su2double T_Normal = nodes->GetTemperature(Point_Normal);
+      const su2double P_Wall = P_Normal;
+
       /*--- Compressible formulation ---*/
 
-      su2double T_Wall = nodes->GetTemperature(iPoint);
-      const su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall / (Gas_Constant * T_Wall);
       const su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
-      const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
-
 
       /*--- Compute the shear stress at the wall in the regular fashion
        *    by using the stress tensor on the surface ---*/
@@ -938,7 +938,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
         const su2double U_Plus = VelTangMod/U_Tau;
 
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
+        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1108 ---*/
 
         const su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
         const su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau);
@@ -955,7 +955,11 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
             nodes->SetTemperature(iPoint,T_Wall);
           }
           else {
-            cout << "Warning: T_Wall < 0 " << endl;
+            SU2_OMP_CRITICAL
+            {
+              cout << "Warning: T_Wall < 0 " << endl;
+            }
+            END_SU2_OMP_CRITICAL
           }
         }
 
@@ -1033,8 +1037,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
     SU2_OMP_ATOMIC
     globalCounter2 += smallYPlusCounter;
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -1044,11 +1047,11 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
+          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
                << " points, for which the wall model is not active." << endl;
       }
     }
-    END_SU2_OMP_MASTER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

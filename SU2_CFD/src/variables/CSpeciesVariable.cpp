@@ -2,7 +2,7 @@
  * \file CSpeciesVariable.cpp
  * \brief Definition of the solution fields.
  * \author T. Kattmann
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

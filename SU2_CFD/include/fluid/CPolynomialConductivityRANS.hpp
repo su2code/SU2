@@ -3,7 +3,7 @@
  * \brief Defines a non-constant thermal conductivity using a polynomial function of temperature
  *        for RANS problems with the addition of a turbulent component based on a turbulent Prandtl number.
  * \author T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,24 +49,10 @@ class CPolynomialConductivityRANS final : public CConductivityModel {
   }
 
   /*!
-   * \brief return conductivity value.
-   */
-  su2double GetConductivity() const override { return kt_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
-
-  /*!
    * \brief Set thermal conductivity.
    */
-  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {
+  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                       su2double, su2double) override {
     /* Evaluate the new kt from the coefficients and temperature. */
     kt_ = coeffs_[0];
     su2double t_i = 1.0;
@@ -79,16 +65,7 @@ class CPolynomialConductivityRANS final : public CConductivityModel {
     kt_ += cp * mu_turb / pr_turb_;
   }
 
-  /*!
-   * \brief Set thermal conductivity derivatives.
-   */
-  void SetDerConductivity(su2double t, su2double rho, su2double dmudrho_t, su2double dmudt_rho, su2double cp) override {
-  }
-
  private:
-  su2double kt_{0.0};          /*!< \brief Effective thermal conductivity. */
-  su2double dktdrho_t_{0.0};   /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0};   /*!< \brief DktDT_rho. */
-  array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for conductivity as a function of temperature. */
-  su2double pr_turb_{0.0};     /*!< \brief Turbulent Prandtl number. */
+  array<su2double, N> coeffs_;    /*!< \brief Polynomial coefficients for conductivity as a function of temperature. */
+  const su2double pr_turb_{0.0};  /*!< \brief Turbulent Prandtl number. */
 };

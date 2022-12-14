@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,6 +43,7 @@ class CNEMOGas;
 
 /*!
  * \class CVariable
+ * \ingroup Variable
  * \brief Main class for defining the variables.
  * \author F. Palacios
  */
@@ -94,6 +95,13 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+  VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
+                                        Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
+  VectorType ExternalExtra; /*!< \brief External storage for the adjoint value (i.e. for the OF mainly */
+
+  VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
+
+ protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
@@ -407,6 +415,31 @@ public:
   }
 
   /*!
+   * \brief Store the adjoint solution of the extra adjoint into the external container.
+   */
+  void Set_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      ExternalExtra[iEntry] = SolutionExtra[iEntry];
+  }
+
+  /*!
+   * \brief Add the external contribution to the solution for the extra adjoint solutions.
+   */
+  void Add_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      SolutionExtra[iEntry] += ExternalExtra[iEntry];
+  }
+
+  /*!
+   * \brief Return the extra adjoint solution.
+   * \return Reference to extra adjoint solution.
+   */
+  inline VectorType& GetSolutionExtra() { return SolutionExtra; }
+  inline const VectorType& GetSolutionExtra() const { return SolutionExtra; }
+
+  /*!
    * \brief Update the variables using a conservative format.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -428,7 +461,8 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) const { return Solution; }
+  inline const MatrixType& GetSolution() const { return Solution; }
+  inline MatrixType& GetSolution() { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1103,20 +1137,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
-   */
-  inline virtual void SetGammaSep(unsigned long iPoint, su2double gamma_sep) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
-   */
-  inline virtual void SetGammaEff(unsigned long iPoint) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return Returns intermittency
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
@@ -1377,27 +1397,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] Gamma - Ratio of Specific heats
    */
-  inline virtual void SetDeltaPressure(unsigned long iPoint, const su2double *val_velocity, su2double Gamma) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Gamma - Ratio of specific heats.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double Gamma) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, CConfig *config) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint) { return false; }
+  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }
 
   /*!
    * \brief A virtual member.
@@ -1646,7 +1647,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
@@ -1668,6 +1669,30 @@ public:
    * \return the value of the eddy viscosity.
    */
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the separation intermittency.
+   * \return the value of the separation intermittency.
+   */
+  inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the separation intermittency(gamma).
+   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   */
+  inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
+
+  /*!
+   * \brief Get the value of the effective intermittency.
+   * \return the value of the effective intermittency.
+   */
+  inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the effective intermittency(gamma).
+   * \param[in] Value of the effective intermittency(gamma).
+   */
+  inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
   /*!
    * \brief Set the value of the eddy viscosity.

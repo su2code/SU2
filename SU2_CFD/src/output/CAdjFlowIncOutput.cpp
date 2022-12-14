@@ -2,7 +2,7 @@
  * \file CAdjFlowIncOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -113,6 +113,10 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    AddHistoryOutput("ADJOINT_SOLEXTRA", "Adjoint_SolExtra", ScreenOutputFormat::FIXED, "ADJOINT_SOLEXTRA", "Adjoint value of the first extra Solution.", HistoryFieldType::COEFFICIENT);
+  }
+
   AddHistoryOutputFields_AdjScalarRMS_RES(config);
 
   if (config->AddRadiation()){
@@ -205,6 +209,11 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   if (config->AddRadiation()){
     SetHistoryOutputValue("RMS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_RMS(0)));
   }
+
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    SetHistoryOutputValue("ADJOINT_SOLEXTRA", adjflow_solver->GetNodes()->GetSolutionExtra()[0]);
+  }
+
   SetHistoryOutputValue("MAX_ADJ_PRESSURE", log10(adjflow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_ADJ_VELOCITY-X", log10(adjflow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_ADJ_VELOCITY-Y", log10(adjflow_solver->GetRes_Max(2)));

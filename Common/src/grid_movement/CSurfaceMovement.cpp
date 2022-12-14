@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -784,9 +784,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
         TotalVertex++;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
     if (config->GetMarker_All_DV(iMarker) == YES) {
-
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
         /*--- Get the cartesian coordinates ---*/

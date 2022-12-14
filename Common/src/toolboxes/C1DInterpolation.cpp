@@ -2,7 +2,7 @@
  * \file C1DInterpolation.cpp
  * \brief Classes for 1D interpolation.
  * \author Aman Baig, P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

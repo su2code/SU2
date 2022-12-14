@@ -2,7 +2,7 @@
  * \file CFlowCompFEMOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -227,11 +227,6 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   }
 }
 
-void CFlowCompFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
-
-
-}
-
 void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* flow_solver = solver[FLOW_SOL];
@@ -260,9 +255,9 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
-  /*--- Set the analyse surface history values --- */
-
-  SetAnalyzeSurface(solver, geometry, config, false);
+  if (config->GetnMarker_Analyze() > 0) {
+    SU2_MPI::Error("SetAnalyzeSurface is not implemented for FEM-DG solver.", CURRENT_FUNCTION);
+  }
 
   /*--- Set aeroydnamic coefficients --- */
 

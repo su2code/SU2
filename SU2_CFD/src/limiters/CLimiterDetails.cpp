@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,5 +32,5 @@
 
 /*--- Definition of the static members of the Venkatakrishnan-Wang
  * specialization of CLimiterDetails, need to be here due to ODR. ---*/
-su2activevector CLimiterDetails<VENKATAKRISHNAN_WANG>::sharedMin;
-su2activevector CLimiterDetails<VENKATAKRISHNAN_WANG>::sharedMax;
+su2activevector CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>::sharedMin;
+su2activevector CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>::sharedMax;

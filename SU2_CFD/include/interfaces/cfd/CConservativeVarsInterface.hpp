@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another one.
  * \author Ruben Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,10 @@
 
 #include "../CInterface.hpp"
 
+/*!
+ * \brief Transfers conservative variables.
+ * \ingroup Interfaces
+ */
 class CConservativeVarsInterface : public CInterface {
 public:
   /*!

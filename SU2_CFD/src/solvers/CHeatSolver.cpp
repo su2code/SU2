@@ -1,8 +1,8 @@
 /*!
  * \file CHeatSolver.cpp
- * \brief Main subrotuines for solving the heat equation
+ * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -187,7 +187,9 @@ CHeatSolver::~CHeatSolver(void) {
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_OMP_MASTER
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  END_SU2_OMP_MASTER
 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     SetUndivided_Laplacian(geometry, config);
@@ -283,23 +285,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
-    }
-
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
     solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
@@ -1354,9 +1341,6 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
-  unsigned long Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
-
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
@@ -1366,21 +1350,9 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
   if (restart && (TimeIter == 0)) {
 
-    su2double Solution[MAXNVAR];
     for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-        for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-          Solution_Fine = solver_container[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
-          for (auto iVar = 0u; iVar < nVar; iVar++) {
-            Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-          }
-        }
-        solver_container[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-      }
+      MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
+                           *geometry[iMesh], solver_container[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
       solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }

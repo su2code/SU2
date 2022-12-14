@@ -2,7 +2,7 @@
  * \file output_physics.cpp
  * \brief Main subroutines to compute physical output quantities such as CL, CD, entropy generation, mass flow, ecc... .
  * \author S. Vitale
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,7 +142,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);
           NuFactorIn[iMarkerTP][iSpan]          = nu*DensityIn[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+          if (config->GetSAParsedOptions().bc) {
             NuFactorIn[iMarkerTP][iSpan]        = nu*DensityIn[iMarkerTP][iSpan]/muLam/0.005;
           }
         }
@@ -229,7 +229,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuOut(iMarkerTP, iSpan);
           NuFactorOut[iMarkerTP][iSpan]          = nu*DensityOut[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+          if (config->GetSAParsedOptions().bc) {
             NuFactorOut[iMarkerTP][iSpan]        = nu*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
           }
         }

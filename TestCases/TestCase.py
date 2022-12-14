@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -27,6 +27,7 @@
 from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
+import platform
 
 
 def print_vals(vals, name="Values"):
@@ -35,6 +36,40 @@ def print_vals(vals, name="Values"):
 
 
 class TestCase:
+
+    class Command:
+        """ Split a command into launch part, the executable itself and parameters.
+
+        Attributes
+        ----------
+        launch : str
+            e.g. "mpirun -n 2", possibly empty
+        exec : str
+            e.g. "SU2_CFD", must be suitable to identify the processes started by the command
+        param : str
+            e.g. "-t 2", possibly empty
+        """
+
+        def __init__(self, launch = "", exec = "", param = ""):
+            self.launch = launch
+            self.exec = exec
+            self.param = param
+
+        def empty(self):
+            return self.launch == "" and self.exec == "" and self.param == ""
+
+        def assemble(self):
+            assert self.exec != ""
+            return " ".join([part for part in [self.launch, self.exec, self.param] if part != ""])
+
+        def allow_mpi_as_root(self):
+            if os.geteuid() == 0:
+                if self.launch.startswith('mpirun'):
+                    self.launch = self.launch.replace('mpirun', 'mpirun --allow-run-as-root')
+
+        def killall(self):
+            """ Issues a shell command that kills all processes matching self.exec, except this process. """
+            os.system('pgrep %s | grep -vx %d | xargs kill -9' % (self.exec, os.getpid()))
 
     def __init__(self,tag_in):
 
@@ -63,17 +98,22 @@ class TestCase:
         self.test_iter = 1
         self.ntest_vals = 4
         self.test_vals = []  
-
-        # These can be optionally varied 
-        self.su2_exec    = "SU2_CFD" 
-        self.timeout     = 300
-        self.tol         = 0.001
+        self.test_vals_aarch64 = []
+        self.cpu_arch = platform.processor()
+        self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
+        self.command = self.Command()
+        self.timeout = 0
+        self.tol = 0.0
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
+        self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
     def run_test(self):
+
+        if not self.is_enabled():
+            return True
 
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
@@ -83,9 +123,7 @@ class TestCase:
         start_solver = True
 
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
@@ -103,18 +141,18 @@ class TestCase:
 
         # Check for polar calls
         if self.polar:
-             command = "%s > %s" % (self.su2_exec, logfilename)
+            shell_command = "%s > %s" % (self.command.assemble(), logfilename)
         else:
-            command = "%s %s > %s 2>&1" % (self.su2_exec, 
-                                           self.cfg_file, 
-                                           logfilename)
+            shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
+
+        self.adjust_test_data()
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -124,7 +162,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -194,7 +232,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])      
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -207,6 +245,8 @@ class TestCase:
 
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
+
+        print('CPU architecture=%s' % self.cpu_arch)
 
         if len(self.test_vals) != 0:
             print('test_iter=%d' % self.test_iter)
@@ -225,6 +265,10 @@ class TestCase:
         return passed
 
     def run_filediff(self):
+
+        if not self.is_enabled():
+            return True
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         timed_out    = False
@@ -232,21 +276,21 @@ class TestCase:
         # Adjust the number of iterations in the config file
         self.adjust_iter()
 
+        self.adjust_test_data()
+
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -256,7 +300,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    self.command.killall()  # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -305,6 +349,7 @@ class TestCase:
         else:
             passed = False
 
+        print('CPU architecture=%s'%self.cpu_arch)
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
@@ -313,6 +358,9 @@ class TestCase:
         return passed
 
     def run_opt(self):
+
+        if not self.is_enabled():
+            return True
 
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
@@ -324,16 +372,18 @@ class TestCase:
         # Adjust the number of iterations in the config file   
         self.adjust_opt_iter()
 
+        self.adjust_test_data()
+
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -343,7 +393,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    self.command.killall()  # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -403,7 +453,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])      
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -434,6 +484,9 @@ class TestCase:
 
     def run_geo(self):
 
+        if not self.is_enabled():
+            return True
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         exceed_tol   = False
@@ -446,21 +499,21 @@ class TestCase:
         found_twist  = False
         found_chord  = False
 
+        self.adjust_test_data()
+
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
                 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
         # check for timeout
         while process.poll() is None:
@@ -470,7 +523,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -534,7 +587,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
 
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
 
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
@@ -562,7 +615,10 @@ class TestCase:
         return passed
 
     def run_def(self):
-    
+
+        if not self.is_enabled():
+            return True
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         exceed_tol   = False
@@ -570,21 +626,21 @@ class TestCase:
         iter_missing = True
         start_solver = True
     
+        self.adjust_test_data()
+
         # if root, add flag to mpirun
-        if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+        self.command.allow_mpi_as_root()
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
     
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
-        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
     
         # check for timeout
         while process.poll() is None:
@@ -594,7 +650,7 @@ class TestCase:
             if running_time > self.timeout:
                 try:
                     process.kill()
-                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                    self.command.killall() # In case of parallel execution
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
@@ -654,7 +710,7 @@ class TestCase:
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
     
-        print('execution command: %s'%command)
+        print('execution command: %s' % shell_command)
     
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
@@ -695,7 +751,7 @@ class TestCase:
         # Rewrite the file with a .autotest extension
         self.cfg_file = "%s.autotest"%self.cfg_file
         file_out = open(self.cfg_file,'w')
-        file_out.write('%% This file automatically generated by the regression script\n')
+        file_out.write('% This file automatically generated by the regression script\n')
         file_out.write('%% Number of iterations changed to %d\n'%(self.test_iter+1))
         if (self.multizone or self.new_output) and self.unsteady:
             adjust_string = "TIME_ITER"
@@ -725,7 +781,7 @@ class TestCase:
         # Rewrite the file with a .autotest extension
         self.cfg_file = "%s.autotest"%self.cfg_file
         file_out = open(self.cfg_file,'w')
-        file_out.write('%% This file automatically generated by the regression script\n')
+        file_out.write('% This file automatically generated by the regression script\n')
         file_out.write('%% Number of optimizer iterations changed to %d\n'%(self.test_iter))
         for line in lines:
             if not line.startswith("OPT_ITERATIONS"):
@@ -749,7 +805,7 @@ class TestCase:
         # Rewrite the file with a .autotest extension
         self.cfg_file = "%s.autotest"%self.cfg_file
         file_out = open(self.cfg_file,'w')
-        file_out.write('%% This file automatically generated by the regression script\n')
+        file_out.write('% This file automatically generated by the regression script\n')
         file_out.write('%% Number of optimizer iterations changed to %d\n'%(self.test_iter))
         for line in lines:
             if not line.startswith("RESTART_SOL"):
@@ -760,3 +816,20 @@ class TestCase:
         os.chdir(workdir)
 
         return
+
+    def is_enabled(self):
+        is_enabled = self.cpu_arch in self.enabled_on_cpu_arch
+
+        if not is_enabled:
+            print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
+
+        return is_enabled
+
+    def adjust_test_data(self):
+
+        if self.cpu_arch == 'aarch64':
+            if len(self.test_vals_aarch64) != 0:
+                self.test_vals = self.test_vals_aarch64
+        
+            if len(self.reference_file_aarch64) != 0:
+                self.reference_file = self.reference_file_aarch64

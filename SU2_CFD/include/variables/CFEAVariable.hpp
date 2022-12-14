@@ -2,7 +2,7 @@
  * \file CFEAVariable.hpp
  * \brief Class for defining the variables of the FEM structural problem.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for defining the variables of the FEM structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 class CFEAVariable : public CVariable {
 protected:

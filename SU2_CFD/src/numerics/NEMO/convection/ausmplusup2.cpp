@@ -2,7 +2,7 @@
  * \file ausmplusup2.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -227,15 +227,16 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     const auto& Ms    = fluidmodel -> GetSpeciesMolarMass();
     su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
 
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+      daL[iSpecies] = 1.0/(2.0*aF*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i);
+      daR[iSpecies] = 1.0/(2.0*aF*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j);
+    }
+
+    for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
       daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
           + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
       daR[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
           + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
-    }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      daL[nSpecies-1] = 1.0/(2.0*aF*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
-      daR[nSpecies-1] = 1.0/(2.0*aF*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[nSpecies-1] - P_j/rho_j);
     }
 
     /*--- Sound speed derivatives: Momentum ---*/

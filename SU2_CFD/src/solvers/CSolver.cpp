@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -468,7 +468,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
 
         if (nDim==2) {
-          GeometryToolbox::RotationMatrix(Theta, rotMatrix2D);
+          GeometryToolbox::RotationMatrix(Psi, rotMatrix2D);
         } else {
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
@@ -736,6 +736,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
+            }
+
+            /*--- Rotate the vector components of the solution. ---*/
+
+            if (rotate_periodic) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                su2double d_diDim[3] = {0.0};
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  d_diDim[iVar-1] = rotBlock(iVar, iDim);
+                }
+                su2double rotated[3] = {0.0};
+                Rotate(zeros, d_diDim, rotated);
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  rotBlock(iVar, iDim) = rotated[iVar-1];
+                }
+              }
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
@@ -1039,12 +1055,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 #ifdef HAVE_MPI
       /*--- Once we have recv'd a message, get the source rank. ---*/
       int ind;
-      SU2_OMP_MASTER
-      SU2_MPI::Waitany(geometry->nPeriodicRecv,
-                       geometry->req_PeriodicRecv,
-                       &ind, &status);
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nPeriodicRecv, geometry->req_PeriodicRecv, &ind, &status);)
       source = status.MPI_SOURCE;
 #else
       /*--- For serial calculations, we know the rank. ---*/
@@ -1298,13 +1309,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_OMP_MASTER
-    SU2_MPI::Waitall(geometry->nPeriodicSend,
-                     geometry->req_PeriodicSend,
-                     MPI_STATUS_IGNORE);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nPeriodicSend, geometry->req_PeriodicSend, MPI_STATUS_IGNORE);)
 #endif
-    SU2_OMP_BARRIER
   }
 
   delete [] Diff;
@@ -1580,10 +1586,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
 
-      SU2_OMP_MASTER
-      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -1688,11 +1691,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_OMP_MASTER
-    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
-    SU2_OMP_BARRIER
   }
 
 }
@@ -1757,7 +1757,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      over time so that we do not get stuck in limit cycles, this is done
      on the fine grid and applied to all others. */
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
@@ -1816,9 +1816,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
       }
     }
-    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    } /* End safe global access, now all threads update the CFL number. */
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -1911,9 +1910,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         Avg_CFL_Local += myCFLSum;
       }
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* MPI reduction. */
         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
         SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
@@ -1921,8 +1919,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
   }
@@ -1933,7 +1930,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -1987,15 +1984,14 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) {
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -2030,8 +2026,7 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
@@ -2198,12 +2193,16 @@ void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
+
+  base_nodes->Add_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Add_Solution_To_External() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
+
+  base_nodes->Set_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
@@ -2246,7 +2245,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
+  const auto kindLimiter = config->GetKind_SlopeLimit();
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();
   auto& solMin = base_nodes->GetSolution_Min();
@@ -2573,7 +2572,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -2721,8 +2720,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- It's necessary to communicate this information ---*/
 
@@ -3655,7 +3653,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::PASSIVE_SCALAR:
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
@@ -3963,79 +3961,49 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config){
 
-  /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  const su2double *Velocity_ND, *Velocity_Real;
-  su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
-  su2double factor;
+  const bool viscous_flow = config->GetViscous();
+  const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
 
-  unsigned short iDim;
-
-  // Check whether the problem is viscous
-  bool viscous_flow = config->GetViscous();
-
-  // Parameters for the calculations
-  su2double Pn = 0.0;
-  su2double auxForce[3] = {1.0, 0.0, 0.0};
-
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  const su2double* iNormal;
-
-  su2double Pressure_Inf = config->GetPressure_FreeStreamND();
-
-  Velocity_Real = config->GetVelocity_FreeStream();
-  Density_Real  = config->GetDensity_FreeStream();
-
-  Velocity_ND = config->GetVelocity_FreeStreamND();
-  Density_ND  = config->GetDensity_FreeStreamND();
-
-  Velocity2_Real = GeometryToolbox::SquaredNorm(nDim, Velocity_Real);
-  Velocity2_ND   = GeometryToolbox::SquaredNorm(nDim, Velocity_ND);
-
-  factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as a wall ---*/
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     // Loop over the vertices
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       // Recover the point index
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      // Get the normal at the vertex: this normal goes inside the fluid domain.
-      iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      su2double auxForce[3] = {0.0};
+
+      // Check if the node belongs to the domain (i.e, not a halo node).
       if (geometry->nodes->GetDomain(iPoint)) {
 
+        // Get the normal at the vertex: this normal goes inside the fluid domain.
+        const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
         // Retrieve the values of pressure
-        Pn = base_nodes->GetPressure(iPoint);
+        const su2double Pn = base_nodes->GetPressure(iPoint);
 
         // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-        for (iDim = 0; iDim < nDim; iDim++)
-          auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          auxForce[iDim] = -(Pn-Pressure_Inf)*Normal[iDim];
 
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
-          su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+          const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);
           }
         }
-
-        // Redimensionalize the forces
-        for (iDim = 0; iDim < nDim; iDim++) {
-          VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
-        }
       }
-      else{
-        for (iDim = 0; iDim < nDim; iDim++) {
-          VertexTraction[iMarker][iVertex][iDim] = 0.0;
-        }
+
+      // Redimensionalize the forces (Lref is 1, thus only Pref is needed).
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        VertexTraction[iMarker][iVertex][iDim] = config->GetPressure_Ref() * auxForce[iDim];
       }
     }
   }
@@ -4211,8 +4179,6 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     const su2double domain = (iPoint < nPointDomain);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double Res = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
-
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
 
       /*--- Update residual information for current thread. ---*/
       resRMS[iVar] += Res*Res;

@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,10 +29,11 @@
 
 /*!
  * \brief A traits class for limiters, see notes for "computeLimiters_impl()".
+ * \ingroup FvmAlgos
  * \note There is no default implementation (the code will compile but not
  *       link) specialization is mandatory.
  */
-template<ENUM_LIMITER LimiterKind>
+template<LIMITER LimiterKind>
 struct CLimiterDetails
 {
   /*!
@@ -63,6 +64,7 @@ struct CLimiterDetails
 
 /*!
  * \brief Common small functions used by limiters.
+ * \ingroup FvmAlgos
  */
 template<class Type = su2double>
 struct LimiterHelpers
@@ -90,9 +92,10 @@ struct LimiterHelpers
 
 /*!
  * \brief Barth-Jespersen specialization.
+ * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<BARTH_JESPERSEN>
+struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
 {
   su2double eps2;
 
@@ -120,9 +123,10 @@ struct CLimiterDetails<BARTH_JESPERSEN>
 
 /*!
  * \brief Venkatakrishnan specialization.
+ * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
 {
   su2double eps2;
 
@@ -157,9 +161,10 @@ struct CLimiterDetails<VENKATAKRISHNAN>
 
 /*!
  * \brief Venkatakrishnan-Wang specialization.
+ * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN_WANG>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
 {
   static su2activevector sharedMin, sharedMax;
   su2activevector eps2;
@@ -178,13 +183,12 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     /*--- Allocate the static members (shared between threads) to
      * perform the reduction across all threads in the rank. ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Per thread reduction. ---*/
 
@@ -212,11 +216,10 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
     }
     END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
     /*--- Global reduction. ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       localMin = sharedMin;
       SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
@@ -224,8 +227,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       localMax = sharedMax;
       SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Compute eps^2 (each thread has its own copy of it). ---*/
 
@@ -258,9 +260,10 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
 
 /*!
  * \brief Venkatakrishnan with sharp edge modification.
+ * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<SHARP_EDGES>
+struct CLimiterDetails<LIMITER::SHARP_EDGES>
 {
   su2double eps1, eps2, sharpCoeff;
 
@@ -299,9 +302,10 @@ struct CLimiterDetails<SHARP_EDGES>
 
 /*!
  * \brief Venkatakrishnan with wall distance modification.
+ * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<WALL_DISTANCE>
+struct CLimiterDetails<LIMITER::WALL_DISTANCE>
 {
   su2double eps1, eps2, sharpCoeff;
 

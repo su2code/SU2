@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -559,21 +559,13 @@ namespace AD{
   FORCEINLINE bool PausePreaccumulation() {
     const auto current = PreaccEnabled;
     if (!current) return false;
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    PreaccEnabled = false;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
     return true;
   }
 
   FORCEINLINE void ResumePreaccumulation(bool wasActive) {
     if (!wasActive) return;
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    PreaccEnabled = true;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
   }
 
   FORCEINLINE void StartNoSharedReading() {

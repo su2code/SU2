@@ -1,8 +1,8 @@
 /*!
  * \file CSolver.hpp
- * \brief Headers of the CSolver class which is inherited by all of the other solvers.
+ * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -2274,6 +2275,11 @@ class CSolver {
   inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline virtual su2double GetReferenceDynamicPressure() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -2894,6 +2900,12 @@ class CSolver {
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member
+   * \return The mass fluxes (from flow solvers) across the edges.
+   */
+  inline virtual const su2activevector* GetEdgeMassFluxes() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -3003,13 +3015,6 @@ class CSolver {
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_dim - Index of the adjoint velocity vector.
-   * \return Value of the density x velocity at the infinity.
-   */
-  inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
@@ -3044,6 +3049,18 @@ class CSolver {
    * \return Value of the turbulent frequency.
    */
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
+
+  /*!
+   * \brief Get value of the Intermittency.
+   * \return Value of the Intermittency.
+   */
+  inline virtual su2double GetIntermittency_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the momentum thickness Reynolds number.
+   * \return Value of the momentum thickness Reynolds number.
+   */
+  inline virtual su2double GetReThetaT_Inf() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3430,6 +3447,28 @@ class CSolver {
    */
   inline virtual void ExtractAdjoint_Displacements(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,
                                                    ENUM_VARIABLE variable) {}
+
+  /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  virtual unsigned long RegisterSolutionExtra(bool input, const CConfig* config) { return 0; }
+
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
+  virtual void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {}
+
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
+  virtual void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {}
 
   /*!
    * \brief  A virtual member.
@@ -4142,8 +4181,8 @@ class CSolver {
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
@@ -4154,6 +4193,34 @@ class CSolver {
    * \param[in] converged - Whether or not solution has converged.
    */
   void SavelibROM(CGeometry* geometry, CConfig* config, bool converged);
+
+  /*!
+   * \brief Interpolate variables to a coarser grid level.
+   * \note Halo values are not communicated in this function.
+   * \param[in] geoFine - Fine grid.
+   * \param[in] varsFine - Matrix of variables on the fine grid.
+   * \param[in] geoCoarse - Coarse grid.
+   * \param[in] varsCoarse - Matrix of variables interpolated to the coarse grid.
+   */
+  inline static void MultigridRestriction(const CGeometry& geoFine, const su2activematrix& varsFine,
+                                          const CGeometry& geoCoarse, su2activematrix& varsCoarse) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geoCoarse.GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPointCoarse = 0ul; iPointCoarse < geoCoarse.GetnPointDomain(); ++iPointCoarse) {
+      for (auto iVar = 0ul; iVar < varsCoarse.cols(); iVar++) {
+        varsCoarse(iPointCoarse, iVar) = 0.0;
+      }
+      const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
+
+      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+        const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
+        for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
+          varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
 
  protected:
   /*!
@@ -4209,13 +4276,12 @@ class CSolver {
    * \brief Set the RMS and MAX residual to zero.
    */
   inline void SetResToZero() {
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       for (auto& r : Residual_RMS) r = 0;
       for (auto& r : Residual_Max) r = 0;
       for (auto& p : Point_Max) p = 0;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!

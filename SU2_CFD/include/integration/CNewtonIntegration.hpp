@@ -2,7 +2,7 @@
  * \file CNewtonIntegration.hpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,8 +45,10 @@
 
 /*!
  * \class CNewtonIntegration
+ * \ingroup Drivers
  * \brief Class for time integration using a Newton-Krylov method, based
  * on matrix-free products with the true Jacobian via finite differences.
+ * \author P. Gomes
  */
 class CNewtonIntegration final : public CIntegration {
 public:
@@ -62,7 +64,7 @@ public:
 
 private:
   /*--- Residual evaluation modes, explicit for products, default to allow preconditioners to be built. ---*/
-  enum ResEvalType {EXPLICIT, DEFAULT};
+  enum class ResEvalType {EXPLICIT, DEFAULT};
 
   bool setup = false;
   Scalar finDiffStepND = 0.0;

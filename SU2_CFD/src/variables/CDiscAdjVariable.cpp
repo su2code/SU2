@@ -2,7 +2,7 @@
  * \file CDiscAdjVariable.cpp
  * \brief Main subroutines for the discrete adjoint variable structure.
  * \author T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,4 +48,12 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
 void CDiscAdjVariable::Set_External_To_DualTimeDer() {
   assert(External.size() == DualTime_Derivative.size());
   parallelCopy(External.size(), DualTime_Derivative.data(), External.data());
+}
+
+void CDiscAdjVariable::AllocateAdjointSolutionExtra(unsigned long nVarExtra) {
+  if (nVarExtra == 0) return;
+  SolutionExtra.resize(nVarExtra) = su2double(1e-16);
+  /*--- These are only for multizone, but since nVarExtra is small we allocate by default. ---*/
+  SolutionExtra_BGS_k.resize(nVarExtra) = su2double(1e-16);
+  ExternalExtra.resize(nVarExtra) = su2double(0.0);
 }

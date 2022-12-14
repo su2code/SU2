@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,8 +32,8 @@
 
 /*!
  * \class CDiscAdjSolver
+ * \ingroup DiscAdj
  * \brief Main class for defining the discrete adjoint solver.
- * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
 class CDiscAdjSolver final : public CSolver {

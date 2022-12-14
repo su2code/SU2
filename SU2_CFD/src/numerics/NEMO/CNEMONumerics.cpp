@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -228,61 +228,40 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
                                        su2double val_therm_conductivity_ve,
                                        const CConfig *config) {
 
+  if (ionization) {
+    SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
+  }
+
   // Requires a slightly non-standard primitive vector:
   // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
   // and gradient GV = [GY1, ... , GYn, GT, GTve, ... ]
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
-  unsigned short iSpecies, iVar, iDim, jDim;
-  su2double mu, ktr, kve, rho, T, Tve, RuSI, Ru;
-  auto& Ms = fluidmodel->GetSpeciesMolarMass();
-
   su2activematrix Flux_Tensor(nVar,nDim);
 
   /*--- Initialize ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
       Flux_Tensor[iVar][iDim] = 0.0;
   }
 
-  /*--- Rename for convenience ---*/
+  /*--- Rename variables for convenience ---*/
   const auto& Ds  = val_diffusioncoeff;
-  mu  = val_lam_viscosity+val_eddy_viscosity;
-  ktr = val_therm_conductivity;
-  kve = val_therm_conductivity_ve;
-  rho = val_primvar[RHO_INDEX];
-  T   = val_primvar[T_INDEX];
-  Tve = val_primvar[TVE_INDEX];
+  const su2double mu  = val_lam_viscosity+val_eddy_viscosity;
+  su2double ktr = val_therm_conductivity;
+  su2double kve = val_therm_conductivity_ve;
+  const su2double rho = val_primvar[RHO_INDEX];
+  const su2double T = val_primvar[T_INDEX];
+  const su2double Tve = val_primvar[TVE_INDEX];
   const auto& V   = val_primvar;
   const auto& GV  = val_gradprimvar;
-  RuSI= UNIVERSAL_GAS_CONSTANT;
-  Ru  = 1000.0*RuSI;
-
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
 
-  /*--- Scale thermal conductivity with turb visc ---*/
-  // TODO: Need to determine proper way to incorporate eddy viscosity
-  // This is only scaling Kve by same factor as ktr
-  // NOTE: V[iSpecies] is == Ys.
-  su2double Mass = 0.0;
-  su2double tmp1, scl, Cptr;
-  for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
-    Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-  tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
-  scl  = tmp1/ktr;
-  ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
-  kve  = kve*(1.0+scl);
-  //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-  //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
-
-  /*--- Pre-compute mixture quantities ---*/
-
+  /*--- Pre-compute mixture quantities ---*/  //TODO
   su2double Vector[MAXNDIM] = {0.0};
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
@@ -291,37 +270,34 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+
     /*--- Species diffusion velocity ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
-    if (ionization) {
-      SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
-    }
 
-    /*--- Shear stress related terms ---*/
+    /*--- Shear-stress/momentum related terms ---*/
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++) {
+    for (auto jDim = 0; jDim < nDim; jDim++) {
       Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
       Flux_Tensor[nSpecies+nDim][iDim] += tau[iDim][jDim]*val_primvar[VEL_INDEX+jDim];
     }
 
     /*--- Diffusion terms ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs[iSpecies];
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * val_eve[iSpecies];
     }
 
     /*--- Heat transfer terms ---*/
-    Flux_Tensor[nSpecies+nDim][iDim]   += ktr*GV[T_INDEX][iDim] +
-        kve*GV[TVE_INDEX][iDim];
+    Flux_Tensor[nSpecies+nDim][iDim] += ktr*GV[T_INDEX][iDim] + kve*GV[TVE_INDEX][iDim];
     Flux_Tensor[nSpecies+nDim+1][iDim] += kve*GV[TVE_INDEX][iDim];
   }
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }

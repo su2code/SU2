@@ -1,9 +1,9 @@
 ﻿/*!
  * \file fvs.hpp
- * \brief Delarations of classes for Flux-Vector-Spliting schemes,
+ * \brief Declarations of classes for Flux-Vector-Spliting schemes,
  *        the implementations are in fvs.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

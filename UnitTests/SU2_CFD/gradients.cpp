@@ -2,7 +2,7 @@
  * \file gradients.cpp
  * \brief Unit tests for gradient calculation.
  * \author P. Gomes, T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

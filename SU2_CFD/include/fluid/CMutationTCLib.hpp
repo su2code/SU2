@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -125,7 +125,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) final;
 
   /*!
    * \brief Get species molar mass.

@@ -2,7 +2,7 @@
  * \file CTurbSSTVariable.hpp
  * \brief Declaration of the variables of the SST turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,10 +40,11 @@ class CTurbSSTVariable final : public CTurbVariable {
 protected:
   su2double sigma_om2;
   su2double beta_star;
+  su2double prod_lim_const;
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
-
+  SST_ParsedOptions sstParsedOptions;
 public:
   /*!
    * \brief Constructor of the class.
@@ -53,7 +54,7 @@ public:
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
-   * \param[in] constants -
+   * \param[in] constants - sst model constants
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
@@ -70,7 +71,7 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) override;
+  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) override;
 
   /*!
    * \brief Get the first blending function.

@@ -3,7 +3,7 @@
  * \brief Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,10 +31,11 @@
 
 /*!
  * \class CBBoxTargetClass
+ * \ingroup ADT
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  */
 struct CBBoxTargetClass {
 

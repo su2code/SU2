@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -190,6 +190,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   /*--- This is akin to the row_ptr. ---*/
   omp_partitions = new unsigned long [omp_num_parts+1];
+  for (unsigned long i = 0; i <= omp_num_parts; ++i) omp_partitions[i] = nPointDomain;
 
   /*--- Work estimate based on non-zeros to produce balanced partitions. ---*/
 
@@ -202,7 +203,15 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     if (row_ptr_prec[iPoint] >= part*nnz_per_part)
       omp_partitions[part++] = iPoint;
   }
-  omp_partitions[omp_num_parts] = nPointDomain;
+
+  for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
+    const auto begin = omp_partitions[thread];
+    const auto end = omp_partitions[thread + 1];
+    if (begin == end) {
+      cout << "WARNING: Redundant thread has been detected. Performance could be impacted due to low number of nodes per thread." << endl;
+      break;
+    }
+  }
 
   /*--- Generate MKL Kernels ---*/
 
@@ -378,10 +387,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
 
-    SU2_OMP_MASTER
-    SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -475,12 +481,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
    data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-  SU2_OMP_MASTER
-  SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
-  END_SU2_OMP_MASTER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
-  SU2_OMP_BARRIER
-
 }
 
 template<class ScalarType>
@@ -641,7 +643,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
+  SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]));
   END_SU2_OMP_FOR
@@ -707,6 +709,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   {
     const auto begin = omp_partitions[thread];
     const auto end = omp_partitions[thread+1];
+    if (begin == end) continue;
 
     /*--- Each thread will work on the submatrix defined from row/col "begin"
      *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
@@ -784,6 +787,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   {
     const auto begin = omp_partitions[thread];
     const auto end = omp_partitions[thread+1];
+    if (begin == end) continue;
 
     ScalarType aux_vec[MAXNVAR];
 
@@ -846,6 +850,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   {
     const auto begin = omp_partitions[thread];
     const auto end = omp_partitions[thread+1];
+    if (begin == end) continue;
 
     /*--- Each thread will work on the submatrix defined from row/col "begin"
      *    to row/col "end-1", except the last thread that also considers halos.
@@ -876,6 +881,8 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   {
     const auto begin = omp_partitions[thread];
     const auto row_end = omp_partitions[thread+1];
+    if (begin == row_end) continue;
+
     /*--- On the last thread partition the upper
      *    product should consider halo columns. ---*/
     const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
@@ -1392,13 +1399,12 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, cons
                                                        unsigned short kind_fact) {
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
     pastix_wrapper.Factorize(geometry, config, kind_fact);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 #else
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
 #endif
@@ -1408,11 +1414,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                                          CGeometry *geometry, const CConfig *config) const {
 #ifdef HAVE_PASTIX
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER
-  pastix_wrapper.Solve(vec,prod);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(pastix_wrapper.Solve(vec,prod);)
 
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
