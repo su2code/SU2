@@ -340,7 +340,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Solution(CGeometry* geometry, CConfi
     } else if (variable == ENUM_VARIABLE::TRACTIONS) {
       direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dTractions_dStates[iPoint]);
     } else {
-      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.", CURRENT_FUNCTION);
     }
   }
 }
@@ -359,9 +359,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Variables(CGeometry* geometry, CConf
       SU2_MPI::Allreduce(&Local_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Local_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     } else {
-      SU2_MPI::Error(
-          "The residual-based discrete adjoint solver is currently implemented for compressible flows only.\n",
-          CURRENT_FUNCTION);
+      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.", CURRENT_FUNCTION);
     }
 
     if (variable == ENUM_VARIABLE::OBJECTIVE) {
@@ -371,7 +369,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Variables(CGeometry* geometry, CConf
       Partial_Prod_dResiduals_dVariables[0] = Total_Sens_Mach;
       Partial_Prod_dResiduals_dVariables[1] = Total_Sens_AoA;
     } else {
-      return;
+      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.", CURRENT_FUNCTION);
     }
   }
   END_SU2_OMP_MASTER
@@ -383,30 +381,29 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry* geometry, CCo
   SU2_OMP_PARALLEL {
     su2matrix<su2double>* VolumeSensitivity;
 
-    if (variable == ENUM_VARIABLE::OBJECTIVE)
+    if (variable == ENUM_VARIABLE::OBJECTIVE) {
       VolumeSensitivity = &Partial_Sens_dObjective_dCoordinates;
-    else if (variable == ENUM_VARIABLE::RESIDUALS)
+    } else if (variable == ENUM_VARIABLE::RESIDUALS) {
       VolumeSensitivity = &Partial_Prod_dResiduals_dCoordinates;
-    else if (variable == ENUM_VARIABLE::TRACTIONS)
+    } else if (variable == ENUM_VARIABLE::TRACTIONS) {
       VolumeSensitivity = &Partial_Prod_dTractions_dCoordinates;
-    else
-      return;
+    } else {
+      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.", CURRENT_FUNCTION);
+    }
 
     /*--- Sensitivities w.r.t all reference mesh coordinates. ---*/
 
     if (mesh_solver) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
       mesh_solver->ExtractAdjoint_Solution(geometry, config, true);
 
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           (*VolumeSensitivity)(iPoint, iDim) = mesh_solver->GetNodes()->GetSolution(iPoint, iDim);
         }
       }
       END_SU2_OMP_FOR
-    }
-
-    else {
+    } else {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         auto coord = geometry->nodes->GetCoord(iPoint);
@@ -427,16 +424,17 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Displacements(CGeometry* geometry, C
   SU2_OMP_PARALLEL {
     vector<su2matrix<su2double>>* MarkerSensitivity;
 
-    if (variable == ENUM_VARIABLE::COORDINATES)
+    if (variable == ENUM_VARIABLE::COORDINATES) {
       MarkerSensitivity = &Partial_Prod_dCoordinates_dDisplacements;
-    else if (variable == ENUM_VARIABLE::OBJECTIVE)
+    } else if (variable == ENUM_VARIABLE::OBJECTIVE) {
       MarkerSensitivity = &Partial_Sens_dObjective_dDisplacements;
-    else if (variable == ENUM_VARIABLE::RESIDUALS)
+    } else if (variable == ENUM_VARIABLE::RESIDUALS) {
       MarkerSensitivity = &Partial_Prod_dResiduals_dDisplacements;
-    else if (variable == ENUM_VARIABLE::TRACTIONS)
+    } else if (variable == ENUM_VARIABLE::TRACTIONS) {
       MarkerSensitivity = &Partial_Prod_dTractions_dDisplacements;
-    else
-      return;
+    } else {
+      SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.", CURRENT_FUNCTION);
+    }
 
     /*--- If the mesh solver is used, extract the discrete-adjoint sensitivities of the boundary displacements. ---*/
 
