@@ -1,7 +1,7 @@
 /*!
  * \file CNeuralNetwork.hpp
  * \brief Declaration of the neural network class
- * \author E. Bunschoten
+ * \author E.C.Bunschoten
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -44,10 +44,10 @@ private:
     std::vector<std::string> input_names,   // MLP input variable names.
                              output_names;  // MLP output variable names.
 
-    unsigned long n_hidden_layers;  // Number of hidden layers (layers between input and output layer).
+    unsigned long n_hidden_layers = 0;  // Number of hidden layers (layers between input and output layer).
 
-    CLayer *inputLayer,     // Pointer to network input layer.
-           *outputLayer;    // Pointer to network output layer.
+    CLayer *inputLayer = nullptr,     // Pointer to network input layer.
+           *outputLayer = nullptr;    // Pointer to network output layer.
 
     std::vector<CLayer*> hiddenLayers;  // Hidden layer collection.
     su2vector<CLayer*>   total_layers;  // Hidden layers plus in/output layers
@@ -78,7 +78,6 @@ private:
     ENUM_ACTIVATION_FUNCTION * activation_function_types;
 
 public:
-    CNeuralNetwork();
     ~CNeuralNetwork(){
         delete inputLayer;
         delete outputLayer;
@@ -113,7 +112,7 @@ public:
     * \param[in] j_neuron - neuron index of connecting neuron.
     * \param[in] value - weight value.
     */
-    void setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value);
+    void setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value) { weights_mat[i_layer][j_neuron][i_neuron] = value; };
 
     /*!
     * \brief Set bias value at a specific neuron.
@@ -133,7 +132,7 @@ public:
     /*!
     * \brief Display the network architecture in the terminal.
     */
-    void displayNetwork();
+    void displayNetwork() const;
 
     /*!
     * \brief Size the weight layers in the network according to its architecture.

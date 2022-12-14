@@ -31,8 +31,9 @@
 #include "../../../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
 TEST_CASE("LookUp ANN test", "[LookUpANN]"){
-
-  MLPToolbox::CLookUp_ANN ANN("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/mlp_collection.mlp");
+  std::string MLP_input_files[] = {"src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/mlp_collection.mlp"};
+  unsigned short n_MLPs = 1;
+  MLPToolbox::CLookUp_ANN ANN(n_MLPs, MLP_input_files);
   su2vector<std::string> MLP_input_names,
                            MLP_output_names;
   su2vector<su2double> MLP_inputs;

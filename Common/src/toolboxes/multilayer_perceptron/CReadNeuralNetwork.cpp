@@ -2,7 +2,7 @@
  * \file ReadNeuralNetwork.cpp
  * \brief Implementation of the reader class to read .mlp input files
  *      used to set up multi-layer perceptrons.
- * \author E. Bunschoten
+ * \author E.C.Bunschoten
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -71,13 +71,13 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
         if(!found_layercount){
           SU2_MPI::Error("No layer count provided before defining neuron count per layer", CURRENT_FUNCTION);
         }
-        // Loop over layer count and size neuron count and bias count per layer accordingly
+        /* Loop over layer count and size neuron count and bias count per layer accordingly */
         for(auto iLayer=0u; iLayer<n_layers; iLayer++){
           getline(file_stream, line);
           n_neurons[iLayer] = stoul(line);
           biases[iLayer].resize(n_neurons[iLayer]);
         }
-        // Loop over spaces between layers and size the weight matrices accordingly
+        /* Loop over spaces between layers and size the weight matrices accordingly */
         for(auto iLayer=0u; iLayer<n_layers-1; iLayer++){
           weights[iLayer].resize(n_neurons[iLayer]);
           for(size_t iNeuron=0; iNeuron<n_neurons[iLayer]; iNeuron++){
@@ -168,7 +168,9 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
       if(line.compare("</header>") == 0){
         eoHeader = true;
       }
-    }
+    } // eoHeader
+
+    /* Error checking */
     if(!found_input_names){
       SU2_MPI::Error("No MLP input variable names provided", CURRENT_FUNCTION);
     }
@@ -207,6 +209,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
 }
 
 string MLPToolbox::CReadNeuralNetwork::SkipToFlag(ifstream *file_stream, string flag) {
+  /*--- Search file for a line and set it as the current line in the file stream ---*/
   string line;
   getline(*file_stream, line);
 

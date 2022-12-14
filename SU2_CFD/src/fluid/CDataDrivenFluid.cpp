@@ -31,17 +31,14 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 
   Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
 
-  /*--- Retrieve interpolation method file name. ---*/
-  input_filename = config->GetDataDriven_Filename();
-
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method)
   {
   case ENUM_DATADRIVEN_METHOD::MLP:
-    lookup_mlp = new MLPToolbox::CLookUp_ANN(input_filename);
+    lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
     break;
   case ENUM_DATADRIVEN_METHOD::LUT:
-    lookup_table = new CLookUpTable(input_filename, "Density", "Energy");
+    lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
     break;
   default:
     break;
@@ -268,7 +265,7 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
     delta_T = Temperature - T;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if(100*(abs(delta_T)/T < tolerance_T)){
+    if(100*abs(delta_T)/T < tolerance_T){
       converged = true;
     }else{
       

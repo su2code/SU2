@@ -59,7 +59,7 @@ class CLookUp_ANN
 
     std::vector<std::string> ANN_filenames;       /*!< Filenames containing ANN architecture information. */
 
-    unsigned long number_of_variables;  /*!< Number of loaded ANNs. */
+    unsigned short number_of_variables;  /*!< Number of loaded ANNs. */
 
     /*!
    * \brief Skip to certain flag in file.
@@ -86,10 +86,11 @@ class CLookUp_ANN
     
     /*!
     * \brief ANN collection class constructor
-    * \param[in] filename - filename containing list of ANN input files
+    * \param[in] n_inputs - Number of MLP files to be loaded.
+    * \param[in] input_filenames - String array containing MLP input file names. 
     */
-    CLookUp_ANN(std::string fileName);
-    
+    CLookUp_ANN(const unsigned short n_inputs, const std::string*input_filenames);
+
     /*!
     * \brief Evaluate loaded ANNs for given inputs and outputs
     * \param[in] input_output_map - input-output map coupling desired inputs and outputs to loaded ANNs
@@ -99,8 +100,9 @@ class CLookUp_ANN
     */
     unsigned long Predict_ANN(CIOMap *input_output_map, su2vector<su2double> &inputs, su2vector<su2double*> &outputs);
 
-    ~CLookUp_ANN(){for(std::size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
-        delete NeuralNetworks[i_ANN];
+    ~CLookUp_ANN() { 
+        for(std::size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
+            delete NeuralNetworks[i_ANN];
     };
 
     /*!

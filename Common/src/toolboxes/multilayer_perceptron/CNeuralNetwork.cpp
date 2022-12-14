@@ -2,7 +2,7 @@
  * \file CNeuralNetwork.cpp
  * \brief Implementation of the NeuralNetwork class to be used
  *      for evaluation of multi-layer perceptrons.
- * \author E. Bunschoten
+ * \author E.C.Bunschoten
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,8 +35,8 @@ using namespace std;
 void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
     /*--- Evaluate MLP for given inputs ---*/
 
-    su2double y, y_norm;
-    bool same_point{true};
+    su2double y;           // Activation function output.
+    bool same_point = true;
 
     /* Normalize input and check if inputs are the same w.r.t last evaluation */
     for(auto iNeuron=0u; iNeuron<inputLayer->getNNeurons(); iNeuron++){
@@ -44,6 +44,7 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
         if(abs(x_norm - inputLayer->getOutput(iNeuron)) > 0) same_point = false;
         inputLayer->setOutput(iNeuron, x_norm);
     }
+    /* Skip evaluation process if current point is the same as during the previous evaluation */
     if(!same_point){
         su2double alpha=1.67326324;
         su2double lambda=1.05070098;
@@ -154,7 +155,7 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
     }
     /* Compute and de-normalize MLP output */
     for(auto iNeuron=0u; iNeuron<outputLayer->getNNeurons(); iNeuron++){
-        y_norm = outputLayer->getOutput(iNeuron);
+        su2double y_norm = outputLayer->getOutput(iNeuron);
         y = y_norm*(output_norm[iNeuron].second - output_norm[iNeuron].first) + output_norm[iNeuron].first;
         
         /* Storing output value */
@@ -162,32 +163,31 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
     }
 }
 
-MLPToolbox::CNeuralNetwork::CNeuralNetwork(){
-    inputLayer = nullptr;
-    outputLayer = nullptr;
-    n_hidden_layers = 0;
-}
-
 
 void MLPToolbox::CNeuralNetwork::defineInputLayer(unsigned long n_neurons){
+    /*--- Define the input layer of the network ---*/
     inputLayer = new CLayer(n_neurons);
+
+    /* Mark layer as input layer */
     inputLayer->setInput(true);
     input_norm.resize(n_neurons);
 }
 
 void MLPToolbox::CNeuralNetwork::defineOutputLayer(unsigned long n_neurons){
+    /*--- Define the output layer of the network ---*/
     outputLayer = new CLayer(n_neurons);
     output_norm.resize(n_neurons);
 }
 
 void MLPToolbox::CNeuralNetwork::push_hidden_layer(unsigned long n_neurons){
+    /*--- Add a hidden layer to the network ---*/
     CLayer *newLayer = new CLayer(n_neurons);
     hiddenLayers.push_back(newLayer);
     n_hidden_layers ++;
 }
 
 void MLPToolbox::CNeuralNetwork::sizeWeights(){
-    /* Size weight matrices based on neuron counts in each layer */
+    /*--- Size weight matrices based on neuron counts in each layer ---*/
 
     /* Generate vector containing input, output, and hidden layer references */
     total_layers.resize(n_hidden_layers + 2);
@@ -207,10 +207,7 @@ void MLPToolbox::CNeuralNetwork::sizeWeights(){
     ANN_outputs = new su2double[outputLayer->getNNeurons()];
 }   
 
-void MLPToolbox::CNeuralNetwork::setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value){
-    weights_mat[i_layer][j_neuron][i_neuron] = value;
-}
-void MLPToolbox::CNeuralNetwork::displayNetwork(){
+void MLPToolbox::CNeuralNetwork::displayNetwork() const {
     /*!
     TODO:
     find way of displaying network architectures

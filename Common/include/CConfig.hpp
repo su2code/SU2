@@ -523,7 +523,8 @@ private:
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
+  Kind_DataDriven_Method,       /*!< \brief Method used for datset regression in datadriven fluid models. */
+  n_Datadriven_files;
 
   su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
             DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in datadriven fluid models. */
@@ -805,7 +806,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-  DataDriven_Method_FileName;    /*!< \brief Dataset information for datadriven fluid models. */
+  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for datadriven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -3782,7 +3783,15 @@ public:
    * \brief Get name of the input file for the data-driven fluid model interpolation method.
    * \return Name of the input file for the interpolation method.
    */
-  string GetDataDriven_Filename(void) const { return DataDriven_Method_FileName; }
+  string GetDataDriven_Filename(unsigned short i_file=0) const { return DataDriven_Method_FileNames[i_file]; }
+
+  string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
+
+  /*!
+   * \brief Get number of listed look-up table or multi-layer perceptron input files.
+   * \return Number of listed datadriven method input files.
+   */
+  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
 
   /*!
    * \brief Get Newton solver relaxation factor for data-driven fluid models.

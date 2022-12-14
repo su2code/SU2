@@ -2,7 +2,7 @@
  * \file CLookUp_ANN.cpp
  * \brief Implementation of the multi-layer perceptron class to be 
  *      used for look-up operations.
- * \author E. Bunschoten
+ * \author E.C.Bunschoten
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,7 +35,7 @@
 
 using namespace std;
 
-MLPToolbox::CLookUp_ANN::CLookUp_ANN(string inputFileName)
+MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string*input_filenames)
 {
     #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -43,21 +43,21 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(string inputFileName)
     if(rank == MASTER_NODE)
         cout << "Generating ANN collection" << endl;
 
-    /* Read MLP collection input file */
-    ReadANNInputFile(inputFileName);
+    number_of_variables = n_inputs;
 
-    /* Generate a multi-layer perceptron for every file listed in the MLP collection file */
-    for(auto i_ANN=0u; i_ANN<number_of_variables; i_ANN++){
-        NeuralNetworks[i_ANN] = new CNeuralNetwork;
-        if(rank == MASTER_NODE)
-            cout << "Generating neural network for " << ANN_filenames[i_ANN] << endl;
-        GenerateANN(NeuralNetworks[i_ANN], ANN_filenames[i_ANN]);
+    NeuralNetworks.resize(n_inputs);
+    for(auto i_MLP=0u; i_MLP < n_inputs; i_MLP++){
+        NeuralNetworks[i_MLP] = new CNeuralNetwork;
+        if(rank == MASTER_NODE) 
+            cout << "Generating neural network for " << input_filenames[i_MLP] << endl;
+        GenerateANN(NeuralNetworks[i_MLP], input_filenames[i_MLP]);
     }
+        
 }
 
-
 vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_t i_ANN, su2vector<string> variable_names, bool input) const {
-    /* Find loaded MLPs that have the same input variable names as the variables listed in variable_names */
+    /*--- Find loaded MLPs that have the same input variable names as the variables listed in variable_names ---*/
+
     vector<pair<size_t, size_t>> variable_indices;
     auto nVar = input ? NeuralNetworks[i_ANN]->GetnInputs() : NeuralNetworks[i_ANN]->GetnOutputs();
 
@@ -77,7 +77,7 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
     bool within_range,              // Within MLP training set range.
          MLP_was_evaluated = false; // MLP was evaluated within training set range.
 
-    // If queries lie outside the training data set, the nearest MLP will be evaluated through extrapolation.
+    /* If queries lie outside the training data set, the nearest MLP will be evaluated through extrapolation. */
     su2double distance_to_query = 1e20; // Overall smallest distance between training data set middle and query.
     size_t i_ANN_nearest = 0,           // Index of nearest MLP.
            i_map_nearest = 0;           // Index of nearest iomap index.
@@ -91,7 +91,7 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
         for(auto i_input=0u; i_input < ANN_inputs.size(); i_input++) {
             auto ANN_input_limits = NeuralNetworks[i_ANN]->GetInputNorm(i_input);
 
-            /* Check if query input lies within MLP training range */
+            /* Check if query input lies outside MLP training range */
             if((ANN_inputs[i_input] < ANN_input_limits.first) || (ANN_inputs[i_input] > ANN_input_limits.second)) {
                 within_range = false;
             }
@@ -126,6 +126,7 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap *input_output_map, su2
         }
     }
 
+    /* Return 1 if query data lies outside the range of any of the loaded MLPs */
     return MLP_was_evaluated ? 0 : 1;
 }
 
@@ -136,10 +137,10 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     /* Read MLP input file */
     CReadNeuralNetwork Reader = CReadNeuralNetwork(fileName);
     
-    // Read MLP input file
+    /* Read MLP input file */
     Reader.ReadMLPFile();
 
-    // Generate basic layer architectures
+    /* Generate basic layer architectures */
     ANN->defineInputLayer(Reader.GetNInputs());
     ANN->sizeInputs(Reader.GetNInputs());
     for(auto iInput=0u; iInput<Reader.GetNInputs(); iInput++){
@@ -153,10 +154,10 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
         ANN->PushOutputName(Reader.GetOutputName(iOutput));
     }
 
-    // Size weights of each layer
+    /* Size weights of each layer */
     ANN->sizeWeights();
 
-    // Define weights and activation functions
+    /* Define weights and activation functions */
     ANN->SizeActivationFunctions(ANN->getNWeightLayers()+1);
     for(auto i_layer=0u; i_layer < ANN->getNWeightLayers(); i_layer++){
         ANN->setActivationFunction(i_layer, Reader.GetActivationFunction(i_layer));
@@ -170,14 +171,14 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     }
     ANN->setActivationFunction(ANN->getNWeightLayers(), Reader.GetActivationFunction(ANN->getNWeightLayers()));
     
-    // Set neuron biases
+    /* Set neuron biases */
     for(auto i_layer=0u; i_layer<ANN->getNWeightLayers()+1; i_layer++){
         for(auto i_neuron=0u; i_neuron<ANN->getNNeurons(i_layer); i_neuron++){
             ANN->setBias(i_layer, i_neuron, Reader.GetBias(i_layer, i_neuron));
         }
     }
     
-    // Define input and output layer normalization values
+    /* Define input and output layer normalization values */
     for(auto iInput=0u; iInput<Reader.GetNInputs(); iInput++){
         ANN->SetInputNorm(iInput, Reader.GetInputNorm(iInput).first, Reader.GetInputNorm(iInput).second);
     }
@@ -189,6 +190,8 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
 
 void MLPToolbox::CLookUp_ANN::ReadANNInputFile(string inputFileName)
 {
+    /*--- Read MLP collection input file and store relevant data ---*/
+
     ifstream file_stream;
     istringstream stream_names_var;
     istringstream stream_filenames;
@@ -199,8 +202,7 @@ void MLPToolbox::CLookUp_ANN::ReadANNInputFile(string inputFileName)
                     CURRENT_FUNCTION);
     }
 
-    string line;
-    string word;
+    string line, word;
 
     line = SkipToFlag(&file_stream, "[number of MLP files]");
     getline(file_stream, line);
@@ -215,6 +217,9 @@ void MLPToolbox::CLookUp_ANN::ReadANNInputFile(string inputFileName)
         ANN_filenames.push_back(word);
     }
     ANN_filenames.pop_back();
+    if(ANN_filenames.size() != number_of_variables)
+        SU2_MPI::Error(string("Inconsistency betwee"),
+                    CURRENT_FUNCTION);
 }
 string MLPToolbox::CLookUp_ANN::SkipToFlag(ifstream *file_stream, string flag) {
   string line;

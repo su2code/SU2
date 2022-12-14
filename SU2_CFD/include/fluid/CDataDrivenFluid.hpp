@@ -49,8 +49,6 @@ class CDataDrivenFluid : public CFluidModel {
   su2double Newton_Relaxation,     // Relaxation factor for Newton solvers.
             rho_start,             // Initial value for the density in Newton solver processes.
             e_start;               // Initial value for the energy in Newton solver processes.
-
-  string input_filename;    // Data-driven method input file name.
   
   su2double dsde_rho, dsdrho_e, d2sde2, d2sdedrho, d2sdrho2;
   
