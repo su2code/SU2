@@ -56,20 +56,57 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
   PrintTableInfo();
 
   if (rank == MASTER_NODE)
+  switch (table_dim)
+  {
+  case 2:
     cout << "Building a trapezoidal map for the (" + name_x + ", " + name_y + ") "
             "space ..."
          << endl;
+    break;
+  case 3:
+    cout << "Building trapezoidal map stack for the (" + name_x + ", " + name_y + ") "
+              "space ..."
+          << endl;
+    break;
+  default:
+    break;
+  }
+
   trap_map_x_y = new CTrapezoidalMap[n_table_levels];
-  for(auto i_level = 0ul; i_level<n_table_levels; i_level++)
+  su2double startTime = SU2_MPI::Wtime();
+  for(auto i_level = 0ul; i_level<n_table_levels; i_level++){
     trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_x, i_level), GetDataP(name_y, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
+    /* Display a progress bar to monitor table generation process */
+    if(rank == MASTER_NODE){
+      su2double progress = su2double(i_level) / n_table_levels;
+      unsigned short barwidth = 65;
+      auto pos = barwidth * progress;
+      cout << "[";
+      for(int iBar=0; iBar<barwidth; ++iBar){
+          if(iBar < pos) cout << "=";
+          else cout << " ";
+      }
+      cout << "] "<< floor(100*progress) << " %\r";
+      cout.flush();
+    }
+  }
+  su2double stopTime = SU2_MPI::Wtime();
 
-  if (rank == MASTER_NODE) 
-    cout << " done." << endl;
-
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE){
+    switch (table_dim)
+    {
+    case 2:
+      cout << "Construction of trapezoidal map took " << stopTime-startTime << " seconds\n" << endl;
+      break;
+    case 3:
+      cout << "Construction of trapezoidal map stack took " << stopTime-startTime << " seconds\n" << endl;
+      break;
+    default:
+      break;
+    }
     cout << "Precomputing interpolation coefficients..." << endl;
-  
-
+  }
+    
   ComputeInterpCoeffs();
 
   if (rank == MASTER_NODE) 
@@ -100,7 +137,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
   file_reader.ReadRawLUT(var_file_name_lut);
-  unsigned short table_dim = file_reader.GetTableDim();
+  table_dim = file_reader.GetTableDim();
   n_table_levels = file_reader.GetNLevels();
 
   n_points            = new unsigned long[n_table_levels];
@@ -154,10 +191,16 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
     limits_table_x[i_level] = make_pair(min_x, max_x);
     limits_table_y[i_level] = make_pair(min_y, max_y);
   }
+
+  if(table_dim == 3){
+    su2double min_z, max_z;
+    min_z = *min_element(z_values_levels, z_values_levels + n_table_levels);
+    max_z = *max_element(z_values_levels, z_values_levels + n_table_levels);
+    limits_table_z = make_pair(min_z, max_z);
+  }
 }
 
 void CLookUpTable::PrintTableInfo() {
-  //TODO: make compatible with 3D table
   if (rank == MASTER_NODE) {
     cout << setfill(' ');
     cout << endl;
@@ -167,25 +210,66 @@ void CLookUpTable::PrintTableInfo() {
     cout << "| File name:" << setw(54) << right << file_name_lut << " |" << endl;
     cout << "| Table version:" << setw(50) << right << version_lut << " |" << endl;
     cout << "| Table reader version:" << setw(43) << right << version_reader << " |" << endl;
+    cout << "| Table dimension:" << setw(48) << right << table_dim << " |" << endl;
     cout << "| Number of variables:" << setw(44) << right << n_variables << " |" << endl;
-    cout << "| Number of points:" << setw(47) << right << n_points[0] << " |" << endl;
-    cout << "| Number of triangles:" << setw(44) << right << n_triangles[0] << " |" << endl;
-    cout << "| Number of edges:" << setw(48) << right << edges[0].size() << " |" << endl;
-    cout << "+------------------------------------------------------------------+" << endl;
-    cout << "| Minimum Y:" << setw(47) << right << limits_table_y[0].first << " |" << endl;
-    cout << "| Maximum Y:" << setw(47) << right << limits_table_y[0].second << " |" << endl;
-    cout << "| Minimum X:" << setw(38) << right << limits_table_x[0].first << " |" << endl;
-    cout << "| Maximum X:" << setw(38) << right << limits_table_x[0].second << " |" << endl;
-    cout << "+------------------------------------------------------------------+" << endl;
-    cout << "| Variable names:                                                  |" << endl;
-    cout << "|                                                                  |" << endl;
 
-    for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
-      cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
+    su2double n_points_av = 0, n_tria_av = 0, n_edges_av = 0, min_x=1/EPS, max_x = -1/EPS, min_y=1/EPS, max_y = -1/EPS;
+    for(auto i_level=0ul; i_level<n_table_levels; i_level++){
+      n_points_av += n_points[i_level] / n_table_levels;
+      n_tria_av += n_triangles[i_level] / n_table_levels;
+      n_edges_av += edges[i_level].size() / n_table_levels;
+      min_x = min(min_x, limits_table_x[i_level].first);
+      min_y = min(min_y, limits_table_y[i_level].first);
+      max_x = max(max_x, limits_table_x[i_level].second);
+      max_y = max(max_y, limits_table_y[i_level].second);
+    }
+    switch (table_dim)
+    {
+    case 2:
+      cout << "| Number of points:" << setw(47) << right << n_points_av << " |" << endl;
+      cout << "| Number of triangles:" << setw(44) << right << n_tria_av << " |" << endl;
+      cout << "| Number of edges:" << setw(48) << right << n_edges_av << " |" << endl;
+      cout << "+------------------------------------------------------------------+" << endl;
+      cout << "| Minimum Y:" << setw(54) << right << min_y << " |" << endl;
+      cout << "| Maximum Y:" << setw(54) << right << max_y << " |" << endl;
+      cout << "| Minimum X:" << setw(54) << right << min_x << " |" << endl;
+      cout << "| Maximum X:" << setw(54) << right << max_x << " |" << endl;
+      cout << "+------------------------------------------------------------------+" << endl;
+      cout << "| Variable names:                                                  |" << endl;
+      cout << "|                                                                  |" << endl;
 
-    cout << "+------------------------------------------------------------------+" << endl;
+      for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
+        cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
 
-    cout << endl;
+      cout << "+------------------------------------------------------------------+" << endl;
+
+      cout << endl;
+      break;
+    case 3:
+      
+      cout << "| Number of table levels:" << setw(41) << right << n_table_levels << " |" << endl;
+      cout << "| Average number of points:" << setw(39) << right << floor(n_points_av) << " |" << endl;
+      cout << "| Average number of triangles:" << setw(36) << right << floor(n_tria_av) << " |" << endl;
+      cout << "| Average number of edges:" << setw(40) << right << floor(n_edges_av) << " |" << endl;
+      cout << "+------------------------------------------------------------------+" << endl;
+      cout << "| Minimum Z:" << setw(54) << right << limits_table_z.first << " |" << endl;
+      cout << "| Maximum Z:" << setw(54) << right << limits_table_z.second << " |" << endl;
+      cout << "| Minimum Y:" << setw(54) << right << min_y << " |" << endl;
+      cout << "| Maximum Y:" << setw(54) << right << max_y << " |" << endl;
+      cout << "| Minimum X:" << setw(54) << right << min_x << " |" << endl;
+      cout << "| Maximum X:" << setw(54) << right << max_x << " |" << endl;
+      cout << "+------------------------------------------------------------------+" << endl;
+      cout << "| Variable names:                                                  |" << endl;
+      cout << "|                                                                  |" << endl;
+
+      for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
+        cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
+
+      cout << "+------------------------------------------------------------------+" << endl;
+      break;
+    default:
+      break;
+    }
   }
 }
 
@@ -348,113 +432,124 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
 }
 
-std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(su2double val_z, bool*within_table_limits)
+std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_z, bool*within_table_limits)
 {
-  std::pair<unsigned long, unsigned long> inclusion_levels;
+  /*--- Find the table levels with constant z-values directly below and above the query value val_z ---*/
+
+  /* Check if val_z lies outside table bounds */
   if(val_z >= limits_table_z.second){
     *within_table_limits = false;
-    inclusion_levels = std::make_pair(n_table_levels-1, n_table_levels-1);
+    return std::make_pair(n_table_levels-1, n_table_levels-1);
   }else if(val_z <= limits_table_z.first){
     *within_table_limits = false;
-    inclusion_levels = std::make_pair(0, 0);
+    return std::make_pair(0, 0);
   }else{
+    std::pair<unsigned long, unsigned long> inclusion_levels;
+    /* Loop over table levels to find the levels directly above and below the query value */
     for(auto i_level = 0ul; i_level < n_table_levels-1; i_level++){
       if((val_z >= z_values_levels[i_level]) && (val_z < z_values_levels[i_level+1])){
         *within_table_limits = true;
         inclusion_levels = std::make_pair(i_level, i_level+1);
       }
     }
+    return inclusion_levels;
   }
-  return inclusion_levels;
 }
 
 unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_x,
                                 su2double val_y, su2double val_z)
 {
-  bool within_z_limits, exit_code;
-  unsigned long lower_level, upper_level;
-  std::pair<unsigned long, unsigned long> inclusion_levels;
-  if(val_z == 0){
-    inclusion_levels = std::make_pair(0, 0);
-    within_z_limits = false;
-  }else{
-    inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
-  }
+  /*--- Perform quasi-3D interpolation for a single variable named val_name_var on a query point 
+        with coordinates val_x, val_y, and val_z ---*/
+
+  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
+  bool within_z_limits = true;
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
   
   if(within_z_limits){
-    lower_level = inclusion_levels.first;
-    upper_level = inclusion_levels.second;
+    /* 2: Perform 2D interpolations on upper and lower inclusion levels */
+    unsigned long lower_level = inclusion_levels.first;
+    unsigned long upper_level = inclusion_levels.second;
+
     su2double val_var_lower, val_var_upper;
     unsigned long exit_code_lower = LookUp_XY(val_name_var, &val_var_lower, val_x, val_y, lower_level);
     unsigned long exit_code_upper = LookUp_XY(val_name_var, &val_var_upper, val_x, val_y, upper_level);
 
-    Linear_Interpolation(val_z, inclusion_levels, val_var_lower, val_var_upper, val_var);
+    /* 3: Perform linear interpolation along the z-direction using the x-y interpolation results
+             from upper and lower trapezoidal maps */
+    Linear_Interpolation(val_z, lower_level, upper_level, val_var_lower, val_var_upper, val_var);
 
     return max(exit_code_lower, exit_code_upper);
   }else{
-    lower_level = inclusion_levels.first;
-    exit_code = LookUp_XY(val_name_var, val_var, val_x, val_y, lower_level);
-    if( val_z == 0 ){
-      return exit_code;
-    }else{
-      return 1;
-    }
+    /* Perform single, 2D interpolation when val_z lies outside table bounds */
+    unsigned long bound_level = inclusion_levels.first;
+    LookUp_XY(val_name_var, val_var, val_x, val_y, bound_level);
+    return 1;
   }
 }
 unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_x,
                                 su2double val_y, su2double val_z)
 {
-  bool within_z_limits, exit_code;
-  unsigned long lower_level, upper_level;
-  std::pair<unsigned long, unsigned long> inclusion_levels;
-  if(val_z == 0){
-    inclusion_levels = std::make_pair(0, 0);
-    within_z_limits = false;
-  }else{
-    inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
-  }
+  /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var 
+        on a query point with coordinates val_x, val_y, and val_z ---*/
+
+  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
+  bool within_z_limits = true;
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
   
   if(within_z_limits){
-    lower_level = inclusion_levels.first;
-    upper_level = inclusion_levels.second;
+    /* 2: Perform 2D interpolations on upper and lower inclusion levels */
+    unsigned long lower_level = inclusion_levels.first;
+    unsigned long upper_level = inclusion_levels.second;
+
     std::vector<su2double> val_vars_lower, val_vars_upper;
     val_vars_lower.resize(val_vars.size());
     val_vars_upper.resize(val_vars.size());
     unsigned long exit_code_lower = LookUp_XY(val_names_var, val_vars_lower, val_x, val_y, lower_level);
     unsigned long exit_code_upper = LookUp_XY(val_names_var, val_vars_upper, val_x, val_y, upper_level);
 
-    Linear_Interpolation(val_z, inclusion_levels, val_vars_lower, val_vars_upper, val_vars);
+    /* 3: Perform linear interpolation along the z-direction using the x-y interpolation results
+             from upper and lower trapezoidal maps */
+    Linear_Interpolation(val_z, lower_level, upper_level, val_vars_lower, val_vars_upper, val_vars);
 
     return max(exit_code_lower, exit_code_upper);
   }else{
-    lower_level = inclusion_levels.first;
-    exit_code = LookUp_XY(val_names_var, val_vars, val_x, val_y, lower_level);
-    if( val_z == 0 ){
-      return exit_code;
-    }else{
-      return 1;
-    }
+    /* Perform single, 2D interpolation when val_z lies outside table bounds */
+    unsigned long bound_level = inclusion_levels.first;
+    LookUp_XY(val_names_var, val_vars, val_x, val_y, bound_level);
+    return 1;
   }
 }
 
-void CLookUpTable::Linear_Interpolation(su2double val_z, std::pair<unsigned long, unsigned long> &inclusion_levels, su2double&lower_value,su2double&upper_value, su2double*&var_val)
+void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, su2double&lower_value,su2double&upper_value, su2double*&var_val)
 {
-  su2double val_z_lower = z_values_levels[inclusion_levels.first];
-  su2double val_z_upper = z_values_levels[inclusion_levels.second];
+  /* Perform linear interpolation along the z-direction of the table for a single variable */
+
+  /* Retrieve constant z-values of inclusion levels */
+  su2double val_z_lower = z_values_levels[lower_level];
+  su2double val_z_upper = z_values_levels[upper_level];
+
+  /* Compute linear interpolation coefficients */
   su2double factor_upper = (val_z - val_z_lower) / (val_z_upper - val_z_lower);
   su2double factor_lower = (val_z_upper - val_z) / (val_z_upper - val_z_lower);
 
+  /* Perform linear interpolation */
   *var_val = lower_value * factor_lower + upper_value * factor_upper;
-  
 }
 
-void CLookUpTable::Linear_Interpolation(su2double val_z, std::pair<unsigned long, unsigned long> &inclusion_levels, std::vector<su2double>&lower_values,std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals)
+void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, std::vector<su2double>&lower_values,std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals)
 {
-  su2double val_z_lower = z_values_levels[inclusion_levels.first];
-  su2double val_z_upper = z_values_levels[inclusion_levels.second];
+  /* Perform linear interpolation along the z-direction of the table for multiple variables */
+
+  /* Retrieve constant z-values of inclusion levels */
+  su2double val_z_lower = z_values_levels[lower_level];
+  su2double val_z_upper = z_values_levels[upper_level];
+
+  /* Compute linear interpolation coefficients */
   su2double factor_upper = (val_z - val_z_lower) / (val_z_upper - val_z_lower);
   su2double factor_lower = (val_z_upper - val_z) / (val_z_upper - val_z_lower);
 
+  /* Perform linear interpolation */
   for(size_t iVar=0; iVar<var_vals.size(); iVar++){
     *var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
   }
@@ -487,7 +582,7 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
       for (int p = 0; p < 3; p++) 
         triangle[p] = triangles[i_level][id_triangle][p]; 
 
-      *val_var = Interpolate(GetDataP(val_name_var), triangle, interp_coeffs);
+      *val_var = Interpolate(GetDataP(val_name_var, i_level), triangle, interp_coeffs);
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
@@ -506,10 +601,10 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
 
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
                                             su2double val_x, su2double val_y, unsigned long i_level) {
-  vector<su2double*> look_up_data;
+  vector<su2double*> look_up_data(val_names_var.size());
 
   for (long unsigned int i_var = 0; i_var < val_vars.size(); ++i_var) {
-    look_up_data.push_back(&val_vars[i_var]);
+    look_up_data[i_var] = &val_vars[i_var];
   }
 
   unsigned long exit_code = LookUp_XY(val_names_var, look_up_data, val_x, val_y, i_level);
@@ -517,11 +612,26 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   return exit_code;
 }
 
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog, 
+                                            su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_name_var, val_var, val_prog, val_enth);
+}
+
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_prog,
+                                su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
+}
+
+unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars, su2double val_prog,
+                                su2double val_enth, std::string name_prog, std::string name_enth) {
+  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
+}
+
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
                                             su2double val_x, su2double val_y, unsigned long i_level) {
   unsigned long exit_code = 0;
   unsigned long nearest_neighbor = 0;
-  unsigned long id_triangle;
+  unsigned long id_triangle = 0;
   std::array<su2double,3> interp_coeffs{0};
   std::array<unsigned long,3> triangle{0};
 
@@ -563,7 +673,7 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) 
           triangle[p] = triangles[i_level][id_triangle][p]; 
-        *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var]), triangle, interp_coeffs);
+        *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
       }
       else
         *val_vars[i_var] = GetDataP(val_names_var[i_var], i_level)[nearest_neighbor];
