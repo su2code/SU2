@@ -27,10 +27,13 @@
 
 #pragma once
 
+#include <cstdint>
 #include "COutput.hpp"
 
 class CFVMOutput : public COutput{
 protected:
+  std::vector<unsigned long> lineletPointColor;
+
   /*!
    * \brief Constructor of the class
    */
@@ -60,5 +63,6 @@ protected:
   /*!
    * \brief Load common FVM outputs.
    */
-  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint);
+  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, const CSolver* solver,
+                            unsigned long iPoint);
 };

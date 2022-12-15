@@ -891,6 +891,11 @@ public:
   unsigned long BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Returns the Linelet structure (point indices in each line).
+   */
+  const vector<vector<unsigned long>>& GetLinelets() const { return LineletPoint; }
+
+  /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.

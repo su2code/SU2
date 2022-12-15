@@ -437,7 +437,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   }
 
-  LoadCommonFVMOutputs(config, geometry, iPoint);
+  LoadCommonFVMOutputs(config, geometry, solver[FLOW_SOL], iPoint);
 }
 
 bool CFlowIncOutput::SetInit_Residuals(const CConfig *config){

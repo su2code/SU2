@@ -144,7 +144,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   // Residuals
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes(iPoint, 0));
 
-  LoadCommonFVMOutputs(config, geometry, iPoint);
+  LoadCommonFVMOutputs(config, geometry, solver[HEAT_SOL], iPoint);
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

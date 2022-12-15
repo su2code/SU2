@@ -29,8 +29,11 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() :
@@ -911,23 +914,20 @@ template<class ScalarType>
 unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config) {
 
   assert(omp_get_thread_num()==0 && "Linelet preconditioner cannot be built by multiple threads.");
+  const auto nDim = geometry->GetnDim();
 
-  bool add_point;
-  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode;
-  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
-  const su2double* normal;
-  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
+  /*--- Stopping criteria. ---*/
 
-  /*--- Memory allocation --*/
-
-  vector<bool> check_Point(nPoint,true);
+  const su2double alphaIsotropic = 0.9;
+  const unsigned long maxLineletPoints = 32;
 
   LineletBool.clear();
-  LineletBool.resize(nPoint,false);
+  LineletBool.resize(nPoint, false);
+
+  /*--- Estimate number of linelets. ---*/
 
   nLinelet = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetSolid_Wall(iMarker) ||
         (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
@@ -938,137 +938,107 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   if (nLinelet != 0) {
 
-    /*--- Basic initial allocation ---*/
-
     LineletPoint.resize(nLinelet);
 
-    /*--- Define the basic linelets, starting from each vertex ---*/
+    /*--- Define the basic linelets, starting from each vertex, preventing duplication of points. ---*/
 
-    iLinelet = 0;
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetSolid_Wall(iMarker) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
-      {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          LineletPoint[iLinelet].push_back(iPoint);
-          check_Point[iPoint] = false;
-          iLinelet++;
+    nLinelet = 0;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetSolid_Wall(iMarker) || (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (!LineletBool[iPoint] && geometry->nodes->GetDomain(iPoint)) {
+            LineletPoint[nLinelet].push_back(iPoint);
+            LineletBool[iPoint] = true;
+            ++nLinelet;
+          }
         }
       }
     }
+    LineletPoint.resize(nLinelet);
 
-    /*--- Create the linelet structure ---*/
+    /*--- Create the linelet structure. ---*/
 
-    iLinelet = 0;
+    for (auto& Linelet : LineletPoint) {
+      while (Linelet.size() < maxLineletPoints) {
+        const auto iPoint = Linelet.back();
 
-    do {
+        /*--- Compute the value of the max and min weights to detect if this region is isotropic. ---*/
 
-      index_Point = 0;
+        auto ComputeWeight = [&](unsigned long iEdge, unsigned long jPoint) {
+          const auto* normal = geometry->edges->GetNormal(iEdge);
+          const su2double area = GeometryToolbox::Norm(nDim, normal);
+          const su2double volume_iPoint = geometry->nodes->GetVolume(iPoint);
+          const su2double volume_jPoint = geometry->nodes->GetVolume(jPoint);
+          return 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
+        };
 
-      do {
+        su2double max_weight = 0.0, min_weight = std::numeric_limits<su2double>::max();
+        for (auto iNode = 0u; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          const auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+          const auto iEdge = geometry->nodes->GetEdge(iPoint, iNode);
+          const auto weight = ComputeWeight(iEdge, jPoint);
+          max_weight = max(max_weight, weight);
+          min_weight = min(min_weight, weight);
+        }
 
-        /*--- Compute the value of the max weight ---*/
+        /*--- Isotropic, stop this linelet. ---*/
+        if (min_weight / max_weight > alphaIsotropic) break;
 
-        iPoint = LineletPoint[iLinelet][index_Point];
-        max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
-          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
-            iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edges->GetNormal(iEdge);
-            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->nodes->GetVolume(iPoint);
-            volume_jPoint = geometry->nodes->GetVolume(jPoint);
-            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-            max_weight = max(max_weight, weight);
+        /*--- Otherwise, add the closest valid neighbor. ---*/
+
+        su2double min_dist2 = std::numeric_limits<su2double>::max();
+        auto next_Point = iPoint;
+        const auto* iCoord = geometry->nodes->GetCoord(iPoint);
+
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+          if (!LineletBool[jPoint] && geometry->nodes->GetDomain(jPoint)) {
+            const auto* jCoord = geometry->nodes->GetCoord(jPoint);
+            const su2double d2 = GeometryToolbox::SquaredDistance(nDim, iCoord, jCoord);
+            su2double cosTheta = 1;
+            if (Linelet.size() > 1) {
+              const auto* kCoord = geometry->nodes->GetCoord(Linelet[Linelet.size() - 2]);
+              su2double dij[3] = {0.0}, dki[3] = {0.0};
+              GeometryToolbox::Distance(nDim, iCoord, kCoord, dki);
+              GeometryToolbox::Distance(nDim, jCoord, iCoord, dij);
+              cosTheta = GeometryToolbox::DotProduct(3, dki, dij) / sqrt(d2 * GeometryToolbox::SquaredNorm(nDim, dki));
+            }
+            if (d2 < min_dist2 && cosTheta > 0.7071) {
+              next_Point = jPoint;
+              min_dist2 = d2;
+            }
           }
         }
 
-        /*--- Verify if any face of the control volume must be added ---*/
+        /*--- Did not find a suitable point. ---*/
+        if (next_Point == iPoint) break;
 
-        add_point = false;
-        counter = 0;
-        next_Point = geometry->nodes->GetPoint(iPoint, 0);
-        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
-          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edges->GetNormal(iEdge);
-          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->nodes->GetVolume(iPoint);
-          volume_jPoint = geometry->nodes->GetVolume(jPoint);
-          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
-              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
-            add_point = true;
-            next_Point = jPoint;
-            counter++;
-          }
-        }
-
-        /*--- We have arrived to an isotropic zone ---*/
-
-        if (counter > 1) add_point = false;
-
-        /*--- Add a typical point to the linelet, no leading edge ---*/
-
-        if (add_point) {
-          LineletPoint[iLinelet].push_back(next_Point);
-          check_Point[next_Point] = false;
-          index_Point++;
-        }
-
-      } while (add_point);
-      iLinelet++;
-    } while (iLinelet < nLinelet);
-
-    /*--- Identify the points that belong to a Linelet ---*/
-
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        LineletBool[iPoint] = true;
+        Linelet.push_back(next_Point);
+        LineletBool[next_Point] = true;
       }
     }
 
-    /*--- Identify the maximum number of elements in a Linelet ---*/
-
-    max_nElem = LineletPoint[0].size();
-    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-      if (LineletPoint[iLinelet].size() > max_nElem)
-        max_nElem = LineletPoint[iLinelet].size();
-
   }
 
-  /*--- The domain doesn't have well defined linelets ---*/
-
-  else {
-
-    max_nElem = 0;
-
+  unsigned long max_nPoints = 0, sum_nPoints = 0;
+  for (const auto& Linelet : LineletPoint) {
+    max_nPoints = max(max_nPoints, Linelet.size());
+    sum_nPoints += Linelet.size();
   }
 
-  /*--- Screen output ---*/
+  /*--- Memory allocation for the local max size. --*/
 
-  Local_nPoints = 0;
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-    Local_nPoints += LineletPoint[iLinelet].size();
-  }
-  Local_nLineLets = nLinelet;
+  LineletUpper.resize(omp_get_max_threads(), vector<const ScalarType*>(max_nPoints, nullptr));
+  LineletVector.resize(omp_get_max_threads(), vector<ScalarType>(max_nPoints * nVar, 0.0));
+  LineletInvDiag.resize(omp_get_max_threads(), vector<ScalarType>(max_nPoints * nVar * nVar, 0.0));
 
-  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  /*--- Average linelet size over all ranks. ---*/
 
-  /*--- Memory allocation --*/
+  unsigned long Global_nPoints, Global_nLineLets;
+  SU2_MPI::Allreduce(&sum_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLinelet, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  LineletUpper.resize(omp_get_max_threads(), vector<const ScalarType*>(max_nElem,nullptr));
-  LineletVector.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar,0.0));
-  LineletInvDiag.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar*nVar,0.0));
-
-  return (unsigned long)(passivedouble(Global_nPoints) / Global_nLineLets);
+  return static_cast<unsigned long>(passivedouble(Global_nPoints) / Global_nLineLets);
 
 }
 

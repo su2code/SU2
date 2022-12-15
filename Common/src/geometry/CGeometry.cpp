@@ -3843,7 +3843,7 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     /*--- Color the coarse points. ---*/
     vector<tColor> color;
     const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
-    if (colorSparsePattern<CCompressedSparsePatternUL, tColor, nColor>(adjacency, 1, false, &color).empty())
+    if (colorSparsePattern<tColor, nColor>(adjacency, 1, false, &color).empty())
       continue;
 
     /*--- Propagate colors to fine mesh. ---*/
