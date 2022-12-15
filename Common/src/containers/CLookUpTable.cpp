@@ -72,7 +72,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     break;
   }
 
-  trap_map_x_y.resize(n_table_levels);//= new CTrapezoidalMap[n_table_levels];
+  trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   for(auto i_level = 0ul; i_level<n_table_levels; i_level++){
     trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_x, i_level), GetDataP(name_y, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
