@@ -44,27 +44,28 @@ class CLookUpTable {
  protected:
   int rank; /*!< \brief MPI Rank. */
 
-  std::string file_name_lut,  // LUT file name.
-              version_lut,    // LUT version as specified in LUT file.
-              version_reader, // Reader version (should be equal or above LUT version).
-              name_CV1,       // Name of controlling variable 1.
-              name_CV2;       // Name of xontrolling variable 2.
+  std::string file_name_lut,  /*!< \brief LUT file name.*/ 
+              version_lut,    /*!< \brief LUT version as specified in LUT file.*/ 
+              version_reader, /*!< \brief Reader version (should be equal or above LUT version).*/ 
+              name_CV1,       /*!< \brief Name of controlling variable 1.*/ 
+              name_CV2;       /*!< \brief Name of xontrolling variable 2.*/ 
 
-  unsigned long *n_points,          // Number of data points per table level.
-                *n_triangles,       // Cell count per table level.
-                *n_hull_points,     // Number of boundary points per table level.
-                n_variables,        // Number of variables stored in the table.
-                n_table_levels = 1; // Number of table levels in the z-direction.
+  su2vector<unsigned long>  n_points,       /*!< \brief Number of data poins per table level.*/ 
+                            n_triangles,    /*!< \brief Number of triangles per table level.*/ 
+                            n_hull_points;  /*!< \brief Number of outer boundary points per table level.*/ 
 
-  su2double *z_values_levels = nullptr; // Constant z-values of each table level.
+  unsigned long n_variables,      
+                n_table_levels=1;
 
-  unsigned short table_dim = 2; // Table dimension.
+  su2vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/ 
+
+  unsigned short table_dim = 2;/*!< \brief Table dimension.*/ 
   /*! 
    * \brief the lower and upper limits of the z, y and x variable for each table level.
    */
   std::pair<su2double, su2double> limits_table_z;
-  std::pair<su2double, su2double> *limits_table_y;
-  std::pair<su2double, su2double> *limits_table_x;
+  su2vector<std::pair<su2double, su2double>> limits_table_y, 
+                                             limits_table_x;
 
   /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data
@@ -75,34 +76,34 @@ class CLookUpTable {
    * Holds all data stored in the table. First index addresses the variable
    * while second index addresses the point.
    */
-  su2activematrix *table_data;
+  su2vector<su2activematrix> table_data;
 
   /*! \brief
    * Holds all connectivity data stored in the table for each level. First index 
    * addresses the variable while second index addresses the point.
    */
-  su2matrix<unsigned long> *triangles;
+  su2vector<su2matrix<unsigned long>>triangles;
 
   /*! \brief
    * Edge information for each table level.
    */
-  std::vector<su2vector<unsigned long> > *edges;
-  su2vector<std::vector<unsigned long> > *edge_to_triangle;
+  su2vector<std::vector<su2vector<unsigned long>>>edges;
+  su2vector<su2vector<std::vector<unsigned long>>>edge_to_triangle;
 
   /*! \brief 
    * The hull contains the boundary of the lookup table.
    */
-  su2vector<unsigned long> *hull;
+  su2vector<su2vector<unsigned long>>hull;
 
   /*! \brief 
    * Trapezoidal map objects for the table levels.
    */
-  CTrapezoidalMap *trap_map_x_y;
+  su2vector<CTrapezoidalMap>trap_map_x_y;
 
   /*! \brief 
    * vector of all the weight factors for the interpolation.
    */
-  su2vector<su2activematrix> *interp_mat_inv_x_y;
+  su2vector<su2vector<su2activematrix>>interp_mat_inv_x_y;
 
   /*! \brief 
    * returns the index to the variable in the lookup table.
@@ -239,7 +240,6 @@ class CLookUpTable {
 
  public:
   CLookUpTable(const std::string& file_name_lut, const std::string& name_x, const std::string& name_y);
-  ~CLookUpTable();
 
   /*!
    * \brief print information to screen.

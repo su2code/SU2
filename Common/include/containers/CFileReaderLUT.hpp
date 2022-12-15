@@ -46,11 +46,12 @@ class CFileReaderLUT {
   std::string version_lut;
   std::string version_reader;
   unsigned long n_levels = 1;
-  unsigned long *n_points;
-  unsigned long *n_triangles;
-  unsigned long *n_hull_points;
+  su2vector<unsigned long> n_points, 
+                           n_triangles, 
+                           n_hull_points;
+
   unsigned long n_variables;
-  su2double *table_levels = nullptr;
+  su2vector<su2double> table_levels;
 
   /*! \brief Holds the variable names stored in the table file. 
    * Order is in sync with tableFlamelet.
@@ -60,11 +61,11 @@ class CFileReaderLUT {
   /*! \brief Holds all data stored in the table. 
    * First index addresses the variable while second index addresses the point.
    */
-  su2activematrix *table_data;
+  su2vector<su2activematrix>table_data;
 
-  su2matrix<unsigned long> *triangles;
+  su2vector<su2matrix<unsigned long>>triangles;
 
-  su2vector<unsigned long> *hull;
+  su2vector<su2vector<unsigned long>>hull;
   /*! \brief Searches for the position of flag in file_stream and 
    *         sets the stream position of file_stream to that position.
    */
@@ -80,8 +81,7 @@ class CFileReaderLUT {
   bool GetStrippedLine(std::ifstream& file_stream, std::string& line) const;
 
  public:
-  CFileReaderLUT(){};
-  ~CFileReaderLUT();
+ 
   inline const std::string& GetVersionLUT() const { return version_lut; }
   inline const std::string& GetVersionReader() const { return version_reader; }
   inline unsigned long GetNPoints(std::size_t i_level=0) const { return n_points[i_level]; }

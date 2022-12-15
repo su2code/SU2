@@ -72,7 +72,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     break;
   }
 
-  trap_map_x_y = new CTrapezoidalMap[n_table_levels];
+  trap_map_x_y.resize(n_table_levels);//= new CTrapezoidalMap[n_table_levels];
   su2double startTime = SU2_MPI::Wtime();
   for(auto i_level = 0ul; i_level<n_table_levels; i_level++){
     trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_x, i_level), GetDataP(name_y, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
@@ -113,23 +113,6 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     cout << "LUT fluid model ready for use" << endl;
 }
 
-CLookUpTable::~CLookUpTable()
-{
-  delete [] trap_map_x_y;
-  delete [] n_points;
-  delete [] n_triangles;
-  delete [] n_hull_points;
-  delete [] table_data;
-  delete [] hull;
-  delete [] triangles;
-  delete [] interp_mat_inv_x_y;
-  delete [] edges;
-  delete [] edge_to_triangle;
-  delete [] limits_table_x;
-  delete [] limits_table_y;
-  if(z_values_levels != nullptr) delete [] z_values_levels;
-}
-
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
@@ -140,15 +123,15 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   table_dim = file_reader.GetTableDim();
   n_table_levels = file_reader.GetNLevels();
 
-  n_points            = new unsigned long[n_table_levels];
-  n_triangles         = new unsigned long[n_table_levels];
-  n_hull_points       = new unsigned long[n_table_levels];
-  table_data          = new su2activematrix[n_table_levels];
-  hull                = new su2vector<unsigned long>[n_table_levels];
-  triangles           = new su2matrix<unsigned long>[n_table_levels];
-  interp_mat_inv_x_y  = new su2vector<su2activematrix>[n_table_levels];
-  edges               = new std::vector<su2vector<unsigned long> >[n_table_levels];
-  edge_to_triangle    = new su2vector<std::vector<unsigned long> >[n_table_levels];
+  n_points.resize(n_table_levels); 
+  n_triangles.resize(n_table_levels);
+  n_hull_points.resize(n_table_levels);
+  table_data.resize(n_table_levels);
+  hull.resize(n_table_levels);
+  triangles.resize(n_table_levels);
+  interp_mat_inv_x_y.resize(n_table_levels);
+  edges.resize(n_table_levels);
+  edge_to_triangle.resize(n_table_levels);
 
   for(unsigned long i_level=0; i_level<n_table_levels; i_level++){
     n_points[i_level] = file_reader.GetNPoints(i_level);
@@ -165,7 +148,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   names_var = file_reader.GetNamesVar();
 
   if(table_dim == 3){
-    z_values_levels = new su2double[n_table_levels];
+    z_values_levels.resize(n_table_levels);
     for(unsigned long i_level=0; i_level<n_table_levels; i_level++){
       z_values_levels[i_level] = file_reader.GetTableLevel(i_level);
     }
@@ -177,8 +160,8 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
 void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv2) {
   int idx_X = GetIndexOfVar(name_cv1);
   int idx_Y = GetIndexOfVar(name_cv2);
-  limits_table_x = new pair<su2double, su2double>[n_table_levels];
-  limits_table_y = new pair<su2double, su2double>[n_table_levels];
+  limits_table_x.resize(n_table_levels);
+  limits_table_y.resize(n_table_levels);
 
   /* we find the lowest and highest value of y and x in the table */
   for(auto i_level=0u; i_level<n_table_levels; i_level++)
@@ -194,8 +177,8 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
 
   if(table_dim == 3){
     su2double min_z, max_z;
-    min_z = *min_element(z_values_levels, z_values_levels + n_table_levels);
-    max_z = *max_element(z_values_levels, z_values_levels + n_table_levels);
+    min_z = z_values_levels[0];
+    max_z = z_values_levels[n_table_levels - 1];
     limits_table_z = make_pair(min_z, max_z);
   }
 }

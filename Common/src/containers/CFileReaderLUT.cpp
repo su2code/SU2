@@ -72,9 +72,9 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         table_dim = 2;
         n_levels = 1;
         found_level_count = true;
-        n_points      = new unsigned long[n_levels];
-        n_triangles   = new unsigned long[n_levels];
-        n_hull_points = new unsigned long[n_levels];
+        n_points.resize(n_levels);
+        n_triangles.resize(n_levels);
+        n_hull_points.resize(n_levels);
       }else if(version_lut.compare("1.1.0") == 0){
         table_dim = 3;
       }else{
@@ -88,10 +88,10 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
       GetNextNonEmptyLine(file_stream, line);
       n_levels = stoul(line);
       
-      n_points      = new unsigned long[n_levels];
-      n_triangles   = new unsigned long[n_levels];
-      n_hull_points = new unsigned long[n_levels];
-      table_levels  = new su2double[n_levels];
+      n_points.resize(n_levels);
+      n_triangles.resize(n_levels);
+      n_hull_points.resize(n_levels);
+      table_levels.resize(n_levels);
     }
 
     /*--- number of points in LUT ---*/
@@ -172,17 +172,17 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
   /*--- now that n_variables, n_points, n_hull_points and n_variables are available, allocate memory ---*/
   if (rank == MASTER_NODE) cout << "allocating memory for the data, size = ( " << GetNVariables() << " , " << GetNPoints() << " )" << endl;
-  table_data = new su2activematrix[n_levels];
+  table_data.resize(n_levels);
   for(unsigned long i_level=0; i_level<n_levels; i_level++)
     table_data[i_level].resize(GetNVariables(), GetNPoints(i_level));
 
   if (rank == MASTER_NODE) cout << "allocating memory for the triangles, size = "<< GetNTriangles() << endl;
-  triangles = new su2matrix<unsigned long>[n_levels];
+  triangles.resize(n_levels);
   for(unsigned long i_level=0; i_level<n_levels; i_level++)
     triangles[i_level].resize(GetNTriangles(i_level), 3);
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points, size = " << GetNHullPoints() << endl;
-  hull = new su2vector<unsigned long>[n_levels];
+  hull.resize(n_levels);
   for(unsigned long i_level=0; i_level<n_levels; i_level++)
     hull[i_level].resize(GetNHullPoints(i_level));
 
@@ -324,16 +324,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
   file_stream.close();
 
-}
-
-CFileReaderLUT::~CFileReaderLUT(){
-  delete [] n_triangles;
-  delete [] n_hull_points;
-  delete [] n_points;
-  delete [] table_data;
-  delete [] hull;
-  delete [] triangles;
-  if(table_levels != nullptr) delete [] table_levels;
 }
 
 void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
