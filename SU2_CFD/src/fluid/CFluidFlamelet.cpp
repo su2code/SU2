@@ -66,7 +66,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   config->SetLUTScalarNames(table_scalar_names);
 
   /*--- we currently only need 1 source term from the LUT for the progress variable
-  /*    and each auxiliary equations needs 2 source terms ---*/
+        and each auxiliary equations needs 2 source terms ---*/
   n_table_sources = 1 + 2*n_reactants;
   config->SetNLUTSources(n_table_sources);
 
