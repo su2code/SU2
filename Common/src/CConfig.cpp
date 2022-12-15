@@ -2100,7 +2100,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
-  /* DESCRIPTION: Names of the reactants solved in flamelet problem. */
+  /* DESCRIPTION: Names of the auxiliary transport equations solved in the flamelet problem. */
   addStringListOption("PASSIVE_REACTANT_NAMES", n_reactants, reactant_names);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
@@ -3928,7 +3928,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
 
-    if (Kind_Species_Model != SPECIES_MODEL::FLAMELET) {
+    if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
  
       if (Kind_FluidModel != FLUID_FLAMELET) {
         SU2_MPI::Error("The use of SCALAR_MODEL= FLAMELET requires the FLUID_MODEL option to be FLUID_FLAMELET",

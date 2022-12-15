@@ -2160,7 +2160,7 @@ public:
   /*!
    * \brief Get the name of the passive reactant.
    */
-  string GetReactantName(unsigned short i_reactant) const { if(n_reactants > 0)return reactant_names[i_reactant];else return "NONE"; }
+  string GetReactantName(unsigned short i_reactant) const { if(n_reactants > 0) return reactant_names[i_reactant]; else return "NONE"; }
 
   /*!
    * \brief Get the Lewis number of reactant i_reactant
@@ -2188,7 +2188,7 @@ public:
   /*!
    * \brief Get the name of the independent variable from the lookup table
    */
-  string GetLUTScalarName(unsigned short i_scalar) const { return table_scalar_names.at(i_scalar); }
+  string GetLUTScalarName(unsigned short i_scalar) const { return table_scalar_names[i_scalar]; }
 
   /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table
@@ -2204,7 +2204,7 @@ public:
   /*!
    * \brief Get the scalar source term name i_source
    */
-  string GetLUTSourceName(unsigned short i_source) const { return table_source_names.at(i_source); }
+  string GetLUTSourceName(unsigned short i_source) const { return table_source_names[i_source]; }
 
   /*!
    * \brief Get the file name of the look up table
