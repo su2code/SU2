@@ -485,23 +485,24 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
+ // nijso: the values of int are important for some cases (fsi)
  enum SOLVER_TYPE : const int {
-   FLOW_SOL,       /*!< \brief Position of the mean flow solution in the solver container array. */
-   ADJFLOW_SOL,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-   TURB_SOL,       /*!< \brief Position of the turbulence model solution in the solver container array. */
-   ADJTURB_SOL,    /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-   TRANS_SOL,      /*!< \brief Position of the transition model solution in the solver container array. */
-   HEAT_SOL,       /*!< \brief Position of the heat equation in the solution solver array. */
-   ADJHEAT_SOL,    /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-   RAD_SOL,        /*!< \brief Position of the radiation equation in the solution solver array. */
-   ADJRAD_SOL,     /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-   MESH_SOL,       /*!< \brief Position of the mesh solver. */
-   ADJMESH_SOL,    /*!< \brief Position of the adjoint of the mesh solver. */
-   SPECIES_SOL,    /*!< \brief Position of the species solver. */
-   ADJSPECIES_SOL, /*!< \brief Position of the adjoint of the species solver. */
-   FEA_SOL,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
-   ADJFEA_SOL,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
-   TEMPLATE_SOL,   /*!< \brief Position of the template solution. */
+   FLOW_SOL=0,       /*!< \brief Position of the mean flow solution in the solver container array. */
+   ADJFLOW_SOL=1,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+   TURB_SOL=2,       /*!< \brief Position of the turbulence model solution in the solver container array. */
+   ADJTURB_SOL=3,    /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   TRANS_SOL=4,      /*!< \brief Position of the transition model solution in the solver container array. */
+   HEAT_SOL=5,       /*!< \brief Position of the heat equation in the solution solver array. */
+   ADJHEAT_SOL=6,    /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+   RAD_SOL=7,        /*!< \brief Position of the radiation equation in the solution solver array. */
+   ADJRAD_SOL=8,     /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   MESH_SOL=9,       /*!< \brief Position of the mesh solver. */
+   ADJMESH_SOL=10,    /*!< \brief Position of the adjoint of the mesh solver. */
+   SPECIES_SOL=11,    /*!< \brief Position of the species solver. */
+   ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
+   FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
+   ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
  };
  static const MapType<std::string, SOLVER_TYPE> SolverType_Map = {
    MakePair("FLOW_SOL", FLOW_SOL)
@@ -707,7 +708,7 @@ enum class MIXINGVISCOSITYMODEL {
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
@@ -1219,16 +1220,16 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 };
 
 /* the order matters: */
-/*! 
+/*!
 * \brief progress variable and enthalpy are the first and second entry in the lookup table.
-*        CO and NOX are auxiliary transport equations that we solve 
+*        CO and NOX are auxiliary transport equations that we solve
 */
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
 };
 
-/*! 
+/*!
  * \brief the source terms for the flamelet method
  */
 enum FLAMELET_SCALAR_SOURCES {

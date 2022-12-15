@@ -193,7 +193,7 @@ vector<passivedouble> CDriver::GetCoords(unsigned long iPoint, unsigned short iM
   coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
   coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
   coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
-  
+
   return coord_passive;
 }
 
@@ -236,7 +236,6 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
 
 /*--- Get the index to the solver ---*/
 unsigned long CDriver::GetSolverIndex(string solverName) const {
-
   return static_cast<unsigned long>(SolverType_Map.find(solverName)->second);
 }
 
