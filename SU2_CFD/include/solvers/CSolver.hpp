@@ -102,6 +102,7 @@ protected:
 
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
+  su2double Total_PowerDissipation = 0.0; /*!< \brief Total custom objective function. */
 
   /*--- Variables that need to go. ---*/
 

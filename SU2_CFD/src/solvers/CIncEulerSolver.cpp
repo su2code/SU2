@@ -1398,7 +1398,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auto Velocity = nodes->GetVelocity(iPoint, iDim);
-            LinSysRes(iPoint, iDim + 1) -= Volume * alpha * Density * Velocity;
+            LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
         }
 
     }

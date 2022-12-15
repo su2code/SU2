@@ -849,7 +849,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         auto Vel2 = nodes->GetVelocity2(iPoint);
         su2double vel_comp = 0.0;
         for (unsigned short iDim=0; iDim < nDim; iDim++){
-            for (unsigned short jDim=0; jDim < nDim; jDim++){
+            for (unsigned short jDim=0; jDim < nDim; jDim++) {
                 vel_comp += (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * nodes->GetLaminarViscosity(iPoint);
             }
         }
@@ -867,7 +867,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         file.close();
     }
 
-    Total_Custom_ObjFunc = power_local;
+    Total_PowerDissipation = power_local;
 }
 
 void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -880,8 +880,6 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 
 void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
 
-  if (!config->GetTopology_Optimization()) return;
-
   unsigned long iPoint,
   nPoint = geometry->GetnPoint(),
   nPointDomain = geometry->GetGlobal_nPointDomain();
@@ -892,8 +890,8 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
   /*--- Allocate and initialize an array onto which the derivatives of every partition
    will be reduced, this is to output results in the correct order, it is not a very
    memory efficient solution...  ---*/
-  su2double *send_buf = new su2double[nPointDomain*vals_per_point], *rec_buf = NULL;
-  for(iPoint=0; iPoint<nPointDomain*vals_per_point; ++iPoint) send_buf[iPoint] = 0.0;
+  su2double *send_buf = new su2double[nPoint*vals_per_point], *rec_buf = NULL;
+  for(iPoint=0; iPoint<nPoint*vals_per_point; ++iPoint) send_buf[iPoint] = 0.0;
 
   unsigned long total_index;
   for(iPoint=0; iPoint<nPoint; ++iPoint) {
@@ -909,8 +907,8 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
   }
 
 #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) rec_buf = new su2double[nPointDomain*vals_per_point];
-  SU2_MPI::Reduce(send_buf,rec_buf,nPointDomain*vals_per_point,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) rec_buf = new su2double[nPoint*vals_per_point];
+  SU2_MPI::Reduce(send_buf,rec_buf,nPoint*vals_per_point,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
 #else
   rec_buf = send_buf;
 #endif
@@ -922,7 +920,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     file.open(filename.c_str());
     file << setprecision(15);
     file << std::scientific;
-    for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
+    for(iPoint=0; iPoint<nPoint; ++iPoint) {
       unsigned long total_index = iPoint*vals_per_point;
       for (unsigned long jPoint = 0; jPoint < vals_per_point; jPoint++) {
         file << rec_buf[total_index];

@@ -411,22 +411,22 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Off-diagonal (coupling term) BGS update. ---*/
 
-      for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+      // for (unsigned short jZone = 0; jZone < nZone; jZone++) {
 
-        if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
+      //   if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
 
-          /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
-           *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
+      //     /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
+      //      *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
 
-          config_container[jZone]->SetInnerIter(0);
-          iteration_container[jZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
-                                                             config_container, jZone, INST_0, true);
+      //     config_container[jZone]->SetInnerIter(0);
+      //     iteration_container[jZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
+      //                                                        config_container, jZone, INST_0, true);
 
-          /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
+      //     /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
-          Update_Cross_Term(iZone, jZone);
-        }
-      }
+      //     Update_Cross_Term(iZone, jZone);
+      //   }
+      // }
 
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
@@ -696,11 +696,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                               solver_container, numerics_container, config_container,
                                               surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-  /*--- Iterate the zone as a block a single time ---*/
-  direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  if (kind_recording != RECORDING::CLEAR_INDICES)
+    /*--- Iterate the zone as a block a single time ---*/
+    direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                            solver_container, numerics_container, config_container,
+                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
 }
 
