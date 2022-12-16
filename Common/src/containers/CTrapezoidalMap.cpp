@@ -75,6 +75,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
   unsigned long n_edges = edges.size();
   /* edge index */
   unsigned long i_edge = 0;
+  unsigned long j_edge = 0;
   /* counter for edges intersects */
   unsigned long n_intersects = 0;
   /* lower and upper x value of each band */
@@ -132,13 +133,14 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
 
   su2double stopTime = SU2_MPI::Wtime();
 
+  /* calculate size of trapezoidal map components */
   double size_unique_bands  = sizeof(su2double) * unique_bands_x.size() / 1e6;
   double size_edge_limits_x = sizeof(su2double) * edge_limits_x.size() * 2 / 1e6;
   double size_edge_limits_y = sizeof(su2double) * edge_limits_y.size() * 2 / 1e6;
 
   double size_edge_to_triangle = 0;
-  for (auto i_edge=0; i_edge < edge_to_triangle.size(); i_edge++)
-    for (auto j_edge=0; j_edge < edge_to_triangle[i_edge].size(); j_edge++)
+  for (i_edge=0; i_edge < edge_to_triangle.size(); i_edge++)
+    for (j_edge=0; j_edge < edge_to_triangle[i_edge].size(); j_edge++)
       size_edge_to_triangle += sizeof(unsigned long) / 1e6;
 
   double size_y_edge_at_band_mid = 0;
@@ -152,6 +154,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
                       size_edge_to_triangle + 
                       size_y_edge_at_band_mid;
 
+  /* print size of trapezoidal map components to screen */
   if (rank == MASTER_NODE) {
     cout << setfill(' ');
     cout << "\n" << endl;
