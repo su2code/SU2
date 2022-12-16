@@ -60,9 +60,6 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
   trap_map_prog_enth = CTrapezoidalMap(GetDataP(name_prog), GetDataP(name_enth), table_data.cols(), edges, edge_to_triangle);
 
   if (rank == MASTER_NODE) 
-    cout << " done." << endl;
-
-  if (rank == MASTER_NODE) 
     cout << "Precomputing interpolation coefficients..." << endl;
   
 
