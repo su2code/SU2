@@ -144,8 +144,8 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
       size_edge_to_triangle += sizeof(unsigned long) / 1e6;
 
   double size_y_edge_at_band_mid = 0;
-  for (auto i_y=0; i_y < y_edge_at_band_mid.size(); i_y++)
-    for (auto j_y=0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
+  for (unsigned long i_y=0; i_y < y_edge_at_band_mid.size(); i_y++)
+    for (unsigned long j_y=0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
       size_y_edge_at_band_mid += sizeof(su2double)  / 1e6 + sizeof(unsigned long)  / 1e6;
   
   double size_total = size_unique_bands + 
