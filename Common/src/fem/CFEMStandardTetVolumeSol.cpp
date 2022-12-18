@@ -149,6 +149,9 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
                   nDOFs, true, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
   SetUpJittedGEMM(nDOFsPad, val_nVar, nIntegration, nDOFsPad, nIntegrationPad,
                   nDOFsPad, false, jitterInt2DOFs, gemmInt2DOFs);
+
+  /*--- Compute the multiplication factors needed in the P-sequencing. ---*/
+  MultiplicationFactorsPSequencing();
 }
 
 CFEMStandardTetVolumeSol::~CFEMStandardTetVolumeSol() {
@@ -297,4 +300,32 @@ void CFEMStandardTetVolumeSol::ResidualGradientBasisFunctions(vector<ColMajorMat
   OwnGemm(gemmInt2DOFs, jitterInt2DOFs, nDOFsPad, resDOFs.cols(), nIntegration,
           nDOFsPad, nIntegrationPad, nDOFsPad, false,
           derLegBasisIntTranspose[2], vectorDataInt[2], resDOFs, nullptr);
+}
+
+void CFEMStandardTetVolumeSol::MultiplicationFactorsPSequencing(void) {
+
+  /*--- Allocate the memory for the multiplication factors and
+        and initialize them to one. ---*/
+  multFactorsPSequencing.resize(nPoly);
+  for(unsigned short p=0; p<nPoly; ++p)
+    multFactorsPSequencing[p].resize(nDOFsPad, 1);
+
+  /*--- Loop over the DOFs of this standard tet in the same manner
+        how the DOFs are stored. ---*/
+  unsigned short ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=(nPoly-i-j); ++k, ++ii) {
+
+        /*--- Determine the polynomial degree from which on
+              this DOF is present. ---*/
+        const unsigned short nPolyLimit = i + j + k;
+
+        /*--- Loop until nPolyLimit to set the multiplication factors
+              to zero for this DOF. ---*/
+        for(unsigned short p=0; p<nPolyLimit; ++p)
+          multFactorsPSequencing[p][ii] = 0;
+      }
+    }
+  }
 }

@@ -268,6 +268,16 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return Pointer to the array that contains the multiplication factors in P-sequencing.
+   */
+  virtual const unsigned short *GetMultiplicationDOFsPSequencing(const unsigned short nPolySequencing) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return nullptr;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \return The number of faces of the volume element.
    */
   virtual unsigned short GetNFaces(void) const {

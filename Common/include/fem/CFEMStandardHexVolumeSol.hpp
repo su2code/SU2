@@ -69,6 +69,21 @@ public:
   ~CFEMStandardHexVolumeSol() = default;
 
   /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function that makes available the multiplication factors of the modal DOFs when
+            P-sequencing is used.
+   * \param[in] nPolySequencing - Current polynomial degree in the P-sequencing.
+   * \return Pointer to the array that contains the multiplication factors of the modal
+             residuals for the given value of nPolySequencing.
+   */
+  inline const unsigned short *GetMultiplicationDOFsPSequencing(const unsigned short nPolySequencing) const override {
+    return multFactorsPSequencing[nPolySequencing].data();
+  }
+
+  /*-----------------------------------------------------------------------------------*/
   /*---                      Public member functions.                               ---*/
   /*-----------------------------------------------------------------------------------*/
 
@@ -172,6 +187,23 @@ public:
   passivedouble ValBasis0(void) override;
 
 private:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                      Private member functions.                              ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function that computes the multiplication factors (0 or 1) for the
+            modal residuals, such that P sequencing can be used.
+   */
+  void MultiplicationFactorsPSequencing(void);
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                      Private member variables.                              ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  vector<vector<unsigned short> > multFactorsPSequencing; /*!< \brief Multiplication factors of the modal
+                                                                      DOFs when P sequencing is used. */
+
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
 
   ColMajorMatrix<passivedouble> legBasisLineInt;    /*!< \brief The values of the 1D Legendre basis functions

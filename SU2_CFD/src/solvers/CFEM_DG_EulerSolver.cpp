@@ -4451,12 +4451,13 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
           the polynomial degree of the element, set the residuals of the higher
           DOFs to zero to improve robustness. ---*/
     if(currentPInPSequencing < volElem[l].standardElemFlow->GetPolyDegree()) {
-      const unsigned short VTK_Type = volElem[l].standardElemFlow->GetVTK_Type();
-      const unsigned short nDOFsUse = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, currentPInPSequencing);
+
+      const unsigned short *multiplicationDOFs = volElem[l].standardElemFlow->GetMultiplicationDOFsPSequencing(currentPInPSequencing);
 
       for(unsigned short j=0; j<nVar; ++j) {
-        for(unsigned short i=nDOFsUse; i<nDOFsPad; ++i)
-          rVec(i,j) = 0.0;
+SU2_OMP_SIMD
+      for(unsigned short i=0; i<nDOFsPad; ++i)
+        rVec(i,j) *= multiplicationDOFs[i];
       }
     }
   }
