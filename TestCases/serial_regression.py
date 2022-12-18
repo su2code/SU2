@@ -593,14 +593,6 @@ def main():
     schubauer_klebanoff_transition.test_vals    = [-8.029786, -13.240213, 0.000053, 0.007986] #last 4 columns
     test_list.append(schubauer_klebanoff_transition)
 
-    # Eppler E387 Transition Case
-    eppler_e387_transition              = TestCase('Eppler_E387')
-    eppler_e387_transition.cfg_dir      = "transition/E387_Airfoil"
-    eppler_e387_transition.cfg_file     = "transitional_SA_LM_model_ConfigFile.cfg"
-    eppler_e387_transition.test_iter    = 10
-    eppler_e387_transition.test_vals    = [-6.665097, -4.986983, -1.559560, 2.355792, 1.563815, 3, -7.644175]
-    test_list.append(eppler_e387_transition)
-
     #####################################
     ### Cont. adj. compressible Euler ###
     #####################################
