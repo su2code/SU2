@@ -646,14 +646,6 @@ def main():
     schubauer_klebanoff_transition.test_vals    = [-7.994740, -13.240225, 0.000046, 0.007987]
     test_list.append(schubauer_klebanoff_transition)
 
-    # Eppler E387 Transition Case
-    eppler_e387_transition              = TestCase('Eppler_E387')
-    eppler_e387_transition.cfg_dir      = "transition/E387_Airfoil"
-    eppler_e387_transition.cfg_file     = "transitional_SA_LM_model_ConfigFile.cfg"
-    eppler_e387_transition.test_iter    = 10
-    eppler_e387_transition.test_vals    = [-6.674782, -4.987298, -1.544803, 2.297538, 1.542486, 2, -9.258345]
-    test_list.append(eppler_e387_transition)
-
     #####################################
     ### Cont. adj. compressible Euler ###
     #####################################
@@ -1409,6 +1401,18 @@ def main():
     species_primitiveVenturi_boundedscalar.test_vals   = [-5.297585, -4.397797, -4.377086, -5.593131, -1.011782, -5.623540, 5.000000, -1.775123, 5.000000, -4.086339, 5.000000, -2.080187, 0.000424, 0.000424, 0.000000, 0.000000]
     species_primitiveVenturi_boundedscalar.new_output  = True
     test_list.append(species_primitiveVenturi_boundedscalar)
+    
+    # 2 species (1 eq) primitive venturi mixing using mixing model including inlet markers for turbulent intensity and viscosity ratios
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS           = TestCase('species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg')
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.019621, -1.652733, -1.414138, -0.971744, 1.590456, -3.762843, 23.000000, -5.066221, 12.000000, -5.359931, 4.000000, -6.078888, 2.000000, 1.000000, 0.000000, 1.000000]
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.timeout   = 1600
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.new_output = True
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.
     # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
