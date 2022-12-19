@@ -51,8 +51,8 @@ import pylab as pl
 def a_distribution (w0, Chi):
     """Function used to compute the value of the axial interference factor using the inviscid theory of the optimal propeller."""
 
-    a = (w0*pow(Chi,2))/(pow(Chi,2)+pow((1+(w0)),2))
-    return a
+    return (w0*pow(Chi,2))/(pow(Chi,2)+pow((1+(w0)),2))
+
 
 def write_su2_config_file():
     """Write the actuator disk configuration file"""
@@ -72,6 +72,7 @@ def write_su2_config_file():
         f.write('MARKER_ACTDISK = ( , , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)\n')
 
     print('SU2 file generated!')
+
 
 def write_external_file(CTrs, CPrs):
     """Function to write the actuator disk input data file"""
@@ -160,20 +161,20 @@ else:
     prandtl_correction = False
 
 # Computation of the non-dimensional hub radius.
-rs_hub = rhub/R
+rs_hub = rhub / R
 
 # Computation of the non-dimensional radial stations.
-for i in range(1,stations+1):
-    r[i-1]=i/float(stations)
+for i in range(1, stations+1):
+    r[i-1] = i / float(stations)
     if r[i-1] <= rs_hub:
-        i_hub = i-1
+        i_hub = i - 1
 
 # Computation of the propeller diameter.
-D = 2*R
+D = 2 * R
 # Computation of the propeller angular velocity (Rounds/s).
-n = Vinf/(D*J)
+n = Vinf / (D*J)
 # Computation of the propeller angular velocity (Rad/s).
-Omega = n*2*math.pi
+Omega = n * 2 * math.pi
 
 # Computation of the tip loss Prandtl correction function F.
 if prandtl_correction:
@@ -235,7 +236,6 @@ print(err_old)
 iteration = 2
 err_new = err_old
 while math.fabs(err_new) >= eps and err_0 != err_old:
-
     iteration += 1
 
     # Computation of the new Lagrange moltiplicator value based on the false position method.
@@ -253,7 +253,6 @@ while math.fabs(err_new) >= eps and err_0 != err_old:
 
     # Computation of the total thrust coefficient error with respect to the input value.
     err_new = Ct_new - Ct
-
     print(err_new)
 
     # Updating the stored values for the next iteration.
@@ -291,10 +290,10 @@ DeltaP = dCt_optimal*(2*Vinf**2)/(J**2*math.pi*r)
 T = sum(2*math.pi*r*math.pow(R,2)*h*DeltaP)
 
 # Computation of the thrust coefficient using T.
-Ct_Renard = T/(math.pow(n,2)*math.pow(D,4))
+Ct_Renard = T / (math.pow(n,2)*math.pow(D,4))
 
 # Computation of the efficiency.
-eta = J*(Ct_optimal/Cp)
+eta = J * (Ct_optimal/Cp)
 
 # Screen output used to check that everything worked correcty.
 print('%%%%%%%%%%%%%%%%%%%%%%%%% CHECK OUTPUT VALUES %%%%%%%%%%%%%%%%%%%%%%%%%')
@@ -321,7 +320,7 @@ write_external_file(dCt_optimal, dCp)
 ##########################
 # Automatically plot the computed propeller performance.
 
-f1 = pl.figure(1)
+pl.figure(1)
 pl.plot(r, dCt_optimal, 'r', markersize=4, label='$\\frac{dCT}{d\overline{r}}$')
 pl.plot(r, dCp, 'k', markersize=4, label='$\\frac{dCP}{d\overline{r}}$')
 pl.grid(True)
@@ -330,7 +329,7 @@ pl.xlabel('$\overline{r}$')
 pl.ylabel('')
 pl.title("Load Distribution")
 
-f1 = pl.figure(2)
+pl.figure(2)
 pl.plot(chi, a_optimal, 'r', markersize=4, label='$a$')
 pl.plot(chi, ap_optimal, 'k', markersize=4, label='$a^1$')
 pl.grid(True)
@@ -340,7 +339,7 @@ pl.ylabel('')
 pl.title("Interference Factors")
 
 if prandtl_correction:
-    f1 = pl.figure(3)
+    pl.figure(3)
     pl.plot(r, F, 'k', markersize=4)
     pl.grid(True)
     pl.xlabel('$\overline{r}$')
