@@ -1137,9 +1137,16 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Returns intermittency
+   * \return Sets separation intermittency
    */
-  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  inline virtual void SetGammaSep(unsigned long iPoint, su2double gamma_sep) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Sets Effective intermittency
+   */
+  inline virtual void SetGammaEff(unsigned long iPoint) {}
 
   /*!
    * \brief Set the amplification factor.
@@ -1684,14 +1691,26 @@ public:
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the intermittency.
+   * \return the value of the intermittency.
+   */
+  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Set the intermittency.   
+   * \param[in] val_dist - Value of the  intermittency.
+   */
+  inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
+
+  /*!
    * \brief Get the value of the separation intermittency.
    * \return the value of the separation intermittency.
    */
   inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the separation intermittency(gamma).
-   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   * \brief Set the separation intermittency (gamma_sep).
+   * \param[in] val_dist - Value of the separation intermittency (gamma_sep).
    */
   inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
 
@@ -1702,8 +1721,8 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the effective intermittency(gamma).
-   * \param[in] Value of the effective intermittency(gamma).
+   * \brief Set the effective intermittency (gamma_eff).
+   * \param[in] Value of the effective intermittency (gamma_eff).
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
@@ -1712,6 +1731,18 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  /*!
+   * \brief Set the value of the turbulence index.
+   * \param[in] val_turb_index - turbulence index
+   */
+  inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   * \return val_turb_index - turbulence index
+   */
+  inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 
   /*!
    * \brief A virtual member.

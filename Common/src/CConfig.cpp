@@ -1103,6 +1103,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("LM_OPTIONS", nLM_Options, LM_Options, LM_Options_Map);
+  /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
+  addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
   /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
@@ -3453,6 +3457,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
+  }
+
+  /*--- Postprocess LM_OPTIONS into structure. ---*/
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+    lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
+
+    /*--- Check if problem is 2D and LM2015 has been selected ---*/
+    if (lmParsedOptions.LM2015 && val_nDim == 2) {
+      SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -6092,8 +6106,36 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
-          case TURB_TRANS_MODEL::LM:    cout << "Transition model: Langtry and Menter's 4 equation model (2009)" << endl; break;
           case TURB_TRANS_MODEL::EN:    cout << "Low-turbulence Transition model: eN 1 equation model (2014)" << endl; break;
+          case TURB_TRANS_MODEL::LM: {
+            cout << "Transition model: Langtry and Menter's 4 equation model"; 
+            if (lmParsedOptions.LM2015) {
+              cout << " w/ cross-flow corrections (2015)" << endl;
+            } else {
+              cout << " (2009)" << endl;
+            }
+            break; 
+          }          
+        }
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+
+          cout << "Correlation Functions: ";
+          switch (lmParsedOptions.Correlation) {
+            case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+            case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::DEFAULT: 
+              switch (Kind_Turb_Model) {
+                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
+                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+              }
+              break;
+          }
         }
 
         cout << "Hybrid RANS/LES: ";

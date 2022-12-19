@@ -85,7 +85,8 @@ protected:
   su2double
   amplification_factor_i;  /*!< \brief amplification factor at point i. */
   su2double
-  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
+  intermittency_eff_i, /*!< \brief effective intermittency at point i. */
+  intermittency_i; /*!< \brief intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -159,6 +160,8 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
+  su2double 
+  LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -392,6 +395,14 @@ public:
                                   CMatrixView<const su2double> val_transvar_grad_j) {
     TransVar_Grad_i = val_transvar_grad_i;
     TransVar_Grad_j = val_transvar_grad_j;
+  }
+
+  /*!
+   * \brief Set the value of the turbulent variable.
+   * \param[in] val_transvar_i - Value of the turbulent variable at point i.
+   */
+  inline void SetLocalGridLength(const su2double val_localGridLength_i) {
+    LocalGridLength_i = val_localGridLength_i;
   }
 
   /*!
@@ -725,6 +736,20 @@ public:
   void SetIntermittencyEff(su2double val_intermittency_eff_i) {
     intermittency_eff_i = val_intermittency_eff_i;
   }
+
+  /*!
+   * \brief Set the value of the intermittency for the LM model.
+   * \param[in] intermittency_i - Value of the intermittency at point i.
+   */
+  void SetIntermittency(su2double val_intermittency_i) {
+    intermittency_i = val_intermittency_i;
+  }
+
+  /*!
+   * \brief Get the value of the effective intermittency for the transition model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  su2double GetIntermittencyEff() const { return intermittency_eff_i; }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
