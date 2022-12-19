@@ -118,7 +118,16 @@ public:
     * \param[in] i_neuron - Neuron index
     * \return Gradient of neuron output wrt input
     */
-    su2double getdYdX(std::size_t i_neuron){ return neurons[i_neuron].getGradient(); }
+    su2double getdYdX(std::size_t i_neuron, std::size_t iInput){ return neurons[i_neuron].getGradient(iInput); }
+
+    /*!
+    * \brief Get the output-input gradient of a neuron in the layer
+    * \param[in] i_neuron - Neuron index
+    * \return Gradient of neuron output wrt input
+    */
+    void setdYdX(std::size_t i_neuron, std::size_t iInput, su2double dy_dx){ neurons[i_neuron].setGradient(iInput, dy_dx); }
+
+    void sizeGradients(std::size_t nInputs) { for(auto iNeuron=0u; iNeuron < number_of_neurons; iNeuron++) neurons[iNeuron].sizeGradient(nInputs); }
 
     /*!
     * \brief Get the activation function name applied to this layer

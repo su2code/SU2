@@ -42,6 +42,7 @@ private:
               input{0},             /*!< Input value of the current neuron */
               doutput_dinput{0},    /*!< Gradient of output with respect to input */
               bias{0};              /*!< Bias value at current neuron */
+    su2vector<su2double> doutput_dinputs;
 
 public:
 
@@ -93,17 +94,18 @@ public:
     */
     su2double getBias() const { return bias; }
 
+    void sizeGradient(std::size_t nInputs) { doutput_dinputs.resize(nInputs); }
     /*!
     * \brief Set neuron output gradient with respect to its input value
     * \param[in] input - Derivative of activation function with respect to input
     */
-    void setGradient(su2double input){ doutput_dinput = input; }
+    void setGradient(std::size_t iInput, su2double input){ doutput_dinputs[iInput] = input; }
 
     /*!
     * \brief Get neuron output gradient with respect to input value
     * \return output gradient wrt input value
     */
-    su2double getGradient() const { return doutput_dinput; }
+    su2double getGradient(std::size_t iInput) const { return doutput_dinputs[iInput]; }
 };
 
 }

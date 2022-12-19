@@ -188,53 +188,6 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     
 }
 
-void MLPToolbox::CLookUp_ANN::ReadANNInputFile(string inputFileName)
-{
-    /*--- Read MLP collection input file and store relevant data ---*/
-
-    ifstream file_stream;
-    istringstream stream_names_var;
-    istringstream stream_filenames;
-    file_stream.open(inputFileName.c_str(), ifstream::in);
-
-    if (!file_stream.is_open()) {
-      SU2_MPI::Error(string("There is no MLP collection file file called ") + inputFileName,
-                    CURRENT_FUNCTION);
-    }
-
-    string line, word;
-
-    line = SkipToFlag(&file_stream, "[number of MLP files]");
-    getline(file_stream, line);
-    number_of_variables = stoul(line);
-    NeuralNetworks.resize(number_of_variables);
-
-    line = SkipToFlag(&file_stream, "[MLP file names]");
-    getline(file_stream, line);
-    stream_filenames.str(line);
-    while(stream_filenames){
-        stream_filenames >> word;
-        ANN_filenames.push_back(word);
-    }
-    ANN_filenames.pop_back();
-    if(ANN_filenames.size() != number_of_variables)
-        SU2_MPI::Error(string("Inconsistency betwee"),
-                    CURRENT_FUNCTION);
-}
-string MLPToolbox::CLookUp_ANN::SkipToFlag(ifstream *file_stream, string flag) {
-  string line;
-  getline(*file_stream, line);
-
-  while (line.compare(flag) != 0 && !(*file_stream).eof()) {
-    getline(*file_stream, line);
-  }
-
-  if ((*file_stream).eof())
-    SU2_MPI::Error("Flag " + flag + " not found in file", CURRENT_FUNCTION);
-
-  return line;
-}
-
 bool MLPToolbox::CLookUp_ANN::Check_Use_of_Inputs(su2vector<string> &input_names, CIOMap *input_output_map) const {
     /*--- Check wether all input variables are in the loaded MLPs ---*/
     vector<string> missing_inputs;

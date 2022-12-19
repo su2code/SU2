@@ -57,8 +57,6 @@ class CLookUp_ANN
     int rank{0};
     su2vector<CNeuralNetwork*> NeuralNetworks;  /*!< std::vector containing all loaded neural networks. */
 
-    std::vector<std::string> ANN_filenames;       /*!< Filenames containing ANN architecture information. */
-
     unsigned short number_of_variables;  /*!< Number of loaded ANNs. */
 
     /*!
@@ -75,12 +73,6 @@ class CLookUp_ANN
     * \param[in] filename - filename containing ANN architecture information
     */
     void GenerateANN(CNeuralNetwork*ANN, std::string filename);
-
-    /*!
-    * \brief Read ANN architecture input file
-    * \param[in] filename - filename containing ANN architecture information
-    */
-    void ReadANNInputFile(std::string fileName); 
     
     public: 
     

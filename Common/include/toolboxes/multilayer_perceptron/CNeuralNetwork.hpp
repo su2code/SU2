@@ -61,6 +61,7 @@ private:
                                         // is skipped if current inputs are the same as the last inputs.
 
     su2double* ANN_outputs; // Pointer to network outputs
+    su2matrix<su2double> dOutputs_dInputs;
 
     /*--- Activation function types that are currently supported ---*/
     enum ENUM_ACTIVATION_FUNCTION {
@@ -233,6 +234,7 @@ public:
     */
     su2double GetANN_Output(std::size_t iOutput) const { return ANN_outputs[iOutput]; }
 
+    su2double GetOutput_Input_Derivative(std::size_t iOutput, std::size_t iInput) const { return dOutputs_dInputs[iOutput][iInput]; }
     /*!
     * \brief Set the activation function array size.
     * \param[in] n_layers - network layer count.
@@ -253,6 +255,13 @@ public:
             x += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer-1]->getOutput(jNeuron);
         }
         return x;
+    }
+    su2double ComputedOutputdInput(std::size_t iLayer, std::size_t iNeuron, std::size_t iInput) const {
+        su2double doutput_dinput = 0;
+        for(auto jNeuron=0u; jNeuron<total_layers[iLayer - 1]->getNNeurons(); jNeuron++){
+            doutput_dinput += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer-1]->getdYdX(jNeuron, iInput);
+        }
+        return doutput_dinput;
     }
 };
 
