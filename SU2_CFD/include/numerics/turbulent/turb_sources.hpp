@@ -53,7 +53,9 @@ struct CSAVariables {
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
 
   /*--- List of helpers ---*/
-  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad, gamma_bc;
+  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
+  
+  su2double intermittency, interDestrFactor;
 };
 
 /*!
@@ -66,7 +68,6 @@ struct CSAVariables {
 template <class FlowIndices, class Omega, class ft2, class ModVort, class rFunc, class SourceTerms>
 class CSourceBase_TurbSA : public CNumerics {
  protected:
-  su2double Gamma_BC = 0.0;
 
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
@@ -74,6 +75,8 @@ class CSourceBase_TurbSA : public CNumerics {
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
+
+  bool transition_LM;
 
  public:
   /*!
@@ -84,17 +87,13 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-        options(config->GetSAParsedOptions()) {
+        options(config->GetSAParsedOptions()),
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
   }
 
-  /*!
-   * \brief Get the intermittency for the BC transition model.
-   * \return Value of the intermittency.
-   */
-  su2double GetGammaBC() const final { return Gamma_BC; }
 
   /*!
    * \brief Residual for source term integration.
@@ -191,11 +190,22 @@ class CSourceBase_TurbSA : public CNumerics {
         const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
         const su2double term_exponential = (term1 + term2);
 
-        Gamma_BC = 1.0 - exp(-term_exponential);
-        var.gamma_bc = Gamma_BC;
+        intermittency_eff_i = 1.0 - exp(-term_exponential);
+        var.intermittency = intermittency_eff_i;
+        var.interDestrFactor = 1;
+
+      } else if (transition_LM){
+
+        var.intermittency = intermittency_eff_i;
+        //var.intermittency = 1.0;
+        // Is wrong the reference from NASA?
+        // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
+        var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
+
       } else {
         /*--- Do not modify the production. ---*/
-        var.gamma_bc = 1.0;
+        var.intermittency = 1.0;
+        var.interDestrFactor = 1.0;
       }
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
@@ -386,7 +396,7 @@ struct Bsl {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double factor = var.gamma_bc * var.cb1;
+    const su2double factor = var.intermittency * var.cb1;
     production = factor * (1.0 - var.ft2) * var.Shat * nue;
     jacobian += factor * (-var.Shat * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Shat));
   }
@@ -395,8 +405,8 @@ struct Bsl {
                                  su2double& jacobian) {
     const su2double cb1_k2 = var.cb1 / var.k2;
     const su2double factor = var.cw1 * var.fw - cb1_k2 * var.ft2;
-    destruction = factor * pow(nue, 2) / var.dist_i_2;
-    jacobian -= ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
+    destruction = var.interDestrFactor * factor * pow(nue, 2) / var.dist_i_2;
+    jacobian -= var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
@@ -421,7 +431,7 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double dP_dnu = var.gamma_bc * var.cb1 * (1.0 - var.ct3) * var.S;
+    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.S;
     production = dP_dnu * nue;
     jacobian += dP_dnu;
   }
@@ -430,8 +440,8 @@ struct Neg {
                                  su2double& jacobian) {
     /*--- The destruction when nue < 0 is added instead of the usual subtraction, hence the negative sign. ---*/
     const su2double dD_dnu = -var.cw1 * nue / var.dist_i_2;
-    destruction = dD_dnu * nue;
-    jacobian -= 2 * dD_dnu;
+    destruction = dD_dnu * nue * var.interDestrFactor;
+    jacobian -= 2 * dD_dnu * var.interDestrFactor;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
