@@ -105,7 +105,7 @@ def write_external_file(CTrs, CPrs):
 ##########################
 ###        Main        ###
 ##########################
-# Screen output
+
 print('------------------ Optimal Propeller vsn 7.0.6 ------------------')
 print('| Computation of the optimal dCT/dr and dCP/dr distributions.   |')
 print('| Based on the inviscid theory of the optimal propeller.        |')
@@ -118,14 +118,12 @@ print('| Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.      |')
 print('| Theoretical and Applied Aerodynamic Research Group (TAARG),   |')
 print('| University of Naples Federico II.                             |')
 print('-----------------------------------------------------------------')
-
 print('')
 print('Warning: present version requires input in SI units.')
 print('')
 
 # Number of radial stations in input.
 stations = int(input('Number of radial stations: '))
-print('')
 
 # Resize the vectors using the number of radial stations.
 r = np.empty(stations)
@@ -137,33 +135,26 @@ a_optimal = np.empty(stations)
 ap_optimal = np.empty(stations)
 
 # Thrust coefficient in input.
-Ct = float(input('CT (Renard definition): '))
-print('')
+Ct = float(input('\nCT (Renard definition): '))
 
 # Propeller radius in input.
-R = float(input('R (propeller radius [m]): '))
-print('')
+R = float(input('\nR (propeller radius [m]): '))
 
 # Hub radius in input.
-rhub = float(input('r_hub (hub radius [m]): '))
-print('')
+rhub = float(input('\nr_hub (hub radius [m]): '))
 
 # Advance ratio in input.
-J = float(input('J (advance ratio): '))
-print('')
+J = float(input('\nJ (advance ratio): '))
 
 # Freestream velocity in input.
-Vinf = float(input('Vinf (m/s): '))
-print('')
+Vinf = float(input('\nVinf (m/s): '))
 
 # Asking if the tip loss Prandtl correction function needs to be used.
-prandtl_input = input('Using tip loss Prandtl correction? (<y>/n): ')
-print('')
+prandtl_input = input('\nUsing tip loss Prandtl correction? (<y>/n): ')
 
 if prandtl_input.lower() in ['yes', 'y', '']:
     # Number of propeller blades in input.
-    N = int(input('N (number of propeller blades): '))
-    print('')
+    N = int(input('\nN (number of propeller blades): '))
     prandtl_correction = True
 else:
     prandtl_correction = False
@@ -216,7 +207,7 @@ Ct_0 = sum(h*dCt_0)
 
 # Compute the error with respect to the thrust coefficient given in input.
 err_0 = Ct_0 - Ct
-print("\nCONVERGENCE HISTORY:")
+print("\n\nCONVERGENCE HISTORY:")
 print(err_0)
 
 # Computation of the second try Lagrange moltiplicator.
