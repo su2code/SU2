@@ -47,6 +47,7 @@ import pylab as pl
 ##########################
 ###     Functions      ###
 ##########################
+
 def a_distribution (w0, Chi):
     """Function used to compute the value of the axial interference factor using the inviscid theory of the optimal propeller."""
 
@@ -75,32 +76,31 @@ def write_su2_config_file():
 def write_external_file(CTrs, CPrs):
     """Function to write the actuator disk input data file"""
     
-    file = open('ActuatorDisk.dat', 'w')
-    file.write('# Automatic generated actuator disk input data file using the Optimal Propeller code.\n')
-    file.write('# Data file needed for the actuator disk VARIABLE_LOAD type.\n')
-    file.write('# The load distribution is obtained using the inviscid theory of the optimal propeller\n')
-    file.write('# using global data.\n')
-    file.write('#\n')
-    file.write('# The first three lines must be filled.\n')
-    file.write('# An example of this file can be found in the TestCases directory.\n')
-    file.write('#\n')
-    file.write('# Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.\n')
-    file.write('# Theoretical and Applied Aerodynamic Research Group (TAARG),\n')
-    file.write('# University of Naples Federico II\n')
-    file.write('# -------------------------------------------------------------------------------------\n')
-    file.write('#\n')
-    file.write('MARKER_ACTDISK= \n')
-    file.write('CENTER= \n')
-    file.write('AXIS= \n')
-    file.write('RADIUS= '+str(R)+'\n')
-    file.write('ADV_RATIO= '+str(J)+'\n')
-    file.write('NROW= '+str(stations)+'\n')
-    file.write('# rs=r/R        dCT/drs       dCP/drs       dCR/drs\n')
+    with open('ActuatorDisk.dat', 'w') as f:
+        f.write('# Automatic generated actuator disk input data file using the Optimal Propeller code.\n')
+        f.write('# Data file needed for the actuator disk VARIABLE_LOAD type.\n')
+        f.write('# The load distribution is obtained using the inviscid theory of the optimal propeller\n')
+        f.write('# using global data.\n')
+        f.write('#\n')
+        f.write('# The first three lines must be filled.\n')
+        f.write('# An example of this file can be found in the TestCases directory.\n')
+        f.write('#\n')
+        f.write('# Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.\n')
+        f.write('# Theoretical and Applied Aerodynamic Research Group (TAARG),\n')
+        f.write('# University of Naples Federico II\n')
+        f.write('# -------------------------------------------------------------------------------------\n')
+        f.write('#\n')
+        f.write('MARKER_ACTDISK= \n')
+        f.write('CENTER= \n')
+        f.write('AXIS= \n')
+        f.write('RADIUS= '+str(R)+'\n')
+        f.write('ADV_RATIO= '+str(J)+'\n')
+        f.write('NROW= '+str(stations)+'\n')
+        f.write('# rs=r/R        dCT/drs       dCP/drs       dCR/drs\n')
 
-    for i in range(0, stations):
-        file.write(f'  {r[i]:.7f}     {CTrs[i]:.7f}     {CPrs[i]:.7f}     0.0\n')
+        for i in range(0, stations):
+            f.write(f'  {r[i]:.7f}     {CTrs[i]:.7f}     {CPrs[i]:.7f}     0.0\n')
 
-    file.close()
 
 ##########################
 ###        Main        ###
