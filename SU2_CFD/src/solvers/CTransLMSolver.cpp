@@ -61,6 +61,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   nDim = geometry->GetnDim();
 
+  /*--- Define variables needed for transition from config file */
+  options = config->GetLMParsedOptions();
+  TransCorrelations.SetOptions(options);
+  TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0) {
@@ -195,43 +200,61 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   AD::StartNoSharedReading();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  auto* turbNodes = su2staticcast_p<CTurbVariable*>(solver_container[TURB_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
+    // Here the nodes already have the new solution, thus I have to compute everything from scratch
+
     const su2double rho = flowNodes->GetDensity(iPoint);
     const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
+    const su2double muT = turbNodes->GetmuT(iPoint);
     const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     su2double StrainMag =flowNodes->GetStrainMag(iPoint);
     VorticityMag = max(VorticityMag, 1e-12);
     StrainMag = max(StrainMag, 1e-12); // safety against division by zero
-    const su2double Intermittecy = nodes->GetSolution(iPoint,0);
+    const su2double Intermittency = nodes->GetSolution(iPoint,0);
     const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
-    const su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
-    const su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-
-    su2double Corr_Rec = 0.0;
-    if(Re_t <= 1870){
-     Corr_Rec = Re_t - (396.035e-02 + (-120.656e-04)*Re_t + (868.230e-06)*pow(Re_t, 2.)
-                                +( -696.506e-09)*pow(Re_t, 3.) + (174.105e-12)*pow(Re_t, 4.));
-    } else {
-     Corr_Rec = Re_t - ( 593.11 + (Re_t - 1870.0) * 0.482);
-    }
-
-    const su2double R_t = rho*k/ mu/ omega;
-    const su2double f_reattach = exp(-pow(R_t/20,4));
-    const su2double re_omega = rho*omega*dist*dist/mu;
-    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
     const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+    su2double omega = 0.0;
+    su2double k = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      omega = turbNodes->GetSolution(iPoint,1);
+      k = turbNodes->GetSolution(iPoint,0);
+    }
+    su2double Tu = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
+    if(TurbFamily == TURB_FAMILY::SA)
+      Tu = config->GetTurbulenceIntensity_FreeStream()*100;
+
+    const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+
+    su2double R_t = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      R_t = rho*k/ mu/ omega;
+    if(TurbFamily == TURB_FAMILY::SA)
+      R_t = muT/ mu;
+
+    const su2double f_reattach = exp(-pow(R_t/20,4));
+    su2double f_wake = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      const su2double re_omega = rho*omega*dist*dist/mu;
+      f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    }
+    if(TurbFamily == TURB_FAMILY::SA)
+      f_wake = 1.0;
+
     const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
     const su2double delta_bl   = 7.5*theta_bl;
     const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
-    const su2double var1 = (Intermittecy-1.0/50.0)/(1.0-1.0/50.0);
+    const su2double var1 = (Intermittency-1.0/50.0)/(1.0-1.0/50.0);
     const su2double var2 = 1.0 - pow(var1,2.0);
     const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
     su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
@@ -314,8 +337,13 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
-    /*--- Set coordnate (for debugging) ---*/
+    /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+
+    if (options.LM2015) {
+      /*--- Set local grid length (for LM2015)*/
+      numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
+    }
 
     /*--- Compute the source term ---*/
 
@@ -554,6 +582,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][TRANS_SOL]->GetNodes()->GetSolution());
     solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
