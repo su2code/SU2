@@ -14,4 +14,6 @@ changelog:
       - title: ':wrench: Maintenance'
         labels:
           - 'changelog:chore'
+      - title: 'Other Changes'
+          - "*"
 
