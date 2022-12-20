@@ -107,12 +107,12 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
     nInf = -20;
   }
   else {
-    lowlimit = 1e-30;
-    nInf = 0;
+    lowlimit = -5;
+    nInf = -5;
   }
 
   lowerlimit[0] = lowlimit;
-  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100)*10;
+  upperlimit[0] = (-8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100))*10;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AmplificationFactor_Inf  = nInf;

@@ -367,28 +367,26 @@ class CSourcePieceWise_TransEN final : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 
-    su2double rho 	= V_i[idx.Density()];
-    su2double p 	= V_i[idx.Pressure()];
-    su2double muLam = V_i[idx.LaminarViscosity()];
+    su2double rho 			= V_i[idx.Density()];
+    su2double p 			= V_i[idx.Pressure()];
+    su2double muLam 		= V_i[idx.LaminarViscosity()];
 
     const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 
-    const su2double vel_u = V_i[idx.Velocity()];
-    const su2double vel_v = V_i[1+idx.Velocity()];
-    const su2double vel_w = (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
+    const su2double vel_u 	= V_i[idx.Velocity()];
+    const su2double vel_v 	= V_i[1+idx.Velocity()];
+    const su2double vel_w 	= (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
 
     const su2double vel_mag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
 
-    su2double rhoInf			= config->GetDensity_FreeStreamND();
-    su2double pInf 				= config->GetPressure_FreeStreamND();
-    const su2double *velInf 	= config->GetVelocity_FreeStreamND();
+    su2double rhoInf		= config->GetDensity_FreeStreamND();
+    su2double pInf 			= config->GetPressure_FreeStreamND();
+    const su2double *velInf = config->GetVelocity_FreeStreamND();
 
     su2double velInf2 = 0.0;
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
     	velInf2 += velInf[iDim]*velInf[iDim];
     }
-
-    su2double Gamma = config->GetGamma();
 
     Residual = 0.0;
     Jacobian_i[0] = 0.0;
@@ -398,17 +396,18 @@ class CSourcePieceWise_TransEN final : public CNumerics {
       su2double u_e;
       if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
-    	/*--- Estimate of the equivalent flow velocity at the edge of the boundary layer based on compressible Bernoulli's equation ---*/
-		const su2double G_over_Gminus_one = Gamma/(Gamma-1);
+  		/*--- Estimate of the equivalent flow velocity at the edge of the boundary layer based on compressible Bernoulli's equation ---*/
+  		const su2double Gamma = config->GetGamma();
+  		const su2double G_over_G = Gamma/(Gamma-1);
 
-		const su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
+  		const su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
 
-		u_e = sqrt(2*(G_over_Gminus_one*(pInf/rhoInf) + (velInf2/2) - G_over_Gminus_one*(p/rho_e)));
+  		u_e = sqrt(2*(G_over_G*(pInf/rhoInf) + (velInf2/2) - G_over_G*(p/rho_e)));
 
       } else {
 
     	/*--- Inviscid edge velocity based on incompressible Bernoulli's equation---*/
-    	u_e = sqrt((rhoInf*velInf2 + 2*(p-pInf))/rho);
+    	u_e = sqrt((rhoInf*velInf2 + 2*(pInf-p))/rho);
 
       }
 
@@ -446,8 +445,8 @@ class CSourcePieceWise_TransEN final : public CNumerics {
       /*--- Production term ---*/
       const su2double P_amplification = rho*VorticityMag*F_crit*F_growth*dn_over_dRe_d2;
 
-      /*--- Source ---*/
-      Residual = P_amplification * Volume;
+      /*--- Add Production to residual ---*/
+      Residual += P_amplification * Volume;
 
       /*--- Implicit part ---*/
 	  Jacobian_i[0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
