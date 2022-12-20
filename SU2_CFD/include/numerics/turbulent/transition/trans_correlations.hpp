@@ -1,7 +1,7 @@
 /*!
  * \file trans_correlations.hpp
  * \brief Numerics class for the LM model's correlation functions.
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
