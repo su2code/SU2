@@ -2,7 +2,7 @@
  * \file CFluidScalar.cpp
  * \brief Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
