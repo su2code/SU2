@@ -893,7 +893,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       /*--- auxiliary species transport ---*/
       for(auto i_species=0u; i_species < config->GetNReactants(); i_species++){
         string species_name = config->GetReactantName(i_species);
-        AddHistoryOutput("RMS_"+species_name, "rms[Y_"+species_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+species_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("RMS_"+species_name, "rms["+species_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+species_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
     }
@@ -1109,7 +1109,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       /*--- auxiliary species ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
         string species_name = config->GetReactantName(iReactant);
-        AddVolumeOutput("Y_" + species_name, "Y_" + species_name, "SOLUTION", species_name + "Mass fraction solution");
+        AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
       }
 
       AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
@@ -1117,7 +1117,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       /*--- auxiliary species source terms ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
         string species_name = config->GetReactantName(iReactant);
-        AddVolumeOutput("SOURCE_Y_" + species_name, "Source_Y_" + species_name, "SOURCE", "Source Y_" + species_name);
+        AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
       }
 
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
@@ -1160,7 +1160,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       /*--- residuals for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++){
         string species_name = config->GetReactantName(iReactant);
-        AddVolumeOutput("RES_Y_" + species_name, "Residual_Y_" + species_name, "RESIDUAL", "Residual of the Y_" + species_name + " equation");
+        AddVolumeOutput("RES_" + species_name, "Residual_" + species_name, "RESIDUAL", "Residual of the " + species_name + " equation");
       }
       break;
     case SPECIES_MODEL::NONE:
@@ -1207,7 +1207,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
         /*--- limiter for auxiliary species transport ---*/
         for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
           string species_name = config->GetReactantName(iReactant);
-          AddVolumeOutput("LIMITER_Y_" + species_name, "LIMITER_Y_" + species_name, "LIMITER", "Limiter value for the Y_" + species_name + " equation");
+          AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
         }
       break;
       case SPECIES_MODEL::NONE:
@@ -1334,7 +1334,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       /*--- values from auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
         string species_name = config->GetReactantName(iReactant);
-        SetVolumeOutputValue("Y_" + species_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControllingVars() + iReactant));
+        SetVolumeOutputValue(species_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControllingVars() + iReactant));
       }
       
       SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
@@ -1342,7 +1342,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       /*--- source terms for auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
         string species_name = config->GetReactantName(iReactant);
-        SetVolumeOutputValue("SOURCE_Y_" + species_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControllingVars() + iReactant));
+        SetVolumeOutputValue("SOURCE_" + species_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControllingVars() + iReactant));
       }
 
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
@@ -1350,7 +1350,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       /*--- residual for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
         string species_name = config->GetReactantName(iReactant);
-        SetVolumeOutputValue("RES_Y_" + species_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControllingVars() + iReactant));
+        SetVolumeOutputValue("RES_" + species_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControllingVars() + iReactant));
       }
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
@@ -1359,7 +1359,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         /*--- limiter for auxiliary species transport equations ---*/
         for (unsigned short iReactant=0; iReactant<config->GetNReactants(); iReactant++) {
           string species_name = config->GetReactantName(iReactant);
-          SetVolumeOutputValue("LIMITER_Y_" + species_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControllingVars() + iReactant));
+          SetVolumeOutputValue("LIMITER_" + species_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControllingVars() + iReactant));
         }
       }
 
