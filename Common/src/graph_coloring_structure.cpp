@@ -2,7 +2,7 @@
  * \file graph_coloring_structure.cpp
  * \brief Functions used to carry out the coloring of a given graph.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,12 +26,6 @@
  */
 
 #include "../include/graph_coloring_structure.hpp"
-
-/* Constructor. Nothing to be done. */
-CGraphColoringStructure::CGraphColoringStructure(void) {}
-
-/* Destructor. Nothing to be done. */
-CGraphColoringStructure::~CGraphColoringStructure(void) {}
 
 /* Function, which determines the colors for the vertices of the given graph. */
 void CGraphColoringStructure::GraphVertexColoring(

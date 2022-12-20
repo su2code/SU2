@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.hpp
  * \brief Declaration of class for time integration using a multigrid method.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 
 /*!
  * \class CMultiGridIntegration
+ * \ingroup Drivers
  * \brief Class for time integration using a multigrid method.
  * \author F. Palacios
  */

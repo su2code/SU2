@@ -3,7 +3,7 @@
  * \brief Implementation of the functions that either simulate BLAS functionality
           or interface to an actual BLAS implementation.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,9 +50,6 @@ CBlasStructure::CBlasStructure(void)
   : mc (256), kc (128), nc (128)
 #endif
 {}
-
-/* Destructor. Nothing to be done. */
-CBlasStructure::~CBlasStructure(void) {}
 
 /* Dense matrix multiplication, gemm functionality. */
 void CBlasStructure::gemm(const int M,        const int N,        const int K,

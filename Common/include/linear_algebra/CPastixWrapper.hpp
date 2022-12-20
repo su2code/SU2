@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,7 @@ class CGeometry;
 
 /*!
  * \class CPastixWrapper
+ * \ingroup SpLinSys
  * \brief Wrapper class that converts between SU2 sparse format and PaStiX
  *        format and simplifies calls to the external solver.
  */

@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CFlowVariable {
-public:
+ public:
   static constexpr size_t MAXNVAR = 12;
 
   template <class IndexType>

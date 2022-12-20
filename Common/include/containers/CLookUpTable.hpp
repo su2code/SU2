@@ -2,7 +2,7 @@
  * \file CLookupTable.hpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,10 @@
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
+/*!
+ * \brief Look up table.
+ * \ingroup LookUpInterp
+ */
 class CLookUpTable {
  protected:
   int rank; /*!< \brief MPI Rank. */

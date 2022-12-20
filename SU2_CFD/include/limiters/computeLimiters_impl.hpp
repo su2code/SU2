@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,7 @@
 /*!
  * \brief Generic limiter computation for methods based on one limiter
  *        value per point (as opposed to one per edge) and per variable.
+ * \ingroup FvmAlgos
  * \note This implementation can be used to derive most common methods
  *       by specializing the limiter functions (e.g. Venkatakrishnan)
  *       and the geometric modifications (e.g. sharp edges), this is done
