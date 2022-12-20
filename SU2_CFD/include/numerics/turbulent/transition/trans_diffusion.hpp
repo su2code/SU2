@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in transition problems.
  * \author S. Kang, R. Roos
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
