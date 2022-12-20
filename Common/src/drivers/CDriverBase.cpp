@@ -80,18 +80,46 @@ unsigned short CDriverBase::GetNumberDesignVariables() const { return main_confi
 unsigned short CDriverBase::GetNumberFFDBoxes() const { return main_config->GetnFFDBox(); }
 
 unsigned short CDriverBase::GetNumberFFDBoxCornerPoints(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   return FFDBox[ZONE_0][iFFDBox]->GetnCornerPoints();
 }
 
 unsigned short CDriverBase::GetNumberFFDBoxControlPoints(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   return FFDBox[ZONE_0][iFFDBox]->GetnControlPoints();
 }
 
 unsigned long CDriverBase::GetNumberFFDBoxSurfacePoints(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   return FFDBox[ZONE_0][iFFDBox]->GetnSurfacePoint();
 }
 
 vector<unsigned short> CDriverBase::GetFFDBoxMarkerIDs(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<unsigned short> values;
 
   for (auto iPoint = 0ul; iPoint < GetNumberFFDBoxSurfacePoints(iFFDBox); iPoint++) {
@@ -101,6 +129,13 @@ vector<unsigned short> CDriverBase::GetFFDBoxMarkerIDs(unsigned short iFFDBox) c
 }
 
 vector<unsigned long> CDriverBase::GetFFDBoxVertexIDs(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<unsigned long> values;
 
   for (auto iPoint = 0ul; iPoint < GetNumberFFDBoxSurfacePoints(iFFDBox); iPoint++) {
@@ -110,6 +145,13 @@ vector<unsigned long> CDriverBase::GetFFDBoxVertexIDs(unsigned short iFFDBox) co
 }
 
 vector<unsigned long> CDriverBase::GetFFDBoxPointIDs(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<unsigned long> values;
 
   for (auto iPoint = 0ul; iPoint < GetNumberFFDBoxSurfacePoints(iFFDBox); iPoint++) {
@@ -119,6 +161,13 @@ vector<unsigned long> CDriverBase::GetFFDBoxPointIDs(unsigned short iFFDBox) con
 }
 
 vector<vector<passivedouble>> CDriverBase::GetFFDBoxCornerCoordinates(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<vector<passivedouble>> values;
 
   for (auto iPoint = 0u; iPoint < GetNumberFFDBoxCornerPoints(iFFDBox); iPoint++) {
@@ -137,6 +186,13 @@ vector<vector<passivedouble>> CDriverBase::GetFFDBoxCornerCoordinates(unsigned s
 }
 
 vector<vector<passivedouble>> CDriverBase::GetFFDBoxControlPointCoordinates(unsigned short iFFDBox) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<vector<passivedouble>> values;
 
   for (auto iOrder = 0u; iOrder < FFDBox[ZONE_0][iFFDBox]->GetlOrder(); iOrder++) {
@@ -152,6 +208,13 @@ vector<vector<passivedouble>> CDriverBase::GetFFDBoxControlPointCoordinates(unsi
 
 vector<passivedouble> CDriverBase::GetFFDBoxControlPointCoordinates(unsigned short iFFDBox, unsigned int iOrder,
                                                                     unsigned int jOrder, unsigned int kOrder) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<passivedouble> values;
 
   const su2double* coord = FFDBox[ZONE_0][iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
@@ -164,6 +227,13 @@ vector<passivedouble> CDriverBase::GetFFDBoxControlPointCoordinates(unsigned sho
 }
 
 vector<vector<passivedouble>> CDriverBase::GetFFDBoxSurfaceCoordinates(unsigned short iFFDBox, bool parametric) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+
   vector<vector<passivedouble>> values;
 
   for (auto iPoint = 0ul; iPoint < GetNumberFFDBoxSurfacePoints(iFFDBox); iPoint++) {
@@ -175,6 +245,16 @@ vector<vector<passivedouble>> CDriverBase::GetFFDBoxSurfaceCoordinates(unsigned 
 
 vector<passivedouble> CDriverBase::GetFFDBoxSurfaceCoordinates(unsigned short iFFDBox, unsigned long iPoint,
                                                                bool parametric) const {
+  if (GetNumberFFDBoxes() == 0) {
+    SU2_MPI::Error("FFD Box definition not found in the mesh file.", CURRENT_FUNCTION);
+  }
+  if (iFFDBox >= GetNumberFFDBoxes()) {
+    SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
+  }
+  if (iPoint >= GetNumberFFDBoxSurfacePoints()) {
+    SU2_MPI::Error("FFD Box vertex index exceeds mesh size.", CURRENT_FUNCTION);
+  }
+
   vector<passivedouble> values;
   const su2double* coord;
 
