@@ -38,7 +38,7 @@ using namespace std;
  * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
-                                 vector<su2vector<unsigned long> > const& edges,
+                                 vector<std::array<unsigned long,2> > const& edges,
                                  su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
   edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 

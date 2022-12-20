@@ -63,8 +63,8 @@ class CLookUpTable {
   /*! 
    * \brief the lower and upper limits of the z, y and x variable for each table level.
    */
-  std::pair<su2double, su2double> limits_table_z;
-  su2vector<std::pair<su2double, su2double>> limits_table_y, 
+  std::pair<su2double*, su2double*> limits_table_z;
+  su2vector<std::pair<su2double*, su2double*>> limits_table_y, 
                                              limits_table_x;
 
   /*! \brief Holds the variable names stored in the table file.
@@ -87,7 +87,7 @@ class CLookUpTable {
   /*! \brief
    * Edge information for each table level.
    */
-  su2vector<std::vector<su2vector<unsigned long>>>edges;
+  su2vector<std::vector<std::array<unsigned long,2>>>edges;
   su2vector<su2vector<std::vector<unsigned long>>>edge_to_triangle;
 
   /*! \brief 
@@ -193,7 +193,8 @@ class CLookUpTable {
    * \param[in] upper_value - Result from x-y interpolation on the upper table level.
    * \param[in] val_vars - Pointer to interpolation result.
   */
-  void Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, su2double&lower_value,su2double&upper_value, su2double*&var_vals);
+  void Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level,
+                            su2double &lower_value, su2double &upper_value, su2double* &var_vals) const;
 
 
   /*!
@@ -205,7 +206,8 @@ class CLookUpTable {
    * \param[in] upper_values - Results from x-y interpolation on the upper table level.
    * \param[in] val_vars - Pointer to interpolation results for all interpolation variables.
   */
-  void Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, std::vector<su2double>&lower_values,std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals);
+  void Linear_Interpolation (const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, 
+                            std::vector<su2double>&lower_values, std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals) const;
 
   /*!
    * \brief find the point on the hull (boundary of the table) that is closest to the point P(val_x,val_y).
@@ -347,13 +349,13 @@ class CLookUpTable {
   * \param[in] within_limits - Whether query point lies within table bounds.
   * \returns pair of inclusion level indices (first = lower level index, second = upper level index)
   */
-  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_z, bool *within_limits);
+  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_z);
 
   /*!
    * \brief determine the minimum and maximum value of the second controlling variable.
    * \returns pair of minimum and maximum value of controlling variable 2.
    */
-  inline std::pair<su2double, su2double> GetTableLimitsY(unsigned long i_level = 0) const {
+  inline std::pair<su2double*, su2double*> GetTableLimitsY(unsigned long i_level = 0) const {
     return limits_table_y[i_level];
   }
 
@@ -361,7 +363,7 @@ class CLookUpTable {
    * \brief determine the minimum and maximum value of the first controlling variable.
    * \returns pair of minimum and maximum value of controlling variable 1.
    */
-  inline std::pair<su2double, su2double> GetTableLimitsX(unsigned long i_level = 0) const {
+  inline std::pair<su2double*, su2double*> GetTableLimitsX(unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
 

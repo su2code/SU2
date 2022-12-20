@@ -257,7 +257,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         eoLevel = true;
         if (n_triangles[levelCounter] != triCounter)
         SU2_MPI::Error(
-            "Number of read points on level " + std::to_string(levelCounter) + " does not match number of points "
+            "Number of read triangles on level " + std::to_string(levelCounter) + " does not match number of triangles "
             "specified in lookup table library header.",
             CURRENT_FUNCTION);
         levelCounter++;
@@ -304,7 +304,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         eoLevel = true;
         if (n_hull_points[levelCounter] != hullCounter)
         SU2_MPI::Error(
-            "Number of read points on level " + std::to_string(levelCounter) + " does not match number of points "
+            "Number of read hull nodes on level " + std::to_string(levelCounter) + " does not match number of hull nodes "
             "specified in lookup table library header.",
             CURRENT_FUNCTION);
         levelCounter++;

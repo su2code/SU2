@@ -74,19 +74,17 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
 
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
+  unsigned short barwidth=65;
   for(auto i_level = 0ul; i_level<n_table_levels; i_level++){
     trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_x, i_level), GetDataP(name_y, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
     /* Display a progress bar to monitor table generation process */
     if(rank == MASTER_NODE){
       su2double progress = su2double(i_level) / n_table_levels;
-      unsigned short barwidth = 65;
-      auto pos = barwidth * progress;
-      cout << "[";
-      for(int iBar=0; iBar<barwidth; ++iBar){
-          if(iBar < pos) cout << "=";
-          else cout << " ";
-      }
-      cout << "] "<< floor(100*progress) << " %\r";
+      int done = int(progress*barwidth);
+      int to_do = barwidth - done;
+      cout << "[" << setfill('=') << setw(done);
+      cout << '>';
+      cout << setfill(' ') << setw(to_do) << std::right << "] " << 100*progress << "%\r";
       cout.flush();
     }
   }
@@ -166,20 +164,12 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   /* we find the lowest and highest value of y and x in the table */
   for(auto i_level=0u; i_level<n_table_levels; i_level++)
   {
-    su2double min_x, max_x, min_y, max_y;
-    min_y = *min_element(&table_data[i_level][idx_Y][0], &table_data[i_level][idx_Y][0]+table_data[i_level].cols());
-    min_x = *min_element(&table_data[i_level][idx_X][0], &table_data[i_level][idx_X][0]+table_data[i_level].cols());
-    max_y = *max_element(&table_data[i_level][idx_Y][0], &table_data[i_level][idx_Y][0]+table_data[i_level].cols());
-    max_x = *max_element(&table_data[i_level][idx_X][0], &table_data[i_level][idx_X][0]+table_data[i_level].cols());
-    limits_table_x[i_level] = make_pair(min_x, max_x);
-    limits_table_y[i_level] = make_pair(min_y, max_y);
+    limits_table_y[i_level] = minmax_element(table_data[i_level][idx_Y], table_data[i_level][idx_Y]+table_data[i_level].cols());
+    limits_table_x[i_level] = minmax_element(table_data[i_level][idx_X], table_data[i_level][idx_X]+table_data[i_level].cols());
   }
 
   if(table_dim == 3){
-    su2double min_z, max_z;
-    min_z = z_values_levels[0];
-    max_z = z_values_levels[n_table_levels - 1];
-    limits_table_z = make_pair(min_z, max_z);
+    limits_table_z = minmax_element(&z_values_levels[0], &z_values_levels[0]+z_values_levels.cols());
   }
 }
 
@@ -201,10 +191,10 @@ void CLookUpTable::PrintTableInfo() {
       n_points_av += n_points[i_level] / n_table_levels;
       n_tria_av += n_triangles[i_level] / n_table_levels;
       n_edges_av += edges[i_level].size() / n_table_levels;
-      min_x = min(min_x, limits_table_x[i_level].first);
-      min_y = min(min_y, limits_table_y[i_level].first);
-      max_x = max(max_x, limits_table_x[i_level].second);
-      max_y = max(max_y, limits_table_y[i_level].second);
+      min_x = min(min_x, *limits_table_x[i_level].first);
+      min_y = min(min_y, *limits_table_y[i_level].first);
+      max_x = max(max_x, *limits_table_x[i_level].second);
+      max_y = max(max_y, *limits_table_y[i_level].second);
     }
     switch (table_dim)
     {
@@ -331,7 +321,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
       /* Store the edge so that the lower index of the pair is always first. */
       if (iPoint < GlobalIndex) {
-        su2vector<unsigned long> edge(2);
+        std::array<unsigned long,2> edge;
         edge[0] = iPoint;
         edge[1] = GlobalIndex;
         edges[i_level].push_back(edge);
@@ -415,23 +405,20 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
 }
 
-std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_z, bool*within_table_limits)
+std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_z)
 {
   /*--- Find the table levels with constant z-values directly below and above the query value val_z ---*/
 
   /* Check if val_z lies outside table bounds */
-  if(val_z >= limits_table_z.second){
-    *within_table_limits = false;
+  if(val_z >= *limits_table_z.second){
     return std::make_pair(n_table_levels-1, n_table_levels-1);
-  }else if(val_z <= limits_table_z.first){
-    *within_table_limits = false;
+  }else if(val_z <= *limits_table_z.first){
     return std::make_pair(0, 0);
   }else{
     std::pair<unsigned long, unsigned long> inclusion_levels;
     /* Loop over table levels to find the levels directly above and below the query value */
     for(auto i_level = 0ul; i_level < n_table_levels-1; i_level++){
       if((val_z >= z_values_levels[i_level]) && (val_z < z_values_levels[i_level+1])){
-        *within_table_limits = true;
         inclusion_levels = std::make_pair(i_level, i_level+1);
       }
     }
@@ -446,9 +433,9 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
         with coordinates val_x, val_y, and val_z ---*/
 
   /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
-  bool within_z_limits = true;
-  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
-  
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z);
+  bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
+
   if(within_z_limits){
     /* 2: Perform 2D interpolations on upper and lower inclusion levels */
     unsigned long lower_level = inclusion_levels.first;
@@ -477,8 +464,8 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names
         on a query point with coordinates val_x, val_y, and val_z ---*/
 
   /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
-  bool within_z_limits = true;
-  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z, &within_z_limits);
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z);
+  bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
   
   if(within_z_limits){
     /* 2: Perform 2D interpolations on upper and lower inclusion levels */
@@ -504,7 +491,8 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names
   }
 }
 
-void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, su2double&lower_value,su2double&upper_value, su2double*&var_val)
+void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, 
+                                        su2double& lower_value, su2double& upper_value, su2double*& var_val) const
 {
   /* Perform linear interpolation along the z-direction of the table for a single variable */
 
@@ -520,7 +508,9 @@ void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned lo
   *var_val = lower_value * factor_lower + upper_value * factor_upper;
 }
 
-void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, std::vector<su2double>&lower_values,std::vector<su2double>&upper_values, std::vector<su2double*>&var_vals)
+void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level, 
+                                        std::vector<su2double>& lower_values, std::vector<su2double>& upper_values, 
+                                        std::vector<su2double*>& var_vals) const
 {
   /* Perform linear interpolation along the z-direction of the table for multiple variables */
 
@@ -539,7 +529,8 @@ void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned lo
 }
 
 unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val_var, su2double val_x,
-                                            su2double val_y, unsigned long i_level) {
+                                            su2double val_y, unsigned long i_level)
+{
   unsigned long exit_code = 0;
 
   if (val_name_var.compare("NULL") == 0) {
@@ -549,8 +540,8 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
   }
 
   /* check if x and y value is in table range */
-  if ((val_x >= limits_table_x[i_level].first && val_x <= limits_table_x[i_level].second) &&
-      (val_y >= limits_table_y[i_level].first && val_y <= limits_table_y[i_level].second)){
+  if ((val_x >= *limits_table_x[i_level].first && val_x <= *limits_table_x[i_level].second) &&
+      (val_y >= *limits_table_y[i_level].first && val_y <= *limits_table_y[i_level].second)){
 
     /* find the triangle that holds the (x, y) point */
     unsigned long id_triangle = trap_map_x_y[i_level].GetTriangle(val_x, val_y);
@@ -583,7 +574,8 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double *val
 }
 
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
-                                            su2double val_x, su2double val_y, unsigned long i_level) {
+                                            su2double val_x, su2double val_y, unsigned long i_level) 
+{
   vector<su2double*> look_up_data(val_names_var.size());
 
   for (long unsigned int i_var = 0; i_var < val_vars.size(); ++i_var) {
@@ -596,7 +588,8 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
 }
 
 unsigned long CLookUpTable::LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog, 
-                                            su2double val_enth, std::string name_prog, std::string name_enth) {
+                                            su2double val_enth, std::string name_prog, std::string name_enth)
+{
   return LookUp_XY(val_name_var, val_var, val_prog, val_enth);
 }
 
@@ -620,8 +613,8 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
 
   /* check if x value is in table x-dimension range
    * and if y is in table y-dimension table range */
-  if ((val_x >= limits_table_x[i_level].first && val_x <= limits_table_x[i_level].second) &&
-      (val_y >= limits_table_y[i_level].first && val_y <= limits_table_y[i_level].second)){
+  if ((val_x >= *limits_table_x[i_level].first && val_x <= *limits_table_x[i_level].second) &&
+      (val_y >= *limits_table_y[i_level].first && val_y <= *limits_table_y[i_level].second)){
     /* if so, try to find the triangle that holds the (prog, enth) point */
     id_triangle = trap_map_x_y[i_level].GetTriangle(val_x, val_y);
 

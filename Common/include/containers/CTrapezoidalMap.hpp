@@ -62,7 +62,7 @@
   CTrapezoidalMap(const su2double* samples_x,
                   const su2double* samples_y,
                   const unsigned long size,
-                  const std::vector<su2vector<unsigned long> >& edges,
+                  const std::vector<std::array<unsigned long,2> >& edges,
                   const su2vector<std::vector<unsigned long> >& edge_to_triangle);
 
   /*!
