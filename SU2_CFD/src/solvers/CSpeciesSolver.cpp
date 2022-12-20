@@ -563,7 +563,8 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const bool axisymmetric = config->GetAxisymmetric();
 
   if (axisymmetric) {
-    CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+    //CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+    CNumerics *numerics  = numerics_container[SOURCE_SECOND_TERM  + omp_get_thread_num()*MAX_TERMS];
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
