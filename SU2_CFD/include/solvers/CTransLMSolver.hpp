@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
+#include "../numerics/turbulent/transition/trans_correlations.hpp"
 
 /*!
  * \class CTransLMSolver
@@ -38,6 +39,11 @@
 
 class CTransLMSolver final : public CTurbSolver {
 private:
+
+  LM_ParsedOptions options;
+  TURB_FAMILY TurbFamily;
+
+  TransLMCorrelations TransCorrelations;
 
 public:
   /*!

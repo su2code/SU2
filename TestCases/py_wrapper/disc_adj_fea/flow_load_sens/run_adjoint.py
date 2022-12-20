@@ -3,7 +3,7 @@
 ## \file run_adjoint.py
 #  \brief Python script to launch SU2_CFD_AD and compute the sensitivity of the FEA problem respect to flow loads.
 #  \author Ruben Sanchez
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
