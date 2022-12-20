@@ -251,7 +251,7 @@ vector<passivedouble> CDriverBase::GetFFDBoxSurfaceCoordinates(unsigned short iF
   if (iFFDBox >= GetNumberFFDBoxes()) {
     SU2_MPI::Error("FFD Box index exceeds size.", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberFFDBoxSurfacePoints()) {
+  if (iPoint >= GetNumberFFDBoxSurfacePoints(iFFDBox)) {
     SU2_MPI::Error("FFD Box vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
