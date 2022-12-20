@@ -204,7 +204,7 @@ for i in range(0, stations):
 dCt_0 = math.pi*J**2*r*(1+a_0)*a_0
 
 # Computation of the total thrust coefficient.
-Ct_0 = sum(h*dCt_0)
+Ct_0 = sum(h*dCt_0[i_hub:])
 
 # Compute the error with respect to the thrust coefficient given in input.
 err_0 = Ct_0 - Ct
@@ -222,7 +222,7 @@ for i in range(0, stations):
 dCt_old = math.pi*J**2*r*(1+a_old)*a_old
 
 # Computation of the total thrust coefficient.
-Ct_old = sum(h*dCt_old)
+Ct_old = sum(h*dCt_old[i_hub:])
 
 # Compute the error with respect to the thrust coefficient given in input.
 err_old = Ct_old - Ct
@@ -249,7 +249,7 @@ while math.fabs(err_new) >= eps and err_0 != err_old:
     dCt_new = math.pi*J**2*r*(1+a_new)*a_new
 
     # Computation of the new total thrust coefficient.
-    Ct_new = sum(h*dCt_new)
+    Ct_new = sum(h*dCt_new[i_hub:])
 
     # Computation of the total thrust coefficient error with respect to the input value.
     err_new = Ct_new - Ct
@@ -278,16 +278,16 @@ for i in range(0, stations):
 ###   Check Results    ###
 ##########################
 # Computation of the total power coefficient.
-Cp = sum(h*dCp)
+Cp = sum(h*dCp[i_hub:])
 
 # Computation of the total thrust coefficient.
-Ct_optimal = sum(h*dCt_optimal)
+Ct_optimal = sum(h*dCt_optimal[i_hub:])
 
 # Computation of the static pressure jump distribution.
 DeltaP = dCt_optimal*(2*Vinf**2)/(J**2*math.pi*r)
 
 # Computation of the thrust over density (T) using the static pressure jump distribution.
-T = sum(2*math.pi*r*math.pow(R,2)*h*DeltaP)
+T = sum(2*math.pi*r[i_hub:]*math.pow(R,2)*h*DeltaP[i_hub:])
 
 # Computation of the thrust coefficient using T.
 Ct_Renard = T / (math.pow(n,2)*math.pow(D,4))
