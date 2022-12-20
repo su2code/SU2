@@ -3873,6 +3873,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
       if (kindSolver == MAIN_SOLVER::RANS ||
           kindSolver == MAIN_SOLVER::INC_RANS ||
+          kindSolver == MAIN_SOLVER::NEMO_RANS ||
           kindSolver == MAIN_SOLVER::DISC_ADJ_RANS ||
           kindSolver == MAIN_SOLVER::DISC_ADJ_INC_RANS ||
           kindSolver == MAIN_SOLVER::FEM_LES ||

@@ -323,3 +323,4 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
+

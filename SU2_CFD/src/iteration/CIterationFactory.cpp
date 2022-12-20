@@ -49,7 +49,7 @@ CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CCo
 
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
-    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
       if(config->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
           cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;

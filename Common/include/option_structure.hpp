@@ -257,6 +257,7 @@ enum class MAIN_SOLVER {
   MULTIPHYSICS,
   NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
   NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_RANS,                   /*!< \brief Definition of the NEMO RANS solver. */
 };
 static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", MAIN_SOLVER::NONE)
@@ -272,6 +273,7 @@ static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
   MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
+  MakePair("NEMO_RANS", MAIN_SOLVER::NEMO_RANS)
   MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
@@ -848,7 +850,7 @@ enum class UPWIND {
   LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for NEMO ONLY)*/
   BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
