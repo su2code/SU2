@@ -1079,28 +1079,17 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
-      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
-      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+	  AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
+	  AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+	  AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+	  AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+	  AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
       break;
 	  
 	case TURB_TRANS_MODEL::EN:
       AddVolumeOutput("AMPLIFICATION_FACTOR", "n", "SOLUTION", "e^N transition Amplification Factor");
-	  break;
-
-    case TURB_TRANS_MODEL::NONE:
-      break;
-  }
-
-  switch (config->GetKind_Trans_Model()) {    
-    case TURB_TRANS_MODEL::LM:
-      AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
-      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
       AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
-      break;
+	  break;
 
     case TURB_TRANS_MODEL::NONE:
       break;
@@ -1265,6 +1254,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 	case TURB_TRANS_MODEL::EN:
       SetVolumeOutputValue("AMPLIFICATION_FACTOR", iPoint, Node_Trans->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RES_AMPLIFICATION_FACTOR", iPoint, trans_solver->LinSysRes(iPoint, 0));
+      SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
 	  break;
 
     case TURB_TRANS_MODEL::NONE: break;

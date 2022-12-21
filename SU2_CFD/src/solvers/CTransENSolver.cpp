@@ -107,8 +107,8 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
     nInf = -20;
   }
   else {
-    lowlimit = -5;
-    nInf = -5;
+    lowlimit = 0;
+    nInf = 0;
   }
 
   lowerlimit[0] = lowlimit;
@@ -531,4 +531,49 @@ void CTransENSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
   
+}
+
+void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  const bool check = true;
+  if (check == true){
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  su2double localUnderRelaxation =  1.00;
+  su2double allowableRatio = 2.0;
+
+  unsigned long Inner_Iter = config->GetInnerIter();
+
+  //if (Inner_Iter < 100) allowableRatio =  1e-5;
+  //else allowableRatio =  0.99;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    localUnderRelaxation = 1.0;
+    su2double ratio = fabs(LinSysSol[iPoint]) / (fabs(nodes->GetSolution(iPoint, 0)) + EPS);
+    /* We impose a limit on the maximum percentage that the
+      turbulence variables can change over a nonlinear iteration. */
+    if (ratio > allowableRatio) {
+      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      cout<<"Ratio = "<<ratio<<". Old = "<<fabs(LinSysSol[iPoint])<<". New = "<<fabs(nodes->GetSolution(iPoint, 0));
+      cout<<". Local ratio = "<<localUnderRelaxation<<endl;
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+  END_SU2_OMP_FOR
+  }
+
 }

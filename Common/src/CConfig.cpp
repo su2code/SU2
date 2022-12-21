@@ -4762,18 +4762,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if ((Kind_Turb_Model != TURB_MODEL::SST) && Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
-    SU2_MPI::Error("LM transition model currently only available in combination with SST turbulence model!", CURRENT_FUNCTION);
-  }
-
-  if ((saParsedOptions.bc) && (Kind_Trans_Model == TURB_TRANS_MODEL::EN)) {
-  	SU2_MPI::Error("Please select only one transition model for the SA turbulence model (Choose either eN or BCM).", CURRENT_FUNCTION);
-  }
-  if ((!saParsedOptions.ft2) && (Kind_Trans_Model == TURB_TRANS_MODEL::EN)) {
-	SU2_MPI::Error("Please select SA_OPTIONS = WITHFT2 when using SA-Ft2-eN transtion model.", CURRENT_FUNCTION);
-  }
-  if ((Kind_Regime == ENUM_REGIME::COMPRESSIBLE) && (Ref_NonDim == 0) && (Kind_Trans_Model == TURB_TRANS_MODEL::EN)) {
-	SU2_MPI::Error("Please select a non-dimensionalization option other than 'REF_DIMENSIONALIZATION = DIMENSIONAL' when using SA-Ft2-eN for a compressible case.", CURRENT_FUNCTION);
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::EN) {
+    if (saParsedOptions.bc){
+      SU2_MPI::Error("Please select only one transition model for the SA turbulence model (Choose either eN or BCM).", CURRENT_FUNCTION);
+    } else if (!saParsedOptions.ft2) {
+      SU2_MPI::Error("Please select SA_OPTIONS = WITHFT2 when using SA-Ft2-eN transtion model.", CURRENT_FUNCTION);
+    } else if ((Kind_Regime == ENUM_REGIME::COMPRESSIBLE) && (Ref_NonDim == 0)) {
+      SU2_MPI::Error("Please select a non-dimensionalization option other than 'REF_DIMENSIONALIZATION = DIMENSIONAL' when using SA-Ft2-eN for a compressible case.", CURRENT_FUNCTION);
+    }
   }
 
   if (Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
