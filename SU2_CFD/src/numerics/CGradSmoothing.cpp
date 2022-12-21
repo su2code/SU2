@@ -2,7 +2,7 @@
  * \file CGradSmoothing.cpp
  * \brief Numerics for gradient smoothing problems.
  * \author T.Dick
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
