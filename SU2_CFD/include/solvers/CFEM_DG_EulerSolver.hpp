@@ -45,8 +45,8 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
-  vector<su2double> EntropyVarFreeStream; /*!< \brief Vector, which contains the free stream
-                                                      entropy variables. */
+  ColMajorMatrix<su2double> EntropyVarFreeStream; /*!< \brief Vector, which contains the free stream
+                                                              entropy variables. */
 
   vector<unsigned long> nDOFsPerRank;                    /*!< \brief Number of DOFs per rank in
                                                                      cumulative storage format. */

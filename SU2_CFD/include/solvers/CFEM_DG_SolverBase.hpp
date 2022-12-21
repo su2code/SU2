@@ -58,8 +58,8 @@ protected:
   su2double StrainMag_Max = 0; /*!< \brief Maximum Strain Rate magnitude. */
   su2double Omega_Max = 0;     /*!< \brief Maximum Omega. */
 
-  vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
-                                                   conservative variables. */
+  ColMajorMatrix<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
+                                                           conservative variables. */
 
   AeroCoeffsArray InvCoeff;        /*!< \brief Inviscid pressure contributions for each boundary. */
   AeroCoeffsArray SurfaceInvCoeff; /*!< \brief Inviscid pressure contributions for each monitoring boundary. */

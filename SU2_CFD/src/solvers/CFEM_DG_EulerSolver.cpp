@@ -92,29 +92,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
   Mach_Inf        = config->GetMach();
 
   /*--- Set the conservative variables of the free-stream. ---*/
-  ConsVarFreeStream.resize(nVar);
+  ConsVarFreeStream.resize(1,nVar);
 
-  ConsVarFreeStream[0]      = Density_Inf;
-  ConsVarFreeStream[nVar-1] = Density_Inf*Energy_Inf;
+  ConsVarFreeStream(0,0)      = Density_Inf;
+  ConsVarFreeStream(0,nVar-1) = Density_Inf*Energy_Inf;
 
   for(unsigned short iDim=0; iDim<nDim; ++iDim)
-    ConsVarFreeStream[iDim+1] = Density_Inf*Velocity_Inf[iDim];
+    ConsVarFreeStream(0,iDim+1) = Density_Inf*Velocity_Inf[iDim];
 
   /*--- Set the entropy variables of the free-stream. ---*/
-  EntropyVarFreeStream.resize(nVar);
-
-  const su2double ovgm1 = 1.0/Gamma_Minus_One;
-  const su2double s     = log(Pressure_Inf/pow(Density_Inf,Gamma));
-  const su2double pInv  = 1.0/Pressure_Inf;
-
-  su2double V2_Inf = 0.0;
-  for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-    EntropyVarFreeStream[iDim+1] = Density_Inf*Velocity_Inf[iDim]*pInv;
-    V2_Inf                      += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-
-  EntropyVarFreeStream[0]      =  (Gamma-s)*ovgm1 - 0.5*pInv*Density_Inf*V2_Inf;
-  EntropyVarFreeStream[nVar-1] = -pInv*Density_Inf;
+  EntropyVarFreeStream = ConsVarFreeStream;
+  ConservativeToEntropyVariables(EntropyVarFreeStream);
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
   dynamic_grid = config->GetDynamic_Grid();
@@ -5279,7 +5267,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig             *config,
     for(unsigned short j=0; j<nVar; ++j) {
       SU2_OMP_SIMD
       for(unsigned short i=0; i<nRows; ++i)
-        solIntRight(i,j) = EntropyVarFreeStream[j];
+        solIntRight(i,j) = EntropyVarFreeStream(0,j);
     }
 
     /*--- Convert the entropy variables to the primitive variables. ---*/
@@ -6390,7 +6378,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
 
         /*--- Reset the state to the infinity state and update nDOFsBad. ---*/
         for(unsigned short k=0; k<nVar; ++k)
-          volElem[i].solDOFs(j,k) = ConsVarFreeStream[k];
+          volElem[i].solDOFs(j,k) = ConsVarFreeStream(0,k);
         ++nDOFsBad;
       }
     }
