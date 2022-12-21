@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -212,7 +212,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   su2double rho = V[RHO_INDEX];
 
   /*--- Scale rhoE with turbulent kinetic energy ---*/
-  rhoE -= rho * turb_ke;        // Density * energy - turb_ke [J/m3]
+  //rhoE -= rho * turb_ke;        // Density * energy - turb_ke [J/m3]
 
   /*--- Assign velocity^2 ---*/
   su2double sqvel = 0.0;

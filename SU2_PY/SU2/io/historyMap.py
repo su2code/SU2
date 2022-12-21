@@ -489,6 +489,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
           'GROUP': 'AERO_COEFF',
           'HEADER': 'CL',
           'TYPE': 'COEFFICIENT'},
+ 'UNSTART': {'DESCRIPTION': 'Total lift coefficient on all surfaces set with '
+                         'MARKER_MONITORING',
+          'GROUP': 'AERO_COEFF',
+          'HEADER': 'CU',
+          'TYPE': 'COEFFICIENT'},
  'LINSOL_ITER': {'DESCRIPTION': 'Number of iterations of the linear solver.',
                  'GROUP': 'LINSOL',
                  'HEADER': 'LinSolIter',

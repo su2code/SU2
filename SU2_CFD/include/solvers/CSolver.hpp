@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1613,6 +1613,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_Total_CU - Value of the total unstart estimator.
+   */
+  inline virtual void SetTotal_CU(su2double val_Total_CU) { }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   inline virtual void SetTotal_NetThrust(su2double val_Total_NetThrust) { }
@@ -1772,6 +1778,14 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient (inviscid contribution) on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetCU_Inv(unsigned short val_marker) const { return 0; }
+
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetCL_Visc(unsigned short val_marker) const { return 0; }
@@ -1782,6 +1796,13 @@ public:
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetSurface_CL(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetSurface_CU(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -1852,6 +1873,14 @@ public:
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetSurface_CL_Inv(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the unstart coefficient on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetSurface_CU_Inv(unsigned short val_marker) const { return 0; }
+
 
   /*!
    * \brief A virtual member.
@@ -2369,6 +2398,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \return Value of the unstart coefficient (inviscid + viscous contribution).
+   */
+  inline virtual su2double GetTotal_CU() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CD() const { return 0; }
@@ -2510,6 +2545,13 @@ public:
    * \return Value of the lift coefficient (inviscid contribution).
    */
   inline virtual su2double GetAllBound_CL_Inv() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the unstart coefficient (inviscid contribution).
+   */
+  inline virtual su2double GetAllBound_CU_Inv() const { return 0; }
+
 
   /*!
    * \brief A virtual member.
