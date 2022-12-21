@@ -2,7 +2,7 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,8 @@ protected:
 
 public:
   static constexpr size_t MAXNVAR = 2;
+  VectorType turb_index;
+  VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
 
   /*!
    * \brief Constructor of the class.
@@ -69,6 +71,34 @@ public:
    * \param[in] val_muT - Value of the eddy viscosity.
    */
   inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+
+  /*!
+    * \brief Set the value of the turbulence index.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_turb_index - Value of the turbulence index.
+   */
+  inline void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) final { turb_index(iPoint) = val_turb_index; }
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   * \param[in] iPoint - Point index.
+   * \return Value of the intermittency of the turbulence index.
+   */
+  inline su2double GetTurbIndex(unsigned long iPoint) const final { return turb_index(iPoint); }
+
+  /*!
+   * \brief Get the intermittency of the transition model.
+   * \param[in] iPoint - Point index.
+   * \return Value of the intermittency of the transition model.
+   */
+  inline su2double GetIntermittency(unsigned long iPoint) const final { return intermittency(iPoint); }
+
+  /*!
+   * \brief Set the intermittency of the transition model.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_intermittency - New value of the intermittency.
+   */
+  inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
 
 };
 
