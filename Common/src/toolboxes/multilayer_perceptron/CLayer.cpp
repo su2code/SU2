@@ -3,7 +3,7 @@
  * \brief Implementation of the Layer class to be used in the NeuralNetwork
  *      class
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

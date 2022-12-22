@@ -2,7 +2,7 @@
  * \file CNeuron.hpp
  * \brief Declaration of artificial neural network perceptron class
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,7 @@ public:
     * \brief Set neuron identification number
     * \param[in] input - Identification number
     */
-    void setNumber(unsigned long input){ i_neuron = input; }
+    void setNumber(unsigned long input) { i_neuron = input; }
 
     /*!
     * \brief Get neuron identification number
@@ -62,7 +62,7 @@ public:
     * \brief Set neuron output value
     * \param[in] input - activation function output value
     */
-    void setOutput(su2double input){ output = input; }
+    void setOutput(su2double input) { output = input; }
 
     /*!
     * \brief Get neuron output value
@@ -74,7 +74,7 @@ public:
     * \brief Set neuron input value
     * \param[in] input - activation function input value
     */
-    void setInput(su2double x){ input = x; }
+    void setInput(su2double x) { input = x; }
 
     /*!
     * \brief Get neuron input value
@@ -86,7 +86,7 @@ public:
     * \brief Set neuron bias
     * \param[in] input - bias value
     */
-    void setBias(su2double input){ bias = input; }
+    void setBias(su2double input) { bias = input; }
 
     /*!
     * \brief Get neuron bias value
@@ -94,12 +94,17 @@ public:
     */
     su2double getBias() const { return bias; }
 
+    /*!
+    * \brief Size the derivative of the neuron output wrt MLP inputs.
+    * \param[in] nInputs - Number of MLP inputs.
+    */
     void sizeGradient(std::size_t nInputs) { doutput_dinputs.resize(nInputs); }
+    
     /*!
     * \brief Set neuron output gradient with respect to its input value
     * \param[in] input - Derivative of activation function with respect to input
     */
-    void setGradient(std::size_t iInput, su2double input){ doutput_dinputs[iInput] = input; }
+    void setGradient(std::size_t iInput, su2double input) { doutput_dinputs[iInput] = input; }
 
     /*!
     * \brief Get neuron output gradient with respect to input value

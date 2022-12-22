@@ -3,7 +3,7 @@
  * \brief Implementation of the NeuralNetwork class to be used
  *      for evaluation of multi-layer perceptrons.
  * \author E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,17 +32,17 @@
 using namespace std;
 
 
-void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
+void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs, bool compute_gradient){
     /*--- Evaluate MLP for given inputs ---*/
 
     su2double y, dy_dx;           // Activation function output.
     bool same_point = true;
-    bool compute_gradient = false; // TODO: get this from function inputs
     /* Normalize input and check if inputs are the same w.r.t last evaluation */
     for(auto iNeuron=0u; iNeuron<inputLayer->getNNeurons(); iNeuron++){
         su2double x_norm = (inputs[iNeuron] - input_norm[iNeuron].first)/(input_norm[iNeuron].second - input_norm[iNeuron].first);
         if(abs(x_norm - inputLayer->getOutput(iNeuron)) > 0) same_point = false;
         inputLayer->setOutput(iNeuron, x_norm);
+
         if(compute_gradient) inputLayer->setdYdX(iNeuron, iNeuron, 1 / (input_norm[iNeuron].second - input_norm[iNeuron].first));
     }
     /* Skip evaluation process if current point is the same as during the previous evaluation */
@@ -69,17 +69,6 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double> &inputs){
             /* Compute and store neuron output based on activation function */
             switch (activation_function_types[iLayer])
                 {
-                case ENUM_ACTIVATION_FUNCTION::SMOOTH_SLOPE:
-                    for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
-                        x = total_layers[iLayer]->getInput(iNeuron);
-                        if(x > 0){
-                            y = x;
-                        }else{
-                            y = tanh(x);
-                        }
-                        total_layers[iLayer]->setOutput(iNeuron, y);
-                    }
-                    break;
                 case ENUM_ACTIVATION_FUNCTION::ELU:
                     for(auto iNeuron=0u; iNeuron<nNeurons_current; iNeuron++){
                         x = total_layers[iLayer]->getInput(iNeuron);
@@ -241,12 +230,14 @@ void MLPToolbox::CNeuralNetwork::defineInputLayer(unsigned long n_neurons){
     /* Mark layer as input layer */
     inputLayer->setInput(true);
     input_norm.resize(n_neurons);
+    input_names.resize(n_neurons);
 }
 
 void MLPToolbox::CNeuralNetwork::defineOutputLayer(unsigned long n_neurons){
     /*--- Define the output layer of the network ---*/
     outputLayer = new CLayer(n_neurons);
     output_norm.resize(n_neurons);
+    output_names.resize(n_neurons);
 }
 
 void MLPToolbox::CNeuralNetwork::push_hidden_layer(unsigned long n_neurons){
@@ -297,10 +288,6 @@ void MLPToolbox::CNeuralNetwork::setActivationFunction(unsigned long i_layer, st
     }
     if(input.compare("relu") == 0){
         activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::RELU;
-        return;
-    }
-    if((input.compare("smooth_slope") == 0)){
-        activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::SMOOTH_SLOPE;
         return;
     }
     if((input.compare("elu") == 0)){

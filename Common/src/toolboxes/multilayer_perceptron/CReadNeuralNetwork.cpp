@@ -3,7 +3,7 @@
  * \brief Implementation of the reader class to read .mlp input files
  *      used to set up multi-layer perceptrons.
  * \author E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,9 +26,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
+#include "../../../include/containers/CFileReaderLUT.hpp"
 using namespace std;
 
-MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in){
+MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in) {
     filename = filename_in;
 }
 
@@ -57,8 +58,8 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
         getline(file_stream, line);
         n_layers = stoul(line);
         n_neurons.resize(n_layers);
-        biases.resize(n_layers);
-        weights.resize(n_layers-1);
+        biases_mat.resize(n_layers);
+        weights_mat.resize(n_layers - 1);
         activation_functions.resize(n_layers);
 
         found_layercount = true;
@@ -75,14 +76,11 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
         for(auto iLayer=0u; iLayer<n_layers; iLayer++){
           getline(file_stream, line);
           n_neurons[iLayer] = stoul(line);
-          biases[iLayer].resize(n_neurons[iLayer]);
+          biases_mat[iLayer].resize(n_neurons[iLayer]);
         }
         /* Loop over spaces between layers and size the weight matrices accordingly */
         for(auto iLayer=0u; iLayer<n_layers-1; iLayer++){
-          weights[iLayer].resize(n_neurons[iLayer]);
-          for(size_t iNeuron=0; iNeuron<n_neurons[iLayer]; iNeuron++){
-            weights[iLayer][iNeuron].resize(n_neurons[iLayer+1]);
-          }
+          weights_mat[iLayer].resize(n_neurons[iLayer], n_neurons[iLayer + 1]);
         }
         /* Size input and output normalization and set default values */
         input_norm.resize(n_neurons[0]);
@@ -110,14 +108,11 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
       /* Read MLP input variable names */
       if(line.compare("[input names]") == 0){
         found_input_names = true;
-        getline(file_stream, line);
-        while(line.compare("") != 0){
-          input_names.push_back(line);
+        input_names.resize(n_neurons[0]);
+        for(auto iInput=0u; iInput < n_neurons[0]; iInput++) {
           getline(file_stream, line);
-        }
-
-        if(input_names.size() != n_neurons[0]){
-          SU2_MPI::Error("Number of input variable names inconsistent with number of MLP inputs", CURRENT_FUNCTION);
+          input_names[iInput] = line;
+          
         }
       }
 
@@ -139,10 +134,11 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
       /* Read MLP output variable names */
       if(line.compare("[output names]") == 0){
         found_output_names = true;
-        getline(file_stream, line);
-        while(line.compare("") != 0){
-          output_names.push_back(line);
+        auto n_outputs = n_neurons[n_neurons.size() - 1];
+        output_names.resize(n_outputs);
+        for(auto iOutput=0u; iOutput<n_outputs; iOutput++){
           getline(file_stream, line);
+          output_names[iOutput] = line;
         }
 
         if(output_names.size() != (n_neurons[n_neurons.size()-1])){
@@ -187,7 +183,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
         istringstream weight_stream(line);
         for(auto jNeuron=0u; jNeuron<n_neurons[iLayer+1]; jNeuron++){
           weight_stream >> word;
-          weights[iLayer][iNeuron][jNeuron] = stold(word);
+          weights_mat[iLayer][iNeuron][jNeuron] = stold(word);
         }
       }
       getline(file_stream, line);
@@ -200,7 +196,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
       istringstream bias_stream(line);
       for(auto iNeuron=0u; iNeuron<n_neurons[iLayer]; iNeuron++){
         bias_stream >> word;
-        biases[iLayer][iNeuron] = stold(word);
+        biases_mat[iLayer][iNeuron] = stold(word);
       }
     }
 

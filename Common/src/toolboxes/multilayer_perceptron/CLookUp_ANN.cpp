@@ -3,7 +3,7 @@
  * \brief Implementation of the multi-layer perceptron class to be 
  *      used for look-up operations.
  * \author E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -144,14 +144,14 @@ void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork * ANN, string fileName)
     ANN->defineInputLayer(Reader.GetNInputs());
     ANN->sizeInputs(Reader.GetNInputs());
     for(auto iInput=0u; iInput<Reader.GetNInputs(); iInput++){
-        ANN->PushInputName(Reader.GetInputName(iInput));
+        ANN->SetInputName(iInput, Reader.GetInputName(iInput));
     }
     for(auto iLayer=1u; iLayer<Reader.GetNlayers()-1; iLayer++){
         ANN->push_hidden_layer(Reader.GetNneurons(iLayer));
     }
     ANN->defineOutputLayer(Reader.GetNOutputs());
     for(auto iOutput=0u; iOutput<Reader.GetNOutputs(); iOutput++){
-        ANN->PushOutputName(Reader.GetOutputName(iOutput));
+        ANN->SetOutputName(iOutput, Reader.GetOutputName(iOutput));
     }
 
     /* Size weights of each layer */

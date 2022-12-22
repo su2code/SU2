@@ -2,7 +2,7 @@
  * \file CNeuralNetwork.hpp
  * \brief Declaration of the neural network class
  * \author E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,8 +41,8 @@ namespace MLPToolbox{
 class CNeuralNetwork
 {
 private:
-    std::vector<std::string> input_names,   // MLP input variable names.
-                             output_names;  // MLP output variable names.
+    su2vector<std::string> input_names,   // MLP input variable names.
+                           output_names;  // MLP output variable names.
 
     unsigned long n_hidden_layers = 0;  // Number of hidden layers (layers between input and output layer).
 
@@ -61,20 +61,19 @@ private:
                                         // is skipped if current inputs are the same as the last inputs.
 
     su2double* ANN_outputs; // Pointer to network outputs
-    su2matrix<su2double> dOutputs_dInputs;
+    su2matrix<su2double> dOutputs_dInputs; // Network output derivatives w.r.t inputs
 
     /*--- Activation function types that are currently supported ---*/
     enum ENUM_ACTIVATION_FUNCTION {
         NONE=0,
         LINEAR=1,
         RELU=2,
-        SMOOTH_SLOPE=3,
-        ELU = 4,
-        GELU = 5,
-        SELU = 6,
-        SIGMOID = 7,
-        SWISH = 8,
-        TANH = 9
+        ELU = 3,
+        GELU = 4,
+        SELU = 5,
+        SIGMOID = 6,
+        SWISH = 7,
+        TANH = 8
     };
     ENUM_ACTIVATION_FUNCTION * activation_function_types;
 
@@ -167,8 +166,10 @@ public:
 
     /*!
     * \brief Evaluate the network.
+    * \param[in] inputs - Network input variable values.
+    * \param[in] compute_gradient - Compute the derivatives of the outputs wrt inputs.
     */
-    void predict(su2vector<su2double> &inputs);
+    void predict(su2vector<su2double> &inputs, bool compute_gradient=false);
 
     /*!
     * \brief Set the normalization factors for the input layer
@@ -193,13 +194,13 @@ public:
     * \brief Add an output variable name to the network.
     * \param[in] input - Input variable name.
     */
-    void PushOutputName(std::string input) { output_names.push_back(input); }
+    void SetOutputName(size_t iOutput, std::string input) { output_names[iOutput] = input; }
 
     /*!
     * \brief Add an input variable name to the network.
     * \param[in] output - Output variable name.
     */
-    void PushInputName(std::string input) { input_names.push_back(input); }
+    void SetInputName(size_t iInput, std::string input) { input_names[iInput] = input; }
    
     /*!
     * \brief Get network input variable name.
@@ -234,7 +235,14 @@ public:
     */
     su2double GetANN_Output(std::size_t iOutput) const { return ANN_outputs[iOutput]; }
 
-    su2double GetOutput_Input_Derivative(std::size_t iOutput, std::size_t iInput) const { return dOutputs_dInputs[iOutput][iInput]; }
+    /*!
+    * \brief Get network output derivative w.r.t specific input.
+    * \param[in] iOutput - output variable index.
+    * \param[in] iInput - input variable index.
+    * \returns Output derivative w.r.t input.
+    */
+    su2double GetANN_Output_Input_Derivative(std::size_t iOutput, std::size_t iInput) const { return dOutputs_dInputs[iOutput][iInput]; }
+
     /*!
     * \brief Set the activation function array size.
     * \param[in] n_layers - network layer count.

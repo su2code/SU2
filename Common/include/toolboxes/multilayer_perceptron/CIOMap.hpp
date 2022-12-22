@@ -2,7 +2,7 @@
  * \file CIOMap.hpp
  * \brief Declaration of input-to-output mapping class for artifical neural networks
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,7 +99,7 @@ namespace MLPToolbox
         * \brief Set MLP index in IO map
         * \param[in] iMLP - loaded MLP index
         */
-        void Push_MLP_index(std::size_t iMLP){ MLP_indices.push_back(iMLP); }
+        void Push_MLP_index(std::size_t iMLP) { MLP_indices.push_back(iMLP); }
 
         /*!
         * \brief Pair call inputs and outputs with the inputs and outputs of 

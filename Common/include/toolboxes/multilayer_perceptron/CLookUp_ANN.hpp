@@ -2,7 +2,7 @@
  * \file CLookUp_ANN.hpp
  * \brief Declaration of artificial neural network interpolation class
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,14 +60,6 @@ class CLookUp_ANN
     unsigned short number_of_variables;  /*!< Number of loaded ANNs. */
 
     /*!
-   * \brief Skip to certain flag in file.
-   * \param[in] file_stream - input stream of file
-   * \param[in] flag - line to search for
-   * \return line in file.
-   */
-    std::string SkipToFlag(ifstream *file_stream, std::string flag); 
-
-    /*!
     * \brief Load ANN architecture
     * \param[in] ANN - pointer to target NeuralNetwork class
     * \param[in] filename - filename containing ANN architecture information
@@ -101,7 +93,7 @@ class CLookUp_ANN
     * \brief Get number of loaded ANNs
     * \return number of loaded ANNs
     */
-    std::size_t GetNANNs() const {return NeuralNetworks.size();}
+    std::size_t GetNANNs() const { return NeuralNetworks.size(); }
 
     /*!
     * \brief Check if all output variables are present in the loaded ANNs
