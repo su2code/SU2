@@ -2,7 +2,7 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,9 +35,9 @@
  *        This class does not implement a particular model, that will be done by its children.
  * \note  In addition to Compute_Constitutive_Matrix, derived classes MUST further implement
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
- * \ingroup FEM_Discr
+ * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 

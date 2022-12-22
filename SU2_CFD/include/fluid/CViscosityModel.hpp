@@ -2,7 +2,7 @@
  * \file CViscosityModel.hpp
  * \brief Interface class for defining laminar viscosity models.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,25 +46,25 @@ class CViscosityModel {
   /*!
    * \brief return viscosity value.
    */
-  virtual su2double GetViscosity() const = 0;
+  inline su2double GetViscosity() const { return mu_; }
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  virtual su2double Getdmudrho_T() const = 0;
+  inline su2double Getdmudrho_T() const { return dmudrho_t_; }
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  virtual su2double GetdmudT_rho() const = 0;
+  inline su2double GetdmudT_rho() const { return dmudt_rho_; }
 
   /*!
    * \brief Set Viscosity.
    */
   virtual void SetViscosity(su2double t, su2double rho) = 0;
 
-  /*!
-   * \brief Set Viscosity Derivatives.
-   */
-  virtual void SetDerViscosity(su2double t, su2double rho) = 0;
+ protected:
+  su2double mu_{0.0};        /*!< \brief Dynamic viscosity. */
+  su2double dmudrho_t_{0.0}; /*!< \brief DmuDrho_T. */
+  su2double dmudt_rho_{0.0}; /*!< \brief DmuDT_rho. */
 };

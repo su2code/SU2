@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,10 @@
 
 #include "../CInterface.hpp"
 
+/*!
+ * \brief Fluid-heat interface (and v.v.).
+ * \ingroup Interfaces
+ */
 class CConjugateHeatInterface : public CInterface {
 public:
   /*!

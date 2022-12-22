@@ -3,7 +3,7 @@
 ## \file hybrid_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -193,7 +193,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals         = [79.000000, -1.938806, -1.995540]
+    discadj_trans_stator.test_vals         = [79.000000, -1.938803, -1.981888]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -1.938809, -1.995540]
     test_list.append(discadj_trans_stator)
     
@@ -215,7 +215,7 @@ def main():
     ######################################
 
     for test in test_list:
-        test.su2_exec = "SU2_CFD_AD -t 2"
+        test.command = TestCase.Command(exec = "SU2_CFD_AD", param = "-t 2")
         test.timeout = 600
         test.tol = 1e-4
     #end

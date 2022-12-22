@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the adjoint variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,10 @@
 #include "CVariable.hpp"
 #include "../../../Common/include/containers/CVertexMap.hpp"
 
+/*!
+ * \ingroup DiscAdj
+ * \brief Main class for defining the variables on the mesh deformation boundaries for adjoint applications.
+ */
 class CDiscAdjMeshBoundVariable final : public CVariable {
 private:
 

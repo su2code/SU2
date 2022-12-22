@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 
 /*!
  * \brief Radial basis function interpolation.
+ * \ingroup Interfaces
  */
 class CRadialBasisFunction final : public CInterpolator {
   static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");

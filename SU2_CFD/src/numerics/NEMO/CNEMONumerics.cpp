@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -247,7 +247,6 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   }
 
   /*--- Rename variables for convenience ---*/
-  const auto& Ms = fluidmodel->GetSpeciesMolarMass();
   const auto& Ds  = val_diffusioncoeff;
   const su2double mu  = val_lam_viscosity+val_eddy_viscosity;
   su2double ktr = val_therm_conductivity;
@@ -257,24 +256,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   const su2double Tve = val_primvar[TVE_INDEX];
   const auto& V   = val_primvar;
   const auto& GV  = val_gradprimvar;
-  const su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
-
-  /*--- Scale thermal conductivity with turb visc ---*/
-  // TODO: Need to determine proper way to incorporate eddy viscosity
-  // This is only scaling Kve by same factor as ktr
-  // NOTE: V[iSpecies] is == Ys.
-  su2double Mass = 0.0;
-  for (auto iSpecies = 0;iSpecies<nSpecies;iSpecies++)
-    Mass += V[iSpecies]*Ms[iSpecies];
-
-  su2double Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
-  su2double tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
-  su2double scl = tmp1/ktr;
-  ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
-  kve  = kve*(1.0+scl);
-  //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
-  //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
   /*--- Pre-compute mixture quantities ---*/  //TODO
   su2double Vector[MAXNDIM] = {0.0};

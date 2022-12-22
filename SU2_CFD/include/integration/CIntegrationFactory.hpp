@@ -2,7 +2,7 @@
  * \file CIntegrationFactory.hpp
  * \brief Headers of the CIntegrationFactory class
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,10 +31,12 @@
 class CIntegration;
 class CConfig;
 
+/*!
+ * \brief Factory for integration classes.
+ * \ingroup Drivers
+ */
 class CIntegrationFactory{
-
-public:
-
+ public:
   /*!
    * \brief Deleted constructor to avoid creating instances of this class
    */

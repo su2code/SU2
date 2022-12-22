@@ -2,7 +2,7 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,6 +39,7 @@ using namespace std;
 
 /*!
  * \class CInterpolator
+ * \ingroup Interfaces
  * \brief Main class for defining the interpolator, it requires
  *        a child class for each particular interpolation method.
  * \author H. Kline
