@@ -2,7 +2,7 @@
  * \file CFreeFormBlending.cpp
  * \brief Parent class for FFD Blending functions
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

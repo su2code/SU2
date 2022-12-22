@@ -3,7 +3,7 @@
  * \brief Header file for the class CLinearPartitioner.
  *        The implementations are in the <i>CLinearPartitioner.cpp</i> file.
  * \author T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
