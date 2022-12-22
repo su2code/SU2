@@ -966,6 +966,11 @@ void CDriverBase::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDef
   unsigned short nFFDBox = 0;
   unsigned short nLevel = 0;
 
+  if (config->GetMesh_FileFormat() != SU2) {
+    if (rank == MASTER_NODE) cout << "Mesh file format is not .su2 so FFD box information cannot be extracted." << endl;
+    return;
+  }
+
   mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
     SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
