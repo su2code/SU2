@@ -35,14 +35,14 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 #endif
 
   /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
-  n_reactants = config->GetNReactants();
+  n_user_scalars = config->GetNUserScalars();
   n_CV = 2;
-  n_scalars = n_CV + n_reactants;
+  n_scalars = n_CV + n_user_scalars;
 
   if (rank == MASTER_NODE) {
     cout << "n_scalars = " << n_scalars << endl;
     cout << "n_CV = " << n_CV << endl;
-    cout << "n_reactants = " << n_reactants << endl;
+    cout << "n_user_scalars = " << n_user_scalars << endl;
   }
 
   config->SetNControllingVars(n_CV);
@@ -59,15 +59,15 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   table_scalar_names[I_ENTH] = "EnthalpyTot";
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
   /*--- auxiliary species transport equations---*/
-  for(size_t i_aux=0; i_aux<n_reactants; i_aux++){
-    table_scalar_names[n_CV + i_aux] = config->GetReactantName(i_aux);
+  for(size_t i_aux=0; i_aux<n_user_scalars; i_aux++){
+    table_scalar_names[n_CV + i_aux] = config->GetUserScalarName(i_aux);
   }
 
   config->SetLUTScalarNames(table_scalar_names);
 
   /*--- we currently only need 1 source term from the LUT for the progress variable
         and each auxiliary equations needs 2 source terms ---*/
-  n_table_sources = 1 + 2*n_reactants;
+  n_table_sources = 1 + 2*n_user_scalars;
   config->SetNLUTSources(n_table_sources);
 
   table_source_names.resize(n_table_sources);
@@ -78,9 +78,13 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
         S_tot = S_PROD + S_CONS * Y ---*/ 
 
-  for(size_t i_aux = 0; i_aux < n_reactants; i_aux++){
-    table_source_names[1 + i_aux] = "ProdRatePos_" + config->GetReactantName(i_aux);
-    table_source_names[1 + n_reactants + i_aux] = "ProdRateNegScaled_" + config->GetReactantName(i_aux);
+  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++){
+
+    //table_source_names[1 + i_aux] = "ProdRatePos_" + config->GetUserScalarName(i_aux);
+    //table_source_names[1 + n_user_scalars + i_aux] = "ProdRateNegScaled_" + config->GetUserScalarName(i_aux);
+
+    table_source_names[1 + i_aux]                  = config->GetUserSourceName(i_aux);
+    table_source_names[1 + n_user_scalars + i_aux] = config->GetUserSourceName(i_aux + 1);
   }
 
   config->SetLUTSourceNames(table_source_names);
@@ -143,11 +147,11 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   source_scalar[I_ENTH] = 0.0;
 
   /*--- source term for the auxiliary species transport equations---*/
-  for(size_t i_aux = 0; i_aux < n_reactants; i_aux++) {
+  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
     su2double y_aux = val_scalars[n_CV + i_aux];      
-    source_scalar[n_CV + i_aux] = table_sources[1 + i_aux] + table_sources[1 + n_reactants + i_aux] * y_aux;
+    source_scalar[n_CV + i_aux] = table_sources[1 + i_aux] + table_sources[1 + n_user_scalars + i_aux] * y_aux;
   }
 
   return exit_code;

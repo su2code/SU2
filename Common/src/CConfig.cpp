@@ -2104,8 +2104,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
-  /* DESCRIPTION: Names of the auxiliary transport equations solved in the flamelet problem. */
-  addStringListOption("PASSIVE_REACTANT_NAMES", n_reactants, reactant_names);
+  /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
+  addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
+
+  /* DESCRIPTION: Names of the user scalar source terms. */
+  addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
