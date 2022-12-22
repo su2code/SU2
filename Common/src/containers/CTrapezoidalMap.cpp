@@ -1,8 +1,8 @@
 /*!
- * \file TrapezoidalMap.cpp
+ * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
- * \author D. Mayer, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \author D. Mayer, T. Economon, N. Beishuizen
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,6 +35,7 @@ using namespace std;
 /* Trapezoidal map implementation. Reference: 
  * M. de Berg, O. Cheong M. van Kreveld, M. Overmars, 
  * Computational Geometry, Algorithms and Applications pp. 121-146 (2008)
+ * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                                  vector<vector<unsigned long> > const& edges,
@@ -143,13 +144,13 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
   /* identify the triangle using the two edges */
-  std::array<unsigned long, 3> triangles_edge_low;
+  std::array<unsigned long, 2> triangles_edge_low;
   
-  for (int i=0;i<3;i++)
+  for (int i=0;i<2;i++)
    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
    
-  std::array<unsigned long, 3> triangles_edge_up;
-  for (int i=0;i<3;i++)
+  std::array<unsigned long, 2> triangles_edge_up;
+  for (int i=0;i<2;i++)
    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
@@ -174,7 +175,9 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
 
   std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
   bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
-  i_up =  bounds.first - unique_bands_x.begin();
+
+  /*--- if upper bound = 0, then use the range [0,1] ---*/
+  i_up =  max<unsigned long>(1, bounds.first - unique_bands_x.begin());
   i_low = i_up-1;
 
   return make_pair(i_low, i_up);

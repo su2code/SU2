@@ -2,7 +2,7 @@
  * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,7 @@
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CBaselineSolver.hpp"
+#include "../../include/fluid/CCoolProp.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
@@ -2775,7 +2776,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 7.3.0  \"Blackbird\"                        |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.4.0  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -2935,6 +2936,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
           Breakdown_file << "Critical Pressure (non-dim):   " << config[val_iZone]->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << "\n";
           Breakdown_file << "Critical Temperature (non-dim) :  " << config[val_iZone]->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << "\n";
           break;
+        case COOLPROP: {
+          CCoolProp auxFluidModel(config[val_iZone]->GetFluid_Name());
+          Breakdown_file << "Fluid Model: CoolProp library \n";
+          Breakdown_file << "Specific gas constant: " << auxFluidModel.GetGas_Constant()<< " N.m/kg.K.\n";
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND() << "\n";
+          Breakdown_file << "Specific Heat Ratio: " << auxFluidModel.GetGamma() << "\n";
+          Breakdown_file << "Critical Pressure:   " << auxFluidModel.GetPressure_Critical() << " Pa.\n";
+          Breakdown_file << "Critical Temperature:  " << auxFluidModel.GetTemperature_Critical()<< " K.\n";
+          Breakdown_file << "Critical Pressure (non-dim):   " << auxFluidModel.GetPressure_Critical()/ config[val_iZone]->GetPressure_Ref()<< "\n";
+          Breakdown_file << "Critical Temperature (non-dim) :  " << auxFluidModel.GetTemperature_Critical() / config[val_iZone]->GetTemperature_Ref() << "\n";
+        } break;
       }
 
       if (viscous) {
@@ -2965,6 +2977,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
+          case VISCOSITYMODEL::COOLPROP:
+            Breakdown_file << "Viscosity Model: CoolProp"<< "\n";
+            break;
+
           default:
             break;
 
@@ -2980,6 +2996,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
+            break;
+
+          case CONDUCTIVITYMODEL::COOLPROP:
+            Breakdown_file << "Conductivity Model: COOLPROP "<< "\n";
             break;
 
           default:
@@ -3331,6 +3351,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << ")." << endl;
             break;
 
+          case VISCOSITYMODEL::COOLPROP:
+            Breakdown_file << "Viscosity Model: CoolProp"<< "\n";
+            break;
+
         }
 
         if (energy) {
@@ -3345,6 +3369,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
+              break;
+
+            case CONDUCTIVITYMODEL::COOLPROP:
+              Breakdown_file << "Conductivity Model: COOLPROP "<< "\n";
               break;
 
             case CONDUCTIVITYMODEL::POLYNOMIAL:

@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,6 +57,7 @@
 
 /*!
  * \class CSysVector
+ * \ingroup SpLinSys
  * \brief Class for holding and manipulating vectors needed by linear solvers.
  */
 template <class ScalarType>

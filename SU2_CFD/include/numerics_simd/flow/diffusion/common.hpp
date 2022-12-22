@@ -2,7 +2,7 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -130,7 +130,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
     for (size_t jDim = 0; jDim < nDim; ++jDim)
       denom += grad(iDim+1,jDim) * grad(iDim+1,jDim);
 
-  const Double factor = 1 / sqrt(max(denom,1e-10));
+  const Double factor = 1 / sqrt(fmax(denom,1e-10));
 
   /*--- Compute the QCR term, and update the stress tensor. ---*/
   MatrixDbl<nDim> qcr;
@@ -159,8 +159,8 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
                             const VectorDbl<nDim>& unitNormal,
                             MatrixDbl<nDim>& tau) {
 
-  Double tauWall_i = max(gatherVariables(iPoint, tauWall), 0.0);
-  Double tauWall_j = max(gatherVariables(jPoint, tauWall), 0.0);
+  Double tauWall_i = fmax(gatherVariables(iPoint, tauWall), 0.0);
+  Double tauWall_j = fmax(gatherVariables(jPoint, tauWall), 0.0);
 
   Double isWall_i = tauWall_i > 0.0;
   Double isWall_j = tauWall_j > 0.0;
@@ -171,7 +171,8 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
   Double tauWall_ij = (tauWall_i+tauWall_j) * isNormalEdge;
 
   /*--- Scale is 1 for those edges, i.e. tau is not changed. ---*/
-  Double scale = tauWall_ij / norm(tangentProjection(tau,unitNormal)) + (1.0-isNormalEdge);
+  Double scale =
+      tauWall_ij / fmax(norm(tangentProjection(tau,unitNormal)), EPS) + (1.0-isNormalEdge);
 
   for (size_t iDim = 0; iDim < nDim; ++iDim)
     for (size_t jDim = 0; jDim < nDim; ++jDim)

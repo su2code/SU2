@@ -2,7 +2,7 @@
  * \file CLookupTable_tests.cpp
  * \brief Unit tests for the lookup table.
  * \author N. Beishuizen
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,12 +40,12 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- smaller and trivial lookup table ---*/
   
-  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","ProgressVariable","EnthalpyTot");
 
   /*--- string names of the controlling variables ---*/
 
-  string name_CV1 = "PROGVAR";
-  string name_CV2 = "ENTHALPY";
+  string name_CV1 = "ProgressVariable";
+  string name_CV2 = "EnthalpyTot";
 
  /*--- look up a single value for density ---*/
 

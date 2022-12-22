@@ -2,7 +2,7 @@
  * \file vectorization.cpp
  * \brief Unit tests for the SIMD type and associated expression templates.
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ template<class T, class U>
 struct logicFun {
   static T f(T A, T B, T C, T D, U x, U y) {
     // (B < A || B >= C) && ...
-    return max(B < A, B >= min(C,-D)) * (abs(A) == abs(x)) * (abs(C) != abs(y));
+    return fmax(B < A, B >= fmin(C,-D)) * (abs(A) == abs(x)) * (abs(C) != abs(y));
   }
 };
 

@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,9 @@
 
 #include <utility>
 #include <type_traits>
+
+/// \addtogroup Containers
+/// @{
 
 /*!
  * \enum StorageType
@@ -635,3 +638,5 @@ using su2activematrix = su2matrix<su2double>;
 
 using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
+
+/// @}

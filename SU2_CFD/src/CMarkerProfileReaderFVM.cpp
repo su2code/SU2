@@ -2,7 +2,7 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,6 +61,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   if (profile_file.fail()) {
     MergeProfileMarkers();
     WriteMarkerProfileTemplate();
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
@@ -202,7 +203,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   unsigned long iVertex, iMarker;
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-
+  unsigned long maxProfiles = 0;
   unsigned long index, iChar;
 
   char str_buf[MAX_STRING_SIZE];
@@ -237,6 +238,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&numberOfProfiles, &maxProfiles, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
@@ -268,8 +270,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
 
-    profileCoords.resize(numberOfProfiles);
-    for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+    profileCoords.resize(maxProfiles);
+    for (iMarker = 0; iMarker < maxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
     }
 

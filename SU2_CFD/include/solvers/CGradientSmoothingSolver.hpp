@@ -2,7 +2,7 @@
  * \file CGradientSmoothingSolver.hpp
  * \brief SOlver class for Sobolev smoothing of sensitivities.
  * \author T. Dick
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,9 +32,10 @@
 #include "../variables/CSobolevSmoothingVariable.hpp"
 #include "CFEASolverBase.hpp"
 
-/*! \class CGradientSmoothingSolver
- *  \brief Main class for defining a gradient smoothing.
- *  \author T. Dick.
+/*!
+ * \brief Main class for defining a Sobolev-based gradient smoothing.
+ * \author T. Dick.
+ * \ingroup GradSmooth
  */
 class CGradientSmoothingSolver final : public CFEASolverBase {
 public:

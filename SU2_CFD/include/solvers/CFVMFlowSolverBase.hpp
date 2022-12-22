@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,6 +54,8 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
 
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
@@ -269,12 +271,49 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
    */
-  void EdgeFluxResidual(const CGeometry *geometry, const CSolver* const* solvers, const CConfig *config);
+  void EdgeFluxResidual(const CGeometry *geometry, const CSolver* const* solvers, CConfig *config);
 
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    */
   void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Sums edge fluxes (if required) and computes the global error counter.
+   * \param[in] pausePreacc - Whether preaccumulation was paused durin.
+   * \param[in] localCounter - Thread-local error counter.
+   * \param[in,out] config - Used to set the global error counter.
+   */
+  inline void FinalizeResidualComputation(const CGeometry *geometry, bool pausePreacc,
+                                          unsigned long localCounter, CConfig* config) {
+
+    /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+    AD::ResumePreaccumulation(pausePreacc);
+    if (!ReducerStrategy) AD::EndNoSharedReading();
+
+    if (ReducerStrategy) {
+      SumEdgeFluxes(geometry);
+      if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+        Jacobian.SetDiagonalAsColumnSum();
+      }
+    }
+
+    /*--- Warning message about non-physical reconstructions. ---*/
+    if ((MGLevel == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+      /*--- Add counter results for all threads. ---*/
+      SU2_OMP_ATOMIC
+      ErrorCounter += localCounter;
+
+      /*--- Add counter results for all ranks. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        localCounter = ErrorCounter;
+        SU2_MPI::Reduce(&localCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+        config->SetNonphysical_Reconstr(ErrorCounter);
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    }
+  }
 
   /*!
    * \brief Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow.
@@ -967,7 +1006,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
    */
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh);
+  void ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh);
 
   /*!
    * \brief Destructor.
@@ -2364,4 +2403,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
     return EddyViscWall[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
+   */
+  inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
+
 };

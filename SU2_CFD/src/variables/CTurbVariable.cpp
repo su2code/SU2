@@ -2,7 +2,7 @@
  * \file CTurbVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,4 +30,9 @@
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) { }
+  : CScalarVariable(npoint, ndim, nvar, config) {
+
+    turb_index.resize(nPoint) = su2double(1.0);
+    intermittency.resize(nPoint) = su2double(1.0);
+
+   }

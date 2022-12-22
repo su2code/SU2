@@ -2,7 +2,7 @@
  * \file CMirror.hpp
  * \brief Mirror interpolation for the conservative (work-wise) approach in FSI problems.
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,7 @@
 /*!
  * \brief Mirror interpolation, transpose interpolation matrix of opposing mesh.
  * \note Requires that the opposing mesh has already run interpolation (jZone > iZone), otherwise throws.
+ * \ingroup Interfaces
  */
 class CMirror final : public CInterpolator {
 private:

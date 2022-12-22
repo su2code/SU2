@@ -2,7 +2,7 @@
  * \file ndflattener.hpp
  * \brief Flatten pointer-to-pointer-... arrays for MPI communication
  * \author M. Aehle
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,6 +35,9 @@
 
 #include "../containers/C2DContainer.hpp"
 #include "../parallelization/mpi_structure.hpp"
+
+/// \addtogroup Containers
+/// @{
 
 // --- Usage
 /*! \page ndflattener_usage NdFlattener usage
@@ -826,3 +829,5 @@ class NdFlattener<1, Data_t_, Index_t_> {
 
   const Data_t* data() const { return data_.data(); }
 };
+
+/// @}

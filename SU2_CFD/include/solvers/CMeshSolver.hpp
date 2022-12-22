@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,10 @@
 #include "../variables/CMeshBoundVariable.hpp"
 #include "../variables/CMeshElement.hpp"
 
+/*!
+ * \brief Mesh deformation solver (pseudo elasticity).
+ * \ingroup Elasticity_Equations
+ */
 class CMeshSolver final : public CFEASolver {
 protected:
 

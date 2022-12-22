@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,14 +104,13 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       switch (donor_config->GetKind_ConductivityModel()) {
 
         case CONDUCTIVITYMODEL::CONSTANT:
+        case CONDUCTIVITYMODEL::COOLPROP:
           thermal_conductivity = thermal_conductivityND*donor_config->GetThermal_Conductivity_Ref();
           break;
-
         case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
           thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
                                  *donor_config->GetViscosity_Ref();
           break;
-
         case CONDUCTIVITYMODEL::POLYNOMIAL:
           SU2_MPI::Error("Polynomial Conductivity model not implemented for CHT interface.", CURRENT_FUNCTION);
           break;

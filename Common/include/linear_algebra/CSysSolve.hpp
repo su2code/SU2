@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,7 @@ enum class LinearToleranceType {RELATIVE, ABSOLUTE};
 
 /*!
  * \class CSysSolve
+ * \ingroup SpLinSys
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
  *
  * The individual solvers could be stand-alone subroutines, but by

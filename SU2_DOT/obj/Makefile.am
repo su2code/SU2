@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.4.0 "Blackbird"
+# \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

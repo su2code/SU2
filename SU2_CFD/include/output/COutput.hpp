@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,9 +58,9 @@ class CConfig;
 using namespace std;
 
 /*!
- * \class COutput
  * \brief Class for writing the convergence history and to write solution data to file.
  * \author T.Albring
+ * \ingroup Output
  */
 class COutput {
 protected:

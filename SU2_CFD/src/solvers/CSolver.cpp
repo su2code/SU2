@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3653,7 +3653,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::PASSIVE_SCALAR:
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";

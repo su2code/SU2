@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,10 @@
 #include "../CInterface.hpp"
 #include <unordered_map>
 
+/*!
+ * \brief Fluid-structure interface (forces or tractions).
+ * \ingroup Interfaces
+ */
 class CFlowTractionInterface : public CInterface {
 protected:
   const bool conservative;
