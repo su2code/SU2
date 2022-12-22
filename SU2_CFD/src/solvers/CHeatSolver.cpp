@@ -1107,9 +1107,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
         }
         minDt = min(minDt, local_delta_time);
         maxDt = max(maxDt, local_delta_time);
-      } else {
-        nodes->SetDelta_Time(iPoint, 0.0);
       }
+      nodes->SetDelta_Time(iPoint, local_delta_time);
     }
     END_SU2_OMP_FOR
     /*--- Min/max over threads. ---*/
