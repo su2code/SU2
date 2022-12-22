@@ -2049,7 +2049,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   vector<su2double> Surface_CL(nMonitoring);
   vector<su2double> Surface_CD(nMonitoring);
-  vector<su2dobule> Surface_CU(nMonitoring);
+  vector<su2double> Surface_CU(nMonitoring);
   vector<su2double> Surface_CSF(nMonitoring);
   vector<su2double> Surface_CEff(nMonitoring);
   vector<su2double> Surface_CFx(nMonitoring);

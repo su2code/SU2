@@ -1544,7 +1544,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CL() const final { return TotalCoeff.CL; }
-
+  inline su2double GetTotal_CU() const final { return TotalCoeff.CU; }
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).

@@ -1945,7 +1945,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
           su2double Cfactor = 1/(0.5*Rcomb*Vcomb*Vcomb);
           Unstart += pow(((Pressure - Pcomb)*Cfactor),8.0);
 
-          /*--- Moment with respect to the reference axis ---*/
+	  /*--- Moment with respect to the reference axis ---*/
 
           if (nDim == 3) {
             MomentInviscid[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
@@ -1963,13 +1963,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
       }
 
       /*--- Project forces and store the non-dimensional coefficients ---*/
-
       if (Monitoring == YES) {
         if (Boundary != NEARFIELD_BOUNDARY) {
           if (nDim == 2) {
             InvCoeff.CD[iMarker] = ForceInviscid[0] * cos(Alpha) + ForceInviscid[1] * sin(Alpha);
             InvCoeff.CL[iMarker] = -ForceInviscid[0] * sin(Alpha) + ForceInviscid[1] * cos(Alpha);
-            InvCoeff.CU[iMarker] = Unstart;
+     	    InvCoeff.CU[iMarker] = Unstart;
             InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
             InvCoeff.CMz[iMarker] = MomentInviscid[2];
             InvCoeff.CoPx[iMarker] = MomentZ_Force[1];
@@ -2149,7 +2148,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SurfaceCoeff.CL[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
-    SurfaceCoeff.CU[iMarker_Monitoring] = SurfaceInvCoeff.CU[iMarker_Monitoring];    
+    SurfaceCoeff.CU[iMarker_Monitoring] = pow(SurfaceInvCoeff.CU[iMarker_Monitoring],(1./8.));    
     SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
         SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
