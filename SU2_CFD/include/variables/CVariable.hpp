@@ -1116,6 +1116,12 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the species diffusion coefficient.
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint , unsigned short val_ivar) const {return 0.0; }
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the specific heat at constant P
    */
   inline virtual su2double GetSpecificHeatCp(unsigned long iPoint) const { return 0.0; }

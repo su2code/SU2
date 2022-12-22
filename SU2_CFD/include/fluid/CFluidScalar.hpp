@@ -41,6 +41,7 @@ class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
+  const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
 
   const bool wilke;
@@ -93,6 +94,12 @@ class CFluidScalar final : public CFluidModel {
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
+  
+  /*!
+   * \brief Compute mass diffusivity for species.
+   */
+  void ComputeMassDiffusivity();
+  
 
  public:
   /*!
@@ -128,7 +135,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid mass diffusivity.
    */
-  inline su2double GetMassDiffusivity(int ivar) override;
+  inline su2double GetMassDiffusivity(int ivar) override {return massDiffusivity[ivar];}
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

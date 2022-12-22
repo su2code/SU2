@@ -47,13 +47,13 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Gamma(config->GetGamma()),
+      Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
-  Pressure = value_pressure_operating;
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
@@ -62,6 +62,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
 
   SetLaminarViscosityModel(config);
   SetThermalConductivityModel(config);
+  SetMassDiffusivityModel(config);
 }
 
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
@@ -82,9 +83,11 @@ void CFluidScalar::SetMassDiffusivityModel(const CConfig* config) {
   }
 }
 
-su2double CFluidScalar::GetMassDiffusivity(int iVar) {
-  MassDiffusivityPointers[iVar]->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
-  return MassDiffusivityPointers[iVar]->GetDiffusivity();
+void CFluidScalar::ComputeMassDiffusivity() {
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    MassDiffusivityPointers[iVar]->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    massDiffusivity[iVar]= MassDiffusivityPointers[iVar]->GetDiffusivity();
+  }
 }
 
 void CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
@@ -215,7 +218,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
-  Density = Pressure / (Temperature * Gas_Constant);
+  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
 
@@ -226,4 +229,5 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   }
 
   Kt = WilkeConductivity(val_scalars);
+  ComputeMassDiffusivity();
 }

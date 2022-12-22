@@ -66,7 +66,7 @@ class CSpeciesVariable : public CScalarVariable {
    * \param[in] val_ivar - eqn. index to the mass diffusivity.
    * \return Value of the mass diffusivity
    */
-  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) {
+  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const final {
     return Diffusivity(iPoint, val_ivar);
   }
 
