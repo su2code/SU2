@@ -301,6 +301,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
       su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
       solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+      solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
       su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
