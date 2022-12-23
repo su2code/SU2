@@ -59,7 +59,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   table_scalar_names[I_ENTH] = "EnthalpyTot";
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
   /*--- auxiliary species transport equations---*/
-  for(size_t i_aux=0; i_aux<n_user_scalars; i_aux++){
+  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_CV + i_aux] = config->GetUserScalarName(i_aux);
   }
 
@@ -72,19 +72,16 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   table_source_names.resize(n_table_sources);
   table_sources.resize(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
+  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot-PV";
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
         S_tot = S_PROD + S_CONS * Y ---*/ 
 
-  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++){
-
-    //table_source_names[1 + i_aux] = "ProdRatePos_" + config->GetUserScalarName(i_aux);
-    //table_source_names[1 + n_user_scalars + i_aux] = "ProdRateNegScaled_" + config->GetUserScalarName(i_aux);
-
-    table_source_names[1 + i_aux]                  = config->GetUserSourceName(i_aux);
-    table_source_names[1 + n_user_scalars + i_aux] = config->GetUserSourceName(i_aux + 1);
+  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+    /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
+    table_source_names[1 + i_aux]                  = config->GetUserSourceName(i_aux*n_user_scalars);
+    table_source_names[1 + n_user_scalars + i_aux] = config->GetUserSourceName(i_aux*n_user_scalars + 1);
   }
 
   config->SetLUTSourceNames(table_source_names);

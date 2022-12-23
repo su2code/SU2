@@ -37,8 +37,8 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_scalars;
   unsigned short n_lookups;
   unsigned short n_table_sources;
-  unsigned short n_user_scalars;     /*!< \brief number of passive reactant species. */
-  unsigned short n_CV;               /*!< \brief number of controlling variables. */
+  unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
+  unsigned short n_CV; /*!< \brief number of controlling variables. */
 
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names; /*!< \brief vector to store names of scalar source variables.   */

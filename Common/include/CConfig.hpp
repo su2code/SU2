@@ -1234,7 +1234,7 @@ private:
   string file_name_lut;                 /*!< \brief file name of the look up table. */
   string* user_scalar_names;
   string* user_source_names;
-  su2double *scalar_Lewis_numbers;
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -2173,12 +2173,6 @@ public:
    * \brief Get the name of the user scalar source term.
    */
   string GetUserSourceName(unsigned short i_user_source) const { if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE"; }
-
-
-  /*!
-   * \brief Get the Lewis number of user scalar i_user_scalar
-   */
-  su2double GetScalarLewis(unsigned short i_user_scalar) const { return scalar_Lewis_numbers[i_user_scalar]; }
 
   /*!
    * \brief Get the number of transported scalars for combustion
