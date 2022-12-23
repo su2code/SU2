@@ -35,8 +35,8 @@ class SU2Interface:
         self.comm.barrier()
 
     def save_forces(self):
-        solver_all_moving_markers = np.array(self.FluidSolver.GetAllDeformMeshMarkersTag())
-        solver_marker_ids = self.FluidSolver.GetAllBoundaryMarkers()
+        solver_all_moving_markers = np.array(self.FluidSolver.GetDeformableMarkerTags())
+        solver_marker_ids = self.FluidSolver.GetMarkerTags()
         # The surface marker and the partitioning of the solver usually don't agree.
         # Thus, it is necessary to figure out if the partition of the current mpi process has
         # a node that belongs to a moving surface marker.
@@ -46,10 +46,10 @@ class SU2Interface:
 
         for marker in solver_all_moving_markers[has_moving_marker]:
             solver_marker_id = solver_marker_ids[marker]
-            n_vertices = self.FluidSolver.GetNumberVertices(solver_marker_id)
+            n_vertices = self.FluidSolver.GetNumberMarkerVertices(solver_marker_id)
             for i_vertex in range(n_vertices):
                 fxyz = self.FluidSolver.GetFlowLoad(solver_marker_id, i_vertex)
-                GlobalIndex = self.FluidSolver.GetVertexGlobalIndex(solver_marker_id, i_vertex)
+                GlobalIndex = self.FluidSolver.GetMarkerVertexIDs(solver_marker_id, i_vertex)
                 f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], fxyz[2]))
         f.close()
 
