@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -328,10 +328,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case FLUID_MIXTURE:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     default:

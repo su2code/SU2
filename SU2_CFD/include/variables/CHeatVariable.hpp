@@ -2,7 +2,7 @@
  * \file CHeatVariable.hpp
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CHeatVariable
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  */
 class CHeatVariable final : public CScalarVariable {
 public:

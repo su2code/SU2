@@ -2,7 +2,7 @@
  * \file CADTNodeClass.hpp
  * \brief Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
