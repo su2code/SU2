@@ -30,7 +30,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
 
-/*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
+/*--- Explicit instantiation of the parent class of CHeatSolver. ---*/
 template class CScalarSolver<CHeatVariable>;
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
