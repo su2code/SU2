@@ -120,8 +120,8 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
     config_container[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
 
-    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
-      SU2_MPI::Error("The discrete adjoint solver was not specified in the configuration file.", CURRENT_FUNCTION);
+    if (!config_container[iZone]->GetDiscrete_Adjoint() && !config_container[iZone]->GetContinuous_Adjoint()) {
+      SU2_MPI::Error("An adjoint solver (discrete or continuous) was not specified in the configuration file.", CURRENT_FUNCTION);
     }
   }
 
