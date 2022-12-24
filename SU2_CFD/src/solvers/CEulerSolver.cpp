@@ -2235,7 +2235,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     unsigned long nPointGlobal = 0;
     SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     const su2double AvgVolume = VolumeSum_global / nPointGlobal;
-    second_numerics->SetAvgVolume_VC(AvgVolume);
+    second_numerics->SetAvgVolume(AvgVolume);
 
     SetAuxVar_Gradient_GG(geometry, config);
 
