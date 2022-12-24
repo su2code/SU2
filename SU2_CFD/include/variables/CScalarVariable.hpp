@@ -94,5 +94,5 @@ class CScalarVariable : public CVariable {
    * \param[in] val_ivar - eqn. index to the mass diffusivity.
    * \return Value of the mass diffusivity
    */
-  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const {return 0.0;}
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 };

@@ -95,12 +95,11 @@ class CFluidScalar final : public CFluidModel {
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
-  
+
   /*!
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
-  
 
  public:
   /*!
@@ -136,7 +135,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid mass diffusivity.
    */
-  inline su2double GetMassDiffusivity(int ivar) override {return massDiffusivity[ivar];}
+  inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

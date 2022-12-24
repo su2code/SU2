@@ -1070,10 +1070,8 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION",
-                      "Species_" + std::to_string(iVar) + " mass fraction");
-      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE",
-                      "Diffusivity_" + std::to_string(iVar));
+      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity_" + std::to_string(iVar));
     }
   }
 }
