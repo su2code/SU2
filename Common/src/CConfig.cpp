@@ -1131,7 +1131,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Add the Vorticity Confinement term*/
-  addBoolOption("VORTICITY_CONFINEMENT",VorticityConfinement, false);
+  addBoolOption("VORTICITY_CONFINEMENT", VorticityConfinement, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
