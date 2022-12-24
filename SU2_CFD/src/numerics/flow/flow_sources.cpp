@@ -647,10 +647,10 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   const su2double omega_abs_grad_y = AuxVar_Grad_i[0][1];
   const su2double omega_abs_grad_z = AuxVar_Grad_i[0][2];
   const su2double omega_abs_grad_abs2
-	  = omega_abs_grad_x * omega_abs_grad_x
-	  + omega_abs_grad_y * omega_abs_grad_y
-	  + omega_abs_grad_z * omega_abs_grad_z
-	  ;
+          = omega_abs_grad_x * omega_abs_grad_x
+          + omega_abs_grad_y * omega_abs_grad_y
+          + omega_abs_grad_z * omega_abs_grad_z
+          ;
   const su2double omega_abs_grad_abs
           = sqrt(omega_abs_grad_abs2) + 1e-16; // avoid divide by zero
 
