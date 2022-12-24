@@ -2217,33 +2217,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   if (vorticity_confinement) {
-    /*!
-     * \brief Vorticity Confinement (VC) technique to counter the numerical
-     * diffusion offered by the numerical scheme
-     * \author: Y Chandukrishna, Josy P Pullockara, T N Venkatesh.
-     * Computational and Theoretical Fluid Dynamics division,
-     * CSIR-National Aerospace Laboratories (NAL), Bangalore.
-     * Academy of Scientific and Innovative Research (AcSIR), Ghaziabad.
-     * First release date : 23 December 2022
-     * modified on:
-     *
-     * VC technique introduces an additional term to the N-S equations that
-     * counters the numerical difusion offerd by the numerical schemes. The
-     * additional term is introduced as a source term. VC technique requires an
-     * input confinement parameter that controls the magnitude of the source
-     * term. A suitable Confinement parameter is problem, scheme and grid
-     * dependant.
-     *
-     * Required changes in config file -
-     * VORTICITY_CONFINEMENT = YES
-     * CONFINEMENT_PARAMETER = <0.0(default)>
-     * Currently have support for Viscous, Inviscid cases for both 2D and 3D
-     * problems. Can be used along with other source terms also.
-     *
-     * The current implementation follows,
-     * R. Loehner and C. Yang, Vorticity confinement on unstructured grids, 2002.
-     * N. Butsuntorn and A. Jameson, Time Spectral Method for Rotorcraft Flow, 2008.
-     */
 
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
