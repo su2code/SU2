@@ -626,7 +626,7 @@ CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim
 
 CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
   /*--- density, \rho ---*/
-  const su2double rho = V_i[0];
+  const su2double rho = U_i[0];
 
   /*--- velocity, U = (u, v, w) ---*/
   su2double U[3] = {V_i[1], V_i[2], 0.0};
@@ -654,6 +654,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   /*--- vorticity confinement parameter ---*/
   const su2double vc_config = config->GetConfinement_Param();
   su2double vc = vc_config * (1 + log10(pow((1 + (Volume / AvgVolume)), 1.0 / 3.0)));
+
   /*--- correction to vc near viscous wall ---*/
   const bool viscous = config->GetViscous();
   if (viscous) {

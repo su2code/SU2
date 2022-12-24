@@ -2220,27 +2220,24 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
-    su2double VolumeSum_global = 0.0;
-    su2double VolumeSum_local = 0.0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      // for calculating average cell volume
-      VolumeSum_local += geometry->nodes->GetVolume(iPoint);
+    /*--- calculate and set the average volume ---*/
+    const su2double AvgVolume = config->GetDomainVolume() / geometry->GetGlobal_nPointDomain();
+    second_numerics->SetAvgVolume(AvgVolume);
 
-      // set vorticity magnitude as auxilliary variable
+    /*--- set vorticity magnitude as auxilliary variable ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
       const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
       nodes->SetAuxVar(iPoint, 0, VorticityMag);
     }
-    SU2_MPI::Allreduce(&VolumeSum_local, &VolumeSum_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    const unsigned long nPointLocal = geometry->GetnPoint();
-    unsigned long nPointGlobal = 0;
-    SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    const su2double AvgVolume = VolumeSum_global / nPointGlobal;
-    second_numerics->SetAvgVolume(AvgVolume);
+    END_SU2_OMP_FOR
 
+    /*--- calculate the gradient of the vorticity magnitude (AuxVarGradient) ---*/
     SetAuxVar_Gradient_GG(geometry, config);
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      second_numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
       second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
       second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
