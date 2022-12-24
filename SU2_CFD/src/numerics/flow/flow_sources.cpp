@@ -714,7 +714,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   residual[4] = rho * S_E_rho;
   }
 
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme()==EULER_IMPLICIT);
   if (implicit) {
     for (unsigned iVar = 0; iVar < nVar; iVar++) {
       for (unsigned jVar = 0; jVar < nVar; jVar++) {
