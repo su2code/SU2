@@ -667,10 +667,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
 
   // vorticity confinement parameter
   const su2double vc_config = config->GetConfinement_Param();
-  su2double vc = vc_config;
-
-  const su2double one_third = 0.33333333; // 1./3.;
-  vc *= (1 + log10(pow((1+(Volume/AvgVolume)), one_third)));
+  su2double vc = vc_config * (1 + log10(pow((1+(Volume/AvgVolume)), 1.0 / 3.0)));
 
   /*--- correction to vc near viscous wall ---*/
   const bool viscous = config->GetViscous();
