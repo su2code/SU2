@@ -1019,12 +1019,6 @@ public:
   inline void SetAvgVolume(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
 
   /*!
-   * \brief Set the value of WallDistance Variable.
-   * \param[in] val_walldistance WallDistance Variable.
-   */
-  inline void SetWallDistance_Numerics_VC(su2double val_walldistance) { WallDistance = val_walldistance; }
-
-  /*!
   * \brief Sets the values of the roe dissipation.
   * \param[in] diss_i - Dissipation value at node i
   * \param[in] diss_j - Dissipation value at node j
