@@ -1016,7 +1016,7 @@ public:
    * \brief Set the value of AvgVolume Variable.
    * \param[in] val_avgvolume AvgVolume Variable.
    */
-  inline void SetAvgVolume_VC(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
+  inline void SetAvgVolume(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
 
   /*!
    * \brief Set the value of WallDistance Variable.
