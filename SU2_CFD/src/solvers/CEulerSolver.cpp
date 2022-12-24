@@ -2268,11 +2268,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      second_numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
-      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
-      second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nodes->GetVorticity(iPoint));
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+      second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
       second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
-      second_numerics->SetWallDistance_Numerics_VC(geometry->nodes->GetWall_Distance(iPoint));
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0);
       second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
       auto residual = second_numerics->ComputeResidual(config);
 
