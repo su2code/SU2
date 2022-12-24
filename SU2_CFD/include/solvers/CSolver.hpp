@@ -4327,6 +4327,12 @@ public:
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
   /*!
+   * \brief Get the value of dissipated power.
+   * \return su2double with the value of dissipated power in each zone.
+   */
+  virtual su2double GetDissipated_Power() const {return 0.0;}
+
+  /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

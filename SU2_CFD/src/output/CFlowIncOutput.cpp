@@ -41,6 +41,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
+  topology = config->GetTopology_Optimization();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -189,6 +190,11 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   }
 
+  // Fluid Topology Optimization
+  if (config->GetTopology_Optimization()) {
+    AddHistoryOutput("POWER_DISSIPATED", "Diss_Pwr", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Power Dissipation", HistoryFieldType::COEFFICIENT);
+  }
+
   AddRotatingFrameCoefficients();
 
 }
@@ -262,6 +268,11 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
     SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_PressureDrop);
     SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_IntegratedHeatFlow);
+  }
+
+  // Fluid Topology Optimization
+  if (topology) {
+    SetHistoryOutputValue("DISSIPATED POWER", flow_solver->GetDissipated_Power());
   }
 
   /*--- Set the analyse surface history values --- */
@@ -363,6 +374,11 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
   }
 
+  // Fluid Topology Optimization
+  if (topology) {
+    AddVolumeOutput("POROSITY", "Porosity", "SOLUTION", "Porosity of the cell element.");
+  }
+
   AddCommonFVMOutputs(config);
 }
 
@@ -435,6 +451,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
     if (heat && streamwisePeriodic_temperature)
       SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
+  }
+
+  // Fluid Topology Optimization
+  if(topology) {
+    SetVolumeOutputValue("POROSITY", iPoint, Node_Flow->GetPorosity(iPoint));
   }
 
   LoadCommonFVMOutputs(config, geometry, iPoint);

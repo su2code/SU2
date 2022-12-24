@@ -1394,11 +1394,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         su2double Volume = geometry->nodes->GetVolume(iPoint);
         su2double Density = nodes->GetDensity(iPoint);
-        su2double alpha = nodes->GetPorosity(iPoint);
+        su2double eta = nodes->GetPorosity(iPoint);
+        su2double a_f = 2.5e-4, a_s = 10.0, q = 0.01 ;
+        su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 +q)/( eta + q));
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auto Velocity = nodes->GetVelocity(iPoint, iDim);
-            LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
+            LinSysRes(iPoint, iDim + 1) -= Volume * alpha * Density * Velocity;
         }
 
     }

@@ -128,7 +128,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   }
 
   if (config->GetTopology_Optimization()) 
-    Aux_Var.resize(npoint) = su2double(0.3);
+    Aux_Var.resize(npoint) = su2double(0.5);
 
   /*--- Other geometric properties of the CV's required by numerical methods. ---*/
   nNeighbor.resize(npoint) = 0;

@@ -421,4 +421,11 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
+  /*!
+   * \brief Get dissipated power for topology optimization
+   * \param[out] Total_PowerDissipation - su2double power value.
+   */
+  su2double GetDissipated_Power() const final { return Total_PowerDissipation;}
+
 };

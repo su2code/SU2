@@ -43,6 +43,7 @@ private:
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
   unsigned short streamwisePeriodic;   /*!< \brief Boolean indicating whether it is a streamwise periodic simulation. */
   bool streamwisePeriodic_temperature; /*!< \brief Boolean indicating streamwise periodic temperature is used. */
+  bool topology;
 
 public:
   /*!

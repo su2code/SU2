@@ -2276,13 +2276,13 @@ public:
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  virtual su2double GetPorosity(unsigned long iPoint) { return 0.0; }
+  virtual su2double GetPorosity(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  virtual su2double GetAdjointPorosity(unsigned long iPoint) { return 0.0; }
+  virtual su2double GetAdjointPorosity(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Get the adjoint values of the coordinates.

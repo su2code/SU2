@@ -854,11 +854,14 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
             }
         }
 
-        porosity_comp = Vel2 * nodes->GetPorosity(iPoint);
+        su2double eta = nodes->GetPorosity(iPoint);
+        su2double a_f = 2.5e-4, a_s = 10.0, q = 0.01 ;
+        su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
+        porosity_comp = Vel2 * alpha;
 
-        power_local += (vel_comp + porosity_comp) * geometry->nodes->GetVolume(iPoint);
+        power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
     }
-    cout << "Power Dissipation :: "<<power_local<<endl;
+    // cout << "Power Dissipation :: "<<power_local<<endl;
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
         file << setprecision(15);
@@ -932,7 +935,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     file.close();
   }
 
-//   /*--- The master writes the file ---*/
+  /*--- The master writes the file ---*/
 //   if (rank == MASTER_NODE) {
 //     string filename = "porosity_new.dat";
 //     ofstream file;
@@ -941,7 +944,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
 //     file << std::scientific;
 //     for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
 //       unsigned long total_index = iPoint*vals_per_point;
-//       for (unsigned long jPoint = 0; jPoint < vals_per_point-1; jPoint++) {
+//       for (unsigned long jPoint = 0; jPoint < vals_per_point-2; jPoint++) {
 //         file << rec_buf[total_index] << "\t";
 //         total_index++;
 //       }
