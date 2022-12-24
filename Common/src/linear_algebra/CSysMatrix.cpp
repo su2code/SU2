@@ -1048,7 +1048,13 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
-  /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+  /*--- Jacobi preconditioning where there is no linelet ---*/
+
+  // SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
+  // for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
+  //   if (!LineletBool[iPoint])
+  //     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+  // END_SU2_OMP_FOR
 
   /*--- Solve the linelets first. ---*/
 
@@ -1138,9 +1144,8 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   }
   END_SU2_OMP_FOR
 
-  /*--- Use the normal LU-SGS lower triangular solve for non-linelet nodes. ---*/
+  /*--- Gauss-Seidel where there are no linelets. ---*/
 
-  /*--- OpenMP Parallelization ---*/
   SU2_OMP_FOR_STAT(1)
   for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
   {
@@ -1153,139 +1158,10 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     for (auto iPoint = begin; iPoint < end; ++iPoint) {
       if (LineletBool[iPoint]) continue;
       const auto idx = iPoint*nVar;
-      LowerProduct(prod, iPoint, begin, low_prod);        // Compute L.x*
-      VectorSubtraction(&vec[idx], low_prod, &prod[idx]); // Compute y = b - L.x*
-      Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x* = y
+      LowerProduct(prod, iPoint, begin, low_prod);        // Compute L.x
+      VectorSubtraction(&vec[idx], low_prod, &prod[idx]); // Compute y = b - L.x
+      Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x = y
     }
-  }
-  END_SU2_OMP_FOR
-
-  /*--- MPI Parallelization ---*/
-
-  CSysMatrixComms::Initiate(prod, geometry, config);
-  CSysMatrixComms::Complete(prod, geometry, config);
-
-  /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
-
-  SU2_OMP_FOR_STAT(1)
-  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
-  {
-    const auto begin = omp_partitions[thread];
-    const auto row_end = omp_partitions[thread+1];
-    if (begin == row_end) continue;
-
-    const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
-
-    ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
-
-    for (auto iPoint = row_end; iPoint > begin;) {
-      iPoint--; // because of unsigned type
-      if (LineletBool[iPoint]) continue;
-      const auto idx = iPoint*nVar;
-      DiagonalProduct(prod, iPoint, dia_prod);          // Compute D.x*
-      UpperProduct(prod, iPoint, col_end, up_prod);     // Compute U.x_(n+1)
-      VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
-      Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x_(n+1) = y
-    }
-  }
-  END_SU2_OMP_FOR
-
-  /*--- Linelets are solved last for the second part of LU-SGS ---*/
-
-  SU2_OMP_FOR_DYN(1)
-  for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
-
-    /*--- Get references to the working vectors allocated for this thread. ---*/
-
-    const int thread = omp_get_thread_num();
-    vector<const ScalarType*>& lineletUpper = LineletUpper[thread];
-    vector<ScalarType>& lineletInvDiag = LineletInvDiag[thread];
-    vector<ScalarType>& lineletVector = LineletVector[thread];
-
-    /*--- Initialize the solution vector with the D.x* - U.x_(1),
-     * where U excludes any linelet points. ---*/
-
-    const auto nElem = LineletPoint[iLinelet].size();
-
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = LineletPoint[iLinelet][iElem];
-
-      ScalarType up_prod[MAXNVAR];
-      DiagonalProduct(prod, iPoint, up_prod);
-
-      for (auto index = dia_ptr[iPoint]+1; index < row_ptr[iPoint+1]; index++) {
-        const auto jPoint = col_ind[index];
-        if (LineletBool[jPoint]) continue;
-        MatrixVectorProductSub(&matrix[index*nVar*nVar], &prod[jPoint*nVar], up_prod);
-      }
-
-      for (auto iVar = 0ul; iVar < nVar; iVar++)
-        lineletVector[iElem*nVar+iVar] = up_prod[iVar];
-    }
-
-    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs. ---*/
-
-    /*--- Small temporaries. ---*/
-    ScalarType aux_block[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
-
-    /*--- Copy diagonal block for first point in this linelet. ---*/
-    MatrixCopy(&matrix[dia_ptr[LineletPoint[iLinelet][0]]*nVar*nVar],
-               lineletInvDiag.data());
-
-    for (auto iElem = 1ul; iElem < nElem; iElem++) {
-
-      /*--- Setup pointers to required matrices and vectors ---*/
-      const auto im1Point = LineletPoint[iLinelet][iElem-1];
-      const auto iPoint = LineletPoint[iLinelet][iElem];
-
-      const auto* d = &matrix[dia_ptr[iPoint]*nVar*nVar];
-      const auto* l = GetBlock(iPoint, im1Point);
-      const auto* u = GetBlock(im1Point, iPoint);
-
-      auto* inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
-      auto* d_prime = &lineletInvDiag[iElem*nVar*nVar];
-      auto* b_prime = &lineletVector[iElem*nVar];
-
-      /*--- Invert previous modified diagonal ---*/
-      MatrixCopy(inv_dm1, aux_block);
-      MatrixInverse(aux_block, inv_dm1);
-
-      /*--- Left-multiply by lower block to obtain the weight ---*/
-      MatrixMatrixProduct(l, inv_dm1, aux_block);
-
-      /*--- Multiply weight by upper block to modify current diagonal ---*/
-      MatrixMatrixProduct(aux_block, u, d_prime);
-      MatrixSubtraction(d, d_prime, d_prime);
-
-      /*--- Update the rhs ---*/
-      MatrixVectorProduct(aux_block, &lineletVector[(iElem-1)*nVar], aux_vector);
-      VectorSubtraction(b_prime, aux_vector, b_prime);
-
-      /*--- Cache upper block pointer for the backward substitution phase ---*/
-      lineletUpper[iElem-1] = u;
-    }
-
-    /*--- Backwards substitution, LineletVector becomes the solution ---*/
-
-    /*--- x_n = d_n^{-1} * b_n ---*/
-    Gauss_Elimination(&lineletInvDiag[(nElem-1)*nVar*nVar], &lineletVector[(nElem-1)*nVar]);
-
-    /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
-    for (auto iElem = nElem-1; iElem > 0; --iElem) {
-      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
-      MatrixVectorProduct(lineletUpper[iElem-1], &lineletVector[iElem*nVar], aux_vector);
-      VectorSubtraction(&lineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
-      MatrixVectorProduct(inv_dm1, aux_vector, &lineletVector[(iElem-1)*nVar]);
-    }
-
-    /*--- Copy results to product vector ---*/
-
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = LineletPoint[iLinelet][iElem];
-      for (auto iVar = 0ul; iVar < nVar; iVar++)
-        prod[iPoint*nVar+iVar] = lineletVector[iElem*nVar+iVar];
-    }
-
   }
   END_SU2_OMP_FOR
 
