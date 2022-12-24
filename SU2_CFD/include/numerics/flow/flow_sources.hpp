@@ -307,6 +307,30 @@ public:
 };
 
 /*!
+ * \class CSourceVorticityConfinement
+ * \brief Class for a source term due to vorticity confinement.
+ * \ingroup SourceDiscr
+ * \author Y Chandukrishna, Josy P Pullockara, T N Venkatesh
+ */
+class CSourceVorticityConfinement final : public CSourceBase_Flow {
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+};
+
+/*!
  * \class CSourceWindGust
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr

@@ -616,6 +616,130 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
+/* Vorticity Confinement technique */
+CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                           CSourceBase_Flow(val_nDim, val_nVar, config) {
+
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+
+}
+
+CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
+
+  // density, \rho
+  const su2double rho = U_i[0];
+
+  // velocity, U = (u, v, w)
+  const su2double u = U_i[1] / rho;
+  const su2double v = (nDim >= 2) ? U_i[2] / rho : 0.0;
+  const su2double w = (nDim >= 3) ? U_i[3] / rho : 0.0;
+  const su2double U_abs2 = (u*u + v*v + w*w);
+  const su2double U_abs  = sqrt(U_abs2);
+
+  // vorticity, \omega
+  const su2double omega_x = Vorticity_i[0];
+  const su2double omega_y = Vorticity_i[1];
+  const su2double omega_z = Vorticity_i[2];
+
+  // gradient of the magnitude of vorticity, \nabla|\omega|
+  const su2double omega_abs_grad_x = AuxVar_Grad_i[0][0];
+  const su2double omega_abs_grad_y = AuxVar_Grad_i[0][1];
+  const su2double omega_abs_grad_z = AuxVar_Grad_i[0][2];
+  const su2double omega_abs_grad_abs2
+	  = omega_abs_grad_x * omega_abs_grad_x
+	  + omega_abs_grad_y * omega_abs_grad_y
+	  + omega_abs_grad_z * omega_abs_grad_z
+	  ;
+  const su2double omega_abs_grad_abs
+          = sqrt(omega_abs_grad_abs2) + 1e-16; // avoid divide by zero
+
+  // unit vector, n along \nabla|\omega|
+  const su2double n_x = omega_abs_grad_x / omega_abs_grad_abs;
+  const su2double n_y = omega_abs_grad_y / omega_abs_grad_abs;
+  const su2double n_z = omega_abs_grad_z / omega_abs_grad_abs;
+
+  // n \cross \omega
+  const su2double nXomega_x = (n_y * omega_z - n_z * omega_y);
+  const su2double nXomega_y = (n_z * omega_x - n_x * omega_z);
+  const su2double nXomega_z = (n_x * omega_y - n_y * omega_x);
+  const su2double nXomega_U = (nXomega_x *u) + (nXomega_y *v) + (nXomega_z *w);
+
+  // vorticity confinement parameter
+  const su2double vc_config = config->GetConfinement_Param();
+  su2double vc = vc_config;
+
+  const su2double one_third = 0.33333333; // 1./3.;
+  vc *= (1 + log10(pow((1+(Volume/AvgVolume)), one_third)));
+
+  // correction to vc near viscous wall
+  const bool viscous = config->GetViscous();
+  if (viscous) {
+    const su2double U_infty_x = config->GetVelocity_FreeStream()[0];
+    const su2double U_infty_y = config->GetVelocity_FreeStream()[1];
+    const su2double U_infty_z = config->GetVelocity_FreeStream()[2];
+    const su2double U_infty_abs2
+            = U_infty_x * U_infty_x
+            + U_infty_y * U_infty_y
+            + U_infty_z * U_infty_z
+            ;
+    const su2double U_infty_abs = sqrt(U_infty_abs2);
+    const su2double L = config->GetLength_Reynolds();
+    const su2double mu     = V_i[nDim+5]; // viscosity
+    const su2double mu_t   = V_i[nDim+6]; // turbulent or eddy viscosity
+    const su2double mu_eff = mu + mu_t;   // effective or total viscosity
+    const su2double Re = rho * U_infty_abs * L / mu_eff; // Reynolds number
+    const su2double delta = 5*L/sqrt(Re); // boundary layer thickness
+
+    if (WallDistance <= 4*delta) {
+      vc *= 0.0;
+    }
+  }
+
+  // source terms: S / rho
+  const su2double vc_Uabs_Volume = vc * U_abs * Volume;
+  const su2double S_u_rho = -nXomega_x * vc_Uabs_Volume;
+  const su2double S_v_rho = -nXomega_y * vc_Uabs_Volume;
+  const su2double S_w_rho = -nXomega_z * vc_Uabs_Volume;
+  const su2double S_E_rho = -nXomega_U * vc_Uabs_Volume;
+
+  residual[0] = 0.0;
+  residual[1] = rho * S_u_rho;
+  residual[2] = rho * S_v_rho;
+  if (nDim == 2) {
+  residual[3] = rho * S_E_rho;
+  }
+  if (nDim == 3) {
+  residual[3] = rho * S_w_rho;
+  residual[4] = rho * S_E_rho;
+  }
+
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
+  if (implicit) {
+    for (unsigned iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned jVar = 0; jVar < nVar; jVar++) {
+        jacobian[iVar][jVar] = 0.0;
+      }
+    }
+
+    jacobian[1][0] = S_u_rho;
+    jacobian[2][0] = S_v_rho;
+    if (nDim == 2) {
+    jacobian[3][1] = S_u_rho;
+    jacobian[3][2] = S_v_rho;
+    }
+    if (nDim == 3) {
+    jacobian[3][0] = S_w_rho;
+    jacobian[4][1] = S_u_rho;
+    jacobian[4][2] = S_v_rho;
+    jacobian[4][3] = S_w_rho;
+    }
+  }
+
+  return ResidualType<>(residual, jacobian, nullptr);
+
+}
+
 CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                  CSourceBase_Flow(val_nDim, val_nVar, config) { }
 

@@ -1912,6 +1912,12 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
+
+      /* Vorticity Confinement term as a second source term to allow the use of VC along with other source terms*/
+      if (config->GetVorticityConfinement() == YES) {
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceVorticityConfinement(nDim, nVar_Flow, config);
+      }
+
     }
 
   }

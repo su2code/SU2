@@ -1130,6 +1130,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Add the Vorticity Confinement term*/
+  addBoolOption("VORTICITY_CONFINEMENT",VorticityConfinement, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
@@ -1166,6 +1168,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
+  addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
