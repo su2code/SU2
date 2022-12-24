@@ -672,7 +672,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   const su2double one_third = 0.33333333; // 1./3.;
   vc *= (1 + log10(pow((1+(Volume/AvgVolume)), one_third)));
 
-  // correction to vc near viscous wall
+  /*--- correction to vc near viscous wall ---*/
   const bool viscous = config->GetViscous();
   if (viscous) {
     const su2double U_infty_x = config->GetVelocity_FreeStream()[0];
