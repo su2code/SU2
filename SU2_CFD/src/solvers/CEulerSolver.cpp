@@ -2237,7 +2237,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      second_numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
       second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
       second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);

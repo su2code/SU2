@@ -616,7 +616,6 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-/* Vorticity Confinement technique */
 CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
     : CSourceBase_Flow(val_nDim, val_nVar, config) {
@@ -626,7 +625,7 @@ CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim
 
 CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
   /*--- density, \rho ---*/
-  const su2double rho = U_i[0];
+  const su2double rho = V_i[nDim + 2];
 
   /*--- velocity, U = (u, v, w) ---*/
   su2double U[3] = {V_i[1], V_i[2], 0.0};
