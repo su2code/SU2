@@ -673,7 +673,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
     }
   }
 
-  // source terms: S / rho
+  /*--- source terms: S / rho ---*/
   const su2double vc_Uabs_Volume = vc * U_abs * Volume;
   const su2double S_u_rho = -nXomega[0] * vc_Uabs_Volume;
   const su2double S_v_rho = -nXomega[1] * vc_Uabs_Volume;
