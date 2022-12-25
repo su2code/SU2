@@ -3908,20 +3908,15 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
         /*--- Compute the value of the max and min weights to detect if this region is isotropic. ---*/
 
-        auto ComputeWeight = [&](unsigned long iEdge, unsigned long jPoint) {
-          const auto* normal = edges->GetNormal(iEdge);
-          const su2double area = GeometryToolbox::Norm(nDim, normal);
-          su2double volume_iPoint{}, volume_jPoint{};
-          volume_iPoint = nodes->GetVolume(iPoint);
-          volume_jPoint = nodes->GetVolume(jPoint);
-          return 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
-        };
-
         su2double max_weight = 0.0, min_weight = std::numeric_limits<su2double>::max();
         for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
           const auto jPoint = nodes->GetPoint(iPoint, iNode);
           const auto iEdge = nodes->GetEdge(iPoint, iNode);
-          const auto weight = ComputeWeight(iEdge, jPoint);
+          const auto* normal = edges->GetNormal(iEdge);
+          const su2double area = GeometryToolbox::Norm(nDim, normal);
+          const su2double volume_iPoint = nodes->GetVolume(iPoint);
+          const su2double volume_jPoint = nodes->GetVolume(jPoint);
+          const su2double weight = 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
           max_weight = max(max_weight, weight);
           min_weight = min(min_weight, weight);
         }
