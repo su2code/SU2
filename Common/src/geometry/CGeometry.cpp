@@ -4008,6 +4008,10 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
   for (auto iColor = 0ul; iColor < nColors; ++iColor) {
     for (const auto iLine : coloring.getInnerIter(iColor)) {
+      /*--- Store the new linelet index for its points. ---*/
+      for (const auto iPoint : li.linelets[iLine]) {
+        li.lineletIdx[iPoint] = sortedLinelets.size();
+      }
       sortedLinelets.push_back(std::move(li.linelets[iLine]));
     }
     li.colorOffsets.push_back(sortedLinelets.size());
