@@ -362,7 +362,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
-  LoadCommonFVMOutputs(config, geometry, solver[FLOW_SOL], iPoint);
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);

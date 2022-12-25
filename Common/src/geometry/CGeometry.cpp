@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unordered_set>
+
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
@@ -3857,6 +3859,178 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
           CoarseGridColor_(iPoint,step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
     }
   }
+}
+
+const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
+  auto& li = lineletInfo;
+  if (!li.linelets.empty() || nPoint == 0) return li;
+
+  li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
+
+  /*--- Estimate number of linelets. ---*/
+
+  unsigned long nLinelet = 0;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetSolid_Wall(iMarker) || config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY) {
+      nLinelet += nVertex[iMarker];
+    }
+  }
+
+  /*--- If the domain contains well defined Linelets ---*/
+
+  unsigned long maxNPoints = 0, sumNPoints = 0;
+
+  if (nLinelet != 0) {
+    /*--- Define the basic linelets, starting from each vertex, preventing duplication of points. ---*/
+
+    li.linelets.resize(nLinelet);
+    nLinelet = 0;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetSolid_Wall(iMarker) || config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY) {
+        for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (li.lineletIdx[iPoint] == CLineletInfo::NO_LINELET && nodes->GetDomain(iPoint)) {
+            li.linelets[nLinelet].push_back(iPoint);
+            li.lineletIdx[iPoint] = nLinelet;
+            ++nLinelet;
+          }
+        }
+      }
+    }
+    li.linelets.resize(nLinelet);
+
+    /*--- Create the linelet structure. ---*/
+
+    nLinelet = 0;
+    for (auto& linelet : li.linelets) {
+      while (linelet.size() < CLineletInfo::MAX_LINELET_POINTS) {
+        const auto iPoint = linelet.back();
+
+        /*--- Compute the value of the max and min weights to detect if this region is isotropic. ---*/
+
+        auto ComputeWeight = [&](unsigned long iEdge, unsigned long jPoint) {
+          const auto* normal = edges->GetNormal(iEdge);
+          const su2double area = GeometryToolbox::Norm(nDim, normal);
+          const su2double volume_iPoint = nodes->GetVolume(iPoint);
+          const su2double volume_jPoint = nodes->GetVolume(jPoint);
+          return 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
+        };
+
+        su2double max_weight = 0.0, min_weight = std::numeric_limits<su2double>::max();
+        for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+          const auto jPoint = nodes->GetPoint(iPoint, iNode);
+          const auto iEdge = nodes->GetEdge(iPoint, iNode);
+          const auto weight = ComputeWeight(iEdge, jPoint);
+          max_weight = max(max_weight, weight);
+          min_weight = min(min_weight, weight);
+        }
+
+        /*--- Isotropic, stop this linelet. ---*/
+        if (min_weight / max_weight > CLineletInfo::ALPHA_ISOTROPIC) break;
+
+        /*--- Otherwise, add the closest valid neighbor. ---*/
+
+        su2double min_dist2 = std::numeric_limits<su2double>::max();
+        auto next_Point = iPoint;
+        const auto* iCoord = nodes->GetCoord(iPoint);
+
+        for (const auto jPoint : nodes->GetPoints(iPoint)) {
+          if (li.lineletIdx[jPoint] == CLineletInfo::NO_LINELET && nodes->GetDomain(jPoint)) {
+            const auto* jCoord = nodes->GetCoord(jPoint);
+            const su2double d2 = GeometryToolbox::SquaredDistance(nDim, iCoord, jCoord);
+            su2double cosTheta = 1;
+            if (linelet.size() > 1) {
+              const auto* kCoord = nodes->GetCoord(linelet[linelet.size() - 2]);
+              su2double dij[3] = {0.0}, dki[3] = {0.0};
+              GeometryToolbox::Distance(nDim, iCoord, kCoord, dki);
+              GeometryToolbox::Distance(nDim, jCoord, iCoord, dij);
+              cosTheta = GeometryToolbox::DotProduct(3, dki, dij) / sqrt(d2 * GeometryToolbox::SquaredNorm(nDim, dki));
+            }
+            if (d2 < min_dist2 && cosTheta > 0.7071) {
+              next_Point = jPoint;
+              min_dist2 = d2;
+            }
+          }
+        }
+
+        /*--- Did not find a suitable point. ---*/
+        if (next_Point == iPoint) break;
+
+        linelet.push_back(next_Point);
+        li.lineletIdx[next_Point] = nLinelet;
+      }
+      ++nLinelet;
+
+      maxNPoints = max(maxNPoints, linelet.size());
+      sumNPoints += linelet.size();
+    }
+  }
+
+  /*--- Average linelet size over all ranks. ---*/
+
+  unsigned long globalNPoints, globalNLineLets;
+  SU2_MPI::Allreduce(&sumNPoints, &globalNPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLinelet, &globalNLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE) {
+    std::cout << "Computed linelet structure, "
+              << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
+              << " points in each line (average)." << std::endl;
+  }
+
+  /*--- Color the linelets for OpenMP parallelization and visualization. ---*/
+
+  /*--- Adjacency between lines, computed from point neighbors. ---*/
+  std::vector<std::vector<unsigned long>> adjacency(nLinelet);
+  for (auto iLine = 0ul; iLine < nLinelet; ++iLine) {
+    std::unordered_set<unsigned long> neighbors;
+    for (const auto iPoint : li.linelets[iLine]) {
+      neighbors.insert(iPoint);
+      for (const auto jPoint : nodes->GetPoints(iPoint)) {
+        neighbors.insert(jPoint);
+      }
+    }
+    adjacency[iLine].reserve(neighbors.size());
+    for (const auto iPoint : neighbors) {
+      adjacency[iLine].push_back(iPoint);
+    }
+  }
+
+  const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
+      CCompressedSparsePatternUL(adjacency), 1, true);
+  const auto nColors = coloring.getOuterSize();
+
+  /*--- Sort linelets by color. ---*/
+  std::vector<std::vector<unsigned long>> sortedLinelets;
+  sortedLinelets.reserve(nLinelet);
+  li.colorOffsets.reserve(nColors + 1);
+  li.colorOffsets.push_back(0);
+
+  for (auto iColor = 0ul; iColor < nColors; ++iColor) {
+    for (const auto iLine : coloring.getInnerIter(iColor)) {
+      sortedLinelets.push_back(std::move(li.linelets[iLine]));
+    }
+    li.colorOffsets.push_back(sortedLinelets.size());
+  }
+  li.linelets = std::move(sortedLinelets);
+
+  /*--- For visualization, offset colors to avoid coloring across ranks. ---*/
+  std::vector<unsigned long> allNColors(size);
+  SU2_MPI::Allgather(&nColors, 1, MPI_UNSIGNED_LONG, allNColors.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  unsigned long offset = 0;
+  for (int i = 0; i < rank; ++i) offset += allNColors[i];
+
+  /*--- Finally, transfer colors to points, using "0" as "no linelet". ---*/
+  li.lineletColor.resize(nPoint, 0);
+  for (auto iColor = 0ul; iColor < nColors; ++iColor) {
+    for (auto iLine = li.colorOffsets[iColor]; iLine < li.colorOffsets[iColor + 1]; ++iLine) {
+      for (const auto iPoint : li.linelets[iLine]) {
+        li.lineletColor[iPoint] = 1 + offset + iColor;
+      }
+    }
+  }
+
+  return li;
 }
 
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){

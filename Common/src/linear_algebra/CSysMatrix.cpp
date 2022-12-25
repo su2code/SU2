@@ -43,7 +43,6 @@ CSysMatrix<ScalarType>::CSysMatrix() :
   nPoint = nPointDomain = nVar = nEqn = 0;
   nnz = nnz_ilu = 0;
   ilu_fill_in = 0;
-  nLinelet = 0;
 
   omp_partitions    = nullptr;
 
@@ -911,135 +910,32 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 }
 
 template<class ScalarType>
-unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config) {
+void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry *geometry, const CConfig *config) {
 
-  assert(omp_get_thread_num()==0 && "Linelet preconditioner cannot be built by multiple threads.");
-  const auto nDim = geometry->GetnDim();
+  BuildJacobiPreconditioner();
 
-  /*--- Stopping criteria. ---*/
+  if (!LineletUpper.empty()) return;
 
-  const su2double alphaIsotropic = 0.9;
-  const unsigned long maxLineletPoints = 32;
+  const auto nThreads = omp_get_max_threads();
 
-  LineletBool.clear();
-  LineletBool.resize(nPoint, false);
-
-  /*--- Estimate number of linelets. ---*/
-
-  nLinelet = 0;
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetSolid_Wall(iMarker) ||
-        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-      nLinelet += geometry->nVertex[iMarker];
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    const auto& li = geometry->GetLineletInfo(config);
+    if (!li.linelets.empty()) {
+      LineletUpper.resize(nThreads);
+      LineletVector.resize(nThreads);
+      LineletInvDiag.resize(nThreads);
     }
   }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- If the domain contains well defined Linelets ---*/
-
-  if (nLinelet != 0) {
-
-    LineletPoint.resize(nLinelet);
-
-    /*--- Define the basic linelets, starting from each vertex, preventing duplication of points. ---*/
-
-    nLinelet = 0;
-    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetSolid_Wall(iMarker) || (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (!LineletBool[iPoint] && geometry->nodes->GetDomain(iPoint)) {
-            LineletPoint[nLinelet].push_back(iPoint);
-            LineletBool[iPoint] = true;
-            ++nLinelet;
-          }
-        }
-      }
-    }
-    LineletPoint.resize(nLinelet);
-
-    /*--- Create the linelet structure. ---*/
-
-    for (auto& Linelet : LineletPoint) {
-      while (Linelet.size() < maxLineletPoints) {
-        const auto iPoint = Linelet.back();
-
-        /*--- Compute the value of the max and min weights to detect if this region is isotropic. ---*/
-
-        auto ComputeWeight = [&](unsigned long iEdge, unsigned long jPoint) {
-          const auto* normal = geometry->edges->GetNormal(iEdge);
-          const su2double area = GeometryToolbox::Norm(nDim, normal);
-          const su2double volume_iPoint = geometry->nodes->GetVolume(iPoint);
-          const su2double volume_jPoint = geometry->nodes->GetVolume(jPoint);
-          return 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
-        };
-
-        su2double max_weight = 0.0, min_weight = std::numeric_limits<su2double>::max();
-        for (auto iNode = 0u; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
-          const auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          const auto iEdge = geometry->nodes->GetEdge(iPoint, iNode);
-          const auto weight = ComputeWeight(iEdge, jPoint);
-          max_weight = max(max_weight, weight);
-          min_weight = min(min_weight, weight);
-        }
-
-        /*--- Isotropic, stop this linelet. ---*/
-        if (min_weight / max_weight > alphaIsotropic) break;
-
-        /*--- Otherwise, add the closest valid neighbor. ---*/
-
-        su2double min_dist2 = std::numeric_limits<su2double>::max();
-        auto next_Point = iPoint;
-        const auto* iCoord = geometry->nodes->GetCoord(iPoint);
-
-        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-          if (!LineletBool[jPoint] && geometry->nodes->GetDomain(jPoint)) {
-            const auto* jCoord = geometry->nodes->GetCoord(jPoint);
-            const su2double d2 = GeometryToolbox::SquaredDistance(nDim, iCoord, jCoord);
-            su2double cosTheta = 1;
-            if (Linelet.size() > 1) {
-              const auto* kCoord = geometry->nodes->GetCoord(Linelet[Linelet.size() - 2]);
-              su2double dij[3] = {0.0}, dki[3] = {0.0};
-              GeometryToolbox::Distance(nDim, iCoord, kCoord, dki);
-              GeometryToolbox::Distance(nDim, jCoord, iCoord, dij);
-              cosTheta = GeometryToolbox::DotProduct(3, dki, dij) / sqrt(d2 * GeometryToolbox::SquaredNorm(nDim, dki));
-            }
-            if (d2 < min_dist2 && cosTheta > 0.7071) {
-              next_Point = jPoint;
-              min_dist2 = d2;
-            }
-          }
-        }
-
-        /*--- Did not find a suitable point. ---*/
-        if (next_Point == iPoint) break;
-
-        Linelet.push_back(next_Point);
-        LineletBool[next_Point] = true;
-      }
-    }
-
+  SU2_OMP_FOR_STAT(1)
+  for (int iThread = 0; iThread < nThreads; ++iThread) {
+    const auto size = CGeometry::CLineletInfo::MAX_LINELET_POINTS;
+    LineletUpper[iThread].resize(size, nullptr);
+    LineletVector[iThread].resize(size * nVar, 0.0);
+    LineletInvDiag[iThread].resize(size * nVar * nVar, 0.0);
   }
-
-  unsigned long max_nPoints = 0, sum_nPoints = 0;
-  for (const auto& Linelet : LineletPoint) {
-    max_nPoints = max(max_nPoints, Linelet.size());
-    sum_nPoints += Linelet.size();
-  }
-
-  /*--- Memory allocation for the local max size. --*/
-
-  LineletUpper.resize(omp_get_max_threads(), vector<const ScalarType*>(max_nPoints, nullptr));
-  LineletVector.resize(omp_get_max_threads(), vector<ScalarType>(max_nPoints * nVar, 0.0));
-  LineletInvDiag.resize(omp_get_max_threads(), vector<ScalarType>(max_nPoints * nVar * nVar, 0.0));
-
-  /*--- Average linelet size over all ranks. ---*/
-
-  unsigned long Global_nPoints, Global_nLineLets;
-  SU2_MPI::Allreduce(&sum_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&nLinelet, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-  return static_cast<unsigned long>(passivedouble(Global_nPoints) / Global_nLineLets);
-
+  END_SU2_OMP_FOR
 }
 
 template<class ScalarType>
@@ -1048,18 +944,20 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
-  /*--- Jacobi preconditioning where there is no linelet ---*/
+  const auto& li = geometry->GetLineletInfo(config);
 
-  // SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
-  // for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
-  //   if (!LineletBool[iPoint])
-  //     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
-  // END_SU2_OMP_FOR
+  /*--- Jacobi preconditioning where there are no linelets. ---*/
 
-  /*--- Solve the linelets first. ---*/
+  SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
+    if (li.lineletIdx[iPoint] == CGeometry::CLineletInfo::NO_LINELET)
+      MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+  END_SU2_OMP_FOR
+
+  /*--- Solve the tridiagonal systems for the linelets. ---*/
 
   SU2_OMP_FOR_DYN(1)
-  for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
+  for (auto iLinelet = 0ul; iLinelet < li.linelets.size(); iLinelet++) {
 
     /*--- Get references to the working vectors allocated for this thread. ---*/
 
@@ -1070,10 +968,10 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    auto nElem = LineletPoint[iLinelet].size();
+    auto nElem = li.linelets[iLinelet].size();
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto iPoint = li.linelets[iLinelet][iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++)
         lineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
@@ -1084,14 +982,14 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     ScalarType aux_block[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
 
     /*--- Copy diagonal block for first point in this linelet. ---*/
-    MatrixCopy(&matrix[dia_ptr[LineletPoint[iLinelet][0]]*nVar*nVar],
+    MatrixCopy(&matrix[dia_ptr[li.linelets[iLinelet][0]]*nVar*nVar],
                lineletInvDiag.data());
 
     for (auto iElem = 1ul; iElem < nElem; iElem++) {
 
       /*--- Setup pointers to required matrices and vectors ---*/
-      const auto im1Point = LineletPoint[iLinelet][iElem-1];
-      const auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto im1Point = li.linelets[iLinelet][iElem-1];
+      const auto iPoint = li.linelets[iLinelet][iElem];
 
       const auto* d = &matrix[dia_ptr[iPoint]*nVar*nVar];
       const auto* l = GetBlock(iPoint, im1Point);
@@ -1136,32 +1034,11 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     /*--- Copy results to product vector ---*/
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto iPoint = li.linelets[iLinelet][iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++)
         prod[iPoint*nVar+iVar] = lineletVector[iElem*nVar+iVar];
     }
 
-  }
-  END_SU2_OMP_FOR
-
-  /*--- Gauss-Seidel where there are no linelets. ---*/
-
-  SU2_OMP_FOR_STAT(1)
-  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
-  {
-    const auto begin = omp_partitions[thread];
-    const auto end = omp_partitions[thread+1];
-    if (begin == end) continue;
-
-    ScalarType low_prod[MAXNVAR];
-
-    for (auto iPoint = begin; iPoint < end; ++iPoint) {
-      if (LineletBool[iPoint]) continue;
-      const auto idx = iPoint*nVar;
-      LowerProduct(prod, iPoint, begin, low_prod);        // Compute L.x
-      VectorSubtraction(&vec[idx], low_prod, &prod[idx]); // Compute y = b - L.x
-      Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x = y
-    }
   }
   END_SU2_OMP_FOR
 

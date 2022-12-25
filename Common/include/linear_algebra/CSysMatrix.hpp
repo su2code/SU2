@@ -148,10 +148,6 @@ private:
 
   ScalarType *invM;                 /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
-  unsigned long nLinelet;                      /*!< \brief Number of Linelets in the system. */
-  vector<bool> LineletBool;                    /*!< \brief Identify if a point belong to a Linelet. */
-  vector<vector<unsigned long> > LineletPoint; /*!< \brief Linelet structure. */
-
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> > LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
   mutable vector<vector<ScalarType> > LineletInvDiag;      /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
@@ -886,14 +882,8 @@ public:
    * \brief Build the Linelet preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \return Average number of points per linelet.
    */
-  unsigned long BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Returns the Linelet structure (point indices in each line).
-   */
-  const vector<vector<unsigned long>>& GetLinelets() const { return LineletPoint; }
+  void BuildLineletPreconditioner(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

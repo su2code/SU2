@@ -26,10 +26,6 @@
  */
 
 #include "../../include/output/CFVMOutput.hpp"
-#include <cstdint>
-#include <limits>
-#include <unordered_set>
-#include "../../include/solvers/CSolver.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
 
@@ -61,11 +57,12 @@ void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
     AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
   }
 
-  AddVolumeOutput("LINELET", "Linelet", "LINELET", "Mesh lines built for the line implicit preconditioner");
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    AddVolumeOutput("LINELET", "Linelet", "LINELET", "Mesh lines built for the line implicit preconditioner");
+  }
 }
 
-void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, const CSolver* solver,
-                                      unsigned long iPoint) {
+void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
 
   // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
   if (config->GetWrt_MeshQuality()) {
@@ -85,47 +82,6 @@ void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* ge
   }
 
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    /*--- Lazy build. ---*/
-    if (lineletPointColor.empty()) {
-      /*--- First color the lines based on connections between then. ---*/
-      const auto& linelets = solver->Jacobian.GetLinelets();
-      const auto nLine = linelets.size();
-
-      /*--- Adjacency between lines, computed from point neighbors. ---*/
-      std::vector<std::vector<unsigned long>> adjacency(nLine);
-      for (auto iLine = 0ul; iLine < nLine; ++iLine) {
-        std::unordered_set<unsigned long> neighbors;
-        for (const auto iPoint : linelets[iLine]) {
-          neighbors.insert(iPoint);
-          for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-            neighbors.insert(jPoint);
-          }
-        }
-        adjacency[iLine].reserve(neighbors.size());
-        for (const auto iPoint : neighbors) {
-          adjacency[iLine].push_back(iPoint);
-        }
-      }
-
-      std::vector<uint8_t> lineletColor;
-      const unsigned long nColors = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
-          CCompressedSparsePatternUL(adjacency), 1, true, &lineletColor).getOuterSize();
-
-      /*--- Offset colors to avoid coloring across ranks. ---*/
-      std::vector<unsigned long> allNColors(size);
-      SU2_MPI::Allgather(&nColors, 1, MPI_UNSIGNED_LONG, allNColors.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-      unsigned long offset = 0;
-      for (int i = 0; i < rank; ++i) offset += allNColors[i];
-
-      /*--- Finally, transfer colors to points. ---*/
-      lineletPointColor.resize(geometry->GetnPoint(), 0);
-      for (auto iLine = 0ul; iLine < nLine; ++iLine) {
-        for (const auto iPoint : linelets[iLine]) {
-          lineletPointColor[iPoint] = 1 + offset + lineletColor[iLine];
-        }
-      }
-    }
-
-    SetVolumeOutputValue("LINELET", iPoint, lineletPointColor[iPoint]);
+    SetVolumeOutputValue("LINELET", iPoint, geometry->GetLineletInfo(config).lineletColor[iPoint]);
   }
 }
