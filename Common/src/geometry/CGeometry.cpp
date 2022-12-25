@@ -3911,8 +3911,9 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
         auto ComputeWeight = [&](unsigned long iEdge, unsigned long jPoint) {
           const auto* normal = edges->GetNormal(iEdge);
           const su2double area = GeometryToolbox::Norm(nDim, normal);
-          const su2double volume_iPoint = nodes->GetVolume(iPoint);
-          const su2double volume_jPoint = nodes->GetVolume(jPoint);
+          su2double volume_iPoint{}, volume_jPoint{};
+          volume_iPoint = nodes->GetVolume(iPoint);
+          volume_jPoint = nodes->GetVolume(jPoint);
           return 0.5 * area * (1.0 / volume_iPoint + 1.0 / volume_jPoint);
         };
 
