@@ -885,17 +885,13 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     const auto row_end = omp_partitions[thread+1];
     if (begin == row_end) continue;
 
-    /*--- On the last thread partition the upper
-     *    product should consider halo columns. ---*/
-    const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
-
     ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
 
     for (auto iPoint = row_end; iPoint > begin;) {
       iPoint--; // because of unsigned type
       auto idx = iPoint*nVar;
       DiagonalProduct(prod, iPoint, dia_prod);          // Compute D.x*
-      UpperProduct(prod, iPoint, col_end, up_prod);     // Compute U.x_(n+1)
+      UpperProduct(prod, iPoint, row_end, up_prod);     // Compute U.x_(n+1)
       VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
       Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
     }
@@ -914,6 +910,7 @@ void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry *geometr
 
   BuildJacobiPreconditioner();
 
+  /*--- Allocate working vectors if not done yet. ---*/
   if (!LineletUpper.empty()) return;
 
   const auto nThreads = omp_get_max_threads();
@@ -962,13 +959,13 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     /*--- Get references to the working vectors allocated for this thread. ---*/
 
     const int thread = omp_get_thread_num();
-    vector<const ScalarType*>& lineletUpper = LineletUpper[thread];
-    vector<ScalarType>& lineletInvDiag = LineletInvDiag[thread];
-    vector<ScalarType>& lineletVector = LineletVector[thread];
+    auto& lineletUpper = LineletUpper[thread];
+    auto& lineletInvDiag = LineletInvDiag[thread];
+    auto& lineletVector = LineletVector[thread];
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    auto nElem = li.linelets[iLinelet].size();
+    const auto nElem = li.linelets[iLinelet].size();
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
       const auto iPoint = li.linelets[iLinelet][iElem];
