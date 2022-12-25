@@ -187,8 +187,8 @@ class CGeometry {
 
   ColMajorMatrix<uint8_t> CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
 
-  /*--- Linelets (mesh lines perpendicular to stretching direction). ---*/
  public:
+  /*!< \brief Linelets (mesh lines perpendicular to stretching direction). */
   struct CLineletInfo {
     static constexpr passivedouble ALPHA_ISOTROPIC = 0.8; /*!< \brief Detect isotropic mesh region. */
     enum : unsigned long {MAX_LINELET_POINTS = 32}; /*!< \brief Maximum points per linelet. */

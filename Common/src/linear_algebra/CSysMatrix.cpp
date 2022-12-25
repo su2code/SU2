@@ -29,11 +29,8 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
-#include "../../include/toolboxes/geometry_toolbox.hpp"
 
-#include <algorithm>
 #include <cmath>
-#include <limits>
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() :
