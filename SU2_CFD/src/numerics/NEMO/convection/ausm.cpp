@@ -159,6 +159,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
+  //for (unsigned short iVar = 0; iVar < nVar; iVar++) std::cout << "Flux[iVar]:" << Flux[iVar] << std::endl;
+
   /*--- Populate the AUSM Jacobian, if necessary. ---*/
   if (implicit){
 

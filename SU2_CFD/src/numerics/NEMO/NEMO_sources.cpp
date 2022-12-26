@@ -104,6 +104,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     residual[iSpecies] = ws[iSpecies] * Volume;}
 
+  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) std::cout << "chem residual:" << residual[iSpecies] << std::endl;  
+
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {
       for (jVar = 0; jVar<nVar; jVar++) {
@@ -158,6 +160,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   }
 
   residual[nSpecies+nDim+1] = VTterm * Volume;
+
+  //std::cout << "vib residual:" << residual[nSpecies+nDim+1] << std::endl;  
 
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {

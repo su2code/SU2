@@ -261,7 +261,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   /*--- Pre-compute mixture quantities ---*/  //TODO
   su2double Vector[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
@@ -273,7 +273,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   for (auto iDim = 0; iDim < nDim; iDim++) {
 
     /*--- Species diffusion velocity ---*/
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
@@ -286,7 +286,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
     }
 
     /*--- Diffusion terms ---*/
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs[iSpecies];
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * val_eve[iSpecies];
     }

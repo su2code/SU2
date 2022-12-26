@@ -162,6 +162,8 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   for (auto iVar = 0; iVar < nVar; iVar++)
     Flux[iVar] = Proj_Flux_Tensor[iVar];
 
+  //for (unsigned short iVar = 0; iVar < nVar; iVar++) std::cout << "visc avg Flux[iVar]:" << Flux[iVar] << std::endl;
+
   /*--- Compute the implicit part ---*/
   if (implicit) {
     dist_ij = 0.0;
@@ -291,6 +293,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+    //std::cout << "Mean_PrimVar[iVar]:" << Mean_PrimVar[iVar] << std::endl;
   }
   for (auto iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -322,8 +325,16 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+      //std::cout << "Mean_GradPrimVar[iVar][iDim]:" << Mean_GradPrimVar[iVar][iDim] << std::endl;
     }
   }
+
+  //for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) std::cout << "Mean_Eve:" << Mean_Eve[iSpecies] << std::endl;
+  //for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) std::cout << "Mean_Diffusion_Coeff:" << Mean_Diffusion_Coeff[iSpecies] << std::endl;
+  //std::cout << "Mean_Laminar_Viscosity:" << Mean_Laminar_Viscosity << std::endl;
+  //std::cout << "Mean_Eddy_Viscosity:" << Mean_Eddy_Viscosity << std::endl;
+  //std::cout << "Mean_Thermal_Conductivity:" << Mean_Thermal_Conductivity << std::endl;
+  //std::cout << "Mean_Thermal_Conductivity_ve:" << Mean_Thermal_Conductivity_ve << std::endl;
 
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
@@ -337,6 +348,8 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   /*--- Update viscous residual ---*/
   for (auto iVar = 0; iVar < nVar; iVar++)
     Flux[iVar] = Proj_Flux_Tensor[iVar];
+
+  //for (unsigned short iVar = 0; iVar < nVar; iVar++) std::cout << "visc avg corr Flux[iVar]:" << Flux[iVar] << std::endl;
 
   /*--- Compute the implicit part ---*/
   if (implicit) {

@@ -61,12 +61,12 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
 
   if (mix->hasElectrons()) {
-    if (config->GetViscous()) {
-      SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
-    } else {
+    //if (config->GetViscous()) {
+    //  SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
+    //} else {
       nHeavy = nSpecies-1;
       nEl = 1;
-    }
+    //}
   }
   else { nHeavy = nSpecies;   nEl = 0; }
 

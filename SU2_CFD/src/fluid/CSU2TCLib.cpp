@@ -1708,6 +1708,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
+    //std::cout << "MolarFracWBE[iSpecies]:" << MolarFracWBE[iSpecies] << std::endl;
     conc               += MolarFracWBE[iSpecies];
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1736,6 +1737,13 @@ void CSU2TCLib::DiffusionCoeffWBE(){
           * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
           +  Omega00(iSpecies,jSpecies,1)*log(T)
           +  Omega00(iSpecies,jSpecies,2));
+      //std::cout << "\n iSpecies:" << iSpecies << " jSpecies:" << jSpecies << std::endl; 
+      //std::cout << "M:" << M << std::endl;
+      //std::cout << "T:" << T << std::endl;
+      //std::cout << "Mi:" << Mi << std::endl;
+      //std::cout << "Mj:" << Mj << std::endl;
+      //std::cout << "Density:" << Density << std::endl;
+      //std::cout << "Omega_ij:" << Omega_ij << std::endl;    
       Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
@@ -1743,17 +1751,29 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 
   /*--- Calculate species-mixture diffusion coefficient --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //std::cout << 'iSpecies:' << std::endl;
     DiffusionCoeff[iSpecies] = 0.0;
     denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      if (jSpecies != iSpecies) {
+      if (jSpecies != iSpecies) {         
+        //std::cout << "iSpecies:" << iSpecies << " jSpecies:" << jSpecies << std::endl; 
+        //std::cout << "MolarFracWBE[iSpecies]:" << MolarFracWBE[iSpecies] << std::endl;
+        //std::cout << "Dij:" << Dij(iSpecies,jSpecies) << std::endl; 
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
+        //std::cout << "denom:" << denom << std::endl;
       }
     }
+    //exit(0);
 
     if (nSpecies==1) DiffusionCoeff[0] = 0;
-    else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
+    else 
+      
+      
+
+      DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
   }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) std::cout << "DiffusionCoeff[iSpecies]" << DiffusionCoeff[iSpecies] << std::endl;
+  //exit(0);
 }
 
 void CSU2TCLib::ViscosityWBE(){
