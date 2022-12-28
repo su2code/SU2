@@ -2,7 +2,7 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -323,7 +323,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
-  bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
+  bool center_jst     = (config->GetKind_Centered_AdjFlow() == CENTERED::JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 

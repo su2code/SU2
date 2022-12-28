@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -71,7 +71,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.626384, 1.444465, -0.750978, 241.757337] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals = [-4.626243, 1.444608, -0.750995, 241.756998] #last 4 lines
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -79,7 +79,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.667133, 1.395801, -0.709306, 208.023676] #last 4 lines
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.666992, 1.395929, -0.709333, 208.023676] #last 4 lines
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     ### Species Transport
@@ -89,7 +89,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.026100, -5.265495, -5.110799, -5.931985, -1.585414, -6.311820, -6.434690, 5, -0.841163, 5, -2.343847, 5, -0.295673, 1.645199, 0.498941, 0.600911, 0.545347]
+    species3_primitiveVenturi.test_vals = [-6.074971, -5.306648, -5.150960, -5.959416, -1.625107, -6.343704, -6.460033, 5.000000, -0.808413, 5.000000, -2.325029, 5.000000, -0.274923, 1.646091, 0.499028, 0.601019, 0.546044]
     species3_primitiveVenturi.new_output = True
     test_list.append(species3_primitiveVenturi)
 
@@ -99,7 +99,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.528844, -7.799649, -7.783477, -7.482502, -12.140092, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     DAspecies3_primitiveVenturi.new_output = True
@@ -169,6 +169,42 @@ def main():
     tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.no_restart = True
     test_list.append(tutorial_trans_flatplate)
+    
+    # Transitional FlatPlate T3A
+    tutorial_trans_flatplate_T3A            = TestCase('transitional_flatplate_tutorial_T3A')
+    tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
+    tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
+    tutorial_trans_flatplate_T3A.test_iter  = 20
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837191, -2.092249, -3.982626, -0.302018, -1.916974, 1.668678, -3.496294, 0.391531]
+    tutorial_trans_flatplate_T3A.no_restart = True
+    test_list.append(tutorial_trans_flatplate_T3A)
+    
+    # Transitional FlatPlate T3Am
+    tutorial_trans_flatplate_T3Am            = TestCase('transitional_flatplate_tutorial_T3Am')
+    tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
+    tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
+    tutorial_trans_flatplate_T3Am.test_iter  = 20
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063550, -1.945057, -3.946359, -0.549026, -3.863798, 2.664577, -2.517606, 1.112977]
+    tutorial_trans_flatplate_T3Am.no_restart = True
+    test_list.append(tutorial_trans_flatplate_T3Am)
+    
+    # Transitional E387 SA
+    tutorial_trans_e387_sa            = TestCase('tutorial_trans_e387_sa')
+    tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sa.test_iter  = 20
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081543, -0.795267, 1.022557, 0.150240, 2, -9.580670]
+    tutorial_trans_e387_sa.no_restart = True
+    test_list.append(tutorial_trans_e387_sa)
+    
+    # Transitional E387 SST
+    tutorial_trans_e387_sst            = TestCase('tutorial_trans_e387_sst')
+    tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sst.test_iter  = 20
+    tutorial_trans_e387_sst.test_vals  = [-6.532421, -5.085785, -0.789723, 1.078391, 0.188263, 2, -9.567014]
+    tutorial_trans_e387_sst.no_restart = True
+    test_list.append(tutorial_trans_e387_sst)
 
     # Turbulent ONERA M6
     tutorial_turb_oneram6            = TestCase('turbulent_oneram6_tutorial')
@@ -183,7 +219,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.187400, -9.409241, 3.477513, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.187397, -2.338536, 3.613629, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 

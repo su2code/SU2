@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -222,6 +222,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array ---*/
+  if (config->GetBounded_Scalar())
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "INC.FLOW";
 
@@ -324,10 +328,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case FLUID_MIXTURE:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     default:
@@ -627,6 +630,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP_VISCOSITY";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -671,6 +683,14 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -883,7 +903,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
 
   /*--- Set the primitive variables ---*/
@@ -1051,8 +1071,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, jPoint;
 
-  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1099,6 +1120,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Compute residuals, and Jacobians ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Update residual value ---*/
 
@@ -1155,6 +1178,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1273,6 +1297,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     auto residual = numerics->ComputeResidual(config);
 
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
@@ -1293,6 +1319,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -2886,7 +2913,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-            su2double AxiFactor = 1.0; 
+            su2double AxiFactor = 1.0;
             if (axisymmetric) {
               if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
@@ -2897,7 +2924,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                   }
                 }
               }
-            } 
+            }
 
             Density      = V_outlet[prim_idx.Density()];
 
@@ -3002,10 +3029,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
           }
 
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
-
+          su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+          cout << "Outlet mass flow (kg/s): " << setprecision(5) << Outlet_mDot << endl;
+          cout << "target mass flow (kg/s): " << setprecision(5) << Outlet_mDot_Target << endl;
+          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
         }
       }
 

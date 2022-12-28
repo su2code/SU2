@@ -4,7 +4,7 @@
  * \note This should be the only cpp for this family of classes
  * (which are all templates). All compilation takes place here.
  * \author P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,8 +41,10 @@ template<class ViscousDecorator>
 CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
   switch (config.GetKind_Upwind_Flow()) {
-    case ROE:
+    case UPWIND::ROE:
       obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    default:
       break;
   }
   return obj;
@@ -62,19 +64,19 @@ CNumericsSIMD* createUpwindGeneralNumerics(const CConfig& config, int iMesh, con
 template<class ViscousDecorator>
 CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
-  switch ((iMesh==MESH_0)? config.GetKind_Centered_Flow() : LAX) {
-    case NO_CENTERED:
+  switch ((iMesh==MESH_0)? config.GetKind_Centered_Flow() : CENTERED::LAX) {
+    case CENTERED::NONE:
       break;
-    case LAX:
+    case CENTERED::LAX:
       obj = new CLaxScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST:
+    case CENTERED::JST:
       obj = new CJSTScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST_KE:
+    case CENTERED::JST_KE:
       obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST_MAT:
+    case CENTERED::JST_MAT:
       obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
   }
@@ -117,6 +119,8 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh, const CVariable*
         obj = createCenteredNumerics<CNoViscousFlux<nDim> >(config, iMesh, turbVars);
       }
       break;
+    default:
+    break;
   }
 
   return obj;

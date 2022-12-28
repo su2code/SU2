@@ -8,6 +8,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CFluidScalar.cpp',
                       'fluid/CPengRobinson.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
+                      'fluid/CCoolProp.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp'])
@@ -116,8 +117,7 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CGradientSmoothingSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
-                      'numerics/template.cpp',
-                      'numerics/transition.cpp',
+                      'numerics/template.cpp',                      
                       'numerics/heat.cpp',
                       'numerics/radiation.cpp',
                       'numerics/flow/convection/roe.cpp',
