@@ -31,12 +31,12 @@
 #include "../../../Common/include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "../../../Common/include/drivers/CDriverBase.hpp"
 #include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../SU2_CFD/include/drivers/CDriverBase.hpp"
 #include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 #include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../../SU2_CFD/include/output/COutput.hpp"

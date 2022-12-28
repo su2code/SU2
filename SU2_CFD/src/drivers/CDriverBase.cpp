@@ -27,8 +27,8 @@
 
 #include "../../include/drivers/CDriverBase.hpp"
 
-#include "../../include/geometry/CPhysicalGeometry.hpp"
-#include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 using namespace std;
 

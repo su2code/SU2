@@ -27,10 +27,10 @@
 
 #pragma once
 
-#include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
-#include "../../../SU2_CFD/include/output/COutput.hpp"
-#include "../../../SU2_CFD/include/solvers/CSolver.hpp"
-#include "../CConfig.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../numerics/CNumerics.hpp"
+#include "../output/COutput.hpp"
+#include "../solvers/CSolver.hpp"
 
 class CDriverBase {
  protected:
