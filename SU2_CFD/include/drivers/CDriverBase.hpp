@@ -128,91 +128,6 @@ class CDriverBase {
   unsigned short GetNumberFFDBoxes() const;
 
   /*!
-   * \brief Get the number of FFD box corner points.
-   * \param[in] iFFDBox - FFD box index.
-   * \return Number of FFD box corner points.
-   */
-  unsigned short GetNumberFFDBoxCornerPoints(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the number of FFD box control points.
-   * \param[in] iFFDBox - FFD box index.
-   * \return Number of FFD box control points.
-   */
-  unsigned short GetNumberFFDBoxControlPoints(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the number of FFD box surface points.
-   * \param[in] iFFDBox - FFD box index.
-   * \return Number of FFD box surface points.
-   */
-  unsigned long GetNumberFFDBoxSurfacePoints(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box marker IDs.
-   * \param[in] iFFDBox - FFD box index.
-   * \return FFD box marker IDs.
-   */
-  vector<unsigned short> GetFFDBoxMarkerIDs(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box vertex IDs.
-   * \param[in] iFFDBox - FFD box index.
-   * \return FFD box vertex IDs.
-   */
-  vector<unsigned long> GetFFDBoxVertexIDs(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box grid point IDs.
-   * \param[in] iFFDBox - FFD box index.
-   * \return FFD box grid point IDs.
-   */
-  vector<unsigned long> GetFFDBoxPointIDs(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box corner coordinates.
-   * \param[in] iFFDBox - FFD box index.
-   * \return FFD box corner coordinates.
-   */
-  vector<vector<passivedouble>> GetFFDBoxCornerCoordinates(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box control point coordinates.
-   * \param[in] iFFDBox - FFD box index.
-   * \return FFD box control point coordinates.
-   */
-  vector<vector<passivedouble>> GetFFDBoxControlPointCoordinates(unsigned short iFFDBox) const;
-
-  /*!
-   * \brief Get the FFD box control point coordinates.
-   * \param[in] iFFDBox - FFD box index.
-   * \param[in] iOrder - Local i-index of the control point.
-   * \param[in] jOrder - Local j-index of the control point.
-   * \param[in] kOrder - Local k-index of the control point.
-   * \return FFD box control point coordinates.
-   */
-  vector<passivedouble> GetFFDBoxControlPointCoordinates(unsigned short iFFDBox, unsigned int iOrder,
-                                                         unsigned int jOrder, unsigned int kOrder) const;
-
-  /*!
-   * \brief Get the FFD box surface coordinates.
-   * \param[in] iFFDBox - FFD box index.
-   * \param[in] parametric - Boolean to indicate if parametric coordinates should be returned.
-   * \return FFD box surface coordinates.
-   */
-  vector<vector<passivedouble>> GetFFDBoxSurfaceCoordinates(unsigned short iFFDBox, bool parametric = false) const;
-
-  /*!
-   * \brief Get the FFD box surface coordinates.
-   * \param[in] iFFDBox - FFD box index.
-   * \param[in] iPoint - FFD surface point index.
-   * \param[in] parametric - Boolean to indicate if parametric coordinates should be returned.
-   * \return FFD box surface coordinates.
-   */
-  vector<passivedouble> GetFFDBoxSurfaceCoordinates(unsigned short iFFDBox, unsigned long iPoint,
-                                                    bool parametric = false) const;
-
-  /*!
    * \brief Get the number of markers in the mesh.
    * \return Number of markers.
    */
@@ -583,7 +498,7 @@ class CDriverBase {
 
  protected:
   /*!
-   * \brief Initialize Containers
+   * \brief Initialize containers.
    */
   void SetContainers_Null();
 
@@ -604,18 +519,18 @@ class CDriverBase {
 
   /*!
    * \brief Definition and allocation of all solution classes.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
   void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Definition and allocation of all solver classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
   void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
@@ -628,13 +543,4 @@ class CDriverBase {
    */
   void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
-
-  /*!
-   * \brief Read the free form deformation box information from the input mesh file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] FFDBox - Definition of the FFD boxes of the problem.
-   * \param[in] val_mesh_filename - Name of the input mesh file.
-   */
-  void ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, string val_mesh_filename);
 };

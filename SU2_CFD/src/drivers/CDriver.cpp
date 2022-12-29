@@ -177,9 +177,6 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
     }
   }
 
-  /*--- Read free form deformation design variables data. --- */
-  ReadFFDInfo(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], FFDBox[ZONE_0], config_container[ZONE_0]->GetMesh_FileName());
-
   /*--- Before we proceed with the zone loop we have to compute the wall distances.
      * This computation depends on all zones at once. ---*/
   if (rank == MASTER_NODE)
@@ -356,7 +353,6 @@ void CDriver::SetContainers_Null(){
   for (iZone = 0; iZone < nZone; iZone++) {
     interface_types[iZone] = new unsigned short[nZone];
     nInst[iZone] = 1;
-    FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
   }
 
   strcpy(runtime_file_name, "runtime.dat");
