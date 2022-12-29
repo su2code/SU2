@@ -27,15 +27,12 @@
 
 #pragma once
 
-#define ENABLE_MAPS
-#include "../../Common/include/CConfig.hpp"
-#undef ENABLE_MAPS
-
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 
+#include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"

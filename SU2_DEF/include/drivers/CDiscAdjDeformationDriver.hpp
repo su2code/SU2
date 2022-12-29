@@ -27,10 +27,7 @@
 
 #pragma once
 
-#define ENABLE_MAPS
 #include "../../../Common/include/CConfig.hpp"
-#undef ENABLE_MAPS
-
 #include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"

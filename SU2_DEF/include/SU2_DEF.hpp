@@ -27,18 +27,14 @@
 
 #pragma once
 
-#include "../../Common/include/parallelization/mpi_structure.hpp"
-#include "../../Common/include/parallelization/omp_structure.hpp"
-
-#define ENABLE_MAPS
-#include "../../Common/include/CConfig.hpp"
-#undef ENABLE_MAPS
-
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 
+#include "../../Common/include/CConfig.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../Common/include/parallelization/omp_structure.hpp"
 #include "drivers/CDeformationDriver.hpp"
 
 using namespace std;
