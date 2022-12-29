@@ -30,7 +30,7 @@
 #include "COutput.hpp"
 
 class CFVMOutput : public COutput{
-protected:
+ protected:
   /*!
    * \brief Constructor of the class
    */
