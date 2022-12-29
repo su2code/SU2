@@ -237,18 +237,22 @@ if get_option('enable-mpp')
 endif
 
 if get_option('enable-coolprop')
-  cmake = import('cmake')
-  cmake_opts = cmake.subproject_options()
-  cmake_opts.set_override_option('warning_level', '0')
-  cmake_opts.add_cmake_defines({
-    'COOLPROP_STATIC_LIBRARY': true,
-    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
-    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-  })
-  coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
-  coolprop_dep = coolprop_subproj.dependency('CoolProp')
-  su2_deps     += coolprop_dep
-  su2_cpp_args += '-DHAVE_COOLPROP'
+  if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
+    cmake = import('cmake')
+    cmake_opts = cmake.subproject_options()
+    cmake_opts.set_override_option('warning_level', '0')
+    cmake_opts.add_cmake_defines({
+      'COOLPROP_STATIC_LIBRARY': true,
+      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+    })
+    coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
+    coolprop_dep = coolprop_subproj.dependency('CoolProp')
+    su2_deps     += coolprop_dep
+    su2_cpp_args += '-DHAVE_COOLPROP'
+  else
+    message('WARNING: CPU is not x86, skipping CoolProp dependency.')
+  endif
 endif
 
 
