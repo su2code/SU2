@@ -36,11 +36,12 @@ class SU2Interface:
 
     def save_forces(self):
         solver_all_moving_markers = np.array(self.FluidSolver.GetDeformableMarkerTags())
-        solver_marker_ids = self.FluidSolver.GetMarkerTags()
+        solver_markers = self.FluidSolver.GetMarkerTags()
+        solver_marker_ids = self.FluidSolver.GetMarkerIndices()
         # The surface marker and the partitioning of the solver usually don't agree.
         # Thus, it is necessary to figure out if the partition of the current mpi process has
         # a node that belongs to a moving surface marker.
-        has_moving_marker = [marker in solver_marker_ids.keys() for marker in solver_all_moving_markers]
+        has_moving_marker = [marker in solver_markers for marker in solver_all_moving_markers]
 
         f = open('forces_'+str(self.myid)+'.csv','w')
 
