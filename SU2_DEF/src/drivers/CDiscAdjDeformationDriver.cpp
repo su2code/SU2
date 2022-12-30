@@ -25,9 +25,18 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/drivers/CDiscAdjDeformationDriver.hpp"
+#define ENABLE_MAPS
+#include "../../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
+#include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
+#include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
+#include "../../../SU2_CFD/include/solvers/CGradientSmoothingSolver.hpp"
+#include "../../include/drivers/CDiscAdjDeformationDriver.hpp"
 
 using namespace std;
 
