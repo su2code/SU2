@@ -90,8 +90,8 @@ def main():
   nVertex_CHTMarker_PHYS = 0    # number of physical vertices
 
   if CHTMarkerID != None:
-    nVertex_CHTMarker = SU2Driver.GetNumberMarkerVertices(CHTMarkerID)
-    nVertex_CHTMarker_HALO = SU2Driver.GetNumberMarkerHaloVertices(CHTMarkerID)
+    nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
+    nVertex_CHTMarker_HALO = SU2Driver.GetNumberMarkerHaloNodes(CHTMarkerID)
     nVertex_CHTMarker_PHYS = nVertex_CHTMarker - nVertex_CHTMarker_HALO
 
   # Retrieve some control parameters from the driver

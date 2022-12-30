@@ -80,7 +80,7 @@ def main():
   nVertex_Marker = 0         #total number of vertices (physical + halo)
 
   if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberMarkerVertices(MarkerID)
+    nVertex_Marker = SU2Driver.GetNumberMarkerNodes(MarkerID)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:

@@ -91,8 +91,8 @@ def main():
   nVertex_MovingMarker_PHYS = 0    #number of physical vertices
 
   if MovingMarkerID != None:
-    nVertex_MovingMarker = SU2Driver.GetNumberMarkerVertices(MovingMarkerID)
-    nVertex_MovingMarker_HALO = SU2Driver.GetNumberMarkerHaloVertices(MovingMarkerID)
+    nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)
+    nVertex_MovingMarker_HALO = SU2Driver.GetNumberMarkerHaloNodes(MovingMarkerID)
     nVertex_MovingMarker_PHYS = nVertex_MovingMarker - nVertex_MovingMarker_HALO
 
   # Retrieve some control parameters from the driver
