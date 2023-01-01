@@ -103,7 +103,8 @@ class CScalarSolver : public CSolver {
                                          CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
     /*--- Points in edge ---*/
 
@@ -117,7 +118,9 @@ class CScalarSolver : public CSolver {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 

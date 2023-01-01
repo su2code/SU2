@@ -37,6 +37,9 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   : CScalarSolver<CHeatVariable>(geometry, config, false),
     flow(config->GetFluidProblem()), heat_equation(config->GetHeatProblem()) {
 
+  /*--- This solver will not run with OpenMP yet so force this to false. ---*/
+  ReducerStrategy = false;
+
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
 
   nVar = 1;
@@ -441,63 +444,30 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
-  su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
-            thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j;
+  const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
-  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
-
-  eddy_viscosity_i = 0.0;
-  eddy_viscosity_j = 0.0;
-  laminar_viscosity = config->GetMu_ConstantND();
-  Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+  const su2double const_diffusivity = config->GetThermalDiffusivity();
+  const su2double pr_lam = config->GetPrandtl_Lam();
+  const su2double pr_turb = config->GetPrandtl_Turb();
 
   for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+    su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
 
-    const auto iPoint = geometry->edges->GetNode(iEdge,0);
-    const auto jPoint = geometry->edges->GetNode(iEdge,1);
-
-    /*--- Points coordinates, and normal vector ---*/
-
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                       geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-    const auto Temp_i_Grad = nodes->GetGradient(iPoint);
-    const auto Temp_j_Grad = nodes->GetGradient(jPoint);
-    numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
-
-    /*--- Primitive variables w/o reconstruction ---*/
-    Temp_i = nodes->GetTemperature(iPoint);
-    Temp_j = nodes->GetTemperature(jPoint);
-    numerics->SetTemperature(Temp_i, Temp_j);
-
-    /*--- Eddy viscosity to compute thermal conductivity ---*/
-    if (flow) {
-      if (turb) {
-        eddy_viscosity_i = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-        eddy_viscosity_j = solver_container[TURB_SOL]->GetNodes()->GetmuT(jPoint);
+    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
+    auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
+      if (flow) {
+        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
+                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
+        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
+                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
+        numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
       }
-      thermal_diffusivity_i = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_i/Prandtl_Turb);
-      thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
-    }
-    else {
-      thermal_diffusivity_i = config->GetThermalDiffusivity();
-      thermal_diffusivity_j = config->GetThermalDiffusivity();
-    }
-
-    numerics->SetThermalDiffusivity(thermal_diffusivity_i,thermal_diffusivity_j);
-
-    /*--- Compute residual, and Jacobians ---*/
-
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-    /*--- Add and subtract residual, and update Jacobians ---*/
-
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    LinSysRes.AddBlock(jPoint, Residual);
-
-    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      else {
+        numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
+      }
+    };
+    /*--- Compute residual and Jacobians. ---*/
+    Viscous_Residual_impl(compute_thermal_diffusivity, iEdge, geometry, solver_container, numerics, config);
   }
 }
 

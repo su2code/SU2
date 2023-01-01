@@ -361,4 +361,8 @@ public:
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
 
+  /*!
+   * \brief Does not support OpenMP+MPI yet.
+   */
+  inline bool GetHasHybridParallel() const override { return false; }
 };
