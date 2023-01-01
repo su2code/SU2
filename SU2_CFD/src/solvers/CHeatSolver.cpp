@@ -38,7 +38,9 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     flow(config->GetFluidProblem()), heat_equation(config->GetHeatProblem()) {
 
   /*--- This solver will not run with OpenMP yet so force this to false. ---*/
+#ifdef HAVE_OMP
   ReducerStrategy = false;
+#endif
 
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
 
