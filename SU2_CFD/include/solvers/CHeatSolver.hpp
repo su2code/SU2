@@ -61,6 +61,42 @@ protected:
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
 
+  /*!
+   * \brief Applies an isothermal condition to a vertex of a marker.
+   */
+  void IsothermalBoundaryCondition(CGeometry *geometry, CSolver *flow_solver, const CConfig *config,
+                                   unsigned short iMarker, unsigned long iVertex, const su2double& temperature) {
+
+    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) return;
+
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+    const su2double prandtl_lam = config->GetPrandtl_Lam();
+    const su2double const_diffusivity = config->GetThermalDiffusivity();
+
+    const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+    const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    const auto* Coord_i = geometry->nodes->GetCoord(iPoint);
+    const auto* Coord_j = geometry->nodes->GetCoord(Point_Normal);
+    const su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+
+    const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - temperature) / dist_ij;
+
+    su2double thermal_diffusivity = const_diffusivity;
+    if (flow) {
+      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
+    }
+    LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
+
+    if (implicit) {
+      su2double Jacobian_i[] = {-thermal_diffusivity / dist_ij * Area};
+      Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+    }
+  }
+
 public:
 
   /*!

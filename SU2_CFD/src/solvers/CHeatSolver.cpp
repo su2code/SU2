@@ -197,27 +197,7 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
     SetUndivided_Laplacian(geometry, config);
   }
 
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint ++) {
-
-    /*--- Initialize the residual vector ---*/
-
-    LinSysRes.SetBlock_Zero(iPoint);
-  }
-
-  /*--- Initialize the Jacobian matrices ---*/
-
-  Jacobian.SetValZero();
-
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  CommonPreprocessing(geometry, config, Output);
 }
 
 void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
@@ -528,52 +508,14 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
   delete[] Local_Surface_Areas;
 }
 
-void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                       unsigned short val_marker) {
+void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, Point_Normal;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, Twall, dTdn;
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  const su2double laminar_viscosity = config->GetMu_ConstantND();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity();
-
-  //su2double Prandtl_Turb = config->GetPrandtl_Turb();
-  //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        Area = GeometryToolbox::Norm(nDim, Normal);
-
-        Coord_i = geometry->nodes->GetCoord(iPoint);
-        Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        dist_ij = 0;
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
-
-        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
-
-        Res_Visc[0] = thermal_diffusivity*dTdn*Area;
-
-        if(implicit)
-          Jacobian_i[0][0] = -thermal_diffusivity/dist_ij * Area;
-
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    }
+    IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
   }
 }
 
@@ -588,19 +530,13 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_contain
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      const auto Area = GeometryToolbox::Norm(nDim, Normal);
-
-      Res_Visc[0] = 0.0;
-
-      Res_Visc[0] = Wall_HeatFlux * Area;
-
-      /*--- Viscous contribution to the residual at the wall ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-    }
+    /*--- Viscous contribution to the residual at the wall. ---*/
+    const auto* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    const su2double flux = Wall_HeatFlux * Area;
+    LinSysRes(iPoint, 0) -= flux;
   }
 }
 
@@ -608,23 +544,16 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double Vel_Mag, *V_inlet, *V_domain;
 
-  bool viscous              = config->GetViscous();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+  const bool viscous = config->GetViscous();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM];
 
-  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
-  //su2double Prandtl_Turb;
-  Prandtl_Lam = config->GetPrandtl_Lam();
-//  Prandtl_Turb = config->GetPrandtl_Turb();
-  laminar_viscosity = config->GetMu_ConstantND();
-  //laminar_viscosity = config->GetViscosity_FreeStreamND(); //TDE check for consistency with CHT
-
-  Twall = config->GetTemperature_FreeStreamND();
+  const su2double Twall = config->GetTemperature_FreeStreamND();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -635,7 +564,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      if(flow) {
+      if (flow) {
 
         /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -679,33 +608,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Viscous contribution ---*/
 
       if (viscous) {
-
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        Area = GeometryToolbox::Norm(nDim, Normal);
-
-        Coord_i = geometry->nodes->GetCoord(iPoint);
-        Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        dist_ij = 0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
-
-        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
-
-        thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
-
-        Res_Visc[0] = thermal_diffusivity*dTdn*Area;
-
-        if(implicit) {
-
-          Jacobian_i[0][0] = -thermal_diffusivity/dist_ij * Area;
-        }
-        /*--- Viscous contribution to the residual at the wall ---*/
-
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+        IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
       }
     }
   }
