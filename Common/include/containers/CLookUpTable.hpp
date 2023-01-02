@@ -132,10 +132,10 @@ class CLookUpTable {
    * \brief find the table limits, i.e. the minimum and maximum values of the 2 independent.
    * controlling variables. We put the values in the variables.
    * limits_table_x[2] and limit_table_y[2].
-   * \param[in] name_x - the string name for the first controlling variable.
-   * \param[in] name_y - the string name of the second controlling variable.
+   * \param[in] name_CV1 - the string name for the first controlling variable.
+   * \param[in] name_CV2 - the string name of the second controlling variable.
    */
-  void FindTableLimits(const std::string& name_x, const std::string& name_y);
+  void FindTableLimits(const std::string& name_CV1, const std::string& name_CV2);
 
   /*!
    * \brief construct a list of all the edges and a list of the pair of elements left and right of the edge.
@@ -241,7 +241,7 @@ class CLookUpTable {
   }
 
  public:
-  CLookUpTable(const std::string& file_name_lut, const std::string& name_x, const std::string& name_y);
+  CLookUpTable(const std::string& file_name_lut, const std::string& name_CV1_in, const std::string& name_CV2_in);
 
   /*!
    * \brief print information to screen.

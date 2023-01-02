@@ -31,17 +31,17 @@
 
 using namespace std;
 
-CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x, const string& name_y) {
-  file_name_lut = var_file_name_lut;
+CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_CV1_in, const string& name_CV2_in) :
+file_name_lut{var_file_name_lut}, 
+name_CV1{name_CV1_in}, 
+name_CV2{name_CV2_in} 
+{
 
   rank = SU2_MPI::GetRank();
 
-  name_CV1 = name_x;
-  name_CV2 = name_y;
-
   LoadTableRaw(var_file_name_lut);
 
-  FindTableLimits(name_x, name_y);
+  FindTableLimits(name_CV1, name_CV2);
 
   if (rank == MASTER_NODE)
     cout << "Detecting all unique edges and setting edge to triangle connectivity "
@@ -59,12 +59,12 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
   switch (table_dim)
   {
   case 2:
-    cout << "Building a trapezoidal map for the (" + name_x + ", " + name_y + ") "
+    cout << "Building a trapezoidal map for the (" + name_CV1 + ", " + name_CV2 + ") "
             "space ..."
          << endl;
     break;
   case 3:
-    cout << "Building trapezoidal map stack for the (" + name_x + ", " + name_y + ") "
+    cout << "Building trapezoidal map stack for the (" + name_CV1 + ", " + name_CV2 + ") "
               "space ..."
           << endl;
     break;
@@ -76,7 +76,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth=65;
   for(auto i_level = 0ul; i_level<n_table_levels; i_level++){
-    trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_x, i_level), GetDataP(name_y, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
+    trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level), table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
     /* Display a progress bar to monitor table generation process */
     if(rank == MASTER_NODE){
       su2double progress = su2double(i_level) / n_table_levels;
