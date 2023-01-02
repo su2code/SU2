@@ -1,8 +1,8 @@
 /*!
  * \file CLookupTable.hpp
  * \brief tabulation of fluid properties
- * \author D. Mayer, T. Economon, E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \author D. Mayer, T. Economon
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

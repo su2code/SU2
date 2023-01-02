@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,7 +57,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   int Unst_RestartIter = 0;
   unsigned long iMarker;
-  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -137,11 +136,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)  cout<< "Explicit Scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"."<<endl;

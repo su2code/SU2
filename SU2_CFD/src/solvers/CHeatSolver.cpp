@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,12 +80,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation) MG level: " << iMesh << "." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 

@@ -1,8 +1,8 @@
 /*!
  * \file CLookupTable.cpp
  * \brief tabulation of fluid properties
- * \author D. Mayer, T. Economon, E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \author D. Mayer, T. Economon
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,9 +80,9 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     /* Display a progress bar to monitor table generation process */
     if(rank == MASTER_NODE){
       su2double progress = su2double(i_level) / n_table_levels;
-      int done = int(progress*barwidth);
-      int to_do = barwidth - done;
-      cout << "[" << setfill('=') << setw(done);
+      auto completed = floor(progress*barwidth);
+      auto to_do = barwidth - completed;
+      cout << "[" << setfill('=') << setw(completed);
       cout << '>';
       cout << setfill(' ') << setw(to_do) << std::right << "] " << 100*progress << "%\r";
       cout.flush();

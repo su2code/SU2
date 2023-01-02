@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
-  unsigned short iDim, nLineLets;
+  unsigned short iDim;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -161,12 +161,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)
