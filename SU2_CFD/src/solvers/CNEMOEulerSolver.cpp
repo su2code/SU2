@@ -2149,9 +2149,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, CNEMOGas *fluidmodel, unsigned short val_marker) {
+                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
- unsigned short iDim, iVar;
+ unsigned short iDim, iVar, iSpecies;
  unsigned long iVertex, iPoint, Point_Normal;
 
  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -2235,7 +2235,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetConservative(U_domain, U_inlet);
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-     /*--- Pass supplementary info to CNumerics ---*/
+     /*--- Pass supplementary info to CNumerics ---*/ //TODO: why pass node infty?
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
