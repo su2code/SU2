@@ -1,7 +1,7 @@
 /*!
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
- * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
+ * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
  * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -2149,7 +2149,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, CNEMOGas *fluidmodel, unsigned short val_marker) {
 
  unsigned short iDim, iVar;
  unsigned long iVertex, iPoint, Point_Normal;
@@ -2169,7 +2169,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  /*--- Supersonic inlet flow: there are no outgoing characteristics,
   so all flow variables can be imposed at the inlet.
   First, retrieve the specified values for the primitive variables. ---*/
- //ASSUME TVE = T for the time being
 
  auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
  su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
@@ -2177,93 +2176,36 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
  su2double Temperature_ve = Temperature; // TODO : add/check for second function for Tve, check what inputs are in config
 
- /*--- Compute Density and Species Densities ---*/
- su2double denom = 0;
- auto& Ms = FluidModel->GetSpeciesMolarMass();
- for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-   denom += Mass_Frac[iSpecies] * (Ru/Ms[iSpecies]) * Temperature;
- for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-   denom += Mass_Frac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Temperature_ve;
- su2double Density = Pressure / denom;
+ /*--- Set mixture state ---*/
+ fluidmodel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
 
- /*--- Compute Soundspeed and Velocity squared ---*/
- su2double conc = 0, rhoCvtr = 0;
- for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-   conc += Mass_Frac[iSpecies]*Density/Ms[iSpecies];
-   rhoCvtr += Density*Mass_Frac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
- }
- su2double soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure/Density);
-
- su2double Velocity2 = 0.0;
- for (iDim = 0; iDim < nDim; iDim++)
-   Velocity2 += Velocity[iDim]*Velocity[iDim];
-
- // TODO: Necessary?
- /*--- Non-dim. the inputs if necessary. ---*/
- // Need to update this portion
- //Temperature = Temperature/config->GetTemperature_Ref();
- //Pressure    = Pressure/config->GetPressure_Ref();
- //Density     = Density/config->GetDensity_Ref();
- //for (iDim = 0; iDim < nDim; iDim++)
- //  Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
-
- su2double rhoE = 0.0, rhoEve = 0.0;
- /*--- Compute energy (RRHO) from supplied primitive quanitites ---*/
- for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-
-   // Species density
-   su2double rhos = Mass_Frac[iSpecies]*Density;
-
-   // Species formation energy
-   su2double Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-   // Species vibrational energy
-   if (thetav[iSpecies] != 0.0)
-     su2double Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Temperature_ve)-1.0);
-   else
-     su2double Ev = 0.0;
-
-   // Species electronic energy
-   su2double num = 0.0;
-   su2double denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Temperature_ve);
-   for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-     num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
-     denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
-   }
-   su2double Ee = Ru/Ms[iSpecies] * (num/denom);
-
-   // Mixture total energy
-   rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
-                   + Ev + Ee + Ef + 0.5*Velocity2);
-
-   // Mixture vibrational-electronic energy
-   rhoEve += rhos * (Ev + Ee);
- }
+ /*--- Compute necessary quantities ---*/
+ const su2double rho = fluidmodel->GetDensity();
+ const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
+ const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
+ const auto& energies = fluidmodel->ComputeMixtureEnergies();
 
  /*--- Setting Conservative Variables ---*/
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   U_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
+   U_inlet[iSpecies] = rho*Mass_Frac[iSpecies];
  for (iDim = 0; iDim < nDim; iDim++)
-   U_inlet[nSpecies+iDim] = Density*Velocity[iDim];
- U_inlet[nVar-2] = rhoE;
- U_inlet[nVar-1] = rhoEve;
+   U_inlet[nSpecies+iDim] = rho*Velocity[iDim];
+ U_inlet[nVar-2] = rho*(energies[0]+0.5*sqvel);
+ U_inlet[nVar-1] = rho*(energies[1]);
 
- /*--- Setting Primitive Vaariables ---*/
+ /*--- Setting Primitive Vaariables ---*/ 
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
+   V_inlet[iSpecies] = Mass_Frac[iSpecies]*rho;
  V_inlet[nSpecies] = Temperature;
  V_inlet[nSpecies+1] = Temperature_ve;
  for (iDim = 0; iDim < nDim; iDim++)
    V_inlet[nSpecies+2+iDim] = Velocity[iDim];
  V_inlet[nSpecies+2+nDim] = Pressure;
- V_inlet[nSpecies+3+nDim] = Density;
- V_inlet[nSpecies+4+nDim] = rhoE+Pressure/Density;
+ V_inlet[nSpecies+3+nDim] = rho;
+ V_inlet[nSpecies+4+nDim] = U_inlet[nVar-2]+Pressure/Density;
  V_inlet[nSpecies+5+nDim] = soundspeed;
- V_inlet[nSpecies+6+nDim] = rhoCvtr;
-
- // TODO: Newton-Rhapson, or can we just call cons2primvar?
- //This requires Newtown Raphson.....So this is not currently operational (See Deathstar)
- //V_inlet[nSpecies+7+nDim] = rhoCvve;
+ V_inlet[nSpecies+6+nDim] = U_inlet[nVar-2]/Temperature;
+ V_inlet[nSpecies+7+nDim] = U_inlet[nVar-1]/Temperature_ve;
 
  /*--- Loop over all the vertices on this boundary marker ---*/
  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
