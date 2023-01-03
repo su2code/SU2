@@ -166,6 +166,9 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- add all quantities and their address to the look up vectors ---*/
   look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, val_enth, name_prog, name_enth);
 
+  /*--- compute density according to ideal gas law ---*/
+  Density = Pressure * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
+  
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
@@ -220,24 +223,22 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- Set lookup names and variables for all relevant lookup processes in the fluid model ---*/
 
   /*--- Thermodynamic state variables ---*/
-  varnames_TD.resize(7);
-  val_vars_TD.resize(7);
+  varnames_TD.resize(6);
+  val_vars_TD.resize(6);
 
   /*--- The string in varnames_TD is the actual string as it appears in the LUT file ---*/
   varnames_TD[0] = "Temperature";
   val_vars_TD[0] = &Temperature;
-  varnames_TD[1] = "Density";
-  val_vars_TD[1] = &Density;
-  varnames_TD[2] = "Cp";
-  val_vars_TD[2] = &Cp;
-  varnames_TD[3] = "ViscosityDyn";
-  val_vars_TD[3] = &Mu;
-  varnames_TD[4] = "Conductivity";
-  val_vars_TD[4] = &Kt;
-  varnames_TD[5] = "DiffusionCoefficient";
-  val_vars_TD[5] = &mass_diffusivity;
-  varnames_TD[6] = "MolarWeightMix";
-  val_vars_TD[6] = &molar_weight;
+  varnames_TD[1] = "Cp";
+  val_vars_TD[1] = &Cp;
+  varnames_TD[2] = "ViscosityDyn";
+  val_vars_TD[2] = &Mu;
+  varnames_TD[3] = "Conductivity";
+  val_vars_TD[3] = &Kt;
+  varnames_TD[4] = "DiffusionCoefficient";
+  val_vars_TD[4] = &mass_diffusivity;
+  varnames_TD[5] = "MolarWeightMix";
+  val_vars_TD[5] = &molar_weight;
 
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
