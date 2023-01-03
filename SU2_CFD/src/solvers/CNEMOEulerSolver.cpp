@@ -2207,6 +2207,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  //for (iDim = 0; iDim < nDim; iDim++)
  //  Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
 
+ su2double rhoE = 0.0, rhoEve = 0.0;
  /*--- Compute energy (RRHO) from supplied primitive quanitites ---*/
  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
 
@@ -2232,11 +2233,11 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    su2double Ee = Ru/Ms[iSpecies] * (num/denom);
 
    // Mixture total energy
-   su2double rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
+   rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
                    + Ev + Ee + Ef + 0.5*Velocity2);
 
    // Mixture vibrational-electronic energy
-   su2double rhoEve += rhos * (Ev + Ee);
+   rhoEve += rhos * (Ev + Ee);
  }
 
  /*--- Setting Conservative Variables ---*/
@@ -2260,7 +2261,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  V_inlet[nSpecies+5+nDim] = soundspeed;
  V_inlet[nSpecies+6+nDim] = rhoCvtr;
 
- // TODO: Newton-Rhapson
+ // TODO: Newton-Rhapson, or can we just call cons2primvar?
  //This requires Newtown Raphson.....So this is not currently operational (See Deathstar)
  //V_inlet[nSpecies+7+nDim] = rhoCvve;
 
@@ -2334,7 +2335,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
        /*--- Jacobian contribution for implicit integration ---*/
        if (implicit)
-         Jacobian.SubtractBlock2Diag(iPoint, residual.Jacobian_i);
+         Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
      }
 
    }
