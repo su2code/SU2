@@ -62,32 +62,30 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   table_dim = 2;
   bool found_level_count = false;
   while (GetNextNonEmptyLine(file_stream, line) && !eoHeader) {
-
     /*--- check version_lut ---*/
     if (line.compare("[Version]") == 0) {
       GetNextNonEmptyLine(file_stream, line);
       version_lut = line;
 
-      if(version_lut.compare("1.0.1") == 0){
+      if (version_lut.compare("1.0.1") == 0) {
         table_dim = 2;
         n_levels = 1;
         found_level_count = true;
         n_points.resize(n_levels);
         n_triangles.resize(n_levels);
         n_hull_points.resize(n_levels);
-      }else if(version_lut.compare("1.1.0") == 0){
+      } else if (version_lut.compare("1.1.0") == 0) {
         table_dim = 3;
-      }else{
+      } else {
         SU2_MPI::Error("Version conflict between LUT reader and LUT library file.", CURRENT_FUNCTION);
       }
     }
 
-    if (line.compare("[Number of table levels]") == 0)
-    {
+    if (line.compare("[Number of table levels]") == 0) {
       found_level_count = true;
       GetNextNonEmptyLine(file_stream, line);
       n_levels = stoul(line);
-      
+
       n_points.resize(n_levels);
       n_triangles.resize(n_levels);
       n_hull_points.resize(n_levels);
@@ -96,9 +94,9 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- number of points in LUT ---*/
     if (line.compare("[Number of points]") == 0) {
-      if(!found_level_count)
+      if (!found_level_count)
         SU2_MPI::Error("Number of points provided before specifying level count.", CURRENT_FUNCTION);
-      for(unsigned long i_level=0; i_level<n_levels; i_level++){
+      for (unsigned long i_level = 0; i_level < n_levels; i_level++) {
         GetNextNonEmptyLine(file_stream, line);
         n_points[i_level] = stoi(line);
       }
@@ -106,9 +104,9 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- number of triangles in LUT ---*/
     if (line.compare("[Number of triangles]") == 0) {
-      if(!found_level_count)
+      if (!found_level_count)
         SU2_MPI::Error("Number of triangles provided before specifying level count.", CURRENT_FUNCTION);
-      for(unsigned long i_level=0; i_level<n_levels; i_level++){
+      for (unsigned long i_level = 0; i_level < n_levels; i_level++) {
         GetNextNonEmptyLine(file_stream, line);
         n_triangles[i_level] = stoi(line);
       }
@@ -116,16 +114,16 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- number of points on the hull ---*/
     if (line.compare("[Number of hull points]") == 0) {
-      if(!found_level_count)
+      if (!found_level_count)
         SU2_MPI::Error("Number of hull points provided before specifying level count.", CURRENT_FUNCTION);
-      for(unsigned long i_level=0; i_level<n_levels; i_level++){
+      for (unsigned long i_level = 0; i_level < n_levels; i_level++) {
         GetNextNonEmptyLine(file_stream, line);
         n_hull_points[i_level] = stoi(line);
       }
     }
 
     if (line.compare("[Table levels]") == 0) {
-      for(unsigned long i_level=0; i_level<n_levels; i_level++){
+      for (unsigned long i_level = 0; i_level < n_levels; i_level++) {
         GetNextNonEmptyLine(file_stream, line);
         table_levels[i_level] = stod(line);
       }
@@ -139,28 +137,25 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
       names_var.resize(n_variables);
-      for (unsigned long i = 0; i < n_variables; i++){
-
+      for (unsigned long i = 0; i < n_variables; i++) {
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var[i] = line.substr(line.find(":")+1); 
+        names_var[i] = line.substr(line.find(":") + 1);
       }
     }
 
     /*--- check if end of header is reached ---*/
     if (line.compare("</Header>") == 0) eoHeader = true;
   }
-    
 
   /*--- check header quantities ---*/
-  for(unsigned long i_level=0; i_level < n_levels; i_level++){
+  for (unsigned long i_level = 0; i_level < n_levels; i_level++) {
     if (n_points[i_level] == 0 || n_triangles[i_level] == 0 || n_variables == 0 || n_hull_points[i_level] == 0)
-    SU2_MPI::Error(
-        "Number of points, triangles, hull points, or variables in lookup table "
-        "library header is zero.",
-        CURRENT_FUNCTION);
+      SU2_MPI::Error(
+          "Number of points, triangles, hull points, or variables in lookup table "
+          "library header is zero.",
+          CURRENT_FUNCTION);
   }
-  
 
   /*--- check if number of variables is consistent ---*/
   if (n_variables != names_var.size())
@@ -171,20 +166,19 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         CURRENT_FUNCTION);
 
   /*--- now that n_variables, n_points, n_hull_points and n_variables are available, allocate memory ---*/
-  if (rank == MASTER_NODE) cout << "allocating memory for the data, size = ( " << GetNVariables() << " , " << GetNPoints() << " )" << endl;
+  if (rank == MASTER_NODE)
+    cout << "allocating memory for the data, size = ( " << GetNVariables() << " , " << GetNPoints() << " )" << endl;
   table_data.resize(n_levels);
-  for(unsigned long i_level=0; i_level<n_levels; i_level++)
+  for (unsigned long i_level = 0; i_level < n_levels; i_level++)
     table_data[i_level].resize(GetNVariables(), GetNPoints(i_level));
 
-  if (rank == MASTER_NODE) cout << "allocating memory for the triangles, size = "<< GetNTriangles() << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the triangles, size = " << GetNTriangles() << endl;
   triangles.resize(n_levels);
-  for(unsigned long i_level=0; i_level<n_levels; i_level++)
-    triangles[i_level].resize(GetNTriangles(i_level), 3);
+  for (unsigned long i_level = 0; i_level < n_levels; i_level++) triangles[i_level].resize(GetNTriangles(i_level), 3);
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points, size = " << GetNHullPoints() << endl;
   hull.resize(n_levels);
-  for(unsigned long i_level=0; i_level<n_levels; i_level++)
-    hull[i_level].resize(GetNHullPoints(i_level));
+  for (unsigned long i_level = 0; i_level < n_levels; i_level++) hull[i_level].resize(GetNHullPoints(i_level));
 
   /*--- flush any cout ---*/
   if (rank == MASTER_NODE) cout << endl;
@@ -197,26 +191,25 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   unsigned long pointCounter = 0;
   unsigned long levelCounter = 0;
   while (GetNextNonEmptyLine(file_stream, line) && !eoData) {
-
     /*--- check if end of data is reached ---*/
     if (line.compare("</Data>") == 0) eoData = true;
 
     if (!eoData) {
-      if(line.compare("<Level>") == 0){
+      if (line.compare("<Level>") == 0) {
         eoLevel = false;
         pointCounter = 0;
         GetNextNonEmptyLine(file_stream, line);
       }
-      if(line.compare("</Level>") == 0){
+      if (line.compare("</Level>") == 0) {
         eoLevel = true;
         if (n_points[levelCounter] != pointCounter)
-        SU2_MPI::Error(
-            "Number of read points on level " + std::to_string(levelCounter) + " does not match number of points "
-            "specified in lookup table library header.",
-            CURRENT_FUNCTION);
+          SU2_MPI::Error("Number of read points on level " + std::to_string(levelCounter) +
+                             " does not match number of points "
+                             "specified in lookup table library header.",
+                         CURRENT_FUNCTION);
         levelCounter++;
       }
-      if(!eoLevel || (table_dim == 2)){
+      if (!eoLevel || (table_dim == 2)) {
         /*--- one line contains values for one point for all variables ---*/
         istringstream streamDataLine(line);
 
@@ -231,8 +224,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
     }
   }
 
-  
-
   /*--- read connectivity ---*/
   if (rank == MASTER_NODE) cout << "loading connectivity block" << endl;
 
@@ -241,34 +232,33 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   eoLevel = true;
   levelCounter = 0;
   while (GetNextNonEmptyLine(file_stream, line) && !eoConnectivity) {
-    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      line.erase(line.length()-1);
+    if (!line.empty() && (line[line.length() - 1] == '\n' || line[line.length() - 1] == '\r')) {
+      line.erase(line.length() - 1);
     }
     /*--- check if end of data is reached ---*/
     if (line.compare("</Connectivity>") == 0) eoConnectivity = true;
 
     if (!eoConnectivity) {
-      if(line.compare("<Level>") == 0){
+      if (line.compare("<Level>") == 0) {
         eoLevel = false;
         triCounter = 0;
         GetNextNonEmptyLine(file_stream, line);
       }
-      if(line.compare("</Level>") == 0){
+      if (line.compare("</Level>") == 0) {
         eoLevel = true;
         if (n_triangles[levelCounter] != triCounter)
-        SU2_MPI::Error(
-            "Number of read triangles on level " + std::to_string(levelCounter) + " does not match number of triangles "
-            "specified in lookup table library header.",
-            CURRENT_FUNCTION);
+          SU2_MPI::Error("Number of read triangles on level " + std::to_string(levelCounter) +
+                             " does not match number of triangles "
+                             "specified in lookup table library header.",
+                         CURRENT_FUNCTION);
         levelCounter++;
       }
-      if(!eoLevel || (table_dim == 2)){
+      if (!eoLevel || (table_dim == 2)) {
         /*--- one line contains values for one triangle (3 points) ---*/
         istringstream streamTriLine(line);
 
         /*--- add next line to triangles ---*/
         for (int iPoint = 0; iPoint < 3; iPoint++) {
-
           streamTriLine >> word;
 
           /*--- lookup table index starts with 1, convert to c++ indexing starting with 0: ---*/
@@ -277,7 +267,6 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         triCounter++;
       }
     }
-    
   }
 
   /*--- read hull points ---*/
@@ -288,28 +277,28 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
   eoLevel = true;
   levelCounter = 0;
   while (GetNextNonEmptyLine(file_stream, line) && !eoHull) {
-    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
-      line.erase(line.length()-1);
+    if (!line.empty() && (line[line.length() - 1] == '\n' || line[line.length() - 1] == '\r')) {
+      line.erase(line.length() - 1);
     }
     /*--- check if end of data is reached ---*/
     if (line.compare("</Hull>") == 0) eoHull = true;
 
     if (!eoHull) {
-      if(line.compare("<Level>") == 0){
+      if (line.compare("<Level>") == 0) {
         eoLevel = false;
         hullCounter = 0;
         GetNextNonEmptyLine(file_stream, line);
       }
-      if(line.compare("</Level>") == 0){
+      if (line.compare("</Level>") == 0) {
         eoLevel = true;
         if (n_hull_points[levelCounter] != hullCounter)
-        SU2_MPI::Error(
-            "Number of read hull nodes on level " + std::to_string(levelCounter) + " does not match number of hull nodes "
-            "specified in lookup table library header.",
-            CURRENT_FUNCTION);
+          SU2_MPI::Error("Number of read hull nodes on level " + std::to_string(levelCounter) +
+                             " does not match number of hull nodes "
+                             "specified in lookup table library header.",
+                         CURRENT_FUNCTION);
         levelCounter++;
       }
-      if(!eoLevel || (table_dim == 2)){
+      if (!eoLevel || (table_dim == 2)) {
         /*--- one line contains one point ID for one point on the hull  ---*/
         istringstream streamHullLine(line);
 
@@ -319,11 +308,10 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         hull[levelCounter][hullCounter] = stol(word) - 1;
         hullCounter++;
       }
-      }
+    }
   }
 
   file_stream.close();
-
 }
 
 void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
@@ -342,12 +330,11 @@ void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_lin
 }
 
 bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) const {
-
   /*--- get next line and save return value ---*/
   bool return_value = GetStrippedLine(file_stream, line);
-  
+
   /*--- skip empty lines ---*/
-  while (line.empty() && !(file_stream).eof()){
+  while (line.empty() && !(file_stream).eof()) {
     return_value = GetStrippedLine(file_stream, line);
   }
 
@@ -356,16 +343,15 @@ bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) co
 }
 
 bool CFileReaderLUT::GetStrippedLine(ifstream& file_stream, string& line) const {
+  /*--- get next line and save return value ---*/
+  getline(file_stream, line);
 
-    /*--- get next line and save return value ---*/
-    getline(file_stream, line);
+  /*--- find last non-control-character character ---*/
+  size_t end = line.find_last_not_of(" \n\r\t\f\v");
 
-    /*--- find last non-control-character character ---*/
-    size_t end = line.find_last_not_of(" \n\r\t\f\v");
+  /*--- clean up line ---*/
+  line = (end == string::npos) ? "" : line.substr(0, end + 1);
 
-    /*--- clean up line ---*/
-    line = (end == string::npos) ? "" : line.substr(0, end + 1);
-
-    /*--- return true if line is not empty, else return false ---*/
-    return !line.empty();
-  }
+  /*--- return true if line is not empty, else return false ---*/
+  return !line.empty();
+}

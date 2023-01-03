@@ -36,13 +36,12 @@
 /*!
  * \class CTrapezoidalMap
  * \ingroup LookUpInterp
- * \brief Construction of trapezoidal map for tabulated lookup 
+ * \brief Construction of trapezoidal map for tabulated lookup
  * \author: D. Mayer, T. Economon
  * \version 7.5.0 "Blackbird"
  */
-  class CTrapezoidalMap {
+class CTrapezoidalMap {
  protected:
-
   /* The unique values of x which exist in the data */
   std::vector<su2double> unique_bands_x;
 
@@ -56,51 +55,45 @@
   su2vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
  public:
-
   CTrapezoidalMap() = default;
 
-  CTrapezoidalMap(const su2double* samples_x,
-                  const su2double* samples_y,
-                  const unsigned long size,
-                  const std::vector<std::array<unsigned long,2> >& edges,
+  CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
+                  const std::vector<std::array<unsigned long, 2> >& edges,
                   const su2vector<std::vector<unsigned long> >& edge_to_triangle);
 
   /*!
-   * \brief return the index to the triangle that contains the coordinates (val_x,val_y) 
-   * \param[in]  val_x  - x-coordinate or first independent variable 
+   * \brief return the index to the triangle that contains the coordinates (val_x,val_y)
+   * \param[in]  val_x  - x-coordinate or first independent variable
    * \param[in]  val_y  - y-coordinate or second independent variable
-   * \param[out] val_index - index to the triangle 
+   * \param[out] val_index - index to the triangle
    */
   unsigned long GetTriangle(su2double val_x, su2double val_y);
 
-
   /*!
-   * \brief get the indices of the vertical coordinate band (xmin,xmax) in the 2D search space 
-   * that contains the coordinate val_x  
-   * \param[in]  val_x  - x-coordinate or first independent variable 
-   * \param[out] val_band - a pair(i_low,i_up) , the lower index and upper index between which the value val_x 
-   * can be found 
+   * \brief get the indices of the vertical coordinate band (xmin,xmax) in the 2D search space
+   * that contains the coordinate val_x
+   * \param[in]  val_x  - x-coordinate or first independent variable
+   * \param[out] val_band - a pair(i_low,i_up) , the lower index and upper index between which the value val_x
+   * can be found
    */
   std::pair<unsigned long, unsigned long> GetBand(su2double val_x);
 
-
- /*!
-  * \brief for a given coordinate (val_x,value), known to be in the band (xmin,xmax) with band index (i_low,i_up),
-  * find the edges in the band (these edges come from the triangulation) that enclose the coordinate 
-  * \param[in]  val_band - pair i_low,i_up 
-  * \param[in]  val_x  - x-coordinate or first independent variable 
-  * \param[in]  val_y  - y-coordinate or first independent variable 
-  * \param[out] pair (edge_low,edge_up) - lower edge and upper edge of a triangle that encloses the coordinate 
-  */
-  std::pair<unsigned long, unsigned long> GetEdges(std::pair<unsigned long, unsigned long> val_band,
-                                                   su2double val_x,
+  /*!
+   * \brief for a given coordinate (val_x,value), known to be in the band (xmin,xmax) with band index (i_low,i_up),
+   * find the edges in the band (these edges come from the triangulation) that enclose the coordinate
+   * \param[in]  val_band - pair i_low,i_up
+   * \param[in]  val_x  - x-coordinate or first independent variable
+   * \param[in]  val_y  - y-coordinate or first independent variable
+   * \param[out] pair (edge_low,edge_up) - lower edge and upper edge of a triangle that encloses the coordinate
+   */
+  std::pair<unsigned long, unsigned long> GetEdges(std::pair<unsigned long, unsigned long> val_band, su2double val_x,
                                                    su2double val_y) const;
 
- /*!
-  * \brief determine if the x-coordinate falls within the bounds xmin,xmax of the table  
-  * \param[in]  val_x  - x-coordinate or first independent variable 
-  * \param[out] bool - true if val_x is within (xmin,xmax) 
-  */
+  /*!
+   * \brief determine if the x-coordinate falls within the bounds xmin,xmax of the table
+   * \param[in]  val_x  - x-coordinate or first independent variable
+   * \param[out] bool - true if val_x is within (xmin,xmax)
+   */
   inline bool IsInsideHullX(su2double val_x) {
     return (val_x >= unique_bands_x.front()) && (val_x <= unique_bands_x.back());
   }
