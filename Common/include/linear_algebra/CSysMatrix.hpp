@@ -523,6 +523,11 @@ public:
   }
 
   /*!
+   * \brief Get the total number of linelets
+   */
+  FORCEINLINE const size_t GetNLinelets() const { return LineletVector.size(); };
+
+  /*!
    * \brief Adds a scaled block to the sparse matrix (see SetBlock).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.

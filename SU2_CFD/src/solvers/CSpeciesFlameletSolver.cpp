@@ -100,9 +100,9 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+        cout << "Compute linelet structure. " << Jacobian.GetNLinelets() << " elements in each line (average)." << endl;
     }
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);

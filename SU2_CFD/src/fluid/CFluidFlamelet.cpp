@@ -72,7 +72,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   table_source_names.resize(n_table_sources);
   table_sources.resize(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot-PV";
+  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -80,8 +80,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    table_source_names[1 + i_aux]                  = config->GetUserSourceName(i_aux*n_user_scalars);
-    table_source_names[1 + n_user_scalars + i_aux] = config->GetUserSourceName(i_aux*n_user_scalars + 1);
+    table_source_names[1 + 2*i_aux]     = config->GetUserSourceName(2*i_aux);
+    table_source_names[1 + 2*i_aux + 1] = config->GetUserSourceName(2*i_aux + 1);
   }
 
   config->SetLUTSourceNames(table_source_names);
@@ -147,8 +147,10 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
-    su2double y_aux = val_scalars[n_CV + i_aux];      
-    source_scalar[n_CV + i_aux] = table_sources[1 + i_aux] + table_sources[1 + n_user_scalars + i_aux] * y_aux;
+    su2double y_aux = val_scalars[n_CV + i_aux];     
+    su2double source_prod = table_sources[1 + 2*i_aux];
+    su2double source_cons = table_sources[1 + 2*i_aux + 1];
+    source_scalar[n_CV + i_aux] = source_prod + source_cons * y_aux;
   }
 
   return exit_code;
