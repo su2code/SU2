@@ -263,6 +263,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
+  bool redefine_fluid_model = true;
+
   /*--- Compute dimensional free-stream values. ---*/
 
   Density_FreeStream     = config->GetInc_Density_Init();     config->SetDensity_FreeStream(Density_FreeStream);
@@ -336,6 +338,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      
+      /*--- flamelet fluid model does not need to be redefined after nondimensionalization ---*/
+      redefine_fluid_model = false;
       break;
 
     default:
@@ -462,7 +467,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
 
-  delete auxFluidModel;
+  if(redefine_fluid_model) delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -489,7 +494,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLUID_FLAMELET:
-        fluidModel = new CFluidFlamelet(config, Pressure_ThermodynamicND);
+        fluidModel = auxFluidModel;
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
