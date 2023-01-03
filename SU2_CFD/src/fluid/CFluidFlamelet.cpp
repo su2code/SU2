@@ -168,9 +168,9 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
   /*--- compute density according to ideal gas law ---*/
   Density = Pressure * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
-
+  
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
-  Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight / 1000.0);
+  Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 
 unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val_prog, su2double val_temp, su2double initial_value) {
