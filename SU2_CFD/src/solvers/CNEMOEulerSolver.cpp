@@ -2148,215 +2148,204 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
 }
 
-// NECESSARY?
 void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
+ unsigned short iDim, iVar;
+ unsigned long iVertex, iPoint, Point_Normal;
 
-//  unsigned short iDim, iVar;
-//  unsigned long iVertex, iPoint, Point_Normal;
-//  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, Velocity2, soundspeed;
-//  su2double Gas_Constant = config->GetGas_ConstantND();
-//
-//  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-//  bool dynamic_grid  = config->GetGrid_Movement();
-//  bool viscous              = config->GetViscous();
-//  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-//
-//  su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
-//  su2double Ru = 1000.0*RuSI;
-//
-//  su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
-//  su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
-//  su2double *Normal = new su2double[nDim];
+ bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+ bool dynamic_grid  = config->GetGrid_Movement();
+ bool viscous              = config->GetViscous();
+ string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-/* ----------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------- */
-/* The block of code commented below needs to be updated to use Fluidmodel class */
-/* ----------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------- */
+ su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
+ su2double Ru = 1000.0*RuSI;
 
-//  /*--- Supersonic inlet flow: there are no outgoing characteristics,
-//   so all flow variables can be imposed at the inlet.
-//   First, retrieve the specified values for the primitive variables. ---*/
-//  //ASSUME TVE = T for the time being
-//  auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
-//  Temperature    = config->GetInlet_Temperature(Marker_Tag);
-//  Pressure       = config->GetInlet_Pressure(Marker_Tag);
-//  Velocity       = config->GetInlet_Velocity(Marker_Tag);
-//  Temperature_ve = Temperature;
-//
-//  /*--- Compute Density and Species Densities ---*/
-//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-//    denom += Mass_Frac[iSpecies] * (Ru/Ms[iSpecies]) * Temperature;
-//  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-//    denom += Mass_Frac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Temperature_ve;
-//  Density = Pressure / denom;
-//
-//  /*--- Compute Soundspeed and Velocity squared ---*/
-//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//    conc += Mass_Frac[iSpecies]*Density/Ms[iSpecies];
-//    rhoCvtr += Density*Mass_Frac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-//  }
-//  soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure/Density);
-//
-//  Velocity2 = 0.0;
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    Velocity2 += Velocity[iDim]*Velocity[iDim];
-//
-//  /*--- Non-dim. the inputs if necessary. ---*/
-//  // Need to update this portion
-//  //Temperature = Temperature/config->GetTemperature_Ref();
-//  //Pressure    = Pressure/config->GetPressure_Ref();
-//  //Density     = Density/config->GetDensity_Ref();
-//  //for (iDim = 0; iDim < nDim; iDim++)
-//  //  Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
-//
-//  /*--- Compute energy (RRHO) from supplied primitive quanitites ---*/
-//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//
-//    // Species density
-//    rhos = Mass_Frac[iSpecies]*Density;
-//
-//    // Species formation energy
-//    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-//
-//    // Species vibrational energy
-//    if (thetav[iSpecies] != 0.0)
-//      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Temperature_ve)-1.0);
-//    else
-//      Ev = 0.0;
-//
-//    // Species electronic energy
-//    num = 0.0;
-//    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Temperature_ve);
-//    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
-//      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
-//    }
-//    Ee = Ru/Ms[iSpecies] * (num/denom);
-//
-//    // Mixture total energy
-//    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
-//                    + Ev + Ee + Ef + 0.5*Velocity2);
-//
-//    // Mixture vibrational-electronic energy
-//    rhoEve += rhos * (Ev + Ee);
-//  }
-//
-//  /*--- Setting Conservative Variables ---*/
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    U_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    U_inlet[nSpecies+iDim] = Density*Velocity[iDim];
-//  U_inlet[nVar-2] = rhoE;
-//  U_inlet[nVar-1] = rhoEve;
-//
-//  /*--- Setting Primitive Vaariables ---*/
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
-//  V_inlet[nSpecies] = Temperature;
-//  V_inlet[nSpecies+1] = Temperature_ve;
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    V_inlet[nSpecies+2+iDim] = Velocity[iDim];
-//  V_inlet[nSpecies+2+nDim] = Pressure;
-//  V_inlet[nSpecies+3+nDim] = Density;
-//  V_inlet[nSpecies+4+nDim] = rhoE+Pressure/Density;
-//  V_inlet[nSpecies+5+nDim] = soundspeed;
-//  V_inlet[nSpecies+6+nDim] = rhoCvtr;
+ su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
+ su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
+ su2double *Normal = new su2double[nDim];
 
-/* ----------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------- */
-/* The block of code that needs to be updated to use Fluidmodel class end here   */
-/* ----------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------- */
+ /*--- Supersonic inlet flow: there are no outgoing characteristics,
+  so all flow variables can be imposed at the inlet.
+  First, retrieve the specified values for the primitive variables. ---*/
+ //ASSUME TVE = T for the time being
 
-//  //This requires Newtown Raphson.....So this is not currently operational (See Deathstar)
-//  //V_inlet[nSpecies+7+nDim] = rhoCvve;
-//
-//  /*--- Loop over all the vertices on this boundary marker ---*/
-//  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//    if (geometry->nodes->GetDomain(iPoint)) {
-//
-//      /*--- Index of the closest interior node ---*/
-//      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-//
-//      /*--- Current solution at this boundary node ---*/
-//      for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = nodes->GetSolution(iPoint,iVar);
-//      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
-//
-//      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-//      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-//
-//      su2double Area = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Area += Normal[iDim]*Normal[iDim];
-//      Area = sqrt (Area);
-//
-//      /*--- Set various quantities in the solver class ---*/
-//      conv_numerics->SetNormal(Normal);
-//      conv_numerics->SetConservative(U_domain, U_inlet);
-//      conv_numerics->SetPrimitive(V_domain, V_inlet);
-//
-//      /*--- Pass supplementary info to CNumerics ---*/
-//      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-//      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
-//      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-//      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
-//      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
-//
-//      if (dynamic_grid)
-//        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-//                                  geometry->nodes->GetGridVel(iPoint));
-//
-//      /*--- Compute the residual using an upwind scheme ---*/
-//      auto residual = conv_numerics->ComputeResidual(config);
-//      LinSysRes.AddBlock(iPoint, residual);
-//
-//      /*--- Jacobian contribution for implicit integration ---*/
-//      //if (implicit)
-//      //  Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-//
-//      /*--- Viscous contribution ---*/
-//      if (viscous) {
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                           geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//
-//        /*--- Primitive variables, and gradient ---*/
-//        visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), nodes->GetLaminarViscosity(iPoint));
-//
-//        /*--- Compute and update residual ---*/
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        //if (implicit)
-//        //  Jacobian.SubtractBlock2Diag(iPoint, residual.Jacobian_i);
-//      }
-//
-//    }
-//  }
-//
-//  /*--- Free locally allocated memory ---*/
-//  delete [] U_domain;
-//  delete [] U_inlet;
-//  delete [] V_domain;
-//  delete [] V_inlet;
-//  delete [] Normal;
+ auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
+ su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
+ su2double Pressure       = config->GetInlet_Pressure(Marker_Tag);
+ su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
+ su2double Temperature_ve = Temperature; // TODO : add/check for second function for Tve, check what inputs are in config
+
+ /*--- Compute Density and Species Densities ---*/
+ su2double denom = 0;
+ auto& Ms = FluidModel->GetSpeciesMolarMass();
+ for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+   denom += Mass_Frac[iSpecies] * (Ru/Ms[iSpecies]) * Temperature;
+ for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+   denom += Mass_Frac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Temperature_ve;
+ su2double Density = Pressure / denom;
+
+ /*--- Compute Soundspeed and Velocity squared ---*/
+ su2double conc = 0, rhoCvtr = 0;
+ for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+   conc += Mass_Frac[iSpecies]*Density/Ms[iSpecies];
+   rhoCvtr += Density*Mass_Frac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+ }
+ su2double soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure/Density);
+
+ su2double Velocity2 = 0.0;
+ for (iDim = 0; iDim < nDim; iDim++)
+   Velocity2 += Velocity[iDim]*Velocity[iDim];
+
+ // TODO: Necessary?
+ /*--- Non-dim. the inputs if necessary. ---*/
+ // Need to update this portion
+ //Temperature = Temperature/config->GetTemperature_Ref();
+ //Pressure    = Pressure/config->GetPressure_Ref();
+ //Density     = Density/config->GetDensity_Ref();
+ //for (iDim = 0; iDim < nDim; iDim++)
+ //  Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
+
+ /*--- Compute energy (RRHO) from supplied primitive quanitites ---*/
+ for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
+   // Species density
+   su2double rhos = Mass_Frac[iSpecies]*Density;
+
+   // Species formation energy
+   su2double Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+
+   // Species vibrational energy
+   if (thetav[iSpecies] != 0.0)
+     su2double Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Temperature_ve)-1.0);
+   else
+     su2double Ev = 0.0;
+
+   // Species electronic energy
+   su2double num = 0.0;
+   su2double denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Temperature_ve);
+   for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+     num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
+     denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Temperature_ve);
+   }
+   su2double Ee = Ru/Ms[iSpecies] * (num/denom);
+
+   // Mixture total energy
+   su2double rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
+                   + Ev + Ee + Ef + 0.5*Velocity2);
+
+   // Mixture vibrational-electronic energy
+   su2double rhoEve += rhos * (Ev + Ee);
+ }
+
+ /*--- Setting Conservative Variables ---*/
+ for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+   U_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
+ for (iDim = 0; iDim < nDim; iDim++)
+   U_inlet[nSpecies+iDim] = Density*Velocity[iDim];
+ U_inlet[nVar-2] = rhoE;
+ U_inlet[nVar-1] = rhoEve;
+
+ /*--- Setting Primitive Vaariables ---*/
+ for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+   V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
+ V_inlet[nSpecies] = Temperature;
+ V_inlet[nSpecies+1] = Temperature_ve;
+ for (iDim = 0; iDim < nDim; iDim++)
+   V_inlet[nSpecies+2+iDim] = Velocity[iDim];
+ V_inlet[nSpecies+2+nDim] = Pressure;
+ V_inlet[nSpecies+3+nDim] = Density;
+ V_inlet[nSpecies+4+nDim] = rhoE+Pressure/Density;
+ V_inlet[nSpecies+5+nDim] = soundspeed;
+ V_inlet[nSpecies+6+nDim] = rhoCvtr;
+
+ // TODO: Newton-Rhapson
+ //This requires Newtown Raphson.....So this is not currently operational (See Deathstar)
+ //V_inlet[nSpecies+7+nDim] = rhoCvve;
+
+ /*--- Loop over all the vertices on this boundary marker ---*/
+ for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+   iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+   /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+   if (geometry->nodes->GetDomain(iPoint)) {
+
+     /*--- Index of the closest interior node ---*/
+     Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+     /*--- Current solution at this boundary node ---*/
+     for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = nodes->GetSolution(iPoint,iVar);
+     for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
+
+     /*--- Normal vector for this vertex (negate for outward convention) ---*/
+     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+     for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+     su2double Area = 0.0;
+     for (iDim = 0; iDim < nDim; iDim++)
+       Area += Normal[iDim]*Normal[iDim];
+     Area = sqrt (Area);
+
+     /*--- Set various quantities in the solver class ---*/
+     conv_numerics->SetNormal(Normal);
+     conv_numerics->SetConservative(U_domain, U_inlet);
+     conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+     /*--- Pass supplementary info to CNumerics ---*/
+     conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
+     conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+     conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+     conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
+     conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
+
+     if (dynamic_grid)
+       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                 geometry->nodes->GetGridVel(iPoint));
+
+     /*--- Compute the residual using an upwind scheme ---*/
+     auto residual = conv_numerics->ComputeResidual(config);
+     LinSysRes.AddBlock(iPoint, residual);
+
+     /*--- Jacobian contribution for implicit integration ---*/
+     if (implicit)
+       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+     /*--- Viscous contribution ---*/
+     if (viscous) {
+
+       /*--- Set the normal vector and the coordinates ---*/
+       visc_numerics->SetNormal(Normal);
+       su2double Coord_Reflected[MAXNDIM];
+       GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                          geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+       visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+
+       /*--- Primitive variables, and gradient ---*/
+       visc_numerics->SetPrimitive(V_domain, V_inlet);
+       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+
+       /*--- Laminar viscosity ---*/
+       visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), nodes->GetLaminarViscosity(iPoint));
+
+       /*--- Compute and update residual ---*/
+       auto residual = visc_numerics->ComputeResidual(config);
+       LinSysRes.SubtractBlock(iPoint, residual);
+
+       /*--- Jacobian contribution for implicit integration ---*/
+       if (implicit)
+         Jacobian.SubtractBlock2Diag(iPoint, residual.Jacobian_i);
+     }
+
+   }
+ }
+
+ /*--- Free locally allocated memory ---*/
+ delete [] U_domain;
+ delete [] U_inlet;
+ delete [] V_domain;
+ delete [] V_inlet;
+ delete [] Normal;
 
 }
 
