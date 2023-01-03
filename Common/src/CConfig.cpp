@@ -1166,6 +1166,17 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
+  /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
+  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, MLP);
+  /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
+  addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
+  /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  /*!\brief DATADRIVEN_FLUID_INITIAL_DENSITY \n DESCRIPTION: Initial value for the density in the Newton solvers in the data-driven fluid model. \n \ingroup Config*/
+  addDoubleOption("DATADRIVEN_FLUID_INITIAL_DENSITY", DataDriven_initial_density, 1.225);
+  /*!\brief DATADRIVEN_FLUID_INITIAL_ENERGY \n DESCRIPTION: Initial value for the static energy in the Newton solvers in the data-driven fluid model. \n \ingroup Config*/
+  addDoubleOption("DATADRIVEN_FLUID_INITIAL_ENERGY", DataDriven_initial_energy, 1e5);
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
@@ -1520,6 +1531,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
   addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
+
+  /*!\brief MLP_FILENAME \n DESCRIPTION: Input file for a multi-layer perceptron input file for fluid model definition. w/ extension) \n DEFAULT: MLP_collection.mlp \ingroup Config*/
+  addStringOption("MLP_FILENAME", MLP_filename, string("MLP_collection.mlp"));
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, INLET_TYPE::TOTAL_CONDITIONS);

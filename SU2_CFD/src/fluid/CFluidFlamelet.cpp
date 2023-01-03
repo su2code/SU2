@@ -49,12 +49,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   config->SetNScalars(n_scalars);
 
-  if (rank == MASTER_NODE) {
-    cout << "*****************************************" << endl;
-    cout << "***   initializing the lookup table   ***" << endl;
-    cout << "*****************************************" << endl;
-  }
-
   table_scalar_names.resize(n_scalars);
   table_scalar_names[I_ENTH] = "EnthalpyTot";
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
@@ -63,6 +57,25 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_scalar_names[n_CV + i_aux] = config->GetUserScalarName(i_aux);
   }
 
+  switch (config->GetKind_DataDriven_Method())
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    if (rank == MASTER_NODE) {
+      cout << "*****************************************" << endl;
+      cout << "***   initializing the lookup table   ***" << endl;
+      cout << "*****************************************" << endl;
+    }
+    look_up_table =
+      new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+    break;
+  
+  case ENUM_DATADRIVEN_METHOD::MLP:
+  
+    break;
+  default:
+    break;
+  }
+  
   config->SetLUTScalarNames(table_scalar_names);
 
   /*--- we currently only need 1 source term from the LUT for the progress variable
@@ -86,8 +99,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   config->SetLUTSourceNames(table_source_names);
 
-  look_up_table =
-      new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+  
 
   n_lookups = config->GetNLookups();
   table_lookup_names.resize(n_lookups);

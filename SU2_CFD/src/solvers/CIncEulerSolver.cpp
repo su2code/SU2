@@ -30,6 +30,7 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -342,6 +343,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       /*--- flamelet fluid model does not need to be redefined after nondimensionalization ---*/
       redefine_fluid_model = false;
       break;
+      
+    case DATADRIVEN_FLUID:
+      auxFluidModel = new CDataDrivenFluid(config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = auxFluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
 
     default:
 
@@ -507,6 +515,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
           fluidModel->SetCpModel(config);
         }
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
+
+      case DATADRIVEN_FLUID:
+        fluidModel = new CDataDrivenFluid(config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 

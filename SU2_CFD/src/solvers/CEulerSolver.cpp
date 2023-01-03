@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
@@ -852,6 +853,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
+    
+    case DATADRIVEN_FLUID:
+
+      auxFluidModel = new CDataDrivenFluid(config);
+      break;
     case COOLPROP:
 
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
@@ -1082,6 +1088,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
+        break;
+
+      case DATADRIVEN_FLUID:
+        FluidModel[thread] = new CDataDrivenFluid(config);
         break;
 
       case COOLPROP:
@@ -1658,6 +1668,12 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
     bool physical = nodes->SetPrimVar(iPoint, GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
+
+    /*--- Update en---*/
+    if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+      nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
+      nodes->SetEntropy(iPoint, GetFluidModel()->GetStaticEnergy());
+    }
 
     /* Check for non-realizable states for reporting. */
 
@@ -4632,6 +4648,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
+      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
+      GetFluidModel()->SetDensity(0.5*(Density_i + config->GetDensity_Init_DataDriven()));
+      GetFluidModel()->SetEnergy(0.5*(StaticEnergy_i + config->GetEnergy_Init_DataDriven()));
+
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
 
@@ -4664,7 +4684,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         GetFluidModel()->SetTDState_PT(P_Total, T_Total);
         Enthalpy_e = GetFluidModel()->GetStaticEnergy()+ GetFluidModel()->GetPressure()/GetFluidModel()->GetDensity();
         Entropy_e = GetFluidModel()->GetEntropy();
-
         /* --- Compute the boundary state u_e --- */
         Velocity2_e = Velocity2_i;
         if (nDim == 2){
@@ -4847,6 +4866,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       Energy_b = u_b[nVar-1]/Density_b;
       StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        GetNodes()->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
+
       Pressure_b = GetFluidModel()->GetPressure();
       Temperature_b = GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;

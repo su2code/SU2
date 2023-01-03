@@ -930,6 +930,14 @@ def main():
     coolprop_transportModel.test_vals = [-4.527922, -1.308741, 4.630469, 0.000000, 0.000000]
     test_list.append(coolprop_transportModel)
 
+    # Subsonic Q1D nozzle using an MLP for thermodynamic state evaluation
+    datadriven_MLP           = TestCase('datadriven_MLP')
+    datadriven_MLP.cfg_dir   = "nicf/datadriven"
+    datadriven_MLP.cfg_file  = "datadriven_nozzle.cfg"
+    datadriven_MLP.test_iter = 100
+    datadriven_MLP.test_vals = [-3.419718, -2.279820, 3.423614, 0.000000, 0.000000]
+    test_list.append(datadriven_MLP)
+
     ######################################
     ### Turbomachinery                 ###
     ######################################
