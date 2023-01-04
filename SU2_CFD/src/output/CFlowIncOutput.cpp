@@ -192,7 +192,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   // Fluid Topology Optimization
   if (config->GetTopology_Optimization()) {
-    AddHistoryOutput("POWER_DISSIPATED", "Diss_Pwr", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Power Dissipation", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("DISSIPATED_POWER", "Diss_Pwr", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Power Dissipation", HistoryFieldType::COEFFICIENT);
   }
 
   AddRotatingFrameCoefficients();
@@ -272,7 +272,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   // Fluid Topology Optimization
   if (topology) {
-    SetHistoryOutputValue("DISSIPATED POWER", flow_solver->GetDissipated_Power());
+    SetHistoryOutputValue("DISSIPATED_POWER", flow_solver->GetDissipated_Power());
   }
 
   /*--- Set the analyse surface history values --- */

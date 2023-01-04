@@ -180,10 +180,10 @@ void CDiscAdjSinglezoneDriver::Run() {
     AD::ComputeAdjoint();
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-
+    
     iteration->IterateDiscAdj(geometry_container, solver_container,
                               config_container, ZONE_0, INST_0, false);
-
+    
     /*--- Monitor the pseudo-time ---*/
 
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
@@ -295,7 +295,6 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   /*--- Register Output of the iteration ---*/
 
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
@@ -452,12 +451,12 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
-
+    
   SetRecording(SecondaryVariables);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
-
+    
   iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/

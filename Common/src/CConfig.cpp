@@ -6544,6 +6544,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
+        case DISSIPATED_POWER:           cout << "Stress penalty objective function." << endl; break;
       }
     }
     else {
@@ -8258,6 +8259,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
+        case DISSIPATED_POWER:            AdjExt = "_dispwr";   break;
       }
     }
     else{
