@@ -3957,7 +3957,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
       }
       ++nLinelet;
 
-      maxNPoints = max(maxNPoints, linelet.size());
+      maxNPoints = max<unsigned long>(maxNPoints, linelet.size());
       sumNPoints += linelet.size();
     }
   }
