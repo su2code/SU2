@@ -8854,6 +8854,13 @@ const su2double* CConfig::GetInlet_Velocity(string val_marker) const {
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
 }
 
+const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
+  unsigned short iMarker_Supersonic_Inlet;
+  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
+    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
+  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
+}
+
 const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
   unsigned short iMarker_Inlet_Species;
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
