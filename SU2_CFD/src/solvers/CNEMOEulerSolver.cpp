@@ -2159,9 +2159,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  bool viscous              = config->GetViscous();
  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
- su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
- su2double Ru = 1000.0*RuSI;
-
  su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
  su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
  su2double *Normal = new su2double[nDim];
@@ -2171,10 +2168,10 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
   First, retrieve the specified values for the primitive variables. ---*/
 
  auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag); //TODO: add get inlet mass_frac function
- su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
- su2double Pressure       = config->GetInlet_Pressure(Marker_Tag);
- su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
- su2double Temperature_ve = Temperature; // TODO : add/check for second function for Tve, check what inputs are in config
+ const su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
+ const su2double Pressure       = config->GetInlet_Pressure(Marker_Tag);
+ const su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
+ const su2double Temperature_ve = Temperature; // TODO : add/check for second function for Tve, check what inputs are in config
 
  /*--- Set mixture state ---*/
  FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
