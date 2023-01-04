@@ -855,7 +855,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         }
 
         su2double eta = nodes->GetPorosity(iPoint);
-        su2double a_f = 2.5e-4, a_s = 10.0, q = 0.1 ;
+        su2double a_f = 2.5e-4, a_s = 10.0, q = 1.0 ;
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
         porosity_comp = Vel2 * alpha;
 
@@ -900,6 +900,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
   
   unsigned long total_index;
   for(iPoint=0; iPoint<nPoint; ++iPoint) {
+    if (geometry->nodes->GetDomain(iPoint)) {
     unsigned long Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
     total_index = Global_Index*vals_per_point;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -909,6 +910,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetAdjointPorosity(iPoint));
     total_index++;
     send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetPorosity(iPoint));
+  }
   }
 
 #ifdef HAVE_MPI
