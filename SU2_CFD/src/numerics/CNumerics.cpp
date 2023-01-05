@@ -54,6 +54,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
+  //species = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
+  //T_Ref = species ? 298.15 : 0.0;
 
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -148,6 +150,11 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
                                        const su2double *val_normal,
                                        su2double *val_Proj_Flux) const {
   su2double rhou, rhov, rhow;
+  /* su2double velSquare = 0.0;
+  for (int i = 0; i < nDim; i++) {
+    velSquare = 0.5 * val_velocity[i] * val_velocity[i];
+  }
+  */
 
   if (nDim == 2) {
     rhou = (*val_density)*val_velocity[0];
@@ -324,6 +331,10 @@ void CNumerics::GetPreconditioner(const su2double *val_density, const su2double 
                                   const su2double *val_temperature, const su2double *val_drhodt,
                                   su2double **val_Precon) const {
   unsigned short iDim, jDim;
+  /* 
+  su2double Velocity_Mag = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) Velocity_Mag += val_velocity[iDim] * val_velocity[iDim];
+  */
 
   val_Precon[0][0] = 1.0/(*val_betainc2);
   for (iDim = 0; iDim < nDim; iDim++)

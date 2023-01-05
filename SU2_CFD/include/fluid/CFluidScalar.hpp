@@ -44,6 +44,7 @@ class CFluidScalar final : public CFluidModel {
   const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
+  const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
 
   const bool wilke;
   const bool davidson;
@@ -130,7 +131,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number ; }
 
   /*!
    * \brief Get fluid mass diffusivity.
