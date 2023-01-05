@@ -62,6 +62,7 @@ protected:
   CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
+  CNEMOEulerVariable* node_inlet = nullptr;
 
   /*!
    * \brief Set the maximum value of the eigenvalue.

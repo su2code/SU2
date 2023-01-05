@@ -2167,7 +2167,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
   so all flow variables can be imposed at the inlet.
   First, retrieve the specified values for the primitive variables. ---*/
 
- auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag); //TODO: add get inlet mass_frac function
+ const auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag); //TODO: add get inlet mass_frac function
  const su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
  const su2double Pressure       = config->GetInlet_Pressure(Marker_Tag);
  const su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
@@ -2204,6 +2204,17 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  V_inlet[nSpecies+6+nDim] = U_inlet[nVar-2]/Temperature;
  V_inlet[nSpecies+7+nDim] = U_inlet[nVar-1]/Temperature_ve;
 
+ su2double* Mvec = new su2double[nDim];
+
+ for (iDim = 0; iDim < nDim; iDim++)
+   Mvec[iDim] = Velocity[iDim] * soundspeed;
+
+ /*--- Allocate inlet node to compute gradients for numerics ---*/
+ node_inlet = new CNEMOEulerVariable(Pressure, Mass_Frac, Mvec,
+                                        Temperature, Temperature_ve,
+                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                        config, FluidModel);
+
  /*--- Loop over all the vertices on this boundary marker ---*/
  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2233,11 +2244,11 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
      /*--- Pass supplementary info to CNumerics ---*/ //TODO: why pass node infty?
-     conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-     conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
-     conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-     conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
-     conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
+     conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
+     conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
+     conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet->GetdTvedU(0));
+     conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet->GetEve(0));
+     conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet->GetCvve(0));
 
      if (dynamic_grid)
        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -2286,6 +2297,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  delete [] V_domain;
  delete [] V_inlet;
  delete [] Normal;
+ delete [] Mvec;
 
 }
 
