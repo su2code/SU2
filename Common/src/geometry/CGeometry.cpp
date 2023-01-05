@@ -3922,7 +3922,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
         }
 
         /*--- Isotropic, stop this linelet. ---*/
-        if (min_weight / max_weight > CLineletInfo::ALPHA_ISOTROPIC) break;
+        if (min_weight / max_weight > CLineletInfo::ALPHA_ISOTROPIC()) break;
 
         /*--- Otherwise, add the closest valid neighbor. ---*/
 
@@ -3957,7 +3957,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
       }
       ++nLinelet;
 
-      maxNPoints = max(maxNPoints, linelet.size());
+      maxNPoints = max<unsigned long>(maxNPoints, linelet.size());
       sumNPoints += linelet.size();
     }
   }
