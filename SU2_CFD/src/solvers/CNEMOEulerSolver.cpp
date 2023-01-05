@@ -2243,7 +2243,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetConservative(U_domain, U_inlet);
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-     /*--- Pass supplementary info to CNumerics ---*/ //TODO: why pass node infty?
+     /*--- Pass supplementary info to CNumerics ---*/
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet->GetdTvedU(0));
