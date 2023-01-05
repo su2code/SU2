@@ -88,7 +88,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
   void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        CConfig* config) final;
+                        CConfig* config);
 
   /*!
    * \brief Impose the inlet boundary condition.

@@ -1355,6 +1355,7 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
+  I_MIXFRAC,
 };
 
 /*!
@@ -1366,6 +1367,17 @@ enum FLAMELET_SCALAR_SOURCES {
   I_SRC_CONS_CO,
   I_SRC_PROD_NOX,
   I_SRC_CONS_NOX,
+};
+
+/*!
+ * \brief the preferential diffusion scalar indices for the preferential diffusion model.
+ */
+enum FLAMELET_PREF_DIFF_SCALARS {
+  I_BETA_PROGVAR,
+  I_BETA_ENTH_THERMAL,
+  I_BETA_ENTH,
+  I_BETA_MIXFRAC,
+  N_BETA_TERMS,
 };
 
 /*!

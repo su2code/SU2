@@ -175,9 +175,22 @@ class CFluidModel {
    */
   virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
                                                su2double  val_prog,
+                                               su2double  val_mixfrac,
                                                su2double  val_temp, 
                                                su2double  initial_value=0) { return 0; }
 
+  /*!
+   * \brief Set the preferential diffusion terms for the transported scalar equations.
+   * \param[in] val_scalars - pointer to species mass fractions
+   */
+  virtual inline unsigned long SetPreferentialDiffusionScalars(su2double* val_scalars) { return 0; }
+
+  /*!
+   * \brief Get the preferential diffusion scalar
+   * \param[in] iVar - index to the species
+   */
+  virtual inline su2double GetPreferentialDiffusionScalar(size_t iVar) const { return 0.0; }
+  
   virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
   virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
 

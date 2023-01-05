@@ -114,6 +114,17 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                        unsigned short iMesh) override;
 
   /*!
+   * \brief Compute the viscous flux for the scalar equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  virtual void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, CConfig* config) final;
+  /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

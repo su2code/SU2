@@ -1237,10 +1237,11 @@ private:
   unsigned short n_user_sources;
   unsigned short n_controlling_variables;
 
+  bool preferential_diffusion;
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
   string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
-  string file_name_lut;                 /*!< \brief file name of the look up table. */
+  //string file_name_lut;                 /*!< \brief file name of the look up table. */
   string* user_scalar_names;
   string* user_source_names;
 
@@ -2226,8 +2227,11 @@ public:
    * \brief Get the file name of the look up table
    * \return File name of the look up table
    */
-  string GetFileNameLUT(void){ return file_name_lut; };
-
+  //string GetFileNameLUT(void){ return file_name_lut; };
+  /*!
+   * \brief Preferential diffusion combustion problem.
+   */
+  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
   /*!
    * \brief Get the Young's modulus of elasticity.
    * \return Value of the Young's modulus of elasticity.

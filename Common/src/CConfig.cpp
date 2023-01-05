@@ -2113,8 +2113,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
   /*!\brief File name of the flamelet look up table.*/
-  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
- 
+  //addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+  /* DESCRIPTION: Define preferential diffusion combustion problem. \n DEFAULT: false (temporarily) */
+  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
+
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
