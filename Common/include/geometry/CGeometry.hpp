@@ -190,7 +190,8 @@ class CGeometry {
  public:
   /*!< \brief Linelets (mesh lines perpendicular to stretching direction). */
   struct CLineletInfo {
-    static constexpr passivedouble ALPHA_ISOTROPIC = 0.8; /*!< \brief Detect isotropic mesh region. */
+    /*!< \brief Detect isotropic mesh region. */
+    static passivedouble ALPHA_ISOTROPIC() { return 0.8; }
     enum : unsigned long {MAX_LINELET_POINTS = 32}; /*!< \brief Maximum points per linelet. */
 
     std::vector<std::vector<unsigned long>> linelets; /*!< \brief Point indices for each linelet. */
