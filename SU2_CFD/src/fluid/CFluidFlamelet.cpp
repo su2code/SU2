@@ -209,7 +209,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 
-  mass_diffusivity = Kt / Cp;
+  mass_diffusivity = Kt / (Density * Cp);
 }
 
 unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_scalars) {

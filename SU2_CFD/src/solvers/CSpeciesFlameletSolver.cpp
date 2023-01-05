@@ -245,30 +245,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   }
 
   CommonPreprocessing(geometry, config, Output);
-  // /*--- Clear residual and system matrix, not needed for
-  //  * reducer strategy as we write over the entire matrix. ---*/
-  // if (!ReducerStrategy && !Output) {
-  //   LinSysRes.SetValZero();
-  //   if (implicit)
-  //     Jacobian.SetValZero();
-  //   else {
-  //     SU2_OMP_BARRIER
-  //   }
-  // }
-
-  // /*--- Upwind second order reconstruction and gradients ---*/
-
-  // if (config->GetReconstructionGradientRequired()) {
-  //   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
-  //   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
-  //   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-  //     SetSolution_Gradient_LS(geometry, config, true);
-  // }
-
-  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-
-  // if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-
 }
 
 void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
@@ -404,72 +380,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
-  // unsigned short iVar;
-  // unsigned long iPoint, total_index;
 
-  // su2double BetaInc2, Density, dRhodT, dRhodC, Temperature, Delta;
-
-  // bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
-  // bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  // for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //   /*--- Access the primitive variables at this node. ---*/
-
-  //   Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-  //   BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-  //   Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
-
-  //   unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
-
-  //   su2double SolP = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + 0];
-  //   su2double SolT = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + nDim + 1];
-
-  //   /*--- We need the derivative of the equation of state to build the
-  //    preconditioning matrix. For now, the only option is the ideal gas
-  //    law, but in the future, dRhodT should be in the fluid model. ---*/
-
-  //   if (variable_density) {
-  //     dRhodT = -Density / Temperature;
-  //   } else {
-  //     dRhodT = 0.0;
-  //   }
-
-  //   /*--- Passive scalars have no impact on the density. ---*/
-
-  //   dRhodC = 0.0;
-
-  //   /*--- Modify matrix diagonal with term including volume and time step. ---*/
-
-  //   su2double Vol = geometry->nodes->GetVolume(iPoint);
-  //   Delta = Vol / (config->GetCFLRedCoeff_Species() * solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
-
-  //   /*--- Calculating the inverse of the preconditioning matrix
-  //    that multiplies the time derivative during time integration. ---*/
-
-  //   if (implicit) {
-  //     for (iVar = 0; iVar < nVar; iVar++) {
-  //       total_index = iPoint * nVar + iVar;
-
-  //       su2double scalar = nodes->GetSolution(iPoint, iVar);
-
-  //       /*--- Compute the lag terms for the decoupled linear system from
-  //        the mean flow equations and add to the residual for the scalar.
-  //        In short, we are effectively making these terms explicit. ---*/
-
-  //       su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
-  //       su2double artcompc2 = SolT * dRhodT * scalar / (Density);
-
-  //       LinSysRes[total_index] += artcompc1 + artcompc2;
-
-  //       /*--- Add the extra Jacobian term to the scalar system. ---*/
-
-  //       su2double Jaccomp = scalar * dRhodC + Density;
-  //       su2double JacTerm = Jaccomp * Delta;
-
-  //       Jacobian.AddVal2Diag(iPoint, JacTerm);
-  //     }
-  //   }
-  // }
 }
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
