@@ -1192,7 +1192,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
   /* DESCRIPTION: Specify mass fraction of each species for NEMO supersonic inlet*/
-  addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies, Inlet_MassFrac);
+  addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies_inlet, Inlet_MassFrac);
   /* DESCRIPTION: Specify if mixture is frozen */
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
