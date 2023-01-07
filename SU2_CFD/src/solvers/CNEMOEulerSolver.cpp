@@ -2167,39 +2167,39 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
   so all flow variables can be imposed at the inlet.
   First, retrieve the specified values for the primitive variables. ---*/
 
- const auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag); //TODO: add get inlet mass_frac function
- const su2double Temperature    = config->GetInlet_Temperature(Marker_Tag);
- const su2double Pressure       = config->GetInlet_Pressure(Marker_Tag);
- const su2double* Velocity       = config->GetInlet_Velocity(Marker_Tag);
- const su2double Temperature_ve = Temperature; // TODO : add/check for second function for Tve, check what inputs are in config
+ const su2double* Mass_Frac       = config->GetInlet_MassFrac(); 
+ const su2double Temperature      = config->GetInlet_Temperature(Marker_Tag);
+ const su2double Pressure         = config->GetInlet_Pressure(Marker_Tag);
+ const su2double* Velocity        = config->GetInlet_Velocity(Marker_Tag);
+ const su2double Temperature_ve   = Temperature; //TODO add option?
 
  /*--- Set mixture state ---*/
  FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
 
  /*--- Compute necessary quantities ---*/
- const su2double rho = FluidModel->GetDensity();
+ const su2double Density = FluidModel->GetDensity();
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
  const auto& energies = FluidModel->ComputeMixtureEnergies();
 
  /*--- Setting Conservative Variables ---*/
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   U_inlet[iSpecies] = rho*Mass_Frac[iSpecies];
+   U_inlet[iSpecies] = Density*Mass_Frac[iSpecies];
  for (iDim = 0; iDim < nDim; iDim++)
-   U_inlet[nSpecies+iDim] = rho*Velocity[iDim];
- U_inlet[nVar-2] = rho*(energies[0]+0.5*sqvel);
- U_inlet[nVar-1] = rho*(energies[1]);
+   U_inlet[nSpecies+iDim] = Density*Velocity[iDim];
+ U_inlet[nVar-2] = Density*(energies[0]+0.5*sqvel);
+ U_inlet[nVar-1] = Density*(energies[1]);
 
  /*--- Setting Primitive Vaariables ---*/ 
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   V_inlet[iSpecies] = Mass_Frac[iSpecies]*rho;
+   V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
  V_inlet[nSpecies] = Temperature;
  V_inlet[nSpecies+1] = Temperature_ve;
  for (iDim = 0; iDim < nDim; iDim++)
    V_inlet[nSpecies+2+iDim] = Velocity[iDim];
  V_inlet[nSpecies+2+nDim] = Pressure;
- V_inlet[nSpecies+3+nDim] = rho;
- V_inlet[nSpecies+4+nDim] = U_inlet[nVar-2]+Pressure/rho;
+ V_inlet[nSpecies+3+nDim] = Density;
+ V_inlet[nSpecies+4+nDim] = U_inlet[nVar-2]+Pressure/Density;
  V_inlet[nSpecies+5+nDim] = soundspeed;
  V_inlet[nSpecies+6+nDim] = U_inlet[nVar-2]/Temperature;
  V_inlet[nSpecies+7+nDim] = U_inlet[nVar-1]/Temperature_ve;

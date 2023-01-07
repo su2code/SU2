@@ -1191,6 +1191,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, TRANSCOEFFMODEL::WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  /* DESCRIPTION: Specify mass fraction of each species for NEMO supersonic inlet*/
+  addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies, Inlet_MassFrac);
   /* DESCRIPTION: Specify if mixture is frozen */
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
@@ -8852,13 +8854,6 @@ const su2double* CConfig::GetInlet_Velocity(string val_marker) const {
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
-}
-
-const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
-  unsigned short iMarker_Supersonic_Inlet;
-  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
-    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
-  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
 }
 
 const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
