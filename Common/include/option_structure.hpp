@@ -1542,7 +1542,6 @@ enum BC_TYPE {
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
-  NEMO_SUPERSONIC_INLET = 56, /*!< \brief NEMO supersonic inlet condition */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };
 
