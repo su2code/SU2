@@ -2181,7 +2181,10 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
  const auto& energies = FluidModel->ComputeMixtureEnergies();
+ 
+ cout << Density << endl;
 
+ // TODO: CHECK THE FORMULATIONS HERE
  /*--- Setting Conservative Variables ---*/
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
    U_inlet[iSpecies] = Density*Mass_Frac[iSpecies];
@@ -2190,7 +2193,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  U_inlet[nVar-2] = Density*(energies[0]+0.5*sqvel);
  U_inlet[nVar-1] = Density*(energies[1]);
 
- /*--- Setting Primitive Vaariables ---*/ 
+ /*--- Setting Primitive Variables ---*/ 
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
    V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
  V_inlet[nSpecies] = Temperature;
@@ -2199,15 +2202,15 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    V_inlet[nSpecies+2+iDim] = Velocity[iDim];
  V_inlet[nSpecies+2+nDim] = Pressure;
  V_inlet[nSpecies+3+nDim] = Density;
- V_inlet[nSpecies+4+nDim] = U_inlet[nVar-2]+Pressure/Density;
+ V_inlet[nSpecies+4+nDim] = (U_inlet[nVar-2]+Pressure)/Density;
  V_inlet[nSpecies+5+nDim] = soundspeed;
- V_inlet[nSpecies+6+nDim] = U_inlet[nVar-2]/Temperature;
- V_inlet[nSpecies+7+nDim] = U_inlet[nVar-1]/Temperature_ve;
+ V_inlet[nSpecies+6+nDim] = FluidModel->ComputerhoCvtr();
+ V_inlet[nSpecies+7+nDim] = FluidModel->ComputerhoCvve();
 
  su2double* Mvec = new su2double[nDim];
 
  for (iDim = 0; iDim < nDim; iDim++)
-   Mvec[iDim] = Velocity[iDim] * soundspeed;
+   Mvec[iDim] = Velocity[iDim] / soundspeed;
 
  /*--- Allocate inlet node to compute gradients for numerics ---*/
  node_inlet = new CNEMOEulerVariable(Pressure, Mass_Frac, Mvec,
@@ -2243,6 +2246,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetConservative(U_domain, U_inlet);
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
+     // dPdU is zero, need to set these with flud model
      /*--- Pass supplementary info to CNumerics ---*/
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
