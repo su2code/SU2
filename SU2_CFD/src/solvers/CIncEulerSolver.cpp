@@ -1341,6 +1341,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool vol_heat       = config->GetHeatSource();
   const bool turbulent      = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool energy         = config->GetEnergy_Equation();
+  const bool species        = (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT);
+  const su2double* scalar   = nullptr;
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
@@ -1525,6 +1527,103 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
+      }
+
+      /*--- Compute Source term Residual ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+    END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
+  }
+
+  if (species) {
+
+    /*--- For viscous problems, we need an additional gradient. ---*/
+
+    if (config->GetKind_FluidModel()==FLUID_MIXTURE) {
+
+      AD::StartNoSharedReading();
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        
+        /*--- Retrieve scalar values (if needed) ---*/
+        if (solver_container[SPECIES_SOL] != nullptr) {
+          scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+        } else {
+          scalar = config->GetSpecies_Init();
+        }
+
+        /*--- Set the auxiliary variable for this node. ---*/
+
+        numerics->SetScalarVar(scalar, scalar );
+
+      }
+      END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
+
+      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+    }
+
+    /*--- loop over points ---*/
+
+    AD::StartNoSharedReading();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set incompressible density  ---*/
+
+      numerics->SetDensity(nodes->GetDensity(iPoint),
+                           nodes->GetDensity(iPoint));
+
+      /*--- Set control volume ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- If viscous, we need gradients for extra terms. ---*/
+
+      if (config->GetKind_FluidModel()==FLUID_MIXTURE) {
+
+        /*--- Load the aux variable gradient that we already computed. ---*/
+        const su2double temperature = nodes->GetTemperature(iPoint);
+        solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
+        solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+        su2double* mass_diffusivity = new su2double;
+        const int n_species = config->GetnSpecies();
+        for (int iVar = 0u; iVar < n_species +1; iVar++) {
+          mass_diffusivity[iVar] = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
+          //solver_container[SPECIES_SOL]->GetNodes()->SetDiffusivity()
+        }
+        
+        numerics->SetScalarVarGradient(solver_container[SPECIES_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
+        numerics->SetDiffusionCoeff(mass_diffusivity, nullptr);
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
       }
 
       /*--- Compute Source term Residual ---*/

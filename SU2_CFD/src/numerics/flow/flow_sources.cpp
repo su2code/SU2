@@ -844,18 +844,25 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
 
     if (nDim == 2) {
       su2double Cp_Grad[2];
+      su2double Enthalpy_Diffusion[2];
       for (iDim = 0; iDim < nDim; iDim++) {
         Cp_Grad[iDim] = 0.0;
+        Enthalpy_Diffusion[iDim] = 0.0;
         for (iVar = 0; iVar < nVar_Species; iVar++) {
           Cp_Grad[iDim] += (config->GetSpecific_Heat_CpND(iVar) - config->GetSpecific_Heat_CpND(nVar_Species)) *
                            ScalarVar_Grad_i[iVar][iDim];
+          //Enthalpy_Diffusion[iDim] += (config->GetSpecific_Heat_CpND(iVar) * Diffusion_Coeff_i[iVar] - config->GetSpecific_Heat_CpND(nVar_Species) * Diffusion_Coeff_i[nVar_Species]) *
+          //                 ScalarVar_Grad_i[iVar][iDim];
         }
       }
+      //cout<<"Diffusion Coefficient[0]: "<<Diffusion_Coeff_i[0]<<endl;
+      //cout<<"diffusion coefficient[1]: "<<Diffusion_Coeff_i[1]<<endl;
+
       residual[0] = 0.0;
       residual[1] = 0.0;
       residual[2] = 0.0;
       residual[3] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) residual[3] += Volume * DensityInc_i * Temp_i * V_i[iDim + 1] * Cp_Grad[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) residual[3] += Volume * DensityInc_i * ( Temp_i * V_i[iDim + 1] * Cp_Grad[iDim] + PrimVar_Grad_i[nDim+1][iDim] * Enthalpy_Diffusion[iDim]);
 
       if (implicit) {
         jacobian[0][0] = 0.0;
@@ -876,7 +883,7 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
         jacobian[3][0] = 0.0;
         jacobian[3][1] = -Temp_i * Cp_Grad[0];
         jacobian[3][2] = -Temp_i * Cp_Grad[1];
-        jacobian[3][3] = -(V_i[1] * Cp_Grad[0] + V_i[2] * Cp_Grad[1] + V_i[3] * Cp_Grad[2]);
+        jacobian[3][3] = -(V_i[1] * Cp_Grad[0] + V_i[2] * Cp_Grad[1]);
       }
     }
     if (nDim == 3) {

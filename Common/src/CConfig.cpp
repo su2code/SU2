@@ -5415,10 +5415,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check whether the number of entries of the constant Lewis number equals the number of transported scalar
        equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
        models--- */
-    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init + 1)
       SU2_MPI::Error(
           "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
-          "to be equal to the number of entries of SPECIES_INIT",
+          "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
