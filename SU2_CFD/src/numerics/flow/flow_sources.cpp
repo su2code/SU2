@@ -826,13 +826,10 @@ CSourceIncSpecies::CSourceIncSpecies(unsigned short val_nDim, unsigned short val
 }
 
 CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* config) {
-  su2double yinv, Cp_Grad[3];
-  su2double Velocity_i[3];
   unsigned short iDim, iVar, jVar;
   int nVar_Species = config->GetnSpecies();
 
   if (fluid_model) {
-    yinv = 1.0 / Coord_i[1];
 
     /*--- Set primitive variables at points iPoint. ---*/
 
@@ -843,15 +840,17 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
     Cp_i = V_i[nDim + 7];
     Enthalpy_i = Cp_i * Temp_i;
 
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (iVar = 0; iVar < nVar_Species; iVar++) {
-        Cp_Grad[iDim] = (config->GetSpecific_Heat_CpND(iVar) - config->GetSpecific_Heat_CpND(nVar_Species)) *
-                        ScalarVar_Grad_i[iVar][iDim];
-      }
-    }
     /*--- Inviscid component of the source term. ---*/
 
     if (nDim == 2) {
+      su2double Cp_Grad[2];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Cp_Grad[iDim] = 0.0;
+        for (iVar = 0; iVar < nVar_Species; iVar++) {
+          Cp_Grad[iDim] += (config->GetSpecific_Heat_CpND(iVar) - config->GetSpecific_Heat_CpND(nVar_Species)) *
+                           ScalarVar_Grad_i[iVar][iDim];
+        }
+      }
       residual[0] = 0.0;
       residual[1] = 0.0;
       residual[2] = 0.0;
@@ -881,12 +880,20 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
       }
     }
     if (nDim == 3) {
+      su2double Cp_Grad[3];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Cp_Grad[iDim] = 0.0;
+        for (iVar = 0; iVar < nVar_Species; iVar++) {
+          Cp_Grad[iDim] += (config->GetSpecific_Heat_CpND(iVar) - config->GetSpecific_Heat_CpND(nVar_Species)) *
+                           ScalarVar_Grad_i[iVar][iDim];
+        }
+      }
       residual[0] = 0.0;
       residual[1] = 0.0;
       residual[2] = 0.0;
       residual[3] = 0.0;
       residual[4] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) residual[3] += Volume * DensityInc_i * Temp_i * V_i[iDim + 1] * Cp_Grad[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) residual[4] += Volume * DensityInc_i * Temp_i * V_i[iDim + 1] * Cp_Grad[iDim];
 
       if (implicit) {
         jacobian[0][0] = 0.0;
@@ -908,13 +915,19 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
         jacobian[2][4] = 0.0;
 
         jacobian[3][0] = 0.0;
-        jacobian[3][1] = -Temp_i * Cp_Grad[0];
-        jacobian[3][2] = -Temp_i * Cp_Grad[1];
-        jacobian[3][3] = -Temp_i * Cp_Grad[2];
-        jacobian[3][3] = -(V_i[1] * Cp_Grad[0] + V_i[2] * Cp_Grad[1] + V_i[3] * Cp_Grad[2]);
+        jacobian[3][1] = 0.0;
+        jacobian[3][2] = 0.0;
+        jacobian[3][3] = 0.0;
+        jacobian[3][4] = 0.0;
+
+        jacobian[4][0] = 0.0;
+        jacobian[4][1] = -Temp_i * Cp_Grad[0];
+        jacobian[4][2] = -Temp_i * Cp_Grad[1];
+        jacobian[4][3] = -Temp_i * Cp_Grad[2];
+        jacobian[4][4] = -(V_i[1] * Cp_Grad[0] + V_i[2] * Cp_Grad[1] + V_i[3] * Cp_Grad[2]);
       }
     }
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] *= Volume * DensityInc_i;
     }
 
