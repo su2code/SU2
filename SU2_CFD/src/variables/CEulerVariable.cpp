@@ -72,6 +72,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     WindGust.resize(nPoint,nDim);
     WindGustDer.resize(nPoint,nDim+1);
   }
+
+  if (config->GetVorticityConfinement()) {
+    nAuxVar = 1;
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
+    AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+  }
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

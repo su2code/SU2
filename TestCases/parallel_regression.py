@@ -302,6 +302,15 @@ def main():
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
+    # ONERA M6 Wing - vorticity confinement
+    turb_oneram6_vc = TestCase('turb_oneram6_vc')
+    turb_oneram6_vc.cfg_dir = "rans/oneram6"
+    turb_oneram6_vc.cfg_file = "turb_ONERAM6_vc.cfg"
+    turb_oneram6_vc.test_iter = 15
+    turb_oneram6_vc.test_vals = [-2.262387, -6.626467, 0.228393, 0.140799, -2.7107e+04]
+    turb_oneram6_vc.timeout = 3200
+    test_list.append(turb_oneram6_vc)
+
     # ONERA M6 Wing - Newton-Krylov
     turb_oneram6_nk           = TestCase('turb_oneram6_nk')
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
