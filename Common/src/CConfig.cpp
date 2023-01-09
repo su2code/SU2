@@ -8472,6 +8472,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
@@ -8479,6 +8480,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
 
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
