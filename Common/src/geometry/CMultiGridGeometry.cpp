@@ -511,6 +511,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry *fine_grid, CConfig *config, un
   SU2_MPI::Allreduce(&nPoint, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
+  SetGlobal_nPointDomain(Global_nPointCoarse);
+
   if (iMesh != MESH_0) {
     const su2double factor = 1.5;
     const su2double Coeff = pow(su2double(Global_nPointFine) / Global_nPointCoarse, 1.0 / nDim);

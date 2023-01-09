@@ -172,7 +172,8 @@ protected:
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
-  Volume;      /*!< \brief Volume of the control volume around point i. */
+  Volume,      /*!< \brief Volume of the control volume around point i. */
+  AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
@@ -1008,6 +1009,12 @@ public:
    * \param[in] val_volume Volume of the control volume.
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
+
+  /*!
+   * \brief Set the value of AvgVolume Variable.
+   * \param[in] val_avgvolume AvgVolume Variable.
+   */
+  inline void SetAvgVolume(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
 
   /*!
   * \brief Sets the values of the roe dissipation.
