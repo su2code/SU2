@@ -419,3 +419,31 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+/*!
+ * \class CSourceIncSpecies
+ * \brief Class for the source term integration of multicomponent problems in the incompressible solver.
+ * \ingroup SourceDiscr
+ * \author C.Morales
+ */
+class CSourceIncSpecies final : public CSourceBase_Flow {
+  bool fluid_model,    /*!< \brief species model. */
+  implicit,              /*!< \brief Implicit calculation. */
+  viscous,               /*!< \brief Viscous calculation. */
+  energy;                /*!< \brief computation with the energy equation. */
+
+public:
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncSpecies(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Source term integration for the energy equation in multicomponent problems.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
