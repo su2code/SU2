@@ -2154,9 +2154,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  unsigned short iDim;
  unsigned long iVertex, iPoint, Point_Normal;
 
- bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
- bool dynamic_grid  = config->GetGrid_Movement();
- bool viscous       = config->GetViscous();
  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
  su2double Normal[MAXNDIM] = {0.0};
@@ -2169,7 +2166,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag);
  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag);
  const su2double* Velocity = config->GetInlet_Velocity(Marker_Tag);
- const su2double Temperature_ve   = config->GetInlet_Temperature_ve();
+ su2double Temperature_ve   = config->GetInlet_Temperature_ve();
 
  /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
  if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
@@ -2191,7 +2188,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
                                         config, FluidModel);
 
- node_inlet->SetPrimVar(0, FluidModel);
+ node_inlet.SetPrimVar(0, FluidModel);
 
  /*--- Loop over all the vertices on this boundary marker ---*/
  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2202,23 +2199,24 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
      /*--- Index of the closest interior node ---*/
      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
+ 
      /*--- Normal vector for this vertex (negate for outward convention) ---*/
      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
      /*--- Set various quantities in the solver class ---*/
      conv_numerics->SetNormal(Normal);
-     conv_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
-     conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet->GetPrimitive(0));
+     conv_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet.GetSolution(0));
+     conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet.GetPrimitive(0));
 
      /*--- Pass supplementary info to CNumerics ---*/
-     conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
-     conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
-     conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet->GetdTvedU(0));
-     conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet->GetEve(0));
-     conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet->GetCvve(0));
+     conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
+     conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
+     conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+     conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
+     conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
 
+     bool dynamic_grid  = config->GetGrid_Movement();
      if (dynamic_grid)
        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                  geometry->nodes->GetGridVel(iPoint));
@@ -2228,10 +2226,12 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      LinSysRes.AddBlock(iPoint, residual);
 
      /*--- Jacobian contribution for implicit integration ---*/
+     bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
      if (implicit)
        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
      /*--- Viscous contribution ---*/
+     bool viscous       = config->GetViscous();
      if (viscous) {
 
        /*--- Set the normal vector and the coordinates ---*/
@@ -2242,16 +2242,16 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
        /*--- Primitive variables, and gradient ---*/
-       visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
-       visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet->GetPrimitive(0));
-       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet->GetGradient_Primitive(0));
+       visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet.GetSolution(0));
+       visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet.GetPrimitive(0));
+       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet.GetGradient_Primitive(0));
 
         /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet->GetdPdU(0));
-        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet->GetdTdU(0));
-        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet->GetdTvedU(0));
-        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet->GetEve(0));
-        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet->GetCvve(0));
+        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet.GetdPdU(0));
+        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet.GetdTdU(0));
+        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet.GetEve(0));
+        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet.GetCvve(0));
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -2283,12 +2283,9 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      }
 
    }
- }
 
  /*--- Free locally allocated memory ---*/
- delete [] Normal;
  delete [] Mvec;
- delete node_inlet;
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
