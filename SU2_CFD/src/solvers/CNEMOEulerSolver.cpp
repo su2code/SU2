@@ -2165,11 +2165,11 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
   so all flow variables can be imposed at the inlet.
   First, retrieve the specified values for the primitive variables. ---*/
 
- const su2double* Mass_Frac       = config->GetInlet_MassFrac(); 
- const su2double Temperature      = config->GetInlet_Temperature(Marker_Tag);
- const su2double Pressure         = config->GetInlet_Pressure(Marker_Tag);
- const su2double* Velocity        = config->GetInlet_Velocity(Marker_Tag);
- su2double Temperature_ve   = config->GetInlet_Temperature_ve();
+ const su2double* Mass_Frac = config->GetInlet_MassFrac(); 
+ const su2double Temperature = config->GetInlet_Temperature(Marker_Tag);
+ const su2double Pressure = config->GetInlet_Pressure(Marker_Tag);
+ const su2double* Velocity = config->GetInlet_Velocity(Marker_Tag);
+ const su2double Temperature_ve   = config->GetInlet_Temperature_ve();
 
  /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
  if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
