@@ -2173,7 +2173,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double* Velocity        = config->GetInlet_Velocity(Marker_Tag);
  su2double Temperature_ve   = config->GetInlet_Temperature_ve();
 
- /*--- If no value given, set to Ttr value ---*/
+ /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
  if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
 
  /*--- Set mixture state ---*/
@@ -2248,7 +2248,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetConservative(U_domain, U_inlet);
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-     // TODO: dPdU is zero, need to set these with flud model, fix eve and cvve values
      /*--- Pass supplementary info to CNumerics ---*/
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
@@ -2279,11 +2278,36 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
        /*--- Primitive variables, and gradient ---*/
+       visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
        visc_numerics->SetPrimitive(V_domain, V_inlet);
-       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet->GetGradient_Primitive(0));
 
-       /*--- Laminar viscosity ---*/
-       visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), nodes->GetLaminarViscosity(iPoint));
+        /*--- Pass supplementary information to CNumerics ---*/
+        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet->GetdPdU(0));
+        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet->GetdTdU(0));
+        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet->GetdTvedU(0));
+        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet->GetEve(0));
+        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet->GetCvve(0));
+
+        /*--- Species diffusion coefficients ---*/
+        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+                                         nodes->GetDiffusionCoeff(iPoint));
+
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                           nodes->GetLaminarViscosity(iPoint));
+
+        /*--- Eddy viscosity ---*/
+        visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                        nodes->GetEddyViscosity(iPoint));
+
+        /*--- Thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
+                                              nodes->GetThermalConductivity(iPoint));
+
+        /*--- Vib-el. thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
+                                                 nodes->GetThermalConductivity_ve(iPoint));
 
        /*--- Compute and update residual ---*/
        auto residual = visc_numerics->ComputeResidual(config);
