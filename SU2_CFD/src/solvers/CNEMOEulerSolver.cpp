@@ -2177,10 +2177,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  /*--- Set mixture state ---*/
  FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
 
- /*--- Compute necessary quantities ---*/
- const su2double Density = FluidModel->GetDensity();
+ /*--- Compute Ma vector for flow direction ---*/
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
- const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
 
  su2double* Mvec = new su2double[nDim];
 
@@ -2209,10 +2207,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-     su2double Area = 0.0;
-     for (iDim = 0; iDim < nDim; iDim++)
-       Area += Normal[iDim]*Normal[iDim];
-     Area = sqrt (Area);
+     su2double Area = GeometryToolbox:Norm(nDim, Normal)
 
      /*--- Set various quantities in the solver class ---*/
      conv_numerics->SetNormal(Normal);
