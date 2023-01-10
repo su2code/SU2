@@ -65,7 +65,6 @@ void CDriverBase::SetContainers_Null() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     nInst[iZone] = 1;
-    FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
   }
 
   driver_config = nullptr;

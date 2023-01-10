@@ -524,32 +524,32 @@ void CDeformationDriver::Postprocessing() {
   if (rank == MASTER_NODE)
     cout << endl << "------------------------- Solver Postprocessing -------------------------" << endl;
 
-  if (driver_config != nullptr) delete[] driver_config;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (numerics_container[iZone] != nullptr) {
-      for (unsigned int iTerm = 0; iTerm < MAX_TERMS * omp_get_max_threads(); iTerm++) {
-        delete numerics_container[iZone][INST_0][MESH_0][MESH_SOL][iTerm];
-        delete[] numerics_container[iZone][INST_0][MESH_0][MESH_SOL];
-        delete[] numerics_container[iZone][INST_0][MESH_0];
-        delete[] numerics_container[iZone][INST_0];
+  if (driver_config->GetDeform_Mesh()) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (numerics_container[iZone] != nullptr) {
+        for (unsigned int iTerm = 0; iTerm < MAX_TERMS * omp_get_max_threads(); iTerm++) {
+          delete numerics_container[iZone][INST_0][MESH_0][MESH_SOL][iTerm];
+          delete[] numerics_container[iZone][INST_0][MESH_0][MESH_SOL];
+          delete[] numerics_container[iZone][INST_0][MESH_0];
+          delete[] numerics_container[iZone][INST_0];
+        }
+        delete[] numerics_container[iZone];
       }
-      delete[] numerics_container[iZone];
     }
-  }
-  delete[] numerics_container;
-  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+    delete[] numerics_container;
+    if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (solver_container[iZone] != nullptr) {
-      delete solver_container[iZone][INST_0][MESH_0][MESH_SOL];
-      delete[] solver_container[iZone][INST_0][MESH_0];
-      delete[] solver_container[iZone][INST_0];
-      delete[] solver_container[iZone];
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (solver_container[iZone] != nullptr) {
+        delete solver_container[iZone][INST_0][MESH_0][MESH_SOL];
+        delete[] solver_container[iZone][INST_0][MESH_0];
+        delete[] solver_container[iZone][INST_0];
+        delete[] solver_container[iZone];
+      }
     }
+    delete[] solver_container;
+    if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
   }
-  delete[] solver_container;
-  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
 
   if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -561,9 +561,6 @@ void CDeformationDriver::Postprocessing() {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete[] FFDBox[iZone];
-  }
   delete[] FFDBox;
   if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
 
@@ -590,6 +587,7 @@ void CDeformationDriver::Postprocessing() {
     }
     delete[] config_container;
   }
+  delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   if (output_container != nullptr) {
