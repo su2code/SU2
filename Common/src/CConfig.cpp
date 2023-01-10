@@ -1193,6 +1193,8 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
   /* DESCRIPTION: Specify mass fraction of each species for NEMO supersonic inlet*/
   addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies_inlet, Inlet_MassFrac);
+  /*!\brief INLET_TEMPERATURE_VE \n DESCRIPTION: NEMO supersonic inlet temperature_ve (K), if left 0 K, set to Ttr value \ingroup Config*/
+  addDoubleOption("INLET_TEMPERATURE_VE", Inlet_Temperature_ve, 0.0);
   /* DESCRIPTION: Specify if mixture is frozen */
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */

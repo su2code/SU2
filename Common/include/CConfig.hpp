@@ -1203,6 +1203,7 @@ private:
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
   su2double *Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
+  su2double Inlet_Temperature_ve;           /*!< \brief Specified Tve for supersonic inlet boundaries (NEMO solver). */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -6679,6 +6680,13 @@ public:
    * \return The inlet velocity vector.
    */
   const su2double* GetInlet_MassFrac(void) const { return Inlet_MassFrac; };
+
+    /*!
+   * \brief Get the Tve value for a NEMO supersonic inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  const su2double GetInlet_Temperature_ve(void) const { return Inlet_Temperature_ve; };
 
   /*!
    * \brief Get the total pressure at an inlet boundary.

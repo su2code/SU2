@@ -2171,7 +2171,10 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double Temperature      = config->GetInlet_Temperature(Marker_Tag);
  const su2double Pressure         = config->GetInlet_Pressure(Marker_Tag);
  const su2double* Velocity        = config->GetInlet_Velocity(Marker_Tag);
- const su2double Temperature_ve   = Temperature; //TODO add option?
+ su2double Temperature_ve   = config->GetInlet_Temperature_ve();
+
+ /*--- If no value given, set to Ttr value ---*/
+ if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
 
  /*--- Set mixture state ---*/
  FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
@@ -2181,10 +2184,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
  const auto& energies = FluidModel->ComputeMixtureEnergies();
- 
- cout << Density << endl;
 
- // TODO: CHECK THE FORMULATIONS HERE
  /*--- Setting Conservative Variables ---*/
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
    U_inlet[iSpecies] = Density*Mass_Frac[iSpecies];
@@ -2206,6 +2206,24 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  V_inlet[nSpecies+5+nDim] = soundspeed;
  V_inlet[nSpecies+6+nDim] = FluidModel->ComputerhoCvtr();
  V_inlet[nSpecies+7+nDim] = FluidModel->ComputerhoCvve();
+
+ // su2double *dPdU_temp = new su2double[nVar]; 
+ // su2double *dTdU_temp = new su2double[nVar];
+ // su2double *dTvedU_temp = new su2double[nVar];
+ // su2double *eves_temp = new su2double[nSpecies];
+ // su2double *cvve_temp = new su2double[nSpecies];
+ 
+ //  const auto& cvves = FluidModel->ComputeSpeciesCvVibEle(V_inlet[nSpecies+7+nDim]);
+ //  vector<su2double> eves  = FluidModel->ComputeSpeciesEve(V_inlet[nSpecies+7+nDim]);
+
+ //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+ //    eves_temp[iSpecies]  = eves[iSpecies];
+ //    cvve_temp[iSpecies] = cvves[iSpecies];
+ //  }
+
+ // FluidModel->ComputedPdU  (V_inlet, eves_temp, dPdU_temp  );
+ // FluidModel->ComputedTdU  (V_inlet, dTdU_temp );
+ // FluidModel->ComputedTvedU(V_inlet, eves_temp, dTvedU_temp );
 
  su2double* Mvec = new su2double[nDim];
 
@@ -2246,7 +2264,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      conv_numerics->SetConservative(U_domain, U_inlet);
      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-     // dPdU is zero, need to set these with flud model
+     // TODO: dPdU is zero, need to set these with flud model, fix eve and cvve values
      /*--- Pass supplementary info to CNumerics ---*/
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet->GetdTdU(0));
