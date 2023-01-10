@@ -2159,7 +2159,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  bool viscous       = config->GetViscous();
  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
- su2double *Normal = new su2double[nDim];
+ su2double Normal[MAXNDIM] = {0.0};
 
  /*--- Supersonic inlet flow: there are no outgoing characteristics,
   so all flow variables can be imposed at the inlet.
