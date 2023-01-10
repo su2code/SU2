@@ -2156,7 +2156,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
  bool dynamic_grid  = config->GetGrid_Movement();
- bool viscous              = config->GetViscous();
+ bool viscous       = config->GetViscous();
  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
  su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
@@ -2207,24 +2207,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  V_inlet[nSpecies+6+nDim] = FluidModel->ComputerhoCvtr();
  V_inlet[nSpecies+7+nDim] = FluidModel->ComputerhoCvve();
 
- // su2double *dPdU_temp = new su2double[nVar]; 
- // su2double *dTdU_temp = new su2double[nVar];
- // su2double *dTvedU_temp = new su2double[nVar];
- // su2double *eves_temp = new su2double[nSpecies];
- // su2double *cvve_temp = new su2double[nSpecies];
- 
- //  const auto& cvves = FluidModel->ComputeSpeciesCvVibEle(V_inlet[nSpecies+7+nDim]);
- //  vector<su2double> eves  = FluidModel->ComputeSpeciesEve(V_inlet[nSpecies+7+nDim]);
-
- //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
- //    eves_temp[iSpecies]  = eves[iSpecies];
- //    cvve_temp[iSpecies] = cvves[iSpecies];
- //  }
-
- // FluidModel->ComputedPdU  (V_inlet, eves_temp, dPdU_temp  );
- // FluidModel->ComputedTdU  (V_inlet, dTdU_temp );
- // FluidModel->ComputedTvedU(V_inlet, eves_temp, dTvedU_temp );
-
  su2double* Mvec = new su2double[nDim];
 
  for (iDim = 0; iDim < nDim; iDim++)
@@ -2235,6 +2217,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
                                         Temperature, Temperature_ve,
                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
                                         config, FluidModel);
+
+ node_inlet->SetPrimVar(0, FluidModel);
 
  /*--- Loop over all the vertices on this boundary marker ---*/
  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2320,7 +2304,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  delete [] V_inlet;
  delete [] Normal;
  delete [] Mvec;
-
+ delete node_inlet;
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
