@@ -2207,8 +2207,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-     su2double Area = GeometryToolbox:Norm(nDim, Normal)
-
      /*--- Set various quantities in the solver class ---*/
      conv_numerics->SetNormal(Normal);
      conv_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
