@@ -2186,7 +2186,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    Mvec[iDim] = Velocity[iDim] / soundspeed;
 
  /*--- Allocate inlet node to compute gradients for numerics ---*/
- node_inlet = new CNEMOEulerVariable(Pressure, Mass_Frac, Mvec,
+ CNEMOEulerVariable node_inlet(Pressure, Mass_Frac, Mvec,
                                         Temperature, Temperature_ve,
                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
                                         config, FluidModel);
