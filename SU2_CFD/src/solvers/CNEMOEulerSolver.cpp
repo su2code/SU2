@@ -2198,7 +2198,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-   if (geometry->nodes->GetDomain(iPoint)) {
+   if (!geometry->nodes->GetDomain(iPoint)) continue;
 
      /*--- Index of the closest interior node ---*/
      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
