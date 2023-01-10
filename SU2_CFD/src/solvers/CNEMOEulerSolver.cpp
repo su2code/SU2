@@ -2151,7 +2151,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
- unsigned short iDim, iVar, iSpecies;
+ unsigned short iDim;
  unsigned long iVertex, iPoint, Point_Normal;
 
  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -2181,7 +2181,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double Density = FluidModel->GetDensity();
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
- const auto& energies = FluidModel->ComputeMixtureEnergies();
 
  su2double* Mvec = new su2double[nDim];
 
