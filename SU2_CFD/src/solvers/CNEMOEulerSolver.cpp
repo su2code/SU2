@@ -2159,8 +2159,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  bool viscous       = config->GetViscous();
  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
- su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
- su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
  su2double *Normal = new su2double[nDim];
 
  /*--- Supersonic inlet flow: there are no outgoing characteristics,
@@ -2185,28 +2183,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, Velocity);
  const auto& energies = FluidModel->ComputeMixtureEnergies();
 
- /*--- Setting Conservative Variables ---*/
- for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   U_inlet[iSpecies] = Density*Mass_Frac[iSpecies];
- for (iDim = 0; iDim < nDim; iDim++)
-   U_inlet[nSpecies+iDim] = Density*Velocity[iDim];
- U_inlet[nVar-2] = Density*(energies[0]+0.5*sqvel);
- U_inlet[nVar-1] = Density*(energies[1]);
-
- /*--- Setting Primitive Variables ---*/ 
- for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-   V_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
- V_inlet[nSpecies] = Temperature;
- V_inlet[nSpecies+1] = Temperature_ve;
- for (iDim = 0; iDim < nDim; iDim++)
-   V_inlet[nSpecies+2+iDim] = Velocity[iDim];
- V_inlet[nSpecies+2+nDim] = Pressure;
- V_inlet[nSpecies+3+nDim] = Density;
- V_inlet[nSpecies+4+nDim] = (U_inlet[nVar-2]+Pressure)/Density;
- V_inlet[nSpecies+5+nDim] = soundspeed;
- V_inlet[nSpecies+6+nDim] = FluidModel->ComputerhoCvtr();
- V_inlet[nSpecies+7+nDim] = FluidModel->ComputerhoCvve();
-
  su2double* Mvec = new su2double[nDim];
 
  for (iDim = 0; iDim < nDim; iDim++)
@@ -2230,10 +2206,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
      /*--- Index of the closest interior node ---*/
      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-     /*--- Current solution at this boundary node ---*/
-     for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = nodes->GetSolution(iPoint,iVar);
-     for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
-
      /*--- Normal vector for this vertex (negate for outward convention) ---*/
      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -2245,8 +2217,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
      /*--- Set various quantities in the solver class ---*/
      conv_numerics->SetNormal(Normal);
-     conv_numerics->SetConservative(U_domain, U_inlet);
-     conv_numerics->SetPrimitive(V_domain, V_inlet);
+     conv_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
+     conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet->GetPrimitive(0));
 
      /*--- Pass supplementary info to CNumerics ---*/
      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet->GetdPdU(0));
@@ -2279,7 +2251,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
        /*--- Primitive variables, and gradient ---*/
        visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet->GetSolution(0));
-       visc_numerics->SetPrimitive(V_domain, V_inlet);
+       visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet->GetPrimitive(0));
        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet->GetGradient_Primitive(0));
 
         /*--- Pass supplementary information to CNumerics ---*/
@@ -2322,10 +2294,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  }
 
  /*--- Free locally allocated memory ---*/
- delete [] U_domain;
- delete [] U_inlet;
- delete [] V_domain;
- delete [] V_inlet;
  delete [] Normal;
  delete [] Mvec;
  delete node_inlet;
