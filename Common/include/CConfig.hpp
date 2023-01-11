@@ -1045,7 +1045,7 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
-
+  
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
   su2double Streamwise_Periodic_PressureDrop;        /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
@@ -1068,6 +1068,11 @@ private:
   su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
+  su2double top_optim_solid_density;      /*!< \brief This values sets the Max. value for the solid pseudo density. */
+  su2double top_optim_fluid_density;      /*!< \brief  This values sets the Min. value for the fluid pseudo density. */
+  su2double top_optim_qval;               /*!< \brief This defines the transition between solid-fluid pseudo density. */
+  su2double top_optim_volfrac;            /*!< \brief This defines the volume fraction to be acheived during topology optimization. */
+  su2double top_optim_dispwr_baseline;            /*!< \brief This defines the volume fraction to be acheived during topology optimization. */
   su2double Darcy_Number;               /*!< \brief Darcy Number for viscous flow prolbem (topology Optimization) */
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
@@ -9176,7 +9181,26 @@ public:
    * \brief Get the maximum "logical radius" (degree of neighborhood) to consider in the neighbor search.
    */
   unsigned short GetTopology_Search_Limit(void) const { return top_optim_search_lim; }
-
+  /*!
+   * \brief Get the pseudo-density for solid.
+   */
+  su2double GetTopology_Solid_Density(void) const { return top_optim_solid_density; }
+  /*!
+   * \brief Get the pseudo-density for fluid.
+   */
+  su2double GetTopology_Fluid_Density(void) const { return top_optim_fluid_density; }
+  /*!
+   * \brief Get the Q Value defining the transition between solid-fluid pseudo density.
+   */
+  su2double GetTopology_QVal(void) const { return top_optim_qval; }
+  /*!
+   * \brief Get the Vol-Frac to be achieved during optimization.
+   */
+  su2double GetTopology_Vol_Fraction(void) const { return top_optim_volfrac; }
+  /*!
+   * \brief Get the Baseline value of Dissipated Power
+   */
+  su2double GetTopology_DisPwr_Baseline(void) const { return top_optim_dispwr_baseline; }
   /*!
    * \brief Get the type and parameter for the projection function used in topology optimization
    */

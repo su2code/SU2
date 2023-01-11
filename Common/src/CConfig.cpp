@@ -2456,6 +2456,11 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("TOPOL_OPTIM_SEARCH_LIMIT", top_optim_search_lim, 0);
   addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, ENUM_PROJECTION_FUNCTION::NONE);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
+  addDoubleOption("TOPOL_OPTIM_FLUID_DENSITY", top_optim_fluid_density, 1e-4);
+  addDoubleOption("TOPOL_OPTIM_SOLID_DENSITY", top_optim_solid_density, 1e1);
+  addDoubleOption("TOPOL_OPTIM_QVAL", top_optim_qval, 1.0);
+  addDoubleOption("TOPOL_OPTIM_VOL_FRACTION", top_optim_volfrac, 0.5);
+  addDoubleOption("TOPOL_OPTIM_DISPWR_BASELINE", top_optim_dispwr_baseline, 1.0);
   
   /*!\brief DARCY_NUMBER \n DESCRIPTION: Darcy number for viscous, incompressible flow (1e-5 by default). \ingroup Config*/
   addDoubleOption("DARCY_NUMBER", Darcy_Number, 1e-5);

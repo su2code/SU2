@@ -842,7 +842,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
 void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* config) {
 
-    su2double power_local = 0.0, porosity_comp = 0.0;
+    su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0;
+    su2double VFrac = config->GetTopology_Vol_Fraction();
 
     for (unsigned long iPoint=0; iPoint<geometry->GetnPointDomain(); iPoint++) {
         auto VelGrad = nodes->GetVelocityGradient(iPoint);
@@ -855,22 +856,27 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         }
 
         su2double eta = nodes->GetPorosity(iPoint);
-        su2double a_f = 2.5e-4, a_s = 10.0, q = 1.0 ;
+        su2double a_f = config->GetTopology_Fluid_Density();
+        su2double a_s = config->GetTopology_Solid_Density();
+        su2double q = config->GetTopology_QVal();
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
         porosity_comp = Vel2 * alpha;
 
-        power_local += (porosity_comp + vel_comp + (eta - 0.5)) * geometry->nodes->GetVolume(iPoint);
+        power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
+        vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
     }
     // cout << "Power Dissipation :: "<<power_local<<endl;
+    su2double cons = (vFrac_local - VFrac) * (vFrac_local - VFrac);
+    su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
         file << setprecision(15);
         file << std::scientific;
-        file << power_local << endl;
+        file << power_local/baseline_power << "\t" << vFrac_local << "\t" << cons << endl;
         file.close();
     }
-
-    Total_PowerDissipation = power_local;
+    
+    Total_PowerDissipation = power_local/baseline_power + cons;
 }
 
 void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
