@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,7 +57,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   int Unst_RestartIter = 0;
   unsigned long iMarker;
-  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -137,11 +136,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)  cout<< "Explicit Scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"."<<endl;
@@ -248,8 +242,8 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
 
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
-  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
+  bool center_jst       = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
   ompMasterAssignBarrier(ErrorCounter,0);
@@ -279,7 +273,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   }
 
   /*--- Set Pressure diffusion sensor ---*/
-  if (config->GetKind_Upwind_Flow() == AUSMPLUSM)
+  if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
     SetPressureDiffusionSensor(geometry, config);
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
@@ -599,7 +593,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       if (!chk_err_j) Gamma_j = ComputeConsistentExtrapolation(GetFluidModel(), nSpecies, Primitive_j, dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
 
       /*--- Recompute Conserved variables if Roe or MSW scheme ---*/
-      if ((config->GetKind_Upwind_Flow() == ROE) || (config->GetKind_Upwind_Flow() == MSW)){
+      if ((config->GetKind_Upwind_Flow() == UPWIND::ROE) || (config->GetKind_Upwind_Flow() == UPWIND::MSW)){
         if (!chk_err_i) RecomputeConservativeVector(Conserved_i, Primitive_i);
         if (!chk_err_j) RecomputeConservativeVector(Conserved_j, Primitive_j);
       }
@@ -615,7 +609,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetGamma (chk_err_i ? nodes->GetGamma (iPoint) : Gamma_i,   chk_err_j ? nodes->GetGamma (jPoint) : Gamma_j);
 
     }
-    if (config->GetKind_Upwind_Flow() == AUSMPLUSM)
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
       numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
 
     /*--- Compute the residual ---*/
@@ -1566,7 +1560,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
-      if(config->GetKind_Upwind_Flow() == AUSMPLUSM)
+      if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
@@ -2094,7 +2088,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
-      if(config->GetKind_Upwind_Flow() == AUSMPLUSM)
+      if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/

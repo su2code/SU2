@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
-  unsigned short iDim, nLineLets;
+  unsigned short iDim;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -161,12 +161,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)
@@ -1170,6 +1164,15 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         NonDimTable.PrintFooter();
         break;
 
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -1205,6 +1208,14 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -1519,17 +1530,17 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
-  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
-  bool center_jst_mat   = (config->GetKind_Centered_Flow() == JST_MAT) && (iMesh == MESH_0);
+  bool center_jst       = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
+  bool center_jst_mat   = (config->GetKind_Centered_Flow() == CENTERED::JST_MAT) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
-                              (config->GetKind_Upwind_Flow() == ROE ||
-                               config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
+                              (config->GetKind_Upwind_Flow() == UPWIND::ROE ||
+                               config->GetKind_Upwind_Flow() == UPWIND::SLAU ||
+                               config->GetKind_Upwind_Flow() == UPWIND::SLAU2);
 
   /*--- Set the primitive variables ---*/
 
@@ -1722,14 +1733,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
+  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
+  const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -2000,6 +2011,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool vorticity_confinement = config->GetVorticityConfinement();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
@@ -2196,6 +2208,42 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+  }
+
+  if (vorticity_confinement) {
+
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    /*--- calculate and set the average volume ---*/
+    const su2double AvgVolume = config->GetDomainVolume() / geometry->GetGlobal_nPointDomain();
+    second_numerics->SetAvgVolume(AvgVolume);
+
+    /*--- set vorticity magnitude as auxilliary variable ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
+      nodes->SetAuxVar(iPoint, 0, VorticityMag);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- calculate the gradient of the vorticity magnitude (AuxVarGradient) ---*/
+    SetAuxVar_Gradient_GG(geometry, config);
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+      second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
+      second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0);
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      auto residual = second_numerics->ComputeResidual(config);
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+
   }
 
   /*--- Check if a verification solution is to be computed. ---*/
@@ -2411,7 +2459,7 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
       return matrix;
     }
 
-  } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == TURKEL), nVar);
+  } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == UPWIND::TURKEL), nVar);
 
   PrepareImplicitIteration_impl(precond, geometry, config);
 }

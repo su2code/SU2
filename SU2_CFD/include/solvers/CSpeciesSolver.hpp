@@ -2,7 +2,7 @@
  * \file CSpeciesSolver.hpp
  * \brief Headers of the CSpeciesSolver class
  * \author T. Kattmann.
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -161,4 +161,25 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
+
+
+/*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final {
+    BC_Fluid_Interface_impl(
+      [&](unsigned long iPoint) {
+        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
+      },
+      geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
 };

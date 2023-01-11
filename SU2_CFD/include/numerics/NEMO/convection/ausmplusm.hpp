@@ -2,7 +2,7 @@
  * \file ausmplusm.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+M.
  * \author F. Morgado
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

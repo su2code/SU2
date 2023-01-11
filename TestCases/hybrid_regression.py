@@ -3,7 +3,7 @@
 ## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494719, -7.711541, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.494728, -7.712546, -0.000000, 2.085796]
     poiseuille_profile.test_vals_aarch64 = [-12.494692, -7.710648, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 

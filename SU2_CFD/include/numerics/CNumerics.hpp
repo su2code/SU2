@@ -3,7 +3,7 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,6 +55,7 @@ protected:
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
+  su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
@@ -70,9 +71,6 @@ protected:
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
-  Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
-  Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
-  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
@@ -82,7 +80,8 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
-  intermittency_eff_i;  /*!< \brief effective intermittency at point i. */
+  intermittency_eff_i, /*!< \brief effective intermittency at point i. */
+  intermittency_i; /*!< \brief intermittency at point i. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -156,6 +155,8 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
+  su2double
+  LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -168,7 +169,8 @@ protected:
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
-  Volume;      /*!< \brief Volume of the control volume around point i. */
+  Volume,      /*!< \brief Volume of the control volume around point i. */
+  AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
@@ -190,6 +192,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
 public:
   /*!
@@ -387,6 +391,14 @@ public:
                                   CMatrixView<const su2double> val_transvar_grad_j) {
     TransVar_Grad_i = val_transvar_grad_i;
     TransVar_Grad_j = val_transvar_grad_j;
+  }
+
+  /*!
+   * \brief Set the value of the turbulent variable.
+   * \param[in] val_transvar_i - Value of the turbulent variable at point i.
+   */
+  inline void SetLocalGridLength(const su2double val_localGridLength_i) {
+    LocalGridLength_i = val_localGridLength_i;
   }
 
   /*!
@@ -709,6 +721,20 @@ public:
   }
 
   /*!
+   * \brief Set the value of the intermittency for the LM model.
+   * \param[in] intermittency_i - Value of the intermittency at point i.
+   */
+  void SetIntermittency(su2double val_intermittency_i) {
+    intermittency_i = val_intermittency_i;
+  }
+
+  /*!
+   * \brief Get the value of the effective intermittency for the transition model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   */
+  su2double GetIntermittencyEff() const { return intermittency_eff_i; }
+
+  /*!
    * \brief Set the gradient of the auxiliary variables.
    * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
@@ -763,18 +789,6 @@ public:
                                      su2double val_thermal_conductivity_ve_j) {
     Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
     Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
-  }
-
-  /*!
-   * \brief Set the thermal diffusivity (translational/rotational)
-   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
-   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
-   * \param[in] iSpecies - Value of the species.
-   */
-  inline void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
-                                    su2double val_thermal_diffusivity_j) {
-    Thermal_Diffusivity_i = val_thermal_diffusivity_i;
-    Thermal_Diffusivity_j = val_thermal_diffusivity_j;
   }
 
   /*!
@@ -980,6 +994,12 @@ public:
    * \param[in] val_volume Volume of the control volume.
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
+
+  /*!
+   * \brief Set the value of AvgVolume Variable.
+   * \param[in] val_avgvolume AvgVolume Variable.
+   */
+  inline void SetAvgVolume(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
 
   /*!
   * \brief Sets the values of the roe dissipation.
@@ -1608,6 +1628,18 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief SetMassFlux
+   * \param[in] val_MassFlux: Mass flux across the edge
+   */
+  inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
+
+  /*!
+   * \brief Obtain information on bounded scalar problem
+   * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
+   */
+  inline bool GetBoundedScalar() const { return bounded_scalar;}
 };
 
 /*!

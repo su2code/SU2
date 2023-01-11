@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for discretization of
  *        convective fluxes in scalar problems.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,24 +115,31 @@ class CUpwScalar : public CNumerics {
     }
     AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
     AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
+    AD::SetPreaccIn(V_i[idx.Density()]);
+    AD::SetPreaccIn(V_j[idx.Density()]);
+    AD::SetPreaccIn(MassFlux);
 
     ExtraADPreaccIn();
 
-    su2double q_ij = 0.0;
-    if (dynamic_grid) {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        su2double Velocity_i = V_i[iDim + idx.Velocity()] - GridVel_i[iDim];
-        su2double Velocity_j = V_j[iDim + idx.Velocity()] - GridVel_j[iDim];
-        q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
-      }
+    if (bounded_scalar) {
+      a0 = fmax(0.0, MassFlux) / V_i[idx.Density()];
+      a1 = fmin(0.0, MassFlux) / V_j[idx.Density()];
     } else {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        q_ij += 0.5 * (V_i[iDim + idx.Velocity()] + V_j[iDim + idx.Velocity()]) * Normal[iDim];
+      su2double q_ij = 0.0;
+      if (dynamic_grid) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          su2double Velocity_i = V_i[iDim + idx.Velocity()] - GridVel_i[iDim];
+          su2double Velocity_j = V_j[iDim + idx.Velocity()] - GridVel_j[iDim];
+          q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
+        }
+      } else {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          q_ij += 0.5 * (V_i[iDim + idx.Velocity()] + V_j[iDim + idx.Velocity()]) * Normal[iDim];
+        }
       }
+      a0 = fmax(0.0, q_ij);
+      a1 = fmin(0.0, q_ij);
     }
-
-    a0 = 0.5 * (q_ij + fabs(q_ij));
-    a1 = 0.5 * (q_ij - fabs(q_ij));
 
     FinishResidualCalc(config);
 

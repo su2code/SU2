@@ -2,7 +2,7 @@
  * \file CCoolProp.hpp
  * \brief Defines the state-of-the-art fluid model from CoolProp library.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -145,4 +145,5 @@ class CCoolProp final : public CFluidModel {
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
 };

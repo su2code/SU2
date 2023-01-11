@@ -3,7 +3,7 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -270,7 +270,7 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildJacobiPreconditioner();
+    sparse_matrix.BuildLineletPreconditioner(geometry, config);
   }
 };
 

@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subroutines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,6 @@
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-
-  unsigned short nLineLets;
 
   adjoint = true;
 
@@ -83,12 +81,6 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialization of the structure of the whole Jacobian ---*/
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-
   Jacobian.SetValZero();
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
