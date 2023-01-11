@@ -2161,7 +2161,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag);
  const su2double* Velocity = config->GetInlet_Velocity(Marker_Tag);
  const su2double* Mass_Frac = config->GetInlet_MassFrac(); 
- su2double Temperature_ve   = config->GetInlet_Temperature_ve();
+ su2double Temperature_ve = config->GetInlet_Temperature_ve();
 
  /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
  if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
