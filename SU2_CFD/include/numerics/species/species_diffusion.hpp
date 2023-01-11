@@ -57,6 +57,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Jacobian_j;
 
   const bool turbulence;
+  const bool fluid_mixture;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -88,7 +89,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
 
       Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
 
-      if(!turbulence){
+      if(!turbulence && fluid_mixture){
         su2double velocity_correction = 0.0;
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           velocity_correction += 0.5*((Diffusion_Coeff_i[iVar] +Diffusion_Coeff_j[iVar])-(Diffusion_Coeff_i[nVar] + Diffusion_Coeff_j[nVar] ))* Proj_Mean_GradScalarVar[iVar];
@@ -117,6 +118,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
-      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE) {}
+      : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
+        turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE),
+        fluid_mixture(config->GetKind_FluidModel() == FLUID_MIXTURE) {}
 };
