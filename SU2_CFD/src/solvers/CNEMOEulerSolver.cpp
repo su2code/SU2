@@ -2231,7 +2231,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
      /*--- Viscous contribution ---*/
-     bool viscous       = config->GetViscous();
+     bool viscous = config->GetViscous();
      if (viscous) {
 
        /*--- Set the normal vector and the coordinates ---*/
@@ -2281,7 +2281,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
        if (implicit)
          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
      }
-
    }
 
  /*--- Free locally allocated memory ---*/
