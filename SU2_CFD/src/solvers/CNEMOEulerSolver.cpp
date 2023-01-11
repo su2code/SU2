@@ -2189,7 +2189,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  
  /*--- Loop over all the vertices on this boundary marker ---*/
  for(unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-   unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+   const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
    if (!geometry->nodes->GetDomain(iPoint)) continue;
