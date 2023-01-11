@@ -241,7 +241,7 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration) override ;
+                    unsigned short iMesh, unsigned long Iteration) override;
 
   /*!
    * \brief Set the freestream temperature.

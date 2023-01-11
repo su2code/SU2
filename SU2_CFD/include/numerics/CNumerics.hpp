@@ -71,9 +71,6 @@ protected:
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
-  Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
-  Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
-  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
@@ -160,7 +157,7 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
-  su2double 
+  su2double
   LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
@@ -807,18 +804,6 @@ public:
                                      su2double val_thermal_conductivity_ve_j) {
     Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
     Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
-  }
-
-  /*!
-   * \brief Set the thermal diffusivity (translational/rotational)
-   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
-   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
-   * \param[in] iSpecies - Value of the species.
-   */
-  inline void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
-                                    su2double val_thermal_diffusivity_j) {
-    Thermal_Diffusivity_i = val_thermal_diffusivity_i;
-    Thermal_Diffusivity_j = val_thermal_diffusivity_j;
   }
 
   /*!
