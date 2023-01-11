@@ -71,9 +71,6 @@ protected:
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
-  Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
-  Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
-  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j,               /*!< \brief Cp at point j. */
   Gas_Constant_i,     /*!< \brief Cp at point i. */
@@ -797,19 +794,7 @@ public:
   }
 
   /*!
-   * \brief Set the thermal diffusivity (translational/rotational)
-   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
-   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
-   * \param[in] iSpecies - Value of the species.
-   */
-  inline void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
-                                    su2double val_thermal_diffusivity_j) {
-    Thermal_Diffusivity_i = val_thermal_diffusivity_i;
-    Thermal_Diffusivity_j = val_thermal_diffusivity_j;
-  }
-
-  /*!
-   * \brief Set the specific heat c_p.
+   * \brief Set the specifc heat c_p.
    * \param[in] val_specific_heat_i - Value of the specific heat at point i.
    * \param[in] val_specific_heat_j - Value of the specific heat at point j.
    */
