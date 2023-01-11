@@ -2172,10 +2172,9 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
  /*--- Compute Ma vector for flow direction ---*/
  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
 
- su2double* Mvec = new su2double[nDim];
+ su2double Mvec[MAXNDIM] = {0.0};
 
- unsigned short iDim;
- for (iDim = 0; iDim < nDim; iDim++)
+ for (unsigned short iDim = 0; iDim < nDim; iDim++)
    Mvec[iDim] = Velocity[iDim] / soundspeed;
 
  /*--- Allocate inlet node to compute gradients for numerics ---*/
@@ -2200,7 +2199,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
 
    /*--- Normal vector for this vertex (negate for outward convention) ---*/
    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-   for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+   for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
    /*--- Set various quantities in the solver class ---*/
    conv_numerics->SetNormal(Normal);
@@ -2275,9 +2274,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
      }
    }
-   
- /*--- Free locally allocated memory ---*/
- delete [] Mvec;
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
