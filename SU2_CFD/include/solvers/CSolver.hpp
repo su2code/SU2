@@ -1477,14 +1477,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config);
+  void MaskSelection_QDEIM(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Create mask for hyper-reduction.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Mask_Selection(CGeometry *geometry, CConfig *config);
+  void MaskSelection(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Return true if provided point is a selected node (for hyper-reduction).
@@ -1523,7 +1523,8 @@ public:
   /*!
    * \brief Write a set of files for debugging purposes
    */
-  void writeROMfiles(unsigned long InnerIter,
+  void writeROMfiles(CGeometry *geometry,
+                     unsigned long InnerIter,
                      vector<su2double> &r,
                      vector<su2double> &r_red);
   

@@ -48,7 +48,7 @@
 #include "../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
-
+#include<string.h>
 
 CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_mode) {
 
@@ -4425,7 +4425,7 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
 
 
 #ifdef HAVE_LIBROM
-void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
+void CSolver::MaskSelection_QDEIM(CGeometry *geometry, CConfig *config) {
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
@@ -4517,13 +4517,13 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
 }
 #endif
 
-void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
 #ifdef HAVE_LIBROM
   bool gnat = false;
   if (gnat) {
-    Mask_Selection_QDEIM(geometry, config);
+    MaskSelection_QDEIM(geometry, config);
     return;
   }
 #endif
@@ -4863,7 +4863,8 @@ void CSolver::CheckLineSearch(CConfig *config, double ReducedRes) {
   
 }
 
-void CSolver::writeROMfiles(unsigned long InnerIter, vector<su2double> &r, vector<su2double> &r_red) {
+void CSolver::writeROMfiles(CGeometry *geometry, unsigned long InnerIter,
+                            vector<su2double> &r, vector<su2double> &r_red) {
   unsigned long m = Mask.size() * nVar;
   unsigned long n = TrialBasis[0].size();
   
@@ -4900,6 +4901,34 @@ void CSolver::writeROMfiles(unsigned long InnerIter, vector<su2double> &r, vecto
     fs << setprecision(10) << r_red[i] << "\n";
   }
   fs.close();
+  
+  bool testing = false;
+  if (testing) {
+    ofstream fs;
+    std::string file_name = "check_jacobian.csv";
+    fs.open(file_name);
+    for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+      unsigned long iPoint = Mask[iPoint_mask];
+      for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint)+1; kNeigh++) {
+        unsigned long kPoint = 0;
+        if (kNeigh == geometry->nodes->GetnPoint(iPoint)) kPoint = iPoint;
+        else kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+        
+        su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+        
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          for (unsigned short kVar = 0; kVar < nVar; kVar++) {
+            unsigned short index_jik = kVar*nVar + iVar;
+            
+            fs << setprecision(10) << J_ik[index_jik] << "," ;
+          }
+          fs <<  "\n" ;
+        }
+      }
+    }
+    fs <<  "\n" ;
+    fs.close();
+  }
   
 }
 

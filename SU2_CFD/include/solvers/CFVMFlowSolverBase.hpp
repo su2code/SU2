@@ -1038,42 +1038,12 @@ class CFVMFlowSolverBase : public CSolver {
         index++;
       }
     }
-    
-    
-    
+
     // DO ROM ITERATION:
     
     /*-- Compute Test Basis: W = J * Phi, where J and Phi may be hyper-reduced --*/
     
     vector<su2double> TestBasis(m*nsnaps, 0.0);
-    
-    bool testing = false;
-    if (testing) {
-      ofstream fs;
-      std::string file_name = "check_jacobian.csv";
-      fs.open(file_name);
-      for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-        unsigned long iPoint = Mask[iPoint_mask];
-        for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint)+1; kNeigh++) {
-          unsigned long kPoint = 0;
-          if (kNeigh == geometry->nodes->GetnPoint(iPoint)) kPoint = iPoint;
-          else kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
-          
-          su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
-          
-          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-            for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-              unsigned short index_jik = kVar*nVar + iVar;
-              
-              fs << setprecision(10) << J_ik[index_jik] << "," ;
-            }
-            fs <<  "\n" ;
-          }
-        }
-      }
-      fs <<  "\n" ;
-      fs.close();
-    }
     
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
@@ -1104,7 +1074,6 @@ class CFVMFlowSolverBase : public CSolver {
               }
             }
           } // end compute of W_ij
-          
         }
       }
     }
@@ -1143,25 +1112,7 @@ class CFVMFlowSolverBase : public CSolver {
     
     if (true) {
       unsigned long InnerIter = config->GetInnerIter();
-      writeROMfiles(InnerIter, r_ns, r_red);
-      
-      ofstream fs;
-      std::string fname = "check_res_unweighted.csv";
-      fs.open(fname);
-      for(unsigned long i=0; i < m; i++){
-        fs << setprecision(10) << r_ns[i] << "," ;
-      }
-      fs.close();
-      //
-      //std::string fname1 = "check_trialbasis.csv";
-      //fs.open(fname1);
-      //for(unsigned long i=0; i < m; i++){
-      //  for(unsigned long j=0; j < nsnaps; j++){
-      //    fs << setprecision(10) << TrialBasis[i][j] << "," ;
-      //  }
-      //  fs << "\n";
-      //}
-      //fs.close();
+      writeROMfiles(geometry, InnerIter, r_ns, r_red);
     }
     
     /*--- Set up variables for QR decomposition ---*/
@@ -1192,6 +1143,8 @@ class CFVMFlowSolverBase : public CSolver {
     for (int i = 0; i < nsnaps; i++) {
       GenCoordsY[i] += a * r[i] ;
     }
+    
+    /*--- Update SU2 solution ---*/
     
     vector<double> allMaskedNodes(Mask);
     allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());

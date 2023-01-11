@@ -146,7 +146,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   if (config_container[ZONE_0]->GetReduced_Model()) {
     if (rank == MASTER_NODE) {
       cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->Mask_Selection(geometry_container[ZONE_0][INST_0][0],
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->MaskSelection(geometry_container[ZONE_0][INST_0][0],
                                                          config_container[ZONE_0]);
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->FindMaskedEdges(geometry_container[ZONE_0][INST_0][0],
                                                          config_container[ZONE_0]);
