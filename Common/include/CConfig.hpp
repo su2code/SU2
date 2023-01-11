@@ -6700,7 +6700,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet velocity vector.
    */
-  const su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
+  su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
 
   /*!
    * \brief Get the total pressure at an inlet boundary.
