@@ -157,7 +157,7 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
-  su2double 
+  su2double
   LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double

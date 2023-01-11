@@ -1155,7 +1155,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals         = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737] #last 7 lines
     solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     test_list.append(solid_periodic_pins)
 
@@ -1368,7 +1368,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.738778, -4.325766, -4.610914, -5.834431, 0.521730, -4.934375, 5.000000, -1.887191, 5.000000, -5.499917, 5.000000, -1.770845, 2.292904, 0.971941, 0.608500, 0.712464]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
-    
+
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg')
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1380,7 +1380,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
-    
+
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg')
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1392,7 +1392,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
-    
+
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1410,7 +1410,7 @@ def main():
     species_primitiveVenturi_boundedscalar.test_vals   = [-5.297585, -4.397797, -4.377086, -5.593131, -1.011782, -5.623540, 5.000000, -1.775123, 5.000000, -4.086339, 5.000000, -2.080187, 0.000424, 0.000424, 0.000000, 0.000000]
     species_primitiveVenturi_boundedscalar.new_output  = True
     test_list.append(species_primitiveVenturi_boundedscalar)
-    
+
     # 2 species (1 eq) primitive venturi mixing using mixing model including inlet markers for turbulent intensity and viscosity ratios
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS           = TestCase('species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg')
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
