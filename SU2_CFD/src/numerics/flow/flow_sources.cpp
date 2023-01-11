@@ -929,7 +929,6 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
   int nVar_Species = config->GetnSpecies();
 
   if (fluid_model) {
-
     /*--- Set primitive variables at points iPoint. ---*/
 
     Pressure_i = V_i[0];
@@ -961,7 +960,10 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
       residual[1] = 0.0;
       residual[2] = 0.0;
       residual[3] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) residual[3] += Volume * DensityInc_i * ( Temp_i * V_i[iDim + 1] * Cp_Grad[iDim] + PrimVar_Grad_i[nDim+1][iDim] * Enthalpy_Diffusion[iDim]);
+      for (iDim = 0; iDim < nDim; iDim++)
+        residual[3] +=
+            Volume * DensityInc_i *
+            (Temp_i * V_i[iDim + 1] * Cp_Grad[iDim] + PrimVar_Grad_i[nDim + 1][iDim] * Enthalpy_Diffusion[iDim]);
 
       if (implicit) {
         jacobian[0][0] = 0.0;
@@ -1036,47 +1038,25 @@ CNumerics::ResidualType<> CSourceIncSpecies::ComputeResidual(const CConfig* conf
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] *= Volume * DensityInc_i;
     }
+  } else {
+    for (iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
-  /*--- Add the viscous terms if necessary. ---*/
-
-  //if (viscous) {
-    //Laminar_Viscosity_i = V_i[nDim + 4];
-    //Eddy_Viscosity_i = V_i[nDim + 5];
-    //Thermal_Conductivity_i = V_i[nDim + 6];
-
-    //su2double total_viscosity;
-
-    //total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
-
-    /*--- The full stress tensor is needed for variable density ---*/
-    //ComputeStressTensor(nDim, tau, PrimVar_Grad_i + 1, total_viscosity);
-
-    /*--- Viscous terms. ---*/
-
-    //residual[0] -= 0.0;
-    //residual[1] -= Volume * (yinv * tau[0][1] - TWO3 * AuxVar_Grad_i[0][0]);
-    //residual[2] -= Volume * (yinv * 2.0 * total_viscosity * PrimVar_Grad_i[2][1] - yinv * yinv * 2.0 * total_viscosity * Velocity_i[1] - TWO3 * AuxVar_Grad_i[0][1]);
-    //residual[3] -= Volume * yinv * Thermal_Conductivity_i * PrimVar_Grad_i[nDim + 1][1];
-  //}
-} else {
-  for (iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
-
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] = 0.0;
+      }
     }
   }
-}
 
-if (!energy) {
-  residual[nDim + 1] = 0.0;
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      jacobian[iVar][nDim + 1] = 0.0;
-      jacobian[nDim + 1][iVar] = 0.0;
+  if (!energy) {
+    residual[nDim + 1] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        jacobian[iVar][nDim + 1] = 0.0;
+        jacobian[nDim + 1][iVar] = 0.0;
+      }
     }
   }
-}
 
-return ResidualType<>(residual, jacobian, nullptr);
+  return ResidualType<>(residual, jacobian, nullptr);
 }
