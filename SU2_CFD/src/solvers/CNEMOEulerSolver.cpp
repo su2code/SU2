@@ -1625,7 +1625,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
 
