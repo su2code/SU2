@@ -2195,7 +2195,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
    /*--- Index of the closest interior node ---*/
-   unsigned long Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
    /*--- Normal vector for this vertex (negate for outward convention) ---*/
    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
