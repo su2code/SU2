@@ -289,38 +289,50 @@ void CDiscAdjDeformationDriver::Output_Preprocessing() {}
 
 void CDiscAdjDeformationDriver::Preprocess() {
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-    unsigned short nInst_Zone = nInst[iZone];
+    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
+      if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
+      geometry_container[iZone][INST_0][MESH_0]->SetBoundSensitivity(config_container[iZone]);
 
-    grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-    grid_movement[iZone][INST_0] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    } else {
+      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
+      unsigned short nInst_Zone = nInst[iZone];
 
-    /*--- Read in sensitivities from file. ---*/
+      grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
+      grid_movement[iZone][INST_0] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
-    if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
-      geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
-    else
-      geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
+      /*--- Read in sensitivities from file. ---*/
+
+      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
+        geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
+      else
+        geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
+    }
   }
 }
 
 void CDiscAdjDeformationDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE)
-      cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
-    if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
-        config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
-      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], grid_movement[iZone][INST_0]);
+    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
+      continue;
     } else {
-      grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
-                                                          config_container[iZone], false, true);
+      if (rank == MASTER_NODE)
+        cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
+      if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
+          config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
+        DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
+                                            grid_movement[iZone][INST_0]);
+      } else {
+        grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
+                                                            config_container[iZone], false, true);
+      }
     }
   }
 
-  if (rank == MASTER_NODE)
-    cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
-
-  SetSensitivity_Files(geometry_container, config_container, nZone);
+  if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
+    if (rank == MASTER_NODE)
+      cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
+    SetSensitivity_Files(geometry_container, config_container, nZone);
+  }
 
   Gradient_file.precision(driver_config->OptionIsSet("OUTPUT_PRECISION") ? driver_config->GetOutput_Precision() : 6);
 
