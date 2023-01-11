@@ -2213,7 +2213,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
    conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
 
-   bool dynamic_grid  = config->GetGrid_Movement();
+   const bool dynamic_grid  = config->GetGrid_Movement();
    if (dynamic_grid)
      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                geometry->nodes->GetGridVel(iPoint));
