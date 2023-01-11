@@ -169,7 +169,7 @@ class CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline virtual su2double GetMassDiffusivity(int iVar) {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivity->SetDiffusivity(Density, Mu, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }
