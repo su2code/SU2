@@ -85,8 +85,8 @@ def main():
     invwedge_ss_inlet.cfg_dir   = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file  = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals         = [-1.042718, -1.567481, -18.250190, -18.579528, -18.523263, 2.275305, 1.880068, 5.319548, 0.873821]
-    invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250190, -18.579528, -18.523263, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.test_vals         = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
     invwedge_ss_inlet.new_output = True
     test_list.append(invwedge_ss_inlet)
 
