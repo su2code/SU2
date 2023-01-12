@@ -6696,7 +6696,7 @@ public:
   const su2double* GetInlet_MassFrac() const { return Inlet_MassFrac; }
 
   /*!
-   * \brief Get the Tve value for a NEMO supersonic inlet boundary.
+   * \brief Get the Tve value for a NEMO inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet velocity vector.
    */
