@@ -75,6 +75,13 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariable_Indices(size_
 
 unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap* input_output_map, su2vector<su2double>& inputs,
                                                    su2vector<su2double*>& outputs) {
+  su2matrix<su2double*> doutputs_dinputs;
+  doutputs_dinputs.resize(outputs.size(), inputs.size()) = nullptr;
+  return Predict_ANN(input_output_map, inputs, outputs, doutputs_dinputs);
+
+}
+unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap* input_output_map, su2vector<su2double>& inputs,
+                                                   su2vector<su2double*>& outputs, su2matrix<su2double*>& doutputs_dinputs) {
   /*--- Evaluate MLP based on target input and output variables ---*/
   bool within_range,              // Within MLP training set range.
       MLP_was_evaluated = false;  // MLP was evaluated within training set range.
@@ -106,11 +113,16 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap* input_output_map, su2
 
     /* Evaluate MLP when query inputs lie within training data range */
     if (within_range) {
-      NeuralNetworks[i_ANN]->predict(ANN_inputs);
+      NeuralNetworks[i_ANN]->predict(ANN_inputs, compute_gradient);
       MLP_was_evaluated = true;
       for (auto i = 0u; i < input_output_map->GetNMappedOutputs(i_map); i++) {
         *outputs[input_output_map->GetOutputIndex(i_map, i)] =
             NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map, i));
+        if(compute_gradient){
+          for (auto iInput=0u; iInput<ANN_inputs.size(); iInput++){
+            *doutputs_dinputs[input_output_map->GetOutputIndex(i_map, i)][iInput] = NeuralNetworks[i_ANN]->GetANN_Output_Input_Derivative(input_output_map->GetMLPOutputIndex(i_map, i), iInput);
+          }
+        }
       }
     }
 
@@ -124,10 +136,16 @@ unsigned long MLPToolbox::CLookUp_ANN::Predict_ANN(CIOMap* input_output_map, su2
   /* Evaluate nearest MLP in case no query data within range is found */
   if (!MLP_was_evaluated) {
     auto ANN_inputs = input_output_map->GetMLP_Inputs(i_map_nearest, inputs);
-    NeuralNetworks[i_ANN_nearest]->predict(ANN_inputs);
+    NeuralNetworks[i_ANN_nearest]->predict(ANN_inputs, compute_gradient);
     for (auto i = 0u; i < input_output_map->GetNMappedOutputs(i_map_nearest); i++) {
       *outputs[input_output_map->GetOutputIndex(i_map_nearest, i)] =
           NeuralNetworks[i_ANN_nearest]->GetANN_Output(input_output_map->GetMLPOutputIndex(i_map_nearest, i));
+      if(compute_gradient){
+        for (auto iInput=0u; iInput<ANN_inputs.size(); iInput++){
+          *doutputs_dinputs[input_output_map->GetOutputIndex(i_map_nearest, i)][iInput] = NeuralNetworks[i_ANN_nearest]->GetANN_Output_Input_Derivative(input_output_map->GetMLPOutputIndex(i_map_nearest, i), iInput);
+        }
+      }
+        
     }
   }
 

@@ -162,9 +162,11 @@ unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
 
   val_controlling_vars[I_PROGVAR] = prog;
   val_controlling_vars[I_ENTH] = enth;
-  /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp, iomap_LookUp);
+  su2matrix<su2double> dummy_matrix;
+  dummy_matrix.resize(val_vars_LookUp.size(), n_CV);
 
+  /*--- add all quantities and their address to the look up vectors ---*/
+  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp, dummy_matrix, iomap_LookUp);
 
   return exit_code;
 }
@@ -178,7 +180,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources, iomap_Sources);
+  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources, dSources_dCV, iomap_Sources);
 
   /*--- the source term for the progress variable is always positive by construction, but we clip from below  --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -204,7 +206,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
+  Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
 
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
@@ -217,7 +219,7 @@ unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_sca
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD, iomap_PD);
+  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD, dPD_dCV, iomap_PD);
   return exit_code;
 }
 
@@ -241,10 +243,12 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   val_controlling_vars[I_PROGVAR] = val_prog;
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_mixfrac;
 
+  if(manifold_format == ENUM_DATADRIVEN_METHOD::MLP) look_up_ANN->SetGradientComputation(false);
+
   while (!converged && (counter++ < counter_limit)) {
     val_controlling_vars[I_ENTH] = enth_iter;
     /*--- look up temperature and heat capacity ---*/
-    Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
+    Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
     if(abs(delta_temp_iter) < delta_temp_final){
@@ -266,7 +270,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   if (!converged) {
     exit_code = 1;
   }
-
+  if(manifold_format == ENUM_DATADRIVEN_METHOD::MLP) look_up_ANN->SetGradientComputation(true);
   return exit_code;
 }
 
@@ -276,8 +280,10 @@ void CFluidFlamelet::PreprocessLookUp() {
   val_controlling_vars.resize(n_CV);
 
   /*--- Thermodynamic state variables ---*/
-  varnames_TD.resize(5);
-  val_vars_TD.resize(5);
+  size_t n_TD = 5;
+  varnames_TD.resize(n_TD);
+  val_vars_TD.resize(n_TD);
+  dTD_dCV.resize(n_TD, n_CV);
 
   /*--- The string in varnames_TD is the actual string as it appears in the LUT file ---*/
   varnames_TD[0] = "Temperature";
@@ -298,7 +304,8 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
   val_vars_Sources.resize(n_table_sources);
-  
+  dSources_dCV.resize(n_table_sources, n_CV);
+
   for(size_t iSource=0; iSource < n_table_sources; iSource++){
     varnames_Sources[iSource] = table_source_names[iSource];
     val_vars_Sources[iSource] = &table_sources[iSource];
@@ -316,7 +323,8 @@ void CFluidFlamelet::PreprocessLookUp() {
   if(PreferentialDiffusion){
     varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
     val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-    
+    dPD_dCV.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS, n_CV);
+
     varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
     varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
     varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
@@ -335,11 +343,13 @@ void CFluidFlamelet::PreprocessLookUp() {
   }
 }
 
-unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, MLPToolbox::CIOMap* iomap) {
+unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, su2matrix<su2double> dOutputs_dInputs, MLPToolbox::CIOMap* iomap) {
   unsigned long exit_code = 0;
 
   vector<string> LUT_varnames;
   vector<su2double*> LUT_val_vars;
+  su2matrix<su2double*> gradient_refs;
+
   switch (manifold_format)
   {
   case ENUM_DATADRIVEN_METHOD::LUT:
@@ -355,7 +365,13 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
       exit_code = look_up_table->LookUp_XY(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH]);
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
-    exit_code = look_up_ANN->Predict_ANN(iomap,val_controlling_vars, val_vars);
+    gradient_refs.resize(val_vars.size(), n_CV);
+    for(auto iVar=0u; iVar<val_vars.size(); iVar++){
+      for(auto iCv=0u; iCv<n_CV; iCv++)
+        gradient_refs[iVar][iCv] = &dOutputs_dInputs[iVar][iCv];
+    }
+    exit_code = look_up_ANN->Predict_ANN(iomap,val_controlling_vars, val_vars, gradient_refs);
+
     break;
   default:
     break;

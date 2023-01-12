@@ -69,14 +69,17 @@ class CFluidFlamelet final : public CFluidModel {
 
   su2vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
   su2vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
+  su2matrix<su2double> dTD_dCV;
   MLPToolbox::CIOMap * iomap_TD = nullptr;
 
   su2vector<string> varnames_PD; /*!< \brief Lookup names for preferential diffusion scalars */
   su2vector<su2double*> val_vars_PD; /*!< \brief References to preferential diffusion scalars*/
+  su2matrix<su2double> dPD_dCV;
   MLPToolbox::CIOMap * iomap_PD = nullptr;
 
   su2vector<string> varnames_Sources; /*!< \brief Lookup names for scalar source terms. */
   su2vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
+  su2matrix<su2double> dSources_dCV;
   MLPToolbox::CIOMap * iomap_Sources = nullptr;
 
   su2vector<string> varnames_LookUp; /*!< \brief Lookup names for passive lookup variables. */
@@ -188,5 +191,5 @@ class CFluidFlamelet final : public CFluidModel {
 
   inline unsigned short GetNControllingVariables() { return n_CV; }
 
-  unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, MLPToolbox::CIOMap* iomap=nullptr);
+  unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, su2matrix<su2double> dOutputs_dInputs, MLPToolbox::CIOMap* iomap=nullptr);
 };

@@ -800,7 +800,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
       /*--- Set enthalpy on the wall ---*/
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-      if(config->GetSpecies_StrongBC()){
+      //if(config->GetSpecies_StrongBC()){
 
         /*--- Initial guess for enthalpy value ---*/
 
@@ -827,37 +827,37 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
           Jacobian.DeleteValsRowi(total_index);
         }
-      }else{
-        /*--- Weak BC formulation ---*/
-        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      // }else{
+      //   /*--- Weak BC formulation ---*/
+      //   const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      //   const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
 
-        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      //   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+      //   /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        su2double Edge_Vector[MAXNDIM];
-        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-        su2double dist_ij = sqrt(dist_ij_2);
+      //   const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      //   const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      //   su2double Edge_Vector[MAXNDIM];
+      //   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+      //   su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+      //   su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall ---*/
+      //   /*--- Compute the normal gradient in temperature using Twall ---*/
 
-        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+      //   su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
 
-        /*--- Get thermal conductivity ---*/
+      //   /*--- Get thermal conductivity ---*/
 
-        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+      //   su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
 
-        /*--- Apply a weak boundary condition for the energy equation.
-        Compute the residual due to the prescribed heat flux. ---*/
+      //   /*--- Apply a weak boundary condition for the energy equation.
+      //   Compute the residual due to the prescribed heat flux. ---*/
 
-        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
-      }
+      //   LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
+      // }
       
     }
   }

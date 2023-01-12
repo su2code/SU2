@@ -58,6 +58,7 @@ class CLookUp_ANN {
 
   unsigned short number_of_variables; /*!< Number of loaded ANNs. */
 
+  bool compute_gradient = false;
   /*!
    * \brief Load ANN architecture
    * \param[in] ANN - pointer to target NeuralNetwork class
@@ -80,6 +81,8 @@ class CLookUp_ANN {
    * \param[in] outputs - pointers to output variables
    * \returns Within output normalization range.
    */
+  unsigned long Predict_ANN(CIOMap* input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs, su2matrix<su2double*>& doutputs_dinputs);
+
   unsigned long Predict_ANN(CIOMap* input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs);
 
   ~CLookUp_ANN() {
@@ -115,6 +118,8 @@ class CLookUp_ANN {
   std::vector<pair<std::size_t, std::size_t>> FindVariable_Indices(std::size_t i_ANN,
                                                                    su2vector<std::string> variable_names,
                                                                    bool input) const;
+
+  void SetGradientComputation(bool input) { compute_gradient = input; }
 };
 
 }  // namespace MLPToolbox
