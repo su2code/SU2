@@ -34,8 +34,6 @@
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
-
-  unsigned short nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -71,12 +69,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -267,8 +259,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
             const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             su2double FrictionVelocity = 0.0;
-            /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|) 
-            (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the 
+            /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|)
+            (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the
             standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
             if(nDim == 2){
               su2double shearStress = 0.0;

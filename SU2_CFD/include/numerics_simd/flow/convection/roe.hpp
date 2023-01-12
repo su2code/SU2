@@ -168,7 +168,7 @@ public:
 
     VectorDbl<nVar> flux;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      flux(iVar) = kappa * (flux_i(iVar) + flux_j(iVar));
+      flux(iVar) = 0.5 * (flux_i(iVar) + flux_j(iVar));
     }
 
     MatrixDbl<nVar> jac_i, jac_j;

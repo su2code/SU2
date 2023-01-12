@@ -71,35 +71,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Update global parameters ---*/
 
-  MAIN_SOLVER main_solver = MAIN_SOLVER::NONE;
-
-  switch (config[val_iZone]->GetKind_Solver()) {
-    case MAIN_SOLVER::EULER:
-    case MAIN_SOLVER::DISC_ADJ_EULER:
-    case MAIN_SOLVER::INC_EULER:
-    case MAIN_SOLVER::DISC_ADJ_INC_EULER:
-    case MAIN_SOLVER::NEMO_EULER:
-      main_solver = MAIN_SOLVER::EULER;
-      break;
-
-    case MAIN_SOLVER::NAVIER_STOKES:
-    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-    case MAIN_SOLVER::INC_NAVIER_STOKES:
-    case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
-    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      main_solver = MAIN_SOLVER::NAVIER_STOKES;
-      break;
-
-    case MAIN_SOLVER::RANS:
-    case MAIN_SOLVER::DISC_ADJ_RANS:
-    case MAIN_SOLVER::INC_RANS:
-    case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-      main_solver = MAIN_SOLVER::RANS;
-      break;
-
-    default:
-      break;
-  }
+  const auto main_solver = config[val_iZone]->GetKind_Solver();
   config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_FLOW_SYS);
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
@@ -109,23 +81,21 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
-  if ((main_solver == MAIN_SOLVER::RANS) && !frozen_visc) {
+  if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
-	/*--- Solve transition model if needed---*/
-	
-	if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    /*--- Solve transition model ---*/
 
-	  config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
-	  integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-																		 RUNTIME_TRANS_SYS, val_iZone, val_iInst);
-	}
+    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+      config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
+      integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst);
+    }
 
     /*--- Solve the turbulence model ---*/	
 	
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
-
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
