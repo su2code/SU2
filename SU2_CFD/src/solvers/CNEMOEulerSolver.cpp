@@ -2230,7 +2230,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
     LinSysRes.AddBlock(iPoint, residual);
 
     /*--- Jacobian contribution for implicit integration ---*/
-    bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     if (implicit)
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
