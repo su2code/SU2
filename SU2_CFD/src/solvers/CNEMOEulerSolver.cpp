@@ -2292,70 +2292,61 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
   }
 }
 
-void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
-                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim;
-  unsigned long iVertex, iPoint;
-  su2double *V_outlet, *V_domain;
-  su2double *U_outlet, *U_domain;
-
-  bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double *Normal = new su2double[nDim];
+void CNEMOEulerSolver::BC_Supersonic_Outlet(
+    CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  su2double Normal[MAXNDIM] = {0.0};
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker];
+       iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint))
+      continue;
 
-      /*--- Current solution at this boundary node ---*/
-      V_domain = nodes->GetPrimitive(iPoint);
-      U_domain = nodes->GetSolution(iPoint);
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
 
-      /*--- Allocate the value at the outlet ---*/
-      V_outlet = GetCharacPrimVar(val_marker, iVertex);
-      V_outlet = V_domain;
-      U_outlet = U_domain;
+    /*--- Set various quantities in the solver class, outlet properties are
+     * equal to domain properties ---*/
+    conv_numerics->SetNormal(Normal);
+    conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                nodes->GetPrimitive(iPoint));
+    conv_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                   nodes->GetSolution(iPoint));
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    /*--- Pass supplementary information to CNumerics ---*/
+    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), nodes->GetdPdU(iPoint));
+    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), nodes->GetdTdU(iPoint));
+    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
+                             nodes->GetdTvedU(iPoint));
+    conv_numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
+    conv_numerics->SetCvve(nodes->GetCvve(iPoint), nodes->GetCvve(iPoint));
+    conv_numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(iPoint));
 
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetNormal(Normal);
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
-      conv_numerics->SetConservative(U_domain, U_outlet);
+    const bool dynamic_grid = config->GetGrid_Movement();
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
+    /*--- Compute the residual using an upwind scheme ---*/
+    auto residual = conv_numerics->ComputeResidual(config);
+    LinSysRes.AddBlock(iPoint, residual);
 
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
+    /*--- Jacobian contribution for implicit integration ---*/
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-
 }
