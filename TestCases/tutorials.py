@@ -110,7 +110,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-6.105905, -4.979417, -4.870704, -7.338344, 2.435662, -5.621107, 5.000000, -5.737172, 12.000000, -8.148164, 9.000000, -8.040415, 2.084589, 1.000000, 0.600000, 0.484589]
+    kenics_mixer_tutorial.test_vals = [-7.490392, -6.824738, -6.838554, -5.158736, -7.902645, -3.175875, -7.447905, 5.000000, -1.939473, 3.000000, -5.217515, 3.000000, -6.367131, 2.5321e-02, 0.0000e+00, 2.5321e-02, 0.0000e+00, 6.3958e+01, 8.4765e+00, 4.7955e+01, 7.5265e+00]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     kenics_mixer_tutorial.new_output = True
     test_list.append(kenics_mixer_tutorial)
