@@ -81,11 +81,11 @@ def main():
     test_list.append(invwedge)
 
     # Inviscid single wedge, implicit, NEMO supersonic inlet
-    invwedge_ss_inlet           = TestCase('invwedge_ss_inlet')
-    invwedge_ss_inlet.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge_ss_inlet.cfg_file  = "invwedge_ss_inlet.cfg"
+    invwedge_ss_inlet = TestCase('invwedge_ss_inlet')
+    invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals         = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.test_vals = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
     invwedge_ss_inlet.new_output = True
     test_list.append(invwedge_ss_inlet)
@@ -1165,7 +1165,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals         = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737] #last 7 lines
+    solid_periodic_pins.test_vals = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737] #last 7 lines
     solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     test_list.append(solid_periodic_pins)
 
