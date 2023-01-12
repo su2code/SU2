@@ -6689,7 +6689,7 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
-   * \brief Get the mass fraction vector for a NEMO supersonic inlet boundary.
+   * \brief Get the mass fraction vector for a NEMO inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet velocity vector.
    */
