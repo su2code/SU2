@@ -2148,132 +2148,148 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNEMOEulerSolver::BC_Supersonic_Inlet(
+    CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
- /*--- Supersonic inlet flow: there are no outgoing characteristics,
-  so all flow variables can be imposed at the inlet.
-  First, retrieve the specified values for the primitive variables. ---*/
+  /*--- Supersonic inlet flow: there are no outgoing characteristics,
+   so all flow variables can be imposed at the inlet.
+   First, retrieve the specified values for the primitive variables. ---*/
 
- const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
- const su2double Temperature = config->GetInlet_Temperature(Marker_Tag);
- const su2double Pressure = config->GetInlet_Pressure(Marker_Tag);
- const su2double* Velocity = config->GetInlet_Velocity(Marker_Tag);
- const su2double* Mass_Frac = config->GetInlet_MassFrac(); 
- su2double Temperature_ve = config->GetInlet_Temperature_ve();
+  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag);
+  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag);
+  const su2double *Velocity = config->GetInlet_Velocity(Marker_Tag);
+  const su2double *Mass_Frac = config->GetInlet_MassFrac();
+  su2double Temperature_ve = config->GetInlet_Temperature_ve();
 
- /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
- if (Temperature_ve == 0.0) {Temperature_ve = Temperature;}
+  /*--- If no Tve value specified (left as 0 K default), set to Ttr value ---*/
+  if (Temperature_ve == 0.0) {
+    Temperature_ve = Temperature;
+  }
 
- /*--- Set mixture state ---*/
- FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
+  /*--- Set mixture state ---*/
+  FluidModel->SetTDStatePTTv(Pressure, Mass_Frac, Temperature, Temperature_ve);
 
- /*--- Compute Ma vector for flow direction ---*/
- const su2double soundspeed = FluidModel->ComputeSoundSpeed();
+  /*--- Compute Ma vector for flow direction ---*/
+  const su2double soundspeed = FluidModel->ComputeSoundSpeed();
 
- su2double Mvec[MAXNDIM] = {0.0};
+  su2double Mvec[MAXNDIM] = {0.0};
 
- for (unsigned short iDim = 0; iDim < nDim; iDim++)
-   Mvec[iDim] = Velocity[iDim] / soundspeed;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Mvec[iDim] = Velocity[iDim] / soundspeed;
 
- /*--- Allocate inlet node to compute gradients for numerics ---*/
- CNEMOEulerVariable node_inlet(Pressure, Mass_Frac, Mvec,
-                                        Temperature, Temperature_ve,
-                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
-                                        config, FluidModel);
- node_inlet.SetPrimVar(0, FluidModel);
- 
- su2double Normal[MAXNDIM] = {0.0};
- 
- /*--- Loop over all the vertices on this boundary marker ---*/
- for(unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-   const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  /*--- Allocate inlet node to compute gradients for numerics ---*/
+  CNEMOEulerVariable node_inlet(Pressure, Mass_Frac, Mvec, Temperature,
+                                Temperature_ve, 1, nDim, nVar, nPrimVar,
+                                nPrimVarGrad, config, FluidModel);
+  node_inlet.SetPrimVar(0, FluidModel);
 
-   /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-   if (!geometry->nodes->GetDomain(iPoint)) continue;
+  su2double Normal[MAXNDIM] = {0.0};
 
-   /*--- Index of the closest interior node ---*/
-   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker];
+       iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-   /*--- Normal vector for this vertex (negate for outward convention) ---*/
-   geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-   for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (!geometry->nodes->GetDomain(iPoint))
+      continue;
 
-   /*--- Set various quantities in the solver class ---*/
-   conv_numerics->SetNormal(Normal);
-   conv_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet.GetSolution(0));
-   conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet.GetPrimitive(0));
+    /*--- Index of the closest interior node ---*/
+    const auto Point_Normal =
+        geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-   /*--- Pass supplementary info to CNumerics ---*/
-   conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-   conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-   conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-   conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-   conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
 
-   const bool dynamic_grid  = config->GetGrid_Movement();
-   if (dynamic_grid)
-     conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                               geometry->nodes->GetGridVel(iPoint));
+    /*--- Set various quantities in the solver class ---*/
+    conv_numerics->SetNormal(Normal);
+    conv_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                   node_inlet.GetSolution(0));
+    conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                node_inlet.GetPrimitive(0));
 
-   /*--- Compute the residual using an upwind scheme ---*/
-   auto residual = conv_numerics->ComputeResidual(config);
-   LinSysRes.AddBlock(iPoint, residual);
+    /*--- Pass supplementary info to CNumerics ---*/
+    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
+    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
+    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+    conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
+    conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
 
-   /*--- Jacobian contribution for implicit integration ---*/
-   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-   if (implicit)
-     Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    const bool dynamic_grid = config->GetGrid_Movement();
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
 
-   /*--- Viscous contribution ---*/
-   bool viscous = config->GetViscous();
-   if (viscous) {
+    /*--- Compute the residual using an upwind scheme ---*/
+    auto residual = conv_numerics->ComputeResidual(config);
+    LinSysRes.AddBlock(iPoint, residual);
 
-     /*--- Set the normal vector and the coordinates ---*/
-     su2double Coord_Reflected[MAXNDIM];
-     GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-     visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected );
-     visc_numerics->SetNormal(Normal);
+    /*--- Jacobian contribution for implicit integration ---*/
+    bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-     /*--- Primitive variables, and gradient ---*/
-     visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet.GetSolution(0));
-     visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet.GetPrimitive(0));
-     visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet.GetGradient_Primitive(0));
+    /*--- Viscous contribution ---*/
+    bool viscous = config->GetViscous();
+    if (viscous) {
 
-     /*--- Pass supplementary information to CNumerics ---*/
-     visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet.GetdPdU(0));
-     visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet.GetdTdU(0));
-     visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-     visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet.GetEve(0));
-     visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet.GetCvve(0));
+      /*--- Set the normal vector and the coordinates ---*/
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(
+          nDim, geometry->nodes->GetCoord(Point_Normal),
+          geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                              Coord_Reflected);
+      visc_numerics->SetNormal(Normal);
 
-     /*--- Species diffusion coefficients ---*/
-     visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+      /*--- Primitive variables, and gradient ---*/
+      visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                     node_inlet.GetSolution(0));
+      visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                  node_inlet.GetPrimitive(0));
+      visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                        node_inlet.GetGradient_Primitive(0));
+
+      /*--- Pass supplementary information to CNumerics ---*/
+      visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
+      visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
+      visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
+                               node_inlet.GetdTvedU(0));
+      visc_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
+      visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+
+      /*--- Species diffusion coefficients ---*/
+      visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
                                        nodes->GetDiffusionCoeff(iPoint));
-     /*--- Laminar viscosity ---*/
-     visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+      /*--- Laminar viscosity ---*/
+      visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
                                          nodes->GetLaminarViscosity(iPoint));
-     /*--- Eddy viscosity ---*/
-     visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+      /*--- Eddy viscosity ---*/
+      visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
                                       nodes->GetEddyViscosity(iPoint));
-     /*--- Thermal conductivity ---*/
-     visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                            nodes->GetThermalConductivity(iPoint));
-     /*--- Vib-el. thermal conductivity ---*/
-     visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                               nodes->GetThermalConductivity_ve(iPoint));
-     
-     /*--- Compute and update residual ---*/
-     auto residual = visc_numerics->ComputeResidual(config);
-     LinSysRes.SubtractBlock(iPoint, residual);
+      /*--- Thermal conductivity ---*/
+      visc_numerics->SetThermalConductivity(
+          nodes->GetThermalConductivity(iPoint),
+          nodes->GetThermalConductivity(iPoint));
+      /*--- Vib-el. thermal conductivity ---*/
+      visc_numerics->SetThermalConductivity_ve(
+          nodes->GetThermalConductivity_ve(iPoint),
+          nodes->GetThermalConductivity_ve(iPoint));
 
-     /*--- Jacobian contribution for implicit integration ---*/
-     if (implicit)
-       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-     }
-   }
+      /*--- Compute and update residual ---*/
+      auto residual = visc_numerics->ComputeResidual(config);
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      if (implicit)
+        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    }
+  }
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
