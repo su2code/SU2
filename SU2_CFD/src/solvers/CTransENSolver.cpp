@@ -61,9 +61,9 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
-    /*--- Define some auxiliary vector related with the residual ---*/
+    /*--- Define some auxiliar vector related with the residual ---*/
 
     Residual_RMS.resize(nVar,0.0);
     Residual_Max.resize(nVar,0.0);
@@ -87,6 +87,13 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
     if (ReducerStrategy)
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
+    if (config->GetExtraOutput()) {
+      if (nDim == 2) { nOutputVariables = 13; }
+      else if (nDim == 3) { nOutputVariables = 19; }
+      OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+      OutputHeadingNames = new string[nOutputVariables];
+    }
+
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
       Residual_BGS.resize(nVar,0.0);
@@ -107,12 +114,12 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
     nInf = -20;
   }
   else {
-    lowlimit = 0;
+    lowlimit = 1e-4;
     nInf = 0;
   }
 
   lowerlimit[0] = lowlimit;
-  upperlimit[0] = (-8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100))*10;
+  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100)*10;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AmplificationFactor_Inf  = nInf;
@@ -141,12 +148,8 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
     due to arbitrary number of turbulence variables ---*/
   Inlet_TurbVars.resize(nMarker);
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar);
-    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
-      Inlet_TurbVars[iMarker](iVertex,0) = AmplificationFactor_Inf;
-    }
-  }
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+    Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = AmplificationFactor_Inf;
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -230,10 +233,6 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetTransVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetTransVarGradient(nodes->GetGradient(iPoint), nullptr);
-
-    /*--- Set Amplification specifically ---*/
-    //numerics-> SetAmplificationFactor(nodes->GetSolution(iPoint,0));
-    //numerics-> SetAmplificationFactor(min(nodes->GetSolution(iPoint,0), 15.0));
 
     /*--- Set volume ---*/
 
@@ -535,14 +534,14 @@ void CTransENSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
 void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
-  const bool check = true;
+  const bool check = false;
   if (check == true){
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-  su2double allowableRatio = 2.0;
+  su2double allowableRatio = 0.99;
 
   unsigned long Inner_Iter = config->GetInnerIter();
 
@@ -558,8 +557,8 @@ void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
       turbulence variables can change over a nonlinear iteration. */
     if (ratio > allowableRatio) {
       localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      cout<<"Ratio = "<<ratio<<". Old = "<<fabs(LinSysSol[iPoint])<<". New = "<<fabs(nodes->GetSolution(iPoint, 0));
-      cout<<". Local ratio = "<<localUnderRelaxation<<endl;
+      //cout<<"Ratio = "<<ratio<<". Old = "<<fabs(LinSysSol[iPoint])<<". New = "<<fabs(nodes->GetSolution(iPoint, 0));
+      //cout<<". Local ratio = "<<localUnderRelaxation<<endl;
     }
 
     /* Threshold the relaxation factor in the event that there is

@@ -40,6 +40,7 @@ struct CSAVariables {
   const su2double k2 = pow(0.41, 2);
   const su2double cb1 = 0.1355;
   const su2double cw2 = 0.3;
+  const su2double ct3 = 1.2;
   const su2double cw3_6 = pow(2, 6);
   const su2double sigma = 2.0 / 3.0;
   const su2double cb2 = 0.622;
@@ -48,7 +49,7 @@ struct CSAVariables {
   const su2double cr1 = 0.5;
 
   /*--- List of non-const constants ---*/
-  su2double ct4 = 0.5; su2double ct3 = 1.2;
+  su2double ct4 = 0.5;
   su2double amplification;
 
   /*--- List of auxiliary functions ---*/
@@ -160,19 +161,16 @@ class CSourceBase_TurbSA : public CNumerics {
 	  if(TURB_TRANS_MODEL::EN == config->GetKind_Trans_Model()) {
 	    var.transEN 		= true;
 	    var.Ncrit 			= -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
-	    //if (dist_i<0.1) cout<<"Tu = "<<config->GetTurbulenceIntensity_FreeStream()<<". Ncrit = "<<var.Ncrit<<". n = "<<var.amplification<<". n_i = "<<amplification_factor_i;
-		//if (config->GetInnerIter() < 1000 ) var.amplification = 0;
-		//else var.amplification 	= min(amplification_factor_i, var.Ncrit);
 		var.amplification 	= min(amplification_factor_i, var.Ncrit);
-		//if (dist_i<0.1) cout<<". chapped n = "<<var.amplification;
 
 		/*--- Slight deviation from theory to obtain better results. Coder et al: Ct4 = 0.05  ---*/
 	    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) var.ct4 = 0.025;
-	    else {var.ct4 = 0.05; var.ct3 = 1.2; }
+	    else var.ct4 = 0.045;
 	  }
 
       ft2::get( var);
-      //if (dist_i<0.1) cout<<". ft2 = "<<var.ft2;
+
+      //if (dist_i<0.001) cout<<". ft2 = "<<var.ft2;
 
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
@@ -235,7 +233,7 @@ class CSourceBase_TurbSA : public CNumerics {
       Residual = (Production - Destruction + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
 
-      //if (dist_i<0.1) cout<<". P = "<<Production<<". D = "<<Destruction<<endl;
+      //if (dist_i<0.001) cout<<". P = "<<Production<<". D = "<<Destruction<<endl;
 	  
     }
 

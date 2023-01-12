@@ -1149,7 +1149,7 @@ public:
   inline virtual void SetGammaEff(unsigned long iPoint) {}
 
   /*!
-   * \brief Set the amplification factor.
+   * \brief Set the amplification factor for the eN transition model.
    * \param[in] val_dist - Value of the amplification factor.
    */
   inline virtual void SetAmplificationFactor(unsigned long iPoint, su2double val_AmplificationFactor) {}
@@ -1157,7 +1157,7 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Returns Amplification factor
+   * \return Returns Amplification factor for the eN transition model
    */
   inline virtual su2double GetAmplificationFactor(unsigned long iPoint) const { return 0.0; }
 

@@ -323,10 +323,6 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     /*--- If the iteration has converged, break the loop ---*/
     if (StopCalc) break;
 
-/*    if (Inner_Iter == 4){
-      SU2_MPI::Error("5 Iteration done.", CURRENT_FUNCTION);
-    }*/
-
   }
 
   if (multizone && steady) {

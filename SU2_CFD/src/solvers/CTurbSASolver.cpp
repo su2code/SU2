@@ -252,7 +252,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 
   /*--- Compute turbulence index ---*/
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM || config->GetSAParsedOptions().bc) {
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE || config->GetSAParsedOptions().bc) {
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
@@ -389,8 +389,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Amplification factor ---*/
 
     if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::EN) {
-	    numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,0));
-	  }
+	  numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,0));
+	}
 
     /*--- Effective Intermittency ---*/
     
