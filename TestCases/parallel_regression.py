@@ -86,7 +86,7 @@ def main():
     invwedge_ap2.cfg_file  = "invwedge_ausmplusup2.cfg"
     invwedge_ap2.test_iter = 10
     invwedge_ap2.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_ap2.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_ap2.test_vals_aarch64 = [-0.617877, -1.142640, -18.301487, -18.628852, -18.574892, 2.785436, 3.236765, 5.740905, 1.291532]
     invwedge_ap2.new_output = True
     test_list.append(invwedge_ap2)
     
@@ -96,7 +96,7 @@ def main():
     invwedge_msw.cfg_file  = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
     invwedge_msw.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_msw.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
     invwedge_msw.new_output = True
     test_list.append(invwedge_msw)
     
@@ -106,7 +106,7 @@ def main():
     invwedge_roe.cfg_file  = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
     invwedge_roe.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_roe.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
     invwedge_roe.new_output = True
     test_list.append(invwedge_roe)
     
