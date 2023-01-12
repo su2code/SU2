@@ -69,11 +69,11 @@ def main():
     test_list.append(invwedge)
     
     # Inviscid single wedge, implicit, NEMO supersonic inlet
-    invwedge_ss_inlet           = TestCase('invwedge_ss_inlet')
-    invwedge_ss_inlet.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge_ss_inlet.cfg_file  = "invwedge_ss_inlet.cfg"
+    invwedge_ss_inlet = TestCase('invwedge_ss_inlet')
+    invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals         = [-1.046196, -1.570959, -18.250158, -18.579516, -18.523248, 2.271892, 1.875990, 5.315899, 0.870132]
+    invwedge_ss_inlet.test_vals = [-1.046196, -1.570959, -18.250158, -18.579516, -18.523248, 2.271892, 1.875990, 5.315899, 0.870132]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.046196, -1.570959, -18.250158, -18.579516, -18.523248, 2.271892, 1.875990, 5.315899, 0.870132]
     invwedge_ss_inlet.new_output = True
     test_list.append(invwedge_ss_inlet)

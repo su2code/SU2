@@ -2182,7 +2182,6 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
                                         Temperature, Temperature_ve,
                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
                                         config, FluidModel);
-
  node_inlet.SetPrimVar(0, FluidModel);
  
  su2double Normal[MAXNDIM] = {0.0};
@@ -2232,39 +2231,40 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver
    if (viscous) {
 
      /*--- Set the normal vector and the coordinates ---*/
-     visc_numerics->SetNormal(Normal);
      su2double Coord_Reflected[MAXNDIM];
      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                        geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-     visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+     visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected );
+     visc_numerics->SetNormal(Normal);
 
      /*--- Primitive variables, and gradient ---*/
      visc_numerics->SetConservative(nodes->GetSolution(iPoint), node_inlet.GetSolution(0));
      visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), node_inlet.GetPrimitive(0));
      visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), node_inlet.GetGradient_Primitive(0));
 
-      /*--- Pass supplementary information to CNumerics ---*/
-      visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet.GetdPdU(0));
-      visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet.GetdTdU(0));
-      visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-      visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet.GetEve(0));
-      visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet.GetCvve(0));
+     /*--- Pass supplementary information to CNumerics ---*/
+     visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_inlet.GetdPdU(0));
+     visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_inlet.GetdTdU(0));
+     visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+     visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_inlet.GetEve(0));
+     visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_inlet.GetCvve(0));
 
-      /*--- Species diffusion coefficients ---*/
-      visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+     /*--- Species diffusion coefficients ---*/
+     visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
                                        nodes->GetDiffusionCoeff(iPoint));
-      /*--- Laminar viscosity ---*/
-      visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+     /*--- Laminar viscosity ---*/
+     visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
                                          nodes->GetLaminarViscosity(iPoint));
-      /*--- Eddy viscosity ---*/
-      visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+     /*--- Eddy viscosity ---*/
+     visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
                                       nodes->GetEddyViscosity(iPoint));
-      /*--- Thermal conductivity ---*/
-      visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
+     /*--- Thermal conductivity ---*/
+     visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
                                             nodes->GetThermalConductivity(iPoint));
-      /*--- Vib-el. thermal conductivity ---*/
-      visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
+     /*--- Vib-el. thermal conductivity ---*/
+     visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
                                                nodes->GetThermalConductivity_ve(iPoint));
+     
      /*--- Compute and update residual ---*/
      auto residual = visc_numerics->ComputeResidual(config);
      LinSysRes.SubtractBlock(iPoint, residual);
