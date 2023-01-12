@@ -1517,15 +1517,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
        iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Allocate the value at the infinity ---*/
-    V_infty = GetCharacPrimVar(val_marker, iVertex);
-
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Retrieve index of the closest interior node ---*/
-      const auto Point_Normal =
-          geometry->vertex[val_marker][iVertex]
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]
               ->GetNormal_Neighbor(); // only used for implicit
 
       /*--- Pass boundary node normal to CNumerics ---*/
