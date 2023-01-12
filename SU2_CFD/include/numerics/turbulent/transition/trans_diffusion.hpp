@@ -50,10 +50,9 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
-  using Base::Jacobian_j;  
+  using Base::Jacobian_j;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -65,7 +64,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
-   
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
     /*--- Compute mean effective dynamic viscosity ---*/
     const su2double diff_i_gamma = Laminar_Viscosity_i + Eddy_Viscosity_i;
     const su2double diff_j_gamma = Laminar_Viscosity_j + Eddy_Viscosity_j;
@@ -101,5 +101,5 @@ public:
   CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
   }
-  
+
 };

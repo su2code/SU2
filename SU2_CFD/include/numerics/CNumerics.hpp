@@ -71,9 +71,6 @@ protected:
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
-  Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
-  Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
-  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
@@ -158,7 +155,7 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
-  su2double 
+  su2double
   LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
@@ -172,7 +169,8 @@ protected:
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
-  Volume;      /*!< \brief Volume of the control volume around point i. */
+  Volume,      /*!< \brief Volume of the control volume around point i. */
+  AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
@@ -800,18 +798,6 @@ public:
   }
 
   /*!
-   * \brief Set the thermal diffusivity (translational/rotational)
-   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
-   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
-   * \param[in] iSpecies - Value of the species.
-   */
-  inline void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
-                                    su2double val_thermal_diffusivity_j) {
-    Thermal_Diffusivity_i = val_thermal_diffusivity_i;
-    Thermal_Diffusivity_j = val_thermal_diffusivity_j;
-  }
-
-  /*!
    * \brief Set the specifc heat c_p.
    * \param[in] val_specific_heat_i - Value of the specific heat at point i.
    * \param[in] val_specific_heat_j - Value of the specific heat at point j.
@@ -1014,6 +1000,12 @@ public:
    * \param[in] val_volume Volume of the control volume.
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
+
+  /*!
+   * \brief Set the value of AvgVolume Variable.
+   * \param[in] val_avgvolume AvgVolume Variable.
+   */
+  inline void SetAvgVolume(su2double val_avgvolume) { AvgVolume = val_avgvolume; }
 
   /*!
   * \brief Sets the values of the roe dissipation.
