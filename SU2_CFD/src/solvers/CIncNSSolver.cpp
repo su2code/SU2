@@ -865,7 +865,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
         vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
     }
-    // cout << "Power Dissipation :: "<<power_local<<endl;
+    
     su2double cons = (vFrac_local - VFrac) * (vFrac_local - VFrac);
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
