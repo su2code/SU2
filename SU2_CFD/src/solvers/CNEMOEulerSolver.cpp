@@ -1503,25 +1503,19 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                    CConfig *config, unsigned short val_marker) {
-
-  unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-
-  su2double *V_infty, *V_domain, *U_infty, *U_domain;
-
-  /*--- Set booleans from configuration parameters ---*/
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous  = config->GetViscous();
+void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config,
+                                    unsigned short val_marker) {
 
   /*--- Allocate arrays ---*/
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM] = {0.0};
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker];
+       iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
@@ -1530,63 +1524,69 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Retrieve index of the closest interior node ---*/
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //only used for implicit
+      const auto Point_Normal =
+          geometry->vertex[val_marker][iVertex]
+              ->GetNormal_Neighbor(); // only used for implicit
 
       /*--- Pass boundary node normal to CNumerics ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      /*--- Retrieve solution at the boundary node & free-stream ---*/
-      U_domain = nodes->GetSolution(iPoint);
-      V_domain = nodes->GetPrimitive(iPoint);
-      U_infty  = node_infty->GetSolution(0);
-      V_infty  = node_infty->GetPrimitive(0);
-
       /*--- Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                     node_infty->GetSolution(0));
+      conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                  node_infty->GetPrimitive(0));
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
+      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
+                               node_infty->GetdTvedU(0));
+      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
+      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
-      // Note: This uses the specified boundary num. method specified in driver_structure.cpp
+      // Note: This uses the specified boundary num. method specified in
+      // driver_structure.cpp
       auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
 
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
+      bool viscous = config->GetViscous();
       if (viscous) {
         su2double Coord_Reflected[MAXNDIM];
-        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected );
+        GeometryToolbox::PointPointReflect(
+            nDim, geometry->nodes->GetCoord(Point_Normal),
+            geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                Coord_Reflected);
         visc_numerics->SetNormal(Normal);
 
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetConservative(nodes->GetSolution(iPoint),
-                                       node_infty->GetSolution(0) );
+                                       node_infty->GetSolution(0));
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                                    node_infty->GetPrimitive(0) );
+                                    node_infty->GetPrimitive(0));
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          node_infty->GetGradient_Primitive(0) );
+                                          node_infty->GetGradient_Primitive(0));
 
         /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
+        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
+                                 node_infty->GetdTvedU(0));
+        visc_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
+        visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -1601,12 +1601,14 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                                         nodes->GetEddyViscosity(iPoint));
 
         /*--- Thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                              nodes->GetThermalConductivity(iPoint));
+        visc_numerics->SetThermalConductivity(
+            nodes->GetThermalConductivity(iPoint),
+            nodes->GetThermalConductivity(iPoint));
 
         /*--- Vib-el. thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                                 nodes->GetThermalConductivity_ve(iPoint));
+        visc_numerics->SetThermalConductivity_ve(
+            nodes->GetThermalConductivity_ve(iPoint),
+            nodes->GetThermalConductivity_ve(iPoint));
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
@@ -1618,9 +1620,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       }
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
 }
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
