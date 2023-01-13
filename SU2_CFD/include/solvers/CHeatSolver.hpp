@@ -2,7 +2,7 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,16 +27,16 @@
 
 #pragma once
 
-#include "CSolver.hpp"
+#include "CScalarSolver.hpp"
 #include "../variables/CHeatVariable.hpp"
 
 /*!
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  */
-class CHeatSolver final : public CSolver {
+class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
@@ -44,7 +44,9 @@ protected:
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
   const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
-  unsigned short nVarFlow, nMarker;
+  su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
+
+  unsigned short nVarFlow;
   vector<vector<su2double> > HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
@@ -52,19 +54,48 @@ protected:
   vector<su2double> AverageT_per_Marker;
   su2double Total_AverageT;
   su2double AllBound_AverageT;
-  vector<su2double>  Primitive_Flow_i;
+  vector<su2double> Primitive_Flow_i;
   vector<su2double> Primitive_Flow_j;
   vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
 
-  CHeatVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
   /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   * \brief Applies an isothermal condition to a vertex of a marker.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  void IsothermalBoundaryCondition(CGeometry *geometry, CSolver *flow_solver, const CConfig *config,
+                                   unsigned short iMarker, unsigned long iVertex, const su2double& temperature) {
+
+    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) return;
+
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+    const su2double prandtl_lam = config->GetPrandtl_Lam();
+    const su2double const_diffusivity = config->GetThermalDiffusivity();
+
+    const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+    const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    const auto* Coord_i = geometry->nodes->GetCoord(iPoint);
+    const auto* Coord_j = geometry->nodes->GetCoord(Point_Normal);
+    const su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+
+    const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - temperature) / dist_ij;
+
+    su2double thermal_diffusivity = const_diffusivity;
+    if (flow) {
+      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
+    }
+    LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
+
+    if (implicit) {
+      su2double Jacobian_i[] = {-thermal_diffusivity / dist_ij * Area};
+      Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+    }
+  }
 
 public:
 
@@ -72,11 +103,6 @@ public:
    * \brief Constructor of the class.
    */
   CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -248,15 +274,6 @@ public:
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
-
-  /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
@@ -331,26 +348,6 @@ public:
   }
 
   /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
-
-  /*!
-   * \brief Update the solution using an explicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ExplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -400,4 +397,8 @@ public:
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
 
+  /*!
+   * \brief Does not support OpenMP+MPI yet.
+   */
+  inline bool GetHasHybridParallel() const override { return false; }
 };

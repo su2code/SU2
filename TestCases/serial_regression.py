@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -1132,7 +1132,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
-    airfoilRBF.test_vals = [1.000000, -2.786185, -4.977948]
+    airfoilRBF.test_vals = [1.000000, -2.786183, -4.977959]
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
 

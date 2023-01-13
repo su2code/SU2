@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1910,8 +1910,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if ((incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) &&
                (config->GetEnergy_Equation() && !config->GetStreamwise_Periodic_Temperature()))
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
+      else if (config->GetVorticityConfinement() == YES) {
+        /*--- Vorticity Confinement term as a second source term to allow the use of VC along with other source terms ---*/
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceVorticityConfinement(nDim, nVar_Flow, config);
+      }
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
+
     }
 
   }
@@ -2114,8 +2119,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGrad_Heat(nDim, nVar_Heat, config, true);
-      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, nVar_Heat, config, false);
+      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
+      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, config, false);
 
       switch (config->GetKind_ConvNumScheme_Heat()) {
 

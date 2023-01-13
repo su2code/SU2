@@ -2,7 +2,7 @@
  * \file CTurbSAVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,7 +46,6 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
     Solution_time_n1 = Solution;
   }
 
-  gamma_BC.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
 }

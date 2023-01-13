@@ -28,76 +28,76 @@
 
 #pragma once
 
-#include "CFluidModel.hpp"
-#include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
+#include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "CFluidModel.hpp"
 
 /*!
  * \class CDataDrivenFluid
- * \brief Template class for fluid model definition using multi-layer perceptrons for 
+ * \brief Template class for fluid model definition using multi-layer perceptrons for
  * fluid dynamic state definition.
  * \author: E.Bunschoten.
  */
 class CDataDrivenFluid : public CFluidModel {
  protected:
+  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;  // Interpolation method for data set evaluation
 
-  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;       // Interpolation method for data set evaluation
+  size_t idx_rho,  // Interpolator index for density input
+      idx_e;       // Interpolator index for energy input
 
-  size_t idx_rho,    // Interpolator index for density input
-         idx_e;      // Interpolator index for energy input
+  su2double Newton_Relaxation,  // Relaxation factor for Newton solvers.
+      rho_start,                // Initial value for the density in Newton solver processes.
+      e_start;                  // Initial value for the energy in Newton solver processes.
 
-  su2double Newton_Relaxation,     // Relaxation factor for Newton solvers.
-            rho_start,             // Initial value for the density in Newton solver processes.
-            e_start;               // Initial value for the energy in Newton solver processes.
-  
   su2double dsde_rho, dsdrho_e, d2sde2, d2sdedrho, d2sdrho2;
-  
+
   su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
-  
-  su2vector<string> input_names_rhoe,        // Data-driven method input variable names of the independent variables (density, energy).
-                 output_names_rhoe;       // Output variable names listed in the data-driven method input file name.
 
-  su2vector<su2double*> outputs_rhoe;        // Pointers to output variables.
+  su2vector<string>
+      input_names_rhoe,   // Data-driven method input variable names of the independent variables (density, energy).
+      output_names_rhoe;  // Output variable names listed in the data-driven method input file name.
+
+  su2vector<su2double*> outputs_rhoe;  // Pointers to output variables.
 
   /*--- Class variables for the multi-layer perceptron method ---*/
-  MLPToolbox::CLookUp_ANN * lookup_mlp;   // multi-layer perceptron collection.
-  MLPToolbox::CIOMap * iomap_rhoe;        // input-output map.
-  su2vector<su2double> MLP_inputs;           // inputs for the multi-layer perceptron look-up operation.
+  MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.
+  MLPToolbox::CIOMap* iomap_rhoe;       // input-output map.
+  su2vector<su2double> MLP_inputs;      // inputs for the multi-layer perceptron look-up operation.
 
   /*--- Class variables for the look-up table method ---*/
-  CLookUpTable *lookup_table;
+  CLookUpTable* lookup_table;
 
-  unsigned long outside_dataset, // Density-energy combination lies outside data set.
-                nIter_Newton;    // Number of Newton solver iterations.
+  unsigned long outside_dataset,  // Density-energy combination lies outside data set.
+      nIter_Newton;               // Number of Newton solver iterations.
 
   /*!
-  * \brief Map dataset variables to specific look-up operations
-  */
+   * \brief Map dataset variables to specific look-up operations
+   */
   void MapInputs_to_Outputs();
 
   /*!
-  * \brief Evaluate dataset through multi-layer perceptron.
-  * \param[in] rho - Density value.
-  * \param[in] e - Static energy value.
-  * \return Query point lies outside MLP normalization range (0 is inside, 1 is outside).
-  */
+   * \brief Evaluate dataset through multi-layer perceptron.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   * \return Query point lies outside MLP normalization range (0 is inside, 1 is outside).
+   */
   unsigned long Predict_MLP(su2double rho, su2double e);
 
   /*!
-  * \brief Evaluate dataset through look-up table.
-  * \param[in] rho - Density value.
-  * \param[in] e - Static energy value.
-  * \return Query point lies outside table data range (0 is inside, 1 is outside).
-  */
+   * \brief Evaluate dataset through look-up table.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   * \return Query point lies outside table data range (0 is inside, 1 is outside).
+   */
   unsigned long Predict_LUT(su2double rho, su2double e);
 
   /*!
-  * \brief Evaluate the data set.
-  * \param[in] rho - Density value.
-  * \param[in] e - Static energy value.
-  */
+   * \brief Evaluate the data set.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   */
   void Evaluate_Dataset(su2double rho, su2double e);
 
  public:
@@ -156,26 +156,26 @@ class CDataDrivenFluid : public CFluidModel {
   void SetTDState_Ps(su2double P, su2double s) override;
 
   /*!
-  * \brief Set the initial guess for the density in Newton solvers
-  * \param[in] rho - Initial value for density.
-  */
-  void SetDensity(su2double rho) override {rho_start = rho;}
+   * \brief Set the initial guess for the density in Newton solvers
+   * \param[in] rho - Initial value for density.
+   */
+  void SetDensity(su2double rho) override { rho_start = rho; }
 
   /*!
-  * \brief Set the initial guess for the static energy in Newton solvers
-  * \param[in] e - Initial value for static energy.
-  */
-  void SetEnergy(su2double e) override {e_start = e;}
+   * \brief Set the initial guess for the static energy in Newton solvers
+   * \param[in] e - Initial value for static energy.
+   */
+  void SetEnergy(su2double e) override { e_start = e; }
 
   /*!
-  * \brief Get fluid model extrapolation instance
-  * \return Query point lies outside fluid model data range.
-  */
+   * \brief Get fluid model extrapolation instance
+   * \return Query point lies outside fluid model data range.
+   */
   unsigned long GetExtrapolation() override { return outside_dataset; }
 
   /*!
-  * \brief Get number of Newton solver iterations.
-  * \return Newton solver iteration count at termination.
-  */
+   * \brief Get number of Newton solver iterations.
+   * \return Newton solver iteration count at termination.
+   */
   unsigned long GetnIter_Newton() override { return nIter_Newton; }
 };

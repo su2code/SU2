@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -272,22 +272,8 @@ static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
   MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
   MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
   MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
   MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
@@ -704,7 +690,7 @@ enum class MIXINGVISCOSITYMODEL {
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
@@ -1196,6 +1182,119 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
 };
+
+/*!
+ * \brief LM Options
+ */
+enum class LM_OPTIONS {
+  NONE,         /*!< \brief No option / default. */
+  LM2015,       /*!< \brief Cross-flow corrections. */
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
+  MakePair("NONE", LM_OPTIONS::NONE)
+  MakePair("LM2015", LM_OPTIONS::LM2015)
+  MakePair("MALAN", LM_OPTIONS::MALAN)
+  MakePair("SULUKSNA", LM_OPTIONS::SULUKSNA)
+  MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
+  MakePair("KRAUSE_HYPER", LM_OPTIONS::KRAUSE_HYPER)
+  MakePair("MEDIDA_BAEDER", LM_OPTIONS::MEDIDA_BAEDER)
+  MakePair("MENTER_LANGTRY", LM_OPTIONS::MENTER_LANGTRY)
+  MakePair("DEFAULT", LM_OPTIONS::DEFAULT)
+};
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class TURB_TRANS_CORRELATION {
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+/*!
+ * \brief Structure containing parsed LM options.
+ */
+struct LM_ParsedOptions {
+  LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
+  bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
+  TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
+};
+
+/*!
+ * \brief Function to parse LM options.
+ * \param[in] LM_Options - Selected LM option from config.
+ * \param[in] nLM_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned short nLM_Options, int rank, TURB_MODEL Kind_Turb_Model) {
+  LM_ParsedOptions LMParsedOptions;
+
+  auto IsPresent = [&](LM_OPTIONS option) {
+    const auto lm_options_end = LM_Options + nLM_Options;
+    return std::find(LM_Options, lm_options_end, option) != lm_options_end;
+  };
+
+  LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
+
+  int NFoundCorrelations = 0;
+  if (IsPresent(LM_OPTIONS::MALAN)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::SULUKSNA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::SULUKSNA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE_HYPER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE_HYPER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA_BAEDER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA_BAEDER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MENTER_LANGTRY)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    NFoundCorrelations++;
+  }
+
+  if (NFoundCorrelations > 1) {
+    SU2_MPI::Error("Two correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (LMParsedOptions.Correlation == TURB_TRANS_CORRELATION::DEFAULT){
+    if (Kind_Turb_Model == TURB_MODEL::SST) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    }
+  }
+
+  return LMParsedOptions;
+}
 
 /*!
  * \brief types of species transport models
