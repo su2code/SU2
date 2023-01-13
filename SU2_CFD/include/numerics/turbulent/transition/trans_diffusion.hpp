@@ -124,7 +124,6 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
@@ -141,6 +140,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+	const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
 	/*--- Compute mean effective dynamic viscosity ---*/
 	const su2double diff_i_amplification = (Laminar_Viscosity_i + Eddy_Viscosity_i)/sigma_n;

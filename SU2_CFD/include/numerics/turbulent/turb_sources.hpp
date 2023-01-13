@@ -170,8 +170,6 @@ class CSourceBase_TurbSA : public CNumerics {
 
       ft2::get( var);
 
-      //if (dist_i<0.001) cout<<". ft2 = "<<var.ft2;
-
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
       var.inv_Shat = 1.0 / var.Shat;
@@ -232,8 +230,6 @@ class CSourceBase_TurbSA : public CNumerics {
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
-
-      //if (dist_i<0.001) cout<<". P = "<<Production<<". D = "<<Destruction<<endl;
 	  
     }
 

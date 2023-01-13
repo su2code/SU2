@@ -450,7 +450,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
       /*--- Implicit part ---*/
 	  Jacobian_i[0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
-	  
+
     }
 
     AD::SetPreaccOut(Residual);
