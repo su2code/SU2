@@ -1883,9 +1883,6 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 
 void CSU2TCLib::DiffusionCoeffGY(){
 
-  su2double pi = PI_NUMBER;
-  su2double kb = BOLTZMANN_CONSTANT;
-
   /*--- Calculate mixture gas constant ---*/
   su2double gam_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1893,7 +1890,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
   }
 
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
@@ -1902,17 +1899,39 @@ void CSU2TCLib::DiffusionCoeffGY(){
     su2double Mi    = MolarMass[iSpecies];
     su2double gam_i = rhos[iSpecies] / (Density*Mi);
     su2double denom = 0.0;
-    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      if (jSpecies != iSpecies) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      if (jSpecies != iSpecies) { 
 
         su2double Mj    = MolarMass[jSpecies];
         su2double gam_j = rhos[iSpecies] / (Density*Mj);
 
-        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+        su2double pi = PI_NUMBER;
+        su2double kb = BOLTZMANN_CONSTANT;
+
+        /*--- Check whether to use collision cross section data or Coulomb potential ---*/
+        if (Omega00(iSpecies, jSpecies, 0) == 1.0) {
+
+          /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+          // TODO: Need to rework the bottom section below - add/convert values from option structure
+          su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
+          su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
+          su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
+          
+          su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+          su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
+          
+
+          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log()
+        } else {
+
+          /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+          su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
                             * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
                                    + Omega00(iSpecies,jSpecies,1)*log(T)
                                    + Omega00(iSpecies,jSpecies,2));
+        }
+
         /*--- Calculate "delta1_ij" ---*/
         su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
 
