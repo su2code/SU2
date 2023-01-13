@@ -286,7 +286,6 @@ private:
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-  su2double **Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -1192,6 +1191,7 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  nSpecies_inlet,                           /*!< \brief No. of species for NEMO inlet. */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
@@ -1206,6 +1206,8 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
+  su2double *Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for NEMO inlet boundaries. */
+  su2double Inlet_Temperature_ve;           /*!< \brief Specified Tve for supersonic inlet boundaries (NEMO solver). */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -6826,6 +6828,20 @@ public:
    * \return The inlet velocity vector.
    */
   const su2double* GetInlet_Velocity(string val_index) const;
+
+  /*!
+   * \brief Get the mass fraction vector for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  const su2double* GetInlet_MassFrac() const { return Inlet_MassFrac; }
+
+  /*!
+   * \brief Get the Tve value for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
 
   /*!
    * \brief Get the total pressure at an inlet boundary.

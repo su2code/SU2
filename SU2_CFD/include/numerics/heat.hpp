@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CNumerics.hpp"
+#include "scalar/scalar_diffusion.hpp"
 
 /*!
  * \class CCentSca_Heat
@@ -100,26 +100,36 @@ public:
  * \author O. Burghardt.
  * \version 7.5.0 "Blackbird"
  */
-class CAvgGrad_Heat : public CNumerics {
-private:
-  bool implicit, correct;
-
-public:
+class CAvgGrad_Heat final : public CAvgGrad_Scalar<CNoFlowIndices> {
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] correct - Correct the gradient.
+   * \param[in] correct - Whether to correct the gradient.
    */
-  CAvgGrad_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config, bool correct);
+  CAvgGrad_Heat(unsigned short val_nDim, const CConfig *config, bool correct)
+    : CAvgGrad_Scalar<CNoFlowIndices>(val_nDim, 1, correct, config) {}
+
+ private:
+  /*!
+   * \brief Adds extra variables to AD
+   */
+  void ExtraADPreaccIn(void) override {
+    AD::SetPreaccIn(*Diffusion_Coeff_i, *Diffusion_Coeff_j);
+  }
 
   /*!
-   * \brief Compute the viscous heat residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \brief Heat-specific specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    const su2double Thermal_Diffusivity_Mean = 0.5 * (*Diffusion_Coeff_i + *Diffusion_Coeff_j);
+
+    Flux[0] = Thermal_Diffusivity_Mean * Proj_Mean_GradScalarVar[0];
+
+    /*--- Use TSL for Jacobians. ---*/
+    Jacobian_i[0][0] = -Thermal_Diffusivity_Mean * proj_vector_ij;
+    Jacobian_j[0][0] = Thermal_Diffusivity_Mean * proj_vector_ij;
+  }
 };
