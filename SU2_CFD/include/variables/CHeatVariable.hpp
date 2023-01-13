@@ -2,7 +2,7 @@
  * \file CHeatVariable.hpp
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,20 +27,18 @@
 
 #pragma once
 
-#include "CVariable.hpp"
+#include "CScalarVariable.hpp"
 
 /*!
  * \class CHeatVariable
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  */
-class CHeatVariable final : public CVariable {
-protected:
-  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-
+class CHeatVariable final : public CScalarVariable {
 public:
+  static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
+
   /*!
    * \brief Constructor of the class.
    * \param[in] heat - Values of the Heat solution (initialization value).
@@ -52,28 +50,9 @@ public:
   CHeatVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatVariable() override = default;
-
-  /*!
-   * \brief Get the array of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \return Array of the reconstruction variables gradient at a node.
-   */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-
-  /*!
-   * \brief Get the reconstruction gradient for primitive variable at all points.
-   * \return Reference to variable reconstruction gradient.
-   */
-  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
-  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
-
-  /*!
    * \brief Get the temperature of the point.
    * \return Value of the temperature of the point.
    */
-  inline su2double GetTemperature(unsigned long iPoint) const final { return Solution(iPoint,0); }
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Solution(iPoint, 0); }
 
 };

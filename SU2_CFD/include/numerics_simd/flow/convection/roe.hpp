@@ -2,7 +2,7 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -168,7 +168,7 @@ public:
 
     VectorDbl<nVar> flux;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      flux(iVar) = kappa * (flux_i(iVar) + flux_j(iVar));
+      flux(iVar) = 0.5 * (flux_i(iVar) + flux_j(iVar));
     }
 
     MatrixDbl<nVar> jac_i, jac_j;

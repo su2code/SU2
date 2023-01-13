@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
-  unsigned short iDim, nLineLets;
+  unsigned short iDim;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -161,12 +161,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)
@@ -2017,6 +2011,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool vorticity_confinement = config->GetVorticityConfinement();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
@@ -2213,6 +2208,42 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+  }
+
+  if (vorticity_confinement) {
+
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    /*--- calculate and set the average volume ---*/
+    const su2double AvgVolume = config->GetDomainVolume() / geometry->GetGlobal_nPointDomain();
+    second_numerics->SetAvgVolume(AvgVolume);
+
+    /*--- set vorticity magnitude as auxilliary variable ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
+      nodes->SetAuxVar(iPoint, 0, VorticityMag);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- calculate the gradient of the vorticity magnitude (AuxVarGradient) ---*/
+    SetAuxVar_Gradient_GG(geometry, config);
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+      second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
+      second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0);
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      auto residual = second_numerics->ComputeResidual(config);
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+
   }
 
   /*--- Check if a verification solution is to be computed. ---*/

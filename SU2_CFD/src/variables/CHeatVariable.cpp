@@ -2,7 +2,7 @@
  * \file CHeatVariable.cpp
  * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,16 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CHeatVariable.hpp"
 
-
 CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+  : CScalarVariable(npoint, ndim, nvar, config) {
 
-  bool low_fidelity = false;
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- Initialization of heat variable ---*/
 
@@ -43,14 +40,14 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
+  Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if ((config->GetMG_CorrecSmooth(iMesh) > 0) || low_fidelity) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
+    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+      Residual_Sum.resize(nPoint, nVar);
+      Residual_Old.resize(nPoint, nVar);
       break;
     }
   }
@@ -61,27 +58,11 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
     Solution_time_n1 = heat;
   }
 
-  /*--- Gradient related fields ---*/
-  Gradient.resize(nPoint,nVar,nDim,0.0);
-
-  if (config->GetReconstructionGradientRequired()) {
-    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
-  }
-
-  if (config->GetLeastSquaresRequired()) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  }
-
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint,nVar);
+    Undivided_Laplacian.resize(nPoint, nVar);
 
   Max_Lambda_Inv.resize(nPoint);
   Max_Lambda_Visc.resize(nPoint);
-  Delta_Time.resize(nPoint);
-
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = su2double(1.0);
-  LocalCFL.resize(nPoint) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
