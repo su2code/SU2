@@ -1908,23 +1908,38 @@ void CSU2TCLib::DiffusionCoeffGY(){
         su2double pi = PI_NUMBER;
         su2double kb = BOLTZMANN_CONSTANT;
 
+        // TODO: Need to rework the bottom section below - add/convert values from option structure
+        su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
+        su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
+        su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
+          
+        su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+        su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
         /*--- Check whether to use collision cross section data or Coulomb potential ---*/
-        if (Omega00(iSpecies, jSpecies, 0) == 1.0) {
+        if (Omega00(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
 
           /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-          // TODO: Need to rework the bottom section below - add/convert values from option structure
-          su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
-          su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
-          su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
-          
-          su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-          su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+          su2double D1 = 0.784;
+          su2double C1 = -0.476;
+          su2double c1 = 0.0313;
 
-          
+          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1*T_star*(1 - C1 * exp(-c1 * T_star))+1);
 
-          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log()
+
+        } else if (Omega00(iSpecies, jSpecies, 0) == -1.0) { // repulsive potential
+
+          /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+          su2double D1 = 0.765;
+          su2double C1 = 0.138;
+          su2double c1 = 0.0106;
+
+          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1*T_star*(1 - C1 * exp(-c1 * T_star))+1);
+
+            
         } else {
 
+          // TODO: check which omega values to use: (0,0), (1,1), etc.
           /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
           su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
                             * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
@@ -1932,65 +1947,24 @@ void CSU2TCLib::DiffusionCoeffGY(){
                                    + Omega00(iSpecies,jSpecies,2));
         }
 
-        /*--- Calculate "delta1_ij" ---*/
-        su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
-
-        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-        su2double D_ij = kb*T/(Pressure*d1_ij);
-        denom += gam_j/D_ij;
+        if (iSpecies == 0) {
+          /*--- Calculate "delta1_ij" ---*/
+          su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+          /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+          su2double D_ij = kb*Tve/(Pressure*d1_ij);
+          denom += gam_j/D_ij;
+        } else {
+          /*--- Calculate "delta1_ij" ---*/
+          su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+          /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+          su2double D_ij = kb*T/(Pressure*d1_ij);
+          denom += gam_j/D_ij;
+        }
       }
     }
-    //if (ionization) {
-    //TODO UPDATE WITH PROPER iElectron value.....
-    //  jSpecies = nSpecies-1;
-    //  su2double Mj       = MolarMass[jSpecies];
-    //  su2double gam_j    = rhos[iSpecies] / (Density*Mj);
-
-      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-    // su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-    //      * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-    //      + Omega00(iSpecies,jSpecies,1)*log(Tve)
-    //      + Omega00(iSpecies,jSpecies,2));
-
-    //  /*--- Calculate "delta1_ij" ---*/
-    //  su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-    //}
-
-    /*--- Assign species diffusion coefficient ---*/
+    
     DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
   }
-  // if (ionization) {
-  //TODO: Update correct iElectron....
-  //   iSpecies = nSpecies-1;
-
-  //   /*--- Initialize the species diffusion coefficient ---*/
-  //   DiffusionCoeff[iSpecies] = 0.0;
-
-  //   /*--- Calculate molar concentration ---*/
-  //   Mi      = MolarMass[iSpecies];
-  //   gam_i   = rhos[iSpecies] / (Density*Mi);
-  //   denom = 0.0;
-  //   for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-  //     if (iSpecies != jSpecies) {
-  //       Mj    = MolarMass[jSpecies];
-  //       gam_j = rhos[iSpecies] / (Density*Mj);
-
-  //       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-  //       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-  //           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-  //           + Omega00(iSpecies,jSpecies,1)*log(Tve)
-  //           + Omega00(iSpecies,jSpecies,2));
-
-  //       /*--- Calculate "delta1_ij" ---*/
-  //       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-
-  //       /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-  //       D_ij = kb*Tve/(Pressure*d1_ij);
-  //       denom += gam_j/D_ij;
-  //     }
-  //   }
-  //   DiffusionCoeff[iSpecies] = gam_t*gam_t*MolarMass[iSpecies]*(1-MolarMass[iSpecies]*gam_i) / denom;
-  // }
 }
 
 void CSU2TCLib::ViscosityGY(){
