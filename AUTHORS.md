@@ -90,6 +90,7 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Josy P. Pullockara
 Kedar Naik
 LaSerpe
 Lennaert Tol
@@ -121,6 +122,7 @@ Scott Imlay
 Steffen Schotthöfer
 Steven Endres
 Sunoh Kang
+T. N. Venkatesh
 Teus van der Stelt
 Thomas D. Economon
 Tim Albring
@@ -128,6 +130,7 @@ TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+Y. Chandukrishna
 Zan Xu
 aaronyicongfu
 aeroamit

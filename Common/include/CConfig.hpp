@@ -125,6 +125,7 @@ private:
   Low_Mach_Precon,          /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
   Low_Mach_Corr,            /*!< \brief Flag to know if we are using a low Mach number correction. */
   GravityForce,             /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+  VorticityConfinement,     /*!< \brief Flag to know if the Vorticity Confinement is included in the formulation. */
   SubsonicEngine,           /*!< \brief Engine intake subsonic region. */
   Frozen_Visc_Cont,         /*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,         /*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
@@ -147,6 +148,7 @@ private:
   su2double dCMy_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMz_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
+  su2double Confinement_Param; /*!< \brief Confinement paramenter for Vorticity Confinement method. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -284,7 +286,6 @@ private:
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-  su2double **Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -1188,6 +1189,7 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  nSpecies_inlet,                           /*!< \brief No. of species for NEMO inlet. */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
@@ -1202,6 +1204,8 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
+  su2double *Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for NEMO inlet boundaries. */
+  su2double Inlet_Temperature_ve;           /*!< \brief Specified Tve for supersonic inlet boundaries (NEMO solver). */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1582,6 +1586,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
+  /*!
+   * \brief Get the value of the Confinement Parameter.
+   * \return Value of the constant: Confinement Parameter
+   */
+  su2double GetConfinement_Param(void) const { return Confinement_Param; }
 
   /*!
    * \brief Get the values of the CFL adaption parameters.
@@ -6004,6 +6014,12 @@ public:
   bool GetGravityForce(void) const { return GravityForce; }
 
   /*!
+   * \brief Get information about the Vorticity Confinement.
+   * \return <code>TRUE</code> if it uses Vorticity Confinement; otherwise <code>FALSE</code>.
+   */
+  bool GetVorticityConfinement(void) const { return VorticityConfinement; }
+
+  /*!
    * \brief Get information about the body force.
    * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
    */
@@ -6671,6 +6687,20 @@ public:
    * \return The inlet velocity vector.
    */
   const su2double* GetInlet_Velocity(string val_index) const;
+
+  /*!
+   * \brief Get the mass fraction vector for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  const su2double* GetInlet_MassFrac() const { return Inlet_MassFrac; }
+
+  /*!
+   * \brief Get the Tve value for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
 
   /*!
    * \brief Get the total pressure at an inlet boundary.
