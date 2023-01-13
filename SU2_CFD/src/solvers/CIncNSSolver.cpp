@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -844,7 +844,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
 
     su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0;
     su2double VFrac = config->GetTopology_Vol_Fraction();
-
+    
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry.GetnPointDomain(), omp_get_num_threads()))
     for (unsigned long iPoint=0; iPoint<geometry->GetnPointDomain(); iPoint++) {
         auto VelGrad = nodes->GetVelocityGradient(iPoint);
         auto Vel2 = nodes->GetVelocity2(iPoint);
@@ -865,6 +866,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
         vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
     }
+    END_SU2_OMP_FOR
+
     
     su2double cons = (vFrac_local - VFrac) * (vFrac_local - VFrac);
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();

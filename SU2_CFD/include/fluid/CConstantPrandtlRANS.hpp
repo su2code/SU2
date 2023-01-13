@@ -2,7 +2,7 @@
  * \file CConstantPrandtlRANS.hpp
  * \brief Defines a non-constant effective thermal conductivity for RANS problems using Prandtl numbers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
