@@ -2,7 +2,7 @@
  * \file CLayer.hpp
  * \brief Declaration of artificial neural network interpolation class
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,114 +27,120 @@
 #pragma once
 
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
-#include <cstdlib>
 
 #include "../../CConfig.hpp"
-#include "CNeuron.hpp"
 #include "../../linear_algebra/blas_structure.hpp"
+#include "CNeuron.hpp"
 
-namespace MLPToolbox{
-class CLayer
-{
-private:
-    unsigned long number_of_neurons;    /*!< Neuron count in current layer */
-    CNeuron * neurons;                   /*!< Array of neurons in current layer */
-    bool is_input;                      /*!< Input layer identifyer */
-    std::string activation_type;             /*!< Activation function type applied to the current layer*/
-public:
-    CLayer();
-    CLayer( unsigned long n_neurons );
-    ~CLayer(){ delete [] neurons; }
-    /*!
-    * \brief Set current layer neuron count
-    * \param[in] n_neurons - Number of neurons in this layer
-    */
-    void setNNeurons( unsigned long n_neurons );
+namespace MLPToolbox {
+class CLayer {
+ private:
+  unsigned long number_of_neurons; /*!< Neuron count in current layer */
+  CNeuron* neurons;                /*!< Array of neurons in current layer */
+  bool is_input;                   /*!< Input layer identifyer */
+  std::string activation_type;     /*!< Activation function type applied to the current layer*/
+ public:
+  CLayer();
+  CLayer(unsigned long n_neurons);
+  ~CLayer() { delete[] neurons; }
+  /*!
+   * \brief Set current layer neuron count
+   * \param[in] n_neurons - Number of neurons in this layer
+   */
+  void setNNeurons(unsigned long n_neurons);
 
-    /*!
-    * \brief Get the current layer neuron count
-    * \return Neuron count
-    */
-    unsigned long getNNeurons() const { return number_of_neurons; }
+  /*!
+   * \brief Get the current layer neuron count
+   * \return Neuron count
+   */
+  unsigned long getNNeurons() const { return number_of_neurons; }
 
-    /*!
-    * \brief Define current layer as input layer
-    * \param[in] input - input layer identifyer
-    */
-    void setInput(bool def){ is_input = def; }
+  /*!
+   * \brief Define current layer as input layer
+   * \param[in] input - input layer identifyer
+   */
+  void setInput(bool def) { is_input = def; }
 
-    /*!
-    * \brief Get input layer identifyer
-    * \return input layer identifyer
-    */
-    bool isInput() const { return is_input; }
+  /*!
+   * \brief Get input layer identifyer
+   * \return input layer identifyer
+   */
+  bool isInput() const { return is_input; }
 
-    /*!
-    * \brief Set the output value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \param[in] output_value - Activation function output
-    */
-    void setOutput(std::size_t i_neuron, su2double value){ neurons[i_neuron].setOutput(value); }
+  /*!
+   * \brief Set the output value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \param[in] output_value - Activation function output
+   */
+  void setOutput(std::size_t i_neuron, su2double value) { neurons[i_neuron].setOutput(value); }
 
-    /*!
-    * \brief Get the output value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \return Neuron output value
-    */
-    su2double getOutput(std::size_t i_neuron) const { return neurons[i_neuron].getOutput(); }
+  /*!
+   * \brief Get the output value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \return Neuron output value
+   */
+  su2double getOutput(std::size_t i_neuron) const { return neurons[i_neuron].getOutput(); }
 
-    /*!
-    * \brief Set the input value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \param[in] input_value - Activation function input
-    */
-    void setInput(std::size_t i_neuron, su2double value){ neurons[i_neuron].setInput(value); }
+  /*!
+   * \brief Set the input value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \param[in] input_value - Activation function input
+   */
+  void setInput(std::size_t i_neuron, su2double value) { neurons[i_neuron].setInput(value); }
 
-    /*!
-    * \brief Get the input value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \return Neuron input value
-    */
-    su2double getInput(std::size_t i_neuron) const { return neurons[i_neuron].getInput(); }
+  /*!
+   * \brief Get the input value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \return Neuron input value
+   */
+  su2double getInput(std::size_t i_neuron) const { return neurons[i_neuron].getInput(); }
 
-    /*!
-    * \brief Set the bias value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \param[in] bias_value - Bias value
-    */
-    void setBias(std::size_t i_neuron, su2double value){ neurons[i_neuron].setBias(value); }
+  /*!
+   * \brief Set the bias value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \param[in] bias_value - Bias value
+   */
+  void setBias(std::size_t i_neuron, su2double value) { neurons[i_neuron].setBias(value); }
 
-    /*!
-    * \brief Get the bias value of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \return Neuron bias value
-    */
-    su2double getBias(std::size_t i_neuron){ return neurons[i_neuron].getBias(); }
+  /*!
+   * \brief Get the bias value of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \return Neuron bias value
+   */
+  su2double getBias(std::size_t i_neuron) const { return neurons[i_neuron].getBias(); }
 
-    /*!
-    * \brief Get the output-input gradient of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \return Gradient of neuron output wrt input
-    */
-    su2double getdYdX(std::size_t i_neuron, std::size_t iInput){ return neurons[i_neuron].getGradient(iInput); }
+  /*!
+   * \brief Get the output-input gradient of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \return Gradient of neuron output wrt input
+   */
+  su2double getdYdX(std::size_t i_neuron, std::size_t iInput) const { return neurons[i_neuron].getGradient(iInput); }
 
-    /*!
-    * \brief Get the output-input gradient of a neuron in the layer
-    * \param[in] i_neuron - Neuron index
-    * \return Gradient of neuron output wrt input
-    */
-    void setdYdX(std::size_t i_neuron, std::size_t iInput, su2double dy_dx){ neurons[i_neuron].setGradient(iInput, dy_dx); }
+  /*!
+   * \brief Get the output-input gradient of a neuron in the layer
+   * \param[in] i_neuron - Neuron index
+   * \return Gradient of neuron output wrt input
+   */
+  void setdYdX(std::size_t i_neuron, std::size_t iInput, su2double dy_dx) {
+    neurons[i_neuron].setGradient(iInput, dy_dx);
+  }
 
-    void sizeGradients(std::size_t nInputs) { for(auto iNeuron=0u; iNeuron < number_of_neurons; iNeuron++) neurons[iNeuron].sizeGradient(nInputs); }
+  /*!
+   * \brief Size neuron output derivative wrt network inputs.
+   * \param[in] nInputs - Number of network inputs.
+   */
+  void sizeGradients(std::size_t nInputs) {
+    for (auto iNeuron = 0u; iNeuron < number_of_neurons; iNeuron++) neurons[iNeuron].sizeGradient(nInputs);
+  }
 
-    /*!
-    * \brief Get the activation function name applied to this layer
-    * \return name of the activation function
-    */
-    string getActivationType(){ return activation_type; }
-    
+  /*!
+   * \brief Get the activation function name applied to this layer
+   * \return name of the activation function
+   */
+  string getActivationType() const { return activation_type; }
 };
 
-}
+}  // namespace MLPToolbox

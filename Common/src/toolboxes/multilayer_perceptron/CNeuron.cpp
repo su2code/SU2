@@ -1,9 +1,9 @@
 /*!
  * \file CNeuron.cpp
- * \brief Implementation of the neuron class to be used within the 
+ * \brief Implementation of the neuron class to be used within the
  *      Layer class as a part of the NeuralNetwork class.
  * \author E.C.Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,8 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CNeuron.hpp"
-#include <iostream>
-#include <cstring>
+
 #include <cmath>
+#include <cstring>
+#include <iostream>
 
 using namespace std;

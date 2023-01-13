@@ -3,7 +3,7 @@
  * \brief Implementation of the Layer class to be used in the NeuralNetwork
  *      class
  * \author E. Bunschoten
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,25 +26,25 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CLayer.hpp"
+
 #include <cstring>
 using namespace std;
 
 MLPToolbox::CLayer::CLayer() : CLayer(1) {}
 
-MLPToolbox::CLayer::CLayer(unsigned long n_neurons) : number_of_neurons{n_neurons}, is_input{false}
-{
-    neurons = new CNeuron[n_neurons];
-    for(size_t i=0; i<number_of_neurons; i++){
-        neurons[i].setNumber(i+1);
-    }
+MLPToolbox::CLayer::CLayer(unsigned long n_neurons) : number_of_neurons{n_neurons}, is_input{false} {
+  neurons = new CNeuron[n_neurons];
+  for (size_t i = 0; i < number_of_neurons; i++) {
+    neurons[i].setNumber(i + 1);
+  }
 }
 
-void MLPToolbox::CLayer::setNNeurons(unsigned long n_neurons){
-    if(number_of_neurons != n_neurons){
-        delete [] neurons;
-        neurons = new CNeuron[n_neurons];
-        for(size_t i=0; i<number_of_neurons; i++){
-            neurons[i].setNumber(i+1);
-        }
+void MLPToolbox::CLayer::setNNeurons(unsigned long n_neurons) {
+  if (number_of_neurons != n_neurons) {
+    delete[] neurons;
+    neurons = new CNeuron[n_neurons];
+    for (size_t i = 0; i < number_of_neurons; i++) {
+      neurons[i].setNumber(i + 1);
     }
+  }
 }
