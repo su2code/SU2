@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,6 @@
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config, true) {
-  unsigned short nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
@@ -61,6 +60,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   nDim = geometry->GetnDim();
 
+  /*--- Define variables needed for transition from config file */
+  options = config->GetLMParsedOptions();
+  TransCorrelations.SetOptions(options);
+  TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0) {
@@ -76,12 +80,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (LM transition model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -176,7 +174,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
@@ -195,43 +193,61 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   AD::StartNoSharedReading();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  auto* turbNodes = su2staticcast_p<CTurbVariable*>(solver_container[TURB_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
+    // Here the nodes already have the new solution, thus I have to compute everything from scratch
+
     const su2double rho = flowNodes->GetDensity(iPoint);
     const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
+    const su2double muT = turbNodes->GetmuT(iPoint);
     const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    su2double StrainMag =flowNodes->GetStrainMag(iPoint);        
+    su2double StrainMag =flowNodes->GetStrainMag(iPoint);
     VorticityMag = max(VorticityMag, 1e-12);
     StrainMag = max(StrainMag, 1e-12); // safety against division by zero
-    const su2double Intermittecy = nodes->GetSolution(iPoint,0);
+    const su2double Intermittency = nodes->GetSolution(iPoint,0);
     const su2double Re_t = nodes->GetSolution(iPoint,1);
-    const su2double Re_v = rho*dist*dist*StrainMag/mu;    
-    const su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
-    const su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-
-    su2double Corr_Rec = 0.0;
-    if(Re_t <= 1870){
-     Corr_Rec = Re_t - (396.035e-02 + (-120.656e-04)*Re_t + (868.230e-06)*pow(Re_t, 2.) 
-                                +( -696.506e-09)*pow(Re_t, 3.) + (174.105e-12)*pow(Re_t, 4.));
-    } else {
-     Corr_Rec = Re_t - ( 593.11 + (Re_t - 1870.0) * 0.482);
-    }
-
-    const su2double R_t = rho*k/ mu/ omega;
-    const su2double f_reattach = exp(-pow(R_t/20,4));
-    const su2double re_omega = rho*omega*dist*dist/mu;
-    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    const su2double Re_v = rho*dist*dist*StrainMag/mu;
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
     const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+    su2double omega = 0.0;
+    su2double k = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      omega = turbNodes->GetSolution(iPoint,1);
+      k = turbNodes->GetSolution(iPoint,0);
+    }
+    su2double Tu = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
+    if(TurbFamily == TURB_FAMILY::SA)
+      Tu = config->GetTurbulenceIntensity_FreeStream()*100;
+
+    const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+
+    su2double R_t = 1.0;
+    if(TurbFamily == TURB_FAMILY::KW)
+      R_t = rho*k/ mu/ omega;
+    if(TurbFamily == TURB_FAMILY::SA)
+      R_t = muT/ mu;
+
+    const su2double f_reattach = exp(-pow(R_t/20,4));
+    su2double f_wake = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      const su2double re_omega = rho*omega*dist*dist/mu;
+      f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    }
+    if(TurbFamily == TURB_FAMILY::SA)
+      f_wake = 1.0;
+
     const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
     const su2double delta_bl   = 7.5*theta_bl;
     const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
-    const su2double var1 = (Intermittecy-1.0/50.0)/(1.0-1.0/50.0);
+    const su2double var1 = (Intermittency-1.0/50.0)/(1.0-1.0/50.0);
     const su2double var2 = 1.0 - pow(var1,2.0);
     const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
     su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
@@ -262,7 +278,7 @@ void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-  
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -279,7 +295,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-        
+
 
     /*--- Conservative variables w/o reconstruction ---*/
 
@@ -295,7 +311,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetScalarVar(turbNodes->GetSolution(iPoint), nullptr);
     numerics->SetScalarVarGradient(turbNodes->GetGradient(iPoint), nullptr);
 
-    /*--- Transition variables w/o reconstruction, and its gradient ---*/        
+    /*--- Transition variables w/o reconstruction, and its gradient ---*/
 
     numerics->SetTransVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetTransVarGradient(nodes->GetGradient(iPoint), nullptr);
@@ -307,16 +323,21 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set distance to the surface ---*/
 
     numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
-    
+
     /*--- Set vorticity and strain rate magnitude ---*/
 
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
-    /*--- Set coordnate (for debugging) ---*/
+    /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
-    
+
+    if (options.LM2015) {
+      /*--- Set local grid length (for LM2015)*/
+      numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
@@ -400,62 +421,6 @@ void CTransLMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
-
-
-void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      conv_numerics->SetPrimitive(V_domain, V_infty);
-
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
-
-      /*--- Set Normal (it is necessary to change the sign) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Grid Movement ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute residuals and Jacobians ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Add residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
-  }
-  END_SU2_OMP_FOR
-
-}
-
 void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                 unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -524,15 +489,12 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
-void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                 CConfig *config, unsigned short val_marker) {
-
-BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-
+void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
-
-void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, 
+void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {
 
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
@@ -561,7 +523,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;   
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -614,31 +576,15 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
 
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
-    }
-    END_SU2_OMP_FOR
-
-    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][TRANS_SOL]->GetNodes()->GetSolution());
+    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
                                             false);
-      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+      solver[iMesh][TRANS_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }
 
@@ -652,5 +598,5 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     Restart_Data = nullptr;
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  
+
 }

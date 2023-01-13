@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,6 +54,8 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
 
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
@@ -2401,4 +2403,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
     return EddyViscWall[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
+   */
+  inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
+
 };

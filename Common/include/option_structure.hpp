@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -272,22 +272,8 @@ static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
   MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
   MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
   MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
   MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
@@ -672,11 +658,13 @@ enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
+  COOLPROP, /*!< \brief CoolProp viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+  MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
 };
 
 /*!
@@ -687,7 +675,7 @@ enum class MIXINGVISCOSITYMODEL {
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
@@ -698,11 +686,13 @@ enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
+  COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
+  MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
 };
 
 /*!
@@ -805,67 +795,69 @@ static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
 /*!
  * \brief Types of centered spatial discretizations
  */
-enum ENUM_CENTERED {
-  NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
-  JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
-  LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
-  JST_MAT = 3,        /*!< \brief JST with matrix dissipation. */
-  JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+enum class CENTERED {
+  NONE,           /*!< \brief No centered scheme is used. */
+  JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
+  LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
+  JST_MAT,        /*!< \brief JST with matrix dissipation. */
+  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
-static const MapType<std::string, ENUM_CENTERED> Centered_Map = {
-  MakePair("NONE", NO_CENTERED)
-  MakePair("JST", JST)
-  MakePair("JST_KE", JST_KE)
-  MakePair("JST_MAT", JST_MAT)
-  MakePair("LAX-FRIEDRICH", LAX)
+static const MapType<std::string, CENTERED> Centered_Map = {
+  MakePair("NONE", CENTERED::NONE)
+  MakePair("JST", CENTERED::JST)
+  MakePair("JST_KE", CENTERED::JST_KE)
+  MakePair("JST_MAT", CENTERED::JST_MAT)
+  MakePair("LAX-FRIEDRICH", CENTERED::LAX)
 };
 
 
-// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
+// If you add to UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief Types of upwind spatial discretizations
  */
-enum ENUM_UPWIND {
-  NO_UPWIND = 0,              /*!< \brief No upwind scheme is used. */
-  ROE = 1,                    /*!< \brief Roe's upwind numerical method. */
-  SCALAR_UPWIND = 2,          /*!< \brief Scalar upwind numerical method. */
-  AUSM = 3,                   /*!< \brief AUSM numerical method. */
-  HLLC = 4,                   /*!< \brief HLLC numerical method. */
-  SW = 5,                     /*!< \brief Steger-Warming method. */
-  MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
-  TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
-  SLAU = 8,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
-  L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
-  LMROE = 12,                 /*!< \brief Rieper's Low Mach ROE numerical method . */
-  SLAU2 = 13,                 /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
-  FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
-  LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
-  AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+enum class UPWIND {
+  NONE,                   /*!< \brief No upwind scheme is used. */
+  ROE,                    /*!< \brief Roe's upwind numerical method. */
+  SCALAR_UPWIND,          /*!< \brief Scalar upwind numerical method. */
+  AUSM,                   /*!< \brief AUSM numerical method. */
+  HLLC,                   /*!< \brief HLLC numerical method. */
+  SW,                     /*!< \brief Steger-Warming method. */
+  MSW,                    /*!< \brief Modified Steger-Warming method. */
+  TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
+  SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
+  CUSP,                   /*!< \brief Convective upwind and split pressure numerical method. */
+  CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
+  L2ROE,                  /*!< \brief L2ROE numerical method . */
+  LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2,                  /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
+  FDS,                    /*!< \brief Flux difference splitting upwind method (incompressible flows). */
+  LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
+  AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
+  AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
-static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
-  MakePair("NONE", NO_UPWIND)
-  MakePair("ROE", ROE)
-  MakePair("TURKEL_PREC", TURKEL)
-  MakePair("AUSM", AUSM)
-  MakePair("AUSMPLUSUP", AUSMPLUSUP)
-  MakePair("AUSMPLUSUP2", AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", AUSMPWPLUS)
-  MakePair("SLAU", SLAU)
-  MakePair("HLLC", HLLC)
-  MakePair("SW", SW)
-  MakePair("MSW", MSW)
-  MakePair("CUSP", CUSP)
-  MakePair("SCALAR_UPWIND", SCALAR_UPWIND)
-  MakePair("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
-  MakePair("L2ROE", L2ROE)
-  MakePair("LMROE", LMROE)
-  MakePair("SLAU2", SLAU2)
-  MakePair("FDS", FDS)
-  MakePair("LAX-FRIEDRICH", LAX_FRIEDRICH)
+static const MapType<std::string, UPWIND> Upwind_Map = {
+  MakePair("NONE", UPWIND::NONE)
+  MakePair("ROE", UPWIND::ROE)
+  MakePair("TURKEL_PREC", UPWIND::TURKEL)
+  MakePair("AUSM", UPWIND::AUSM)
+  MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
+  MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
+  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("SLAU", UPWIND::SLAU)
+  MakePair("HLLC", UPWIND::HLLC)
+  MakePair("SW", UPWIND::SW)
+  MakePair("MSW", UPWIND::MSW)
+  MakePair("CUSP", UPWIND::CUSP)
+  MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
+  MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
+  MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
+  MakePair("L2ROE", UPWIND::L2ROE)
+  MakePair("LMROE", UPWIND::LMROE)
+  MakePair("SLAU2", UPWIND::SLAU2)
+  MakePair("FDS", UPWIND::FDS)
+  MakePair("LAX-FRIEDRICH", UPWIND::LAX_FRIEDRICH)
 };
 
 /*!
@@ -1175,6 +1167,119 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
 };
+
+/*!
+ * \brief LM Options
+ */
+enum class LM_OPTIONS {
+  NONE,         /*!< \brief No option / default. */
+  LM2015,       /*!< \brief Cross-flow corrections. */
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
+  MakePair("NONE", LM_OPTIONS::NONE)
+  MakePair("LM2015", LM_OPTIONS::LM2015)
+  MakePair("MALAN", LM_OPTIONS::MALAN)
+  MakePair("SULUKSNA", LM_OPTIONS::SULUKSNA)
+  MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
+  MakePair("KRAUSE_HYPER", LM_OPTIONS::KRAUSE_HYPER)
+  MakePair("MEDIDA_BAEDER", LM_OPTIONS::MEDIDA_BAEDER)
+  MakePair("MENTER_LANGTRY", LM_OPTIONS::MENTER_LANGTRY)
+  MakePair("DEFAULT", LM_OPTIONS::DEFAULT)
+};
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class TURB_TRANS_CORRELATION {
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+/*!
+ * \brief Structure containing parsed LM options.
+ */
+struct LM_ParsedOptions {
+  LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
+  bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
+  TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
+};
+
+/*!
+ * \brief Function to parse LM options.
+ * \param[in] LM_Options - Selected LM option from config.
+ * \param[in] nLM_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned short nLM_Options, int rank, TURB_MODEL Kind_Turb_Model) {
+  LM_ParsedOptions LMParsedOptions;
+
+  auto IsPresent = [&](LM_OPTIONS option) {
+    const auto lm_options_end = LM_Options + nLM_Options;
+    return std::find(LM_Options, lm_options_end, option) != lm_options_end;
+  };
+
+  LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
+
+  int NFoundCorrelations = 0;
+  if (IsPresent(LM_OPTIONS::MALAN)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::SULUKSNA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::SULUKSNA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE_HYPER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE_HYPER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA_BAEDER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA_BAEDER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MENTER_LANGTRY)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    NFoundCorrelations++;
+  }
+
+  if (NFoundCorrelations > 1) {
+    SU2_MPI::Error("Two correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (LMParsedOptions.Correlation == TURB_TRANS_CORRELATION::DEFAULT){
+    if (Kind_Turb_Model == TURB_MODEL::SST) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    }
+  }
+
+  return LMParsedOptions;
+}
 
 /*!
  * \brief types of species transport models

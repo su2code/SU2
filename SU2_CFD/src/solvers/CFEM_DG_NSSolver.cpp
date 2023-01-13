@@ -2,7 +2,7 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

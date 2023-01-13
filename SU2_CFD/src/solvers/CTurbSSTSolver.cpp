@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,14 +28,12 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
-#include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config, true) {
-  unsigned short nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
@@ -73,12 +71,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -247,6 +239,40 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   END_SU2_OMP_FOR
 
+
+  /*--- Compute turbulence index ---*/
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetViscous_Wall(iMarker)) {
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+          if (geometry->nodes->GetDomain(iPoint)) {
+            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            su2double shearStress = 0.0;
+            for(auto iDim = 0u; iDim < nDim; iDim++) {
+              shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
+            }
+            shearStress = sqrt(shearStress);
+
+            const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+            const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+            const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
+            const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
+
+            nodes->SetTurbIndex(iPoint, turbulence_index);
+
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+  }
+
+
   AD::EndNoSharedReading();
 }
 
@@ -323,8 +349,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     /*--- Effective Intermittency ---*/
-
-    if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
     }
 
@@ -336,6 +361,12 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    /*--- Store the intermittency ---*/
+
+    if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+      nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
+    }
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -519,68 +550,10 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      conv_numerics->SetPrimitive(V_domain, V_infty);
-
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
-
-      /*--- Set Normal (it is necessary to change the sign) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Grid Movement ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute residuals and Jacobians ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Add residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
-  }
-  END_SU2_OMP_FOR
-
-}
-
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  const CPrimitiveIndices<unsigned short> prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
-                                                   config->GetNEMOProblem(), nDim, config->GetnSpecies());
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -638,8 +611,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
           Density_Inlet = FluidModel->GetDensity();
         }
         const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
-        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-        const su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+        const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+        const su2double Intensity = Turb_Properties[0];
+        const su2double viscRatio = Turb_Properties[1];
         const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
         Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
@@ -657,6 +631,12 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
+
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -701,7 +681,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
   }
   END_SU2_OMP_FOR
-
 }
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -750,6 +729,12 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
+
       /*--- Compute the residual using an upwind scheme ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
@@ -792,7 +777,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
     }
   }
   END_SU2_OMP_FOR
-
 }
 
 
