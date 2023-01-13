@@ -845,8 +845,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
     su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0;
     su2double VFrac = config->GetTopology_Vol_Fraction();
     
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry.GetnPointDomain(), omp_get_num_threads()))
-    for (unsigned long iPoint=0; iPoint<geometry->GetnPointDomain(); iPoint++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
         auto VelGrad = nodes->GetVelocityGradient(iPoint);
         auto Vel2 = nodes->GetVelocity2(iPoint);
         su2double vel_comp = 0.0;
@@ -868,14 +868,23 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
     }
     END_SU2_OMP_FOR
 
+    //   /*--- Reduce residual information over all threads in this rank. ---*/
+    su2double power = 0.0, vFrac_global= 0.0;
+    #ifdef HAVE_MPI
+        SU2_MPI::Allreduce(&power_local, &power, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&vFrac_local, &vFrac_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    #else
+        power = power_local;
+        vFrac_global = vFrac_local;
+    #endif
     
-    su2double cons = (vFrac_local - VFrac) * (vFrac_local - VFrac);
+    su2double cons = (vFrac_global - VFrac) * (vFrac_global - VFrac);
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
         file << setprecision(15);
         file << std::scientific;
-        file << power_local/baseline_power << "\t" << vFrac_local << "\t" << cons << endl;
+        file << power/baseline_power << "\t" << vFrac_global << "\t" << cons << endl;
         file.close();
     }
     
