@@ -1889,6 +1889,17 @@ void CSU2TCLib::DiffusionCoeffGY(){
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
 
+  // TODO: find a better place to store these
+  /*--- Attractive Coulombic potential constants ---*/
+  const su2double D1_a = 0.784;
+  const su2double C1_a = -0.476;
+  const su2double c1_a = 0.0313;
+
+  /*--- Repulsive Coulombic potential constants ---*/
+  const su2double D1 = 0.765;
+  const su2double C1 = 0.138;
+  const su2double c1 = 0.0106;
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
@@ -1902,46 +1913,37 @@ void CSU2TCLib::DiffusionCoeffGY(){
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       if (jSpecies != iSpecies) { 
 
-        su2double Mj    = MolarMass[jSpecies];
-        su2double gam_j = rhos[iSpecies] / (Density*Mj);
+        const su2double Mj    = MolarMass[jSpecies];
+        const su2double gam_j = rhos[iSpecies] / (Density*Mj);
 
-        su2double pi = PI_NUMBER;
-        su2double kb = BOLTZMANN_CONSTANT;
+        const su2double pi = PI_NUMBER;
+        const su2double kb = BOLTZMANN_CONSTANT;
 
         // TODO: Need to rework the bottom section below - add/convert values from option structure
-        su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
-        su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
-        su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
+        const su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
+        const su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
+        const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
           
-        su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-        su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+        const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+        const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
 
         /*--- Check whether to use collision cross section data or Coulomb potential ---*/
         if (Omega00(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
 
           /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-          su2double D1 = 0.784;
-          su2double C1 = -0.476;
-          su2double c1 = 0.0313;
-
-          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1*T_star*(1 - C1 * exp(-c1 * T_star))+1);
+          const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
 
 
         } else if (Omega00(iSpecies, jSpecies, 0) == -1.0) { // repulsive potential
 
           /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-          su2double D1 = 0.765;
-          su2double C1 = 0.138;
-          su2double c1 = 0.0106;
+          const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
 
-          su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1*T_star*(1 - C1 * exp(-c1 * T_star))+1);
-
-            
         } else {
 
           // TODO: check which omega values to use: (0,0), (1,1), etc.
           /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-          su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+          const su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
                             * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
                                    + Omega00(iSpecies,jSpecies,1)*log(T)
                                    + Omega00(iSpecies,jSpecies,2));
@@ -1949,29 +1951,40 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
         if (iSpecies == 0) {
           /*--- Calculate "delta1_ij" ---*/
-          su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+          const su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
           /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-          su2double D_ij = kb*Tve/(Pressure*d1_ij);
+          const su2double D_ij = kb*Tve/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         } else {
           /*--- Calculate "delta1_ij" ---*/
-          su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+          const su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
           /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-          su2double D_ij = kb*T/(Pressure*d1_ij);
+          const su2double D_ij = kb*T/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         }
       }
     }
-    
+
     DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
   }
 }
 
 void CSU2TCLib::ViscosityGY(){
 
-  su2double pi = PI_NUMBER;
-  su2double Na = AVOGAD_CONSTANT;
-  su2double Mu = 0.0;
+  const su2double pi = PI_NUMBER;
+  const su2double Na = AVOGAD_CONSTANT;
+  const su2double Mu = 0.0;
+
+  // TODO: find a better place to store these
+  /*--- Attractive Coulombic potential constants ---*/
+  const su2double D1_a = 0.784;
+  const su2double C1_a = -0.476;
+  const su2double c1_a = 0.0313;
+
+  /*--- Repulsive Coulombic potential constants ---*/
+  const su2double D1 = 0.765;
+  const su2double C1 = 0.138;
+  const su2double c1 = 0.0106;
 
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -1979,81 +1992,61 @@ void CSU2TCLib::ViscosityGY(){
     su2double denom = 0.0;
 
     /*--- Calculate molar concentration ---*/
-    su2double Mi    = MolarMass[iSpecies];
-    su2double gam_i = rhos[iSpecies] / (Density*Mi);
+    const ssu2double Mi    = MolarMass[iSpecies];
+    const su2double gam_i = rhos[iSpecies] / (Density*Mi);
 
     for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      su2double Mj    = MolarMass[jSpecies];
-      su2double gam_j = rhos[jSpecies] / (Density*Mj);
+      const su2double Mj    = MolarMass[jSpecies];
+      const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
-      /*--- Calculate "delta" quantities ---*/
-      su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+      // TODO: check omegaXX values
+      if (Omega11(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
+
+          /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+          const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
+      
+      } else if (Omega11(iSpecies, jSpecies, 0) == -1.0) { // repulsive potential
+
+          /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+          const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
+
+      } else {
+
+        const su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega11(iSpecies,jSpecies,1)*log(T)
           + Omega11(iSpecies,jSpecies,2));
-      su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+      }
 
-      /*--- Add to denominator of viscosity ---*/
-      denom += gam_j*d2_ij;
+        if (iSpeceis == 0) {
+          /*--- Calculate "delta" quantities ---*/
+          su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+          /*--- Add to denominator of viscosity ---*/
+          denom += gam_j*d2_ij;
+      } else {
+          /*--- Calculate "delta" quantities ---*/
+          su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+          /*--- Add to denominator of viscosity ---*/
+          denom += gam_j*d2_ij;
+      }
     }
-    if (ionization) {
-      jSpecies = nSpecies-1;
-      su2double Mj    = MolarMass[jSpecies];
-      su2double gam_j = rhos[jSpecies] / (Density*Mj);
-
-      /*--- Calculate "delta" quantities ---*/
-      su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
-          * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-          + Omega11(iSpecies,jSpecies,1)*log(Tve)
-          + Omega11(iSpecies,jSpecies,2));
-      su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-      denom += gam_j*d2_ij;
-    }
-
     /*--- Calculate species laminar viscosity ---*/
     Mu += (Mi/Na * gam_i) / denom;
   }
-  // if (ionization) {
-  //TODO iElectron value!!!!
-  //   iSpecies = nSpecies-1;
-  //   denom = 0.0;
-  //   /*--- Calculate molar concentration ---*/
-  //   Mi    = MolarMass[iSpecies];
-  //   gam_i = rhos[iSpecies] / (Density*Mi);
-  //   for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-  //     Mj    = MolarMass[jSpecies];
-  //     gam_j = rhos[jSpecies] / (Density*Mj);
-  //     /*--- Calculate "delta" quantities ---*/
-  //     Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
-  //         * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-  //         + Omega11(iSpecies,jSpecies,1)*log(Tve)
-  //         + Omega11(iSpecies,jSpecies,2));
-  //     d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-  //     /*--- Add to denominator of viscosity ---*/
-  //     denom += gam_j*d2_ij;
-  //   }
-  //   Mu += (Mi/Na * gam_i) / denom;
-  // }
 }
 
 void CSU2TCLib::ThermalConductivitiesGY(){
 
-  su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
-
-  su2double pi   = PI_NUMBER;
-  su2double Na   = AVOGAD_CONSTANT;
-  su2double kb   = BOLTZMANN_CONSTANT;
-
-  if (ionization) {
-    SU2_MPI::Error("NEEDS REVISION w/ IONIZATION",CURRENT_FUNCTION);
-  }
+  const su2double pi   = PI_NUMBER;
+  const su2double Na   = AVOGAD_CONSTANT;
+  const su2double kb   = BOLTZMANN_CONSTANT;
 
   /*--- Mixture vibrational-electronic specific heat ---*/
-  Cvves = ComputeSpeciesCvVibEle(Tve);
+  const auto Cvves = ComputeSpeciesCvVibEle(Tve);
   su2double rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
-  su2double Cvve = rhoCvve/Density;
+  const su2double Cvve = rhoCvve/Density;
 
   /*--- Calculate mixture gas constant ---*/
   su2double R = 0.0;
@@ -2061,40 +2054,65 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     R += Ru * rhos[iSpecies]/Density;
   }
 
+  // TODO: find a better place to store these
+  /*--- Attractive Coulombic potential constants ---*/
+  const su2double D1_a = 0.784;
+  const su2double C1_a = -0.476;
+  const su2double c1_a = 0.0313;
+
+  /*--- Repulsive Coulombic potential constants ---*/
+  const su2double D1 = 0.765;
+  const su2double C1 = 0.138;
+  const su2double c1 = 0.0106;
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  ThermalCond_tr = 0.0;
-  ThermalCond_ve = 0.0;
+  su2double ThermalCond_tr = 0.0;
+  su2double ThermalCond_ve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     /*--- Calculate molar concentration ---*/
-    Mi      = MolarMass[iSpecies];
-    mi      = Mi/Na;
-    gam_i   = rhos[iSpecies] / (Density*Mi);
-    denom_t = 0.0;
-    denom_r = 0.0;
+    const su2double Mi      = MolarMass[iSpecies];
+    const su2double mi      = Mi/Na;
+    const su2double gam_i   = rhos[iSpecies] / (Density*Mi);
+    su2double denom_t = 0.0;
+    su2double denom_r = 0.0;
+
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      Mj    = MolarMass[jSpecies];
-      mj    = Mj/Na;
-      gam_j = rhos[iSpecies] / (Density*Mj);
-      a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
+      const su2double Mj    = MolarMass[jSpecies];
+      const su2double mj    = Mj/Na;
+      const su2double gam_j = rhos[iSpecies] / (Density*Mj);
+      const su2double a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
+
+      if (Omega11(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
+
+        /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+        const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
+      
+      } else if (Omega11(iSpecies, jSpecies, 0) == 1.0) { // repulsive potential
+
+      } else {
+
+      }
+
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+      const su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega00(iSpecies,jSpecies,1)*log(T)
           + Omega00(iSpecies,jSpecies,2));
 
       /*--- Calculate "delta1_ij" ---*/
-      d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+      const su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
 
       /*--- Calculate the Omega^(1,1)_ij collision cross section ---*/
-      Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+      const su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega11(iSpecies,jSpecies,1)*log(T)
           + Omega11(iSpecies,jSpecies,2));
 
       /*--- Calculate "delta2_ij" ---*/
-      d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+      const su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+
       denom_t += a_ij*gam_j*d2_ij;
       denom_r += gam_j*d1_ij;
     }
