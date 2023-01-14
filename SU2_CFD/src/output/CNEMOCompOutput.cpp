@@ -254,8 +254,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3)
      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
-    AddVolumeOutput("THERMAL_COND_TR",       "Thermal_Cond_tr",       "PRIMITIVE", "thermal tr");
-    AddVolumeOutput("THERMAL__COND_VE",       "Thermal_Cond_ve",       "PRIMITIVE", "thermal vib");
+    AddVolumeOutput("THERMAL_COND_TR", "Thermal_Cond_tr", "PRIMITIVE", "thermal tr");
+    AddVolumeOutput("THERMAL__COND_VE", "Thermal_Cond_ve", "PRIMITIVE", "thermal vib");
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
