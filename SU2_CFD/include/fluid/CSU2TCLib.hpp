@@ -71,6 +71,16 @@ private:
 
   const su2double T_ref_suth = 273.15; /*!<\brief Reference temperature for Sutherland's model [K] */
 
+  /*--- Attractive Coulombic potential constants ---*/
+  const su2double D1_a = 0.784;
+  const su2double C1_a = -0.476;
+  const su2double c1_a = 0.0313;
+
+  /*--- Repulsive Coulombic potential constants ---*/
+  const su2double D1_r = 0.765;
+  const su2double C1_r = 0.138;
+  const su2double c1_r = 0.0106;
+
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
