@@ -1884,10 +1884,9 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 su2double CSU2TCLib::ComputeDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
 
   if (ionization) {
-    // TODO: Need to rework the bottom section below - add/convert values from option structure
-    const su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
-    const su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
-    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
+    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+    const su2double kb_cgs = BOLTZMANN_CONSTANT*1E7; // CGS unit of Boltzmann Constant 
+    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6 // CGS unit of electron number density
       
     const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
     const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
