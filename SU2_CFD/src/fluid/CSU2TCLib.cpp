@@ -1881,7 +1881,7 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   ThermalConductivities[1] = ThermalCond_ve;
 }
 
-su2double CSU2TCLib::ComputeDelta1(su2double Omega, su2double T, ) {
+su2double CSU2TCLib::ComputeDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
 
   if (ionization) {
     // TODO: Need to rework the bottom section below - add/convert values from option structure
@@ -1915,48 +1915,13 @@ su2double CSU2TCLib::ComputeDelta1(su2double Omega, su2double T, ) {
                              + Omega00(iSpecies,jSpecies,2));
   }  
   
-  const su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
-
-  return d1_ij;
-}
-
-su2double CSU2TCLib::ComputeDelta2(su2double Omega, su2double T, ) {
-
-  if (ionization) {
-    // TODO: Need to rework the bottom section below - add/convert values from option structure
-    const su2double e_cgs = 4.8032047E−10; // CGS unit of fundamental electric charge TODO: confirm value
-    const su2double kb_cgs = 1.3807E-16; // CGS unit of Boltzmann Constant TODO: confirm value
-    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6// CGS unit of electron number density TODO: confirm value
-      
-    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+  if (d1) {
+    const su2double d_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d1_ij
+  } else {
+    const su2double d_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d2_ij
   }
 
-  /*--- Check whether to use collision cross section data or Coulomb potential ---*/
-  if (Omega00(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
-
-    /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
-
-
-  } else if (Omega00(iSpecies, jSpecies, 0) == -1.0) { // repulsive potential
-
-    /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
-
-  } else {
-
-    // TODO: check which omega values to use: (0,0), (1,1), etc.
-    /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-    const su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-                      * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
-                             + Omega00(iSpecies,jSpecies,1)*log(T)
-                             + Omega00(iSpecies,jSpecies,2));
-  }  
-  
-  const su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
-
-  return d2_ij;
+  return d_ij;
 }
 
 void CSU2TCLib::DiffusionCoeffGY(){
@@ -1974,10 +1939,10 @@ void CSU2TCLib::DiffusionCoeffGY(){
     DiffusionCoeff[iSpecies] = 0.0;
 
     /*--- Calculate molar concentration ---*/
-    su2double Mi    = MolarMass[iSpecies];
-    su2double gam_i = rhos[iSpecies] / (Density*Mi);
+    const su2double Mi    = MolarMass[iSpecies];
+    const su2double gam_i = rhos[iSpecies] / (Density*Mi);
     su2double denom = 0.0;
-    
+
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       if (jSpecies != iSpecies) { 
 
@@ -1988,11 +1953,11 @@ void CSU2TCLib::DiffusionCoeffGY(){
         const su2double kb = BOLTZMANN_CONSTANT;
 
         if (iSpecies == 0) {
-          const su2double d1_ij = ComputeDelta1();
+          const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
           const su2double D_ij = kb*Tve/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         } else {
-          const su2double d1_ij = ComputeDelta1();
+          const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, true);
           const su2double D_ij = kb*T/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         }
@@ -2005,9 +1970,8 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
 void CSU2TCLib::ViscosityGY(){
 
-  const su2double pi = PI_NUMBER;
   const su2double Na = AVOGAD_CONSTANT;
-  const su2double Mu = 0.0;
+  su2double Mu = 0.0;
 
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -2023,10 +1987,10 @@ void CSU2TCLib::ViscosityGY(){
       const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
       if (iSpeceis == 0) {
-          const su2double d2_ij = ComputeDelta2();
+          const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
           denom += gam_j*d2_ij;
       } else {
-          const su2double d2_ij = ComputeDelta2();
+          const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, false);
           denom += gam_j*d2_ij;
       }
     }
@@ -2037,7 +2001,6 @@ void CSU2TCLib::ViscosityGY(){
 
 void CSU2TCLib::ThermalConductivitiesGY(){
 
-  const su2double pi   = PI_NUMBER;
   const su2double Na   = AVOGAD_CONSTANT;
   const su2double kb   = BOLTZMANN_CONSTANT;
 
@@ -2073,11 +2036,11 @@ void CSU2TCLib::ThermalConductivitiesGY(){
       const su2double a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
       if (iSpecies == 0) {
-        const su2double d1_ij = ComputeDelta1();
-        const su2double d2_ij = ComputeDelta2();
+        const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
+        const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
       } else {
-        const su2double d1_ij = ComputeDelta1();
-        const su2double d2_ij = ComputeDelta2();
+        const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, true);
+        const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, false);
       }
 
       denom_t += a_ij*gam_j*d2_ij;
