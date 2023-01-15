@@ -30,40 +30,6 @@
 #include "scalar/scalar_diffusion.hpp"
 
 /*!
- * \class CCentSca_Heat
- * \brief Class for scalar centered scheme.
- * \ingroup ConvDiscr
- * \author O. Burghardt
- * \version 7.5.0 "Blackbird"
- */
-class CCentSca_Heat : public CNumerics {
-private:
-  su2double Param_Kappa_4;         /*!< \brief Artificial dissipation parameters. */
-  bool implicit;                   /*!< \brief Implicit calculation. */
-  bool dynamic_grid;               /*!< \brief Modification for grid movement. */
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Compute the flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config) override;
-};
-
-/*!
  * \class CUpwSca_Heat
  * \brief Class for doing a scalar upwind solver for the heat convection equation.
  * \ingroup ConvDiscr

@@ -149,21 +149,6 @@ public:
                    bool val_update_geo) override;
 
   /*!
-   * \brief Compute the spatial integration using a centered scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Centered_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
-  /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

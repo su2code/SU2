@@ -193,10 +193,6 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
   END_SU2_OMP_MASTER
 
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
-    SetUndivided_Laplacian(geometry, config);
-  }
-
   CommonPreprocessing(geometry, config, Output);
 }
 
@@ -281,47 +277,6 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   Restart_Vars = nullptr;
   delete[] Restart_Data;
   Restart_Data = nullptr;
-}
-
-void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
-                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-
-  const auto numerics = numerics_container[CONV_TERM];
-
-  if(flow) {
-
-    nVarFlow = solver_container[FLOW_SOL]->GetnVar();
-
-    for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-
-      /*--- Points in edge ---*/
-      const auto iPoint = geometry->edges->GetNode(iEdge,0);
-      const auto jPoint = geometry->edges->GetNode(iEdge,1);
-      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-      /*--- Primitive variables w/o reconstruction ---*/
-      const auto V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-      const auto V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
-
-      const auto Temp_i = nodes->GetTemperature(iPoint);
-      const auto Temp_j = nodes->GetTemperature(jPoint);
-
-      numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
-      numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
-
-      numerics->SetPrimitive(V_i, V_j);
-      numerics->SetTemperature(Temp_i, Temp_j);
-
-      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-      LinSysRes.AddBlock(iPoint, Residual);
-      LinSysRes.SubtractBlock(jPoint, Residual);
-
-      /*--- Implicit part ---*/
-
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
-    }
-  }
 }
 
 void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
