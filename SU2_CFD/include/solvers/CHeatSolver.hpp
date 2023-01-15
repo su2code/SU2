@@ -46,16 +46,13 @@ protected:
 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
 
-  unsigned short nVarFlow;
-  vector<vector<su2double> > HeatFlux;
+  vector<vector<su2double>> HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
   su2double AllBound_HeatFlux;
   vector<su2double> AverageT_per_Marker;
   su2double Total_AverageT;
   su2double AllBound_AverageT;
-  vector<su2double> Primitive_Flow_i;
-  vector<su2double> Primitive_Flow_j;
   vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
@@ -157,18 +154,6 @@ public:
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
                     bool Output) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      unsigned short iMesh) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -417,9 +402,4 @@ public:
    * \return Value of the heat flux.
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
-
-  /*!
-   * \brief Does not support OpenMP+MPI yet.
-   */
-  inline bool GetHasHybridParallel() const override { return false; }
 };
