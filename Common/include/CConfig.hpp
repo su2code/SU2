@@ -497,6 +497,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
@@ -547,6 +548,7 @@ private:
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
+  Kind_Centered_Heat,           /*!< \brief Centered scheme for the heat transfer model. */
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
 
 
@@ -563,6 +565,7 @@ private:
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
+  Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
@@ -2325,8 +2328,8 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
-                             UPWIND val_kind_upwind,        LIMITER val_kind_slopelimit,
-                             bool val_muscl,                        unsigned short val_kind_fem);
+                             UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
+                             bool val_muscl,  unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.

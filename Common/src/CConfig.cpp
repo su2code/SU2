@@ -1947,9 +1947,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
-  /*!\brief CONV_NUM_METHOD_HEAT
-   *  \n DESCRIPTION: Convective numerical method \n DEFAULT: UPWIND */
-  addEnumOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Space_Map, SPACE_UPWIND);
+  /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
+  /*!\brief CONV_NUM_METHOD_HEAT \n DESCRIPTION: Convective numerical method */
+  addConvectOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Kind_Centered_Heat, Kind_Upwind_Heat);
 
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
@@ -3547,9 +3548,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
+  auto SetScalarDefaults = [](bool muscl, unsigned short& KindConvScheme, UPWIND& KindUpwind, LIMITER& KindLimiter) {
+    if (KindConvScheme == NO_CONVECTIVE) {
+      KindConvScheme = SPACE_UPWIND;
+      KindUpwind = UPWIND::SCALAR_UPWIND;
+    } else if (KindConvScheme == SPACE_CENTERED) {
+      SU2_MPI::Error("Centered schemes are not available for scalar transport", CURRENT_FUNCTION);
+    }
+    if (!muscl) KindLimiter = LIMITER::NONE;
+  };
+  SetScalarDefaults(MUSCL_Turb, Kind_ConvNumScheme_Turb, Kind_Upwind_Turb, Kind_SlopeLimit_Turb);
+  SetScalarDefaults(MUSCL_Heat, Kind_ConvNumScheme_Heat, Kind_Upwind_Heat, Kind_SlopeLimit_Heat);
+  SetScalarDefaults(MUSCL_Species, Kind_ConvNumScheme_Species, Kind_Upwind_Species, Kind_SlopeLimit_Species);
+
   if (!MUSCL_Flow || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = LIMITER::NONE;
-  if (!MUSCL_Turb || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = LIMITER::NONE;
-  if (!MUSCL_Species || (Kind_ConvNumScheme_Species == SPACE_CENTERED)) Kind_SlopeLimit_Species = LIMITER::NONE;
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
@@ -8407,7 +8419,8 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
   auto SetHeatParam = [&]() {
     if (val_system == RUNTIME_HEAT_SYS) {
-      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, MUSCL_Heat, NONE);
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat,
+                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
     }
   };
