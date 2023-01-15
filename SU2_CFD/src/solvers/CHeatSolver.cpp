@@ -93,7 +93,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     Temperature_Ref = config->GetInc_Temperature_Ref();
   }
   config->SetTemperature_Ref(Temperature_Ref);
-  config->SetTemperature_FreeStreamND(Temperature_FreeStream/Temperature_Ref);
+  config->SetTemperature_FreeStreamND(Temperature_FreeStream / Temperature_Ref);
+  Solution_Inf[0] = config->GetTemperature_FreeStreamND();
 
   /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
    *    thermal conductivity is read directly from config file ---*/
@@ -115,7 +116,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
    used for communications with donor cells ---*/
 
   const unsigned short nConjVariables = 4;
-  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar, config->GetTemperature_FreeStreamND());
+  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar, Solution_Inf[0]);
 
   /*--- Heat flux in all the markers ---*/
 
@@ -131,7 +132,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Initialize the nodes vector. ---*/
 
-  nodes = new CHeatVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
+  nodes = new CHeatVariable(Solution_Inf[0], nPoint, nDim, nVar, config);
 
   SetBaseClassPointerToNodes();
 
@@ -389,72 +390,61 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_contain
   END_SU2_OMP_FOR
 }
 
-void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  if (!flow) return;
 
   const bool viscous = config->GetViscous();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const su2double Temp_j = config->GetInlet_Ttotal(Marker_Tag) / config->GetTemperature_Ref();
-  const su2double Twall = config->GetTemperature_FreeStreamND();
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-      su2double Normal[MAXNDIM];
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      if (flow) {
+    su2double Normal[MAXNDIM];
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-        conv_numerics->SetNormal(Normal);
+    conv_numerics->SetNormal(Normal);
 
-        /*--- Retrieve solution at this boundary node ---*/
+    /*--- Retrieve solution at this boundary node ---*/
 
-        const auto* V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+    const auto* V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
-        /*--- Retrieve the specified velocity for the inlet. ---*/
+    /*--- Retrieve the specified velocity for the inlet. ---*/
 
-        const su2double Vel_Mag = config->GetInlet_Ptotal(Marker_Tag) / config->GetVelocity_Ref();
-        const auto* Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+    const auto* V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-        auto* V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+    conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        conv_numerics->SetPrimitive(V_domain, V_inlet);
+    const su2double Temp_i = nodes->GetTemperature(iPoint);
+    const su2double Temp_j = V_inlet[prim_idx.Temperature()];
+    conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
 
-        if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+    /*--- Compute the residual using an upwind scheme ---*/
 
-        const su2double Temp_i = nodes->GetTemperature(iPoint);
-        conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
+    auto residual = conv_numerics->ComputeResidual(config);
 
-        /*--- Compute the residual using an upwind scheme ---*/
+    /*--- Update residual value ---*/
 
-        auto residual = conv_numerics->ComputeResidual(config);
+    LinSysRes.AddBlock(iPoint, residual);
 
-        /*--- Update residual value ---*/
+    /*--- Jacobian contribution for implicit integration ---*/
 
-        LinSysRes.AddBlock(iPoint, residual);
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-        /*--- Jacobian contribution for implicit integration ---*/
+    /*--- Viscous contribution ---*/
 
-        if (implicit)
-          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      }
-
-      /*--- Viscous contribution ---*/
-
-      if (viscous) {
-        IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
-      }
+    if (viscous) {
+      IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Temp_j);
     }
   }
   END_SU2_OMP_FOR
@@ -462,6 +452,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  if (!flow) return;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -470,52 +461,46 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      su2double Normal[MAXNDIM];
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    su2double Normal[MAXNDIM];
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      if(flow) {
-        conv_numerics->SetNormal(Normal);
+    conv_numerics->SetNormal(Normal);
 
-        /*--- Retrieve solution at this boundary node ---*/
+    /*--- Retrieve solution at this boundary node ---*/
 
-        const auto* V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+    const auto* V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
-        /*--- Retrieve the specified velocity for the inlet. ---*/
+    /*--- Retrieve the specified velocity for the inlet. ---*/
 
-        auto* V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(Point_Normal, iDim);
+    const auto* V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-        conv_numerics->SetPrimitive(V_domain, V_outlet);
+    conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-        if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        const su2double Temp_i = nodes->GetTemperature(iPoint);
-        const su2double Temp_j = nodes->GetTemperature(Point_Normal);
-        conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
+    const su2double Temp_i = nodes->GetTemperature(iPoint);
+    const su2double Temp_j = nodes->GetTemperature(Point_Normal);
+    conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
 
-        /*--- Compute the residual using an upwind scheme ---*/
+    /*--- Compute the residual using an upwind scheme ---*/
 
-        auto residual = conv_numerics->ComputeResidual(config);
+    auto residual = conv_numerics->ComputeResidual(config);
 
-        /*--- Update residual value ---*/
+    /*--- Update residual value ---*/
 
-        LinSysRes.AddBlock(iPoint, residual);
+    LinSysRes.AddBlock(iPoint, residual);
 
-        /*--- Jacobian contribution for implicit integration ---*/
+    /*--- Jacobian contribution for implicit integration ---*/
 
-        if (implicit)
-          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      }
-    }
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
 }
