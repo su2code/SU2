@@ -56,26 +56,12 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   nDim = geometry->GetnDim();
 
-  /*--- Define some auxiliary vector related with the residual ---*/
-
-  Residual = new su2double[nVar]; for (auto iVar = 0u; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-  Res_Visc = new su2double[nVar]; for (auto iVar = 0u; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
-
   /*--- Define some structures for locating max residuals ---*/
 
   Residual_RMS.resize(nVar,0.0);
   Residual_Max.resize(nVar,0.0);
   Point_Max.resize(nVar,0);
   Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
-
-  /*--- Jacobians and vector structures for implicit computations ---*/
-
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
 
   /*--- Initialization of the structure of the whole Jacobian ---*/
 
@@ -465,11 +451,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *V_outlet, *V_domain;
-
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  su2double Normal[MAXNDIM];
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -481,6 +463,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
+      su2double Normal[MAXNDIM];
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
@@ -489,11 +472,11 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve solution at this boundary node ---*/
 
-        V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+        const auto* V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
         /*--- Retrieve the specified velocity for the inlet. ---*/
 
-        V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+        auto* V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
         for (auto iDim = 0u; iDim < nDim; iDim++)
           V_outlet[iDim+1] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(Point_Normal, iDim);
 
@@ -528,7 +511,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
   su2double thermal_diffusivity, T_Conjugate, Tinterface, Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
 
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const su2double rho_cp_solid = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
@@ -577,9 +560,8 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           HeatFlux          = HeatFluxDensity * Area;
 
           if (implicit) {
-
-            Jacobian_i[0][0] = -thermal_diffusivity*Area;
-            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+            su2double Jacobian_i[] = {-thermal_diffusivity*Area};
+            Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
           }
         }
         else {
@@ -588,8 +570,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           HeatFlux        = HeatFluxDensity*Area;
         }
 
-        Res_Visc[0] = -HeatFlux;
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        LinSysRes(iPoint, 0) += HeatFlux;
       }
     }
   }
