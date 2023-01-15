@@ -28,6 +28,8 @@
 #pragma once
 
 #include "scalar/scalar_diffusion.hpp"
+#include "scalar/scalar_convection.hpp"
+#include "../variables/CIncEulerVariable.hpp"
 
 /*!
  * \class CUpwSca_Heat
@@ -36,27 +38,31 @@
  * \author O. Burghardt.
  * \version 7.5.0 "Blackbird"
  */
-class CUpwSca_Heat : public CNumerics {
-private:
-  bool implicit, dynamic_grid;
-
-public:
+class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>> {
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
+  CUpwSca_Heat(unsigned short val_nDim, const CConfig *config)
+    : CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>>(val_nDim, 1, config) {}
+
+ private:
+  /*!
+   * \brief Adds extra variables to AD
+   */
+  void ExtraADPreaccIn(void) override {}
 
   /*!
-   * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \brief Heat-specific specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    Flux[0] = a0 * ScalarVar_i[0] + a1 * ScalarVar_j[0];
+    Jacobian_i[0][0] = a0;
+    Jacobian_j[0][0] = a1;
+  }
 };
 
 /*!

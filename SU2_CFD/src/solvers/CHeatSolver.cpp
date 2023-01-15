@@ -281,130 +281,20 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-
-  CNumerics* numerics = numerics_container[CONV_TERM];
-
-  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected,
-            Project_Grad_i, Project_Grad_j, Project_Temp_i_Grad, Project_Temp_j_Grad;
-
-  su2double Vector_i[MAXNDIM] = {0};
-  su2double Vector_j[MAXNDIM] = {0};
-
-  if(flow) {
-
-    nVarFlow = solver_container[FLOW_SOL]->GetnVar();
-
-    /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
-    vector<su2double> Primitive_Flow_i(nVarFlow, 0.0);
-    vector<su2double> Primitive_Flow_j(nVarFlow, 0.0);
-
-    for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-
-      /*--- Points in edge ---*/
-      const auto iPoint = geometry->edges->GetNode(iEdge,0);
-      const auto jPoint = geometry->edges->GetNode(iEdge,1);
-      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-      /*--- Primitive variables w/o reconstruction ---*/
-      V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-      V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
-
-      const auto Temp_i_Grad = nodes->GetGradient(iPoint);
-      const auto Temp_j_Grad = nodes->GetGradient(jPoint);
-      numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
-
-      Temp_i = nodes->GetTemperature(iPoint);
-      Temp_j = nodes->GetTemperature(jPoint);
-
-      /* Second order reconstruction */
-      if (config->GetMUSCL_Heat()) {
-
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) - geometry->nodes->GetCoord(iPoint, iDim));
-          Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
-        }
-
-        const auto Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-        const auto Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
-        const auto Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
-        const auto Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
-
-        /*Loop to correct the flow variables*/
-        for (auto iVar = 0u; iVar < nVarFlow; iVar++) {
-
-          /*Apply the Gradient to get the right temperature value on the edge */
-          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-              Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-              Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-          }
-
-          Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_Flow_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-
-        /* Correct the temperature variables */
-        Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim];
-            Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim];
-        }
-
-        Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
-        Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
-
-        numerics->SetPrimitive(Primitive_Flow_i.data(), Primitive_Flow_j.data());
-        numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
-      }
-
-      else {
-
-        numerics->SetPrimitive(V_i, V_j);
-        numerics->SetTemperature(Temp_i, Temp_j);
-      }
-
-      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-      LinSysRes.AddBlock(iPoint, Residual);
-      LinSysRes.SubtractBlock(jPoint, Residual);
-
-      /*--- Implicit part ---*/
-
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
-    }
-  }
-
+  /*--- For solid heat transfer there is no convection. ---*/
+  if (!flow) return;
+  CScalarSolver<CHeatVariable>::Upwind_Residual(geometry, solver_container, numerics_container, config, iMesh);
 }
 
 void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  /*--- For fluid problems the viscous residual is included in the convective residual. ---*/
+  if (flow) return;
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
-  const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
-
-  const su2double const_diffusivity = config->GetThermalDiffusivity();
-  const su2double pr_lam = config->GetPrandtl_Lam();
-  const su2double pr_turb = config->GetPrandtl_Turb();
-
   for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-    su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
-
-    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
-    auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
-      if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
-        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
-        numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
-        numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
-      }
-    };
-    /*--- Compute residual and Jacobians. ---*/
-    Viscous_Residual_impl(compute_thermal_diffusivity, iEdge, geometry, solver_container, numerics, config);
+    Viscous_Residual(iEdge, geometry, solver_container, numerics, config);
   }
 }
 
@@ -505,6 +395,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   const bool viscous = config->GetViscous();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const su2double Temp_j = config->GetInlet_Ttotal(Marker_Tag) / config->GetTemperature_Ref();
 
   su2double Normal[MAXNDIM];
 
@@ -544,20 +435,21 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         if (dynamic_grid)
           conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        conv_numerics->SetTemperature(nodes->GetTemperature(iPoint), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
+        const su2double Temp_i = nodes->GetTemperature(iPoint);
+        conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
 
         /*--- Compute the residual using an upwind scheme ---*/
 
-        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        auto residual = conv_numerics->ComputeResidual(config);
 
         /*--- Update residual value ---*/
 
-        LinSysRes.AddBlock(iPoint, Residual);
+        LinSysRes.AddBlock(iPoint, residual);
 
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
 
       /*--- Viscous contribution ---*/
@@ -610,20 +502,22 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         if (dynamic_grid)
           conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        conv_numerics->SetTemperature(nodes->GetTemperature(iPoint), nodes->GetTemperature(Point_Normal));
+        const su2double Temp_i = nodes->GetTemperature(iPoint);
+        const su2double Temp_j = nodes->GetTemperature(Point_Normal);
+        conv_numerics->SetScalarVar(&Temp_i, &Temp_j);
 
         /*--- Compute the residual using an upwind scheme ---*/
 
-        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        auto residual = conv_numerics->ComputeResidual(config);
 
         /*--- Update residual value ---*/
 
-        LinSysRes.AddBlock(iPoint, Residual);
+        LinSysRes.AddBlock(iPoint, residual);
 
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
     }
   }
