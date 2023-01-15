@@ -466,7 +466,7 @@ public:
     }
 
     if (FEM_Map.count(option_value[0])) {
-      this->space = Space_Map.find("FINITE_ELEMENT")->second;
+      this->space = FINITE_ELEMENT;
       this->fem = FEM_Map.find(option_value[0])->second;
       return "";
     }
