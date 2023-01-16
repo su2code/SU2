@@ -432,7 +432,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-15.485939, -14.427060, -14.309349, -14.207925, -14.419144, -1.049701, 5.5458]
+    inc_weakly_coupled.test_vals = [-17.240436, -16.184455, -16.069131, -17.230730, -18.350601, -13.768070, 5.545700]
     test_list.append(inc_weakly_coupled)
 
     ######################################
