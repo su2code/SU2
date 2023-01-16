@@ -865,16 +865,16 @@ public:
 
   /*!
    * \brief Set wall roughnesses according to stored closest wall information.
-   * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
+   * \param[in] roughness - Function (rank, zone, marker) -> roughness
    */
   template<typename Roughness_type>
-  void SetWallRoughness(Roughness_type const& roughness){
+  void SetWallRoughness(Roughness_type const& roughness) {
     for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
       auto rankID = ClosestWall_Rank[iPoint];
       auto zoneID = ClosestWall_Zone[iPoint];
       auto markerID = ClosestWall_Marker[iPoint];
-      if(rankID >= 0){
-        SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
+      if (rankID >= 0) {
+        SetRoughnessHeight(iPoint, roughness(rankID, zoneID, markerID));
       }
     }
   }
