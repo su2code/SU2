@@ -1347,7 +1347,6 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
 
   /*--- Initialize variables ---*/
   unsigned short ii, iReaction;
-  su2double Keq;
   ws.resize(nSpecies,0.0);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
     ws[iSpecies] = 0.0;
@@ -1356,8 +1355,8 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
-  su2double T_min   = 800.0;
-  su2double epsilon = 80;
+  const su2double T_min   = 800.0;
+  const su2double epsilon = 80;
 
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3; //TODO: make this a config option?
@@ -1381,7 +1380,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
     ComputeKeqConstants(iReaction);
 
     /*--- Calculate Keq ---*/
-    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
+    const su2double Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
         + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
 
     /*--- Calculate rate coefficients ---*/
@@ -1618,10 +1617,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
 
-  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW;
-  vector<su2double> MolarFrac;
-  su2activematrix mu;
-
   MolarFrac.resize(nSpecies,0.0);
   mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
@@ -1635,6 +1630,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     conc += rhos[iSpecies] / MolarMass[iSpecies];
     N    += rhos[iSpecies] / MolarMass[iSpecies] * AVOGAD_CONSTANT;
   }
+
+  vector<su2double> MolarFrac;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 
@@ -1642,29 +1639,30 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   eve_eq = ComputeSpeciesEve(T, true);
   eve    = ComputeSpeciesEve(Tve, true);
 
+  su2activematrix mu;
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     /*--- Millikan & White relaxation time ---*/
-    num   = 0.0;
-    denom = 0.0;
+    su2double num   = 0.0;
+    su2double denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       mu(iSpecies,jSpecies) = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
-      A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
-      B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
-      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+      const su2double A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
+      const su2double B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
+      const su2double tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
 
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;
     }
 
-    tauMW = num / denom;
+    const su2double tauMW = num / denom;
 
     /*--- Park limiting cross section ---*/
-    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
-    sig_s = 3E-21*(2.5E9)/(T*T);
+    const su2double Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
+    const su2double sig_s = 3E-21*(2.5E9)/(T*T);
 
-    tauP = 1/(sig_s*Cs*N);
+    const su2double tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
     taus[iSpecies] = tauMW + tauP;
@@ -1683,7 +1681,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   omega = omegaVT + omegaCV;
 
   return omega;
-
 }
 
 void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve, const su2double *dTdU, const su2double* dTvedU, su2double **val_jacobian){
@@ -1877,7 +1874,7 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   ThermalConductivities[1] = ThermalCond_ve;
 }
 
-su2double CSU2TCLib::ComputeDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
+su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
 
   if (ionization) {
     const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
@@ -1946,12 +1943,12 @@ void CSU2TCLib::DiffusionCoeffGY(){
         const su2double pi = PI_NUMBER;
         const su2double kb = BOLTZMANN_CONSTANT;
 
-        if (iSpecies == 0) {
-          const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
+        if (iSpecies == 0 && ionization) {
+          const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
           const su2double D_ij = kb*Tve/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         } else {
-          const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, true);
+          const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, true);
           const su2double D_ij = kb*T/(Pressure*d1_ij);
           denom += gam_j/D_ij;
         }
@@ -1980,11 +1977,11 @@ void CSU2TCLib::ViscosityGY(){
       const su2double Mj    = MolarMass[jSpecies];
       const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
-      if (iSpeceis == 0) {
-          const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
+      if (iSpeceis == 0 && ionization) {
+          const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
           denom += gam_j*d2_ij;
       } else {
-          const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, false);
+          const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, false);
           denom += gam_j*d2_ij;
       }
     }
@@ -2029,12 +2026,12 @@ void CSU2TCLib::ThermalConductivitiesGY(){
       const su2double gam_j = rhos[iSpecies] / (Density*Mj);
       const su2double a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
-      if (iSpecies == 0) {
-        const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
-        const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
+      if (iSpecies == 0 && ionization) {
+        const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
+        const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
       } else {
-        const su2double d1_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, true);
-        const su2double d2_ij = ComputeDelta(iSpecies, jSpecies, Mi, Mj, T, false);
+        const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, true);
+        const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, false);
       }
 
       denom_t += a_ij*gam_j*d2_ij;
