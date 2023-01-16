@@ -1950,7 +1950,6 @@ void CSU2TCLib::DiffusionCoeffGY(){
         const su2double Mj    = MolarMass[jSpecies];
         const su2double gam_j = rhos[iSpecies] / (Density*Mj);
 
-        const su2double pi = PI_NUMBER;
         const su2double kb = BOLTZMANN_CONSTANT;
 
         if (iSpecies == 0 && ionization) {
