@@ -1763,11 +1763,6 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
 void CSU2TCLib::DiffusionCoeffWBE(){
 
-  su2double Mi, Mj, Omega_ij, denom;
-  su2activematrix Dij;
-
-  Dij.resize(nSpecies, nSpecies) = su2double(0.0);
-
   /*--- Calculate species mole fraction ---*/
   su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1790,13 +1785,16 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   /*--- Solve for binary diffusion coefficients ---*/
   // Note: Dij = Dji, so only loop through req'd indices
   // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol
+  su2activematrix Dij;
+  Dij.resize(nSpecies, nSpecies) = su2double(0.0);
+
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Mi = MolarMass[iSpecies]*1E-3;
+    const su2double Mi = MolarMass[iSpecies]*1E-3;
     for (jSpecies = iSpecies; jSpecies < nSpecies; jSpecies++) {
-      Mj = MolarMass[jSpecies]*1E-3;
+      const su2double Mj = MolarMass[jSpecies]*1E-3;
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
+      const su2double Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
           * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
           +  Omega00(iSpecies,jSpecies,1)*log(T)
           +  Omega00(iSpecies,jSpecies,2));
@@ -1808,7 +1806,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   /*--- Calculate species-mixture diffusion coefficient --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     DiffusionCoeff[iSpecies] = 0.0;
-    denom = 0.0;
+    su2double denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       if (jSpecies != iSpecies) {
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
@@ -1821,8 +1819,6 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 }
 
 void CSU2TCLib::ViscosityWBE(){
-
-  su2double tmp1, tmp2;
 
   /*--- Calculate species mole fraction ---*/
   su2double conc = 0.0;
@@ -1842,8 +1838,8 @@ void CSU2TCLib::ViscosityWBE(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     phis[iSpecies] = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      tmp1 = 1.0 + sqrt(mus[iSpecies]/mus[jSpecies])*pow(MolarMass[jSpecies]/MolarMass[iSpecies], 0.25);
-      tmp2 = sqrt(8.0*(1.0+MolarMass[iSpecies]/MolarMass[jSpecies]));
+      const su2double tmp1 = 1.0 + sqrt(mus[iSpecies]/mus[jSpecies])*pow(MolarMass[jSpecies]/MolarMass[iSpecies], 0.25);
+      const su2double tmp2 = sqrt(8.0*(1.0+MolarMass[iSpecies]/MolarMass[jSpecies]));
       phis[iSpecies] += MolarFracWBE[jSpecies]*tmp1*tmp1/tmp2;
     }
   }
@@ -1885,7 +1881,7 @@ su2double CSU2TCLib::ComputeDelta(unsigned iSpecies, unsigned jSpecies, su2doubl
 
   if (ionization) {
     const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
-    const su2double kb_cgs = BOLTZMANN_CONSTANT*1E7; // CGS unit of Boltzmann Constant 
+    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
     const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6 // CGS unit of electron number density
       
     const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
@@ -1893,13 +1889,12 @@ su2double CSU2TCLib::ComputeDelta(unsigned iSpecies, unsigned jSpecies, su2doubl
   }
 
   /*--- Check whether to use collision cross section data or Coulomb potential ---*/
-  if (Omega00(iSpecies, jSpecies, 0) == 1.0) { // attractive potential
+  if (Omega00(iSpecies, jSpecies, 0) == 1.0 && ionization) { // attractive potential
 
     /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
     const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
 
-
-  } else if (Omega00(iSpecies, jSpecies, 0) == -1.0) { // repulsive potential
+  } else if (Omega00(iSpecies, jSpecies, 0) == -1.0 && ionization) { // repulsive potential
 
     /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
     const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
@@ -1970,7 +1965,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
 void CSU2TCLib::ViscosityGY(){
 
   const su2double Na = AVOGAD_CONSTANT;
-  su2double Mu = 0.0;
+  Mu = 0.0;
 
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
