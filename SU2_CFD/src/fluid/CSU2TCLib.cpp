@@ -1617,6 +1617,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
 
+  su2activematrix mu;
+
   MolarFrac.resize(nSpecies,0.0);
   mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
@@ -1639,7 +1641,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   eve_eq = ComputeSpeciesEve(T, true);
   eve    = ComputeSpeciesEve(Tve, true);
 
-  su2activematrix mu;
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
@@ -1876,31 +1877,40 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 
 su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
 
-  if (ionization) {
-    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
-    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6 // CGS unit of electron number density
-      
-    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
-  }
+  su2double pi = PI_NUMBER;
+
+  su2double Omega_ij;
 
   /*--- Check whether to use collision cross section data or Coulomb potential ---*/
   if (Omega00(iSpecies, jSpecies, 0) == 1.0 && ionization) { // attractive potential
-
+    
+    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      
+    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+    
     /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
+    Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
 
   } else if (Omega00(iSpecies, jSpecies, 0) == -1.0 && ionization) { // repulsive potential
 
+    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      
+    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
     /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    const su2double Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
+    Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
 
   } else {
 
     // TODO: check which omega values to use: (0,0), (1,1), etc.
     /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-    const su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+    Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
                       * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
                              + Omega00(iSpecies,jSpecies,1)*log(T)
                              + Omega00(iSpecies,jSpecies,2));
@@ -1908,11 +1918,11 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
   
   if (d1) {
     const su2double d_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d1_ij
+    return d_ij;
   } else {
     const su2double d_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d2_ij
+    return d_ij;
   }
-
-  return d_ij;
 }
 
 void CSU2TCLib::DiffusionCoeffGY(){
@@ -1970,14 +1980,14 @@ void CSU2TCLib::ViscosityGY(){
     su2double denom = 0.0;
 
     /*--- Calculate molar concentration ---*/
-    const ssu2double Mi    = MolarMass[iSpecies];
+    const su2double Mi    = MolarMass[iSpecies];
     const su2double gam_i = rhos[iSpecies] / (Density*Mi);
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       const su2double Mj    = MolarMass[jSpecies];
       const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
-      if (iSpeceis == 0 && ionization) {
+      if (iSpecies == 0 && ionization) {
           const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
           denom += gam_j*d2_ij;
       } else {
@@ -2029,13 +2039,17 @@ void CSU2TCLib::ThermalConductivitiesGY(){
       if (iSpecies == 0 && ionization) {
         const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, true);
         const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, Tve, false);
+
+        denom_t += a_ij*gam_j*d2_ij;
+        denom_r += gam_j*d1_ij;
+      
       } else {
         const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, true);
         const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T, false);
+      
+        denom_t += a_ij*gam_j*d2_ij;
+        denom_r += gam_j*d1_ij;
       }
-
-      denom_t += a_ij*gam_j*d2_ij;
-      denom_r += gam_j*d1_ij;
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
