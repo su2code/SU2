@@ -319,7 +319,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
     AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "PRIMITIVE", "Heat capacity");
-    AddVolumeOutput("EFFECTIVE_THERMAL_CONDUCTIVITY", "Effective_Thermal_Conductivity", "PRIMITIVE", "Effective_Thermal conductivity");
+    AddVolumeOutput("EFFECTIVE_THERMAL_CONDUCTIVITY", "Effective_Thermal_Conductivity", "PRIMITIVE", "Effective thermal conductivity");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
     AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
