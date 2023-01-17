@@ -1,7 +1,7 @@
 /*!
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
- * \author C. Garbacz, W. Maier, S. R. Copeland
+ * \author C. Garbacz, W. Maier, S. R. Copeland, J. Needels
  * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -1023,7 +1023,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Index 3: A1, A2, A3
 
     // Omega(0,0) ----------------------
-    //e-  (TODO: NO+ and e-,  NO+ and NO+, e- and e- ??????)
     Omega00(0,0,0) = -1.000000E+00;  Omega00(0,0,1) = -1.000000E+00;  Omega00(0,0,2) = -1.000000E+00;  Omega00(0,0,3) = -1.000000E+00;
     Omega00(0,1,0) = -1.0525124E-02; Omega00(0,1,1) = 1.3498950E-01;  Omega00(0,1,2) = 1.2524805E-01;  Omega00(0,1,3) = 1.5066506E-01;
     Omega00(0,2,0) = 2.3527001E-02;  Omega00(0,2,1) = -6.9632323E-01; Omega00(0,2,2) = 6.8035475E+00;  Omega00(0,2,3) = 1.8335509E-09;
@@ -1082,7 +1081,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
 
     // Omega(1,1) ----------------------
-    //e-    (TODO: NO+ and e-,  NO+ and NO+, e- and e- ??????)
     Omega11(0,0,0) = -1.000000E+00;  Omega11(0,0,1) = -1.000000E+00;  Omega11(0,0,2) = -1.000000E+00;  Omega11(0,0,3) = -1.000000E+00;
     Omega11(0,1,0) = -4.2254948E-03; Omega11(0,1,1) = -5.2965163E-02; Omega11(0,1,2) = 1.9157708E+00;  Omega11(0,1,3) = 6.3263309E-04;
     Omega11(0,2,0) = 9.6744867E-03;  Omega11(0,2,1) = -3.3759583E-01; Omega11(0,2,2) = 3.7952121E+00;  Omega11(0,2,3) = 6.8468036E-06;
@@ -1716,7 +1714,6 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
   }
 
   return hs;
-
 }
 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
@@ -1729,7 +1726,6 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
    DiffusionCoeffWBE();
 
   return DiffusionCoeff;
-
 }
 
 su2double CSU2TCLib::GetViscosity(){
@@ -1755,7 +1751,6 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
     ThermalConductivitiesSuth();
 
   return ThermalConductivities;
-
 }
 
 void CSU2TCLib::DiffusionCoeffWBE(){
@@ -1908,7 +1903,6 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
 
     } else {
 
-      // TODO: check which omega values to use: (0,0), (1,1), etc.
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
                         * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
@@ -1943,7 +1937,6 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
 
     } else {
 
-      // TODO: check which omega values to use: (0,0), (1,1), etc.
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
                         * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
@@ -2107,7 +2100,6 @@ void CSU2TCLib::ViscositySuth(){
 
   /*--- Calculate mixture laminar viscosity ---*/
   Mu = mu_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sm_ref[0]) / (T + Sm_ref[0]));
-
 }
 
 void CSU2TCLib::ThermalConductivitiesSuth(){
