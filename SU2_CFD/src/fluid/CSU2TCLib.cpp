@@ -1618,6 +1618,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Park limiting cross section
 
   su2activematrix mu;
+  vector<su2double> MolarFrac;
 
   MolarFrac.resize(nSpecies,0.0);
   mu.resize(nSpecies,nSpecies)=su2double(0.0);
@@ -1633,7 +1634,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     N    += rhos[iSpecies] / MolarMass[iSpecies] * AVOGAD_CONSTANT;
   }
 
-  vector<su2double> MolarFrac;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 

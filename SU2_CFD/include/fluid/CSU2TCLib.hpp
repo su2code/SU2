@@ -61,7 +61,6 @@ private:
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   Particle_Mass,                  /*!< \brief Mass of all particles present in the plasma */
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
-  MolarFrac,                      /*!< \brief Molar fractions */
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
   A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
