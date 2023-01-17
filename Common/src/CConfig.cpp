@@ -3924,12 +3924,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) ) {
-      SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Transport model not available for NEMO solver using SU2TCLIB. Please use the WILKE, SUTHERLAND or GUPTAYOS transport model instead.", CURRENT_FUNCTION);
     }
 
     if (Kind_FluidModel == MUTATIONPP &&
         (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-      SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.",
+      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE or CHAPMANN_ENSKOG transport model instead..",
                      CURRENT_FUNCTION);
     }
 
@@ -6155,14 +6155,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
+            SU2_MPI::Error("The GAS_MODEL given is unavailble using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
+          SU2_MPI::Error("The GAS_MODEL given is unavailble using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::FEM_LES:

@@ -265,6 +265,16 @@ public:
    */
   void ThermalConductivitiesSuth();
 
+  /*!
+   *\brief Compute the collision terms (deltas)
+   *\param[in] iSpecies - Species of gas
+   *\param[in] jSpecies - Collision partner of species i
+   *\param[in] Mi - Molar mass of species i
+   *\param[in] Mj - Molar mass of species j
+   *\param[in] T - Temperature of gas
+   *\param[in] d1 - Whether delta_1 or delta_2 is computed
+   *\param[out] Delta_1 or Delta_2
+   */
   su2double ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1);
 
   /*!
