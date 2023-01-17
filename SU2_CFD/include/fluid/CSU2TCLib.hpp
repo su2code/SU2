@@ -273,7 +273,7 @@ public:
    *\param[in] Mj - Molar mass of species j
    *\param[in] T - Temperature of gas
    *\param[in] d1 - Whether delta_1 or delta_2 is computed
-   *\param[out] Delta_1 or Delta_2
+   *\param[out] Delta_1 or Delta_2 - Collision term between species i and j
    */
   su2double ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1);
 
