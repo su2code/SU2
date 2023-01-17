@@ -93,8 +93,8 @@ private:
   Blottner,                      /*!< \brief Blottner viscosity coefficients */
   Dij;                           /*!< \brief Binary diffusion coefficients. */
 
-  C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
-  Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
+  C3DDoubleMatrix Omega11,       /*!< \brief Collision integrals (Omega^(1,1)) */
+  Omega22;                       /*!< \brief Collision integrals (Omega^(2,2)) */
 
   /*--- Implicit variables ---*/
   su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
