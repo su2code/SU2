@@ -1024,13 +1024,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     // Omega(0,0) ----------------------
     //e-  (TODO: NO+ and e-,  NO+ and NO+, e- and e- ??????)
-    Omega00(0,0,0) = 0.0000000E+00;  Omega00(0,0,1) = 0.0000000E+00;  Omega00(0,0,2) = 0.0000000E+00;  Omega00(0,0,3) = 0.0000000E+00;
+    Omega00(0,0,0) = -1.000000E+00;  Omega00(0,0,1) = -1.000000E+00;  Omega00(0,0,2) = -1.000000E+00;  Omega00(0,0,3) = -1.000000E+00;
     Omega00(0,1,0) = -1.0525124E-02; Omega00(0,1,1) = 1.3498950E-01;  Omega00(0,1,2) = 1.2524805E-01;  Omega00(0,1,3) = 1.5066506E-01;
     Omega00(0,2,0) = 2.3527001E-02;  Omega00(0,2,1) = -6.9632323E-01; Omega00(0,2,2) = 6.8035475E+00;  Omega00(0,2,3) = 1.8335509E-09;
     Omega00(0,3,0) = 1.0414818E-01;  Omega00(0,3,1) = -2.8369126E+00; Omega00(0,3,2) = 2.5323135E+01;  Omega00(0,3,3) = 7.7138358E-32;
     Omega00(0,4,0) = 0.0000000E+00;  Omega00(0,4,1) = 1.6554247E-01;  Omega00(0,4,2) = -3.4986344E+00; Omega00(0,4,3) = 5.9268038E+08;
     Omega00(0,5,0) = 9.9865506E-03;  Omega00(0,5,1) = -2.7407431E-01; Omega00(0,5,2) = 2.6561032E+00;  Omega00(0,5,3) = 4.3080676E-04;
-    Omega00(0,6,0) = 0.0000000E+00;  Omega00(0,6,1) = 0.0000000E+00;  Omega00(0,6,2) = 0.0000000E+00;  Omega00(0,6,3) = 0.0000000E+00;
+    Omega00(0,6,0) = 1.0000000E+00;  Omega00(0,6,1) = 1.0000000E+00;  Omega00(0,6,2) = 1.0000000E+00;  Omega00(0,6,3) = 1.0000000E+00;
     //N2
     Omega00(1,0,0) = -1.0525124E-02; Omega00(1,0,1) = 1.3498950E-01;  Omega00(1,0,2) = 1.2524805E-01;  Omega00(1,0,3) = 1.5066506E-01;
     Omega00(1,1,0) = -6.0614558E-03; Omega00(1,1,1) = 1.2689102E-01;  Omega00(1,1,2) = -1.0616948E+00; Omega00(1,1,3) = 8.0955466E+02;
@@ -1072,24 +1072,24 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega00(5,5,0) = -6.4040535E-03; Omega00(5,5,1) = 1.4629949E-01;  Omega00(5,5,2) = -1.3892121E+00; Omega00(5,5,3) = 2.0903441E+03;
     Omega00(5,6,0) = -1.6409054E-02; Omega00(5,6,1) = 4.6352852E-01;  Omega00(5,6,2) = -4.5479735E+00; Omega00(5,6,3) = 7.4250671E+07;
     //NO+
-    Omega00(6,0,0) = 0.0000000E+00;  Omega00(6,0,1) = 0.0000000E+00;  Omega00(6,0,2) = 0.0000000E+00;  Omega00(6,0,3) = 0.0000000E+00;
+    Omega00(6,0,0) = 1.0000000E+00;  Omega00(6,0,1) = 1.0000000E+00;  Omega00(6,0,2) = 1.0000000E+00;  Omega00(6,0,3) = 1.0000000E+00;
     Omega00(6,1,0) = 0.0000000E+00;  Omega00(6,1,1) = 9.1205839E-02;  Omega00(6,1,2) = -1.8728231E+00; Omega00(6,1,3) = 2.4432020E+05;
     Omega00(6,2,0) = -3.7822765E-03; Omega00(6,2,1) = 1.7967016E-01;  Omega00(6,2,2) = -2.5409098E+00; Omega00(6,2,3) = 1.1840435E+06;
     Omega00(6,3,0) = -8.1158474E-03; Omega00(6,3,1) = 2.1474280E-01;  Omega00(6,3,2) = -2.0148450E+00; Omega00(6,3,3) = 6.2986385E+04;
     Omega00(6,4,0) = -1.9605234E-02; Omega00(6,4,1) = 5.5570872E-01;  Omega00(6,4,2) = -5.4285702E+00; Omega00(6,4,3) = 1.3574446E+09;
     Omega00(6,5,0) = -1.6409054E-02; Omega00(6,5,1) = 4.6352852E-01;  Omega00(6,5,2) = -4.5479735E+00; Omega00(6,5,3) = 7.4250671E+07;
-    Omega00(6,6,0) = 0.0000000E+00;  Omega00(6,6,1) = 0.0000000E+00;  Omega00(6,6,2) = 0.0000000E+00;  Omega00(6,6,3) = 0.0000000E+00;
+    Omega00(6,6,0) = -1.000000E+00;  Omega00(6,6,1) = -1.000000E+00;  Omega00(6,6,2) = -1.000000E+00;  Omega00(6,6,3) = -1.000000E+00;
 
 
     // Omega(1,1) ----------------------
     //e-    (TODO: NO+ and e-,  NO+ and NO+, e- and e- ??????)
-    Omega11(0,0,0) = 0.0000000E+00;  Omega11(0,0,1) = 0.0000000E+00;  Omega11(0,0,2) = 0.0000000E+00;  Omega11(0,0,3) = 0.0000000E+00;
+    Omega11(0,0,0) = -1.000000E+00;  Omega11(0,0,1) = -1.000000E+00;  Omega11(0,0,2) = -1.000000E+00;  Omega11(0,0,3) = -1.000000E+00;
     Omega11(0,1,0) = -4.2254948E-03; Omega11(0,1,1) = -5.2965163E-02; Omega11(0,1,2) = 1.9157708E+00;  Omega11(0,1,3) = 6.3263309E-04;
     Omega11(0,2,0) = 9.6744867E-03;  Omega11(0,2,1) = -3.3759583E-01; Omega11(0,2,2) = 3.7952121E+00;  Omega11(0,2,3) = 6.8468036E-06;
     Omega11(0,3,0) = 0.0000000E+00;  Omega11(0,3,1) = 5.4444485E-02;  Omega11(0,3,2) = -1.2854128E+00; Omega11(0,3,3) = 1.3857556E+04;
     Omega11(0,4,0) = -1.0903638E-01; Omega11(0,4,1) = 2.8678381E+00;  Omega11(0,4,2) = -2.5297550E+01; Omega11(0,4,3) = 3.4838798E+33;
     Omega11(0,5,0) = -1.7924100E-02; Omega11(0,5,1) = 4.0402656E-01;  Omega11(0,5,2) = -2.6712374E+00; Omega11(0,5,3) = 4.1447669E+02;
-    Omega11(0,6,0) = 0.0000000E+00;  Omega11(0,6,1) = 0.0000000E+00;  Omega11(0,6,2) = 0.0000000E+00;  Omega11(0,6,3) = 0.0000000E+00;
+    Omega11(0,6,0) = 1.0000000E+00;  Omega11(0,6,1) = 1.0000000E+00;  Omega11(0,6,2) = 1.0000000E+00;  Omega11(0,6,3) = 1.0000000E+00;
     //N2
     Omega11(1,0,0) = -4.2254948E-03; Omega11(1,0,1) = -5.2965163E-02; Omega11(1,0,2) = 1.9157708E+00;  Omega11(1,0,3) = 6.3263309E-04;
     Omega11(1,1,0) = -7.6303990E-03; Omega11(1,1,1) = 1.6878089E-01;  Omega11(1,1,2) = -1.4004234E+00; Omega11(1,1,3) = 2.1427708E+03;
@@ -1131,13 +1131,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(5,5,0) = -4.2451096E-03; Omega11(5,5,1) = 9.6820337E-02;  Omega11(5,5,2) = -9.9770795E-01; Omega11(5,5,3) = 8.3320644E+02;
     Omega11(5,6,0) = -1.5315132E-02; Omega11(5,6,1) = 4.3541627E-01;  Omega11(5,6,2) = -4.2864279E+00; Omega11(5,6,3) = 3.5125207E+07;
     //NO+
-    Omega11(6,0,0) = 0.0000000E+00;  Omega11(6,0,1) = 0.0000000E+00;  Omega11(6,0,2) = 0.0000000E+00;  Omega11(6,0,3) = 0.0000000E+00;
+    Omega11(6,0,0) = 1.0000000E+00;  Omega11(6,0,1) = 1.0000000E+00;  Omega11(6,0,2) = 1.0000000E+00;  Omega11(6,0,3) = 1.0000000E+00;
     Omega11(6,1,0) = 0.0000000E+00;  Omega11(6,1,1) = 8.5112236E-02;  Omega11(6,1,2) = -1.7460044E+00; Omega11(6,1,3) = 1.4498969E+05;
     Omega11(6,2,0) = 0.0000000E+00;  Omega11(6,2,1) = 8.4737359E-02;  Omega11(6,2,2) = -1.7290488E+00; Omega11(6,2,3) = 1.2485194E+05;
     Omega11(6,3,0) = 1.1055777E-02;  Omega11(6,3,1) = -1.6621846E-01; Omega11(6,3,2) = 1.4372166E-01;  Omega11(6,3,3) = 1.3182061E+03;
     Omega11(6,4,0) = -2.1009546E-02; Omega11(6,4,1) = 5.8910426E-01;  Omega11(6,4,2) = -5.6681361E+00; Omega11(6,4,3) = 2.4486594E+09;
     Omega11(6,5,0) = -1.5315132E-02; Omega11(6,5,1) = 4.3541627E-01;  Omega11(6,5,2) = -4.2864279E+00; Omega11(6,5,3) = 3.5125207E+07;
-    Omega11(6,6,0) = 0.0000000E+00;  Omega11(6,6,1) = 0.0000000E+00;  Omega11(6,6,2) = 0.0000000E+00;  Omega11(6,6,3) = 0.0000000E+00;
+    Omega11(6,6,0) = -1.000000E+00;  Omega11(6,6,1) = -1.000000E+00;  Omega11(6,6,2) = -1.000000E+00;  Omega11(6,6,3) = -1.000000E+00;
 
     // Creation/Destruction (+1/-1), Index of monoatomic reactants
     // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
@@ -1239,7 +1239,6 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
   }
 
   return Cvves;
-
 }
 
 vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
@@ -1881,40 +1880,77 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
 
   su2double Omega_ij;
 
-  /*--- Check whether to use collision cross section data or Coulomb potential ---*/
-  if (Omega00(iSpecies, jSpecies, 0) == 1.0 && ionization) { // attractive potential
-    
-    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
-    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+  if (d1) {
+    /*--- Check whether to use collision cross section data or Coulomb potential ---*/
+    if (Omega00(iSpecies, jSpecies, 0) == 1.0 && ionization) { // attractive potential
       
-    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
-    
-    /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
-
-  } else if (Omega00(iSpecies, jSpecies, 0) == -1.0 && ionization) { // repulsive potential
-
-    const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
-    const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-    const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+      const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+        
+      const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+      const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
       
-    const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
-    const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+      /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+      Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
 
-    /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
-    Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
+    } else if (Omega00(iSpecies, jSpecies, 0) == -1.0 && ionization) { // repulsive potential
 
+      const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+      const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+        
+      const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+      const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
+      /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+      Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
+
+    } else {
+
+      // TODO: check which omega values to use: (0,0), (1,1), etc.
+      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+      Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+                        * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+                               + Omega00(iSpecies,jSpecies,1)*log(T)
+                               + Omega00(iSpecies,jSpecies,2));
+    }  
   } else {
+        /*--- Check whether to use collision cross section data or Coulomb potential ---*/
+    if (Omega11(iSpecies, jSpecies, 0) == 1.0 && ionization) { // attractive potential
+      
+      const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+      const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+        
+      const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+      const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+      
+      /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+      Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D2_a*T_star*(1 - C2_a * exp(-c2_a * T_star))+1);
 
-    // TODO: check which omega values to use: (0,0), (1,1), etc.
-    /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-    Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-                      * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
-                             + Omega00(iSpecies,jSpecies,1)*log(T)
-                             + Omega00(iSpecies,jSpecies,2));
-  }  
+    } else if (Omega11(iSpecies, jSpecies, 0) == -1.0 && ionization) { // repulsive potential
+
+      const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
+      const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
+      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+        
+      const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
+      const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
+      /*--- Calculate the Omega^(0,0)_ij Coulomb potential ---*/
+      Omega_ij = 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D2_r*T_star*(1 - C2_r * exp(-c2_r * T_star))+1);
+
+    } else {
+
+      // TODO: check which omega values to use: (0,0), (1,1), etc.
+      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+      Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+                        * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+                               + Omega00(iSpecies,jSpecies,1)*log(T)
+                               + Omega00(iSpecies,jSpecies,2));
+    }  
+  }
   
   if (d1) {
     const su2double d_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d1_ij
@@ -2094,7 +2130,6 @@ void CSU2TCLib::ThermalConductivitiesSuth(){
 
   ThermalConductivities[0] = k;
   ThermalConductivities[1] = kve;
-
 }
 
 vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) {
@@ -2193,7 +2228,6 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   temperatures[1] = Tve;
 
   return temperatures;
-
 }
 
 void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){

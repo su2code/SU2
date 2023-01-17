@@ -75,11 +75,17 @@ private:
   const su2double D1_a = 0.784;
   const su2double C1_a = -0.476;
   const su2double c1_a = 0.0313;
+  const su2double D2_a = 1.262;
+  const su2double C2_a = -0.146;
+  const su2double c2_a = 0.0377;
 
   /*--- Repulsive Coulombic potential constants ---*/
   const su2double D1_r = 0.765;
   const su2double C1_r = 0.138;
   const su2double c1_r = 0.0106;
+  const su2double D2_r = 1.235;
+  const su2double C2_r = 0.157;
+  const su2double c2_r = 0.0274;
 
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
