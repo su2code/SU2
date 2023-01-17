@@ -163,7 +163,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   }
 
   if (table_dim == 3) {
-    limits_table_z = minmax_element(&z_values_levels[0], &z_values_levels[0] + z_values_levels.cols());
+    limits_table_z = minmax_element(&z_values_levels[0], &z_values_levels[0] + z_values_levels.size());
   }
 }
 
@@ -221,8 +221,8 @@ void CLookUpTable::PrintTableInfo() {
         cout << "| Average number of triangles:" << setw(36) << right << floor(n_tria_av) << " |" << endl;
         cout << "| Average number of edges:" << setw(40) << right << floor(n_edges_av) << " |" << endl;
         cout << "+------------------------------------------------------------------+" << endl;
-        cout << "| Minimum Z:" << setw(54) << right << limits_table_z.first << " |" << endl;
-        cout << "| Maximum Z:" << setw(54) << right << limits_table_z.second << " |" << endl;
+        cout << "| Minimum Z:" << setw(54) << right << *limits_table_z.first << " |" << endl;
+        cout << "| Maximum Z:" << setw(54) << right << *limits_table_z.second << " |" << endl;
         cout << "| Minimum Y:" << setw(54) << right << min_y << " |" << endl;
         cout << "| Maximum Y:" << setw(54) << right << max_y << " |" << endl;
         cout << "| Minimum X:" << setw(54) << right << min_x << " |" << endl;
@@ -461,10 +461,29 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names
     unsigned long upper_level = inclusion_levels.second;
 
     std::vector<su2double> val_vars_lower, val_vars_upper;
+    su2double x_min_lower = *limits_table_x[lower_level].first,
+              x_max_lower = *limits_table_x[lower_level].second;
+    su2double x_min_upper = *limits_table_x[upper_level].first,
+              x_max_upper = *limits_table_x[upper_level].second;   
+    su2double y_min_lower = *limits_table_y[lower_level].first,
+              y_max_lower = *limits_table_y[lower_level].second;
+    su2double y_min_upper = *limits_table_y[upper_level].first,
+              y_max_upper = *limits_table_y[upper_level].second;     
+    su2double x_min_q = x_min_lower + (x_min_upper - x_min_lower) * (val_z - z_values_levels[lower_level])/(z_values_levels[upper_level] - z_values_levels[lower_level]);
+    su2double x_max_q = x_max_lower + (x_max_upper - x_max_lower) * (val_z - z_values_levels[lower_level])/(z_values_levels[upper_level] - z_values_levels[lower_level]);
+    su2double y_min_q = y_min_lower + (y_min_upper - y_min_lower) * (val_z - z_values_levels[lower_level])/(z_values_levels[upper_level] - z_values_levels[lower_level]);
+    su2double y_max_q = y_max_lower + (y_max_upper - y_max_lower) * (val_z - z_values_levels[lower_level])/(z_values_levels[upper_level] - z_values_levels[lower_level]);
+    
+    su2double x_norm_q = (val_CV1 - x_min_q)/(x_max_q - x_min_q);
+    su2double y_norm_q = (val_CV2 - y_min_q)/(y_max_q - y_min_q);
+    su2double val_CV1_upper = x_min_upper + (x_max_upper - x_min_upper)*x_norm_q;
+    su2double val_CV2_upper = y_min_upper + (y_max_upper - y_min_upper)*y_norm_q;
+    su2double val_CV1_lower = x_min_lower + (x_max_lower - x_min_lower)*x_norm_q;
+    su2double val_CV2_lower = y_min_lower + (y_max_lower - y_min_lower)*y_norm_q;
     val_vars_lower.resize(val_vars.size());
     val_vars_upper.resize(val_vars.size());
-    unsigned long exit_code_lower = LookUp_XY(val_names_var, val_vars_lower, val_CV1, val_CV2, lower_level);
-    unsigned long exit_code_upper = LookUp_XY(val_names_var, val_vars_upper, val_CV1, val_CV2, upper_level);
+    unsigned long exit_code_lower = LookUp_XY(val_names_var, val_vars_lower, val_CV1_lower, val_CV2_lower, lower_level);
+    unsigned long exit_code_upper = LookUp_XY(val_names_var, val_vars_upper, val_CV1_upper, val_CV2_upper, upper_level);
 
     /* 3: Perform linear interpolation along the z-direction using the x-y interpolation results
              from upper and lower trapezoidal maps */
@@ -619,7 +638,7 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
 
   } else {
     /* if point is outside of table ranges, find nearest neighbor */
-    nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
+    //nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
     exit_code = 1;
   }
 
@@ -632,10 +651,12 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) triangle[p] = triangles[i_level][id_triangle][p];
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
-      } else
-        *val_vars[i_var] = GetDataP(val_names_var[i_var], i_level)[nearest_neighbor];
+      } //else
+        //*val_vars[i_var] = GetDataP(val_names_var[i_var], i_level)[nearest_neighbor];
     }
   }
+  if(exit_code != 0)
+    InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var, val_vars, i_level);
   return exit_code;
 }
 
@@ -676,10 +697,10 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_CV1, su2doub
   const su2double* x_table = GetDataP(name_CV1, i_level);
   const su2double* y_table = GetDataP(name_CV2, i_level);
 
-  su2double norm_coeff_x = 1. / (limits_table_x[i_level].second - limits_table_x[i_level].first);
-  su2double norm_coeff_y = 1. / (limits_table_y[i_level].second - limits_table_y[i_level].first);
-  su2double val_CV1_norm = val_CV1 / (limits_table_x[i_level].second - limits_table_x[i_level].first);
-  su2double val_CV2_norm = val_CV2 / (limits_table_y[i_level].second - limits_table_y[i_level].first);
+  su2double norm_coeff_x = 1. / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double norm_coeff_y = 1. / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
+  su2double val_CV1_norm = val_CV1 / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double val_CV2_norm = val_CV2 / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
 
   for (unsigned long i_point = 0; i_point < n_hull_points[i_level]; ++i_point) {
     next_x_norm = x_table[hull[i_level][i_point]] * norm_coeff_x;
@@ -693,6 +714,46 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_CV1, su2doub
     }
   }
   return neighbor_id;
+}
+
+void CLookUpTable::InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2, const std::vector<std::string>& names_var, std::vector<su2double*>& var_vals, const unsigned long i_level) {
+  su2double min_distance = 1e99;
+  su2double second_distance = 1e99;
+  su2double third_distance = 1e99;
+  su2double norm_coeff_x = 1. / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double norm_coeff_y = 1. / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
+  su2double val_CV1_norm = val_CV1 / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double val_CV2_norm = val_CV2 / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
+
+  const su2double* x_table = GetDataP(name_CV1, i_level);
+  const su2double* y_table = GetDataP(name_CV2, i_level);
+  unsigned long i_nearest=0, i_second_nearest=0, i_third_nearest = 0;
+  
+  for (unsigned long i_point = 0; i_point < n_hull_points[i_level]; ++i_point) {
+    su2double next_x_norm = x_table[hull[i_level][i_point]] * norm_coeff_x;
+    su2double next_y_norm = y_table[hull[i_level][i_point]] * norm_coeff_y;
+
+    su2double next_distance = sqrt(pow(val_CV1_norm - next_x_norm, 2) + pow(val_CV2_norm - next_y_norm, 2));
+
+    if (next_distance < min_distance) {
+      second_distance = min_distance;
+      min_distance = next_distance;
+      
+      i_second_nearest = i_nearest;
+      i_nearest = hull[i_level][i_point];
+    }else  if ((next_distance > min_distance) && (next_distance < second_distance)) {
+      i_second_nearest = hull[i_level][i_point];
+
+      second_distance = next_distance;
+    }
+  }
+
+  su2double delimiter = (1.0/min_distance) + (1.0/second_distance);
+  for(auto iVar=0u; iVar<var_vals.size(); iVar++){
+    su2double data_nearest = GetDataP(names_var[iVar], i_level)[i_nearest],
+              data_second_nearest = GetDataP(names_var[iVar], i_level)[i_second_nearest];
+    *var_vals[iVar] = (data_nearest * (1.0/min_distance) + data_second_nearest * (1.0/second_distance))/delimiter;
+  }
 }
 
 bool CLookUpTable::IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned long val_id_triangle,

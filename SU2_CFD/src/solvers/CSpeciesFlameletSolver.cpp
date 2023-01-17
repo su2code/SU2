@@ -304,7 +304,26 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-
+      //  su2double *scalar_test = new su2double[nVar];
+      //   ifstream file;
+      //     file.open("/home/evert/PhD/LuT_Investigation/Density_trend_interpolation_comparison.csv");
+      //     string word, line;
+      //     getline(file, line);
+      //     vector<vector<string>> content;
+      //     for(unsigned long i=0;i<1000;i++){
+      //       getline(file, line);
+      //       vector<string> row;
+      //       stringstream str(line);
+      //       while(getline(str, word, ','))
+      //       row.push_back(word);
+      //       content.push_back(row);
+      //       scalar_test[I_PROGVAR] = stod(row[0]);
+      //       scalar_test[I_ENTH] = stod(row[1]);
+      //       scalar_test[I_MIXFRAC] = stod(row[2]);
+      //       fluid_model_local->SetTDState_T(300, scalar_test);
+      //       unsigned long thingy = fluid_model_local->SetPreferentialDiffusionScalars(scalar_test);
+      //       cout << thingy << ", " << scalar_test[I_PROGVAR] << ", " << scalar_test[I_ENTH] << ", " << scalar_test[I_MIXFRAC] << ", " << fluid_model_local->GetDensity() << ", " << fluid_model_local->GetTemperature() <<endl;
+      //     }
       //prog_burnt = fluid_model_local->GetTableLimitsProg().second;
       prog_burnt = 0.0;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
@@ -800,7 +819,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
       /*--- Set enthalpy on the wall ---*/
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-      //if(config->GetSpecies_StrongBC()){
+      if(config->GetSpecies_StrongBC()){
 
         /*--- Initial guess for enthalpy value ---*/
 
@@ -827,37 +846,37 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
           Jacobian.DeleteValsRowi(total_index);
         }
-      // }else{
-      //   /*--- Weak BC formulation ---*/
-      //   const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      }else{
+        /*--- Weak BC formulation ---*/
+        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      //   const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
 
-      //   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      //   /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      //   const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      //   const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      //   su2double Edge_Vector[MAXNDIM];
-      //   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-      //   su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-      //   su2double dist_ij = sqrt(dist_ij_2);
+        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+        su2double Edge_Vector[MAXNDIM];
+        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+        su2double dist_ij = sqrt(dist_ij_2);
 
-      //   /*--- Compute the normal gradient in temperature using Twall ---*/
+        /*--- Compute the normal gradient in temperature using Twall ---*/
 
-      //   su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
 
-      //   /*--- Get thermal conductivity ---*/
+        /*--- Get thermal conductivity ---*/
 
-      //   su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
 
-      //   /*--- Apply a weak boundary condition for the energy equation.
-      //   Compute the residual due to the prescribed heat flux. ---*/
+        /*--- Apply a weak boundary condition for the energy equation.
+        Compute the residual due to the prescribed heat flux. ---*/
 
-      //   LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
-      // }
+        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
+      }
       
     }
   }

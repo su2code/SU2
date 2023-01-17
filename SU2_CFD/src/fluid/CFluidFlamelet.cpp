@@ -208,8 +208,11 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- add all quantities and their address to the look up vectors ---*/
   Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
 
+  molar_weight = Density * UNIVERSAL_GAS_CONSTANT *Temperature / 101325;
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
-  Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
+  Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight);
+
+  // Density = 101325 * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
 
   mass_diffusivity = Kt / (Density * Cp);
 }
