@@ -590,6 +590,16 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
 };
 
+enum class FLAME_INIT_TYPE {
+  FLAME_FRONT,
+  SPARK
+};
+
+static const MapType<std::string, FLAME_INIT_TYPE> FlameInit_Map = {
+  MakePair("FLAME_FRONT", FLAME_INIT_TYPE::FLAME_FRONT)
+  MakePair("SPARK", FLAME_INIT_TYPE::SPARK)
+};
+
 /*!
  * \brief types of gas models
  */

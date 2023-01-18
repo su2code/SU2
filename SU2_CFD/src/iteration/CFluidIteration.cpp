@@ -100,6 +100,17 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
+    
+    if ((config[val_iZone]->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) && (config[val_iZone]->GetKind_Flame_Init() == FLAME_INIT_TYPE::SPARK)){
+      //cout << config[val_iZone]->GetOuterIter() << " " << config[val_iZone]->GetSparkIteration_Start() << " " << config[val_iZone]->GetSparkDuration() << endl;
+      auto OuterIter = config[val_iZone]->GetOuterIter();
+      if ((OuterIter >= config[val_iZone]->GetSparkIteration_Start()) && (OuterIter <= (config[val_iZone]->GetSparkIteration_Start() + config[val_iZone]->GetSparkDuration()))){
+        solver[val_iZone][val_iInst][MESH_0][SPECIES_SOL]->SetIgnition(true);
+      }else{
+        solver[val_iZone][val_iInst][MESH_0][SPECIES_SOL]->SetIgnition(false);
+      }
+        
+    }
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
 

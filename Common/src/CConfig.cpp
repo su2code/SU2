@@ -1361,6 +1361,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
   addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
 
+  addEnumOption("FLAME_INITIALIZATION", Kind_FlameInit, FlameInit_Map, FLAME_INIT_TYPE::FLAME_FRONT);
   /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
   flame_offset[0] = 0.0;
   flame_offset[1] = 0.0;
@@ -1375,6 +1376,12 @@ void CConfig::SetConfig_Options() {
   flame_normal[1] = 0.0;
   flame_normal[2] = 0.0;
   addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
+  
+  addDoubleArrayOption("SPARK_LOCATION", 3, spark_location);
+  addDoubleOption("SPARK_RADIUS", spark_radius, 0.0);
+  addDoubleOption("SPARK_REACTION_RATE", spark_reaction_rate, 0.0);
+  addUnsignedLongOption("SPARK_ITERATION_START", spark_iteration_start, 0);
+  addUnsignedLongOption("SPARK_DURATION", spark_duration, 1);
   
   /*!\brief FLAME_BURNT_THICKNESS \n DESCRIPTION: burnt thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_BURNT_THICKNESS", flame_burnt_thickness, 1);

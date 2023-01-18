@@ -4362,6 +4362,11 @@ public:
     END_SU2_OMP_FOR
   }
 
+  /*!
+   * \brief For flamelet problems, enable ignition source
+  */
+  inline virtual void SetIgnition(bool input) { }
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4473,4 +4478,5 @@ protected:
    */
   inline virtual unsigned long GetNTableMisses() { return 0; }
 
+  
 };

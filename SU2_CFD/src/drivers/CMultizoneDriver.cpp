@@ -579,6 +579,9 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       break;
     case CONJUGATE_HEAT_SF:
       BroadcastData(HEAT_SOL, FLOW_SOL);
+      
+      if(config_container[targetZone]->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+        BroadcastData(HEAT_SOL, SPECIES_SOL);
       break;
     case CONJUGATE_HEAT_WEAKLY_SF:
       BroadcastData(HEAT_SOL, HEAT_SOL);

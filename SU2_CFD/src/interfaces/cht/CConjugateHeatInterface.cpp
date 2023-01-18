@@ -70,7 +70,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   su2double conductivity_over_dist = 0.0;
 
   const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && ((donor_config->GetEnergy_Equation()) || (donor_config->GetKind_Species_Model()==SPECIES_MODEL::FLAMELET));
 
   if (compressible_flow) {
 

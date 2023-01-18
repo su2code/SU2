@@ -1226,10 +1226,16 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- flamelet subsolver ---*/
+  FLAME_INIT_TYPE Kind_FlameInit;
   su2double flame_thickness;
   su2double flame_burnt_thickness;
   su2double flame_offset[3];
   su2double flame_normal[3];
+  su2double spark_location[3];
+  su2double spark_radius;
+  su2double spark_reaction_rate;
+  unsigned long spark_iteration_start;
+  unsigned long spark_duration;
 
   /*--- lookup table ---*/
   unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
@@ -2138,6 +2144,8 @@ public:
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
+  FLAME_INIT_TYPE GetKind_Flame_Init(void) const { return Kind_FlameInit; }
+
   /*!
    * \brief Get the flame offset for flamelet model initialization
    * \return flame offset for flamelet model initialization
@@ -2162,7 +2170,16 @@ public:
    */
   su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
 
+  su2double GetSparkLocation(unsigned short iDim) const { return spark_location[iDim]; }
 
+  su2double GetSparkRadius(void) const { return spark_radius; }
+
+  su2double GetSparkReactionRate(void) const { return spark_reaction_rate; }
+
+  unsigned long GetSparkIteration_Start(void) const { return spark_iteration_start; }
+
+  unsigned long GetSparkDuration(void) const { return spark_duration; }
+  
   void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
 
   /*!

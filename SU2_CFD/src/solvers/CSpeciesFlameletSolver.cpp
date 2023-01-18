@@ -218,6 +218,17 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
         nodes->SetAuxVar(i_point, i_beta, fluid_model_local->GetPreferentialDiffusionScalar(i_beta));
     }
 
+    if(ignition){
+      su2double *Coord = geometry->nodes->GetCoord(i_point);
+      su2double dist = 0;
+      for(auto iDim=0u; iDim<nDim; iDim++){
+        dist += pow(Coord[iDim] - config->GetSparkLocation(iDim), 2);
+      }
+      dist = sqrt(dist);
+      if(dist < config->GetSparkRadius())
+        nodes->SetScalarSource(i_point, I_PROGVAR, nodes->GetScalarSources(i_point, I_PROGVAR) + config->GetSparkReactionRate());
+    }
+
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
 
@@ -331,32 +342,45 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
-        /* determine if our location is above or below the plane, assuming the normal
+        switch (config->GetKind_Flame_Init())
+        {
+        case FLAME_INIT_TYPE::FLAME_FRONT:
+          /* determine if our location is above or below the plane, assuming the normal
            is pointing towards the burned region*/
-        point_loc = 0.0;
-        for (unsigned short i_dim = 0; i_dim < geometry[i_mesh]->GetnDim(); i_dim++) {
-          point_loc += flame_normal[i_dim] * (coords[i_dim] - flame_offset[i_dim]);
+          point_loc = 0.0;
+          for (unsigned short i_dim = 0; i_dim < geometry[i_mesh]->GetnDim(); i_dim++) {
+            point_loc += flame_normal[i_dim] * (coords[i_dim] - flame_offset[i_dim]);
+          }
+
+          /* compute the exact distance from point to plane */
+          point_loc = point_loc / flamenorm;
+
+          /* --- unburnt region upstream of the flame --- */
+          if (point_loc <= 0) {
+            scalar_init[I_PROGVAR] = prog_unburnt;
+
+            /* --- flame zone --- */
+          } else if ((point_loc > 0) && (point_loc <= flame_thickness)) {
+            scalar_init[I_PROGVAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
+
+            /* --- burnt region --- */
+          } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)) {
+            scalar_init[I_PROGVAR] = prog_burnt;
+
+            /* --- unburnt region downstream of the flame --- */
+          } else {
+            scalar_init[I_PROGVAR] = prog_unburnt;
+          }
+          break;
+        case FLAME_INIT_TYPE::SPARK:
+          for(auto iVar=0u; iVar<nVar; iVar++){
+            scalar_init[iVar] = config->GetSpecies_Init()[iVar];
+          }
+          break;
+        default:
+          break;
         }
-
-        /* compute the exact distance from point to plane */
-        point_loc = point_loc / flamenorm;
-
-        /* --- unburnt region upstream of the flame --- */
-        if (point_loc <= 0) {
-          scalar_init[I_PROGVAR] = prog_unburnt;
-
-          /* --- flame zone --- */
-        } else if ((point_loc > 0) && (point_loc <= flame_thickness)) {
-          scalar_init[I_PROGVAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
-
-          /* --- burnt region --- */
-        } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)) {
-          scalar_init[I_PROGVAR] = prog_burnt;
-
-          /* --- unburnt region downstream of the flame --- */
-        } else {
-          scalar_init[I_PROGVAR] = prog_unburnt;
-        }
+        
 
         if(config->GetPreferentialDiffusion()) scalar_init[I_MIXFRAC] = mixfrac_inlet;
         
@@ -893,7 +917,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
   bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
+  //su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   su2double enth_wall, enth_init, prog_wall, mixfrac_wall = 0.0;
@@ -904,13 +928,12 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
-
+    su2double temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      if(config->GetSpecies_StrongBC()){
+      //if(config->GetSpecies_StrongBC()){
 
         /*--- Initial guess for enthalpy ---*/
 
@@ -939,37 +962,37 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
           Jacobian.DeleteValsRowi(total_index);
         }
-      }else{
-        /*--- Weak BC formulation ---*/
-        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      // }else{
+      //   /*--- Weak BC formulation ---*/
+      //   const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      //   const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
 
-        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      //   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+      //   /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        su2double Edge_Vector[MAXNDIM];
-        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-        su2double dist_ij = sqrt(dist_ij_2);
+      //   const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      //   const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      //   su2double Edge_Vector[MAXNDIM];
+      //   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+      //   su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+      //   su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall ---*/
+      //   /*--- Compute the normal gradient in temperature using Twall ---*/
 
-        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+      //   su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
 
-        /*--- Get thermal conductivity ---*/
+      //   /*--- Get thermal conductivity ---*/
 
-        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+      //   su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
 
-        /*--- Apply a weak boundary condition for the energy equation.
-        Compute the residual due to the prescribed heat flux. ---*/
+      //   /*--- Apply a weak boundary condition for the energy equation.
+      //   Compute the residual due to the prescribed heat flux. ---*/
 
-        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
-      }
+      //   LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
+      // }
       
     }
   }

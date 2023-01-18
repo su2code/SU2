@@ -38,7 +38,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   unsigned long n_table_misses;          /*!< \brief number of times we failed to do a lookup from the table */
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
-
+  bool ignition = false;
  public:
   /*!
    * \brief Constructor.
@@ -211,5 +211,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
     conjugate_var[val_marker][val_vertex][pos_var] =
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
+
+  inline void SetIgnition(bool input) override { ignition = input; }
 };
 
