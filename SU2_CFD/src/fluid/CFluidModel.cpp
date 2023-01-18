@@ -2,7 +2,7 @@
  * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,19 +35,22 @@
 #include "../../include/fluid/CConstantPrandtl.hpp"
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CConstantSchmidt.hpp"
-#include "../../include/fluid/CConstantSchmidtRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
-#include "../../include/fluid/CUnityLewisDiffusivity.hpp"
+#include "../../include/fluid/CCoolPropViscosity.hpp"
+#include "../../include/fluid/CConstantLewisDiffusivity.hpp"
+#include "../../include/fluid/CCoolPropConductivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       return unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND(iSpecies)));
+    case VISCOSITYMODEL::COOLPROP:
+      return unique_ptr<CCoolPropViscosity>(new CCoolPropViscosity(config->GetFluid_Name()));
     case VISCOSITYMODEL::SUTHERLAND:
       return unique_ptr<CSutherland>(new CSutherland(config->GetMu_RefND(iSpecies),
                                                      config->GetMu_Temperature_RefND(iSpecies),
@@ -76,6 +79,16 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
       } else {
         return unique_ptr<CConstantConductivity>(
             new CConstantConductivity(config->GetThermal_Conductivity_ConstantND(iSpecies)));
+      }
+      break;
+    case CONDUCTIVITYMODEL::COOLPROP:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+        return unique_ptr<CConstantConductivityRANS>(
+            new CConstantConductivityRANS(config->GetThermal_Conductivity_ConstantND(iSpecies),
+                                          config->GetPrandtl_Turb(iSpecies)));
+      } else {
+        return unique_ptr<CCoolPropConductivity>(
+            new CCoolPropConductivity(config->GetFluid_Name()));
       }
       break;
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
@@ -112,15 +125,14 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       return unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
       break;
     case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
-      if ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS)) {
-        return unique_ptr<CConstantSchmidtRANS>(
-            new CConstantSchmidtRANS(config->GetSchmidt_Number_Laminar(), config->GetSchmidt_Number_Turbulent()));
-      } else {
-        return unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Number_Laminar()));
-      }
+      return unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Number_Laminar()));
       break;
     case DIFFUSIVITYMODEL::UNITY_LEWIS:
-      return unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());
+      return unique_ptr<CConstantLewisDiffusivity>(new CConstantLewisDiffusivity(1.0));
+      break;
+    case DIFFUSIVITYMODEL::CONSTANT_LEWIS:
+      return unique_ptr<CConstantLewisDiffusivity>(
+          new CConstantLewisDiffusivity(config->GetConstant_Lewis_Number(iSpecies)));
       break;
     default:
       SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);

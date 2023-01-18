@@ -1,8 +1,9 @@
 /*!
- * \file CUnityLewisDiffusivity.hpp
- * \brief Defines unity Lewis mass diffusivity.
- * \author M.Heimgartner
- * \version 7.4.0 "Blackbird"
+ * \file trans_convection.hpp
+ * \brief Delarations of numerics classes for discretization of
+ *        convective fluxes in transition problems.
+ * \author S. Kang
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,23 +28,13 @@
 
 #pragma once
 
-#include "CDiffusivityModel.hpp"
+#include "../turb_convection.hpp"
 
 /*!
- * \class CUnityLewisDiffusivity
- * \brief Defines a unity Lewis mass diffusivity model for species equations.
- * \author M.Heimgartner
+ * \class CUpwSca_TransLM
+ * \brief Re-use the SST convective fluxes for the scalar upwind discretization of LM transition model equations.
+ * \ingroup ConvDiscr
  */
-class CUnityLewisDiffusivity final : public CDiffusivityModel {
- public:
-  /*!
-   * \brief Set diffusivity.
-   */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                      su2double kt) override {
-    diff_ = kt / (Lewis * rho * cp);
-  }
+template <class FlowIndices>
+using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
 
- private:
-  const su2double Lewis{1.0};
-};

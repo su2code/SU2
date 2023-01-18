@@ -2,7 +2,7 @@
  * \file CLookupTable.cpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,7 +78,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   if (rank == MASTER_NODE) 
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
-  file_reader.ReadRawDRG(var_file_name_lut);
+  file_reader.ReadRawLUT(var_file_name_lut);
 
   n_points = file_reader.GetNPoints();
   n_triangles = file_reader.GetNTriangles();

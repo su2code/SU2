@@ -2,7 +2,7 @@
  * \file CFVMOutput.cpp
  * \brief Main subroutines for Finite Volume Method output
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,6 +56,10 @@ void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
     name << "Coarse_Grid_" << iMesh;
     AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
   }
+
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    AddVolumeOutput("LINELET", "Linelet", "LINELET", "Mesh lines built for the line implicit preconditioner");
+  }
 }
 
 void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
@@ -75,5 +79,9 @@ void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* ge
       key << "MG_" << iMesh;
       SetVolumeOutputValue(key.str(), iPoint, geometry->CoarseGridColor(iPoint,iMesh-1));
     }
+  }
+
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    SetVolumeOutputValue("LINELET", iPoint, geometry->GetLineletInfo(config).lineletColor[iPoint]);
   }
 }

@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,6 +71,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   if (config->GetWind_Gust()) {
     WindGust.resize(nPoint,nDim);
     WindGustDer.resize(nPoint,nDim+1);
+  }
+
+  if (config->GetVorticityConfinement()) {
+    nAuxVar = 1;
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
+    AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
   }
 }
 

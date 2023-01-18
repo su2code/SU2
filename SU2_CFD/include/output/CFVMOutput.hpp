@@ -2,7 +2,7 @@
  * \file CFVMOutput.hpp
  * \brief  Headers of the Finite Volume Method output.
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,7 @@
 #include "COutput.hpp"
 
 class CFVMOutput : public COutput{
-protected:
+ protected:
   /*!
    * \brief Constructor of the class
    */

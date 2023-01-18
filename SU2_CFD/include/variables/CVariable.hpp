@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -461,7 +461,8 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) const { return Solution; }
+  inline const MatrixType& GetSolution() const { return Solution; }
+  inline MatrixType& GetSolution() { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1143,16 +1144,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Sets separation intermittency
+   * \return Sets Effective intermittency
    */
   inline virtual void SetGammaEff(unsigned long iPoint) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Returns intermittency
-   */
-  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1410,27 +1404,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] Gamma - Ratio of Specific heats
    */
-  inline virtual void SetDeltaPressure(unsigned long iPoint, const su2double *val_velocity, su2double Gamma) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Gamma - Ratio of specific heats.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double Gamma) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint, CConfig *config) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual bool SetSoundSpeed(unsigned long iPoint) { return false; }
+  inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }
 
   /*!
    * \brief A virtual member.
@@ -1679,7 +1654,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
@@ -1703,10 +1678,58 @@ public:
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the intermittency.
+   * \return the value of the intermittency.
+   */
+  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Set the intermittency.   
+   * \param[in] val_dist - Value of the  intermittency.
+   */
+  inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
+
+  /*!
+   * \brief Get the value of the separation intermittency.
+   * \return the value of the separation intermittency.
+   */
+  inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the separation intermittency (gamma_sep).
+   * \param[in] val_dist - Value of the separation intermittency (gamma_sep).
+   */
+  inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
+
+  /*!
+   * \brief Get the value of the effective intermittency.
+   * \return the value of the effective intermittency.
+   */
+  inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the effective intermittency (gamma_eff).
+   * \param[in] Value of the effective intermittency (gamma_eff).
+   */
+  inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
+
+  /*!
    * \brief Set the value of the eddy viscosity.
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  /*!
+   * \brief Set the value of the turbulence index.
+   * \param[in] val_turb_index - turbulence index
+   */
+  inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   * \return val_turb_index - turbulence index
+   */
+  inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 
   /*!
    * \brief A virtual member.

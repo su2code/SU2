@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,6 @@ CSysMatrix<ScalarType>::CSysMatrix() :
   nPoint = nPointDomain = nVar = nEqn = 0;
   nnz = nnz_ilu = 0;
   ilu_fill_in = 0;
-  nLinelet = 0;
 
   omp_partitions    = nullptr;
 
@@ -883,17 +882,13 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     const auto row_end = omp_partitions[thread+1];
     if (begin == row_end) continue;
 
-    /*--- On the last thread partition the upper
-     *    product should consider halo columns. ---*/
-    const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
-
     ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
 
     for (auto iPoint = row_end; iPoint > begin;) {
       iPoint--; // because of unsigned type
       auto idx = iPoint*nVar;
       DiagonalProduct(prod, iPoint, dia_prod);          // Compute D.x*
-      UpperProduct(prod, iPoint, col_end, up_prod);     // Compute U.x_(n+1)
+      UpperProduct(prod, iPoint, row_end, up_prod);     // Compute U.x_(n+1)
       VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
       Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
     }
@@ -908,168 +903,33 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 }
 
 template<class ScalarType>
-unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config) {
+void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry *geometry, const CConfig *config) {
 
-  assert(omp_get_thread_num()==0 && "Linelet preconditioner cannot be built by multiple threads.");
+  BuildJacobiPreconditioner();
 
-  bool add_point;
-  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode;
-  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
-  const su2double* normal;
-  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
+  /*--- Allocate working vectors if not done yet. ---*/
+  if (!LineletUpper.empty()) return;
 
-  /*--- Memory allocation --*/
+  const auto nThreads = omp_get_max_threads();
 
-  vector<bool> check_Point(nPoint,true);
-
-  LineletBool.clear();
-  LineletBool.resize(nPoint,false);
-
-  nLinelet = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetSolid_Wall(iMarker) ||
-        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-      nLinelet += geometry->nVertex[iMarker];
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    const auto& li = geometry->GetLineletInfo(config);
+    if (!li.linelets.empty()) {
+      LineletUpper.resize(nThreads);
+      LineletVector.resize(nThreads);
+      LineletInvDiag.resize(nThreads);
     }
   }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- If the domain contains well defined Linelets ---*/
-
-  if (nLinelet != 0) {
-
-    /*--- Basic initial allocation ---*/
-
-    LineletPoint.resize(nLinelet);
-
-    /*--- Define the basic linelets, starting from each vertex ---*/
-
-    iLinelet = 0;
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetSolid_Wall(iMarker) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
-      {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          LineletPoint[iLinelet].push_back(iPoint);
-          check_Point[iPoint] = false;
-          iLinelet++;
-        }
-      }
-    }
-
-    /*--- Create the linelet structure ---*/
-
-    iLinelet = 0;
-
-    do {
-
-      index_Point = 0;
-
-      do {
-
-        /*--- Compute the value of the max weight ---*/
-
-        iPoint = LineletPoint[iLinelet][index_Point];
-        max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
-          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
-            iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edges->GetNormal(iEdge);
-            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->nodes->GetVolume(iPoint);
-            volume_jPoint = geometry->nodes->GetVolume(jPoint);
-            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-            max_weight = max(max_weight, weight);
-          }
-        }
-
-        /*--- Verify if any face of the control volume must be added ---*/
-
-        add_point = false;
-        counter = 0;
-        next_Point = geometry->nodes->GetPoint(iPoint, 0);
-        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
-          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edges->GetNormal(iEdge);
-          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->nodes->GetVolume(iPoint);
-          volume_jPoint = geometry->nodes->GetVolume(jPoint);
-          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
-              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
-            add_point = true;
-            next_Point = jPoint;
-            counter++;
-          }
-        }
-
-        /*--- We have arrived to an isotropic zone ---*/
-
-        if (counter > 1) add_point = false;
-
-        /*--- Add a typical point to the linelet, no leading edge ---*/
-
-        if (add_point) {
-          LineletPoint[iLinelet].push_back(next_Point);
-          check_Point[next_Point] = false;
-          index_Point++;
-        }
-
-      } while (add_point);
-      iLinelet++;
-    } while (iLinelet < nLinelet);
-
-    /*--- Identify the points that belong to a Linelet ---*/
-
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        LineletBool[iPoint] = true;
-      }
-    }
-
-    /*--- Identify the maximum number of elements in a Linelet ---*/
-
-    max_nElem = LineletPoint[0].size();
-    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-      if (LineletPoint[iLinelet].size() > max_nElem)
-        max_nElem = LineletPoint[iLinelet].size();
-
+  SU2_OMP_FOR_STAT(1)
+  for (int iThread = 0; iThread < nThreads; ++iThread) {
+    const auto size = CGeometry::CLineletInfo::MAX_LINELET_POINTS;
+    LineletUpper[iThread].resize(size, nullptr);
+    LineletVector[iThread].resize(size * nVar, 0.0);
+    LineletInvDiag[iThread].resize(size * nVar * nVar, 0.0);
   }
-
-  /*--- The domain doesn't have well defined linelets ---*/
-
-  else {
-
-    max_nElem = 0;
-
-  }
-
-  /*--- Screen output ---*/
-
-  Local_nPoints = 0;
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-    Local_nPoints += LineletPoint[iLinelet].size();
-  }
-  Local_nLineLets = nLinelet;
-
-  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-  /*--- Memory allocation --*/
-
-  LineletUpper.resize(omp_get_max_threads(), vector<const ScalarType*>(max_nElem,nullptr));
-  LineletVector.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar,0.0));
-  LineletInvDiag.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar*nVar,0.0));
-
-  return (unsigned long)(passivedouble(Global_nPoints) / Global_nLineLets);
-
+  END_SU2_OMP_FOR
 }
 
 template<class ScalarType>
@@ -1078,32 +938,34 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
-  /*--- Jacobi preconditioning where there is no linelet ---*/
+  const auto& li = geometry->GetLineletInfo(config);
+
+  /*--- Jacobi preconditioning where there are no linelets. ---*/
 
   SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
-    if (!LineletBool[iPoint])
+    if (li.lineletIdx[iPoint] == CGeometry::CLineletInfo::NO_LINELET)
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
   END_SU2_OMP_FOR
 
-  /*--- Solve each linelet using the Thomas algorithm ---*/
+  /*--- Solve the tridiagonal systems for the linelets. ---*/
 
   SU2_OMP_FOR_DYN(1)
-  for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
+  for (auto iLinelet = 0ul; iLinelet < li.linelets.size(); iLinelet++) {
 
     /*--- Get references to the working vectors allocated for this thread. ---*/
 
-    int thread = omp_get_thread_num();
-    vector<const ScalarType*>& lineletUpper = LineletUpper[thread];
-    vector<ScalarType>& lineletInvDiag = LineletInvDiag[thread];
-    vector<ScalarType>& lineletVector = LineletVector[thread];
+    const int thread = omp_get_thread_num();
+    auto& lineletUpper = LineletUpper[thread];
+    auto& lineletInvDiag = LineletInvDiag[thread];
+    auto& lineletVector = LineletVector[thread];
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    auto nElem = LineletPoint[iLinelet].size();
+    const auto nElem = li.linelets[iLinelet].size();
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto iPoint = li.linelets[iLinelet][iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++)
         lineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
@@ -1114,22 +976,22 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     ScalarType aux_block[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
 
     /*--- Copy diagonal block for first point in this linelet. ---*/
-    MatrixCopy(&matrix[dia_ptr[LineletPoint[iLinelet][0]]*nVar*nVar],
+    MatrixCopy(&matrix[dia_ptr[li.linelets[iLinelet][0]]*nVar*nVar],
                lineletInvDiag.data());
 
     for (auto iElem = 1ul; iElem < nElem; iElem++) {
 
       /*--- Setup pointers to required matrices and vectors ---*/
-      auto im1Point = LineletPoint[iLinelet][iElem-1];
-      auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto im1Point = li.linelets[iLinelet][iElem-1];
+      const auto iPoint = li.linelets[iLinelet][iElem];
 
-      auto d = &matrix[dia_ptr[iPoint]*nVar*nVar];
-      auto l = GetBlock(iPoint, im1Point);
-      auto u = GetBlock(im1Point, iPoint);
+      const auto* d = &matrix[dia_ptr[iPoint]*nVar*nVar];
+      const auto* l = GetBlock(iPoint, im1Point);
+      const auto* u = GetBlock(im1Point, iPoint);
 
-      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
-      auto d_prime = &lineletInvDiag[iElem*nVar*nVar];
-      auto b_prime = &lineletVector[iElem*nVar];
+      auto* inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      auto* d_prime = &lineletInvDiag[iElem*nVar*nVar];
+      auto* b_prime = &lineletVector[iElem*nVar];
 
       /*--- Invert previous modified diagonal ---*/
       MatrixCopy(inv_dm1, aux_block);
@@ -1157,7 +1019,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
     /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
     for (auto iElem = nElem-1; iElem > 0; --iElem) {
-      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      const auto* inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
       MatrixVectorProduct(lineletUpper[iElem-1], &lineletVector[iElem*nVar], aux_vector);
       VectorSubtraction(&lineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
       MatrixVectorProduct(inv_dm1, aux_vector, &lineletVector[(iElem-1)*nVar]);
@@ -1166,7 +1028,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     /*--- Copy results to product vector ---*/
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      auto iPoint = LineletPoint[iLinelet][iElem];
+      const auto iPoint = li.linelets[iLinelet][iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++)
         prod[iPoint*nVar+iVar] = lineletVector[iElem*nVar+iVar];
     }

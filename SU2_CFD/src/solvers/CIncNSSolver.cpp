@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,7 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -309,7 +309,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
       scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     }
-  
+
     /*--- Incompressible flow, primitive variables --- */
 
     bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
@@ -647,11 +647,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-      /*--- Check if the node belongs to the domain (i.e, not a halo node)
-       *    and the neighbor is not part of the physical boundary ---*/
-
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
+      /*--- On the finest mesh compute also on halo nodes to avoid communication of tau wall. ---*/
+      if ((!geometry->nodes->GetDomain(iPoint)) && !(MGLevel==MESH_0)) continue;
 
       /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -736,7 +733,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         const su2double U_Plus = VelTangMod / U_Tau;
 
         /*--- Y+ defined by White & Christoph ---*/
- 
+
         const su2double kUp = kappa * U_Plus;
 
         // incompressible adiabatic result

@@ -1,8 +1,8 @@
 /*!
- * \file CConstantSchmidtRANS.hpp
- * \brief Defines a mass diffusivity model with constant Schmidt numbers for RANS.
- * \author T. Economon, C. Morales
- * \version 7.4.0 "Blackbird"
+ * \file CConstantLewisDiffusivity.hpp
+ * \brief Defines Constant Lewis mass diffusivity.
+ * \author M.Heimgartner, C.Morales
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,28 +30,25 @@
 #include "CDiffusivityModel.hpp"
 
 /*!
- * \class CDiffusivityModelRANS
- * \brief Defines a mass diffusivity model for species equations based on Schmidt numbers for RANS.
- * \author T. Economon
+ * \class CConstantLewisDiffusivity
+ * \brief Defines a Constant Lewis mass diffusivity model for species equations.
+ * \author M.Heimgartner, C.Morales
  */
-class CConstantSchmidtRANS final : public CDiffusivityModel {
+class CConstantLewisDiffusivity final : public CDiffusivityModel {
  public:
-
   /*!
    * \brief Constructor of the class.
    */
-  CConstantSchmidtRANS(su2double diff_lam_const, su2double sc_turb)
-      : diff_lam_const_(diff_lam_const), sc_turb_(sc_turb) {}
+  CConstantLewisDiffusivity(su2double Lewis) : Lewis_(Lewis) {}
 
   /*!
-   * \brief Set mass diffusivity.
+   * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
                       su2double kt) override {
-    diff_ = diff_lam_const_ + mu_turb / (rho * sc_turb_);
+    diff_ = kt / (Lewis_ * rho * cp);
   }
 
  private:
-  su2double diff_lam_const_{0.0};
-  su2double sc_turb_{0.0};
+  const su2double Lewis_{1.0};
 };
