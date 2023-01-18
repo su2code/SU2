@@ -80,6 +80,16 @@ def main():
     invwedge.new_output = True
     test_list.append(invwedge)
 
+    # Inviscid single wedge, implicit, AUSM+M scheme
+    invwedge_ausm_m = TestCase('invwedge_ausm_m')
+    invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
+    invwedge_ausm_m.test_iter = 10
+    invwedge_ausm_m.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_ausm_m.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_ausm_m.new_output = True
+    test_list.append(invwedge_ausm_m)
+
     # Inviscid single wedge, implicit, NEMO supersonic inlet
     invwedge_ss_inlet = TestCase('invwedge_ss_inlet')
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
