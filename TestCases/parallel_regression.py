@@ -85,8 +85,8 @@ def main():
     invwedge_ap2.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ap2.cfg_file = "invwedge_ausmplusup2.cfg"
     invwedge_ap2.test_iter = 10
-    invwedge_ap2.test_vals = [-0.617877, -1.142640, -18.301487, -18.628852, -18.574892, 2.785436, 3.236765, 5.740905, 1.291532]
-    invwedge_ap2.test_vals_aarch64 = [-0.617877, -1.142640, -18.301487, -18.628852, -18.574892, 2.785436, 3.236765, 5.740905, 1.291532]
+    invwedge_ap2.test_vals = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.test_vals_aarch64 = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
     invwedge_ap2.new_output = True
     test_list.append(invwedge_ap2)
     
