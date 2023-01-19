@@ -1871,7 +1871,8 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 
 su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1) {
 
-  su2double pi = PI_NUMBER;
+  const su2double pi = PI_NUMBER;
+  const su2double Na = AVOGAD_CONSTANT;
 
   su2double Omega_ij;
 
@@ -1881,7 +1882,8 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
       
       const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
       const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+
+      const su2double ne_cgs = Na * rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
         
       const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
       const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
@@ -1893,7 +1895,8 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
 
       const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
       const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      
+      const su2double ne_cgs = Na * rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
         
       const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
       const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
@@ -1915,7 +1918,8 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
       
       const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
       const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      
+      const su2double ne_cgs = Na * rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
         
       const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
       const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
@@ -1927,7 +1931,8 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
 
       const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
       const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
-      const su2double ne_cgs = rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
+      
+      const su2double ne_cgs = Na * rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
         
       const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
       const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
