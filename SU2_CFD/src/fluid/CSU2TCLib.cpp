@@ -1982,7 +1982,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
       if (jSpecies != iSpecies) { 
 
         const su2double Mj    = MolarMass[jSpecies];
-        const su2double gam_j = rhos[iSpecies] / (Density*Mj);
+        const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
         const su2double kb = BOLTZMANN_CONSTANT;
 
