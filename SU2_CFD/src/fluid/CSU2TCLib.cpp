@@ -1998,7 +1998,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
       }
     }
     /*--- Calculate species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
+    DiffusionCoeff[iSpecies] = (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom);
   }
 }
 
@@ -2086,13 +2086,13 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
-    ThermalCond_tr += (denom_t > EPS) ? ((15.0/4.0)*kb*gam_i/denom_t) : su2double(0.0);
+    ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
 
-    /*--- Translational contribution to thermal conductivity ---*/
-    if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (denom_r > EPS) ? (kb*gam_i/denom_r) : su2double(0.0);
+    /*--- Rotational contribution to thermal conductivity ---*/
+    if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (kb*gam_i/denom_r);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    ThermalCond_ve += (denom_r > EPS) ? (kb*Cvve/R*gam_i / denom_r) : su2double(0.0);
+    ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
@@ -2158,8 +2158,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   /*--- Set vibrational temperature algorithm parameters ---*/
   const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
   const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
-  const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
-  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const unsigned short maxBIter = 100;        // Maximum Bisection method iterations
+  const unsigned short maxNIter = 100;        // Maximum Newton-Raphson iterations
   const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
   /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
