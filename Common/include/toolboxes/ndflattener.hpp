@@ -210,12 +210,12 @@ class NdFlattener;
 /*! Allgatherv wrapper defaulting to a copy operation if there is only a single MPI rank.
  *
  *  Introducing this was necessary because MPICH's Allgatherv behaved unexpectedly if there
- *  is only one MPI rank.
+ *  is only one MPI rank (seemingly ignoring displs[0] != 0).
  */
 static inline void SU2_MPI_Allgatherv_safe(const void* sendbuf, int sendcount, SU2_MPI::Datatype sendtype, void* recvbuf,
                               const int* recvcounts, const int* displs, SU2_MPI::Datatype recvtype, SU2_MPI::Comm comm) {
-  if(SU2_MPI::GetSize()==1){
-    SU2_MPI::CopyData(sendbuf,recvbuf,sendcount,sendtype,displs[0]);
+  if (SU2_MPI::GetSize() == 1) {
+    SU2_MPI::CopyData(sendbuf, recvbuf, sendcount, sendtype, displs[0]);
   } else {
     SU2_MPI::Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
   }
