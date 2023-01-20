@@ -1362,13 +1362,13 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
-  
+
   /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
   flame_normal[0] = 1.0;
   flame_normal[1] = 0.0;
   flame_normal[2] = 0.0;
   addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
-  
+
   /*!\brief FLAME_BURNT_THICKNESS \n DESCRIPTION: burnt thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_BURNT_THICKNESS", flame_burnt_thickness, 1);
 
@@ -1508,8 +1508,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MARKER_PYTHON_CUSTOM\n DESCRIPTION: Python customizable marker(s) \ingroup Config*/
   addStringListOption("MARKER_PYTHON_CUSTOM", nMarker_PyCustom, Marker_PyCustom);
-  /*!\brief INITIAL_PYTHON_CUSTOM\n DESCRIPTION: flag for using Python customizable initial condition 
-   * \ingroup Config 
+  /*!\brief INITIAL_PYTHON_CUSTOM\n DESCRIPTION: flag for using Python customizable initial condition
+   * \ingroup Config
    */
   addBoolOption("INITIAL_PYTHON_CUSTOM", initial_PyCustom, false);
 
@@ -2108,7 +2108,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief File name of the flamelet look up table.*/
   addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
- 
+
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
@@ -3954,7 +3954,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
 
     if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
- 
+
       if (Kind_FluidModel != FLUID_FLAMELET) {
         SU2_MPI::Error("The use of SCALAR_MODEL= FLAMELET requires the FLUID_MODEL option to be FLUID_FLAMELET",
                        CURRENT_FUNCTION);
@@ -5459,7 +5459,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+  if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
