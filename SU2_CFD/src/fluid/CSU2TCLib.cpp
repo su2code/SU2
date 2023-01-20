@@ -1879,7 +1879,7 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
   const bool coulomb2 = (d2 && ionization && (Omega22(iSpecies, jSpecies, 0) == 1.0 || Omega22(iSpecies, jSpecies, 0) == -1.0));
 
   if (coulomb1 || coulomb2) {
-    
+
       const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
       const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
 
@@ -1948,6 +1948,8 @@ void CSU2TCLib::DiffusionCoeffGY(){
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
 
+  const su2double kb = BOLTZMANN_CONSTANT;
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
@@ -1964,8 +1966,6 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
         const su2double Mj    = MolarMass[jSpecies];
         const su2double gam_j = rhos[jSpecies] / (Density*Mj);
-
-        const su2double kb = BOLTZMANN_CONSTANT;
 
         const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
