@@ -119,9 +119,9 @@ void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Dat
   } else {
     int scalarsize;
     MPI_Type_size(datatype, &scalarsize);
-    const char* src = static_cast<const char*>(sendbuf) + sendshift*scalarsize;
-    char* dest = static_cast<char*>(recvbuf) + recvshift*scalarsize;
-    std::memcpy(static_cast<void*>(dest), static_cast<const void*>(src), size*scalarsize);
+    const char* src = static_cast<const char*>(sendbuf) + sendshift*static_cast<size_t>(scalarsize);
+    char* dest = static_cast<char*>(recvbuf) + recvshift*static_cast<size_t>(scalarsize);
+    std::memcpy(static_cast<void*>(dest), static_cast<const void*>(src), size*static_cast<size_t>(scalarsize));
   }
 }
 #else // HAVE_MPI
