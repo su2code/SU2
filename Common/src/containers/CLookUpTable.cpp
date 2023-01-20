@@ -219,8 +219,8 @@ void CLookUpTable::PrintTableInfo() {
         cout << "| Average number of triangles:" << setw(36) << right << floor(n_tria_av) << " |" << endl;
         cout << "| Average number of edges:" << setw(40) << right << floor(n_edges_av) << " |" << endl;
         cout << "+------------------------------------------------------------------+" << endl;
-        cout << "| Minimum Z:" << setw(54) << right << limits_table_z.first << " |" << endl;
-        cout << "| Maximum Z:" << setw(54) << right << limits_table_z.second << " |" << endl;
+        cout << "| Minimum Z:" << setw(54) << right << *limits_table_z.first << " |" << endl;
+        cout << "| Maximum Z:" << setw(54) << right << *limits_table_z.second << " |" << endl;
         cout << "| Minimum Y:" << setw(54) << right << min_y << " |" << endl;
         cout << "| Maximum Y:" << setw(54) << right << max_y << " |" << endl;
         cout << "| Minimum X:" << setw(54) << right << min_x << " |" << endl;
@@ -415,26 +415,32 @@ std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const 
 }
 
 unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,
-                                       su2double val_CV2, su2double val_z) {
+                                       su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a single variable named val_name_var on a query point
         with coordinates val_CV1, val_CV2, and val_z ---*/
 
   /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
-  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z);
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
   if (within_z_limits) {
-    /* 2: Perform 2D interpolations on upper and lower inclusion levels */
+    /* 2: Determine val_CV1 and val_CV2 for the inclusion table levels. */
+    std::array<std::array<su2double, 2>, 2> lower_upper_CV1_2 =
+        ComputeNormalizedXY(inclusion_levels, val_CV1, val_CV2, val_CV3);
+    su2double val_CV1_lower = lower_upper_CV1_2[0][0], val_CV2_lower = lower_upper_CV1_2[0][1],
+              val_CV1_upper = lower_upper_CV1_2[1][0], val_CV2_upper = lower_upper_CV1_2[1][1];
+
+    /* 3: Perform 2D interpolations on upper and lower inclusion levels */
     unsigned long lower_level = inclusion_levels.first;
     unsigned long upper_level = inclusion_levels.second;
 
     su2double val_var_lower, val_var_upper;
-    unsigned long exit_code_lower = LookUp_XY(val_name_var, &val_var_lower, val_CV1, val_CV2, lower_level);
-    unsigned long exit_code_upper = LookUp_XY(val_name_var, &val_var_upper, val_CV1, val_CV2, upper_level);
+    unsigned long exit_code_lower = LookUp_XY(val_name_var, &val_var_lower, val_CV1_lower, val_CV2_lower, lower_level);
+    unsigned long exit_code_upper = LookUp_XY(val_name_var, &val_var_upper, val_CV1_upper, val_CV2_upper, upper_level);
 
-    /* 3: Perform linear interpolation along the z-direction using the x-y interpolation results
+    /* 4: Perform linear interpolation along the z-direction using the x-y interpolation results
              from upper and lower trapezoidal maps */
-    Linear_Interpolation(val_z, lower_level, upper_level, val_var_lower, val_var_upper, val_var);
+    Linear_Interpolation(val_CV3, lower_level, upper_level, val_var_lower, val_var_upper, val_var);
 
     return max(exit_code_lower, exit_code_upper);
   } else {
@@ -445,28 +451,34 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
   }
 }
 unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
-                                       su2double val_CV1, su2double val_CV2, su2double val_z) {
+                                       su2double val_CV1, su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_z ---*/
 
   /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
-  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_z);
+  std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
   if (within_z_limits) {
-    /* 2: Perform 2D interpolations on upper and lower inclusion levels */
+    /* 2: Determine val_CV1 and val_CV2 for the inclusion table levels. */
+    std::array<std::array<su2double, 2>, 2> lower_upper_CV1_2 =
+        ComputeNormalizedXY(inclusion_levels, val_CV1, val_CV2, val_CV3);
+    su2double val_CV1_lower = lower_upper_CV1_2[0][0], val_CV2_lower = lower_upper_CV1_2[0][1],
+              val_CV1_upper = lower_upper_CV1_2[1][0], val_CV2_upper = lower_upper_CV1_2[1][1];
+
+    /* 3: Perform 2D interpolations on upper and lower inclusion levels */
     unsigned long lower_level = inclusion_levels.first;
     unsigned long upper_level = inclusion_levels.second;
 
     std::vector<su2double> val_vars_lower, val_vars_upper;
     val_vars_lower.resize(val_vars.size());
     val_vars_upper.resize(val_vars.size());
-    unsigned long exit_code_lower = LookUp_XY(val_names_var, val_vars_lower, val_CV1, val_CV2, lower_level);
-    unsigned long exit_code_upper = LookUp_XY(val_names_var, val_vars_upper, val_CV1, val_CV2, upper_level);
+    unsigned long exit_code_lower = LookUp_XY(val_names_var, val_vars_lower, val_CV1_lower, val_CV2_lower, lower_level);
+    unsigned long exit_code_upper = LookUp_XY(val_names_var, val_vars_upper, val_CV1_upper, val_CV2_upper, upper_level);
 
-    /* 3: Perform linear interpolation along the z-direction using the x-y interpolation results
+    /* 4: Perform linear interpolation along the z-direction using the x-y interpolation results
              from upper and lower trapezoidal maps */
-    Linear_Interpolation(val_z, lower_level, upper_level, val_vars_lower, val_vars_upper, val_vars);
+    Linear_Interpolation(val_CV3, lower_level, upper_level, val_vars_lower, val_vars_upper, val_vars);
 
     return max(exit_code_lower, exit_code_upper);
   } else {
@@ -513,9 +525,54 @@ void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned lo
   }
 }
 
-unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val_var, su2double val_CV1, su2double val_CV2,
-                                      unsigned long i_level) {
-  unsigned long exit_code = 0;
+std::array<std::array<su2double, 2>, 2> CLookUpTable::ComputeNormalizedXY(
+    std::pair<unsigned long, unsigned long>& inclusion_levels, const su2double val_CV1, const su2double val_CV2,
+    const su2double val_CV3) {
+  /* Determine the values of the controlling variables of the upper and lower table levels corresponding to the
+     normalized query point coordinates. */
+
+  unsigned long lower_level = inclusion_levels.first;
+  unsigned long upper_level = inclusion_levels.second;
+
+  /* Get the upper and lower limits of the first and second controlling variables on the inclusion levels. */
+  su2double x_min_lower = *limits_table_x[lower_level].first, x_max_lower = *limits_table_x[lower_level].second;
+  su2double x_min_upper = *limits_table_x[upper_level].first, x_max_upper = *limits_table_x[upper_level].second;
+  su2double y_min_lower = *limits_table_y[lower_level].first, y_max_lower = *limits_table_y[lower_level].second;
+  su2double y_min_upper = *limits_table_y[upper_level].first, y_max_upper = *limits_table_y[upper_level].second;
+
+  /* Interpolate the table limits to the query point coordinates. */
+  su2double x_min_q = x_min_lower + (x_min_upper - x_min_lower) * (val_CV3 - z_values_levels[lower_level]) /
+                                        (z_values_levels[upper_level] - z_values_levels[lower_level] + EPS);
+  su2double x_max_q = x_max_lower + (x_max_upper - x_max_lower) * (val_CV3 - z_values_levels[lower_level]) /
+                                        (z_values_levels[upper_level] - z_values_levels[lower_level] + EPS);
+  su2double y_min_q = y_min_lower + (y_min_upper - y_min_lower) * (val_CV3 - z_values_levels[lower_level]) /
+                                        (z_values_levels[upper_level] - z_values_levels[lower_level] + EPS);
+  su2double y_max_q = y_max_lower + (y_max_upper - y_max_lower) * (val_CV3 - z_values_levels[lower_level]) /
+                                        (z_values_levels[upper_level] - z_values_levels[lower_level] + EPS);
+
+  /* Compute the normalized first and second controlling variable values. */
+  su2double x_norm_q = (val_CV1 - x_min_q) / (x_max_q - x_min_q);
+  su2double y_norm_q = (val_CV2 - y_min_q) / (y_max_q - y_min_q);
+
+  /* De-normalize the normalized coordinates for the upper and lower table levels. */
+  su2double val_CV1_upper = x_min_upper + (x_max_upper - x_min_upper) * x_norm_q;
+  su2double val_CV2_upper = y_min_upper + (y_max_upper - y_min_upper) * y_norm_q;
+  su2double val_CV1_lower = x_min_lower + (x_max_lower - x_min_lower) * x_norm_q;
+  su2double val_CV2_lower = y_min_lower + (y_max_lower - y_min_lower) * y_norm_q;
+
+  /* Store coordinates in output */
+  std::array<std::array<su2double, 2>, 2> lower_upper_CVs;
+  lower_upper_CVs[0][0] = val_CV1_lower;
+  lower_upper_CVs[0][1] = val_CV2_lower;
+  lower_upper_CVs[1][0] = val_CV1_upper;
+  lower_upper_CVs[1][1] = val_CV2_upper;
+
+  return lower_upper_CVs;
+}
+
+unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val_var, su2double val_CV1,
+                                      su2double val_CV2, unsigned long i_level) {
+  unsigned long exit_code = 1;
 
   if (val_name_var.compare("NULL") == 0) {
     *val_var = 0.0;
@@ -540,23 +597,15 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val
 
       *val_var = Interpolate(GetDataP(val_name_var, i_level), triangle, interp_coeffs);
       exit_code = 0;
-    } else {
-      /* in bounding box but outside of table */
-      unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
-      *val_var = GetDataP(val_name_var, i_level)[nearest_neighbor];
-      exit_code = 1;
     }
-  } else {
-    /* lookup is outside of table bounding box */
-    unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
-    *val_var = GetDataP(val_name_var, i_level)[nearest_neighbor];
-    exit_code = 1;
   }
+  if (exit_code == 1) InterpolateToNearestNeighbors(val_CV1, val_CV2, val_name_var, val_var, i_level);
+
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars, su2double val_CV1,
-                                      su2double val_CV2, unsigned long i_level) {
+unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
+                                      su2double val_CV1, su2double val_CV2, unsigned long i_level) {
   vector<su2double*> look_up_data(val_names_var.size());
 
   for (long unsigned int i_var = 0; i_var < val_vars.size(); ++i_var) {
@@ -587,7 +636,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_
 
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
                                       su2double val_CV1, su2double val_CV2, unsigned long i_level) {
-  unsigned long exit_code = 0;
+  unsigned long exit_code = 1;
   unsigned long nearest_neighbor = 0;
   unsigned long id_triangle = 0;
   std::array<su2double, 3> interp_coeffs{0};
@@ -608,32 +657,24 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
 
       /* exit_code 0 means point was in triangle */
       exit_code = 0;
-
-    } else {
-      /* if point is not inside a triangle (outside table domain) search nearest neighbor */
-      nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
-      exit_code = 1;
     }
-
-  } else {
-    /* if point is outside of table ranges, find nearest neighbor */
-    nearest_neighbor = FindNearestNeighborOnHull(val_CV1, val_CV2, i_level);
-    exit_code = 1;
   }
 
   /* loop over variable names and interpolate / get values */
-  for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
-    if (val_names_var[i_var].compare("NULL") == 0) {
-      *val_vars[i_var] = 0.0;
-    } else {
-      if (exit_code == 0) {
+  if (exit_code == 0) {
+    for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
+      if (val_names_var[i_var].compare("NULL") == 0) {
+        *val_vars[i_var] = 0.0;
+      } else {
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) triangle[p] = triangles[i_level][id_triangle][p];
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
-      } else
-        *val_vars[i_var] = GetDataP(val_names_var[i_var], i_level)[nearest_neighbor];
+      }
     }
+  } else {
+    InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var, val_vars, i_level);
   }
+
   return exit_code;
 }
 
@@ -691,6 +732,61 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_CV1, su2doub
     }
   }
   return neighbor_id;
+}
+
+void CLookUpTable::InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                                 const std::vector<std::string>& names_var,
+                                                 std::vector<su2double*>& var_vals, const unsigned long i_level) {
+  /* Interpolate data using distance-weighted averaging on the two nearest table nodes. */
+
+  su2double min_distance = 1e99, second_distance = 1e99;
+  su2double norm_coeff_x = 1. / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double norm_coeff_y = 1. / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
+  su2double val_CV1_norm = val_CV1 / (*limits_table_x[i_level].second - *limits_table_x[i_level].first);
+  su2double val_CV2_norm = val_CV2 / (*limits_table_y[i_level].second - *limits_table_y[i_level].first);
+
+  const su2double* x_table = GetDataP(name_CV1, i_level);
+  const su2double* y_table = GetDataP(name_CV2, i_level);
+  unsigned long i_nearest = 0, i_second_nearest = 0, i_third_nearest = 0;
+
+  for (unsigned long i_point = 0; i_point < n_hull_points[i_level]; ++i_point) {
+    su2double next_x_norm = x_table[hull[i_level][i_point]] * norm_coeff_x;
+    su2double next_y_norm = y_table[hull[i_level][i_point]] * norm_coeff_y;
+
+    su2double next_distance = pow(val_CV1_norm - next_x_norm, 2) + pow(val_CV2_norm - next_y_norm, 2);
+
+    /* Check if distance to node is lower than current nearest or second nearest node. */
+    if (next_distance < min_distance) {
+      second_distance = min_distance;
+      min_distance = next_distance;
+
+      i_second_nearest = i_nearest;
+      i_nearest = hull[i_level][i_point];
+    } else if ((next_distance > min_distance) && (next_distance < second_distance)) {
+      i_second_nearest = hull[i_level][i_point];
+
+      second_distance = next_distance;
+    }
+  }
+
+  min_distance = sqrt(min_distance);
+  second_distance = sqrt(second_distance);
+
+  /* Interpolate data using distance-weighted averaging */
+  su2double delimiter = (1.0 / min_distance) + (1.0 / second_distance);
+  for (auto iVar = 0u; iVar < var_vals.size(); iVar++) {
+    su2double data_nearest = GetDataP(names_var[iVar], i_level)[i_nearest],
+              data_second_nearest = GetDataP(names_var[iVar], i_level)[i_second_nearest];
+    *var_vals[iVar] = (data_nearest * (1.0 / min_distance) + data_second_nearest * (1.0 / second_distance)) / delimiter;
+  }
+}
+
+void CLookUpTable::InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                                 const std::string& name_var, su2double* var_vals,
+                                                 const unsigned long i_level) {
+  std::vector<std::string> names_var = {name_var};
+  std::vector<su2double*> val_names_var = {var_vals};
+  InterpolateToNearestNeighbors(val_CV1, val_CV2, names_var, val_names_var, i_level);
 }
 
 bool CLookUpTable::IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned long val_id_triangle,
