@@ -4085,30 +4085,51 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
     /*--- Otherwise, set wall roughnesses. ---*/
     if (!allEmpty) {
-      /*--- Store all marker wall roughnesses in a common data structure (rank, zone, marker) -> value. ---*/
-      unsigned short nMarkerMax = 0;
-      for (auto iZone = 0u; iZone < nZone; ++iZone) {
-        nMarkerMax = std::max(nMarkerMax, geometry_container[iZone][iInst][MESH_0]->GetnMarker());
-      }
-      const auto tmp = nMarkerMax;
-      SU2_MPI::Allreduce(&tmp, &nMarkerMax, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
-
-      su2activematrix wall_roughness(nZone, nMarkerMax);
+      /*--- Store all marker wall roughnesses in a common data structure. ---*/
+      std::vector<unsigned short> wall_rough_zone, wall_rough_marker;
+      std::vector<su2double> wall_rough_val;
       for (auto iZone = 0u; iZone < nZone; ++iZone) {
         const CConfig* config = config_container[iZone];
         for (auto iMarker = 0u; iMarker < geometry_container[iZone][iInst][MESH_0]->GetnMarker(); ++iMarker) {
-          wall_roughness(iZone, iMarker) =
-              config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          wall_rough_zone.push_back(iZone);
+          wall_rough_marker.push_back(iMarker);
+          wall_rough_val.push_back(config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second);
         }
       }
-      const auto nRank = SU2_MPI::GetSize();
-      C3DDoubleMatrix all_wall_roughness(nRank, nZone, nMarkerMax);
-      SU2_MPI::Allgather(wall_roughness.data(), wall_roughness.size(), MPI_DOUBLE, all_wall_roughness.data(),
-                         wall_roughness.size(), MPI_DOUBLE, SU2_MPI::GetComm());
+      /*--- Communicate. ---*/
+      const int wall_rough_size = wall_rough_val.size();
+      const int mpi_size = SU2_MPI::GetSize();
+      std::vector<int> counts(mpi_size);
+      SU2_MPI::Allgather(&wall_rough_size, 1, MPI_INT, counts.data(), 1, MPI_INT, SU2_MPI::GetComm());
+      std::vector<int> displs(mpi_size + 1, 0);
+      for (int i = 1; i <= mpi_size; ++i) displs[i] = displs[i - 1] + counts[i - 1];
+      const auto total_size = displs.back();
 
-      for(auto iZone = 0u; iZone < nZone; ++iZone) {
-        if (wallDistanceNeeded[iZone] && config_container[iZone]->GetnRoughWall() > 0) {
-          geometry_container[iZone][iInst][MESH_0]->nodes->SetWallRoughness(all_wall_roughness);
+      std::vector<unsigned short> all_wall_rough_zone(total_size), all_wall_rough_marker(total_size);
+      std::vector<su2double> all_wall_rough_val(total_size);
+
+      SU2_MPI::Allgatherv(wall_rough_zone.data(), wall_rough_size, MPI_UNSIGNED_SHORT, all_wall_rough_zone.data(),
+                          counts.data(), displs.data(), MPI_UNSIGNED_SHORT, SU2_MPI::GetComm());
+      SU2_MPI::Allgatherv(wall_rough_marker.data(), wall_rough_size, MPI_UNSIGNED_SHORT, all_wall_rough_marker.data(),
+                          counts.data(), displs.data(), MPI_UNSIGNED_SHORT, SU2_MPI::GetComm());
+      SU2_MPI::Allgatherv(wall_rough_val.data(), wall_rough_size, MPI_DOUBLE, all_wall_rough_val.data(),
+                          counts.data(), displs.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+
+      /*--- f(iRank, iZone, iMarker) -> roughness value ---*/
+      auto wall_rough_func = [&](int iRank, unsigned short iZone, unsigned short iMarker) {
+        /*--- Jump based on rank, then linear search for (iZone, iMarker). ---*/
+        for (auto k = displs[iRank]; k < displs[iRank + 1]; ++k) {
+          if (all_wall_rough_zone[k] == iZone && all_wall_rough_marker[k] == iMarker) {
+            return all_wall_rough_val[k];
+          }
+        }
+        SU2_MPI::Error("Failed to find wall roughness value", CURRENT_FUNCTION);
+        return su2double{};
+      };
+
+      for(auto jZone=0u; jZone<nZone; jZone++) {
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(wall_rough_func);
         }
       }
     }

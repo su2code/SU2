@@ -116,12 +116,6 @@ public:
   Index cols() const noexcept { return m_innerSz; }
 
   /*!
-   * \brief Raw data.
-   */
-  Scalar* data() noexcept { return m_storage.data(); }
-  const Scalar* data() const noexcept { return m_storage.data(); }
-
-  /*!
    * \brief Element-wise access.
    */
   Scalar& operator() (Index i, Index j, Index k) noexcept { return m_storage(i, j*m_innerSz + k); }
