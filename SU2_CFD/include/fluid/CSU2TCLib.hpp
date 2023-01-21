@@ -276,6 +276,17 @@ public:
    *\param[out] Delta_1 or Delta_2 - Collision term between species i and j
    */
   su2double ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1);
+  
+  /*!
+   *\brief Compute the collision cross section
+   *\param[in] iSpecies - Species of gas
+   *\param[in] jSpecies - Collision partner of species i
+   *\param[in] T - Temperature of gas
+   *\param[in] d1 - Whether omega^(1,1) or omega^(2,2)
+   *\param[in] coulomb - Whether to use Coulomb potential
+   *\param[out] Omega_ij - collision cross section
+   */
+  su2double ComputeCollisionCrossSection(unsigned iSpecies, unsigned jSpecies, su2double T, bool d1, bool coulomb);
 
   /*!
    * \brief Get reference temperature.
