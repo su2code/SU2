@@ -1638,12 +1638,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (!geometry->nodes->GetDomain(iPoint))
+      continue;
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -1651,7 +1652,6 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
-
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
        therefore we can specify all but one state variable at the inlet.
        The outgoing Riemann invariant provides the final piece of info.
@@ -1665,8 +1665,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       case INLET_TYPE::TOTAL_CONDITIONS:    
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
-        const su2double P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-        const su2double T_Total  = config->GetInlet_Ttotal(Marker_Tag);
+        su2double P_Total  = config->GetInlet_Ptotal(Marker_Tag);
+        su2double T_Total  = config->GetInlet_Ttotal(Marker_Tag);
         const su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
         const su2double *Mass_Frac_inlet = config->GetInlet_MassFrac();
 
@@ -1676,18 +1676,18 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = nodes->GetSolution(iPoint, RHO_INDEX);
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = nodes->GetSolution(iPoint, nSpecies+iDim)/Density;
 
-        const su2double Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
+        su2double Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
         const su2double Energy      = nodes->GetSolution(iPoint, nVar-2)/Density;
         const su2double Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
         const su2double H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-        const su2double SoundSpeed2 = Gamma*Pressure/Density;
+        su2double SoundSpeed2 = Gamma*Pressure/Density;
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
-        const su2double Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
+        su2double Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
         for (iDim = 0; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
@@ -1706,10 +1706,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Solve quadratic equation for velocity magnitude. Value must
            be positive, so the choice of root is clear. ---*/
-        const su2double dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(max(0.0,dd));
-        const su2double Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = max(0.0,Vel_Mag);
+        const su2double dd = sqrt(max(0.0, bb*bb - 4.0*aa*cc));
+        const su2double Vel_Mag = max(0.0, (-bb + dd)/(2.0*aa));
         Velocity2 = Vel_Mag*Vel_Mag;
 
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -1752,42 +1750,43 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       case INLET_TYPE::MASS_FLOW:
 
         /*--- Retrieve the specified mass flow for the inlet. ---*/
-        Density  = config->GetInlet_Ttotal(Marker_Tag);
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        su2double Density  = config->GetInlet_Ttotal(Marker_Tag);
+        su2double Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
+        const su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        const su2double *Mass_Frac_inlet = config->GetInlet_MassFrac();
 
         /*--- Non-dim. the inputs if necessary. ---*/
         Density /= config->GetDensity_Ref();
         Vel_Mag /= config->GetVelocity_Ref();
 
         /*--- Get primitives from current inlet state. ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
-        Pressure    = nodes->GetPressure(iPoint);
-        SoundSpeed2 = Gamma*Pressure/U_domain[0];
+        const su2double Pressure    = nodes->GetPressure(iPoint);
+        const su2double SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+        su2double Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
         for (iDim = 0; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Speed of sound squared for fictitious inlet state ---*/
-        SoundSpeed2 = Riemann;
+        su2double SoundSpeed2 = Riemann;
         for (iDim = 0; iDim < nDim; iDim++)
           SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
         SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
         SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Mvec_inlet[iDim] = Velocity[iDim] / sqrt(SoundSpeed2);
+
         /*--- Pressure for the fictitious inlet state ---*/
-        Pressure = SoundSpeed2*Density/Gamma;
+        const su2double Pressure_inlet = SoundSpeed2*Density/Gamma;
 
-        /*--- Energy for the fictitious inlet state ---*/
-        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
-
-        Temperature_inlet = Pressure / ( Gas_Constant * Density);
-        Temperature_ve_inlet = Temperature_inlet;
+        const su2double Temperature_inlet = Pressure_inlet / ( Gas_Constant * Density);
+        const su2double Temperature_ve_inlet = Temperature_inlet;
 
         /*--- Allocate inlet node to compute gradients for numerics ---*/
         CNEMOEulerVariable node_inlet(Pressure_inlet, Mass_Frac_inlet, Mvec_inlet, Temperature_inlet,
@@ -1855,7 +1854,6 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //        if (implicit)
 //          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 //      }
-    }
   }
 }
 
