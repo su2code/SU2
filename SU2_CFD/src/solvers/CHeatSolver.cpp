@@ -358,10 +358,14 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+  su2double Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+  const bool IsPyCustom = config->GetMarker_All_PyCustom(val_marker);
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    if (IsPyCustom) {
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+    }
     IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
   }
   END_SU2_OMP_FOR
@@ -370,6 +374,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const bool IsPyCustom = config->GetMarker_All_PyCustom(val_marker);
 
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
   if (config->GetIntegrated_HeatFlux()) {
@@ -381,6 +386,9 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_contain
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
+    if (IsPyCustom) {
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+    }
     /*--- Viscous contribution to the residual at the wall. ---*/
     const auto* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
