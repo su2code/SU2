@@ -105,6 +105,8 @@ class CBaseMPIWrapper {
   static Win winMinRankError;
 
  public:
+  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
+
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static inline int GetRank() { return Rank; }
@@ -503,9 +505,9 @@ class CBaseMPIWrapper {
   static int Rank, Size;
   static Comm currentComm;
 
+ public:
   static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
 
- public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static inline int GetRank() { return Rank; }
