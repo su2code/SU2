@@ -1792,7 +1792,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
       } 
       const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
-      const su2double Omega_ij = ComputeCollisionCrossSection(iSpecies, jSpecies, Tcol, true, coulomb) / PI_NUMBER;
+      const su2double Omega_ij = ComputeCollisionCrossSection(iSpecies, jSpecies, T_col, true, coulomb) / PI_NUMBER;
       Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
