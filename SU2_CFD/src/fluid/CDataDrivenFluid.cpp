@@ -28,14 +28,27 @@
 #include "../../include/fluid/CDataDrivenFluid.hpp"
 
 CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
+  #ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  #endif
   Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
 
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
+      if (rank == MASTER_NODE) {
+        cout << "***********************************************" << endl;
+        cout << "*** initializing the multi-layer perceptron ***" << endl;
+        cout << "***********************************************" << endl;
+      }
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
+      if (rank == MASTER_NODE) {
+        cout << "*****************************************" << endl;
+        cout << "***   initializing the lookup table   ***" << endl;
+        cout << "*****************************************" << endl;
+      }
       lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
       break;
     default:
@@ -372,6 +385,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 
   /* Apply exponential transformation to the MLP outputs for the first and second
      derivative of the entropy w.r.t density */
+  // Optional:
   // dsdrho_e = -exp(dsdrho_e);
   // d2sdrho2 = exp(d2sdrho2);
 
