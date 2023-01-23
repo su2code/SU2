@@ -637,7 +637,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
                                       su2double val_CV1, su2double val_CV2, unsigned long i_level) {
   unsigned long exit_code = 1;
-  unsigned long nearest_neighbor = 0;
   unsigned long id_triangle = 0;
   std::array<su2double, 3> interp_coeffs{0};
   std::array<unsigned long, 3> triangle{0};
@@ -747,7 +746,7 @@ void CLookUpTable::InterpolateToNearestNeighbors(const su2double val_CV1, const 
 
   const su2double* x_table = GetDataP(name_CV1, i_level);
   const su2double* y_table = GetDataP(name_CV2, i_level);
-  unsigned long i_nearest = 0, i_second_nearest = 0, i_third_nearest = 0;
+  unsigned long i_nearest = 0, i_second_nearest = 0;
 
   for (unsigned long i_point = 0; i_point < n_hull_points[i_level]; ++i_point) {
     su2double next_x_norm = x_table[hull[i_level][i_point]] * norm_coeff_x;
