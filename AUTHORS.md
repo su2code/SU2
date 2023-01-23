@@ -43,6 +43,7 @@ in collaboration with the following main contributors and research teams:
 Copyright holders might be the individual person or their respective employer. If no real name is available, the Github user name is listed.
 
 ```
+Aidan Jungo
 Akshay.K.R
 Alejandro
 Alessandro Gastaldi

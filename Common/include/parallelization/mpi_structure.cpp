@@ -26,6 +26,7 @@
  */
 
 #include "mpi_structure.hpp"
+#include <cstring> // memcpy
 
 
 /* Initialise the MPI Communicator Rank and Size */
@@ -108,6 +109,20 @@ void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
     std::cout << std::endl << std::endl;
   }
   Abort(currentComm, EXIT_FAILURE);
+}
+
+void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift, int sendshift) {
+  if(datatype==MPI_DOUBLE) {
+    for (int i = 0; i < size; i++) {
+      static_cast<su2double*>(recvbuf)[i+recvshift] = static_cast<const su2double*>(sendbuf)[i+sendshift];
+    }
+  } else {
+    int scalarsize;
+    MPI_Type_size(datatype, &scalarsize);
+    const char* src = static_cast<const char*>(sendbuf) + sendshift*static_cast<size_t>(scalarsize);
+    char* dest = static_cast<char*>(recvbuf) + recvshift*static_cast<size_t>(scalarsize);
+    std::memcpy(static_cast<void*>(dest), static_cast<const void*>(src), size*static_cast<size_t>(scalarsize));
+  }
 }
 #else // HAVE_MPI
 

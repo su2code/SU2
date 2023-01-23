@@ -70,15 +70,55 @@ def main():
     thermalbath_frozen.new_output = True
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge, implicit
-    invwedge           = TestCase('invwedge')
-    invwedge.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge.cfg_file  = "invwedge.cfg"
-    invwedge.test_iter = 10
-    invwedge.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge.new_output = True
-    test_list.append(invwedge)
+    # Inviscid single wedge, ausm, implicit
+    invwedge_a = TestCase('invwedge_ausm')
+    invwedge_a.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_a.cfg_file = "invwedge_ausm.cfg"
+    invwedge_a.test_iter = 10
+    invwedge_a.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.new_output = True
+    test_list.append(invwedge_a)
+
+    # Inviscid single wedge, ausm+-up2, implicit
+    invwedge_ap2 = TestCase('invwedge_ap2')
+    invwedge_ap2.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ap2.cfg_file = "invwedge_ausmplusup2.cfg"
+    invwedge_ap2.test_iter = 10
+    invwedge_ap2.test_vals = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.test_vals_aarch64 = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.new_output = True
+    test_list.append(invwedge_ap2)
+    
+    # Inviscid single wedge, msw, implicit
+    invwedge_msw = TestCase('invwedge_msw')
+    invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_msw.cfg_file = "invwedge_msw.cfg"
+    invwedge_msw.test_iter = 10
+    invwedge_msw.test_vals = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.new_output = True
+    test_list.append(invwedge_msw)
+    
+    # Inviscid single wedge, roe, implicit
+    invwedge_roe = TestCase('invwedge_roe')
+    invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_roe.cfg_file = "invwedge_roe.cfg"
+    invwedge_roe.test_iter = 10
+    invwedge_roe.test_vals = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.new_output = True
+    test_list.append(invwedge_roe)
+    
+    # Inviscid single wedge, lax, implicit
+    invwedge_lax = TestCase('invwedge_lax')
+    invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_lax.cfg_file = "invwedge_lax.cfg"
+    invwedge_lax.test_iter = 10
+    invwedge_lax.test_vals = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
+    invwedge_lax.test_vals_aarch64 = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
+    invwedge_lax.new_output = True
+    test_list.append(invwedge_lax)
 
     # Inviscid single wedge, implicit, NEMO supersonic inlet
     invwedge_ss_inlet = TestCase('invwedge_ss_inlet')
