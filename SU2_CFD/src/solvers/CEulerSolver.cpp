@@ -791,6 +791,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
+  bool redefine_fluidmodel = true;
 
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -857,6 +858,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case DATADRIVEN_FLUID:
 
       auxFluidModel = new CDataDrivenFluid(config);
+      redefine_fluidmodel = false;
+
       break;
     case COOLPROP:
 
@@ -1055,7 +1058,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
-  delete auxFluidModel;
+  if(redefine_fluidmodel) delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1091,7 +1094,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
 
       case DATADRIVEN_FLUID:
-        FluidModel[thread] = new CDataDrivenFluid(config);
+        FluidModel[thread] = auxFluidModel;
         break;
 
       case COOLPROP:
