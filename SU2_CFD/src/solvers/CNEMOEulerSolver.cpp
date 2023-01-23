@@ -1648,7 +1648,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
@@ -1663,6 +1663,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Total properties have been specified at the inlet. ---*/
       case INLET_TYPE::TOTAL_CONDITIONS:    
+        {
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
         su2double P_Total  = config->GetInlet_Ptotal(Marker_Tag);
@@ -1675,7 +1676,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         T_Total /= config->GetTemperature_Ref();
 
         /*--- Store primitives and set some variables for clarity. ---*/
-        Density = nodes->GetSolution(iPoint, RHO_INDEX);
+        su2double Density = nodes->GetPrimitive(iPoint, RHO_INDEX);
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = nodes->GetSolution(iPoint, nSpecies+iDim)/Density;
 
@@ -1688,7 +1689,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
         su2double Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Total speed of sound ---*/
@@ -1707,26 +1708,25 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Solve quadratic equation for velocity magnitude. Value must
            be positive, so the choice of root is clear. ---*/
         const su2double dd = sqrt(max(0.0, bb*bb - 4.0*aa*cc));
-        const su2double Vel_Mag = max(0.0, (-bb + dd)/(2.0*aa));
+        su2double Vel_Mag = max(0.0, (-bb + dd)/(2.0*aa));
         Velocity2 = Vel_Mag*Vel_Mag;
 
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
         /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-        const su2double Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = min(1.0,Mach2);
+        const su2double Mach2 = min(1.0, Velocity2/SoundSpeed2);
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
         /*--- Compute new velocity vector at the inlet ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
 
         /*--- Static temperature from the speed of sound relation ---*/
         const su2double Temperature_inlet = SoundSpeed2/(Gamma*Gas_Constant);
-        const su2double Temperature_ve_inlet = Temperature;
+        const su2double Temperature_ve_inlet = Temperature_inlet;
 
         /*--- Static pressure using isentropic relation at a point ---*/
         const su2double Pressure_inlet = P_Total*pow((Temperature_inlet/T_Total),Gamma/Gamma_Minus_One);
@@ -1744,11 +1744,38 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         node_inlet.SetPrimVar(0, FluidModel);
 
-        break;
+        /*--- Set various quantities in the solver class ---*/
+        conv_numerics->SetNormal(Normal);
+        conv_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                     node_inlet.GetSolution(0));
+        conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                  node_inlet.GetPrimitive(0));
 
+        /*--- Pass supplementary info to CNumerics ---*/
+        conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
+        conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
+        conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+        conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
+        conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+
+        const bool dynamic_grid = config->GetGrid_Movement();
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
+
+        /*--- Compute the residual using an upwind scheme ---*/
+        auto residual = conv_numerics->ComputeResidual(config);
+        LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+        break;
+      }
         /*--- Mass flow has been specified at the inlet. ---*/
       case INLET_TYPE::MASS_FLOW:
-
+        {
         /*--- Retrieve the specified mass flow for the inlet. ---*/
         su2double Density  = config->GetInlet_Ttotal(Marker_Tag);
         su2double Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
@@ -1763,17 +1790,17 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
         const su2double Pressure    = nodes->GetPressure(iPoint);
-        const su2double SoundSpeed2 = Gamma*Pressure/U_domain[0];
+        su2double SoundSpeed2 = Gamma*Pressure/nodes->GetPrimitive(iPoint, RHO_INDEX);
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
         su2double Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Speed of sound squared for fictitious inlet state ---*/
-        su2double SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
+        SoundSpeed2 = Riemann;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
           SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
         SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
@@ -1795,39 +1822,39 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         node_inlet.SetPrimVar(0, FluidModel);
 
-        break;
+        /*--- Set various quantities in the solver class ---*/
+        conv_numerics->SetNormal(Normal);
+        conv_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                     node_inlet.GetSolution(0));
+        conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                  node_inlet.GetPrimitive(0));
 
+        /*--- Pass supplementary info to CNumerics ---*/
+        conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
+        conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
+        conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
+        conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
+        conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+
+        const bool dynamic_grid = config->GetGrid_Movement();
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
+
+        /*--- Compute the residual using an upwind scheme ---*/
+        auto residual = conv_numerics->ComputeResidual(config);
+        LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+        break;
+      }
       default:
         SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
         break;
       }
-
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetNormal(Normal);
-      conv_numerics->SetConservative(nodes->GetSolution(iPoint),
-                                   node_inlet.GetSolution(0));
-      conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                                node_inlet.GetPrimitive(0));
-
-      /*--- Pass supplementary info to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-      conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
-
-      const bool dynamic_grid = config->GetGrid_Movement();
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution ---*/
 //      if (viscous) {
