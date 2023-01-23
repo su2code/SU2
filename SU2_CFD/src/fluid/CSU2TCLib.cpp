@@ -1786,10 +1786,13 @@ void CSU2TCLib::DiffusionCoeffWBE(){
       const su2double Mj = MolarMass[jSpecies]*1E-3;
 
       /*--- Calculate the Omega^(1,1)_ij collision cross section ---*/
-      const su2double Omega_ij = 1E-20/PI_NUMBER * Omega11(iSpecies,jSpecies,3)
-          * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
-          +  Omega11(iSpecies,jSpecies,1)*log(T)
-          +  Omega11(iSpecies,jSpecies,2));
+      bool coulomb = false;
+      if (abs(Omega11(iSpecies, jSpecies, 0)) == 1.0 && ionization) {
+        coulomb = true;
+      } 
+      const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
+
+      const su2double Omega_ij = ComputeCollisionCrossSection(iSpecies, jSpecies, Tcol, true, coulomb) / PI_NUMBER;
       Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
@@ -1884,30 +1887,19 @@ su2double CSU2TCLib::ComputeCollisionCrossSection(unsigned iSpecies, unsigned jS
     const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
 
     if (Omega11(iSpecies, jSpecies, 0) == 1.0 && d1) {
-
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
-
     } else if (Omega11(iSpecies, jSpecies, 0) == -1.0 && d1) {
-
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
-
     } else if (Omega22(iSpecies, jSpecies, 0) == 1.0 && !d1) {
-
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D2_a*T_star*(1 - C2_a * exp(-c2_a * T_star))+1);
-
     } else {
-
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D2_r*T_star*(1 - C2_r * exp(-c2_r * T_star))+1);
     }
 
   } else {
-
     if (d1) {
-
       return 1E-20 * Omega11(iSpecies,jSpecies,3) * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T) + Omega11(iSpecies,jSpecies,1)*log(T) + Omega11(iSpecies,jSpecies,2));
-
     } else {
-
       return 1E-20 * Omega22(iSpecies,jSpecies,3) * pow(T, Omega22(iSpecies,jSpecies,0)*log(T)*log(T) + Omega22(iSpecies,jSpecies,1)*log(T) + Omega22(iSpecies,jSpecies,2));
     }
   }
