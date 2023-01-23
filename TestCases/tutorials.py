@@ -115,6 +115,16 @@ def main():
     kenics_mixer_tutorial.new_output = True
     test_list.append(kenics_mixer_tutorial)
 
+    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_tutorial           = TestCase('sudo_bend')
+    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_tutorial.cfg_file  = "sudo.cfg"
+    sudo_tutorial.test_iter = 10
+    sudo_tutorial.test_vals = [-13.618610, -12.647974, -12.296537, -11.658760, -13.136523, -9.550829, 15.000000, -2.369703]
+    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    sudo_tutorial.new_output = True
+    test_list.append(sudo_tutorial)
+
     ### Compressible Flow
 
     # Inviscid Bump
