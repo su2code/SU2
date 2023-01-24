@@ -132,7 +132,7 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/viscous"
+    visc_cone.cfg_dir   = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
@@ -151,7 +151,7 @@ def main():
 
     # Viscous single wedge - super catalytic walls
     super_cat           = TestCase('super_cat')
-    super_cat.cfg_dir   = "nonequilibrium/viscous"
+    super_cat.cfg_dir   = "nonequilibrium/visc_wedge"
     super_cat.cfg_file  = "super_cat.cfg"
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
@@ -163,7 +163,7 @@ def main():
 
     # Viscous single wedge - partially catalytic walls
     partial_cat           = TestCase('partial_cat')
-    partial_cat.cfg_dir   = "nonequilibrium/viscous"
+    partial_cat.cfg_dir   = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file  = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
@@ -172,6 +172,30 @@ def main():
     partial_cat.new_output = True
     partial_cat.tol       = 0.00001
     test_list.append(partial_cat)
+
+    # Viscous cylinder, ionization, Wilkes-Blottner-Eucken
+    partial_ion_wbe = TestCase('ion_wbe')
+    partial_ion_wbe.cfg_dir = "nonequilibrium/visc_cylinder"
+    partial_ion_wbe.cfg_file = "cyl_ion_wbe.cfg"
+    partial_ion_wbe.test_iter = 10
+    partial_ion_wbe.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
+    partial_ion_wbe.su2_exec = "mpirun -n 2 SU2_CFD"
+    partial_ion_wbe.timeout = 1600
+    partial_ion_wbe.new_output = True
+    partial_ion_wbe.tol = 0.00001
+    test_list.append(partial_ion_wbe)
+
+    # Viscous cylinder, ionization, Gupta-Yos
+    partial_ion_gy = TestCase('ion_gy')
+    partial_ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
+    partial_ion_gy.cfg_file = "cyl_ion_gy.cfg"
+    partial_ion_gy.test_iter = 10
+    partial_ion_gy.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
+    partial_ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
+    partial_ion_gy.timeout = 1600
+    partial_ion_gy.new_output = True
+    partial_ion_gy.tol = 0.00001
+    test_list.append(partial_ion_gy)
 
     ##########################
     ### Compressible Euler ###
