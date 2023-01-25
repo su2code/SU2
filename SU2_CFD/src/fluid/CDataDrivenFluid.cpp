@@ -137,10 +137,10 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   /*--- Compute secondary flow variables ---*/
   dTde_rho = -pow(dsde_rho, -2) * d2sde2;
-  dTdrho_e = 0.0;
+  dTdrho_e = -pow(dsde_rho, -2) * d2sdedrho;
 
-  dPde_rho = -pow(rho, 2) * dTde_rho * dsdrho_e;
-  dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * Temperature * d2sdrho2;
+  dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
+  dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
