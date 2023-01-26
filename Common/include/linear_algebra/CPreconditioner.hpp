@@ -270,7 +270,7 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildJacobiPreconditioner();
+    sparse_matrix.BuildLineletPreconditioner(geometry, config);
   }
 };
 
