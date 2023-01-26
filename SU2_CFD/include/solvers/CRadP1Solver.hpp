@@ -2,7 +2,7 @@
  * \file CRadP1Solver.hpp
  * \brief Declaration and inlines of the class to compute a P1 radiation problem.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -241,7 +241,7 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration) override ;
+                    unsigned short iMesh, unsigned long Iteration) override;
 
   /*!
    * \brief Set the freestream temperature.

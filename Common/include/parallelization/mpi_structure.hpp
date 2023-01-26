@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,6 +105,8 @@ class CBaseMPIWrapper {
   static Win winMinRankError;
 
  public:
+  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
+
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static inline int GetRank() { return Rank; }
@@ -503,9 +505,9 @@ class CBaseMPIWrapper {
   static int Rank, Size;
   static Comm currentComm;
 
+ public:
   static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
 
- public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static inline int GetRank() { return Rank; }
