@@ -994,7 +994,7 @@ def main():
     datadriven_MLP.cfg_dir   = "nicf/datadriven"
     datadriven_MLP.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_MLP.test_iter = 100
-    datadriven_MLP.test_vals = [-4.716703, -2.781021, 2.476446, 0.000000, 0.000000]
+    datadriven_MLP.test_vals = [-4.159241, 0.073280, 3.627716, 0.000000, 0.000000]
     test_list.append(datadriven_MLP)
 
     ######################################
