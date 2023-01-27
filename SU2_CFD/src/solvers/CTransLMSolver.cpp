@@ -60,10 +60,16 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   nDim = geometry->GetnDim();
 
-  /*--- Define variables needed for transition from config file */
+  /*--- Define variables needed for transition from config file ---*/
   options = config->GetLMParsedOptions();
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
+  /*--- Check if Simplified version is used ---*/
+  if (options.SLM) {
+    nVar = 1;
+    nPrimVar = 1;
+  }
 
   /*--- Single grid simulation ---*/
 
@@ -101,33 +107,41 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   lowerlimit[0] = 1.0e-4;
   upperlimit[0] = 5.0;
 
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 1.0e15;
+  if (!options.SLM) {
+    lowerlimit[1] = 1.0e-4;
+    upperlimit[1] = 1.0e15;
+  }
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
 
   const su2double Intermittency_Inf  = 1.0;
-  su2double ReThetaT_Inf = 100.0;
-
-  /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
-  if (Intensity <= 1.3) {
-    if(Intensity >=0.027) {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
-    }
-    else {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
-    }
-  }
-  else if(Intensity>1.3) {
-    ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
-  }
-
   Solution_Inf[0] = Intermittency_Inf;
-  Solution_Inf[1] = ReThetaT_Inf;
+
+  su2double ReThetaT_Inf = 0.0;
+
+  if (!options.SLM) {
+    su2double ReThetaT_Inf = 100.0;
+
+    /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
+    if (Intensity <= 1.3) {
+      if(Intensity >=0.027) {
+        ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
+      }
+      else {
+        ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
+      }
+    }
+    else if(Intensity>1.3) {
+      ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
+    }
+
+    Solution_Inf[1] = ReThetaT_Inf;
+  }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/

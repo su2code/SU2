@@ -31,10 +31,13 @@
 CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) 
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  LM_ParsedOptions options = config->GetLMParsedOptions();
+
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = Intermittency;
-    Solution(iPoint,1) = ReThetaT;
+    if(!options.SLM)
+      Solution(iPoint,1) = ReThetaT;
   }
 
   Solution_Old = Solution;
