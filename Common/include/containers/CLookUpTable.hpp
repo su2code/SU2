@@ -218,6 +218,27 @@ class CLookUpTable {
   void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2, const std::vector<std::string>& names_var, std::vector<su2double*>& var_vals, const unsigned long i_level=0);
 
   /*!
+   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
+   * \param[in] val_CV1 - - first coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] val_CV2 - second coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] val_names_var - vector of string names of the variables to look up.
+   * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
+   */
+  void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                     const std::vector<std::string>& names_var, std::vector<su2double*>& var_vals,
+                                     const unsigned long i_level = 0);
+
+  /*!
+   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes for a single variable
+   * \param[in] val_CV1 - - first coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] val_CV2 - second coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] name_var - variable name to look up.
+   * \param[out] var_val - pointer to the to be interpolated variable.
+   */
+  void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2, const std::string& name_var,
+                                     su2double* var_val, const unsigned long i_level = 0);
+
+  /*!
    * \brief determine if a point P(val_CV1,val_CV2) is inside the triangle val_id_triangle.
    * \param[in] val_CV1 - first coordinate of point P(val_CV1,val_CV2) to check.
    * \param[in] val_CV2 - second coordinate of point P(val_CV1,val_CV2) to check.
@@ -240,6 +261,18 @@ class CLookUpTable {
     return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) * 0.5);
   }
 
+  /*!
+   * \brief Compute the values of the first and second controlling variable based on normalized query coordinates
+   * \param[in] inclusion_levels - Pair containing lower(first) and upper(second) table inclusion level indices.
+   * \param[in] val_CV1 - first controlling variable value.
+   * \param[in] val_CV2 - second controlling variable value.
+   * \param[in] val_CV3 - third controlling variable value.
+   * \returns array with first and second controlling variable values for the upper and lower table inclusion levels.
+   */
+  std::array<std::array<su2double, 2>, 2> ComputeNormalizedXY(std::pair<unsigned long, unsigned long>& inclusion_levels,
+                                                              const su2double val_CV1, const su2double val_CV2,
+                                                              const su2double val_CV3);
+
  public:
   CLookUpTable(const std::string& file_name_lut, const std::string& name_CV1_in, const std::string& name_CV2_in);
 
@@ -260,12 +293,11 @@ class CLookUpTable {
                           unsigned long i_level = 0);
 
   /*!
-   * \brief lookup 1 value for each of the variables in "val_name_var" using controlling variable values(val_CV1,val_CV2).
-   * \param[in] val_names_var - vector of string names of the variables to look up.
-   * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
-   * \param[in] val_CV1 - value of controlling variable 1.
-   * \param[in] val_CV2 - value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief lookup 1 value for each of the variables in "val_name_var" using controlling variable
+   * values(val_CV1,val_CV2). \param[in] val_names_var - vector of string names of the variables to look up. \param[out]
+   * val_vars - pointer to the vector of stored values of the variables to look up. \param[in] val_CV1 - value of
+   * controlling variable 1. \param[in] val_CV2 - value of controlling variable 2. \returns 1 if the lookup and
+   * subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
                           su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
