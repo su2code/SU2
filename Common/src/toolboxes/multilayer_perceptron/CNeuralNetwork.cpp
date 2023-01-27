@@ -102,6 +102,19 @@ void MLPToolbox::CNeuralNetwork::predict(su2vector<su2double>& inputs, bool comp
             }
           }
           break;
+        case ENUM_ACTIVATION_FUNCTION::EXPONENTIAL:
+          for (auto iNeuron = 0u; iNeuron < nNeurons_current; iNeuron++) {
+            x = total_layers[iLayer]->getInput(iNeuron);
+            y = exp(x);
+            total_layers[iLayer]->setOutput(iNeuron, y);
+            if (compute_gradient) {
+              dy_dx = 1.0;
+              for (auto iInput = 0u; iInput < inputLayer->getNNeurons(); iInput++) {
+                total_layers[iLayer]->setdYdX(iNeuron, iInput, dy_dx * total_layers[iLayer]->getdYdX(iNeuron, iInput));
+              }
+            }
+          }
+          break;
         case ENUM_ACTIVATION_FUNCTION::RELU:
           for (auto iNeuron = 0u; iNeuron < nNeurons_current; iNeuron++) {
             x = total_layers[iLayer]->getInput(iNeuron);
@@ -318,6 +331,10 @@ void MLPToolbox::CNeuralNetwork::setActivationFunction(unsigned long i_layer, st
   }
   if (input.compare("none") == 0) {
     activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::NONE;
+    return;
+  }
+  if (input.compare("exponential") == 0) {
+    activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::EXPONENTIAL;
     return;
   }
   SU2_MPI::Error("Unknown activation function type: " + input, CURRENT_FUNCTION);

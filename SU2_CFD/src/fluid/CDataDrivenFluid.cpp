@@ -64,6 +64,38 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Set initial values for density and energy based on config options ---*/
   rho_start = config->GetDensity_Init_DataDriven();
   e_start = config->GetEnergy_Init_DataDriven();
+
+  unsigned short n_streamlines = 30;
+  for(auto i_streamline=0u; i_streamline<n_streamlines+1; i_streamline++){
+    string filenamepath = "/home/evert/NICFD/Architecture_Optimization/Hyperparameter_Search/CoolProp_Streamline_"+to_string(i_streamline) + "_data.csv";
+    ifstream file;
+    file.open(filenamepath);
+    string word, line;
+    getline(file, line);
+    ofstream streamline_file;
+    streamline_file.open("SU2_Streamline_"+to_string(i_streamline)+"_data.csv");
+
+    streamline_file << "Density,Energy,Entropy,dsde,dsdrho,d2sde2,d2sdedrho,d2sdrho2,P,T,SoS,dPde,dPdrho,dTde,dTdrho" <<endl;
+    unsigned long n_steps = stoul(line);
+    for(auto j=0u; j<n_steps; j++){
+      getline(file, line);
+      stringstream str(line);
+      str >> word;
+      su2double density = stold(word);
+      str >> word;
+      su2double energy = stold(word);
+      SetTDState_rhoe(density, energy);
+      streamline_file << density << ", " << energy << ", " << Entropy << ", " << dsde_rho << ", " << dsdrho_e << ", " << d2sde2 << ", " << d2sdedrho << ", " << d2sdrho2 << ", " 
+      << Pressure << ", "
+      << Temperature << ", "
+      << sqrt(SoundSpeed2) << ", "
+      << dPde_rho << ", "
+      << dPdrho_e << ", "
+      << dTde_rho << ", "
+      << dTdrho_e << endl; 
+    }
+    streamline_file.close();
+  }
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
@@ -147,8 +179,8 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, e = e_start;
 
-  su2double tolerance_P = 0.01,  // Tolerance percentage for pressure solution
-      tolerance_T = 0.01;        // Tolerance percentage for temperature solution
+  su2double tolerance_P = 1e-6,  // Tolerance percentage for pressure solution
+      tolerance_T = 1e-6;        // Tolerance percentage for temperature solution
 
   bool converged = false;        // Convergence flag
   unsigned long iter_max = 500,  // Maximum number of iterations
@@ -168,7 +200,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
     delta_P = Pressure - P;
     delta_T = Temperature - T;
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if ((100 * abs(delta_P / P) < tolerance_P) && (100 * abs(delta_T / T) < tolerance_T)) {
+    if ((abs(delta_P / P) < tolerance_P) && (abs(delta_T / T) < tolerance_T)) {
       converged = true;
     } else {
       /*--- Compute step size for density and energy ---*/
@@ -202,7 +234,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   /*--- Setting initial values for energy ---*/
   su2double e = e_start;
 
-  su2double tolerance_P = 0.01;  // Tolerance percentage for pressure solution
+  su2double tolerance_P = 1e-6;  // Tolerance percentage for pressure solution
 
   bool converged = false;        // Convergence flag
   unsigned long iter_max = 500,  // Maximum number of iterations
@@ -220,7 +252,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
 
     su2double partial_diff = abs(delta_P) / P;
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if (100 * abs(delta_P / P) < tolerance_P) {
+    if (abs(delta_P / P) < tolerance_P) {
       converged = true;
     } else {
       /*--- Compute step size for energy ---*/
@@ -242,7 +274,7 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   /*--- Setting initial values for density and energy ---*/
   su2double e = e_start;
 
-  su2double tolerance_T = 0.01;  // Tolerance for temperature solution
+  su2double tolerance_T = 1e-6;  // Tolerance for temperature solution
 
   bool converged = false;        // Convergence flag
   unsigned long iter_max = 500,  // Maximum number of iterations
@@ -260,7 +292,7 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
     delta_T = Temperature - T;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if (100 * abs(delta_T / T) < tolerance_T) {
+    if (abs(delta_T / T) < tolerance_T) {
       converged = true;
     } else {
       delta_e = delta_T / dTde_rho;
@@ -281,8 +313,8 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, e = e_start;
 
-  su2double tolerance_h = 0.01,  // Tolerance for enthalpy solution
-      tolerance_s = 0.01;        // Tolerance for entropy solution
+  su2double tolerance_h = 1e-6,  // Tolerance for enthalpy solution
+      tolerance_s = 1e-6;        // Tolerance for entropy solution
 
   bool converged = false;        // Convergence flag
   unsigned long iter_max = 500,  // Maximum number of iterations
@@ -305,7 +337,7 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
     delta_s = Entropy - s;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if ((100 * abs(delta_h / h) < tolerance_h) && (100 * abs(delta_s / s) < tolerance_s)) {
+    if ((abs(delta_h / h) < tolerance_h) && (abs(delta_s / s) < tolerance_s)) {
       converged = true;
     } else {
       su2double dh_de = 1 + dPde_rho / rho;
@@ -331,8 +363,8 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, e = e_start;
 
-  su2double tolerance_P = 0.01,  // Tolerance for pressure solution
-      tolerance_s = 0.01;        // Tolerance for entropy solution
+  su2double tolerance_P = 1e-6,  // Tolerance for pressure solution
+      tolerance_s = 1e-6;        // Tolerance for entropy solution
 
   bool converged = false;        // Convergence flag
   unsigned long iter_max = 500,  // Maximum number of iterations
@@ -354,7 +386,7 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
     delta_s = Entropy - s;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
-    if ((100 * abs(delta_P / P) < tolerance_P) && (100 * abs(delta_s / s) < tolerance_s)) {
+    if ((abs(delta_P / P) < tolerance_P) && (abs(delta_s / s) < tolerance_s)) {
       converged = true;
     } else {
       /*--- Compute step size for density and energy ---*/
