@@ -40,6 +40,7 @@
  */
 class CDataDrivenFluid : public CFluidModel {
  protected:
+  int rank;
   unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;  // Interpolation method for data set evaluation
 
   size_t idx_rho,  // Interpolator index for density input

@@ -791,6 +791,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
+  bool redefine_fluidmodel = true;
 
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -857,6 +858,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case DATADRIVEN_FLUID:
 
       auxFluidModel = new CDataDrivenFluid(config);
+      redefine_fluidmodel = false;
+
       break;
     case COOLPROP:
 
@@ -1055,7 +1058,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
-  delete auxFluidModel;
+  if(redefine_fluidmodel) delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1091,7 +1094,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
 
       case DATADRIVEN_FLUID:
-        FluidModel[thread] = new CDataDrivenFluid(config);
+        FluidModel[thread] = auxFluidModel;
         break;
 
       case COOLPROP:
@@ -4686,8 +4689,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-      GetFluidModel()->SetDensity(0.5*(Density_i + config->GetDensity_Init_DataDriven()));
-      GetFluidModel()->SetEnergy(0.5*(StaticEnergy_i + config->GetEnergy_Init_DataDriven()));
+      su2double relax_Newton = config->GetRelaxation_DataDriven();
+      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
 
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;

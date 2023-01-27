@@ -254,6 +254,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3)
      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
+    AddVolumeOutput("THERMAL_CONDUCTIVITY_TR", "Thermal_Conductivity_tr", "PRIMITIVE", "Translational-rotational thermal conductivity");
+    AddVolumeOutput("THERMAL_CONDUCTIVITY_VE", "Thermal_Conductivity_ve", "PRIMITIVE", "Vibrational-electronic thermal conductivity");
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
@@ -332,6 +334,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+    SetVolumeOutputValue("THERMAL_CONDUCTIVITY_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
+    SetVolumeOutputValue("THERMAL_CONDUCTIVITY_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
   }
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
