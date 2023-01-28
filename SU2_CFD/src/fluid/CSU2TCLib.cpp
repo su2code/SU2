@@ -1759,7 +1759,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
-    conc               += MolarFracWBE[iSpecies];
+    conc += MolarFracWBE[iSpecies];
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
@@ -1786,13 +1786,18 @@ void CSU2TCLib::DiffusionCoeffWBE(){
       const su2double Mj = MolarMass[jSpecies]*1E-3;
 
       /*--- Calculate the Omega^(1,1)_ij collision cross section ---*/
+
+      /*--- If collisions between electrons/ion, used Coloumb potentials ---*/
       bool coulomb = false;
-      if (abs(Omega11(iSpecies, jSpecies, 0)) == 1.0 && ionization) {
-        coulomb = true;
-      } 
+      if (abs(Omega11(iSpecies, jSpecies, 0)) == 1.0 && ionization) coulomb = true;
+
+      // Used Tve for electron collisions
       const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
+      /*--- Compute the collisional cross section (omega_ij) ---*/
       const su2double Omega_ij = ComputeCollisionCrossSection(iSpecies, jSpecies, T_col, true, coulomb) / PI_NUMBER;
+
+      /*--- Calculate and populate diffusion coefficients ---*/
       Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
@@ -1819,7 +1824,7 @@ void CSU2TCLib::ViscosityWBE(){
   su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
-    conc               += MolarFracWBE[iSpecies];
+    conc += MolarFracWBE[iSpecies];
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
