@@ -1953,7 +1953,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
         const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
         const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
-        const su2double D_ij = kb*T/(Pressure*d1_ij);
+        const su2double D_ij = kb*T_col/(Pressure*d1_ij);
         denom += gam_j/D_ij;
       }
     }
@@ -2005,7 +2005,7 @@ void CSU2TCLib::ThermalConductivitiesGY(){
   /*--- Calculate mixture gas constant ---*/
   su2double R = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    R += Ru * rhos[iSpecies]/Density;
+    R += Ru / MolarMass[iSpecies] * rhos[iSpecies]/Density;
   }
 
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
@@ -2019,6 +2019,7 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     const su2double gam_i   = rhos[iSpecies] / (Density*Mi);
     su2double denom_t = 0.0;
     su2double denom_r = 0.0;
+    su2double denom_re = 0.0;
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       const su2double Mj    = MolarMass[jSpecies];
@@ -2026,23 +2027,30 @@ void CSU2TCLib::ThermalConductivitiesGY(){
       const su2double gam_j = rhos[iSpecies] / (Density*Mj);
       const su2double a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
-      const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
+      const su2double T_col = ((iSpecies == 0 && ionization) || (jSpecies == 0 && ionization)) ? Tve : T; 
 
       const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
       const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
-    
-      denom_t += a_ij*gam_j*d2_ij;
+      
+      if (jSpecies == 0 && ionization) {
+        denom_t += 3.54*gam_j*d2_ij;
+      } else {
+        denom_t += a_ij*gam_j*d2_ij;
+      }
       denom_r += gam_j*d1_ij;
+      denom_re += gam_j*d2_ij;
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
-    ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
+    if (!(ionization && iSpecies == 0)) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
 
     /*--- Rotational contribution to thermal conductivity ---*/
     if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (kb*gam_i/denom_r);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
+    if (!(ionization && iSpecies == 0) && RotationModes[iSpecies] != 0.0) ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
+    
+    if (ionization && iSpecies == 0) ThermalCond_ve += ((15.0/4.0)*kb*gam_i/(1.45*denom_re));
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
@@ -2168,7 +2176,6 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   // If absolutely no convergence, then assign to the TR temperature
   if (!NRconvg && !Bconvg ) {
     Tve = T;
-    cout <<"Warning: temperatures did not converge, error= "<< fabs(rhoEve_t-rhoEve)<<endl;
   }
 
   temperatures[0] = T;
