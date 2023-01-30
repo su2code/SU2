@@ -176,6 +176,17 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
   CommonPreprocessing(geometry, config, Output);
+
+  /*--- Need to clear EdgeFluxes and Jacobian when only the viscous part is called for solid heat transfer,
+   * for the weakly coupled energy equation the convection part does this by setting instead of incrementing. ---*/
+  if (!Output && !flow && ReducerStrategy) {
+    EdgeFluxes.SetValZero();
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetValZero();
+    } else {
+      SU2_OMP_BARRIER
+    }
+  }
 }
 
 void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter,
