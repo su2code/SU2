@@ -40,6 +40,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
 
   nVar = 1;
+  nPrimVar = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -61,9 +62,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   /*--- Initialization of the structure of the whole Jacobian ---*/
 
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation) MG level: " << iMesh << "." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
   if (config->GetExtraOutput()) {
     if (nDim == 2) { nOutputVariables = 13; }
