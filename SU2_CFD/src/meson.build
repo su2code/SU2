@@ -118,8 +118,7 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CGradientSmoothingSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
-                      'numerics/template.cpp',                      
-                      'numerics/heat.cpp',
+                      'numerics/template.cpp',
                       'numerics/radiation.cpp',
                       'numerics/flow/convection/roe.cpp',
                       'numerics/flow/convection/fds.cpp',
