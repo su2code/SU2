@@ -48,13 +48,16 @@ class CDataDrivenFluid : public CFluidModel {
 
   su2double Newton_Relaxation,  // Relaxation factor for Newton solvers.
       rho_start,                // Initial value for the density in Newton solver processes.
-      e_start;                  // Initial value for the energy in Newton solver processes.
+      e_start,                  // Initial value for the energy in Newton solver processes.
+      Newton_Tolerance;         // Normalized tolerance for Newton solvers.
 
-  su2double dsde_rho, dsdrho_e, d2sde2, d2sdedrho, d2sdrho2;
+  unsigned long MaxIter_Newton;  // Maximum number of iterations for Newton solvers
 
-  su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
-  su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
+  su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density */
+      dsdrho_e,       /*!< \brief Entropy derivative w.r.t. static energy */
+      d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy */
+      d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy */
+      d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density */
 
   su2vector<string>
       input_names_rhoe,   // Data-driven method input variable names of the independent variables (density, energy).

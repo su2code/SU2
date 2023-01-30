@@ -4688,8 +4688,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-      GetFluidModel()->SetDensity(0.5*(Density_i + config->GetDensity_Init_DataDriven()));
-      GetFluidModel()->SetEnergy(0.5*(StaticEnergy_i + config->GetEnergy_Init_DataDriven()));
+      su2double relax_Newton = config->GetRelaxation_DataDriven();
+      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
 
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;

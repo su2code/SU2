@@ -72,7 +72,8 @@ class CNeuralNetwork {
     SELU = 5,
     SIGMOID = 6,
     SWISH = 7,
-    TANH = 8
+    TANH = 8,
+    EXPONENTIAL = 9
   };
   ENUM_ACTIVATION_FUNCTION* activation_function_types;
 
