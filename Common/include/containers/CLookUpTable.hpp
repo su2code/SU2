@@ -215,8 +215,6 @@ class CLookUpTable {
    */
   unsigned long FindNearestNeighborOnHull(su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
 
-  void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2, const std::vector<std::string>& names_var, std::vector<su2double*>& var_vals, const unsigned long i_level=0);
-
   /*!
    * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
    * \param[in] val_CV1 - - first coordinate of point P(val_CV1,val_CV2) to check.
