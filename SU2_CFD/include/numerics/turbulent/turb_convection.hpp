@@ -47,7 +47,6 @@ private:
   using Base::Jacobian_j;
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
-  using Base::implicit;
   using Base::bounded_scalar;
 
   /*!
@@ -61,11 +60,8 @@ private:
    */
   void FinishResidualCalc(const CConfig* config) override {
     Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
-
-    if (implicit) {
-      Jacobian_i[0][0] = a0;
-      Jacobian_j[0][0] = a1;
-    }
+    Jacobian_i[0][0] = a0;
+    Jacobian_j[0][0] = a1;
   }
 
 public:
@@ -99,7 +95,6 @@ private:
   using Base::Jacobian_j;
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
-  using Base::implicit;
   using Base::idx;
   using Base::bounded_scalar;
 
@@ -115,13 +110,12 @@ private:
   void FinishResidualCalc(const CConfig* config) override {
     Flux[0] = a0*V_i[idx.Density()]*ScalarVar_i[0] + a1*V_j[idx.Density()]*ScalarVar_j[0];
     Flux[1] = a0*V_i[idx.Density()]*ScalarVar_i[1] + a1*V_j[idx.Density()]*ScalarVar_j[1];
-    if (implicit) {
-      Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
 
-      Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
-    }
+    Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
+
+    Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
   }
 
 public:

@@ -259,8 +259,8 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     /*--- Set primitive variables at points iPoint. ---*/
 
+    const su2double Temp_i = V_i[nDim+1];
     Pressure_i    = V_i[0];
-    Temp_i        = V_i[nDim+1];
     DensityInc_i  = V_i[nDim+2];
     BetaInc2_i    = V_i[nDim+3];
     Cp_i          = V_i[nDim+7];
