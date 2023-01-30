@@ -396,19 +396,19 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
   }
 }
 
-std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_z) {
-  /*--- Find the table levels with constant z-values directly below and above the query value val_z ---*/
+std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_CV3) {
+  /*--- Find the table levels with constant z-values directly below and above the query value val_CV3 ---*/
 
-  /* Check if val_z lies outside table bounds */
-  if (val_z >= *limits_table_z.second) {
+  /* Check if val_CV3 lies outside table bounds */
+  if (val_CV3 >= *limits_table_z.second) {
     return std::make_pair(n_table_levels - 1, n_table_levels - 1);
-  } else if (val_z <= *limits_table_z.first) {
+  } else if (val_CV3 <= *limits_table_z.first) {
     return std::make_pair(0, 0);
   } else {
     std::pair<unsigned long, unsigned long> inclusion_levels;
     /* Loop over table levels to find the levels directly above and below the query value */
     for (auto i_level = 0ul; i_level < n_table_levels - 1; i_level++) {
-      if ((val_z >= z_values_levels[i_level]) && (val_z < z_values_levels[i_level + 1])) {
+      if ((val_CV3 >= z_values_levels[i_level]) && (val_CV3 < z_values_levels[i_level + 1])) {
         inclusion_levels = std::make_pair(i_level, i_level + 1);
       }
     }
@@ -419,9 +419,9 @@ std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const 
 unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,
                                        su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a single variable named val_name_var on a query point
-        with coordinates val_CV1, val_CV2, and val_z ---*/
+        with coordinates val_CV1, val_CV2, and val_CV3 ---*/
 
-  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
+  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_CV3) */
   std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
@@ -446,7 +446,7 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
 
     return max(exit_code_lower, exit_code_upper);
   } else {
-    /* Perform single, 2D interpolation when val_z lies outside table bounds */
+    /* Perform single, 2D interpolation when val_CV3 lies outside table bounds */
     unsigned long bound_level = inclusion_levels.first;
     LookUp_XY(val_name_var, val_var, val_CV1, val_CV2, bound_level);
     return 1;
@@ -455,9 +455,9 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
 unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
                                        su2double val_CV1, su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
-        on a query point with coordinates val_CV1, val_CV2, and val_z ---*/
+        on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
 
-  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_z) */
+  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_CV3) */
   std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
@@ -485,14 +485,14 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names
 
     return max(exit_code_lower, exit_code_upper);
   } else {
-    /* Perform single, 2D interpolation when val_z lies outside table bounds */
+    /* Perform single, 2D interpolation when val_CV3 lies outside table bounds */
     unsigned long bound_level = inclusion_levels.first;
     LookUp_XY(val_names_var, val_vars, val_CV1, val_CV2, bound_level);
     return 1;
   }
 }
 
-void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level,
+void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, su2double& lower_value, su2double& upper_value,
                                         su2double*& var_val) const {
   /* Perform linear interpolation along the z-direction of the table for a single variable */
@@ -502,14 +502,14 @@ void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned lo
   su2double val_z_upper = z_values_levels[upper_level];
 
   /* Compute linear interpolation coefficients */
-  su2double factor_upper = (val_z - val_z_lower) / (val_z_upper - val_z_lower);
-  su2double factor_lower = (val_z_upper - val_z) / (val_z_upper - val_z_lower);
+  su2double factor_upper = (val_CV3 - val_z_lower) / (val_z_upper - val_z_lower);
+  su2double factor_lower = (val_z_upper - val_CV3) / (val_z_upper - val_z_lower);
 
   /* Perform linear interpolation */
   *var_val = lower_value * factor_lower + upper_value * factor_upper;
 }
 
-void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned long lower_level,
+void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, std::vector<su2double>& lower_values,
                                         std::vector<su2double>& upper_values, std::vector<su2double*>& var_vals) const {
   /* Perform linear interpolation along the z-direction of the table for multiple variables */
@@ -519,8 +519,8 @@ void CLookUpTable::Linear_Interpolation(const su2double val_z, const unsigned lo
   su2double val_z_upper = z_values_levels[upper_level];
 
   /* Compute linear interpolation coefficients */
-  su2double factor_upper = (val_z - val_z_lower) / (val_z_upper - val_z_lower);
-  su2double factor_lower = (val_z_upper - val_z) / (val_z_upper - val_z_lower);
+  su2double factor_upper = (val_CV3 - val_z_lower) / (val_z_upper - val_z_lower);
+  su2double factor_lower = (val_z_upper - val_CV3) / (val_z_upper - val_z_lower);
 
   /* Perform linear interpolation */
   for (size_t iVar = 0; iVar < var_vals.size(); iVar++) {

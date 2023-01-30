@@ -498,6 +498,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
@@ -555,6 +556,7 @@ private:
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
+  Kind_Centered_Heat,           /*!< \brief Centered scheme for the heat transfer model. */
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
 
 
@@ -571,6 +573,7 @@ private:
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
+  Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
@@ -606,7 +609,6 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
-  WALL_TYPE *Kind_Wall;            /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -636,8 +638,6 @@ private:
   Kappa_1st_Flow,           /*!< \brief Lax 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,           /*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
-  Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
   Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
   Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
@@ -1111,7 +1111,6 @@ private:
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
-  ad_coeff_heat[2],      /*!< \brief artificial dissipation (heat) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
   geo_loc[2],            /*!< \brief SU2_GEO section locations array for the COption class. */
@@ -2480,8 +2479,8 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
-                             UPWIND val_kind_upwind,        LIMITER val_kind_slopelimit,
-                             bool val_muscl,                        unsigned short val_kind_fem);
+                             UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
+                             bool val_muscl,  unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
@@ -4549,7 +4548,7 @@ public:
    * \return Value of roughness.
    */
   su2double GethRoughness(void) const { return hRoughness; }
-  
+
   /*!
    * \brief Get the kind of the species model.
    * \return Kind of the species model.
@@ -4863,18 +4862,6 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void) const { return Kappa_4th_Flow; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equations.
-   */
-  su2double GetKappa_2nd_Heat(void) const { return Kappa_2nd_Heat; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST-like method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equation.
-   */
-  su2double GetKappa_4th_Heat(void) const { return Kappa_4th_Heat; }
 
   /*!
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
@@ -7181,7 +7168,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall type and roughness height.
    */
-  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(string val_marker) const;
+  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(const string& val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.

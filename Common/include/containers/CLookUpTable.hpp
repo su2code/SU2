@@ -154,12 +154,12 @@ class CLookUpTable {
 
   /*!
    * \brief compute the inverse matrix for interpolation.
-   * \param[in] vec_x - pointer to first coordinate (progress variable).
-   * \param[in] vec_y - pointer to second coordinate (enthalpy).
+   * \param[in] vec_CV1 - pointer to first coordinate (progress variable).
+   * \param[in] vec_CV2 - pointer to second coordinate (enthalpy).
    * \param[in] point_ids - single triangle data.
    * \param[out] interp_mat_inv - inverse matrix for interpolation.
    */
-  void GetInterpMatInv(const su2double* vec_x, const su2double* vec_y, std::array<unsigned long, 3>& point_ids,
+  void GetInterpMatInv(const su2double* vec_CV1, const su2double* vec_CV2, std::array<unsigned long, 3>& point_ids,
                        su2activematrix& interp_mat_inv);
 
   /*!
@@ -184,26 +184,26 @@ class CLookUpTable {
 
   /*!
    * \brief Perform linear interpolation between two table levels for a single variable.
-   * \param[in] val_z - z-coordinate of the query point.
+   * \param[in] val_CV3 - value of the third controlling variable at the query point.
    * \param[in] lower_level - Table level index of the table level directly below the query point.
    * \param[in] upper_level - Table level index of the table level directly above the query point.
    * \param[in] lower_value - Result from x-y interpolation on the lower table level.
    * \param[in] upper_value - Result from x-y interpolation on the upper table level.
    * \param[in] val_vars - Pointer to interpolation result.
    */
-  void Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level,
+  void Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level, const unsigned long upper_level,
                             su2double& lower_value, su2double& upper_value, su2double*& var_vals) const;
 
   /*!
    * \brief Perform linear interpolation between two table levels for a vector of variables.
-   * \param[in] val_z - z-coordinate of the query point.
+   * \param[in] val_CV3 - value of the third controlling variable at the query point.
    * \param[in] lower_level - Table level index of the table level directly below the query point.
    * \param[in] upper_level - Table level index of the table level directly above the query point.
    * \param[in] lower_values - Results from x-y interpolation on the lower table level.
    * \param[in] upper_values - Results from x-y interpolation on the upper table level.
    * \param[in] val_vars - Pointer to interpolation results for all interpolation variables.
    */
-  void Linear_Interpolation(const su2double val_z, const unsigned long lower_level, const unsigned long upper_level,
+  void Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level, const unsigned long upper_level,
                             std::vector<su2double>& lower_values, std::vector<su2double>& upper_values,
                             std::vector<su2double*>& var_vals) const;
 
@@ -358,11 +358,11 @@ class CLookUpTable {
    * \param[out] val_var - the stored value of the variable to look up.
    * \param[in] val_CV1 - value of controlling variable 1.
    * \param[in] val_CV2 - value of controlling variable 2.
-   * \param[in] val_z - value of controlling variable 3.
+   * \param[in] val_CV3 - value of controlling variable 3.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1, su2double val_CV2,
-                           su2double val_z);
+                           su2double val_CV3);
 
   /*!
    * \brief lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
@@ -370,19 +370,19 @@ class CLookUpTable {
    * \param[out] val_var - the stored value of the variable to look up.
    * \param[in] val_CV1 - value of controlling variable 1.
    * \param[in] val_CV2 - value of controlling variable 2.
-   * \param[in] val_z - value of controlling variable 3.
+   * \param[in] val_CV3 - value of controlling variable 3.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
-                           su2double val_CV1, su2double val_CV2, su2double val_z = 0);
+                           su2double val_CV1, su2double val_CV2, su2double val_CV3 = 0);
 
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
-   * \param[in] val_z - Z-coordinate of query point.
+   * \param[in] val_CV3 - value of controlling variable 3.
    * \param[in] within_limits - Whether query point lies within table bounds.
    * \returns pair of inclusion level indices (first = lower level index, second = upper level index)
    */
-  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_z);
+  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
 
   /*!
    * \brief determine the minimum and maximum value of the second controlling variable.
