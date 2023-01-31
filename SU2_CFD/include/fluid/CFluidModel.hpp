@@ -175,7 +175,7 @@ class CFluidModel {
    */
   virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
                                                su2double  val_prog,
-                                               su2double  val_temp, 
+                                               su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
 
   virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
