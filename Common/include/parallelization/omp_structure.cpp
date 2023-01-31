@@ -36,7 +36,7 @@ void omp_initialize() {
 #endif
   opdi::logic = new opdi::OmpLogic;
   opdi::logic->init();
-  opdi::tool = new CoDiOpDiTool<su2double>;
+  opdi::tool = new CoDiOpDiLibTool<su2double>;
   opdi::tool->init();
 #endif
 }

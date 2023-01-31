@@ -90,7 +90,7 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #include "codi/tools/data/externalFunctionUserData.hpp"
 
 #if defined(HAVE_OMP)
-using su2double = codi::RealReverseIndexParallel;
+using su2double = codi::RealReverseIndexOpenMP;
 #else
 #if defined(CODI_INDEX_TAPE)
 using su2double = codi::RealReverseIndex;
