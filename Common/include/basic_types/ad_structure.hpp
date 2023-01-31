@@ -294,7 +294,11 @@ namespace AD{
 
   using Tape = su2double::Tape;
 
+#ifdef HAVE_OPDI
+  using ExtFuncHelper = codi::OpenMPExternalFunctionHelper<su2double>;
+#else
   using ExtFuncHelper = codi::ExternalFunctionHelper<su2double>;
+#endif
 
   extern ExtFuncHelper FuncHelper;
 
