@@ -831,6 +831,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
+        // Check if the Prod_lim_k has to be introduced based on input options
+        if ((config->GetLMParsedOptions()).ProdLim) {
+          const su2double Re_theta_c_lim = 1100.0;
+          const su2double C_k = 1.0;
+          const su2double C_SEP = 1.0;
+          const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
+          const su2double F_on_lim = min(max(Re_v/(2.2*Re_theta_c_lim)-1.0, 0.0), 3.0);
+          const su2double IntermittencyRelated = max(eff_intermittency-0.2, 0.0) * (1.0 - eff_intermittency);
+          pk = pk + 5*C_k * IntermittencyRelated * F_on_lim * max(3.0*C_SEP*Laminar_Viscosity_i - Eddy_Viscosity_i, 0.0) * StrainMag_i * VorticityMag;
+        }
         dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }
 

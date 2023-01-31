@@ -40,6 +40,8 @@ class CTransLMVariable final : public CTurbVariable {
 protected:
   VectorType Intermittency_Eff;
   VectorType Intermittency_Sep;
+  VectorType Corr_Rec;
+  VectorType Re_t;
 
 public:
   /*!
@@ -54,6 +56,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] Intermittency - intermittency(gamma) (initialization value).
+   * \param[in] gammaSep - separation intermittency(gamma) (initialization value).
+   * \param[in] gammaEff - effective intermittency(gamma) (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTransLMVariable(su2double Intermittency, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -71,6 +85,16 @@ public:
   void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) override;
 
   /*!
+   * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  void SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) override;
+
+  /*!
+   * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  void SetRe_t(unsigned long iPoint, su2double val_Re_t) override;
+
+  /*!
    * \brief Calculate effective intermittency.
    */
   inline su2double GetIntermittencyEff(unsigned long iPoint) const override { return Intermittency_Eff(iPoint); }
@@ -80,4 +104,13 @@ public:
    */
   inline su2double GetIntermittencySep(unsigned long iPoint) const override { return Intermittency_Sep(iPoint); }
 
+  /*!
+   * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline su2double GetCorr_Rec(unsigned long iPoint) const override { return Corr_Rec(iPoint); }
+
+  /*!
+   * \brief Get Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline su2double GetRe_t(unsigned long iPoint) const override { return Re_t(iPoint); }
 };

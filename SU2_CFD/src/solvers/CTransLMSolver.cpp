@@ -49,6 +49,14 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
   nVar = 2;
   nPrimVar = 2;
+
+  /*--- Check if Simplified version is used ---*/
+  options = config->GetLMParsedOptions();
+  if (options.SLM) {
+    nVar = 1;
+    nPrimVar = 1;
+  }
+
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -61,15 +69,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nDim = geometry->GetnDim();
 
   /*--- Define variables needed for transition from config file ---*/
-  options = config->GetLMParsedOptions();
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
-
-  /*--- Check if Simplified version is used ---*/
-  if (options.SLM) {
-    nVar = 1;
-    nPrimVar = 1;
-  }
 
   /*--- Single grid simulation ---*/
 
@@ -121,7 +122,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double ReThetaT_Inf = 0.0;
 
   if (!options.SLM) {
-    su2double ReThetaT_Inf = 100.0;
+
+    ReThetaT_Inf = 100.0;
 
     /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
     if (Intensity <= 1.3) {
@@ -140,7 +142,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+  nodes = new CTransLMVariable(Intermittency_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+  if (!options.SLM) {
+      nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+  }
 
   SetBaseClassPointerToNodes();
 
@@ -169,7 +174,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       Inlet_TurbVars[iMarker](iVertex,0) = Intermittency_Inf;
-      Inlet_TurbVars[iMarker](iVertex,1) = ReThetaT_Inf;
+       if (!options.SLM) Inlet_TurbVars[iMarker](iVertex,1) = ReThetaT_Inf;
     }
   }
 
@@ -192,6 +197,70 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+
+  /////////////////////
+  // ATTENZIONE! Forse devo farlo solamente per i punti che sono nello strato limite! Quindi magari nelle sources devo usare la function che mi definisce lo strato limite!
+  // Al di fuori di essa devo usare la solita du/ds? Perchè altrimenti il contorno più vicino ad un certo punto diventa il farfield, e non ha senso! 
+  // UPDATE: Mi sa che la wall distance è rispetto alla parete, quindi effettivamente l'elemento più vicino è sempre a parete.
+  /////////////////////
+
+  cout << "Sono qui" << endl;
+  //if (rank == MASTER_NODE) {
+  if (options.SLM) {
+    /*--- Reconstructon of auxiliary variables gradient ---*/
+    su2double Normal[nPoint][nDim];
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++)      
+        Normal[iPoint][iDim] = 0.0;
+
+      // Extract nearest wall element and wall marker
+      unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
+      unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
+
+      // Cycle on all of the points of the wall element
+      for (unsigned short iNode = 0; iNode < geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes(); iNode++) {
+        // Extract global coordinate of the node
+        unsigned long iPointHere = geometry->bound[NearestWallMarker][NearestWallElement]->GetNode(iNode);
+        long iVertexHere = geometry->nodes->GetVertex(iPointHere, NearestWallMarker);
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Normal[iPoint][iDim] += geometry->vertex[NearestWallMarker][iVertexHere]->GetNormal(iDim);
+      }
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iPoint][iDim] /= geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes();
+
+      nodes->SetAuxVar(iPoint, 0, nodes->GetProjVel(iPoint, Normal[iPoint]));
+    }
+    END_SU2_OMP_FOR
+
+    //SU2_OMP_BARRIER
+
+    cout << "primo for" << endl;
+
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetAuxVar_Gradient_GG(geometry, config);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetAuxVar_Gradient_LS(geometry, config);
+    }
+
+    //SU2_OMP_BARRIER
+
+    cout << "Dopo Gradienti" << endl;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+      su2double AuxVarHere = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        AuxVarHere += Normal[iPoint][iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+      nodes->SetAuxVar(iPoint, 0, AuxVarHere);
+    }
+    END_SU2_OMP_FOR
+
+    cout << "Ho finito" << endl;
+  }
+
 }
 
 void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -223,7 +292,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     VorticityMag = max(VorticityMag, 1e-12);
     StrainMag = max(StrainMag, 1e-12); // safety against division by zero
     const su2double Intermittency = nodes->GetSolution(iPoint,0);
-    const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
@@ -231,17 +299,28 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
     su2double omega = 0.0;
     su2double k = 0.0;
-    if(TurbFamily == TURB_FAMILY::KW){
-      omega = turbNodes->GetSolution(iPoint,1);
-      k = turbNodes->GetSolution(iPoint,0);
-    }
-    su2double Tu = 1.0;
-    if(TurbFamily == TURB_FAMILY::KW)
-      Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
-    if(TurbFamily == TURB_FAMILY::SA)
-      Tu = config->GetTurbulenceIntensity_FreeStream()*100;
 
-    const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+    su2double Corr_Rec = 0.0;
+    su2double Re_t = 0.0;
+    if (!options.SLM) {
+      Re_t = nodes->GetSolution(iPoint,1);
+      if(TurbFamily == TURB_FAMILY::KW){
+        omega = turbNodes->GetSolution(iPoint,1);
+        k = turbNodes->GetSolution(iPoint,0);
+      }
+      su2double Tu = 1.0;
+      if(TurbFamily == TURB_FAMILY::KW)
+        Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
+      if(TurbFamily == TURB_FAMILY::SA)
+        Tu = config->GetTurbulenceIntensity_FreeStream()*100;
+
+      Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+    }
+
+    if (options.SLM) {
+      Re_t = nodes->GetRe_t(iPoint);
+      Corr_Rec = nodes->GetCorr_Rec(iPoint);
+    }
 
     su2double R_t = 1.0;
     if(TurbFamily == TURB_FAMILY::KW)
@@ -352,9 +431,18 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
     }
 
+    if(options.SLM) {
+      numerics->SetAuxVar(nodes->GetAuxVar(iPoint, 0));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if(options.SLM) {
+      nodes->SetRe_t(iPoint, numerics->GetRe_t());
+      nodes->SetCorr_Rec(iPoint, numerics->GetCorr_Rec());
+    }
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -554,6 +642,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        // I am really not sure about these, I have to check if they are actually saved
         nodes ->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
         nodes ->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
 

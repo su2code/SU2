@@ -735,6 +735,25 @@ public:
   su2double GetIntermittencyEff() const { return intermittency_eff_i; }
 
   /*!
+   * \brief Get the value of the Transition Momentum Thickness Reynolds number from correlations.
+   * \param[in] Corr_Rec_i - Value of the Transition Momentum Thickness Reynolds number at point i.
+   */
+  inline virtual su2double GetCorr_Rec() {return 0.0;}
+
+   /*!
+   * \brief Get the value of the Momentum Thickness Reynolds number.
+   * \param[in] Corr_Rec_i - Value of the Momentum Thickness Reynolds number at point i.
+   */
+  inline virtual su2double GetRe_t() {return 0.0;}
+
+  /*!
+   * \brief Set the gradient of the auxiliary variables.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
+   */
+  inline virtual void SetAuxVar(su2double val_AuxVar) {}
+
+  /*!
    * \brief Set the gradient of the auxiliary variables.
    * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.

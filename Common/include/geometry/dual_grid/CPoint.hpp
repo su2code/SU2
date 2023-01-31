@@ -457,6 +457,18 @@ public:
   inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
 
   /*!
+   * \brief Get the index of the closest wall element.
+   * \param[in] iPoint - Index of the point.
+   */
+  inline unsigned long GetClosestWall_Elem(unsigned long iPoint) {return ClosestWall_Elem(iPoint);}
+
+  /*!
+   * \brief Get the marker of the closest wall marker.
+   * \param[in] iPoint - Index of the point.
+   */
+  inline unsigned long GetClosestWall_Marker(unsigned long iPoint) {return ClosestWall_Marker(iPoint);}
+
+  /*!
    * \brief Get the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.

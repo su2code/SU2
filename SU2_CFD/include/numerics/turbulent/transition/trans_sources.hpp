@@ -92,7 +92,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override {
-    /*--- ScalarVar[0] = k, ScalarVar[0] = w, TransVar[0] = gamma, and TransVar[0] = ReThetaT ---*/
+    /*--- ScalarVar[0] = k, ScalarVar[0] = w, TransVar[0] = gamma, and TransVar[1] = ReThetaT ---*/
     /*--- dU/dx = PrimVar_Grad[1][0] ---*/
     AD::StartPreacc();
     AD::SetPreaccIn(StrainMag_i);
@@ -322,4 +322,191 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+};
+
+
+/*!
+ * \class CSourcePieceWise_TranSLM
+ * \brief Class for integrating the source terms of the Simplified LM transition model equations.
+ * \ingroup SourceDiscr
+ * \author S. Kang.
+ */
+template <class FlowIndices>
+class CSourcePieceWise_TransSLM final : public CNumerics {
+ private:
+  const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+
+  const LM_ParsedOptions options;
+
+  /*--- LM Closure constants ---*/
+  const su2double c_e1 = 1.0;
+  const su2double c_a1 = 2.0;
+  const su2double c_e2 = 50.0;
+  const su2double c_a2 = 0.06;
+  const su2double sigmaf = 1.0;
+  const su2double s1 = 2.0;
+  const su2double c_theta = 0.03;
+  const su2double c_CF = 0.6;
+  const su2double sigmat = 2.0;
+
+  TURB_FAMILY TurbFamily;
+  su2double hRoughness;
+
+  su2double IntermittencySep = 1.0;
+  su2double IntermittencyEff = 1.0;
+
+  su2double Re_t;
+  su2double Corr_Rec;
+  su2double AuxVar;
+
+  su2double Residual;
+  su2double* Jacobian_i;
+  su2double Jacobian_Buffer;  // Static storage for the Jacobian (which needs to be pointer for return type).
+
+  TransLMCorrelations TransCorrelations;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TransSLM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+      : CNumerics(val_nDim, 1, config), idx(val_nDim, config->GetnSpecies()), options(config->GetLMParsedOptions()){
+    /*--- "Allocate" the Jacobian using the static buffer. ---*/
+    Jacobian_i = &Jacobian_Buffer;
+
+    TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
+    hRoughness = config->GethRoughness();
+
+    TransCorrelations.SetOptions(options);
+    
+  }
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override {
+    /*--- ScalarVar[0] = k, ScalarVar[0] = w, TransVar[0] = gamma ---*/
+    /*--- dU/dx = PrimVar_Grad[1][0] ---*/
+    AD::StartPreacc();
+    AD::SetPreaccIn(StrainMag_i);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(TransVar_i, nVar);
+    AD::SetPreaccIn(TransVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(Volume);
+    AD::SetPreaccIn(dist_i);
+    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+    AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
+    AD::SetPreaccIn(Vorticity_i, 3);
+
+    su2double VorticityMag =
+        sqrt(Vorticity_i[0] * Vorticity_i[0] + Vorticity_i[1] * Vorticity_i[1] + Vorticity_i[2] * Vorticity_i[2]);
+
+    const su2double vel_u = V_i[idx.Velocity()];
+    const su2double vel_v = V_i[1 + idx.Velocity()];
+    const su2double vel_w = (nDim == 3) ? V_i[2 + idx.Velocity()] : 0.0;
+
+    const su2double Velocity_Mag = sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w);
+
+    AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+
+    Density_i = V_i[idx.Density()];
+    Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+    Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
+
+    Residual = 0.0;
+    Jacobian_i[0] = 0.0;
+
+    if (dist_i > 1e-10) {
+      su2double Tu_L = 1.0;
+      if (TurbFamily == TURB_FAMILY::KW) Tu_L = max(min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (ScalarVar_i[1]*dist_i), 100.0), 0.027);
+      if (TurbFamily == TURB_FAMILY::SA) Tu_L = config->GetTurbulenceIntensity_FreeStream() * 100;
+
+      /*--- F_length ---*/
+      su2double F_length = 100.0;
+
+      /*--- F_onset ---*/
+      su2double R_t = 1.0;
+      if (TurbFamily == TURB_FAMILY::KW) R_t = Density_i * ScalarVar_i[0] / Laminar_Viscosity_i / ScalarVar_i[1];
+      if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
+
+      /*-- Gradient of velocity magnitude ---*/
+
+      su2double dU_dx = 0.5 / Velocity_Mag * (2. * vel_u * PrimVar_Grad_i[1][0] + 2. * vel_v * PrimVar_Grad_i[2][0]);
+      if (nDim == 3) dU_dx += 0.5 / Velocity_Mag * (2. * vel_w * PrimVar_Grad_i[3][0]);
+
+      su2double dU_dy = 0.5 / Velocity_Mag * (2. * vel_u * PrimVar_Grad_i[1][1] + 2. * vel_v * PrimVar_Grad_i[2][1]);
+      if (nDim == 3) dU_dy += 0.5 / Velocity_Mag * (2. * vel_w * PrimVar_Grad_i[3][1]);
+
+      su2double dU_dz = 0.0;
+      if (nDim == 3)
+        dU_dz =
+            0.5 / Velocity_Mag *
+            (2. * vel_u * PrimVar_Grad_i[1][2] + 2. * vel_v * PrimVar_Grad_i[2][2] + 2. * vel_w * PrimVar_Grad_i[3][2]);
+
+      su2double du_ds = vel_u / Velocity_Mag * dU_dx + vel_v / Velocity_Mag * dU_dy;
+      if (nDim == 3) du_ds += vel_w / Velocity_Mag * dU_dz;
+
+      /*--- Corr_RetC correlation*/
+      //Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, du_ds, dist_i, Laminar_Viscosity_i, Density_i, VorticityMag, Velocity_Mag);
+      Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, AuxVar, dist_i, Laminar_Viscosity_i, Density_i, VorticityMag, Velocity_Mag);
+
+      if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::CODER_SLM || options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM) {
+        // If these correlations are used, then the value of Corr_Rec has to be used instead of the TransVar[1] of the original LM model 
+        F_length = TransCorrelations.FLength_Correlations(Tu_L, Re_t);
+        Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu_L, Re_t);
+      }
+      if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) Corr_Rec = Re_t;
+
+
+      const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
+      const su2double F_onset1 = Re_v / (2.2 * Corr_Rec);
+      su2double F_onset2 = 1.0;
+      su2double F_onset3 = 1.0;
+      if (TurbFamily == TURB_FAMILY::KW) {
+        F_onset2 = min(F_onset1, 2.0);
+        F_onset3 = max(1.0 - pow(R_t / 3.5, 3.0), 0.0);
+      }
+      if (TurbFamily == TURB_FAMILY::SA) {
+        F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 4.0);
+        F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
+      }
+      const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+     
+      const su2double f_turb = exp(-pow(R_t / 4, 4));
+
+      /*-- production term of Intermeittency(Gamma) --*/
+      const su2double Pg =
+          F_length * Density_i * StrainMag_i * F_onset * TransVar_i[0] * (1.0 - TransVar_i[0]);
+
+      /*-- destruction term of Intermeittency(Gamma) --*/
+      const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
+
+      /*--- Source ---*/
+      Residual += (Pg - Dg) * Volume;
+
+      /*--- Implicit part ---*/
+      Jacobian_i[0] = (F_length * StrainMag_i * F_onset * (1 - 2*TransVar_i[0]) -
+                          c_a2 * VorticityMag * f_turb * (2.0 * c_e2 * TransVar_i[0] - 1.0)) *
+                         Volume;
+
+    }
+
+    AD::SetPreaccOut(Residual, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+    
+  }
+
+  inline su2double GetRe_t() override {return Re_t;}
+  inline su2double GetCorr_Rec() override {return Corr_Rec;} 
+  inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
+
 };

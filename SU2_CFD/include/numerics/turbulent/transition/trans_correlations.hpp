@@ -25,6 +25,7 @@
  */
 
 #pragma once
+//#include <cmath>
 
 /*!
  * \class TransLMCorrelations
@@ -189,4 +190,106 @@ class TransLMCorrelations {
 
     return F_length1;
   }
+
+  /*!
+   * \brief Compute Re_theta_c from correlations for the Simplified LM model.
+   * \param[in] Tu - Turbulence intensity.
+   * \param[in] du_ds - Streamwise velocity gradient.
+   * \param[out] rethetac - Corrected value for Re_theta.
+   */
+  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double du_ds, const su2double wall_dist, const su2double Laminar_Viscosity, const su2double Density, const su2double VorticityMag, const su2double VelocityMag) const {
+
+    su2double rethetac = 0.0;
+
+    switch (options.Correlation_SLM) {
+      case TURB_TRANS_CORRELATION_SLM::MENTER_SLM: {
+
+        /*-- Thwaites parameter ---*/
+        su2double  lambda_theta_local = 7.57e-3 * du_ds * wall_dist * wall_dist * Density / Laminar_Viscosity + 0.0128;
+        lambda_theta_local = min(max(lambda_theta_local, -1.0), 1.0);
+
+        /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/
+        su2double FPG = 0.0;
+        const su2double C_PG1 = 14.68;
+        const su2double C_PG1_lim = 1.5;
+        const su2double C_PG2 = -7.34;
+        const su2double C_PG2_lim = 3.0;
+        const su2double C_PG3 = 0.0;
+        if (lambda_theta_local >= 0.0) {
+          FPG = min(1+ C_PG1 * lambda_theta_local, C_PG1_lim);
+        } else {
+          const su2double FirstTerm = C_PG2 * lambda_theta_local;
+          const su2double SecondTerm = C_PG3 * min(lambda_theta_local + 0.0681, 0.0);
+          FPG = min(1 + FirstTerm + SecondTerm, C_PG2_lim);
+        }
+
+        FPG = max(FPG, 0.0);
+
+        const su2double C_TU1 = 100.0;
+        const su2double C_TU2 = 1000.0;
+        const su2double C_TU3 = 1.0;
+        rethetac = C_TU1 + C_TU2 * exp(-C_TU3 * Tu_L * FPG);
+
+        break;
+      } case TURB_TRANS_CORRELATION_SLM::CODER_SLM: {
+        
+        /*-- Local pressure gradient parameter ---*/
+        const su2double H_c = max(min(wall_dist * VorticityMag / VelocityMag, 1.1542), 0.3823);
+
+        /*-- Thwaites parameter ---*/
+        su2double lambda_theta_local = 0.0;
+        const su2double H_c_delta = 0.587743 - H_c;
+        if ( H_c >= 0.587743 ) {
+          const su2double FirstTerm = 0.1919 * pow(H_c_delta, 3.0);
+          const su2double SecondTerm = 0.4182 * pow(H_c_delta, 2.0);
+          const su2double ThirdTerm = 0.2959 * H_c_delta;
+          lambda_theta_local = FirstTerm + SecondTerm + ThirdTerm;
+        } else {
+          const su2double FirstTerm = 4.7596 * pow(H_c_delta, 3.0);
+          const su2double SecondTerm = -0.3837 * pow(H_c_delta, 2.0);
+          const su2double ThirdTerm = 0.3575 * H_c_delta;
+          lambda_theta_local = FirstTerm + SecondTerm + ThirdTerm;
+        }
+
+        /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/
+        su2double FPG = 0.0;
+        if (lambda_theta_local <= 0.0) {
+          const su2double FirstTerm = -12.986 * lambda_theta_local;
+          const su2double SecondTerm = -123.66 * pow(lambda_theta_local, 2.0);
+          const su2double ThirdTerm = -405.689 * pow(lambda_theta_local, 3.0);
+          FPG = 1 - (FirstTerm + SecondTerm + ThirdTerm) * exp(-pow(Tu_L/1.5,1.5));
+        } else {
+          FPG = 1 + 0.275 * (1 - exp(-35.0 * lambda_theta_local)) * exp(-Tu_L/0.5);
+        }
+
+        // This is not reported in the paper
+        //FPG = max(FPG, 0.0);
+
+        const su2double C_TU1 = 100.0;
+        const su2double C_TU2 = 1000.0;
+        const su2double C_TU3 = 1.0;
+        rethetac = C_TU1 + C_TU2 * exp(-C_TU3 * Tu_L * FPG);
+
+        break;
+      } case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: {
+        
+        /*-- Local pressure gradient parameter ---*/
+        const su2double H_c = max(min(wall_dist * VorticityMag / VelocityMag, 1.1542), 0.3823);
+
+        /*-- H_32 Shape factor --*/
+        const su2double H_32 = 1.515095 + 0.2041 * pow((1.1542 - H_c), 2.0956);
+
+        rethetac = exp(127.94 * pow((H_32-1.515095), 2.0) + 6.774224);
+
+        break;
+      }
+      case TURB_TRANS_CORRELATION_SLM::DEFAULT:
+        SU2_MPI::Error("Transition correlation for Simplified LM model is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+
+    return rethetac;
+  }
+
 };

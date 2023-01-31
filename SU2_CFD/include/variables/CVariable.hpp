@@ -1714,6 +1714,26 @@ public:
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
   /*!
+   * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline virtual void SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) {};
+
+  /*!
+   * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline virtual su2double GetCorr_Rec(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline virtual void SetRe_t(unsigned long iPoint, su2double val_Re_t) {};
+
+  /*!
+   * \brief Get Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline virtual su2double GetRe_t(unsigned long iPoint) const { return 0.0; }
+
+  /*!
    * \brief Set the value of the eddy viscosity.
    * \param[in] val_muT
    */
