@@ -197,7 +197,7 @@ class TransLMCorrelations {
    * \param[in] du_ds - Streamwise velocity gradient.
    * \param[out] rethetac - Corrected value for Re_theta.
    */
-  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double du_ds, const su2double wall_dist, const su2double Laminar_Viscosity, const su2double Density, const su2double VorticityMag, const su2double VelocityMag) const {
+  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double lambda_theta, const su2double wall_dist, const su2double VorticityMag, const su2double VelocityMag) const {
 
     su2double rethetac = 0.0;
 
@@ -205,7 +205,8 @@ class TransLMCorrelations {
       case TURB_TRANS_CORRELATION_SLM::MENTER_SLM: {
 
         /*-- Thwaites parameter ---*/
-        su2double  lambda_theta_local = 7.57e-3 * du_ds * wall_dist * wall_dist * Density / Laminar_Viscosity + 0.0128;
+        // su2double  lambda_theta_local = 7.57e-3 * du_ds * wall_dist * wall_dist * Density / Laminar_Viscosity + 0.0128;
+        su2double  lambda_theta_local = lambda_theta;
         lambda_theta_local = min(max(lambda_theta_local, -1.0), 1.0);
 
         /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/

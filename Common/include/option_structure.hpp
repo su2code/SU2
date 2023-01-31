@@ -1173,7 +1173,7 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  */
 enum class LM_OPTIONS {
   NONE,         /*!< \brief No option / default. */
-  LM2015,       /*!< \brief Cross-flow corrections. */
+  CROSSFLOW,    /*!< \brief Cross-flow corrections. */
   SLM,          /*!< \brief Simplified version. */
   PRODLIM,      /*!< \brief Add production term to Pk. */
   MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
@@ -1191,7 +1191,7 @@ enum class LM_OPTIONS {
 
 static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
   MakePair("NONE", LM_OPTIONS::NONE)
-  MakePair("LM2015", LM_OPTIONS::LM2015)
+  MakePair("CROSSFLOW", LM_OPTIONS::CROSSFLOW)
   MakePair("SLM", LM_OPTIONS::SLM)
   MakePair("PRODLIM", LM_OPTIONS::PRODLIM)
   MakePair("MALAN", LM_OPTIONS::MALAN)
@@ -1235,7 +1235,7 @@ enum class TURB_TRANS_CORRELATION_SLM {
  */
 struct LM_ParsedOptions {
   LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
-  bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
+  bool CrossFlow = false;                 /*!< \brief Use cross-flow corrections. */
   bool SLM = false;                       /*!< \brief Use simplified version. */
   bool ProdLim = false;                   /*!< \brief Add production term to Pk. */
   TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
@@ -1257,7 +1257,7 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     return std::find(LM_Options, lm_options_end, option) != lm_options_end;
   };
 
-  LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
+  LMParsedOptions.CrossFlow = IsPresent(LM_OPTIONS::CROSSFLOW);
   LMParsedOptions.SLM = IsPresent(LM_OPTIONS::SLM);
   LMParsedOptions.ProdLim = IsPresent(LM_OPTIONS::PRODLIM);
 

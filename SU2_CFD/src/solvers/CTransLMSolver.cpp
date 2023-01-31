@@ -205,61 +205,61 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   // UPDATE: Mi sa che la wall distance è rispetto alla parete, quindi effettivamente l'elemento più vicino è sempre a parete.
   /////////////////////
 
-  cout << "Sono qui" << endl;
+  // cout << "Sono qui" << endl;
   //if (rank == MASTER_NODE) {
-  if (options.SLM) {
-    /*--- Reconstructon of auxiliary variables gradient ---*/
-    su2double Normal[nPoint][nDim];
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-      for (auto iDim = 0u; iDim < nDim; iDim++)      
-        Normal[iPoint][iDim] = 0.0;
+  // if (options.SLM) {
+  //   /*--- Reconstructon of auxiliary variables gradient ---*/
+  //   su2double Normal[nPoint][nDim];
+  //   SU2_OMP_FOR_STAT(omp_chunk_size)
+  //   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  //     for (auto iDim = 0u; iDim < nDim; iDim++)      
+  //       Normal[iPoint][iDim] = 0.0;
 
-      // Extract nearest wall element and wall marker
-      unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
-      unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
+  //     // Extract nearest wall element and wall marker
+  //     unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
+  //     unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
 
-      // Cycle on all of the points of the wall element
-      for (unsigned short iNode = 0; iNode < geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes(); iNode++) {
-        // Extract global coordinate of the node
-        unsigned long iPointHere = geometry->bound[NearestWallMarker][NearestWallElement]->GetNode(iNode);
-        long iVertexHere = geometry->nodes->GetVertex(iPointHere, NearestWallMarker);
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          Normal[iPoint][iDim] += geometry->vertex[NearestWallMarker][iVertexHere]->GetNormal(iDim);
-      }
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iPoint][iDim] /= geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes();
+  //     // Cycle on all of the points of the wall element
+  //     for (unsigned short iNode = 0; iNode < geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes(); iNode++) {
+  //       // Extract global coordinate of the node
+  //       unsigned long iPointHere = geometry->bound[NearestWallMarker][NearestWallElement]->GetNode(iNode);
+  //       long iVertexHere = geometry->nodes->GetVertex(iPointHere, NearestWallMarker);
+  //       for (auto iDim = 0u; iDim < nDim; iDim++)
+  //         Normal[iPoint][iDim] += geometry->vertex[NearestWallMarker][iVertexHere]->GetNormal(iDim);
+  //     }
+  //     for (auto iDim = 0u; iDim < nDim; iDim++)
+  //       Normal[iPoint][iDim] /= geometry->bound[NearestWallMarker][NearestWallElement]->GetnNodes();
 
-      nodes->SetAuxVar(iPoint, 0, nodes->GetProjVel(iPoint, Normal[iPoint]));
-    }
-    END_SU2_OMP_FOR
+  //     nodes->SetAuxVar(iPoint, 0, nodes->GetProjVel(iPoint, Normal[iPoint]));
+  //   }
+  //   END_SU2_OMP_FOR
 
-    //SU2_OMP_BARRIER
+  //   //SU2_OMP_BARRIER
 
-    cout << "primo for" << endl;
+  //   cout << "primo for" << endl;
 
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetAuxVar_Gradient_GG(geometry, config);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetAuxVar_Gradient_LS(geometry, config);
-    }
+  //   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  //     SetAuxVar_Gradient_GG(geometry, config);
+  //   }
+  //   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  //     SetAuxVar_Gradient_LS(geometry, config);
+  //   }
 
-    //SU2_OMP_BARRIER
+  //   //SU2_OMP_BARRIER
 
-    cout << "Dopo Gradienti" << endl;
+  //   cout << "Dopo Gradienti" << endl;
 
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-      su2double AuxVarHere = 0.0;
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        AuxVarHere += Normal[iPoint][iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
-      nodes->SetAuxVar(iPoint, 0, AuxVarHere);
-    }
-    END_SU2_OMP_FOR
+  //   SU2_OMP_FOR_STAT(omp_chunk_size)
+  //   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  //     su2double AuxVarHere = 0.0;
+  //     for (auto iDim = 0u; iDim < nDim; iDim++)
+  //       AuxVarHere += Normal[iPoint][iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+  //     nodes->SetAuxVar(iPoint, 0, AuxVarHere);
+  //   }
+  //   END_SU2_OMP_FOR
 
-    cout << "Ho finito" << endl;
-  }
+  //   cout << "Ho finito" << endl;
+  // }
 
 }
 
@@ -426,8 +426,8 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
-    if (options.LM2015) {
-      /*--- Set local grid length (for LM2015)*/
+    if (options.CrossFlow && !options.SLM) {
+      /*--- Set local grid length (for LM2015 cross-flow corrections)*/
       numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
     }
 

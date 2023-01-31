@@ -2295,7 +2295,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_TRANS_MODEL::NONE: break;        
         case TURB_TRANS_MODEL::LM:     
           file << "Langtry and Menter's transition";
-          if (config->GetLMParsedOptions().LM2015) {
+          if (config->GetLMParsedOptions().CrossFlow) {
             file << " w/ cross-flow corrections (2015)\n";
           } else {
             file << " (2009)\n";

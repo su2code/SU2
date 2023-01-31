@@ -186,7 +186,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       /*-- Calculate blending function f_theta --*/
       su2double time_scale = 500.0 * Laminar_Viscosity_i / Density_i / Velocity_Mag / Velocity_Mag;
-      if (options.LM2015)
+      if (options.CrossFlow)
         time_scale = min(time_scale,
                          Density_i * LocalGridLength_i * LocalGridLength_i / (Laminar_Viscosity_i + Eddy_Viscosity_i));
       const su2double theta_bl = TransVar_i[1] * Laminar_Viscosity_i / Density_i / Velocity_Mag;
@@ -206,7 +206,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       const su2double f_turb = exp(-pow(R_t / 4, 4));
 
       su2double f_theta_2 = 0.0;
-      if (options.LM2015)
+      if (options.CrossFlow)
         f_theta_2 = min(f_wake * exp(-pow(dist_i / delta, 4.0)), 1.0);
 
       /*--- Corr_Ret correlation*/
@@ -247,7 +247,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       /*-- Corr_RetT_SCF Correlations--*/
       su2double ReThetat_SCF = 0.0;
-      if (options.LM2015) {
+      if (options.CrossFlow) {
         su2double VelocityNormalized[3];
         VelocityNormalized[0] = vel_u / Velocity_Mag;
         VelocityNormalized[1] = vel_v / Velocity_Mag;
@@ -298,7 +298,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       /*-- destruction term of ReThetaT --*/
       // It should not be with the minus sign but I put for consistency
       su2double DRethetat = 0.0;
-      if (options.LM2015)
+      if (options.CrossFlow)
         DRethetat = -c_theta * (Density_i / time_scale) * c_CF * min(ReThetat_SCF - TransVar_i[1], 0.0) * f_theta_2;
 
       /*--- Source ---*/
@@ -313,7 +313,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       Jacobian_i[0][1] = 0.0;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -c_theta / time_scale * (1.0 - f_theta) * Volume;
-      if (options.LM2015 && ReThetat_SCF - TransVar_i[1] < 0)
+      if (options.CrossFlow && ReThetat_SCF - TransVar_i[1] < 0)
         Jacobian_i[1][1] += (c_theta / time_scale) * c_CF * f_theta_2 * Volume;
     }
 
@@ -453,9 +453,12 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       su2double du_ds = vel_u / Velocity_Mag * dU_dx + vel_v / Velocity_Mag * dU_dy;
       if (nDim == 3) du_ds += vel_w / Velocity_Mag * dU_dz;
 
+      const su2double lambda_theta = 7.57e-3 * du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
+      // const su2double lambda_theta = 7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
+
       /*--- Corr_RetC correlation*/
-      //Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, du_ds, dist_i, Laminar_Viscosity_i, Density_i, VorticityMag, Velocity_Mag);
-      Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, AuxVar, dist_i, Laminar_Viscosity_i, Density_i, VorticityMag, Velocity_Mag);
+      Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
+      // Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
 
       if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::CODER_SLM || options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM) {
         // If these correlations are used, then the value of Corr_Rec has to be used instead of the TransVar[1] of the original LM model 
@@ -477,7 +480,57 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 4.0);
         F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
-      const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+      su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+
+      if (options.CrossFlow) {
+        
+        // Computation of shape factor
+        const su2double k = 0.25 - lambda_theta;
+        const su2double FirstTerm = 4.14 * k;
+        const su2double SecondTerm = 83.5 * pow(k, 2.0);
+        const su2double ThirdTerm = 854 * pow(k, 3.0);
+        const su2double ForthTerm = 3337 * pow(k, 4.0);
+        const su2double FifthTerm = 4576 * pow(k, 5.0);
+        const su2double H = min(2.0 + FirstTerm - SecondTerm + ThirdTerm - ForthTerm + FifthTerm, 2.7);
+
+        // Computation of critical cross flow Reynolds number
+        su2double Re_Crit_CF = 0.0;
+        if(H < 2.3) {
+          Re_Crit_CF = 150.0;
+        } else {
+          Re_Crit_CF = -(300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
+        }
+
+        // Helicity computation
+        su2double VelocityNormalized[3];
+        VelocityNormalized[0] = vel_u / Velocity_Mag;
+        VelocityNormalized[1] = vel_v / Velocity_Mag;
+        if (nDim == 3) VelocityNormalized[2] = vel_w / Velocity_Mag;
+
+        su2double StreamwiseVort = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
+        }
+        StreamwiseVort = abs(StreamwiseVort);
+
+        const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
+
+        // Computation of Delta_H_CF. Here I have included directly R_t as the ration between turb and lam viscosity
+        const su2double Delta_H_CF = H_CF * (1.0 + min(R_t, 0.4));
+        
+        // Take into account for roughness
+        const su2double h_0 = 0.25e-6;
+        const su2double C_r = 2.0 - pow(0.5, config->GethRoughness()/h_0);
+
+        // Construct Cross flow activation function
+        const su2double C_CF = 1.0;
+        const su2double f_CF = (C_CF * C_r * Delta_H_CF * Corr_Rec) / Re_Crit_CF;
+        const su2double F_onset_CF = min(max(0.0, f_CF - 1.0), 1.0);
+
+        // Adjust onset function for intermittency
+        F_onset = max(F_onset, F_onset_CF);
+
+      }
      
       const su2double f_turb = exp(-pow(R_t / 4, 4));
 
