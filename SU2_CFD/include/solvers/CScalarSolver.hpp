@@ -291,6 +291,12 @@ class CScalarSolver : public CSolver {
    */
   void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
+
  private:
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
@@ -312,12 +318,6 @@ class CScalarSolver : public CSolver {
     Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
   }
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
