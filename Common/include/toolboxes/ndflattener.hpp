@@ -207,6 +207,20 @@
 template <size_t K, typename Data_t_ = su2double, typename Index_t_ = unsigned long>
 class NdFlattener;
 
+/*! Allgatherv wrapper defaulting to a copy operation if there is only a single MPI rank.
+ *
+ *  Introducing this was necessary because MPICH's Allgatherv behaved unexpectedly if there
+ *  is only one MPI rank (seemingly ignoring displs[0] != 0).
+ */
+static inline void SU2_MPI_Allgatherv_safe(const void* sendbuf, int sendcount, SU2_MPI::Datatype sendtype, void* recvbuf,
+                              const int* recvcounts, const int* displs, SU2_MPI::Datatype recvtype, SU2_MPI::Comm comm) {
+  if (SU2_MPI::GetSize() == 1) {
+    SU2_MPI::CopyData(sendbuf, recvbuf, sendcount, sendtype, displs[0]);
+  } else {
+    SU2_MPI::Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
+  }
+}
+
 /*! \struct Nd_MPI_Environment
  * \brief Contains information for the collective communication of NdFlatteners.
  *
@@ -232,7 +246,7 @@ struct Nd_MPI_Environment {
                      MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
                      MPI_Communicator_t comm = SU2_MPI::GetComm(),
                      MPI_Allgather_t MPI_Allgather_fun = &(SU2_MPI::Allgather),
-                     MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv))
+                     MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI_Allgatherv_safe))
       : mpi_data(mpi_data),
         mpi_index(mpi_index),
         comm(comm),
