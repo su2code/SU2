@@ -31,7 +31,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-
+#include <iomanip>
 #include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
 
@@ -46,10 +46,17 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string
   number_of_variables = n_inputs;
 
   NeuralNetworks.resize(n_inputs);
+  cout << setfill(' ');
+  cout << endl;
+  cout << "+------------------------------------------------------------------+\n";
+  cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
+  cout << "+------------------------------------------------------------------+" << endl;
+  
   for (auto i_MLP = 0u; i_MLP < n_inputs; i_MLP++) {
     NeuralNetworks[i_MLP] = new CNeuralNetwork;
     if (rank == MASTER_NODE) cout << "Generating neural network for " << input_filenames[i_MLP] << endl;
     GenerateANN(NeuralNetworks[i_MLP], input_filenames[i_MLP]);
+    if (rank == MASTER_NODE) NeuralNetworks[i_MLP]->displayNetwork();
   }
 }
 

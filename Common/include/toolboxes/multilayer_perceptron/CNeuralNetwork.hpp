@@ -75,8 +75,8 @@ class CNeuralNetwork {
     TANH = 8,
     EXPONENTIAL = 9
   };
-  ENUM_ACTIVATION_FUNCTION* activation_function_types;
-
+  su2vector<ENUM_ACTIVATION_FUNCTION> activation_function_types;
+  su2vector<string> activation_function_names;
  public:
   ~CNeuralNetwork() {
     delete inputLayer;
@@ -85,7 +85,6 @@ class CNeuralNetwork {
       delete total_layers[i];
     }
     delete[] ANN_outputs;
-    delete[] activation_function_types;
   };
   /*!
    * \brief Set the input layer of the network.
@@ -261,7 +260,8 @@ class CNeuralNetwork {
    * \param[in] n_layers - network layer count.
    */
   void SizeActivationFunctions(unsigned long n_layers) {
-    activation_function_types = new ENUM_ACTIVATION_FUNCTION[n_layers];
+    activation_function_types.resize(n_layers);
+    activation_function_names.resize(n_layers);
   }
 
   /*!

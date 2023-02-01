@@ -36,19 +36,9 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
-      if (rank == MASTER_NODE) {
-        cout << "***********************************************" << endl;
-        cout << "*** initializing the multi-layer perceptron ***" << endl;
-        cout << "***********************************************" << endl;
-      }
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
-      if (rank == MASTER_NODE) {
-        cout << "*****************************************" << endl;
-        cout << "***   initializing the lookup table   ***" << endl;
-        cout << "*****************************************" << endl;
-      }
       lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
       break;
     default:

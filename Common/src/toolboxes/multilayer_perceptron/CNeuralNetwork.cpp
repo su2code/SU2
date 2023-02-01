@@ -27,6 +27,7 @@
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CNeuralNetwork.hpp"
 
+#include <iomanip>
 #include <iostream>
 
 #include "../../../include/toolboxes/multilayer_perceptron/CLayer.hpp"
@@ -289,14 +290,71 @@ void MLPToolbox::CNeuralNetwork::sizeWeights() {
 }
 
 void MLPToolbox::CNeuralNetwork::displayNetwork() const {
-  /*!
-  TODO:
-  find way of displaying network architectures
-  */
+  /*--- Display information on the MLP architecture ---*/
+  int display_width = 54;
+  int column_width = int(display_width / 3.0) - 1;
+
+  /*--- Input layer information ---*/
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << "|" << left << setw(display_width - 1) << "Input Layer Information:"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << "|" << left << setw(column_width) << "Input Variable:"
+       << "|" << left << setw(column_width) << "Lower limit:"
+       << "|" << left << setw(column_width) << "Upper limit:"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+
+  /*--- Hidden layer information ---*/
+  for (auto iInput = 0u; iInput < inputLayer->getNNeurons(); iInput++)
+    cout << "|" << left << setw(column_width) << to_string(iInput + 1) + ": " + input_names[iInput] << "|" << right
+         << setw(column_width) << input_norm[iInput].first << "|" << right << setw(column_width)
+         << input_norm[iInput].second << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << "|" << left << setw(display_width - 1) << "Hidden Layers Information:"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << "|" << setw(column_width) << left << "Layer index"
+       << "|" << setw(column_width) << left << "Neuron count"
+       << "|" << setw(column_width) << left << "Function"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  for (auto iLayer = 0u; iLayer < n_hidden_layers; iLayer++)
+    cout << "|" << setw(column_width) << right << iLayer + 1 << "|" << setw(column_width) << right
+         << hiddenLayers[iLayer]->getNNeurons() << "|" << setw(column_width) << right
+         << activation_function_names[iLayer + 1] << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+
+  /*--- Output layer information ---*/
+  cout << "|" << left << setw(display_width - 1) << "Output Layer Information:"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << "|" << left << setw(column_width) << "Output Variable:"
+       << "|" << left << setw(column_width) << "Lower limit:"
+       << "|" << left << setw(column_width) << "Upper limit:"
+       << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  for (auto iOutput = 0u; iOutput < outputLayer->getNNeurons(); iOutput++)
+    cout << "|" << left << setw(column_width) << to_string(iOutput + 1) + ": " + output_names[iOutput] << "|" << right
+         << setw(column_width) << output_norm[iOutput].first << "|" << right << setw(column_width)
+         << output_norm[iOutput].second << "|" << endl;
+  cout << "+" << setfill('-') << setw(display_width) << right << "+" << endl;
+  cout << setfill(' ');
+  cout << endl;
 }
 
 void MLPToolbox::CNeuralNetwork::setActivationFunction(unsigned long i_layer, string input) {
   /*--- Translate activation function name from input file to a number ---*/
+  activation_function_names[i_layer] = input;
   if (input.compare("linear") == 0) {
     activation_function_types[i_layer] = ENUM_ACTIVATION_FUNCTION::LINEAR;
     return;
