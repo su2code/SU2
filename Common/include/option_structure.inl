@@ -422,13 +422,13 @@ public:
     }
 
     if (Centered_Map.count(option_value[0])) {
-      this->space = Space_Map.find("SPACE_CENTERED")->second;
+      this->space = SPACE_CENTERED;
       this->centered = Centered_Map.find(option_value[0])->second;
       this->upwind = UPWIND::NONE;
       return "";
     }
     if (Upwind_Map.count(option_value[0])) {
-      this->space = Space_Map.find("SPACE_UPWIND")->second;
+      this->space = SPACE_UPWIND;
       this->upwind = Upwind_Map.find(option_value[0])->second;
       this->centered = CENTERED::NONE;
       return "";
@@ -466,7 +466,7 @@ public:
     }
 
     if (FEM_Map.count(option_value[0])) {
-      this->space = Space_Map.find("FINITE_ELEMENT")->second;
+      this->space = FINITE_ELEMENT;
       this->fem = FEM_Map.find(option_value[0])->second;
       return "";
     }

@@ -106,9 +106,6 @@ protected:
   su2double
   dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;  /*!< \brief Distance of point j to the nearest wall. */
-  su2double
-  Temp_i,  /*!< \brief Temperature at point i. */
-  Temp_j;  /*!< \brief Temperature at point j. */
   const su2double
   *Und_Lapl_i,  /*!< \brief Undivided laplacians at point i. */
   *Und_Lapl_j;  /*!< \brief Undivided laplacians at point j. */
@@ -927,16 +924,6 @@ public:
   inline void SetSoundSpeed(su2double val_soundspeed_i, su2double val_soundspeed_j) {
     SoundSpeed_i = val_soundspeed_i;
     SoundSpeed_j = val_soundspeed_j;
-  }
-
-  /*!
-   * \brief Set the value of the temperature.
-   * \param[in] val_temp_i - Value of the temperature at point i.
-   * \param[in] val_temp_j - Value of the temperature at point j.
-   */
-  inline void SetTemperature(su2double val_temp_i, su2double val_temp_j) {
-    Temp_i = val_temp_i;
-    Temp_j = val_temp_j;
   }
 
   /*!
