@@ -5465,7 +5465,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     // Helper function that checks scalar variable bounds,
     auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
-      if (scalar < lowerBound || scalar > upperBound)
+      if ((scalar < lowerBound || scalar > upperBound) && Species_Clipping)
         SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
     };
 

@@ -208,11 +208,10 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- add all quantities and their address to the look up vectors ---*/
   Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
 
-  molar_weight = Density * UNIVERSAL_GAS_CONSTANT *Temperature / 101325;
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight);
 
-  // Density = 101325 * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
+  Density = Pressure * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
 
   mass_diffusivity = Kt / (Density * Cp);
 }
@@ -291,8 +290,8 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- The string in varnames_TD is the actual string as it appears in the LUT file ---*/
   varnames_TD[0] = "Temperature";
   val_vars_TD[0] = &Temperature;
-  varnames_TD[1] = "Density";
-  val_vars_TD[1] = &Density;
+  varnames_TD[1] = "mean_molar_weight";
+  val_vars_TD[1] = &molar_weight;
   varnames_TD[2] = "Cp";
   val_vars_TD[2] = &Cp;
   varnames_TD[3] = "ViscosityDyn";
