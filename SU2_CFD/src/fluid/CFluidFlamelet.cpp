@@ -36,18 +36,14 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
   n_user_scalars = config->GetNUserScalars();
-  n_CV = 2;
-  n_scalars = n_CV + n_user_scalars;
+  n_control_vars = config->GetNControlVars();
+  n_scalars      = config->GetNScalars();
 
   if (rank == MASTER_NODE) {
-    cout << "n_scalars = " << n_scalars << endl;
-    cout << "n_CV = " << n_CV << endl;
-    cout << "n_user_scalars = " << n_user_scalars << endl;
+    cout << "Number of scalars:           " << n_scalars << endl;
+    cout << "Number of user scalars:      " << n_user_scalars << endl;
+    cout << "Number of control variables: " << n_control_vars << endl;
   }
-
-  config->SetNControllingVars(n_CV);
-
-  config->SetNScalars(n_scalars);
 
   if (rank == MASTER_NODE) {
     cout << "*****************************************" << endl;
@@ -60,7 +56,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
   /*--- auxiliary species transport equations---*/
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    table_scalar_names[n_CV + i_aux] = config->GetUserScalarName(i_aux);
+    table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
   config->SetLUTScalarNames(table_scalar_names);
@@ -147,10 +143,10 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
-    su2double y_aux = val_scalars[n_CV + i_aux];     
+    su2double y_aux = val_scalars[n_control_vars + i_aux];     
     su2double source_prod = table_sources[1 + 2*i_aux];
     su2double source_cons = table_sources[1 + 2*i_aux + 1];
-    source_scalar[n_CV + i_aux] = source_prod + source_cons * y_aux;
+    source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
   }
 
   return exit_code;
@@ -176,7 +172,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
- su2double delta_temp_final = 0.01; /* convergence criterion for temperature in [K] */
+  su2double delta_temp_final = 0.01; /* convergence criterion for temperature in [K] */
   su2double enth_iter = initial_value;          /* in CH4/Air flames, 0 is usually a good initial value for the iteration */
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
