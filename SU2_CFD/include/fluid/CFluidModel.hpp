@@ -161,11 +161,6 @@ class CFluidModel {
   virtual inline su2double GetScalarLookups(int){ return 0; }
 
   /*!
-   * \brief flamelet LUT - Get the number of controlling variables for manifold evaluation.
-   */
-  virtual inline unsigned short GetNControllingVariables() { return 0; }
-
-  /*!
    * \brief flamelet LUT - Get the actual lookup table
    */
   virtual CLookUpTable* GetLookUpTable() { return look_up_table; }

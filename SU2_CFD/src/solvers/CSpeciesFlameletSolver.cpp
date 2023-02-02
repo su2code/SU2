@@ -289,8 +289,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     su2double point_loc;
-    unsigned long n_not_iterated = 0;
-    unsigned long n_not_in_domain = 0;
 
     CFluidModel* fluid_model_local;
 
@@ -298,6 +296,17 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     vector<su2double*> look_up_data;
     string name_enth = config->GetLUTScalarName(I_ENTH);
     string name_prog = config->GetLUTScalarName(I_PROGVAR);
+
+    unsigned long n_not_iterated_local   = 0;
+    unsigned long n_not_in_domain_local  = 0;
+    unsigned long n_points_unburnt_local = 0;
+    unsigned long n_points_burnt_local   = 0;
+    unsigned long n_points_flame_local   = 0;
+    unsigned long n_not_iterated_global;
+    unsigned long n_not_in_domain_global;
+    unsigned long n_points_burnt_global;
+    unsigned long n_points_flame_global;  
+    unsigned long n_points_unburnt_global;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
@@ -321,29 +330,33 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         /* --- unburnt region upstream of the flame --- */
         if (point_loc <= 0) {
           scalar_init[I_PROGVAR] = prog_unburnt;
+          n_points_unburnt_local++;
 
           /* --- flame zone --- */
         } else if ((point_loc > 0) && (point_loc <= flame_thickness)) {
           scalar_init[I_PROGVAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
+          n_points_flame_local++;
 
           /* --- burnt region --- */
         } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)) {
           scalar_init[I_PROGVAR] = prog_burnt;
+          n_points_burnt_local++;
 
           /* --- unburnt region downstream of the flame --- */
         } else {
           scalar_init[I_PROGVAR] = prog_unburnt;
+          n_points_unburnt_local++;
         }
 
         
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet, enth_inlet);
+        n_not_iterated_local += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet, enth_inlet);
         scalar_init[I_ENTH] = enth_inlet;
 
-        n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(
+        n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(
             look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH], name_prog, name_enth);
 
-        /*--- initialize the auxiliary transported scalars  (not controlling variables) ---*/
-        for (int i_scalar = fluid_model_local->GetNControllingVariables(); i_scalar < config->GetNScalars(); ++i_scalar) {
+        /* --- initialize the auxiliary transported scalars  (not controlling variables) --- */
+        for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
 
@@ -360,17 +373,31 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
 
-    if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0)) cout << endl;
+    /* --- sum up some counters over processes --- */
+    SU2_MPI::Reduce(&n_not_in_domain_local,  &n_not_in_domain_global,  1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&n_not_iterated_local,   &n_not_iterated_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&n_points_unburnt_local, &n_points_unburnt_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&n_points_burnt_local,   &n_points_burnt_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&n_points_flame_local,   &n_points_flame_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (rank == MASTER_NODE){
+      cout << endl;
+      cout << " Number of points in unburnt region: " << n_points_unburnt_global << "." << endl;
+      cout << " Number of points in burnt region  : " << n_points_burnt_global   << "." << endl;
+      cout << " Number of points in flame zone    : " << n_points_flame_global << "." << endl;
+    }
+
+    if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
 
 
-    if (rank == MASTER_NODE && n_not_in_domain > 0)
-      cout << " !!! Initial condition: Number of points outside of table domain: " << n_not_in_domain << " !!!" << endl;
+    if (rank == MASTER_NODE && n_not_in_domain_global > 0)
+      cout << " !!! Initial condition: Number of points outside of table domain: " << n_not_in_domain_global << " !!!" << endl;
 
-    if (rank == MASTER_NODE && n_not_iterated > 0)
-      cout << " !!! Initial condition: Number of points in which enthalpy could not be iterated: " << n_not_iterated
+    if (rank == MASTER_NODE && n_not_iterated_global > 0)
+      cout << " !!! Initial condition: Number of points in which enthalpy could not be iterated: " << n_not_iterated_global
            << " !!!" << endl;
 
-    if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0)) cout << endl;
+    if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
     delete [] scalar_init;
   }
 }
