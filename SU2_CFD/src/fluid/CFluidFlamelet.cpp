@@ -72,7 +72,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   table_source_names.resize(n_table_sources);
   table_sources.resize(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
+  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot-PV";
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -163,6 +163,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   string name_enth = table_scalar_names[I_ENTH];
   string name_prog = table_scalar_names[I_PROGVAR];
 
+
   /*--- add all quantities and their address to the look up vectors ---*/
   look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, val_enth, name_prog, name_enth);
 
@@ -175,43 +176,73 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double   delta_temp_final = 0.01, /* convergence criterion for temperature in [K] */
-              relaxation = 0.5,        /* Newton solver relaxation factor. */
-              enth_iter = initial_value, /* Initial enthalpy value, default stetting is zero. */
-              delta_enth,              /* Enthalpy residual. */
-              delta_temp_iter;         /* Temperature residual. */
+ su2double delta_temp_final = 0.01; /* convergence criterion for temperature in [K] */
+  su2double enth_iter = initial_value;          /* in CH4/Air flames, 0 is usually a good initial value for the iteration */
+  su2double delta_enth;
+  su2double delta_temp_iter = 1e10;
+  unsigned long exit_code = 0;
+  vector<string> look_up_tags;
+  vector<su2double*> look_up_data;
+  int counter_limit = 50;
+  
+  /*--- set up look up vectors ---*/
+  su2double temp_iter;
 
-  unsigned long exit_code = 0,
-                counter_limit = 50,
-                counter = 0;
+  su2double cp_iter;
 
-  bool converged = false;
-
-  while (!converged && (counter++ < counter_limit)) {
-    /*--- look up temperature and heat capacity ---*/
+  int counter = 0;
+  while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
+    /* look up temperature and heat capacity */
     look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, enth_iter, name_prog, name_enth);
 
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
-    if(abs(delta_temp_iter) < delta_temp_final){
-      converged = true;
-    }else{
-      /*--- calculate delta_enthalpy following dh = cp * dT ---*/
-      delta_enth = Cp * delta_temp_iter;
 
-      /*--- update enthalpy ---*/
-      enth_iter += relaxation * delta_enth;
+    /* calculate delta_enthalpy following dh = cp * dT */
+    //delta_enth = cp_iter * delta_temp_iter;
+    delta_enth = Cp * delta_temp_iter;
 
-      counter ++;
-    }
+    /*--- update enthalpy ---*/
+    enth_iter += delta_enth;
   }
 
   /*--- set enthalpy value ---*/
   *val_enth = enth_iter;
 
-  if (!converged) {
+  if (counter >= counter_limit) {
     exit_code = 1;
   }
+
+  // su2double   delta_temp_final = 0.01, /* convergence criterion for temperature in [K] */
+  //             relaxation = 0.5,        /* Newton solver relaxation factor. */
+  //             enth_iter = initial_value, /* Initial enthalpy value, default stetting is zero. */
+  //             delta_enth,              /* Enthalpy residual. */
+  //             delta_temp_iter;         /* Temperature residual. */
+
+  // unsigned long exit_code = 0,
+  //               counter_limit = 50,
+  //               counter = 0;
+  // bool converged = false;
+  // while (!converged && (counter++ < counter_limit)) {
+  //   /*--- look up temperature and heat capacity ---*/
+  //   look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, enth_iter, name_prog, name_enth);
+  //   /*--- calculate delta_temperature ---*/
+  //   delta_temp_iter = val_temp - Temperature;
+  //   if(abs(delta_temp_iter) < delta_temp_final){
+  //     converged = true;
+  //   }else{
+  //     /*--- calculate delta_enthalpy following dh = cp * dT ---*/
+  //     delta_enth = Cp * delta_temp_iter;
+  //     /*--- update enthalpy ---*/
+  //     enth_iter += relaxation * delta_enth;
+  //     counter ++;
+  //   }
+  // }
+  // /*--- set enthalpy value ---*/
+  // *val_enth = enth_iter;
+  // if (!converged) {
+  //   exit_code = 1;
+  // }
 
   return exit_code;
 }

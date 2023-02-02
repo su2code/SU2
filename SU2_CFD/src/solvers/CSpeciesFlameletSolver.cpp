@@ -328,7 +328,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           scalar_init[I_PROGVAR] = prog_unburnt;
         }
 
-        
         n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet, enth_inlet);
         scalar_init[I_ENTH] = enth_inlet;
 
@@ -354,7 +353,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0)) cout << endl;
-
 
     if (rank == MASTER_NODE && n_not_in_domain > 0)
       cout << " !!! Initial condition: Number of points outside of table domain: " << n_not_in_domain << " !!!" << endl;
@@ -657,7 +655,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
           Jacobian.DeleteValsRowi(total_index);
         }
-      }else{
+      } else {
         /*--- Weak BC formulation ---*/
         const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
