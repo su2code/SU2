@@ -351,7 +351,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
                                             const string& name_enth) {
   unsigned long exit_code = 0;
   unsigned long nearest_neighbor = 0;
-  unsigned long id_triangle;
+  unsigned long id_triangle = 0;
   std::array<su2double,3> interp_coeffs{0};
   std::array<unsigned long,3> triangle{0};
 
