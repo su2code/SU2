@@ -119,33 +119,27 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   const su2double Intermittency_Inf  = 1.0;
   Solution_Inf[0] = Intermittency_Inf;
 
-  su2double ReThetaT_Inf = 0.0;
+  su2double ReThetaT_Inf = 100.0;
 
-  if (!options.SLM) {
-
-    ReThetaT_Inf = 100.0;
-
-    /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
-    if (Intensity <= 1.3) {
-      if(Intensity >=0.027) {
-        ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
-      }
-      else {
-        ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
-      }
+  /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
+  if (Intensity <= 1.3) {
+    if(Intensity >=0.027) {
+      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
     }
-    else if(Intensity>1.3) {
-      ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
+    else {
+      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
     }
+  }
+  else if(Intensity>1.3) {
+    ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
+  }
 
+   if (!options.SLM) {
     Solution_Inf[1] = ReThetaT_Inf;
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  nodes = new CTransLMVariable(Intermittency_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
-  if (!options.SLM) {
-      nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
-  }
+  nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
 
   SetBaseClassPointerToNodes();
 
@@ -299,15 +293,15 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
     su2double omega = 0.0;
     su2double k = 0.0;
+    if(TurbFamily == TURB_FAMILY::KW){
+      omega = turbNodes->GetSolution(iPoint,1);
+      k = turbNodes->GetSolution(iPoint,0);
+    }
 
     su2double Corr_Rec = 0.0;
     su2double Re_t = 0.0;
     if (!options.SLM) {
       Re_t = nodes->GetSolution(iPoint,1);
-      if(TurbFamily == TURB_FAMILY::KW){
-        omega = turbNodes->GetSolution(iPoint,1);
-        k = turbNodes->GetSolution(iPoint,0);
-      }
       su2double Tu = 1.0;
       if(TurbFamily == TURB_FAMILY::KW)
         Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
@@ -322,6 +316,9 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       Corr_Rec = nodes->GetCorr_Rec(iPoint);
     }
 
+    // cout << Re_t << " " << Corr_Rec << endl; 
+    // if (geometry->nodes->GetDomain(iPoint)) cout << "Point is on boundary" << endl;
+
     su2double R_t = 1.0;
     if(TurbFamily == TURB_FAMILY::KW)
       R_t = rho*k/ mu/ omega;
@@ -329,6 +326,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       R_t = muT/ mu;
 
     const su2double f_reattach = exp(-pow(R_t/20,4));
+
     su2double f_wake = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
       const su2double re_omega = rho*omega*dist*dist/mu;
@@ -337,6 +335,8 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     if(TurbFamily == TURB_FAMILY::SA)
       f_wake = 1.0;
 
+    //cout << "StrainMag = " << StrainMag << " rho = " << rho << " dist = " << dist << " Re_v = " << Re_v << " Corr_Rec = " << Corr_Rec << endl; 
+
     const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
     const su2double delta_bl   = 7.5*theta_bl;
     const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
@@ -344,6 +344,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double var2 = 1.0 - pow(var1,2.0);
     const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
     su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
+    //if (Intermittency_Sep>1.0) cout << "StrainMag = " << StrainMag << " rho = " << rho << " dist = " << dist << " Re_v = " << Re_v << " Corr_Rec = " << Corr_Rec <<  " Intermittency: " << Intermittency_Sep << " f_reattach = " << f_reattach << endl;
     Intermittency_Sep = min(Intermittency_Sep,2.0)*f_theta;
     Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);
     nodes -> SetIntermittencySep(iPoint, Intermittency_Sep);

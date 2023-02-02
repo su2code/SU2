@@ -459,12 +459,14 @@ public:
   /*!
    * \brief Get the index of the closest wall element.
    * \param[in] iPoint - Index of the point.
-   */
+   * \param[out] ClosestWall_Elem - ID of the closest element on a wall boundary.
+  */
   inline unsigned long GetClosestWall_Elem(unsigned long iPoint) {return ClosestWall_Elem(iPoint);}
 
   /*!
    * \brief Get the marker of the closest wall marker.
    * \param[in] iPoint - Index of the point.
+   * \param[out] ClosestWall_Marker - MarkerID of the closest wall boundary.
    */
   inline unsigned long GetClosestWall_Marker(unsigned long iPoint) {return ClosestWall_Marker(iPoint);}
 
