@@ -89,15 +89,9 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeInterfaceQuantities(const CConfig* config, 
                                                          su2double &interface_mach,
                                                          su2double *interface_soundspeed) {
 
-  /*--- For schemes that fit in the general form of AUSM+up and SLAU schemes you can inherit from this class
-   and implement only the specifics, which should be the face mass flux (per unit area) and the face pressure.
-     For implicit solution methods this class can either approximate the flux Jacobians (using those of the Roe
-   scheme) or compute accurate ones. This is done either numerically, differentiating "mdot" and "pressure"
-   using 1st order finite differences, or analytically if you use this function to set the values of
-   "dmdot_dVi/j", "dpres_dVi/j" and set "HasAnalyticalDerivatives" to true in the ctor of the derived class.
-     For accurate numerical differentiation "mdot" and "pressure" can be functions of, at most, the velocities,
-   pressures, densities, and enthalpies at nodes i/j. This is also the order expected for the partial derivatives
-   of "mdot" and "pressure" in "d?_dVi/j" (in case they are known analytically, see the AUSM+up implementation).
+  /*--- For schemes that fit in the general form of Advection Upstream Splitting Method (AUSM) schemes you can inherit from this class
+   and implement only the specifics, which should be the face pressure flux(es), interface Mach number and the interface soundspeed(s).
+     For implicit solution methods this class will use the analytic AUSM Jacobians, until more variant Jacobians have been added.
   ---*/
 
 }
@@ -149,8 +143,8 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double **val_Jacobian_i, su2dou
   }
 
   /*--- Sound speed derivatives: Energy ---*/
-  da_L[nSpecies+nDim]   = 1.0/(2.0*Density_i*SoundSpeed_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim]);
-  da_R[nSpecies+nDim]   = 1.0/(2.0*Density_j*SoundSpeed_j) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim]);
+  da_L[nSpecies+nDim] = 1.0/(2.0*Density_i*SoundSpeed_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim]);
+  da_R[nSpecies+nDim] = 1.0/(2.0*Density_j*SoundSpeed_j) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim]);
 
   /*--- Sound speed derivatives: Vib-el energy ---*/
   da_L[nSpecies+nDim+1] = 1.0/(2.0*Density_i*SoundSpeed_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim+1]);
@@ -187,34 +181,34 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double **val_Jacobian_i, su2dou
 
       /*--- Mach number ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dM_LP[iSpecies] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(Density_i*SoundSpeed_i) - ProjVelocity_i*da_L[iSpecies]/(SoundSpeed_i*SoundSpeed_i));
+        dM_LP[iSpecies] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(Density_i*SoundSpeed_i) - ProjVelocity_i*da_L[iSpecies]/(pow(SoundSpeed_i,2)));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          dM_LP[nSpecies+iDim] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+iDim] + UnitNormal[iDim]/(Density_i*SoundSpeed_i));
-      dM_LP[nSpecies+nDim]   = 0.5*(M_L+1.0) * (-ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim]);
-      dM_LP[nSpecies+nDim+1] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim+1]);
+          dM_LP[nSpecies+iDim] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+iDim] + UnitNormal[iDim]/(Density_i*SoundSpeed_i));
+      dM_LP[nSpecies+nDim]   = 0.5*(M_L+1.0) * (-ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim]);
+      dM_LP[nSpecies+nDim+1] = 0.5*(M_L+1.0) * (-ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim+1]);
 
       /*--- Pressure ---*/
       for(unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         dP_LP[iSpecies] = 0.25*(M_L+1.0) * (dPdU_i[iSpecies]*(M_L+1.0)*(2.0-M_L)
                                          + Pressure_i*(-ProjVelocity_i/(Density_i*SoundSpeed_i)
-                                         - ProjVelocity_i*da_L[iSpecies]/(SoundSpeed_i*SoundSpeed_i))*(3.0-3.0*M_L));
+                                         - ProjVelocity_i*da_L[iSpecies]/(pow(SoundSpeed_i,2)))*(3.0-3.0*M_L));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         dP_LP[nSpecies+iDim] = 0.25*(M_L+1.0) * (-Velocity_i[iDim]*dPdU_i[nSpecies+nDim]*(M_L+1.0)*(2.0-M_L)
-                                              + Pressure_i*( -ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+iDim]
+                                              + Pressure_i*( -ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+iDim]
                                               + UnitNormal[iDim]/(Density_i*SoundSpeed_i))*(3.0-3.0*M_L));
       dP_LP[nSpecies+nDim] = 0.25*(M_L+1.0) * (dPdU_i[nSpecies+nDim]*(M_L+1.0)*(2.0-M_L)
-                                              + Pressure_i*(-ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim])*(3.0-3.0*M_L));
+                                              + Pressure_i*(-ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim])*(3.0-3.0*M_L));
       dP_LP[nSpecies+nDim+1] = 0.25*(M_L+1.0) * (dPdU_i[nSpecies+nDim+1]*(M_L+1.0)*(2.0-M_L)
-                                              + Pressure_i*(-ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim+1])*(3.0-3.0*M_L));
+                                              + Pressure_i*(-ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim+1])*(3.0-3.0*M_L));
     } else {
 
       /*--- Mach number ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dM_LP[iSpecies]      = -ProjVelocity_i/(Density_i*SoundSpeed_i) - ProjVelocity_i*da_L[iSpecies]/(SoundSpeed_i*SoundSpeed_i);
+        dM_LP[iSpecies]      = -ProjVelocity_i/(Density_i*SoundSpeed_i) - ProjVelocity_i*da_L[iSpecies]/(pow(SoundSpeed_i,2));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        dM_LP[nSpecies+iDim] = -ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+iDim] + UnitNormal[iDim]/(Density_i*SoundSpeed_i);
-      dM_LP[nSpecies+nDim]   = -ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim];
-      dM_LP[nSpecies+nDim+1] = -ProjVelocity_i/(SoundSpeed_i*SoundSpeed_i) * da_L[nSpecies+nDim+1];
+        dM_LP[nSpecies+iDim] = -ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+iDim] + UnitNormal[iDim]/(Density_i*SoundSpeed_i);
+      dM_LP[nSpecies+nDim]   = -ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim];
+      dM_LP[nSpecies+nDim+1] = -ProjVelocity_i/(pow(SoundSpeed_i,2)) * da_L[nSpecies+nDim+1];
 
       /*--- Pressure ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -270,35 +264,35 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double **val_Jacobian_i, su2dou
 
       /*--- Mach ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dM_RM[iSpecies] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(Density_j*SoundSpeed_j) - ProjVelocity_j*da_R[iSpecies]/(SoundSpeed_j*SoundSpeed_j));
+        dM_RM[iSpecies] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(Density_j*SoundSpeed_j) - ProjVelocity_j*da_R[iSpecies]/(pow(SoundSpeed_j,2)));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        dM_RM[nSpecies+iDim] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+iDim] + UnitNormal[iDim]/(Density_j*SoundSpeed_j));
-      dM_RM[nSpecies+nDim]   = -0.5*(M_R-1.0) * (-ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+nDim]);
-      dM_RM[nSpecies+nDim+1] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+nDim+1]);
+        dM_RM[nSpecies+iDim] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+iDim] + UnitNormal[iDim]/(Density_j*SoundSpeed_j));
+      dM_RM[nSpecies+nDim]   = -0.5*(M_R-1.0) * (-ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+nDim]);
+      dM_RM[nSpecies+nDim+1] = -0.5*(M_R-1.0) * (-ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+nDim+1]);
 
       /*--- Pressure ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         dP_RM[iSpecies] = 0.25*(M_R-1.0) * (dPdU_j[iSpecies]*(M_R-1.0)*(2.0+M_R)
                                         + Pressure_j*(-ProjVelocity_j/(Density_j*SoundSpeed_j)
-                                               -ProjVelocity_j*da_R[iSpecies]/(SoundSpeed_j*SoundSpeed_j))*(3.0+3.0*M_R));
+                                               -ProjVelocity_j*da_R[iSpecies]/(pow(SoundSpeed_j,2)))*(3.0+3.0*M_R));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         dP_RM[nSpecies+iDim] = 0.25*(M_R-1.0) * ((-Velocity_j[iDim]*dPdU_j[nSpecies+nDim])*(M_R-1.0)*(2.0+M_R)
-                                               + Pressure_j*( -ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+iDim]
+                                               + Pressure_j*( -ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+iDim]
                                                + UnitNormal[iDim]/(Density_j*SoundSpeed_j))*(3.0+3.0*M_R));
       dP_RM[nSpecies+nDim]   = 0.25*(M_R-1.0) * (dPdU_j[nSpecies+nDim]*(M_R-1.0)*(2.0+M_R)
-                                             + Pressure_j*(-ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j)*da_R[nSpecies+nDim])*(3.0+3.0*M_R));
+                                             + Pressure_j*(-ProjVelocity_j/(pow(SoundSpeed_j,2))*da_R[nSpecies+nDim])*(3.0+3.0*M_R));
       dP_RM[nSpecies+nDim+1] = 0.25*(M_R-1.0) * (dPdU_j[nSpecies+nDim+1]*(M_R-1.0)*(2.0+M_R)
-                                             + Pressure_j*(-ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j)*da_R[nSpecies+nDim+1])*(3.0+3.0*M_R));
+                                             + Pressure_j*(-ProjVelocity_j/(pow(SoundSpeed_j,2))*da_R[nSpecies+nDim+1])*(3.0+3.0*M_R));
 
     } else {
 
       /*--- Mach ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dM_RM[iSpecies]      = -ProjVelocity_j/(Density_j*SoundSpeed_j) - ProjVelocity_j*da_R[iSpecies]/(SoundSpeed_j*SoundSpeed_j);
+        dM_RM[iSpecies]      = -ProjVelocity_j/(Density_j*SoundSpeed_j) - ProjVelocity_j*da_R[iSpecies]/(pow(SoundSpeed_j,2));
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        dM_RM[nSpecies+iDim] = -ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+iDim] + UnitNormal[iDim]/(Density_j*SoundSpeed_j);
-      dM_RM[nSpecies+nDim]   = -ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+nDim];
-      dM_RM[nSpecies+nDim+1] = -ProjVelocity_j/(SoundSpeed_j*SoundSpeed_j) * da_R[nSpecies+nDim+1];
+        dM_RM[nSpecies+iDim] = -ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+iDim] + UnitNormal[iDim]/(Density_j*SoundSpeed_j);
+      dM_RM[nSpecies+nDim]   = -ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+nDim];
+      dM_RM[nSpecies+nDim+1] = -ProjVelocity_j/(pow(SoundSpeed_j,2)) * da_R[nSpecies+nDim+1];
 
       /*--- Pressure ---*/
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)

@@ -75,8 +75,8 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
     invwedge_a.new_output = True
     test_list.append(invwedge_a)
 
@@ -125,8 +125,8 @@ def main():
     invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
-    invwedge_ausm_m.test_vals = [-1.049631, -1.574394, -16.739725, -17.063619, -17.012831, 2.273504, 1.803327, 5.308213, 0.861629]
-    invwedge_ausm_m.test_vals_aarch64 = [-1.049631, -1.574394, -16.739725, -17.063619, -17.012831, 2.273504, 1.803327, 5.308213, 0.861629]
+    invwedge_ausm_m.test_vals = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.85654]
+    invwedge_ausm_m.test_vals_aarch64 = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.85654]
     invwedge_ausm_m.new_output = True
     test_list.append(invwedge_ausm_m)
 
@@ -145,8 +145,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/viscous"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, 1.255761, -3.208360, -0.016014, 0.093462, 32634.000000]
+    visc_cone.test_vals = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
