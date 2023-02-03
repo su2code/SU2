@@ -55,7 +55,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Jacobian_j;
 
   const bool turbulence;
-  const bool flamelet;
+  //const bool flamelet;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -109,6 +109,5 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    */
   CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
-      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE),
-      flamelet(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {}
+      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE) {}
 };

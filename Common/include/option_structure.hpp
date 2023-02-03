@@ -490,6 +490,7 @@ enum RUNTIME_TYPE {
    ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
    TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
  };
+ 
  static const MapType<std::string, SOLVER_TYPE> SolverType_Map = {
    MakePair("FLOW_SOL", FLOW_SOL)
    MakePair("ADJFLOW_SOL", ADJFLOW_SOL)

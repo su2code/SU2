@@ -173,7 +173,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_enth = table_scalar_names[I_ENTH];
 
   su2double delta_temp_final = 0.01; /* convergence criterion for temperature in [K] */
-  su2double enth_iter = initial_value;          /* in CH4/Air flames, 0 is usually a good initial value for the iteration */
+  su2double enth_iter = initial_value; 
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
@@ -181,10 +181,6 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   vector<su2double*> look_up_data;
   int counter_limit = 50;
   
-  /*--- set up look up vectors ---*/
-  //su2double temp_iter;
-  //su2double cp_iter;
-
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /* look up temperature and heat capacity */
@@ -194,7 +190,6 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
     delta_temp_iter = val_temp - Temperature;
 
     /* calculate delta_enthalpy following dh = cp * dT */
-    //delta_enth = cp_iter * delta_temp_iter;
     delta_enth = Cp * delta_temp_iter;
 
     /*--- update enthalpy ---*/
@@ -207,37 +202,6 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   if (counter >= counter_limit) {
     exit_code = 1;
   }
-
-  // su2double   delta_temp_final = 0.01, /* convergence criterion for temperature in [K] */
-  //             relaxation = 0.5,        /* Newton solver relaxation factor. */
-  //             enth_iter = initial_value, /* Initial enthalpy value, default stetting is zero. */
-  //             delta_enth,              /* Enthalpy residual. */
-  //             delta_temp_iter;         /* Temperature residual. */
-
-  // unsigned long exit_code = 0,
-  //               counter_limit = 50,
-  //               counter = 0;
-  // bool converged = false;
-  // while (!converged && (counter++ < counter_limit)) {
-  //   /*--- look up temperature and heat capacity ---*/
-  //   look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, enth_iter, name_prog, name_enth);
-  //   /*--- calculate delta_temperature ---*/
-  //   delta_temp_iter = val_temp - Temperature;
-  //   if(abs(delta_temp_iter) < delta_temp_final){
-  //     converged = true;
-  //   }else{
-  //     /*--- calculate delta_enthalpy following dh = cp * dT ---*/
-  //     delta_enth = Cp * delta_temp_iter;
-  //     /*--- update enthalpy ---*/
-  //     enth_iter += relaxation * delta_enth;
-  //     counter ++;
-  //   }
-  // }
-  // /*--- set enthalpy value ---*/
-  // *val_enth = enth_iter;
-  // if (!converged) {
-  //   exit_code = 1;
-  // }
 
   return exit_code;
 }

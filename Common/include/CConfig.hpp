@@ -379,16 +379,16 @@ private:
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
   su2double* Surface_Species_0;              /*!< \brief Average Species_0 at the boundaries. */
   su2double* Surface_Species_Variance;       /*!< \brief Species Variance at the boundaries. */
-  su2double* Surface_Scalar_00;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_01;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_02;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_03;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_04;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_05;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_06;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_07;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_08;               /*!< \brief Average of scalar 0 at the boundaries. */
-  su2double* Surface_Scalar_09;               /*!< \brief Average of scalar 0 at the boundaries. */
+  su2double* Surface_Scalar_00;              /*!< \brief Average of scalar 0 at the boundaries. */
+  su2double* Surface_Scalar_01;              /*!< \brief Average of scalar 1 at the boundaries. */
+  su2double* Surface_Scalar_02;              /*!< \brief Average of scalar 2 at the boundaries. */
+  su2double* Surface_Scalar_03;              /*!< \brief Average of scalar 3 at the boundaries. */
+  su2double* Surface_Scalar_04;              /*!< \brief Average of scalar 4 at the boundaries. */
+  su2double* Surface_Scalar_05;              /*!< \brief Average of scalar 5 at the boundaries. */
+  su2double* Surface_Scalar_06;              /*!< \brief Average of scalar 6 at the boundaries. */
+  su2double* Surface_Scalar_07;              /*!< \brief Average of scalar 7 at the boundaries. */
+  su2double* Surface_Scalar_08;              /*!< \brief Average of scalar 8 at the boundaries. */
+  su2double* Surface_Scalar_09;              /*!< \brief Average of scalar 9 at the boundaries. */
   su2double *Surface_DC60;                   /*!< \brief Specified surface DC60 for nacelle boundaries. */
   su2double *Surface_IDC;                    /*!< \brief Specified IDC for nacelle boundaries. */
   su2double *Surface_IDC_Mach;               /*!< \brief Specified IDC mach for nacelle boundaries. */
@@ -2151,13 +2151,13 @@ public:
    */
   su2double *GetFlameNormal(void) { return flame_normal; }
 
-    /*!
+  /*!
    * \brief Get the flame thickness for flamelet model initialization
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameThickness(void) { return flame_thickness; }
 
-    /*!
+  /*!
    * \brief Get the burnt region thickness for flamelet mdoel initialization
    * \return flame thickness for flamelet model initialization
    */
@@ -2193,7 +2193,7 @@ public:
    */
   string GetUserScalarName(unsigned short i_user_scalar) const { if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE"; }
 
-/*!
+  /*!
    * \brief Get the name of the user scalar source term.
    */
   string GetUserSourceName(unsigned short i_user_source) const { if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE"; }
@@ -2250,15 +2250,15 @@ public:
   su2double GetElasticyMod(unsigned short id_val) const { return ElasticityMod[id_val]; }
 
   /*!
-    * \brief Decide whether to apply DE effects to the model.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to apply DE effects to the model.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
   bool GetDE_Effects(void) const { return DE_Effects; }
 
   /*!
-    * \brief Decide whether to predict the DE effects for the next time step.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to predict the DE effects for the next time step.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
    bool GetDE_Predicted(void);
 
   /*!
