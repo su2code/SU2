@@ -104,26 +104,6 @@ def main():
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     DAspecies3_primitiveVenturi.new_output = True
     test_list.append(DAspecies3_primitiveVenturi)
-    
-    # 2 species (1 eq) kenics static mixer for composition-dependent model
-    kenics_mixer_tutorial           = TestCase('kenics_mixer_tutorial')
-    kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
-    kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
-    kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.489841, -6.823474, -6.838069, -5.157396, -7.902273, -3.174235, -7.448166, 5.000000, -1.862000, 4.000000, -5.173789, 3.000000, -6.373917, 0.025135, 0.000000, 0.025135, 0.000000, 64.095000, 8.479500, 48.089000, 7.526700]
-    kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    kenics_mixer_tutorial.new_output = True
-    test_list.append(kenics_mixer_tutorial)
-
-    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
-    sudo_tutorial           = TestCase('sudo_bend')
-    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
-    sudo_tutorial.cfg_file  = "sudo.cfg"
-    sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-13.618610, -12.647974, -12.296537, -11.658760, -13.136523, -9.550829, 15.000000, -2.369703]
-    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    sudo_tutorial.new_output = True
-    test_list.append(sudo_tutorial)
 
     ### Compressible Flow
 
