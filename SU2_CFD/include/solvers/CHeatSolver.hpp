@@ -46,16 +46,13 @@ protected:
 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
 
-  unsigned short nVarFlow;
-  vector<vector<su2double> > HeatFlux;
+  vector<vector<su2double>> HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
   su2double AllBound_HeatFlux;
   vector<su2double> AverageT_per_Marker;
   su2double Total_AverageT;
   su2double AllBound_AverageT;
-  vector<su2double> Primitive_Flow_i;
-  vector<su2double> Primitive_Flow_j;
   vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
@@ -97,6 +94,42 @@ protected:
     }
   }
 
+  /*!
+   * \brief Compute the viscous flux for the scalar equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  inline void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, CConfig* config) override {
+    const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
+
+    const su2double const_diffusivity = config->GetThermalDiffusivity();
+    const su2double pr_lam = config->GetPrandtl_Lam();
+    const su2double pr_turb = config->GetPrandtl_Turb();
+
+    su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
+
+    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
+    auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
+      if (flow) {
+        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
+                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
+        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
+                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
+        numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
+      }
+      else {
+        numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
+      }
+    };
+    /*--- Compute residual and Jacobians. ---*/
+    Viscous_Residual_impl(compute_thermal_diffusivity, iEdge, geometry, solver_container, numerics, config);
+  }
+
 public:
 
   /*!
@@ -123,18 +156,6 @@ public:
                     bool Output) override;
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      unsigned short iMesh) override;
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -148,21 +169,6 @@ public:
                    int val_iter,
                    bool val_update_geo) override;
 
-  /*!
-   * \brief Compute the spatial integration using a centered scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Centered_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -396,9 +402,4 @@ public:
    * \return Value of the heat flux.
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
-
-  /*!
-   * \brief Does not support OpenMP+MPI yet.
-   */
-  inline bool GetHasHybridParallel() const override { return false; }
 };
