@@ -187,8 +187,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   Tmin   = 50.0; Tmax   = 8E4;
   Tvemin = 50.0; Tvemax = 8E4;
 
-  if (U[nSpecies+nDim+1] <= 0) {U[nSpecies+nDim+1] = 0;}
-
   /*--- Rename variables for convenience ---*/
   su2double rhoE   = U[nSpecies+nDim];     // Density * energy [J/m3]
   su2double rhoEve = U[nSpecies+nDim+1];   // Density * energy_ve [J/m3]
