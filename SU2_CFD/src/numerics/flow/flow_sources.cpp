@@ -259,8 +259,8 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     /*--- Set primitive variables at points iPoint. ---*/
 
-    const su2double Temp_i = V_i[nDim+1];
     Pressure_i    = V_i[0];
+    Temp_i        = V_i[nDim+1];
     DensityInc_i  = V_i[nDim+2];
     BetaInc2_i    = V_i[nDim+3];
     Cp_i          = V_i[nDim+7];
@@ -610,105 +610,6 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
       jacobian[2][3] = -DensityInc_i*Omega[0]*Volume;
       jacobian[3][1] = -DensityInc_i*Omega[1]*Volume;
       jacobian[3][2] =  DensityInc_i*Omega[0]*Volume;
-    }
-  }
-
-  return ResidualType<>(residual, jacobian, nullptr);
-}
-
-CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar,
-                                                         const CConfig* config)
-    : CSourceBase_Flow(val_nDim, val_nVar, config) {
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-}
-
-CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
-  /*--- density, \rho ---*/
-  const su2double rho = V_i[nDim + 2];
-
-  /*--- velocity, U = (u, v, w) ---*/
-  su2double U[3] = {V_i[1], V_i[2], 0.0};
-  if (nDim == 3) U[2] = V_i[3];
-  const su2double U_abs = max(GeometryToolbox::Norm(3, U), 1e-12);
-
-  /*--- vorticity, \omega ---*/
-  const su2double omega[3] = {Vorticity_i[0], Vorticity_i[1], Vorticity_i[2]};
-
-  /*--- grad of the mag of vorticity, \nabla|\omega| = AuxVar_Grad_i[0] ---*/
-  const su2double omega_abs_grad_abs = max(GeometryToolbox::Norm(3, AuxVar_Grad_i[0]), 1e-12);
-
-  /*--- unit vector, n along \nabla|\omega| ---*/
-  const su2double n[3] = {
-      AuxVar_Grad_i[0][0] / omega_abs_grad_abs,
-      AuxVar_Grad_i[0][1] / omega_abs_grad_abs,
-      AuxVar_Grad_i[0][2] / omega_abs_grad_abs,
-  };
-
-  /*--- n \cross \omega ---*/
-  su2double nXomega[3] = {0.0, 0.0, 0.0};
-  GeometryToolbox::CrossProduct(n, omega, nXomega);
-  const su2double nXomega_U = GeometryToolbox::DotProduct(3, nXomega, U);
-
-  /*--- vorticity confinement parameter ---*/
-  const su2double vc_config = config->GetConfinement_Param();
-  su2double vc = vc_config * (1 + log10(pow((1 + (Volume / AvgVolume)), 1.0 / 3.0)));
-
-  /*--- correction to vc near viscous wall ---*/
-  const bool viscous = config->GetViscous();
-  if (viscous) {
-    su2double U_infty[3] = {config->GetVelocity_FreeStreamND()[0], config->GetVelocity_FreeStreamND()[1], 0.0};
-    if (nDim == 3) U_infty[2] = config->GetVelocity_FreeStreamND()[2];
-    const su2double U_infty_abs = max(GeometryToolbox::Norm(3, U_infty), 1e-12);
-    const su2double L = config->GetLength_Reynolds();
-    const su2double mu = V_i[nDim + 5];                   // viscosity
-    const su2double mu_t = V_i[nDim + 6];                 // turbulent or eddy viscosity
-    const su2double mu_eff = mu + mu_t;                   // effective or total viscosity
-    const su2double Re = rho * U_infty_abs * L / mu_eff;  // Reynolds number
-    const su2double delta = 5 * L / sqrt(Re);             // boundary layer thickness
-
-    if (dist_i <= 4 * delta) {
-      vc *= 0.0;
-    }
-  }
-
-  /*--- source terms: S / rho ---*/
-  const su2double vc_Uabs_Volume = vc * U_abs * Volume;
-  const su2double S_u_rho = -nXomega[0] * vc_Uabs_Volume;
-  const su2double S_v_rho = -nXomega[1] * vc_Uabs_Volume;
-  const su2double S_w_rho = -nXomega[2] * vc_Uabs_Volume;
-  const su2double S_E_rho = -nXomega_U * vc_Uabs_Volume;
-
-  residual[0] = 0.0;
-  residual[1] = rho * S_u_rho;
-  residual[2] = rho * S_v_rho;
-  if (nDim == 2) {
-    residual[3] = rho * S_E_rho;
-  }
-  if (nDim == 3) {
-    residual[3] = rho * S_w_rho;
-    residual[4] = rho * S_E_rho;
-  }
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  if (implicit) {
-    for (unsigned iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned jVar = 0; jVar < nVar; jVar++) {
-        jacobian[iVar][jVar] = 0.0;
-      }
-    }
-
-    jacobian[1][0] = S_u_rho;
-    jacobian[2][0] = S_v_rho;
-    if (nDim == 2) {
-      jacobian[3][1] = S_u_rho;
-      jacobian[3][2] = S_v_rho;
-    }
-    if (nDim == 3) {
-      jacobian[3][0] = S_w_rho;
-      jacobian[4][1] = S_u_rho;
-      jacobian[4][2] = S_v_rho;
-      jacobian[4][3] = S_w_rho;
     }
   }
 

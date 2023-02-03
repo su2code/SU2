@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CScalarSolver.hpp"
+#include "CSolver.hpp"
 #include "../variables/CHeatVariable.hpp"
 
 /*!
@@ -36,7 +36,7 @@
  * \author O. Burghardt
  * \version 7.5.0 "Blackbird"
  */
-class CHeatSolver final : public CScalarSolver<CHeatVariable> {
+class CHeatSolver final : public CSolver {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
@@ -44,91 +44,27 @@ protected:
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
   const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
-  su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
-
-  vector<vector<su2double>> HeatFlux;
+  unsigned short nVarFlow, nMarker;
+  vector<vector<su2double> > HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
   su2double AllBound_HeatFlux;
   vector<su2double> AverageT_per_Marker;
   su2double Total_AverageT;
   su2double AllBound_AverageT;
+  vector<su2double>  Primitive_Flow_i;
+  vector<su2double> Primitive_Flow_j;
   vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
 
-  /*!
-   * \brief Applies an isothermal condition to a vertex of a marker.
-   */
-  void IsothermalBoundaryCondition(CGeometry *geometry, CSolver *flow_solver, const CConfig *config,
-                                   unsigned short iMarker, unsigned long iVertex, const su2double& temperature) {
-
-    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-    if (!geometry->nodes->GetDomain(iPoint)) return;
-
-    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-    const su2double prandtl_lam = config->GetPrandtl_Lam();
-    const su2double const_diffusivity = config->GetThermalDiffusivity();
-
-    const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-    const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-    const auto* Coord_i = geometry->nodes->GetCoord(iPoint);
-    const auto* Coord_j = geometry->nodes->GetCoord(Point_Normal);
-    const su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
-
-    const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - temperature) / dist_ij;
-
-    su2double thermal_diffusivity = const_diffusivity;
-    if (flow) {
-      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
-    }
-    LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
-
-    if (implicit) {
-      su2double Jacobian_i[] = {-thermal_diffusivity / dist_ij * Area};
-      Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
-    }
-  }
+  CHeatVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
-   * \brief Compute the viscous flux for the scalar equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, CConfig* config) override {
-    const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
-
-    const su2double const_diffusivity = config->GetThermalDiffusivity();
-    const su2double pr_lam = config->GetPrandtl_Lam();
-    const su2double pr_turb = config->GetPrandtl_Turb();
-
-    su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
-
-    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
-    auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
-      if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
-        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
-        numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
-        numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
-      }
-    };
-    /*--- Compute residual and Jacobians. ---*/
-    Viscous_Residual_impl(compute_thermal_diffusivity, iEdge, geometry, solver_container, numerics, config);
-  }
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
 
@@ -136,6 +72,11 @@ public:
    * \brief Constructor of the class.
    */
   CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHeatSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -156,6 +97,18 @@ public:
                     bool Output) override;
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) override;
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -169,6 +122,21 @@ public:
                    int val_iter,
                    bool val_update_geo) override;
 
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics **numerics_container,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) override;
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -280,6 +248,15 @@ public:
                                   unsigned short val_marker) override;
 
   /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
+
+  /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
@@ -354,6 +331,26 @@ public:
   }
 
   /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) override;
+
+  /*!
+   * \brief Update the solution using an explicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) override;
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -402,4 +399,5 @@ public:
    * \return Value of the heat flux.
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
+
 };
