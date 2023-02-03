@@ -182,9 +182,8 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   int counter_limit = 50;
   
   /*--- set up look up vectors ---*/
-  su2double temp_iter;
-
-  su2double cp_iter;
+  //su2double temp_iter;
+  //su2double cp_iter;
 
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
