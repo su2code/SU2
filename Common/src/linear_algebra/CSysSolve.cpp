@@ -980,6 +980,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
+    auto placeholder = [](){};
+    AD::FuncHelper.callPrimalFuncWithADType([](){});
     AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
