@@ -6,8 +6,8 @@
 # \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -85,7 +85,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/CNumerics.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
-  ../src/numerics/heat.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/CLookUpTable.cpp \
   ../src/numerics/CTrapezoidalMap.cpp \
@@ -135,7 +134,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
-  ../src/output/filewriter/CCGNSFileWriter.cpp \  
+  ../src/output/filewriter/CCGNSFileWriter.cpp \
   ../src/output/tools/CWindowingTools.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
@@ -231,7 +230,7 @@ su2_cfd_sources = \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC -std=c++11
-libSU2Core_libadd = 
+libSU2Core_libadd =
 
 su2_cfd_cxx_flags = -fPIC -std=c++11
 su2_cfd_ldadd =
@@ -265,7 +264,7 @@ if BUILD_DIRECTDIFF
 libSU2Core_DIRECTDIFF_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ $(libSU2Core_cxx_flags)
 libSU2Core_DIRECTDIFF_a_LIBADD = @DIRECTDIFF_LIBS@ $(libSU2Core_libadd)
-___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources) 
+___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_DIRECTDIFF_LDADD = libSU2Core_DIRECTDIFF.a @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 endif
@@ -274,7 +273,7 @@ if BUILD_REVERSE
 libSU2Core_AD_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_AD_a_CXXFLAGS = @REVERSE_CXX@ $(libSU2Core_cxx_flags)
 libSU2Core_AD_a_LIBADD = @REVERSE_LIBS@ $(libSU2Core_libadd)
-___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources) 
+___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_AD_LDADD = libSU2Core_AD.a @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif

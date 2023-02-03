@@ -535,12 +535,6 @@ enum ENUM_SPACE {
   SPACE_UPWIND = 2,    /*!< \brief Upwind convective numerical method. */
   FINITE_ELEMENT = 3   /*!< \brief Finite element convective numerical method. */
 };
-static const MapType<std::string, ENUM_SPACE> Space_Map = {
-  MakePair("NONE", NO_CONVECTIVE)
-  MakePair("SPACE_CENTERED", SPACE_CENTERED)
-  MakePair("SPACE_UPWIND", SPACE_UPWIND)
-  MakePair("FINITE_ELEMENT", FINITE_ELEMENT)
-};
 
 /*!
  * \brief Types of fluid model

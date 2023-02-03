@@ -1461,7 +1461,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
 
   unsigned short iMGlevel, iSol,
-
   nVar_Template         = 0,
   nVar_Flow             = 0,
   nVar_NEMO             = 0,
@@ -1473,8 +1472,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
-  nVar_Rad              = 0,
-  nVar_Heat             = 0;
+  nVar_Rad              = 0;
 
   numerics = new CNumerics***[config->GetnMGLevels()+1] ();
 
@@ -1591,7 +1589,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-  if (heat)         nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
 
   if (config->AddRadiation()) nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
@@ -2125,13 +2122,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       switch (config->GetKind_ConvNumScheme_Heat()) {
 
         case SPACE_UPWIND :
-          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-          break;
-
-        case SPACE_CENTERED :
-          numerics[iMGlevel][HEAT_SOL][conv_term] = new CCentSca_Heat(nDim, nVar_Heat, config);
-          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat(nDim, config);
+          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, config);
           break;
 
         default:
