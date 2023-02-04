@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,11 +36,10 @@
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
  */
 class CUpwAUSM_SLAU_Base_NEMO : public CNEMONumerics {
-protected:
-
-  su2double A_F[2] = {0.0}, PressureFlux[MAXNDIM]={0.0};
+ protected:
+  su2double A_F[2] = {0.0}, PressureFlux[MAXNDIM] = {0.0};
   su2double M_L, M_R, M_F;
-  
+
   su2double* Fc_L = nullptr;
   su2double* Fc_R = nullptr;
   su2double* Fc_LR = nullptr;
@@ -62,20 +61,18 @@ protected:
    * \param[out] interface_mach - The interface Mach number M_(1/2).
    * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
    */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double *pressure,
-                                               su2double &interface_mach,
-                                               su2double *interface_soundspeed) = 0;
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) = 0;
 
-private:
+ private:
   /*!
    * \brief Compute the flux Jacobians of the AUSM scheme to use as an approximation.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void ComputeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void ComputeJacobian(su2double** val_Jacobian_i, su2double** val_Jacobian_j);
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -84,9 +81,8 @@ public:
    * \param[in] val_nPrimVarGrad - Number of primitive gradient variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSM_SLAU_Base_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-                          unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-                          const CConfig* config);
+  CUpwAUSM_SLAU_Base_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                          unsigned short val_nPrimVarGrad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -99,7 +95,6 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) final;
-
 };
 
 /*!
@@ -109,8 +104,7 @@ public:
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
  */
 class CUpwAUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
-private:
-
+ private:
   /*!
    * \brief Compute the interface Mach number, soundspeeds and pressure for AUSM scheme.
    * \param[in] config - Definition of the particular problem.
@@ -118,11 +112,10 @@ private:
    * \param[out] interface_mach - The interface Mach number M_(1/2).
    * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
    */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double *pressure,
-                                          su2double &interface_mach,
-                                          su2double *interface_soundspeed) override;
-public:
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) override;
 
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -131,20 +124,17 @@ public:
    * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, 
+  CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                 unsigned short val_nPrimVarGrad, const CConfig* config);
-
 };
 
 /*!
  * \class CUpwAUSMPLUSM_NEMO
- * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model. https://doi.org/10.1016/j.apm.2019.09.005 
- * \ingroup ConvDiscr 
- * \author F. Morgado
+ * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model.
+ * https://doi.org/10.1016/j.apm.2019.09.005 \ingroup ConvDiscr \author F. Morgado
  */
 class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
  private:
-
   su2double beta;
 
   /*!
@@ -154,9 +144,9 @@ class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
    * \param[out] interface_mach - The interface Mach number M_(1/2).
    * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
    */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double *pressure,
-                                          su2double &interface_mach,
-                                          su2double *interface_soundspeed) override;
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) override;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -168,18 +158,15 @@ class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
    */
   CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                      unsigned short val_nPrimVarGrad, const CConfig* config);
-
 };
 
 /*!
  * \class CUpwAUSMPLUSUP2_NEMO
- * \brief Class for solving an approximate Riemann AUSM+-up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
- * \ingroup ConvDiscr
- * \author W. Maier, A. Sachedeva, C. Garbacz
+ * \brief Class for solving an approximate Riemann AUSM+-up2, Two-Temperature Model.
+ * https://doi.org/10.1016/j.jcp.2013.02.046 \ingroup ConvDiscr \author W. Maier, A. Sachedeva, C. Garbacz
  */
 class CUpwAUSMPLUSUP2_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
-private:
-
+ private:
   su2double Kp, Ku, sigma;
 
   /*!
@@ -189,12 +176,10 @@ private:
    * \param[out] interface_mach - The interface Mach number M_(1/2).
    * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
    */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double *pressure,
-                                               su2double &interface_mach,
-                                               su2double *interface_soundspeed) override;
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) override;
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -205,7 +190,6 @@ public:
    */
   CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                        unsigned short val_nPrimVarGrad, const CConfig* config);
-
 };
 
 /*!
@@ -215,8 +199,7 @@ public:
  * \author F. Palacios, W.Maier, C. Garbacz
  */
 class CUpwAUSMPWplus_NEMO : public CUpwAUSM_SLAU_Base_NEMO {
-private:
-
+ private:
   su2double alpha;
 
   /*!
@@ -226,12 +209,10 @@ private:
    * \param[out] interface_mach - The interface Mach number M_(1/2).
    * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
    */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double *pressure,
-                                               su2double &interface_mach,
-                                               su2double *interface_soundspeed) override;
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) override;
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -242,5 +223,4 @@ public:
    */
   CUpwAUSMPWplus_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                       unsigned short val_nPrimVarGrad, const CConfig* config);
-
 };
