@@ -828,7 +828,7 @@ enum class UPWIND {
   LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
   BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
@@ -838,7 +838,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("AUSM", UPWIND::AUSM)
   MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("AUSMPLUSM", UPWIND::AUSMPLUSM)
   MakePair("SLAU", UPWIND::SLAU)
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)

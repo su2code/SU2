@@ -99,9 +99,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/flow/flow_diffusion.cpp \
   ../src/numerics/flow/flow_sources.cpp \
   ../src/numerics/NEMO/convection/roe.cpp \
-  ../src/numerics/NEMO/convection/ausm.cpp \
-  ../src/numerics/NEMO/convection/ausmplusup2.cpp \
-  ../src/numerics/NEMO/convection/ausmpwplus.cpp \
+  ../src/numerics/NEMO/convection/ausm_slau.cpp \
   ../src/numerics/NEMO/convection/lax.cpp \
   ../src/numerics/NEMO/convection/msw.cpp \
   ../src/numerics/NEMO/CNEMONumerics.cpp \

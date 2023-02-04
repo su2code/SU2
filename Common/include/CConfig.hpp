@@ -3714,7 +3714,7 @@ public:
    */
   bool GetAUSMMethod(void) const {
     switch (Kind_Upwind_Flow) {
-      case UPWIND::AUSM : case UPWIND::AUSMPLUSUP: case UPWIND::AUSMPLUSUP2: case UPWIND::AUSMPWPLUS:
+      case UPWIND::AUSM : case UPWIND::AUSMPLUSUP: case UPWIND::AUSMPLUSUP2: case UPWIND::AUSMPLUSM:
         return true;
       default:
         return false;
