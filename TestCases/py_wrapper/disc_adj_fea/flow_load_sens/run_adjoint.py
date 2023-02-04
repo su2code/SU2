@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ from optparse import OptionParser	# use a parser for configuration
 import pysu2ad as pysu2          # imports the SU2 adjoint-wrapped module
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -58,7 +58,7 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
   else:
-    comm = 0 
+    comm = 0
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
@@ -83,31 +83,31 @@ def main():
   sys.stdout.flush()
   if options.with_MPI == True:
     comm.Barrier()
-  
+
   # Define the load at the target vertex
   SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
-  
+
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
-  
+
   # Run one time-step (static: one simulation)
   SU2Driver.Run()
-  
+
   # Update the solver for the next time iteration
   SU2Driver.Update()
-  
+
   # Monitor the solver and output solution to file if required
   SU2Driver.Monitor(0)
-  
+
   # Output the solution to file
   SU2Driver.Output(0)
-  
+
   sens=[]
   disp=[]
-  # Recover the sensitivity 
+  # Recover the sensitivity
   sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
   disp.append(SU2Driver.GetFEA_Displacements(MarkerID,5))
-  
+
   print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
   print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
 
@@ -117,7 +117,7 @@ def main():
   if SU2Driver != None:
     del SU2Driver
 
-  
+
 
 # -------------------------------------------------------------------
 #  Run Main Program
@@ -125,4 +125,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

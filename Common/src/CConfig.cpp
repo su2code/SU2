@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3256,7 +3256,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2022, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;

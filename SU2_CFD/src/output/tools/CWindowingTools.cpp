@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
     if (curTimeIter > startIter) {  // Only update sum over previous timesteps, if there are any
       cachedSum = UpdateCachedSum(windowWidth-1);  // Save weighted sum up to last time step for later use
-    } 
+    }
     lastTimeIter = curTimeIter;                // New time iteration step, update iteration number.
     // Add new sample
     if (windowingFunctionId != WINDOW_FUNCTION::SQUARE) {
@@ -87,7 +87,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   val = totalSum / static_cast<su2double>(windowWidth);
 }
 
-su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const { 
+su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const {
   // Handle square window
   if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
   // Handle non-trivial windows

@@ -6,17 +6,17 @@
 #  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,11 +29,11 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase    
+from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
@@ -49,7 +49,7 @@ def main():
     discadj_naca0012.test_iter = 100
     discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
     test_list.append(discadj_naca0012)
-   
+
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
@@ -65,7 +65,7 @@ def main():
     discadj_arina2k.test_iter    = 20
     discadj_arina2k.test_vals    = [-3.087876, -3.481506, 0.068878, 0.000000]
     test_list.append(discadj_arina2k)
-    
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -135,16 +135,16 @@ def main():
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
-   
+
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746907, -1.544882, -0.008321, 0.000014]
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-    
+
     ##############################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average ###
     ##############################################################
@@ -152,12 +152,12 @@ def main():
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg"
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.004402]
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-    
+
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -187,28 +187,28 @@ def main():
     #######################################################
     ### Disc. adj. turbomachinery                       ###
     #######################################################
-    
+
     # Transonic Stator 2D
     discadj_trans_stator           = TestCase('transonic_stator')
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
-    discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
+    discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals         = [79.000000, -1.938803, -1.981888]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -1.938809, -1.995540]
     test_list.append(discadj_trans_stator)
-    
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
-   
+
     # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
-    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
     discadj_fea.test_vals_aarch64 = [2.216938, 2.129429, -0.000365, -8.782500]
-    test_list.append(discadj_fea) 
+    test_list.append(discadj_fea)
 
     ######################################
     ### RUN TESTS                      ###

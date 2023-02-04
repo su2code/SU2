@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,7 @@ def main():
     invwedge_ap2.test_vals_aarch64 = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
     invwedge_ap2.new_output = True
     test_list.append(invwedge_ap2)
-    
+
     # Inviscid single wedge, msw, implicit
     invwedge_msw = TestCase('invwedge_msw')
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
@@ -99,7 +99,7 @@ def main():
     invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
     invwedge_msw.new_output = True
     test_list.append(invwedge_msw)
-    
+
     # Inviscid single wedge, roe, implicit
     invwedge_roe = TestCase('invwedge_roe')
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
@@ -109,7 +109,7 @@ def main():
     invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
     invwedge_roe.new_output = True
     test_list.append(invwedge_roe)
-    
+
     # Inviscid single wedge, lax, implicit
     invwedge_lax = TestCase('invwedge_lax')
     invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
