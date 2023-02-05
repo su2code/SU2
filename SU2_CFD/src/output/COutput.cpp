@@ -2186,6 +2186,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     {"AreaInt", OperationType::AREA_INT},
     {"MassFlowAvg", OperationType::MASSFLOW_AVG},
     {"MassFlowInt", OperationType::MASSFLOW_INT},
+    {"Probe", OperationType::PROBE},
   };
   std::stringstream knownOps;
   for (const auto& item : opMap) knownOps << item.first << ", ";

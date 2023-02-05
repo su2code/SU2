@@ -765,16 +765,37 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       } else {
         SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
       }
-      /*--- Convert marker names to their index (if any) in this rank. ---*/
+      /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
-      output.markerIndices.clear();
-      for (const auto& marker : output.markers) {
-        for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
-          if (config->GetMarker_All_TagBound(iMarker) == marker) {
-            output.markerIndices.push_back(iMarker);
-            continue;
+      if (output.type != OperationType::PROBE) {
+        output.markerIndices.clear();
+        for (const auto& marker : output.markers) {
+          for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
+            if (config->GetMarker_All_TagBound(iMarker) == marker) {
+              output.markerIndices.push_back(iMarker);
+              continue;
+            }
           }
         }
+      } else {
+        if (output.markers.size() != nDim) {
+          SU2_MPI::Error("Wrong number of coordinates to specify probe " + output.name, CURRENT_FUNCTION);
+        }
+        su2double coord[3] = {};
+        for (auto iDim = 0u; iDim < nDim; ++iDim) coord[iDim] = std::stod(output.markers[iDim]);
+        su2double minDist = std::numeric_limits<su2double>::max();
+        unsigned long minPoint = 0;
+        for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+          const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
+          if (dist < minDist) {
+            minDist = dist;
+            minPoint = iPoint;
+          }
+        }
+        /*--- Decide which rank owns the probe. ---*/
+        su2double globMinDist;
+        SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        output.iPoint = (minDist == globMinDist) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
       }
     }
 
@@ -784,6 +805,36 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
       };
       SetHistoryOutputValue(output.name, output.eval(Functor));
+      continue;
+    }
+
+    /*--- Prepares the functor that maps symbol indices to values at a given point
+     * (see ConvertVariableSymbolsToIndices). ---*/
+
+    auto MakeFunctor = [&](unsigned long iPoint) {
+      return [&, iPoint](unsigned long i) {
+        if (i < CustomOutput::NOT_A_VARIABLE) {
+          const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+          const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+          if (solIdx == FLOW_SOL) {
+            return flowNodes->GetPrimitive(iPoint, varIdx);
+          } else {
+            return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+          }
+        } else {
+          return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+        }
+      };
+    };
+
+    if (output.type == OperationType::PROBE) {
+      su2double value = std::numeric_limits<su2double>::max();
+      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+        value = output.eval(MakeFunctor(output.iPoint));
+      }
+      su2double tmp = value;
+      SU2_MPI::Allreduce(&tmp, &value, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      SetHistoryOutputValue(output.name, value);
       continue;
     }
 
@@ -812,23 +863,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
-
-          /*--- Prepare the functor that maps symbol indices to values (see ConvertVariableSymbolsToIndices). ---*/
-
-          auto Functor = [&](unsigned long i) {
-            if (i < CustomOutput::NOT_A_VARIABLE) {
-              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-              if (solIdx == FLOW_SOL) {
-                return flowNodes->GetPrimitive(iPoint, varIdx);
-              } else {
-                return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-              }
-            } else {
-              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-            }
-          };
-          local_integral[0] += weight * output.eval(Functor);
+          local_integral[0] += weight * output.eval(MakeFunctor(iPoint));
         }
         END_SU2_OMP_FOR
       }
