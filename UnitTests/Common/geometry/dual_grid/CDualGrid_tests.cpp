@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 #include "../../../Common/include/geometry/dual_grid/CVertex.hpp"
 
 TEST_CASE("Volume Computation", "[Dual Grid]") {
-  
+
   su2double Coord_FaceiPoint[3];
   su2double Coord_FaceElem_CG[3];
   su2double Coord_Elem_CG[3];
@@ -53,7 +53,7 @@ TEST_CASE("Volume Computation", "[Dual Grid]") {
     su2double volume = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
     REQUIRE(volume == Approx(0.000546832));
   }
-  
+
   CVertex vertex2d(0, 2);
   SECTION("2D Vertex"){
     vertex2d.SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
@@ -68,5 +68,5 @@ TEST_CASE("Volume Computation", "[Dual Grid]") {
     REQUIRE(vertex3d.GetNormal()[1] == Approx(0.0499696));
     REQUIRE(vertex3d.GetNormal()[2] == Approx(0.111938));
   }
-  
+
 }

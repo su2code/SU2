@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,9 +69,7 @@
 #include "../../include/numerics/flow/flow_sources.hpp"
 #include "../../include/numerics/NEMO/convection/roe.hpp"
 #include "../../include/numerics/NEMO/convection/lax.hpp"
-#include "../../include/numerics/NEMO/convection/ausm.hpp"
-#include "../../include/numerics/NEMO/convection/ausmplusup2.hpp"
-#include "../../include/numerics/NEMO/convection/ausmpwplus.hpp"
+#include "../../include/numerics/NEMO/convection/ausm_slau.hpp"
 #include "../../include/numerics/NEMO/convection/msw.hpp"
 #include "../../include/numerics/NEMO/NEMO_diffusion.hpp"
 #include "../../include/numerics/NEMO/NEMO_sources.hpp"
@@ -1977,17 +1975,17 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
+            case UPWIND::AUSMPLUSM:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
             case UPWIND::MSW:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwMSW_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwMSW_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-              }
-              break;
-
-            case UPWIND::AUSMPWPLUS:
-              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 
