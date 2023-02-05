@@ -135,6 +135,79 @@ class CDriverBase {
   unsigned short GetNumberFFDBoxes() const;
 
   /*!
+   * \brief Get the number of dimensions of the mesh.
+   * \return Number of dimensions.
+   */
+  unsigned long GetNumberDimensions() const;
+
+  /*!
+   * \brief Get the number of elements in the mesh.
+   * \return Number of elements.
+   */
+  unsigned long GetNumberElements() const;
+
+  /*!
+   * \brief Get the global index of a mesh element.
+   * \param[in] iElem - Mesh element index.
+   * \return Global element index.
+   */
+  unsigned long GetElementGlobalIndex(unsigned long iElem) const;
+
+  /*!
+   * \brief Get the node indices of a mesh element.
+   * \param[in] iElem - Mesh element index.
+   * \return Element node indices (nNode).
+   */
+  vector<unsigned long> GetElementNodes(unsigned long iElem) const;
+
+  /*!
+   * \brief Get the number of nodes in the mesh (including halos).
+   * \return Number of nodes.
+   */
+  unsigned long GetNumberNodes() const;
+
+  /*!
+   * \brief Get the number of halo nodes in the mesh.
+   * \return Number of halo nodes.
+   */
+  unsigned long GetNumberHaloNodes() const;
+
+  /*!
+   * \brief Get the global node index.
+   * \param[in] iPoint - Mesh node index.
+   * \return Global node index.
+   */
+  unsigned long GetNodeGlobalIndex(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get the halo flag of a mesh node.
+   * \param[in] iPoint - Mesh node index.
+   * \return Node domain flag.
+   */
+  bool GetNodeDomain(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get the initial (un-deformed) coordinates of a mesh node.
+   * \param[in] iPoint - Mesh node index.
+   * \return Initial node coordinates (nDim).
+   */
+  vector<passivedouble> GetInitialCoordinates(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get the current coordinates of a mesh node.
+   * \param[in] iPoint - Mesh node index.
+   * \return Node coordinates (nDim).
+   */
+  vector<passivedouble> GetCoordinates(unsigned long iPoint) const;
+
+  /*!
+   * \brief Set the coordinates of a mesh node.
+   * \param[in] iPoint - Mesh node index.
+   * \param[in] values - Node coordinates (nDim).
+   */
+  void SetCoordinates(unsigned long iPoint, vector<passivedouble> values);
+
+  /*!
    * \brief Get the number of markers in the mesh.
    * \return Number of markers.
    */
@@ -142,13 +215,13 @@ class CDriverBase {
 
   /*!
    * \brief Get all the boundary markers tags with their associated indices.
-   * \return List of boundary markers tags with their indices.
+   * \return Map of boundary markers tags to their indices.
    */
   map<string, unsigned short> GetMarkerIndices() const;
 
   /*!
    * \brief Get all the boundary markers tags with their associated types.
-   * \return List of boundary markers tags with their types.
+   * \return Map of boundary markers tags to their types.
    */
   map<string, string> GetMarkerTypes() const;
 
@@ -165,18 +238,6 @@ class CDriverBase {
   vector<string> GetDeformableMarkerTags() const;
 
   /*!
-   * \brief Get the number of dimensions of the mesh.
-   * \return Number of dimensions.
-   */
-  unsigned long GetNumberDimensions() const;
-
-  /*!
-   * \brief Get the number of elements in the mesh.
-   * \return Number of elements.
-   */
-  unsigned long GetNumberElements() const;
-
-  /*!
    * \brief Get the number of elements in the marker.
    * \param[in] iMarker - Marker index.
    * \return Number of elements.
@@ -184,66 +245,20 @@ class CDriverBase {
   unsigned long GetNumberMarkerElements(unsigned short iMarker) const;
 
   /*!
-   * \brief Get the global indices of the mesh elements.
-   * \return Global element indices (nElem).
-   */
-  vector<unsigned long> GetElements() const;
-
-  /*!
-   * \brief Get the global index of a mesh element.
-   * \param[in] iElem - Mesh element index.
-   * \return Global element index.
-   */
-  unsigned long GetElements(unsigned long iElem) const;
-
-  /*!
-   * \brief Get the global indices of the marker elements.
-   * \param[in] iMarker - Marker index.
-   * \return Global element indices (nElem).
-   */
-  vector<unsigned long> GetMarkerElements(unsigned short iMarker) const;
-
-  /*!
    * \brief Get the global index of a marker element.
    * \param[in] iMarker - Marker index.
    * \param[in] iElem - Marker element index.
    * \return Global element index.
    */
-  unsigned long GetMarkerElements(unsigned short iMarker, unsigned long iElem) const;
+  unsigned long GetMarkerElementGlobalIndex(unsigned short iMarker, unsigned long iElem) const;
 
   /*!
-   * \brief Get the global node indices of the mesh elements.
-   * \return Element global node indices (nElem, nNode).
-   */
-  vector<vector<unsigned long>> GetElementNodes() const;
-
-  /*!
-   * \brief Get the global node indices of a mesh element.
-   * \param[in] iElem - Mesh element index.
-   * \return Element global node indices (nNode).
-   */
-  vector<unsigned long> GetElementNodes(unsigned long iElem) const;
-
-  /*!
-   * \brief Get the global node indices of the marker elements.
-   * \param[in] iMarker - Marker index.
-   * \return Element global node indices (nElem, nVertex).
-   */
-  vector<vector<unsigned long>> GetMarkerElementNodes(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the global node indices of a marker element.
+   * \brief Get the node indices of a marker element.
    * \param[in] iMarker - Marker index.
    * \param[in] iElem - Marker element index.
-   * \return Element global node indices (nVertex).
+   * \return Element node indices.
    */
   vector<unsigned long> GetMarkerElementNodes(unsigned short iMarker, unsigned long iElem) const;
-
-  /*!
-   * \brief Get the number of nodes in the mesh.
-   * \return Number of nodes.
-   */
-  unsigned long GetNumberNodes() const;
 
   /*!
    * \brief Get the number of nodes in the marker.
@@ -253,240 +268,12 @@ class CDriverBase {
   unsigned long GetNumberMarkerNodes(unsigned short iMarker) const;
 
   /*!
-   * \brief Get the number of halo nodes in the mesh.
-   * \return Number of halo nodes.
-   */
-  unsigned long GetNumberHaloNodes() const;
-
-  /*!
-   * \brief Get the number of halo nodes in the marker.
-   * \param[in] iMarker - Marker index.
-   * \return Number of halo nodes.
-   */
-  unsigned long GetNumberMarkerHaloNodes(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the vertices of the marker.
-   * \param[in] iMarker - Marker index.
-   * \return Marker vertices (nVertex).
-   */
-  vector<unsigned long> GetMarkerVertices(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the vertex of a marker.
+   * \brief Get the node index of a marker.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Marker vertex.
    */
-  unsigned long GetMarkerVertices(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the global node indices.
-   * \return Global node indices (nNode).
-   */
-  vector<unsigned long> GetNodes() const;
-
-  /*!
-   * \brief Get the global node index.
-   * \param[in] iPoint - Mesh node index.
-   * \return Global node index.
-   */
-  unsigned long GetNodes(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the global node indices of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Global node indices (nVertex).
-   */
-  vector<unsigned long> GetMarkerNodes(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the global node index of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Global node index.
-   */
-  unsigned long GetMarkerNodes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the halo flags of the mesh nodes.
-   * \return Node domain flags (nNode).
-   */
-  vector<bool> GetDomain() const;
-
-  /*!
-   * \brief Get the halo flag of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Node domain flag.
-   */
-  bool GetDomain(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the halo flags of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Domain flags (nVertex).
-   */
-  vector<bool> GetMarkerDomain(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the halo flag of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Domain flag.
-   */
-  bool GetMarkerDomain(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the initial (un-deformed) coordinates of the mesh nodes.
-   * \return Initial node coordinates (nNode, nDim).
-   */
-  vector<vector<passivedouble>> GetInitialCoordinates() const;
-
-  /*!
-   * \brief Get the initial (un-deformed) coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Initial node coordinates (nDim).
-   */
-  vector<passivedouble> GetInitialCoordinates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the initial (un-deformed) coordinates of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Initial node coordinates (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerInitialCoordinates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the initial (un-deformed) coordinates of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Initial node coordinates (nDim).
-   */
-  vector<passivedouble> GetMarkerInitialCoordinates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the coordinates of the mesh nodes.
-   * \return Node coordinates (nNode, nDim).
-   */
-  vector<vector<passivedouble>> GetCoordinates() const;
-
-  /*!
-   * \brief Get the coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Node coordinates (nDim).
-   */
-  vector<passivedouble> GetCoordinates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the coordinates of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Node coordinates (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerCoordinates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the coordinates of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Node coordinates (nDim).
-   */
-  vector<passivedouble> GetMarkerCoordinates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the coordinates of the mesh nodes.
-   * \param[in] values - Node coordinates (nNode, nDim).
-   */
-  void SetCoordinates(vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \param[in] values - Node coordinates (nDim).
-   */
-  void SetCoordinates(unsigned long iPoint, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the coordinates of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \param[in] values - Node coordinates (nVertex, nDim).
-   */
-  void SetMarkerCoordinates(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the coordinates of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Node coordinates (nDim).
-   */
-  void SetMarkerCoordinates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
-   * \brief Get the displacements of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Node displacements (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerDisplacements(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the displacements of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Node displacements (nDim).
-   */
-  vector<passivedouble> GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the displacements of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \param[in] values - Node displacements (nVertex, nDim).
-   */
-  void SetMarkerDisplacements(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the displacements of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Node displacements (nDim).
-   */
-  void SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
-   * \brief Get the velocities of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \return Node velocities (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerVelocities(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the velocities of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Node velocities (nDim).
-   */
-  vector<passivedouble> GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the velocities of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \param[in] values - Node velocities (nVertex, nDim).
-   */
-  void SetMarkerVelocities(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the velocities of a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Node velocities (nDim).
-   */
-  void SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
-   * \brief Get the normal vectors of the marker vertices.
-   * \param[in] iMarker - Marker index.
-   * \param[in] normalize - If true, the unit (i.e. normalized) normal vector is returned.
-   * \return Node normal vectors (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerVertexNormals(unsigned short iMarker, bool normalize = false) const;
+  unsigned long GetMarkerNode(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the normal vector of a marker vertex.
@@ -497,6 +284,38 @@ class CDriverBase {
    */
   vector<passivedouble> GetMarkerVertexNormals(unsigned short iMarker, unsigned long iVertex,
                                                bool normalize = false) const;
+
+  /*!
+   * \brief Get the displacements of a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Node displacements (nDim).
+   */
+  vector<passivedouble> GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Set the displacements of a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Node displacements (nDim).
+   */
+  void SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+
+  /*!
+   * \brief Get the velocities of a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Node velocities (nDim).
+   */
+  vector<passivedouble> GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Set the velocities of a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Node velocities (nDim).
+   */
+  void SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
 
   /*!
    * \brief Communicate the boundary mesh displacements.
