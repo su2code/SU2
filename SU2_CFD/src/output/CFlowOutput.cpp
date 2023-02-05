@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sstream>
 #include <string>
 
 #include "../../include/output/CFlowOutput.hpp"
@@ -795,7 +796,12 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         /*--- Decide which rank owns the probe. ---*/
         su2double globMinDist;
         SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-        output.iPoint = (minDist == globMinDist) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+        output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+        if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+          std::cout << "Probe " << output.name << " is using global point "
+                    << geometry->nodes->GetGlobalIndex(output.iPoint)
+                    << ", distance from target location is " << sqrt(minDist) << std::endl;
+        }
       }
     }
 
