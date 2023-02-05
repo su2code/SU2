@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1000,11 +1000,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   {4,5,1,0,4},  // bottom side
   {4,7,6,5,4}}; // back side
 
-  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles 
+  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles
       by defining a supporting middle point. This allows nonplanar FFD boxes.
       Note that the definition of the FFD box is as follows: the FFD box is a 6-sided die and we are looking at the side "1".
-      The opposite side is side "6". 
-      If we are looking at side "1", we define the nodes counterclockwise. 
+      The opposite side is side "6".
+      If we are looking at side "1", we define the nodes counterclockwise.
       If we are looking at side "6", we define the face clockwise  ---*/
 
   unsigned short nDim = geometry->GetnDim();
