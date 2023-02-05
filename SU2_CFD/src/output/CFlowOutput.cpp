@@ -812,6 +812,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
      * (see ConvertVariableSymbolsToIndices). ---*/
 
     auto MakeFunctor = [&](unsigned long iPoint) {
+      /*--- This returns another lambda that captures iPoint by value. ---*/
       return [&, iPoint](unsigned long i) {
         if (i < CustomOutput::NOT_A_VARIABLE) {
           const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
