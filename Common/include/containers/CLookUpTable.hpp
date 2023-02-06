@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +90,7 @@ class CLookUpTable {
   su2vector<std::vector<std::array<unsigned long,2>>>edges;
   su2vector<su2vector<std::vector<unsigned long>>>edge_to_triangle;
 
-  /*! \brief 
+  /*! \brief
    * The hull contains the boundary of the lookup table.
    */
   su2vector<su2vector<unsigned long>>hull;
@@ -100,12 +100,12 @@ class CLookUpTable {
    */
   su2vector<CTrapezoidalMap>trap_map_x_y;
 
-  /*! \brief 
+  /*! \brief
    * vector of all the weight factors for the interpolation.
    */
   su2vector<su2vector<su2activematrix>>interp_mat_inv_x_y;
 
-  /*! \brief 
+  /*! \brief
    * returns the index to the variable in the lookup table.
    */
   inline unsigned int GetIndexOfVar(const std::string& nameVar) const {

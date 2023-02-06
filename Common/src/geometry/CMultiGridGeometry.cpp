@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -510,6 +510,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry *fine_grid, CConfig *config, un
 
   SU2_MPI::Allreduce(&nPoint, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+  SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
     const su2double factor = 1.5;

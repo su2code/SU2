@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -138,12 +138,20 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
+<<<<<<< HEAD
       names_var.resize(n_variables);
+=======
+
+>>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
       for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
+<<<<<<< HEAD
         names_var[i] = line.substr(line.find(":")+1); 
+=======
+        names_var.push_back(line.substr(line.find(":")+1));
+>>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
       }
     }
 
@@ -345,7 +353,7 @@ bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) co
 
   /*--- get next line and save return value ---*/
   bool return_value = GetStrippedLine(file_stream, line);
-  
+
   /*--- skip empty lines ---*/
   while (line.empty() && !(file_stream).eof()){
     return_value = GetStrippedLine(file_stream, line);

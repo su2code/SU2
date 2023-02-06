@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -424,10 +424,21 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 }
 
 template <class VariableType>
-void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
-                                                           CConfig* config) {
+void CScalarSolver<VariableType>::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                               unsigned short iMesh, unsigned long Iteration) {
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
+  }
+  END_SU2_OMP_FOR
+}
+
+template <class VariableType>
+void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
+                                                           CConfig* config) {
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
@@ -440,11 +451,8 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
 
   SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    /// TODO: This could be the SetTime_Step of this solver.
-    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    nodes->SetDelta_Time(iPoint, dt);
-
     /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
+    const su2double dt = nodes->GetDelta_Time(iPoint);
 
     if (dt != 0.0) {
       su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
@@ -476,8 +484,6 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
                                                             CConfig* config) {
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
   ComputeUnderRelaxationFactor(config);
 
   /*--- Update solution (system written in terms of increments) ---*/
@@ -486,6 +492,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     /*--- Update the scalar solution. For transport equations, where Solution is not equivalent with the transported
      * quantity, multiply the respective factor.  ---*/
     if (Conservative) {
+      const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
@@ -547,16 +555,13 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                           CConfig* config) {
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
   /*--- Local residual variables for current thread ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   unsigned long idxMax[MAXNVAR] = {0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    const su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    nodes->SetDelta_Time(iPoint, dt);
+    const su2double dt = nodes->GetDelta_Time(iPoint);
     const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {

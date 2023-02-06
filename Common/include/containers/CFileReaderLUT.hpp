@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,12 +53,12 @@ class CFileReaderLUT {
   unsigned long n_variables;
   su2vector<su2double> table_levels;
 
-  /*! \brief Holds the variable names stored in the table file. 
+  /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with tableFlamelet.
    */
   su2vector<std::string> names_var;
 
-  /*! \brief Holds all data stored in the table. 
+  /*! \brief Holds all data stored in the table.
    * First index addresses the variable while second index addresses the point.
    */
   su2vector<su2activematrix>table_data;
@@ -74,7 +74,7 @@ class CFileReaderLUT {
   /*! \brief Extracts the next non-empty characters from file_stream and stores them into line.
    */
   bool GetNextNonEmptyLine(std::ifstream& file_stream, std::string& line) const;
-  
+
   /*! \brief Extracts characters from file_stream, removes trailing control characters,
    *         and stores them into line.
    */

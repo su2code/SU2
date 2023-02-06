@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -190,7 +190,8 @@ class CGeometry {
  public:
   /*!< \brief Linelets (mesh lines perpendicular to stretching direction). */
   struct CLineletInfo {
-    static constexpr passivedouble ALPHA_ISOTROPIC = 0.8; /*!< \brief Detect isotropic mesh region. */
+    /*!< \brief Detect isotropic mesh region. */
+    static passivedouble ALPHA_ISOTROPIC() { return 0.8; }
     enum : unsigned long {MAX_LINELET_POINTS = 32}; /*!< \brief Maximum points per linelet. */
 
     std::vector<std::vector<unsigned long>> linelets; /*!< \brief Point indices for each linelet. */

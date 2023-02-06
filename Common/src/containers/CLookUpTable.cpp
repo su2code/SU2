@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
 
   IdentifyUniqueEdges();
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << " done." << endl;
 
   PrintTableInfo();
@@ -107,14 +107,14 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_x
     
   ComputeInterpCoeffs();
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << "LUT fluid model ready for use" << endl;
 }
 
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
   file_reader.ReadRawLUT(var_file_name_lut);
@@ -396,7 +396,7 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
   global_M.Invert();
   global_M.Transpose();
- 
+
   for (unsigned int i=0; i<M; i++){
     for (unsigned int j=0; j<M; j++){
       interp_mat_inv[i][j] = global_M(i,j);
