@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ class CLookUpTable {
   unsigned long n_variables;
   unsigned long n_hull_points;
 
-  /*! 
+  /*!
    * \brief the lower and upper limits of the enthalpy and progress variable.
    */
   su2double limits_table_enth[2];
@@ -75,19 +75,19 @@ class CLookUpTable {
   std::vector<std::vector<unsigned long> > edges;
   std::vector<std::vector<unsigned long> > edge_to_triangle;
 
-  /*! \brief 
+  /*! \brief
    * The hull contains the boundary of the lookup table.
    */
   std::vector<unsigned long> hull;
 
   CTrapezoidalMap trap_map_prog_enth;
 
-  /*! \brief 
+  /*! \brief
    * vector of all the weight factors for the interpolation.
    */
   std::vector<su2activematrix> interp_mat_inv_prog_enth;
 
-  /*! \brief 
+  /*! \brief
    * returns the index to the variable in the lookup table.
    */
   inline unsigned int GetIndexOfVar(const std::string& nameVar) const {

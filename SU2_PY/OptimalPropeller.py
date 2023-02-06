@@ -4,17 +4,17 @@
 #  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,7 +29,7 @@
 #               University of Naples Federico II.
 # Version     : 1.0.0 - Python
 # Date        : 01/09/2020
-# Copyright   : 
+# Copyright   :
 # Description : Compute the optimal load distribution along the propeller radius using
 #               the inviscid theory of the optimal propeller.
 # Reference   : Glauert H., Airplane Propellers, in Aerodynamic Theory, Ed. Durand W. F.,
@@ -56,7 +56,7 @@ def a_distribution (w0, Chi):
 
 def write_su2_config_file():
     """Write the actuator disk configuration file"""
-    
+
     with open('ActuatorDisk.cfg', 'w') as f:
         f.write('% Automatic generated actuator disk configuration file.\n')
         f.write('%\n')
@@ -76,7 +76,7 @@ def write_su2_config_file():
 
 def write_external_file(CTrs, CPrs):
     """Function to write the actuator disk input data file"""
-    
+
     with open('ActuatorDisk.dat', 'w') as f:
         f.write('# Automatic generated actuator disk input data file using the Optimal Propeller code.\n')
         f.write('# Data file needed for the actuator disk VARIABLE_LOAD type.\n')

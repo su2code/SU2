@@ -6,17 +6,17 @@
 #  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -284,7 +284,7 @@ def find_all(text, dic):
 def init_codi(argument_dict, modes, mpi_support = False, update = False):
 
     modules_failed = True
-    
+
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
@@ -378,7 +378,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
         print('\t - Execute command \'touch externals/'+ alt_name + '/' + commit_sha + '\'')
         print('\t - Run preconfigure.py again')
         sys.exit()
-    
+
     # Extract zip archive
     try:
         print('Extracting archive ...')
@@ -425,7 +425,7 @@ def configure(argument_dict,
         configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
-   
+
     print(  '\nPreparing build environment\n' \
             '=====================================================================')
 
@@ -563,7 +563,7 @@ def header():
           '| The SU2 Project is maintained by the SU2 Foundation                   | \n'\
           '| (http://su2foundation.org)                                            | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                | \n'\
+          '| Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)                | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\
           '| modify it under the terms of the GNU Lesser General Public            | \n'\

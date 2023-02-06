@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -666,7 +666,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     if (mf != 1.0) {
       SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
-    
+
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 22;
@@ -680,7 +680,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Tcf_b.resize(nReactions,0.0);
     Tcb_a.resize(nReactions,0.0);
     Tcb_b.resize(nReactions,0.0);
-    
+
     /*--- Assign gas properties ---*/
     // Rotational modes of energy storage
     RotationModes[0] = 0.0; // e-
@@ -690,7 +690,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     RotationModes[4] = 0.0; // N
     RotationModes[5] = 0.0; // O
     RotationModes[6] = 2.0; // NO+
-    
+
     // Molar mass [kg/kmol]
     MolarMass[0] = 5.4858E-04;      // e-
     MolarMass[1] = 2.0*14.0067;     // N2
@@ -719,7 +719,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Enthalpy_Formation[6] = 3.28E7; // NO+
 
     // Reference temperature (JANAF values, [K])
-    Ref_Temperature[0] = 0.0; 
+    Ref_Temperature[0] = 0.0;
     Ref_Temperature[1] = 0.0;
     Ref_Temperature[2] = 0.0;
     Ref_Temperature[3] = 0.0;
@@ -879,7 +879,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Reactions(2,0,0)=1;    Reactions(2,0,1)=3;   Reactions(2,0,2)=nSpecies;    Reactions(2,1,0)=4;   Reactions(2,1,1)=4;   Reactions(2,1,2) =3;
     Reactions(3,0,0)=1;    Reactions(3,0,1)=4;   Reactions(3,0,2)=nSpecies;    Reactions(3,1,0)=4;   Reactions(3,1,1)=4;   Reactions(3,1,2) =4;
     Reactions(4,0,0)=1;    Reactions(4,0,1)=5;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=4;   Reactions(4,1,1)=4;   Reactions(4,1,2) =5;
-    Reactions(5,0,0)=1;    Reactions(5,0,1)=6;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=4;   Reactions(5,1,1)=4;   Reactions(5,1,2) =6;            
+    Reactions(5,0,0)=1;    Reactions(5,0,1)=6;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=4;   Reactions(5,1,1)=4;   Reactions(5,1,2) =6;
     // O2 dissociation
     Reactions(6,0,0)=2;    Reactions(6,0,1)=1;   Reactions(6,0,2)=nSpecies;    Reactions(6,1,0)=5;   Reactions(6,1,1)=5;   Reactions(6,1,2) =1;
     Reactions(7,0,0)=2;    Reactions(7,0,1)=2;   Reactions(7,0,2)=nSpecies;    Reactions(7,1,0)=5;   Reactions(7,1,1)=5;   Reactions(7,1,2) =2;
@@ -892,7 +892,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Reactions(13,0,0)=3;   Reactions(13,0,1)=2;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=4;  Reactions(13,1,1)=5;  Reactions(13,1,2) =2;
     Reactions(14,0,0)=3;   Reactions(14,0,1)=3;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=4;  Reactions(14,1,1)=5;  Reactions(14,1,2) =3;
     Reactions(15,0,0)=3;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=4;  Reactions(15,1,1)=5;  Reactions(15,1,2) =4;
-    Reactions(16,0,0)=3;   Reactions(16,0,1)=5;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=4;  Reactions(16,1,1)=5;  Reactions(16,1,2) =5;    
+    Reactions(16,0,0)=3;   Reactions(16,0,1)=5;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=4;  Reactions(16,1,1)=5;  Reactions(16,1,2) =5;
     Reactions(17,0,0)=3;   Reactions(17,0,1)=6;  Reactions(17,0,2)=nSpecies;   Reactions(17,1,0)=4;  Reactions(17,1,1)=5;  Reactions(17,1,2) =6;
     // N2 + O -> NO + N
     Reactions(18,0,0)=1;   Reactions(18,0,1)=5;  Reactions(18,0,2)=nSpecies;   Reactions(18,1,0)=3;  Reactions(18,1,1)=4;  Reactions(18,1,2)= nSpecies;
@@ -983,7 +983,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     //   Dissociation:         a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
     //   Exchange:             a = 1,   b = 0
     //   Associative ion...    a = 1,   b = 0  ???
-    //   E Impact dissociation a = 0,   b = 1  
+    //   E Impact dissociation a = 0,   b = 1
     //   E Impact ionization:  a = 0,   b = 1
     //
     // Backward Reactions
@@ -1015,7 +1015,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Tcf_a[18] = 1.0; Tcf_b[18] = 0.0; Tcb_a[18] = 1;   Tcb_b[18] = 0;
     Tcf_a[19] = 1.0; Tcf_b[19] = 0.0; Tcb_a[19] = 1;   Tcb_b[19] = 0;
     Tcf_a[20] = 1.0; Tcf_b[20] = 0.0; Tcb_a[20] = 0.5; Tcb_b[20] = 0.5;
-    Tcf_a[21] = 0.0; Tcf_b[21] = 1.0; Tcb_a[21] = 0;   Tcb_b[21] = 1;    
+    Tcf_a[21] = 0.0; Tcf_b[21] = 1.0; Tcb_a[21] = 0;   Tcb_b[21] = 1;
 
     /*--- Collision integral data ---*/
     // Index 1: collider
@@ -2142,20 +2142,20 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
       rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
       rhoCvve += rhos[iSpecies] * val_cvves[iSpecies];
-    } 
+    }
 
     /*--- Find the roots ---*/
     su2double f  = rhoEve - rhoEve_t;
     su2double df = -rhoCvve;
-    Tve2 = Tve - (f/df)*scale; 
+    Tve2 = Tve - (f/df)*scale;
 
     /*--- Check for convergence ---*/
     if ((fabs(Tve2-Tve) < NRtol) && (Tve > Tvemin) && (Tve < Tvemax)) {
       NRconvg = true;
       Tve = Tve2;
-      break; 
+      break;
     } else {
-      Tve = Tve2;  
+      Tve = Tve2;
     }
   }
 
@@ -2325,7 +2325,7 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
       RxnConstantTable(3,0) = -0.57924;  RxnConstantTable(3,1) = -7.3079; RxnConstantTable(3,2) = -1.9999; RxnConstantTable(3,3) = -3.2294; RxnConstantTable(3,4) = 0.016382;
       RxnConstantTable(4,0) = -0.53538;  RxnConstantTable(4,1) = -7.3252; RxnConstantTable(4,2) = -1.937;  RxnConstantTable(4,3) = -3.2572; RxnConstantTable(4,4) = 0.01823;
       RxnConstantTable(5,0) = -0.52801;  RxnConstantTable(5,1) = -7.3281; RxnConstantTable(5,2) = -1.9264; RxnConstantTable(5,3) = -3.2618; RxnConstantTable(5,4) = 0.01854;
-    
+
     } else if (iReaction == 21) {
 
       //N2 + e -> N + N + e
