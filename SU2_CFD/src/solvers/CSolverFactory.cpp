@@ -2,14 +2,14 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -372,11 +372,11 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
 }
 
 CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
-	
-  CSolver *transSolver = nullptr; 
+
+  CSolver *transSolver = nullptr;
 
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
-    switch (kindTransModel) {      
+    switch (kindTransModel) {
       case TURB_TRANS_MODEL::LM :
         transSolver = new CTransLMSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -384,7 +384,7 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break; 
 		
-	  case TURB_TRANS_MODEL::EN :
+	    case TURB_TRANS_MODEL::EN :
         transSolver = new CTransENSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);

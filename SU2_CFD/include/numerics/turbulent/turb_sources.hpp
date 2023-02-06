@@ -1,14 +1,14 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ struct CSAVariables {
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
-  
+
   su2double intermittency, interDestrFactor;
 
   /*--- List of booleans ---*/
@@ -662,13 +662,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
- 
+
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
     Jacobian_i[0][0] -= yinv * Volume * rhov;
-    Jacobian_i[0][1] -= 0.0; 
-    Jacobian_i[1][0] -= 0.0; 
+    Jacobian_i[0][1] -= 0.0;
+    Jacobian_i[1][0] -= 0.0;
     Jacobian_i[1][1] -= yinv * Volume * rhov;
 
   }
