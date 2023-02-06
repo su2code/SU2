@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.hpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  * \ingroup LookUpInterp
  * \brief Construction of trapezoidal map for tabulated lookup
  * \author: D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CTrapezoidalMap {
  protected:

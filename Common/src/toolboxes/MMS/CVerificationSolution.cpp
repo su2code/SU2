@@ -2,7 +2,7 @@
  * \file CVerificationSolution.cpp
  * \brief Implementations of the member functions of CVerificationSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
