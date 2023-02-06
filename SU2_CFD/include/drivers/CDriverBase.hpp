@@ -95,32 +95,32 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Preprocessing(){};
+  virtual void Preprocessing(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Run(){};
+  virtual void Run(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Update(){};
+  virtual void Update(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Update_Legacy(){};
+  virtual void Update_Legacy(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Output(){};
+  virtual void Output(){}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Postprocessing(){};
+  virtual void Postprocessing(){}
 
   /*!
    * \brief Get the number of design variables.

@@ -309,10 +309,13 @@ void CDeformationDriver::Update() {
     solver_container[iZone][INST_0][MESH_0][MESH_SOL]->SetMesh_Stiffness(numerics_container[iZone][INST_0][MESH_0][MESH_SOL], config_container[iZone]);
 
     /*--- Deform the volume grid around the new boundary locations. ---*/
-
-    solver_container[iZone][INST_0][MESH_0][MESH_SOL]->DeformMesh(geometry_container[iZone][INST_0][MESH_0],
+    /*--- Force the number of levels to be 0 because in this driver we do not build MG levels. ---*/
+    const auto nMGLevels = config_container[iZone]->GetnMGLevels();
+    config_container[iZone]->SetMGLevels(0);
+    solver_container[iZone][INST_0][MESH_0][MESH_SOL]->DeformMesh(geometry_container[iZone][INST_0],
                                                                   numerics_container[iZone][INST_0][MESH_0][MESH_SOL],
                                                                   config_container[iZone]);
+    config_container[iZone]->SetMGLevels(nMGLevels);
   }
 }
 

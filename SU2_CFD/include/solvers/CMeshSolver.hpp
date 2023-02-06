@@ -133,15 +133,6 @@ public:
                   CConfig *config) override;
 
   /*!
-   * \brief Grid deformation using the linear elasticity equations (no multigrid).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Numerics used in the solution.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void DeformMesh(CGeometry *geometry,
-                  CNumerics **numerics,
-                  CConfig *config) override;
-  /*!
    * \brief Set the stiffness of the mesh.
    * \param[in] numerics - Numerics used in the solution.
    * \param[in] config - Definition of the particular problem.

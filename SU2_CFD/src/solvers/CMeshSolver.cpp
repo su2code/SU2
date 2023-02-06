@@ -539,63 +539,6 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 }
 
-void CMeshSolver::DeformMesh(CGeometry *geometry, CNumerics **numerics, CConfig *config){
-
-  if (multizone) nodes->Set_BGSSolution_k();
-
-  /*--- Capture a few MPI dependencies for AD. ---*/
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  InitiateComms(geometry, config, MESH_DISPLACEMENTS);
-  CompleteComms(geometry, config, MESH_DISPLACEMENTS);
-
-  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
-
-  const bool wasActive = AD::BeginPassive();
-
-  Compute_StiffMatrix(geometry, numerics, config);
-
-  AD::EndPassive(wasActive);
-
-  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL {
-    LinSysRes.SetValZero();
-    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
-  }
-  END_SU2_OMP_PARALLEL
-
-  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry, config, false);
-
-  /*--- Solve the linear system. ---*/
-  Solve_System(geometry, config);
-
-  SU2_OMP_PARALLEL {
-
-  /*--- Update the grid coordinates and cell volumes using the solution
-     of the linear system (usol contains the x, y, z displacements). ---*/
-  UpdateGridCoord(geometry, config);
-
-  /*--- Update the dual grid (without multigrid). ---*/
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
-
-  geometry->SetControlVolume(config, UPDATE);
-  geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
-
-  /*--- Check for failed deformation (negative volumes). ---*/
-  SetMinMaxVolume(geometry, config, true);
-
-  }
-  END_SU2_OMP_PARALLEL
-
-}
-
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/

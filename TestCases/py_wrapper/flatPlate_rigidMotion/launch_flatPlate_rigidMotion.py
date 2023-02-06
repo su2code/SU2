@@ -87,13 +87,9 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_MovingMarker = 0         #total number of vertices (physical + halo)
-  nVertex_MovingMarker_HALO = 0    #number of halo vertices
-  nVertex_MovingMarker_PHYS = 0    #number of physical vertices
 
   if MovingMarkerID != None:
-    nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)
-    nVertex_MovingMarker_HALO = SU2Driver.GetNumberMarkerHaloNodes(MovingMarkerID)
-    nVertex_MovingMarker_PHYS = nVertex_MovingMarker - nVertex_MovingMarker_HALO
+    nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)\
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
@@ -105,7 +101,8 @@ def main():
   CoordX = np.zeros(nVertex_MovingMarker)
   CoordY = np.zeros(nVertex_MovingMarker)
   for iVertex in range(nVertex_MovingMarker):
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetMarkerInitialCoordinates(MovingMarkerID, iVertex)
+    iPoint = SU2Driver.GetMarkerNode(MovingMarkerID, iVertex)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetInitialCoordinates(iPoint)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:

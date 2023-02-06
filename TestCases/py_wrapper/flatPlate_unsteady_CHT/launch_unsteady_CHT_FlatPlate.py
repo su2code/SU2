@@ -86,13 +86,9 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_CHTMarker = 0         # total number of vertices (physical + halo)
-  nVertex_CHTMarker_HALO = 0    # number of halo vertices
-  nVertex_CHTMarker_PHYS = 0    # number of physical vertices
 
   if CHTMarkerID != None:
     nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
-    nVertex_CHTMarker_HALO = SU2Driver.GetNumberMarkerHaloNodes(CHTMarkerID)
-    nVertex_CHTMarker_PHYS = nVertex_CHTMarker - nVertex_CHTMarker_HALO
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
