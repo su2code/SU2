@@ -72,6 +72,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   /* find the table limits */
   
   auto limitsEnth = look_up_table.GetTableLimitsY();
+<<<<<<< HEAD
 =======
   look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2);
   CHECK(look_up_dat == Approx(0.0000674286));
@@ -82,10 +83,14 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 >>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
   CHECK(limitsEnth.first == Approx(-1.0));
   CHECK(limitsEnth.second == Approx(1.0));
+=======
+  CHECK(SU2_TYPE::GetValue(*limitsEnth.first) == Approx(-1.0));
+  CHECK(SU2_TYPE::GetValue(*limitsEnth.second) == Approx(1.0));
+>>>>>>> 3088378be6c6ca596edfbcc44b2ca3272ee9319f
 
   auto limitsProgvar = look_up_table.GetTableLimitsX();
-  CHECK(limitsProgvar.first == Approx(0.0));
-  CHECK(limitsProgvar.second == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(*limitsProgvar.first) == Approx(0.0));
+  CHECK(SU2_TYPE::GetValue(*limitsProgvar.second) == Approx(1.0));
 
   /* lookup value outside of lookup table */
 
@@ -94,11 +99,16 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   look_up_tag = "Density";
 <<<<<<< HEAD
   look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth); 
+<<<<<<< HEAD
 =======
   look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2);
 >>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
   CHECK(look_up_dat == Approx(1.2));
 
+=======
+  CHECK(look_up_dat == Approx(1.1738796125));
+ 
+>>>>>>> 3088378be6c6ca596edfbcc44b2ca3272ee9319f
 }
 
 TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
@@ -134,12 +144,12 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   /* find the table limits */
   
   auto limitsEnth = look_up_table.GetTableLimitsY();
-  CHECK(limitsEnth.first == Approx(-1.0));
-  CHECK(limitsEnth.second == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(*limitsEnth.first) == Approx(-1.0));
+  CHECK(SU2_TYPE::GetValue(*limitsEnth.second) == Approx(1.0));
 
   auto limitsProgvar = look_up_table.GetTableLimitsX();
-  CHECK(limitsProgvar.first == Approx(0.0));
-  CHECK(limitsProgvar.second == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(*limitsProgvar.first) == Approx(0.0));
+  CHECK(SU2_TYPE::GetValue(*limitsProgvar.second) == Approx(1.0));
 
   /* lookup value outside of lookup table */
 
@@ -148,6 +158,6 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   mfrac = 2.0;
   look_up_tag = "Density";
   look_up_table.LookUp_XYZ(look_up_tag, &look_up_dat, prog, enth, mfrac); 
-  CHECK(look_up_dat == Approx(1.2));
+  CHECK(look_up_dat == Approx(1.1738796125));
  
 }
