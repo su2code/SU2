@@ -128,7 +128,6 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
 }
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
-  // unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) const {
   /* find x band in which val_x sits */
   pair<unsigned long, unsigned long> band = GetBand(val_x);
 
