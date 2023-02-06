@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
@@ -6,17 +6,17 @@
 #  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -31,7 +31,7 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -54,13 +54,13 @@ def main():
 
 
     (options, args)=parser.parse_args()
-    
+
     # process inputs
     options.partitions  = int( options.partitions )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
     options.nzones      = int( options.nzones )
-    
+
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
     sys.stdout.write('|   / __| | | |_  )   Release 7.5.0 \"Blackbird\"                         |\n')
@@ -73,7 +73,7 @@ def main():
     sys.stdout.write('| The SU2 Project is maintained by the SU2 Foundation                   |\n')
     sys.stdout.write('| (http://su2foundation.org)                                            |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |\n')
+    sys.stdout.write('| Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)                |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
     sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')
@@ -96,7 +96,7 @@ def main():
                         options.optimization ,
                         options.quiet       ,
                         options.nzones      )
-    
+
 #: main()
 
 def shape_optimization( filename                           ,
@@ -112,7 +112,7 @@ def shape_optimization( filename                           ,
     config.NZONES      = int( nzones )
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
-    
+
     its               = int ( config.OPT_ITERATIONS )                      # number of opt iterations
     bound_upper       = float ( config.OPT_BOUND_UPPER )                   # variable bound to be scaled by the line search
     bound_lower       = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
@@ -125,7 +125,7 @@ def shape_optimization( filename                           ,
     xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
     xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
     xb                = list(zip(xb_low, xb_up)) # design bounds
-    
+
     # State
     state = SU2.io.State()
     state.find_files(config)
@@ -168,7 +168,7 @@ def shape_optimization( filename                           ,
     # rename project file
     if projectname:
         shutil.move('project.pkl',projectname)
-    
+
     return project
 
 #: shape_optimization()

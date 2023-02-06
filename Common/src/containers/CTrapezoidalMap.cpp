@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,8 @@
 
 using namespace std;
 
-/* Trapezoidal map implementation. Reference: 
- * M. de Berg, O. Cheong M. van Kreveld, M. Overmars, 
+/* Trapezoidal map implementation. Reference:
+ * M. de Berg, O. Cheong M. van Kreveld, M. Overmars,
  * Computational Geometry, Algorithms and Applications pp. 121-146 (2008)
  * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
@@ -147,11 +147,11 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
   for (unsigned long i_y=0; i_y < y_edge_at_band_mid.size(); i_y++)
     for (unsigned long j_y=0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
       size_y_edge_at_band_mid += sizeof(su2double)  / 1e6 + sizeof(unsigned long)  / 1e6;
-  
-  double size_total = size_unique_bands + 
-                      size_edge_limits_x + 
-                      size_edge_limits_y + 
-                      size_edge_to_triangle + 
+
+  double size_total = size_unique_bands +
+                      size_edge_limits_x +
+                      size_edge_limits_y +
+                      size_edge_to_triangle +
                       size_y_edge_at_band_mid;
 
   /* print size of trapezoidal map components to screen */
@@ -184,6 +184,7 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
 
   /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
+
   for (long unsigned int i = 0; i < edge_to_triangle[edges.first].size(); i++)
     triangles_edge_low[i] = edge_to_triangle[edges.first][i];
 

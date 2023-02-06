@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +28,8 @@
 #include "../../../../include/numerics/NEMO/convection/msw.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
-                           unsigned short val_nVar,
-                           unsigned short val_nPrimVar,
-                           unsigned short val_nPrimVarGrad,
+CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
+                           unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
                            CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
@@ -46,8 +44,6 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   rhos_j   = new su2double [nSpecies];
   rhosst_i = new su2double [nSpecies];
   rhosst_j = new su2double [nSpecies];
-  u_i      = new su2double [nDim];
-  u_j      = new su2double [nDim];
   ust_i    = new su2double [nDim];
   ust_j    = new su2double [nDim];
   Vst_i    = new su2double [nPrimVar];
@@ -86,8 +82,6 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
   delete [] rhos_j;
   delete [] rhosst_i;
   delete [] rhosst_j;
-  delete [] u_i;
-  delete [] u_j;
   delete [] ust_i;
   delete [] ust_j;
   delete [] Ust_i;
@@ -115,8 +109,8 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
 CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Set parameters in the numerical method ---*/
-  su2double alpha   = 5.0;
-  su2double epsilon = 0.0;
+  const su2double alpha   = 5.0;
+  const su2double epsilon = 0.0;
 
   /*--- Calculate supporting geometry parameters ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -144,19 +138,19 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    u_i[iDim] = V_i[VEL_INDEX+iDim];
-    u_j[iDim] = V_j[VEL_INDEX+iDim];
+    Velocity_i[iDim] = V_i[VEL_INDEX+iDim];
+    Velocity_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-  P_i = V_i[P_INDEX];
-  P_j = V_j[P_INDEX];
+  Pressure_i = V_i[P_INDEX];
+  Pressure_j = V_j[P_INDEX];
 
   /*--- Calculate velocity quantities ---*/
-  ProjVel_i = GeometryToolbox::DotProduct(nDim, u_i, UnitNormal);
-  ProjVel_j = GeometryToolbox::DotProduct(nDim, u_j, UnitNormal);
+  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
+  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
 
   /*--- Calculate the state weighting function ---*/
-  su2double dp    = fabs(P_j-P_i) / min(P_j,P_i);
-  su2double w     = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
+  su2double dp = fabs(Pressure_j-Pressure_i) / min(Pressure_j, Pressure_i);
+  su2double w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   su2double onemw = 1.0 - w;
 
   /*--- Calculate weighted state vector (*) for i & j ---*/
@@ -168,8 +162,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
     Vst_i[iVar] = onemw*V_i[iVar] + w*V_j[iVar];
     Vst_j[iVar] = onemw*V_j[iVar] + w*V_i[iVar];
   }
-  su2double ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
-  su2double ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
+  su2double ProjVelst_i = onemw*ProjVelocity_i + w*ProjVelocity_j;
+  su2double ProjVelst_j = onemw*ProjVelocity_j + w*ProjVelocity_i;
 
   const auto& eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
   const auto& eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);

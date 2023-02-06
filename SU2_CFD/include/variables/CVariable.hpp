@@ -11,7 +11,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1682,9 +1682,9 @@ public:
    * \return the value of the intermittency.
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
-  
+
   /*!
-   * \brief Set the intermittency.   
+   * \brief Set the intermittency.
    * \param[in] val_dist - Value of the  intermittency.
    */
   inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}

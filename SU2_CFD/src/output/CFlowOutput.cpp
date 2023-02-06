@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1209,7 +1209,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
           AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
         }
       }
-        
+
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       break;
     case SPECIES_MODEL::NONE:
@@ -1414,25 +1414,16 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
       SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, I_PROGVAR));
       SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, I_ENTH));
-      /*--- values from auxiliary species transport ---*/
+      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
+      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
+      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
+
+      /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
         string scalar_name = config->GetUserScalarName(i_scalar);
         SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
-      }
-      
-      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
-      /*--- no source term for enthalpy ---*/
-      /*--- source terms for auxiliary species transport ---*/
-      for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-        string scalar_name = config->GetUserScalarName(i_scalar);
         SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControlVars() + i_scalar));
-      }
-
-      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
-      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
-      /*--- residual for auxiliary species transport equations ---*/
-      for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-        string scalar_name = config->GetUserScalarName(i_scalar);
         SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControlVars() + i_scalar));
       }
 
@@ -1451,8 +1442,6 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         if (config->GetLUTLookupName(i_lookup)!="NULL")
           SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint, i_lookup));
       }
-      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
-
 
       break;
     }
@@ -2437,7 +2426,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2022, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -2975,7 +2964,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else file << " lbf.s/ft^2.\n";
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
-          
+
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp \n";
           break;

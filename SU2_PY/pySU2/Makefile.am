@@ -6,17 +6,17 @@
 # \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -61,15 +61,15 @@ PY_LIB = ${PYTHON_LIBS} \
          -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
-         
+
 
 SWIG_INCLUDE = ${PY_INCLUDE}
 
 SUBDIR_EXEC = ${bindir}
 
-all:	
-	${MAKE} real; 
-	
+all:
+	${MAKE} real;
+
 # List the dependencies
 real: ${SWIG_SO_REAL}
 
@@ -104,11 +104,11 @@ pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB}
 # Set the command line flags to use for compilation
 pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} @su2_externals_INCLUDES@ ${pySU2_INCLUDE}
 
-SO_LINK_FLAGS= -fPIC -shared 
+SO_LINK_FLAGS= -fPIC -shared
 
 # Default rule for creating the _wrap.cxx file from the .i file
 ${SWIG_WRAP_REAL}.cxx: ${SU2SOLVER_LIB} ${SWIG_SRC}
-	${SWIG} ${CPPFLAGS} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC} 
+	${SWIG} ${CPPFLAGS} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC}
 
 #Default rule for compiling the .o files
 ${SWIG_WRAP_REAL}.o: ${SWIG_WRAP_REAL}.cxx
@@ -122,7 +122,7 @@ ${SWIG_SO_REAL}: ${SWIG_WRAP_REAL}.o
 
 .SECONDARY:
 
-clean: 
+clean:
 	rm -f ${CURRENT_DIR}/*.cxx
 	rm -f ${CURRENT_DIR}/*.${SO_EXT}
 	rm -f ${CURRENT_DIR}/*.o
