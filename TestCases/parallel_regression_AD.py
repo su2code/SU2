@@ -242,7 +242,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849774, -3.238669, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals         = [-2.849453, -3.238429, -0.000364, -8.708700] #last 4 columns
     discadj_fea.test_vals_aarch64 = [-2.849726, -3.238594, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
