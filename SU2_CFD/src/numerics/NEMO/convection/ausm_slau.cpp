@@ -509,11 +509,11 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2
   const su2double ChatR = CstarR * CstarR / max(CstarR, -ProjVelocity_j);
 
   /*--- Interface speed of sound ---*/
-  const su2double aF = min(ChatL, ChatR);
-  interface_soundspeed[0] = interface_soundspeed[1] = aF;
+  const su2double A_F = min(ChatL, ChatR);
+  interface_soundspeed[0] = interface_soundspeed[1] = A_F;
 
-  const su2double M_L = ProjVelocity_i / aF;
-  const su2double M_R = ProjVelocity_j / aF;
+  const su2double M_L = ProjVelocity_i / A_F;
+  const su2double M_R = ProjVelocity_j / A_F;
 
   const su2double rhoF = 0.5 * (Density_i + Density_j);
   const su2double MFsq = 0.5 * (M_L * M_L + M_R * M_R);
@@ -526,7 +526,7 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2
   const su2double beta = 1.0 / 8.0;
 
   /*--- Pressure diffusion term ---*/
-  const su2double Mp = -(Kp / fa) * max((1.0 - sigma * MFsq), 0.0) * (Pressure_j - Pressure_i) / (rhoF * aF * aF);
+  const su2double Mp = -(Kp / fa) * max((1.0 - sigma * MFsq), 0.0) * (Pressure_j - Pressure_i) / (rhoF * A_F * A_F);
 
   su2double M_LP, P_LP, M_RM, P_RM;
 
@@ -550,7 +550,7 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2
   interface_mach = (M_LP + M_RM + Mp);
 
   /*--- Modified pressure flux ---*/
-  const su2double pFi = sqrt(0.5 * (sq_veli + sq_velj)) * (P_LP + P_RM - 1.0) * 0.5 * (Density_j + Density_i) * aF;
+  const su2double pFi = sqrt(0.5 * (sq_veli + sq_velj)) * (P_LP + P_RM - 1.0) * 0.5 * (Density_j + Density_i) * A_F;
 
   for (auto iDim = 0ul; iDim < nDim; iDim++) {
     pressure[iDim] =
@@ -648,4 +648,80 @@ void CUpwAUSMPLUSM_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2do
         (0.5 * (Pressure_j + Pressure_i) + 0.5 * (P_LP - P_RM) * (Pressure_i - Pressure_j) + pFi) * UnitNormal[iDim] +
         P_un[iDim];
   }
+}
+
+CUpwSLAU_NEMO::CUpwSLAU_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation)
+    : CUpwAUSM_SLAU_Base_NEMO(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
+
+  slau_low_diss = val_low_dissipation;
+  slau2 = false;
+}
+
+void CUpwSLAU_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                               su2double* interface_soundspeed) {
+
+  /*--- Project velocities and speed of sound ---*/
+
+  const su2double sq_veli = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
+  const su2double sq_velj = GeometryToolbox::SquaredNorm(nDim, Velocity_j);
+
+  su2double Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  su2double Energy_j = Enthalpy_j - Pressure_j/Density_j;
+
+  /*--- Compute interface speed of sound (A_F), and left/right Mach number ---*/
+
+  su2double A_F = 0.5 * (SoundSpeed_i + SoundSpeed_j);
+  su2double M_L = ProjVelocity_i/A_F;
+  su2double M_R = ProjVelocity_j/A_F;
+
+  /*--- Smooth function of the local Mach number---*/
+
+  su2double Mach_tilde = min(1.0, (1.0/A_F) * sqrt(0.5*(sq_veli+sq_velj)));
+  su2double Chi = pow((1.0 - Mach_tilde),2.0);
+  su2double f_rho = -max(min(M_L,0.0),-1.0) * min(max(M_R,0.0),1.0);
+
+  /*--- Mean normal velocity with density weighting ---*/
+
+  su2double Vn_Mag = (Density_i*fabs(ProjVelocity_i) + Density_j*fabs(ProjVelocity_j)) / (Density_i + Density_j);
+  su2double Vn_MagL= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_i);
+  su2double Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_j);
+
+  /*--- Mass flux function ---*/
+
+  mdot = 0.5 * (Density_i*(ProjVelocity_i+Vn_MagL) + Density_j*(ProjVelocity_j-Vn_MagR) - (Chi/A_F)*(Pressure_j-Pressure_i));
+
+  /*--- Pressure function ---*/
+
+  su2double BetaL, BetaR, Dissipation_ij;
+
+  if (fabs(M_L) < 1.0) BetaL = 0.25*(2.0-M_L)*pow((M_L+1.0),2.0);
+  else if (M_L >= 0)   BetaL = 1.0;
+  else                 BetaL = 0.0;
+
+  if (fabs(M_R) < 1.0) BetaR = 0.25*(2.0+M_R)*pow((M_R-1.0),2.0);
+  else if (M_R >= 0)   BetaR = 0.0;
+  else                 BetaR = 1.0;
+
+  if (slau_low_diss)
+    Dissipation_ij = GetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, config);
+  else
+    Dissipation_ij = 1.0;
+
+  P_F = 0.5*(Pressure_i+Pressure_j) + 0.5*(BetaL-BetaR)*(Pressure_i-Pressure_j);
+
+  if (!slau2) P_F += Dissipation_ij*(1.0-Chi)*(BetaL+BetaR-1.0)*0.5*(Pressure_i+Pressure_j);
+  else        P_F += Dissipation_ij*sqrt(0.5*(sq_veli+sq_velj))*(BetaL+BetaR-1.0)*A_F*0.5*(Density_i+Density_j);
+
+  pressure[0] = pressure[1] = P_F;
+}
+
+CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                               unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation)
+          : CUpwSLAU_NEMO(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, val_low_dissipation) {
+
+  /*--- The difference between SLAU and SLAU2 is minimal, so we derive from SLAU and set this flag
+   so that the ComputeMassAndPressureFluxes function modifies the pressure according to SLAU2.
+   This is safe since this constructor is guaranteed to execute after SLAU's one. ---*/
+  slau2 = true;
 }
