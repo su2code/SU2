@@ -136,27 +136,12 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
-<<<<<<< HEAD
       names_var.resize(n_variables);
-<<<<<<< HEAD
-=======
-
->>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
       for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-<<<<<<< HEAD
         names_var[i] = line.substr(line.find(":")+1); 
-=======
-        names_var.push_back(line.substr(line.find(":")+1));
->>>>>>> 95a84870e869ab205b5da98d0969fd732a17cf55
-=======
-      for (unsigned long i = 0; i < n_variables; i++) {
-        /*--- grab a single line ---*/
-        GetNextNonEmptyLine(file_stream, line);
-        names_var[i] = line.substr(line.find(":") + 1);
->>>>>>> 3088378be6c6ca596edfbcc44b2ca3272ee9319f
       }
     }
 
