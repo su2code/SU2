@@ -2,7 +2,7 @@
  * \file ausm_slau.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -718,7 +718,7 @@ void CUpwSLAU_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2double*
   pressure[0] = pressure[1] = P_F;
 }
 
-CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+CUpwSLAU2_NEMO::CUpwSLAU2_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                                unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation)
           : CUpwSLAU_NEMO(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, val_low_dissipation) {
 

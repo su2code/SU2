@@ -3,7 +3,7 @@
  * \brief Class that reads a single zone of a CGNS mesh file from disk into
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
