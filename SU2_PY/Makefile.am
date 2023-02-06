@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 7.5.0 "Blackbird"
+# \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
