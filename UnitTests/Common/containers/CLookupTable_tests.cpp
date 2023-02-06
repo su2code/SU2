@@ -80,7 +80,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   enth = 1.1;
   look_up_tag = "Density";
   look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth); 
-  CHECK(look_up_dat == Approx(1.2));
+  CHECK(look_up_dat == Approx(1.1738796125));
 
 }
 

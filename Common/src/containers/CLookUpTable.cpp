@@ -617,23 +617,6 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog,
-                                            su2double val_enth, std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_name_var, val_var, val_prog, val_enth);
-}
-
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var,
-                                            std::vector<su2double*>& val_vars, su2double val_prog, su2double val_enth,
-                                            std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
-}
-
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var,
-                                            std::vector<su2double>& val_vars, su2double val_prog, su2double val_enth,
-                                            std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
-}
-
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
                                       su2double val_CV1, su2double val_CV2, unsigned long i_level) {
   unsigned long exit_code = 1;

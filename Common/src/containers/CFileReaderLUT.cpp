@@ -26,10 +26,11 @@
  */
 
 #include "../../Common/include/containers/CFileReaderLUT.hpp"
-#include "../../Common/include/option_structure.hpp"
-#include "../../Common/include/parallelization/mpi_structure.hpp"
+
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
+#include "../../Common/include/option_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 using namespace std;
 
@@ -128,6 +129,17 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         table_levels[i_level] = stod(line);
       }
     }
+
+    /*--- Checking whether table levels are ordered and appearance of duplicates ---*/
+    for (auto i_level = 0; i_level < n_levels - 1; i_level++) {
+      if (table_levels[i_level] > table_levels[i_level + 1])
+        SU2_MPI::Error("Table levels are not provided in ascending order.", CURRENT_FUNCTION);
+    }
+    const auto duplicate = adjacent_find(table_levels.begin(), table_levels.end());
+    if (duplicate != table_levels.end())
+      SU2_MPI::Error("Table level " + to_string(*duplicate) + " appears more than once in the look-up table",
+                     CURRENT_FUNCTION);
+
     /*--- number of variables in LUT ---*/
     if (line.compare("[Number of variables]") == 0) {
       GetNextNonEmptyLine(file_stream, line);
@@ -137,11 +149,10 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
       names_var.resize(n_variables);
-      for (unsigned long i = 0; i < n_variables; i++){
-
+      for (unsigned long i = 0; i < n_variables; i++) {
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var[i] = line.substr(line.find(":")+1); 
+        names_var[i] = line.substr(line.find(":") + 1);
       }
     }
 

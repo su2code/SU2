@@ -309,48 +309,6 @@ class CLookUpTable {
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
                           su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
-
-  /*!
-   * \brief legacy version of the 2D lookup method for 1 value of the single variable "val_name_var"
-            using controlling variable values(val_prog,val_enth).
-   * \param[in] val_name_var - string name of the variable to look up.
-   * \param[out] val_var - the stored value of the variable to look up.
-   * \param[in] val_prog - value of the progress variable.
-   * \param[in] val_enth - value of the enthalpy.
-   * \param[in] name_prog - name of the progress variable.
-   * \param[in] name_enth - name of the enthalpy variable.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog,
-                                su2double val_enth, std::string name_prog, std::string name_enth);
-
-  /*!
-   * \brief legacy version of the 2D lookup method for 1 value for each of the variables in "val_name_var"
-            using controlling variable values(val_CV1,val_CV2).
-   * \param[in] val_name_var - vector of string names of the variables to look up.
-   * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
-   * \param[in] val_prog - value of the progress variable.
-   * \param[in] val_enth - value of the enthalpy.
-   * \param[in] name_prog - name of the progress variable.
-   * \param[in] name_enth - name of the enthalpy variable.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
-                                su2double val_prog, su2double val_enth, std::string name_prog, std::string name_enth);
-
-  /*!
-   * \brief legacy version of the 2D lookup method for 1 value for each of the variables in "val_name_var"
-            using controlling variable values(val_CV1,val_CV2).
-   * \param[in] val_name_var - vector of string names of the variables to look up.
-   * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
-   * \param[in] val_prog - value of the progress variable.
-   * \param[in] val_enth - value of the enthalpy.
-   * \param[in] name_prog - name of the progress variable.
-   * \param[in] name_enth - name of the enthalpy variable.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                                su2double val_CV1, su2double val_CV2, std::string name_prog, std::string name_enth);
   /*!
    * \brief lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
    * \param[in] val_name_var - string name of the variable to look up.
