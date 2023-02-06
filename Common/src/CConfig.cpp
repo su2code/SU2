@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -840,7 +840,6 @@ void CConfig::SetPointersNull(void) {
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
   DoubleInfo_WallFunctions = nullptr;
-  Kind_Wall                = nullptr;
 
   Config_Filenames = nullptr;
 
@@ -1130,6 +1129,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Add the Vorticity Confinement term*/
+  addBoolOption("VORTICITY_CONFINEMENT", VorticityConfinement, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
@@ -1166,6 +1167,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
+  addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
@@ -1191,6 +1194,10 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, TRANSCOEFFMODEL::WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  /* DESCRIPTION: Specify mass fraction of each species for NEMO inlet*/
+  addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies_inlet, Inlet_MassFrac);
+  /*!\brief INLET_TEMPERATURE_VE \n DESCRIPTION: NEMO inlet temperature_ve (K), if left 0 K, set to Ttr value \ingroup Config*/
+  addDoubleOption("INLET_TEMPERATURE_VE", Inlet_Temperature_ve, 0.0);
   /* DESCRIPTION: Specify if mixture is frozen */
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
@@ -1891,9 +1898,6 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  ad_coeff_heat[0] = 0.5; ad_coeff_heat[1] = 0.02;
-  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, ad_coeff_heat);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
@@ -1942,9 +1946,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
-  /*!\brief CONV_NUM_METHOD_HEAT
-   *  \n DESCRIPTION: Convective numerical method \n DEFAULT: UPWIND */
-  addEnumOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Space_Map, SPACE_UPWIND);
+  /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
+  /*!\brief CONV_NUM_METHOD_HEAT \n DESCRIPTION: Convective numerical method */
+  addConvectOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Kind_Centered_Heat, Kind_Upwind_Heat);
 
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
@@ -2328,7 +2333,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: FEM flow solver definition \ingroup Config*/
   /*--- Options related to the finite element flow solver---*/
 
-  /* DESCRIPTION: Riemann solver used for DG (ROE, LAX-FRIEDRICH, AUSM, AUSMPW+, HLLC, VAN_LEER) */
+  /* DESCRIPTION: Riemann solver used for DG (ROE, LAX-FRIEDRICH, AUSM, HLLC, VAN_LEER) */
   addEnumOption("RIEMANN_SOLVER_FEM", Riemann_Solver_FEM, Upwind_Map, UPWIND::ROE);
   /* DESCRIPTION: Constant factor applied for quadrature with straight elements (2.0 by default) */
   addDoubleOption("QUADRATURE_FACTOR_STRAIGHT_FEM", Quadrature_Factor_Straight, 2.0);
@@ -3251,7 +3256,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2022, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3542,9 +3547,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
+  auto SetScalarDefaults = [](bool muscl, unsigned short& KindConvScheme, UPWIND& KindUpwind, LIMITER& KindLimiter) {
+    if (KindConvScheme == NO_CONVECTIVE) {
+      KindConvScheme = SPACE_UPWIND;
+      KindUpwind = UPWIND::SCALAR_UPWIND;
+    } else if (KindConvScheme == SPACE_CENTERED) {
+      SU2_MPI::Error("Centered schemes are not available for scalar transport", CURRENT_FUNCTION);
+    }
+    if (!muscl) KindLimiter = LIMITER::NONE;
+  };
+  SetScalarDefaults(MUSCL_Turb, Kind_ConvNumScheme_Turb, Kind_Upwind_Turb, Kind_SlopeLimit_Turb);
+  SetScalarDefaults(MUSCL_Heat, Kind_ConvNumScheme_Heat, Kind_Upwind_Heat, Kind_SlopeLimit_Heat);
+  SetScalarDefaults(MUSCL_Species, Kind_ConvNumScheme_Species, Kind_Upwind_Species, Kind_SlopeLimit_Species);
+
   if (!MUSCL_Flow || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = LIMITER::NONE;
-  if (!MUSCL_Turb || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = LIMITER::NONE;
-  if (!MUSCL_Species || (Kind_ConvNumScheme_Species == SPACE_CENTERED)) Kind_SlopeLimit_Species = LIMITER::NONE;
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
@@ -3925,16 +3941,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      CURRENT_FUNCTION);
     }
 
-  if (!ideal_gas && !nemo) {
-    if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
-      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
+    if (!ideal_gas && !nemo) {
+      if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
+        SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
+      }
     }
-  }
-
-  if (nemo){
-    if (Kind_Upwind_Flow == UPWIND::AUSMPWPLUS)
-      SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-  }
 
     if (GetBoolTurbomachinery()) {
       nBlades = new su2double[nZone];
@@ -4382,8 +4393,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_4th_Flow = jst_coeff[1];
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
-  Kappa_2nd_Heat = ad_coeff_heat[0];
-  Kappa_4th_Heat = ad_coeff_heat[1];
 
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -4899,6 +4908,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Vorticity confinement feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows. ---*/
+
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER
+    || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES
+    || Kind_Solver == MAIN_SOLVER::INC_RANS
+    || Kind_Solver == MAIN_SOLVER::NEMO_EULER
+    || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES
+    || Axisymmetric)
+    && VorticityConfinement) {
+    SU2_MPI::Error("Vorticity confinement feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows.", CURRENT_FUNCTION);
+  }
+
   /*--- Check the coefficients for the polynomial models. ---*/
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
@@ -5003,95 +5024,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Streamwise_Periodic_Temperature = false;
   }
 
-  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
-   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_HeatTransfer) || (nMarker_CHTInterface > 0)) {
-
-     /*--- The total number of wall markers. ---*/
-     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + nMarker_CHTInterface;
-
-     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
-     if (nRough_Wall == 0) {
-
-       nRough_Wall = nWall;
-       Roughness_Height = new su2double [nWall];
-       Kind_Wall = new WALL_TYPE [nWall];
-       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
-         Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = WALL_TYPE::SMOOTH;
-       }
-
-       /*--- Check for mismatch in number of rough walls and solid walls. ---*/
-     } else if (nRough_Wall > nWall) {
-        SU2_MPI::Error("Mismatch in number of rough walls and solid walls. Number of rough walls cannot be more than solid walls.", CURRENT_FUNCTION);
-       /*--- Check name of the marker and assign the corresponding roughness. ---*/
-     } else {
-       /*--- Store roughness heights in a temp array. ---*/
-       vector<su2double> temp_rough;
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
-         temp_rough.push_back(Roughness_Height[iMarker]);
-
-       /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
-       delete Roughness_Height;
-       delete Kind_Wall;
-       Roughness_Height = new su2double [nWall];
-       Kind_Wall = new WALL_TYPE [nWall];
-       unsigned short jMarker, chkRough = 0;
-
-       /*--- Initialize everything to smooth. ---*/
-       for (iMarker = 0; iMarker < nWall; iMarker++) {
-         Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
-       }
-
-       /*--- Look through heat flux, isothermal, heat transfer and cht_interface markers and assign proper values. ---*/
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
-         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
-           if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++)
-           if (Marker_Isothermal[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_HeatTransfer; jMarker++)
-           if (Marker_HeatTransfer[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_CHTInterface; jMarker++)
-           if (Marker_CHTInterface[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-       }
-
-       /*--- Update kind_wall when a non zero roughness value is specified. ---*/
-       for (iMarker = 0; iMarker < nWall; iMarker++)
-         if (Roughness_Height[iMarker] != 0.0)
-           Kind_Wall[iMarker] = WALL_TYPE::ROUGH;
-
-       /*--- Check if a non solid wall marker was specified as rough. ---*/
-       if (chkRough != nRough_Wall)
-         SU2_MPI::Error("Only solid walls can be rough.", CURRENT_FUNCTION);
-     }
-   }
+  if (nRough_Wall > 0) {
+    /*--- Validate name of the markers. ---*/
+    for (iMarker = 0; iMarker < nRough_Wall; ++iMarker) {
+      auto CheckMarker = [&](unsigned short nMarker, const string* markerName) {
+        for (auto jMarker = 0u; jMarker < nMarker; ++jMarker) {
+          if (markerName[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+      if (!CheckMarker(nMarker_HeatFlux, Marker_HeatFlux) &&
+          !CheckMarker(nMarker_Isothermal, Marker_Isothermal) &&
+          !CheckMarker(nMarker_HeatTransfer, Marker_HeatTransfer) &&
+          !CheckMarker(nMarker_CHTInterface, Marker_CHTInterface)) {
+        SU2_MPI::Error("Marker " + Marker_RoughWall[iMarker] + " is not a viscous wall.", CURRENT_FUNCTION);
+      }
+    }
+  }
 
   /*--- Handle default options for topology optimization ---*/
 
@@ -6093,14 +6044,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
           case TURB_TRANS_MODEL::LM: {
-            cout << "Transition model: Langtry and Menter's 4 equation model"; 
+            cout << "Transition model: Langtry and Menter's 4 equation model";
             if (lmParsedOptions.LM2015) {
               cout << " w/ cross-flow corrections (2015)" << endl;
             } else {
               cout << " (2009)" << endl;
             }
-            break; 
-          }          
+            break;
+          }
         }
         if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
@@ -6113,7 +6064,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
             case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
             case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::DEFAULT: 
+            case TURB_TRANS_CORRELATION::DEFAULT:
               switch (Kind_Turb_Model) {
                 case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
                 case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
@@ -6683,7 +6634,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == UPWIND::FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == UPWIND::AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSM)  cout << "AUSM+M solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == MAIN_SOLVER::EULER         || Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER ||
             Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
@@ -7999,8 +7950,6 @@ CConfig::~CConfig() {
 
   delete[] Marker_All_SendRecv;
 
-  delete[] Kind_Wall;
-
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
     delete [] DV_Value;
@@ -8390,6 +8339,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     }
   };
 
+  auto SetHeatParam = [&]() {
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat,
+                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+    }
+  };
+
   auto SetSpeciesParam = [&]() {
     if (val_system == RUNTIME_SPECIES_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
@@ -8410,21 +8367,21 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
   switch (val_solver) {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_INC_EULER:
       SetFlowParam();
       break;
     case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       SetFlowParam();
       SetSpeciesParam();
-
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
+      SetHeatParam();
       break;
     case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       SetFlowParam();
       SetTurbParam();
       SetSpeciesParam();
+      SetHeatParam();
 
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
@@ -8432,14 +8389,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
                               MUSCL_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
       break;
     case MAIN_SOLVER::FEM_EULER:
     case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
     case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8465,6 +8422,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
@@ -8472,11 +8430,12 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
 
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE , NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;
@@ -9166,40 +9125,15 @@ su2double CConfig::GetWall_HeatTransfer_Temperature(string val_marker) const {
   return HeatTransfer_WallTemp[0];
 }
 
-pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
-  unsigned short iMarker = 0;
-  short          flag = -1;
-  pair<WALL_TYPE, su2double> WallProp;
-
-  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_HeatTransfer || nMarker_CHTInterface > 0) {
-    for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
-      if (Marker_HeatFlux[iMarker] == val_marker) {
-        flag = iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-      if (Marker_Isothermal[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++)
-      if (Marker_HeatTransfer[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
-      if (Marker_CHTInterface[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
+pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(const string& val_marker) const {
+  su2double roughness = 0.0;
+  for (auto iMarker = 0u; iMarker < nRough_Wall; iMarker++) {
+    if (val_marker.compare(Marker_RoughWall[iMarker]) == 0) {
+      roughness = Roughness_Height[iMarker];
+      break;
+    }
   }
-
-  WallProp = make_pair(WALL_TYPE::SMOOTH, 0.0);
-  return WallProp;
+  return make_pair(roughness > 0 ? WALL_TYPE::ROUGH : WALL_TYPE::SMOOTH, roughness);
 }
 
 WALL_FUNCTIONS CConfig::GetWallFunction_Treatment(string val_marker) const {

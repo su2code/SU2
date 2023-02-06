@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -248,7 +248,7 @@ def main():
     #######################################
     ### Axisymmetric Compressible RANS  ###
     #######################################
-    
+
     # Axisymmetric air nozzle (transonic)
     axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
@@ -426,6 +426,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_iter = 20
     inc_turb_naca0012_sst_sust.test_vals = [-7.274028, 0.145888, 0.000002, 0.312014]
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # Weakly coupled heat equation
+    inc_weakly_coupled = TestCase('inc_weakly_coupled')
+    inc_weakly_coupled.cfg_dir = "disc_adj_heat"
+    inc_weakly_coupled.cfg_file = "primal.cfg"
+    inc_weakly_coupled.test_iter = 10
+    inc_weakly_coupled.test_vals = [-17.240436, -16.184455, -16.069131, -17.230730, -18.350601, -13.768070, 5.545700]
+    test_list.append(inc_weakly_coupled)
 
     ######################################
     ### Moving Wall                    ###

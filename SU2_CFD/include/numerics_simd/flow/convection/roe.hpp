@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -168,7 +168,7 @@ public:
 
     VectorDbl<nVar> flux;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      flux(iVar) = kappa * (flux_i(iVar) + flux_j(iVar));
+      flux(iVar) = 0.5 * (flux_i(iVar) + flux_j(iVar));
     }
 
     MatrixDbl<nVar> jac_i, jac_j;

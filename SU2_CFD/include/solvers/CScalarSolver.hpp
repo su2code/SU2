@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -103,7 +103,8 @@ class CScalarSolver : public CSolver {
                                          CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
     /*--- Points in edge ---*/
 
@@ -117,7 +118,9 @@ class CScalarSolver : public CSolver {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
@@ -156,6 +159,8 @@ class CScalarSolver : public CSolver {
   void BC_Fluid_Interface_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, CGeometry *geometry,
                                CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config) {
+    if (solver_container[FLOW_SOL] == nullptr) return;
+
     const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
     su2activevector PrimVar_j(nPrimVar);
     su2double solution_j[MAXNVAR] = {0.0};
@@ -286,6 +291,12 @@ class CScalarSolver : public CSolver {
    */
   void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
+
  private:
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
@@ -307,12 +318,6 @@ class CScalarSolver : public CSolver {
     Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
   }
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
@@ -437,6 +442,17 @@ class CScalarSolver : public CSolver {
   }
 
   /*!
+   * \brief This base implementation simply copies the time step of the flow solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration) override;
+
+  /*!
    * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -466,7 +482,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -478,7 +494,7 @@ class CScalarSolver : public CSolver {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) final;
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Load a solution from a restart file.

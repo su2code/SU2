@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,12 +49,12 @@ class CFileReaderLUT {
   unsigned long n_hull_points;
   unsigned long n_variables;
 
-  /*! \brief Holds the variable names stored in the table file. 
+  /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with tableFlamelet.
    */
   std::vector<std::string> names_var;
 
-  /*! \brief Holds all data stored in the table. 
+  /*! \brief Holds all data stored in the table.
    * First index addresses the variable while second index addresses the point.
    */
   su2activematrix table_data;
@@ -63,7 +63,7 @@ class CFileReaderLUT {
 
   std::vector<unsigned long> hull;
 
-  /*! \brief Searches for the position of flag in file_stream and 
+  /*! \brief Searches for the position of flag in file_stream and
    *         sets the stream position of file_stream to that position.
    */
   void SkipToFlag(std::ifstream& file_stream, const std::string& current_line, const std::string& flag) const;
@@ -71,7 +71,7 @@ class CFileReaderLUT {
   /*! \brief Extracts the next non-empty characters from file_stream and stores them into line.
    */
   bool GetNextNonEmptyLine(std::ifstream& file_stream, std::string& line) const;
-  
+
   /*! \brief Extracts characters from file_stream, removes trailing control characters,
    *         and stores them into line.
    */
@@ -79,7 +79,7 @@ class CFileReaderLUT {
 
  public:
   CFileReaderLUT(){};
-  
+
   inline const std::string& GetVersionLUT() const { return version_lut; }
   inline const std::string& GetVersionReader() const { return version_reader; }
   inline unsigned long GetNPoints() const { return n_points; }

@@ -6,17 +6,17 @@
 #  \version 7.5.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -35,7 +35,7 @@ import SU2				# imports SU2 python tools
 import pysu2			# imports the SU2 wrapped module
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -76,7 +76,7 @@ def main():
     from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial)
     comm = MPI.COMM_WORLD
   else:
-    comm = 0 
+    comm = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
@@ -111,4 +111,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

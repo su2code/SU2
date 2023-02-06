@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -59,22 +59,22 @@ def main():
     test_list.append(thermalbath_frozen)
 
     # Inviscid single wedge, implicit
-    invwedge           = TestCase('invwedge')
-    invwedge.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge.cfg_file  = "invwedge.cfg"
+    invwedge = TestCase('invwedge')
+    invwedge.cfg_dir = "nonequilibrium/invwedge"
+    invwedge.cfg_file = "invwedge_ausm.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals         = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271778, 1.875687, 5.315769, 0.870008]
-    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.300012, -18.627418, -18.573436, 2.271778, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals = [-1.046323, -1.571086, -18.301251, -18.628639, -18.574676, 2.271778, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271778, 1.875687, 5.315769, 0.870008]
     invwedge.new_output = True
     test_list.append(invwedge)
 
     # Viscous single cone - axisymmetric
-    visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/viscous"
-    visc_cone.cfg_file  = "axi_visccone.cfg"
+    visc_cone = TestCase('visc_cone')
+    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals         = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
-    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.545048, -20.618697, -20.501528, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
+    visc_cone.test_vals = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
+    visc_cone.test_vals_aarch64 = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
@@ -1132,7 +1132,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
-    airfoilRBF.test_vals = [1.000000, -2.786185, -4.977948]
+    airfoilRBF.test_vals = [1.000000, -2.786183, -4.977959]
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
 
