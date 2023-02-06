@@ -674,6 +674,7 @@ void CUpwSLAU_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2double*
   su2double A_F = 0.5 * (SoundSpeed_i + SoundSpeed_j);
   su2double M_L = ProjVelocity_i/A_F;
   su2double M_R = ProjVelocity_j/A_F;
+  interface_soundspeed[0] = interface_soundspeed[1] = A_F;
 
   /*--- Smooth function of the local Mach number---*/
 
@@ -690,6 +691,7 @@ void CUpwSLAU_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2double*
   /*--- Mass flux function ---*/
 
   mdot = 0.5 * (Density_i*(ProjVelocity_i+Vn_MagL) + Density_j*(ProjVelocity_j-Vn_MagR) - (Chi/A_F)*(Pressure_j-Pressure_i));
+  interface_mach = mdot/A_F;
 
   /*--- Pressure function ---*/
 
