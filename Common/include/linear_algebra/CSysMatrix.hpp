@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -147,10 +147,6 @@ private:
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
   ScalarType *invM;                 /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
-
-  unsigned long nLinelet;                      /*!< \brief Number of Linelets in the system. */
-  vector<bool> LineletBool;                    /*!< \brief Identify if a point belong to a Linelet. */
-  vector<vector<unsigned long> > LineletPoint; /*!< \brief Linelet structure. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> > LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
@@ -886,9 +882,8 @@ public:
    * \brief Build the Linelet preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \return Average number of points per linelet.
    */
-  unsigned long BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config);
+  void BuildLineletPreconditioner(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

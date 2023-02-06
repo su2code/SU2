@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
-  unsigned short iDim, iVar, nLineLets;
+  unsigned short iDim, iVar;
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, *Normal;
@@ -169,11 +169,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new su2double* [nVar];

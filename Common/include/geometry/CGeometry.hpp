@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <limits>
 #include "../parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_METIS
@@ -72,7 +73,7 @@ using namespace std;
  * \author F. Palacios
  */
 class CGeometry {
-protected:
+ protected:
   enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
   enum : size_t {MAXNDIM = 3};
 
@@ -186,7 +187,30 @@ protected:
 
   ColMajorMatrix<uint8_t> CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
 
-public:
+ public:
+  /*!< \brief Linelets (mesh lines perpendicular to stretching direction). */
+  struct CLineletInfo {
+    /*!< \brief Detect isotropic mesh region. */
+    static passivedouble ALPHA_ISOTROPIC() { return 0.8; }
+    enum : unsigned long {MAX_LINELET_POINTS = 32}; /*!< \brief Maximum points per linelet. */
+
+    std::vector<std::vector<unsigned long>> linelets; /*!< \brief Point indices for each linelet. */
+
+    /*!< \brief Index of the linelet of each point ("linelets" transfered to points). */
+    std::vector<unsigned> lineletIdx;
+
+    /*!< \brief Signals that a point is not on a linelet. */
+    enum : unsigned {NO_LINELET = std::numeric_limits<unsigned>::max()};
+
+    /*!< \brief Coloring for OpenMP parallelization, "linelets" is sorted by color. */
+    std::vector<unsigned long> colorOffsets;
+
+    std::vector<uint8_t> lineletColor;  /*!< \brief Coloring transfered to points, for visualization. */
+  };
+ protected:
+  mutable CLineletInfo lineletInfo;
+
+ public:
   /*--- Main geometric elements of the grid. ---*/
 
   CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
@@ -1657,6 +1681,11 @@ public:
    * \return Group size.
    */
   inline unsigned long GetElementColorGroupSize() const { return elemColorGroupSize; }
+
+  /*!
+   * \brief Get the linelet definition, this function computes the linelets if that has not been done yet.
+   */
+  const CLineletInfo& GetLineletInfo(const CConfig* config) const;
 
   /*!
    * \brief Compute an ADT including the coordinates of all viscous markers

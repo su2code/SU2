@@ -2,14 +2,14 @@
  * \file CFileReaderLUT.hpp
  * \brief reading lookup table for tabulated fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,12 +94,12 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 
     /*--- variable names ---*/
     if (line.compare("[Variable names]") == 0) {
-      
+
       for (unsigned long i = 0; i < n_variables; i++){
 
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var.push_back(line.substr(line.find(":")+1)); 
+        names_var.push_back(line.substr(line.find(":")+1));
       }
     }
 
@@ -259,7 +259,7 @@ bool CFileReaderLUT::GetNextNonEmptyLine(ifstream& file_stream, string& line) co
 
   /*--- get next line and save return value ---*/
   bool return_value = GetStrippedLine(file_stream, line);
-  
+
   /*--- skip empty lines ---*/
   while (line.empty() && !(file_stream).eof()){
     return_value = GetStrippedLine(file_stream, line);

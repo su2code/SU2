@@ -3,20 +3,20 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 7.5.0 "Blackbird"
+# \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -151,7 +151,7 @@ if (test $enabletecio = yes); then
   if ( ! test -d "$srcdir/externals/tecio/boost" ); then
     AC_MSG_RESULT([Extracting boost source ...])
     if ( ! tar -xzf $srcdir/externals/tecio/boost.tar.gz -C $srcdir/externals/tecio/ ); then
-	AC_MSG_ERROR([Extraction of boost sources to $srcdir/externals/tecio/boost using 'tar' failed ...])	    
+	AC_MSG_ERROR([Extraction of boost sources to $srcdir/externals/tecio/boost using 'tar' failed ...])
     fi
   fi
    # Attempt to get pthread to work
@@ -261,7 +261,7 @@ if test "${MKLROOT+set}" = set; then
   if [[ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]]; then
     CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
     CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
-    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS" 
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS"
     have_MKL="yes"
   fi
 fi
@@ -338,7 +338,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 7.4.0 'Blackbird'                         |
+|   / __| | | |_  )   Release 7.5.0 'Blackbird'                         |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -348,7 +348,7 @@ AC_MSG_RESULT([
 | The SU2 Project is maintained by the SU2 Foundation                   |
 | (http://su2foundation.org)                                            |
 -------------------------------------------------------------------------
-| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |
+| Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |

@@ -2,14 +2,14 @@
  * \file CSpeciesSolver.cpp
  * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,13 +81,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (species transport model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -292,7 +285,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
