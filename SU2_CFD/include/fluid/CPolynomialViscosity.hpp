@@ -2,7 +2,7 @@
  * \file CPolynomialViscosity.hpp
  * \brief Defines a laminar viscosity model as a polynomial function of temperature.
  * \author T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

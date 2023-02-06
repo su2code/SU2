@@ -2,7 +2,7 @@
  * \file CFileReaderLUT.hpp
  * \brief reading lookup table for tabulated fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CCGNSFileWriter.cpp
  * \brief Filewriter class for CGNS format.
  * \author G. Baldan
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

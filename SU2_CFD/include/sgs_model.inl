@@ -2,7 +2,7 @@
  * \file sgs_model.inl
  * \brief In-Line subroutines of the <i>sgs_model.hpp</i> file.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
