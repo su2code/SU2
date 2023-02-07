@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 #include "../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 #include "../../Common/include/linear_algebra/blas_structure.hpp"
