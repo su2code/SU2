@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -187,7 +187,7 @@ protected:
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
   /*! \brief Type of operation for custom outputs. */
-  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT, PROBE };
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
@@ -201,6 +201,9 @@ protected:
     mel::ExpressionTree<passivedouble> expression;
     std::vector<std::string> varSymbols;
     std::vector<unsigned short> markerIndices;
+    static constexpr long PROBE_NOT_SETUP = -2;
+    static constexpr long PROBE_NOT_OWNED = -1;
+    long iPoint = PROBE_NOT_SETUP;
 
     /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
      is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"

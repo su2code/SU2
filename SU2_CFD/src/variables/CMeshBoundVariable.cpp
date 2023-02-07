@@ -2,7 +2,7 @@
  * \file CMeshBoundVariable.cpp
  * \brief Definition of the boundary variables for mesh motion using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

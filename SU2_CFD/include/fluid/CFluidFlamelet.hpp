@@ -47,21 +47,21 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> table_sources;
 
   su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
-  su2double molar_weight; /*!< \brief local molar weight of the mixture */
+  su2double molar_weight;     /*!< \brief local molar weight of the mixture */
 
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
 
   CLookUpTable* look_up_table;
 
-  vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
+  vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
   vector<string> varnames_Sources; /*!< \brief Lookup names for scalar source terms. */
-  vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
+  vector<su2double*> val_vars_Sources;  /*!< \brief References to scalar sources. */
 
   vector<string> varnames_LookUp; /*!< \brief Lookup names for passive lookup variables. */
-  vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
+  vector<su2double*> val_vars_LookUp;  /*!< \brief References to lookup variables. */
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -95,7 +95,8 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_temp - temperature
    * \param[out] exit_code = error code
    */
-  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp, su2double initial_value=0);
+  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_temp,
+                                su2double initial_value = 0);
 
   /*!
    * \brief return a pointer to the lookup table
@@ -127,12 +128,18 @@ class CFluidFlamelet final : public CFluidModel {
   /*!
    * \brief Get the enthalpy range in the lookup table
    */
-  inline pair<su2double, su2double> GetTableLimitsEnth() { return look_up_table->GetTableLimitsEnth(); }
+  inline pair<su2double, su2double> GetTableLimitsEnth() {
+    pair<su2double*, su2double*> limits_Y = look_up_table->GetTableLimitsY();
+    return make_pair(*limits_Y.first, *limits_Y.second);
+  }
 
   /*!
    * \brief Get the progress variable range in the lookup table
    */
-  inline pair<su2double, su2double> GetTableLimitsProg() { return look_up_table->GetTableLimitsProg(); }
+  inline pair<su2double, su2double> GetTableLimitsProg() {
+    pair<su2double*, su2double*> limits_X = look_up_table->GetTableLimitsX();
+    return make_pair(*limits_X.first, *limits_X.second);
+  }
 
   /*!
    * \brief Get the reaction source term of a species equation
@@ -152,5 +159,4 @@ class CFluidFlamelet final : public CFluidModel {
   inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
-
 };

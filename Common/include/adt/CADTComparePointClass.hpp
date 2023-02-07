@@ -2,7 +2,7 @@
  * \file CADTComparePointClass.hpp
  * \brief subroutines for comparing two points in an alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

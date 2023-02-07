@@ -304,7 +304,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
-      prog_burnt = fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
+      prog_burnt = fluid_model_local->GetTableLimitsProg().second;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         for (unsigned long i_var = 0; i_var < nVar; i_var++) Solution[i_var] = 0.0;
 
@@ -344,8 +344,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         n_not_iterated_local += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet, enth_inlet);
         scalar_init[I_ENTH] = enth_inlet;
 
-        n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(
-            look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH], name_prog, name_enth);
+        n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_XY(
+            look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH]);
 
         /* --- initialize the auxiliary transported scalars  (not controlling variables) --- */
         for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
