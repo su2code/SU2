@@ -1,15 +1,15 @@
 /*!
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
- * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.5.0 "Blackbird"
+ * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -271,6 +271,10 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
     if (center_jst) SetUndivided_Laplacian(geometry, config);
     if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
   }
+
+  /*--- Set Pressure diffusion sensor ---*/
+  if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+    SetPressureDiffusionSensor(geometry, config);
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
@@ -605,6 +609,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetGamma (chk_err_i ? nodes->GetGamma (iPoint) : Gamma_i,   chk_err_j ? nodes->GetGamma (jPoint) : Gamma_j);
 
     }
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
 
     /*--- Compute the residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -1554,6 +1560,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -2080,6 +2088,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -2424,5 +2434,28 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+
+}
+
+void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
+
+  const auto P_INDEX = nodes->GetPIndex();
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    su2double Sensor = 1.0;
+
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      const su2double P_k = nodes->GetPrimitive(jPoint, P_INDEX) / nodes->GetPrimitive(iPoint, P_INDEX);
+      Sensor = min(Sensor, min(P_k, 1.0/P_k));
+    }
+
+    nodes->SetSensor(iPoint,Sensor);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }

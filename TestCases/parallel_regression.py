@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -43,84 +43,144 @@ def main():
     #########################
 
     # Adiabatic thermal bath
-    thermalbath           = TestCase('thermalbath')
-    thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
-    thermalbath.cfg_file  = "thermalbath.cfg"
+    thermalbath = TestCase('thermalbath')
+    thermalbath.cfg_dir = "nonequilibrium/thermalbath/finitechemistry"
+    thermalbath.cfg_file = "thermalbath.cfg"
     thermalbath.test_iter = 10
     thermalbath.test_vals = [0.945997, 0.945997, -12.039262, -12.171767, -32.000000, 10.013239]
     thermalbath.new_output = True
     test_list.append(thermalbath)
 
     # Adiabatic thermal bath
-    ionized           = TestCase('ionized')
-    ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
-    ionized.cfg_file  = "weakly_ionized.cfg"
+    ionized = TestCase('ionized')
+    ionized.cfg_dir = "nonequilibrium/thermalbath/finitechemistry"
+    ionized.cfg_file = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals         = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]
+    ionized.test_vals = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]
     ionized.test_vals_aarch64 = [-29.816386, -10.729986, -11.720016, -17.484469, -18.237891, -15.241605, -24.956918, -32.000000, -5.727244, 0.000000, 0.000000]
     ionized.new_output = True
     test_list.append(ionized)
 
     # Adiabatic frozen thermal bath
-    thermalbath_frozen           = TestCase('thermalbath_frozen')
-    thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
-    thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
+    thermalbath_frozen = TestCase('thermalbath_frozen')
+    thermalbath_frozen.cfg_dir = "nonequilibrium/thermalbath/frozen"
+    thermalbath_frozen.cfg_file = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
     thermalbath_frozen.test_vals = [-32.000000, -32.000000, -11.962477, -11.962477, -32.000000, 10.013545]
     thermalbath_frozen.new_output = True
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge, implicit
-    invwedge           = TestCase('invwedge')
-    invwedge.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge.cfg_file  = "invwedge.cfg"
-    invwedge.test_iter = 10
-    invwedge.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge.new_output = True
-    test_list.append(invwedge)
+    # Inviscid single wedge, ausm, implicit
+    invwedge_a = TestCase('invwedge_ausm')
+    invwedge_a.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_a.cfg_file = "invwedge_ausm.cfg"
+    invwedge_a.test_iter = 10
+    invwedge_a.test_vals = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.new_output = True
+    test_list.append(invwedge_a)
+
+    # Inviscid single wedge, ausm+-up2, implicit
+    invwedge_ap2 = TestCase('invwedge_ap2')
+    invwedge_ap2.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ap2.cfg_file = "invwedge_ausmplusup2.cfg"
+    invwedge_ap2.test_iter = 10
+    invwedge_ap2.test_vals = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.test_vals_aarch64 = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.new_output = True
+    test_list.append(invwedge_ap2)
+
+    # Inviscid single wedge, msw, implicit
+    invwedge_msw = TestCase('invwedge_msw')
+    invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_msw.cfg_file = "invwedge_msw.cfg"
+    invwedge_msw.test_iter = 10
+    invwedge_msw.test_vals = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.new_output = True
+    test_list.append(invwedge_msw)
+
+    # Inviscid single wedge, roe, implicit
+    invwedge_roe = TestCase('invwedge_roe')
+    invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_roe.cfg_file = "invwedge_roe.cfg"
+    invwedge_roe.test_iter = 10
+    invwedge_roe.test_vals = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.new_output = True
+    test_list.append(invwedge_roe)
+
+    # Inviscid single wedge, lax, implicit
+    invwedge_lax = TestCase('invwedge_lax')
+    invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_lax.cfg_file = "invwedge_lax.cfg"
+    invwedge_lax.test_iter = 10
+    invwedge_lax.test_vals = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
+    invwedge_lax.test_vals_aarch64 = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
+    invwedge_lax.new_output = True
+    test_list.append(invwedge_lax)
+
+    # Inviscid single wedge, implicit, AUSM+M scheme
+    invwedge_ausm_m = TestCase('invwedge_ausm_m')
+    invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
+    invwedge_ausm_m.test_iter = 10
+    invwedge_ausm_m.test_vals = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.85654]
+    invwedge_ausm_m.test_vals_aarch64 = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.85654]
+    invwedge_ausm_m.new_output = True
+    test_list.append(invwedge_ausm_m)
+
+    # Inviscid single wedge, implicit, NEMO supersonic inlet
+    invwedge_ss_inlet = TestCase('invwedge_ss_inlet')
+    invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
+    invwedge_ss_inlet.test_iter = 10
+    invwedge_ss_inlet.test_vals = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.new_output = True
+    test_list.append(invwedge_ss_inlet)
 
     # Viscous single cone - axisymmetric
-    visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/viscous"
-    visc_cone.cfg_file  = "axi_visccone.cfg"
+    visc_cone = TestCase('visc_cone')
+    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, 1.255761, -3.208360, -0.016014, 0.093462, 32634.000000]
+    visc_cone.test_vals = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
-    #viscwedge_mpp           = TestCase('viscwedge_mpp')
-    #viscwedge_mpp.cfg_dir   = "nonequilibrium/viscwedge_mpp"
-    #viscwedge_mpp.cfg_file  = "viscwedge_mpp.cfg"
+    #viscwedge_mpp = TestCase('viscwedge_mpp')
+    #viscwedge_mpp.cfg_dir = "nonequilibrium/viscwedge_mpp"
+    #viscwedge_mpp.cfg_file = "viscwedge_mpp.cfg"
     #viscwedge_mpp.test_iter = 10
     #viscwedge_mpp.test_vals = [-20.608474, -20.586446,-20.707524, -5.171304,-5.696067,-1.548350,-2.071211,2.231054,-2.545494]
     #viscwedge_mpp.new_output = True
     #test_list.append(viscwedge_mpp)
 
     # Viscous single wedge - super catalytic walls
-    super_cat           = TestCase('super_cat')
-    super_cat.cfg_dir   = "nonequilibrium/viscous"
-    super_cat.cfg_file  = "super_cat.cfg"
+    super_cat = TestCase('super_cat')
+    super_cat.cfg_dir = "nonequilibrium/viscous"
+    super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
-    super_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
-    super_cat.timeout   = 1600
+    super_cat.su2_exec = "mpirun -n 2 SU2_CFD"
+    super_cat.timeout = 1600
     super_cat.new_output = True
-    super_cat.tol       = 0.00001
+    super_cat.tol = 0.00001
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
-    partial_cat           = TestCase('partial_cat')
-    partial_cat.cfg_dir   = "nonequilibrium/viscous"
-    partial_cat.cfg_file  = "partial_cat.cfg"
+    partial_cat = TestCase('partial_cat')
+    partial_cat.cfg_dir = "nonequilibrium/viscous"
+    partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
-    partial_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
-    partial_cat.timeout   = 1600
+    partial_cat.su2_exec = "mpirun -n 2 SU2_CFD"
+    partial_cat.timeout = 1600
     partial_cat.new_output = True
-    partial_cat.tol       = 0.00001
+    partial_cat.tol = 0.00001
     test_list.append(partial_cat)
 
     ##########################
@@ -212,7 +272,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653802, -1.181430, -0.794887, 0.000611, -0.000369, 0.000736, -0.001104, 596.690000, 299.800000, 296.890000, 21.492000, 0.563990, 2.278700]
+    flatplate_udobj.test_vals = [-6.653802, -1.181430, -0.794887, 0.000611, -0.000369, 0.000736, -0.001104, 596.690000, 299.800000, 296.890000, 21.492000, 0.563990, 37.148, 2.278700]
     test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
