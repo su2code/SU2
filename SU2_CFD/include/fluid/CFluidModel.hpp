@@ -2,7 +2,7 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -173,8 +173,8 @@ class CFluidModel {
                                                su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
 
-  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
-  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
+  //virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
+  //virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
 
   /*!
    * \brief Get fluid dynamic viscosity.

@@ -114,7 +114,7 @@ unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
 
   /*--- perform table look ups ---*/
   unsigned long exit_code =
-      look_up_table->LookUp_ProgEnth(table_lookup_names, lookup_scalar, prog, enth, name_prog, name_enth);
+      look_up_table->LookUp_XY(table_lookup_names, lookup_scalar, prog, enth);
 
   return exit_code;
 }
@@ -133,7 +133,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
 
   /*--- perform table look ups ---*/
   unsigned long exit_code =
-      look_up_table->LookUp_ProgEnth(varnames_Sources, val_vars_Sources, prog, enth, name_prog, name_enth);
+      look_up_table->LookUp_XY(varnames_Sources, val_vars_Sources, prog, enth);
 
   /*--- the source term for the progress variable is always positive by construction, but we clip from below  --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -161,7 +161,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
 
   /*--- add all quantities and their address to the look up vectors ---*/
-  look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, val_enth, name_prog, name_enth);
+  look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
 
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
@@ -184,7 +184,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /* look up temperature and heat capacity */
-    look_up_table->LookUp_ProgEnth(varnames_TD, val_vars_TD, val_prog, enth_iter, name_prog, name_enth);
+    look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, enth_iter);
 
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;

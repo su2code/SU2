@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,14 +39,14 @@ using namespace std;
  * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
-                                 vector<vector<unsigned long> > const& edges,
-                                 vector<vector<unsigned long> > const& val_edge_to_triangle) {
+                                 vector<std::array<unsigned long, 2> > const& edges,
+                                 su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
-  su2double startTime = SU2_MPI::Wtime();
+  su2double startTime = SU2_MPI::Wtime(); 
 
-  edge_to_triangle = vector<vector<unsigned long> >(val_edge_to_triangle);
+  edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 
-  unique_bands_x.assign(samples_x,samples_x+size);
+  unique_bands_x.assign(samples_x, samples_x + size);
 
   /* sort x_bands and make them unique */
   sort(unique_bands_x.begin(), unique_bands_x.end());
@@ -172,8 +172,8 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
     cout << "+------------------------------------------------------------------+" << endl;
     cout << "\n" << endl;
   }
-}
 
+}
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   /* find x band in which val_x sits */
@@ -185,12 +185,11 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
 
-  for (long unsigned int i = 0; i < edge_to_triangle[edges.first].size(); i++)
-    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
+
+  for (int i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_low[i] = edge_to_triangle[edges.first][i];
 
   std::array<unsigned long, 2> triangles_edge_up;
-  for (long unsigned int i = 0; i < edge_to_triangle[edges.second].size(); i++)
-    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
+  for (int i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
@@ -211,18 +210,18 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
   if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
   if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
 
-  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
-  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
+  std::pair<std::vector<su2double>::iterator, std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range(unique_bands_x.begin(), unique_bands_x.end(), val_x);
 
   /*--- if upper bound = 0, then use the range [0,1] ---*/
-  i_up =  max<unsigned long>(1, bounds.first - unique_bands_x.begin());
-  i_low = i_up-1;
+  i_up = max<unsigned long>(1, bounds.first - unique_bands_x.begin());
+  i_low = i_up - 1;
 
   return make_pair(i_low, i_up);
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long, unsigned long> val_band,
-                                                             su2double val_x, su2double val_y) const{
+                                                             su2double val_x, su2double val_y) const {
   su2double next_y;
   su2double y_edge_low;
   su2double y_edge_up;

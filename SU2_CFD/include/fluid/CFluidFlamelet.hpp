@@ -127,12 +127,12 @@ class CFluidFlamelet final : public CFluidModel {
   /*!
    * \brief Get the enthalpy range in the lookup table
    */
-  inline pair<su2double, su2double> GetTableLimitsEnth() { return look_up_table->GetTableLimitsEnth(); }
+  //inline pair<su2double, su2double> GetTableLimitsEnth() { return look_up_table->GetTableLimitsY(); }
 
   /*!
    * \brief Get the progress variable range in the lookup table
    */
-  inline pair<su2double, su2double> GetTableLimitsProg() { return look_up_table->GetTableLimitsProg(); }
+  //inline pair<su2double, su2double> GetTableLimitsProg() { return look_up_table->GetTableLimitsX(); }
 
   /*!
    * \brief Get the reaction source term of a species equation
