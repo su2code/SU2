@@ -6867,6 +6867,15 @@ public:
   const su2double* GetInlet_SpeciesVal(string val_index) const;
 
   /*!
+   * \brief Set the species values at an inlet boundary
+   * \param[in] val - value of the variable
+   * \param[in] iMarker - marker index
+   * \param[in] iVar - index to the variable
+   */
+  void SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const;
+
+
+  /*!
    * \brief Get the turbulent properties values at an inlet boundary
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet turbulent values.

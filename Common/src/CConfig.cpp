@@ -5508,6 +5508,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     n_control_vars = 2;
     n_scalars = n_control_vars + n_user_scalars;
+
+    /*--- compute inlet enthalpy from progress variable and temperature ---*/
+
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
@@ -8948,6 +8951,14 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
+}
+
+void CConfig::SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++){
+    if (Marker_Inlet[iMarker_Inlet] == val_marker)
+      Inlet_SpeciesVal[iMarker_Inlet][iVar] = val;
+  }
 }
 
 const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {

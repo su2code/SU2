@@ -68,7 +68,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   table_source_names.resize(n_table_sources);
   table_sources.resize(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot-PV";
+  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -172,15 +172,15 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double delta_temp_final = 0.01; /* convergence criterion for temperature in [K] */
+  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
   su2double enth_iter = initial_value; 
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
   vector<string> look_up_tags;
   vector<su2double*> look_up_data;
-  int counter_limit = 50;
-  
+  int counter_limit = 1000;
+
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /* look up temperature and heat capacity */
@@ -191,9 +191,10 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
 
     /* calculate delta_enthalpy following dh = cp * dT */
     delta_enth = Cp * delta_temp_iter;
-
+     
     /*--- update enthalpy ---*/
     enth_iter += delta_enth;
+
   }
 
   /*--- set enthalpy value ---*/

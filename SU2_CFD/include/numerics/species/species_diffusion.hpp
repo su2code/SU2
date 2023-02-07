@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,6 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Jacobian_j;
 
   const bool turbulence;
-  //const bool flamelet;
 
   /*!
    * \brief Adds any extra variables to AD
