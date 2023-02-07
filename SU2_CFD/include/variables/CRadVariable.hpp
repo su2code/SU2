@@ -2,7 +2,7 @@
  * \file CRadVariable.hpp
  * \brief Class for defining the variables of the radiation solver.
  * \author Ruben Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CTransLMVariable.cpp
  * \brief Definition of the solution fields.
  * \author A. Aranake, S. Kang
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
