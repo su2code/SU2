@@ -2,14 +2,14 @@
  * \file lax.cpp
  * \brief Implementations of Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,9 +82,9 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Rename for convenience ---*/
-  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
-  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
-  a_i   = V_i[A_INDEX];   a_j   = V_j[A_INDEX];
+  Density_i = V_i[RHO_INDEX]; Density_j = V_j[RHO_INDEX];
+  Enthalpy_i = V_i[H_INDEX]; Enthalpy_j = V_j[H_INDEX];
+  SoundSpeed_i = V_i[A_INDEX]; SoundSpeed_j = V_j[A_INDEX];
 
   /*--- Compute mean quantities for the variables ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -109,12 +109,12 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   }
 
   /*--- Compute the local spectral radius and the stretching factor ---*/
-  su2double ProjVel_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX],Normal);
-  su2double ProjVel_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX],Normal);
+  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX],Normal);
+  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX],Normal);
 
   /*--- Dissipation --*/
-  Local_Lambda_i = (fabs(ProjVel_i)+a_i*Area);
-  Local_Lambda_j = (fabs(ProjVel_j)+a_j*Area);
+  Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
+  Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
 
   Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
@@ -124,7 +124,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Computes differences btw. conservative variables ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_i[iVar] - U_j[iVar];
-  Diff_U[nSpecies+nDim] = rho_i*h_i - rho_j*h_j;
+  Diff_U[nSpecies+nDim] = Density_i*Enthalpy_i - Density_j*Enthalpy_j;
 
   /*--- Compute dissipation coefficient ---*/
   sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
