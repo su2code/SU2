@@ -305,7 +305,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
       prog_burnt = *fluid_model_local->GetLookUpTable()->GetTableLimitsX().second;
-      cout << "prog_burnt = " << prog_burnt << endl;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         for (unsigned long i_var = 0; i_var < nVar; i_var++) Solution[i_var] = 0.0;
 
