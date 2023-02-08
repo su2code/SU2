@@ -1,20 +1,20 @@
 # \file config_options.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -33,7 +33,7 @@ class OptionError(Exception):
     pass
 
 class Option(object):
-    
+
     def __init__(self):
         self.val = ""
 
@@ -60,7 +60,7 @@ class MathProblem(Option):
 
 class DEFINITION_DV(ordered_bunch):
     """ SU2.io.config.DEFINITION_DV()
-    
+
         List of design variables (Design variables are separated by semicolons)
         2D Design variables
     	   -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
@@ -83,9 +83,9 @@ class DEFINITION_DV(ordered_bunch):
 	Global design variables
 	   -TRANSLATION  ( 1, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
  	   -ROTATION	 ( 2, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
-        
+
     """
-    
+
     def __init__(self,*args,**kwarg):
         ordered_bunch.__init__(self)
         self.KIND   = []
@@ -94,14 +94,14 @@ class DEFINITION_DV(ordered_bunch):
         self.FFDTAG = []
         self.PARAM  = []
         self.update(ordered_bunch(*args,**kwarg))
-    
+
     def append(self,new_dv):
         self.KIND.  append(new_dv['KIND'])
         self.SCALE. append(new_dv['SCALE'])
         self.MARKER.append(new_dv['MARKER'])
         self.FFDTAG.append(new_dv['FFDTAG'])
         self.PARAM. append(new_dv['PARAM'])
-    
+
     def extend(self,new_dvs):
         assert isinstance(new_dvs,DEFINITION_DV) , 'input must be of type DEFINITION_DV'
         self.KIND.  extend(new_dvs['KIND'])
@@ -114,7 +114,7 @@ class DEFINITION_DV(ordered_bunch):
 
 class DV_KIND(ordered_bunch):
   """ SU2.io.config.DV_KIND()
-    
+
         List of design variables (Design variables are separated by semicolons)
         2D Design variables
     	   -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
@@ -137,19 +137,19 @@ class DV_KIND(ordered_bunch):
 	Global design variables
 	   -TRANSLATION  ( 1, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
  	   -ROTATION	 ( 2, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
-        
+
     """
-  
+
   def __init__(self,*args,**kwarg):
     ordered_bunch.__init__(self)
     self.FFDTAG = []
     self.PARAM  = []
     self.update(ordered_bunch(*args,**kwarg))
-  
+
   def append(self,new_dv):
     self.FFDTAG.append(new_dv['FFDTAG'])
     self.PARAM. append(new_dv['PARAM'])
-  
+
   def extend(self,new_dvs):
     assert isinstance(new_dvs,DV_KIND) , 'input must be of type DV_KIND'
     self.FFDTAG.extend(new_dvs['FFDTAG'])
