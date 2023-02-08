@@ -362,15 +362,6 @@ def main():
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
-    # ONERA M6 Wing - vorticity confinement
-    turb_oneram6_vc = TestCase('turb_oneram6_vc')
-    turb_oneram6_vc.cfg_dir = "rans/oneram6"
-    turb_oneram6_vc.cfg_file = "turb_ONERAM6_vc.cfg"
-    turb_oneram6_vc.test_iter = 15
-    turb_oneram6_vc.test_vals = [-2.262387, -6.626467, 0.228393, 0.140799, -2.7107e+04]
-    turb_oneram6_vc.timeout = 3200
-    test_list.append(turb_oneram6_vc)
-
     # ONERA M6 Wing - Newton-Krylov
     turb_oneram6_nk           = TestCase('turb_oneram6_nk')
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
@@ -999,14 +990,6 @@ def main():
     coolprop_transportModel.test_vals = [-4.527922, -1.308741, 4.630469, 0.000000, 0.000000]
     test_list.append(coolprop_transportModel)
 
-    # Subsonic Q1D nozzle using an MLP for thermodynamic state evaluation
-    datadriven_MLP           = TestCase('datadriven_MLP')
-    datadriven_MLP.cfg_dir   = "nicf/datadriven"
-    datadriven_MLP.cfg_file  = "datadriven_nozzle.cfg"
-    datadriven_MLP.test_iter = 100
-    datadriven_MLP.test_vals = [-4.159241, 0.073280, 3.627716, 0.000000, 0.000000]
-    test_list.append(datadriven_MLP)
-
     ######################################
     ### Turbomachinery                 ###
     ######################################
@@ -1223,7 +1206,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737] #last 7 lines
+    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
     solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     test_list.append(solid_periodic_pins)
 
@@ -1436,7 +1419,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.738778, -4.325766, -4.610914, -5.834431, 0.521730, -4.934375, 5.000000, -1.887191, 5.000000, -5.499917, 5.000000, -1.770845, 2.292904, 0.971941, 0.608500, 0.712464]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
-
+    
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg')
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1448,7 +1431,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
-
+    
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND           = TestCase('species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg')
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1460,7 +1443,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
-
+    
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1478,7 +1461,7 @@ def main():
     species_primitiveVenturi_boundedscalar.test_vals   = [-5.297585, -4.397797, -4.377086, -5.593131, -1.011782, -5.623540, 5.000000, -1.775123, 5.000000, -4.086339, 5.000000, -2.080187, 0.000424, 0.000424, 0.000000, 0.000000]
     species_primitiveVenturi_boundedscalar.new_output  = True
     test_list.append(species_primitiveVenturi_boundedscalar)
-
+    
     # 2 species (1 eq) primitive venturi mixing using mixing model including inlet markers for turbulent intensity and viscosity ratios
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS           = TestCase('species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg')
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"

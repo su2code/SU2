@@ -27,9 +27,41 @@
 
 #pragma once
 
-#include "scalar/scalar_diffusion.hpp"
-#include "scalar/scalar_convection.hpp"
-#include "../variables/CIncEulerVariable.hpp"
+#include "CNumerics.hpp"
+
+/*!
+ * \class CCentSca_Heat
+ * \brief Class for scalar centered scheme.
+ * \ingroup ConvDiscr
+ * \author O. Burghardt
+ * \version 7.5.0 "Blackbird"
+ */
+class CCentSca_Heat : public CNumerics {
+private:
+  su2double Param_Kappa_4;         /*!< \brief Artificial dissipation parameters. */
+  bool implicit;                   /*!< \brief Implicit calculation. */
+  bool dynamic_grid;               /*!< \brief Modification for grid movement. */
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
+
+  /*!
+   * \brief Compute the flow residual using a JST method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config) override;
+};
 
 /*!
  * \class CUpwSca_Heat
@@ -38,31 +70,27 @@
  * \author O. Burghardt.
  * \version 7.5.1 "Blackbird"
  */
-class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>> {
- public:
+class CUpwSca_Heat : public CNumerics {
+private:
+  bool implicit, dynamic_grid;
+
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Heat(unsigned short val_nDim, const CConfig *config)
-    : CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>>(val_nDim, 1, config) {}
-
- private:
-  /*!
-   * \brief Adds extra variables to AD
-   */
-  void ExtraADPreaccIn(void) override {}
+  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
-   * \brief Heat-specific specific steps in the ComputeResidual method
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override {
-    Flux[0] = a0 * ScalarVar_i[0] + a1 * ScalarVar_j[0];
-    Jacobian_i[0][0] = a0;
-    Jacobian_j[0][0] = a1;
-  }
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -72,36 +100,26 @@ class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::templat
  * \author O. Burghardt.
  * \version 7.5.1 "Blackbird"
  */
-class CAvgGrad_Heat final : public CAvgGrad_Scalar<CNoFlowIndices> {
- public:
+class CAvgGrad_Heat : public CNumerics {
+private:
+  bool implicit, correct;
+
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] correct - Whether to correct the gradient.
+   * \param[in] correct - Correct the gradient.
    */
-  CAvgGrad_Heat(unsigned short val_nDim, const CConfig *config, bool correct)
-    : CAvgGrad_Scalar<CNoFlowIndices>(val_nDim, 1, correct, config) {}
-
- private:
-  /*!
-   * \brief Adds extra variables to AD
-   */
-  void ExtraADPreaccIn(void) override {
-    AD::SetPreaccIn(*Diffusion_Coeff_i, *Diffusion_Coeff_j);
-  }
+  CAvgGrad_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config, bool correct);
 
   /*!
-   * \brief Heat-specific specific steps in the ComputeResidual method
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override {
-    const su2double Thermal_Diffusivity_Mean = 0.5 * (*Diffusion_Coeff_i + *Diffusion_Coeff_j);
-
-    Flux[0] = Thermal_Diffusivity_Mean * Proj_Mean_GradScalarVar[0];
-
-    /*--- Use TSL for Jacobians. ---*/
-    Jacobian_i[0][0] = -Thermal_Diffusivity_Mean * proj_vector_ij;
-    Jacobian_j[0][0] = Thermal_Diffusivity_Mean * proj_vector_ij;
-  }
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };

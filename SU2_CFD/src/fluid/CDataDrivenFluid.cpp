@@ -379,7 +379,7 @@ unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
     outputs_LUT[iOutput] = outputs_rhoe[iOutput];
   }
 
-  exit_code = lookup_table->LookUp_ProgEnth(output_names_rhoe_LUT, outputs_LUT, rho, e, "Density", "Energy");
+  exit_code = lookup_table->LookUp_XY(output_names_rhoe_LUT, outputs_LUT, rho, e);
   return exit_code;
 }
 
