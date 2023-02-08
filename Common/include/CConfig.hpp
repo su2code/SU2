@@ -125,6 +125,7 @@ private:
   Low_Mach_Precon,          /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
   Low_Mach_Corr,            /*!< \brief Flag to know if we are using a low Mach number correction. */
   GravityForce,             /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+  VorticityConfinement,     /*!< \brief Flag to know if the Vorticity Confinement is included in the formulation. */
   SubsonicEngine,           /*!< \brief Engine intake subsonic region. */
   Frozen_Visc_Cont,         /*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,         /*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
@@ -147,6 +148,7 @@ private:
   su2double dCMy_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMz_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
+  su2double Confinement_Param; /*!< \brief Confinement paramenter for Vorticity Confinement method. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -284,7 +286,6 @@ private:
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-  su2double **Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -496,6 +497,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
@@ -553,6 +555,7 @@ private:
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
+  Kind_Centered_Heat,           /*!< \brief Centered scheme for the heat transfer model. */
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
 
 
@@ -569,6 +572,7 @@ private:
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
+  Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
@@ -604,7 +608,6 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
-  WALL_TYPE *Kind_Wall;            /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -634,8 +637,6 @@ private:
   Kappa_1st_Flow,           /*!< \brief Lax 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,           /*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
-  Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
   Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
   Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
@@ -1107,7 +1108,6 @@ private:
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
-  ad_coeff_heat[2],      /*!< \brief artificial dissipation (heat) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
   geo_loc[2],            /*!< \brief SU2_GEO section locations array for the COption class. */
@@ -1196,6 +1196,7 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  nSpecies_inlet,                           /*!< \brief No. of species for NEMO inlet. */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
@@ -1210,6 +1211,8 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
+  su2double *Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for NEMO inlet boundaries. */
+  su2double Inlet_Temperature_ve;           /*!< \brief Specified Tve for supersonic inlet boundaries (NEMO solver). */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1590,6 +1593,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
+  /*!
+   * \brief Get the value of the Confinement Parameter.
+   * \return Value of the constant: Confinement Parameter
+   */
+  su2double GetConfinement_Param(void) const { return Confinement_Param; }
 
   /*!
    * \brief Get the values of the CFL adaption parameters.
@@ -2326,8 +2335,8 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
-                             UPWIND val_kind_upwind,        LIMITER val_kind_slopelimit,
-                             bool val_muscl,                        unsigned short val_kind_fem);
+                             UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
+                             bool val_muscl,  unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
@@ -4376,7 +4385,7 @@ public:
    * \return Value of roughness.
    */
   su2double GethRoughness(void) const { return hRoughness; }
-  
+
   /*!
    * \brief Get the kind of the species model.
    * \return Kind of the species model.
@@ -4690,18 +4699,6 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void) const { return Kappa_4th_Flow; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equations.
-   */
-  su2double GetKappa_2nd_Heat(void) const { return Kappa_2nd_Heat; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST-like method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equation.
-   */
-  su2double GetKappa_4th_Heat(void) const { return Kappa_4th_Heat; }
 
   /*!
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
@@ -6048,6 +6045,12 @@ public:
   bool GetGravityForce(void) const { return GravityForce; }
 
   /*!
+   * \brief Get information about the Vorticity Confinement.
+   * \return <code>TRUE</code> if it uses Vorticity Confinement; otherwise <code>FALSE</code>.
+   */
+  bool GetVorticityConfinement(void) const { return VorticityConfinement; }
+
+  /*!
    * \brief Get information about the body force.
    * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
    */
@@ -6717,6 +6720,20 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
+   * \brief Get the mass fraction vector for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  const su2double* GetInlet_MassFrac() const { return Inlet_MassFrac; }
+
+  /*!
+   * \brief Get the Tve value for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
+
+  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -6988,7 +7005,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall type and roughness height.
    */
-  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(string val_marker) const;
+  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(const string& val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
