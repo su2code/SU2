@@ -5492,7 +5492,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
       checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
 
-      for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
         su2double Inlet_SpeciesVal_Sum = 0.0;
         for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
