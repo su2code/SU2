@@ -520,7 +520,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   su2double enth_inlet;
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
-
   const su2double* inlet_scalar_original = config->GetInlet_SpeciesVal(Marker_Tag);
   su2double* inlet_scalar = const_cast<su2double*>(inlet_scalar_original);
 
