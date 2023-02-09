@@ -184,12 +184,10 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
 
   /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
-
-
-  for (int i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_low[i] = edge_to_triangle[edges.first][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_low[i] = edge_to_triangle[edges.first][i];
 
   std::array<unsigned long, 2> triangles_edge_up;
-  for (int i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_up[i] = edge_to_triangle[edges.second][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
