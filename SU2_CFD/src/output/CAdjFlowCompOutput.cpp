@@ -166,7 +166,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config) {
 
   AddHistoryOutputFields_AdjScalarLinsol(config);
 
-  if (config->GetDeform_Mesh()){
+  if (config->GetDeform_Mesh()) {
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
