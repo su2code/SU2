@@ -109,9 +109,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity y-component.
   AddHistoryOutput("RMS_ADJ_VELOCITY-Y", "rms[A_V]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) {
+    AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
 
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     AddHistoryOutput("ADJOINT_SOLEXTRA", "Adjoint_SolExtra", ScreenOutputFormat::FIXED, "ADJOINT_SOLEXTRA", "Adjoint value of the first extra Solution.", HistoryFieldType::COEFFICIENT);
@@ -133,9 +137,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the adjoint Velocity y-component
   AddHistoryOutput("MAX_ADJ_VELOCITY-Y", "max[A_RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity y-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint Velocity z-component
-  if (nDim == 3) AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) {
+    AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
+  }
 
   AddHistoryOutputFields_AdjScalarMAX_RES(config);
   /// END_GROUP
@@ -148,9 +156,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: BGS residual of the adjoint Velocity y-component
   AddHistoryOutput("BGS_ADJ_VELOCITY-Y", "bgs[A_RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity y-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint Velocity z-component
-  if (nDim == 3) AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: BGS residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) {
+    AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
 
   AddHistoryOutputFields_AdjScalarBGS_RES(config);
 
