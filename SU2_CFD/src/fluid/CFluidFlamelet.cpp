@@ -72,7 +72,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
-        S_tot = S_PROD + S_CONS * Y ---*/ 
+        S_tot = S_PROD + S_CONS * Y ---*/
 
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
