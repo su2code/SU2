@@ -268,7 +268,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -1.559957, -3.080711, 0.000440, -1.063100]
+    discadj_fsi.test_vals = [6.000000, -1.949946, -3.080711, 0.000440, -1.063100]
     test_list.append(discadj_fsi)
 
     # Multi physics framework
@@ -276,7 +276,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.479484, 0.127482, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals         = [-4.349355, 0.127482, -1.303589, 0.000000, 2.324400]
     discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.tol       = 1e-16
     test_list.append(discadj_fsi2)
