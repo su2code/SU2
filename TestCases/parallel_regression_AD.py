@@ -3,20 +3,20 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,11 +29,11 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase    
+from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
@@ -49,7 +49,7 @@ def main():
     discadj_naca0012.test_iter = 100
     discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
     test_list.append(discadj_naca0012)
-   
+
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
@@ -65,7 +65,7 @@ def main():
     discadj_arina2k.test_iter    = 20
     discadj_arina2k.test_vals    = [-3.111181, -3.501516, 6.8705e-02, 0]
     test_list.append(discadj_arina2k)
-    
+
     # Equivalent area NACA64-206
     ea_naca64206              = TestCase('ea_naca64206')
     ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
@@ -157,16 +157,16 @@ def main():
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
-   
+
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014] #last 4 columns
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-    
+
     ##############################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average ###
     ##############################################################
@@ -174,12 +174,12 @@ def main():
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg"
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.004406] #last column
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-    
+
     ##############################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average ###
     ##############################################################
@@ -187,14 +187,14 @@ def main():
     # Turbulent Cylinder
     discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
-    discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
+    discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg"
     discadj_cylinder.test_iter = 6
     discadj_cylinder.test_vals = [0.202349, -0.000119, 1.899933, -0.000050, 1.067900]
     discadj_cylinder.tol       = 0.0001
     discadj_cylinder.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_DIRECTDIFF")
     discadj_cylinder.unsteady  = True
-    test_list.append(discadj_cylinder)  
-    
+    test_list.append(discadj_cylinder)
+
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -224,27 +224,27 @@ def main():
     #######################################################
     ### Disc. adj. turbomachinery                       ###
     #######################################################
-    
+
     # Transonic Stator 2D
     discadj_trans_stator           = TestCase('transonic_stator')
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
-    discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
+    discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals = [79.000000, -1.941681, -1.984570]
     test_list.append(discadj_trans_stator)
-    
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
-   
+
     # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
-    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [-2.849774, -3.238669, -0.000364, -8.708700] #last 4 columns
     discadj_fea.test_vals_aarch64 = [-2.849726, -3.238594, -0.000364, -8.708700] #last 4 columns
-    test_list.append(discadj_fea) 
+    test_list.append(discadj_fea)
 
     ###################################
     ### Disc. adj. heat             ###
@@ -255,20 +255,20 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-2.280433, 0.714828, -0.743730, -6.767300]
-    discadj_heat.test_vals_aarch64 = [-2.280428, 0.714835, -0.743730, -6.767300]
+    discadj_heat.test_vals         = [-2.226525, 0.603989, 0.000000, -6.256200]
+    discadj_heat.test_vals_aarch64 = [-2.226525, 0.603989, 0.000000, -6.256200]
     test_list.append(discadj_heat)
 
     ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
-   
+
     # Legacy driver
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -1.559957, -3.080711, 0.000440, -1.063100]
+    discadj_fsi.test_vals = [6.000000, -1.949946, -3.080711, 0.000440, -1.063100]
     test_list.append(discadj_fsi)
 
     # Multi physics framework
@@ -276,9 +276,9 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.479484, 0.127482, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals         = [-4.349355, 0.127482, -1.303589, 0.000000, 2.324400]
     discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
-    discadj_fsi2.tol       = 1e-16
+    discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
     ###################################
@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.364408, -3.085549, -3.085516, -3.085511]
+    discadj_cht.test_vals = [-2.955510, -3.085549, -3.085516, -3.085511]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
@@ -316,8 +316,8 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.000000, 3.684000, 2.9483e-01]
-    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.000000, 3.684000, 2.9483e-01]
+    da_unsteadyCHT_cylinder.test_vals         = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
     test_list.append(da_unsteadyCHT_cylinder)
@@ -364,7 +364,7 @@ def main():
     # NACA0012 Airfoil
     unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.cfg_file  = "naca0012.cfg"
     unsteady_naca0012.test_iter = 14
     unsteady_naca0012.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-f")
     unsteady_naca0012.timeout   = 1600
@@ -373,7 +373,7 @@ def main():
     unsteady_naca0012.unsteady  = True
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
-    
+
     ####################################################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint 		 ###
     ####################################################################################
@@ -381,7 +381,7 @@ def main():
     # NACA0012 Airfoil (Test depends on results of "unsteady_NACA0012_restart_adjoint")
     unsteady_naca0012           = TestCase('unsteady_NACA0012_adjoint_only')
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.cfg_file  = "naca0012.cfg"
     unsteady_naca0012.test_iter = 14
     unsteady_naca0012.command   = TestCase.Command(exec = "discrete_adjoint.py", param = "-m adj -f")
     unsteady_naca0012.timeout   = 1600

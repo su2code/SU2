@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,6 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
@@ -64,6 +63,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
     /*--- Compute mean effective viscosity ---*/
 
     const su2double nu_i = Laminar_Viscosity_i/Density_i;
@@ -111,7 +112,6 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
@@ -129,6 +129,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
     /*--- Compute mean effective viscosity ---*/
 
     const su2double nu_i = Laminar_Viscosity_i/Density_i;
@@ -191,7 +193,6 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
@@ -215,6 +216,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
     /*--- Compute the blended constant for the viscous terms ---*/
     const su2double sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
     const su2double sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;

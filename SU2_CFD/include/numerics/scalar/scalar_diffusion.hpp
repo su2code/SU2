@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in scalar problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,18 @@
 #pragma once
 
 #include "../CNumerics.hpp"
+
+/*!
+ * \class CNoFlowIndices
+ * \brief Dummy flow indices class to use CAvgGrad_Scalar when flow variables are not available.
+ * For example, solid heat transfer problems.
+ */
+struct CNoFlowIndices {
+  CNoFlowIndices(int, int) {}
+  inline int Density() const { return 0; }
+  inline int LaminarViscosity() const { return 0; }
+  inline int EddyViscosity() const { return 0; }
+};
 
 /*!
  * \class CAvgGrad_Scalar
@@ -57,7 +69,7 @@ class CAvgGrad_Scalar : public CNumerics {
   su2double* Jacobian_j[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node j. */
   su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];/*!< \brief Static storage for the two Jacobians. */
 
-  const bool correct_gradient = false, implicit = false, incompressible = false;
+  const bool correct_gradient = false, incompressible = false;
 
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD
@@ -84,7 +96,6 @@ class CAvgGrad_Scalar : public CNumerics {
     : CNumerics(val_nDim, val_nVar, config),
       idx(val_nDim, config->GetnSpecies()),
       correct_gradient(correct_grad),
-      implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
     if (nVar > MAXNVAR) {
       SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
@@ -116,15 +127,17 @@ class CAvgGrad_Scalar : public CNumerics {
       AD::SetPreaccIn(ScalarVar_i, nVar);
       AD::SetPreaccIn(ScalarVar_j, nVar);
     }
-    AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
-    AD::SetPreaccIn(V_j[idx.Density()], V_j[idx.LaminarViscosity()], V_j[idx.EddyViscosity()]);
+    if (!std::is_same<FlowIndices, CNoFlowIndices>::value) {
+      AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+      AD::SetPreaccIn(V_j[idx.Density()], V_j[idx.LaminarViscosity()], V_j[idx.EddyViscosity()]);
 
-    Density_i = V_i[idx.Density()];
-    Density_j = V_j[idx.Density()];
-    Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
-    Laminar_Viscosity_j = V_j[idx.LaminarViscosity()];
-    Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
-    Eddy_Viscosity_j = V_j[idx.EddyViscosity()];
+      Density_i = V_i[idx.Density()];
+      Density_j = V_j[idx.Density()];
+      Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+      Laminar_Viscosity_j = V_j[idx.LaminarViscosity()];
+      Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
+      Eddy_Viscosity_j = V_j[idx.EddyViscosity()];
+    }
 
     ExtraADPreaccIn();
 

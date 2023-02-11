@@ -2,14 +2,14 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,19 +36,17 @@
 /*!
  * \class CNEMONumerics
  * \brief Base class template NEMO numerics.
- * \author C. Garbacz.
+ * \author C. Garbacz., W. Maier
  */
 class CNEMONumerics : public CNumerics {
 public:
   bool implicit, ionization;
-  su2double *rhos_i, *u_i;
-  su2double *rhos_j, *u_j;
-  su2double a_i, P_i, h_i;
-  su2double a_j, P_j, h_j;
-  su2double rho_i, rho_j;
+  su2double *rhos_i, *rhos_j;
+  su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
   su2double e_ve_i, e_ve_j;
   su2double rhoCvtr_i, rhoCvtr_j;
   su2double rhoCvve_i, rhoCvve_j;
+  su2double ProjVelocity_i, ProjVelocity_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
