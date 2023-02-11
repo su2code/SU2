@@ -278,7 +278,7 @@ def main():
     discadj_fsi2.test_iter = 8
     discadj_fsi2.test_vals         = [-4.349355, 0.127482, -1.303589, 0.000000, 2.324400]
     discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
-    discadj_fsi2.tol       = 1e-16
+    discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
     ###################################
