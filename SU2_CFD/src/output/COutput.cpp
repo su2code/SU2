@@ -196,17 +196,22 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   curInnerIter = InnerIter;
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-
+cout <<"1"<<endl;
   LoadCommonHistoryData(config);
 
+cout <<"2"<<endl;
   LoadHistoryData(config, geometry, solver_container);
 
+cout <<"3"<<endl;
   Convergence_Monitoring(config, curInnerIter);
 
+cout <<"4"<<endl;
   Postprocess_HistoryData(config);
 
+cout <<"5"<<endl;
   MonitorTimeConvergence(config, curTimeIter);
 
+cout <<"6"<<endl;
   OutputScreenAndHistory(config);
 
 }
