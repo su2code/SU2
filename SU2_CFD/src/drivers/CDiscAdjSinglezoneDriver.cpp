@@ -297,7 +297,7 @@ cout << "register output"<<endl;
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
-cout << "set objective function" << endl;
+cout << "nijso:set objective function" << endl;
   SetObjFunction();
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
@@ -345,7 +345,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
-
+cout << "setobjfunc start"<<endl;
   ObjFunc = 0.0;
 
   /*--- Specific scalar objective functions ---*/
@@ -356,11 +356,12 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
 
     /*--- Surface based obj. function ---*/
-
+    cout <<"history output"<<endl;
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
+    cout << "set objfunc" <<endl;
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-
+    cout <<"stuff"<<endl;
     /*--- These calls to be moved to a generic framework at a next stage        ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
     if (config->GetBoolTurbomachinery()) {
@@ -402,10 +403,11 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   default:
     break;
   }
-
+cout << "register output" << endl;
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
   }
+cout << "setobjfunc end"<<endl;
 
 }
 
