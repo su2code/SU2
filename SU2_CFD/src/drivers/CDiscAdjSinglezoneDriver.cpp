@@ -261,7 +261,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
-    case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::CLEAR_INDICES: cout << "Nijso:Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES:
       cout << "Direct iteration to store the primal computational graph." << endl;
@@ -269,7 +269,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     default: break;
     }
   }
-
+  cout << "end clear" << endl;
   /*---Enable recording and register input of the iteration --- */
 
   if (kind_recording != RECORDING::CLEAR_INDICES){
