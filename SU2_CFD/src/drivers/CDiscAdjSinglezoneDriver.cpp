@@ -280,12 +280,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   }
 
   /*--- Set the dependencies of the iteration ---*/
-
+cout << "set dependencies" << endl;
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
                              INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/
-
+cout << "direct run" << endl;
   DirectRun(kind_recording);
 
   /*--- Store the recording state ---*/
@@ -293,11 +293,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   RecordingState = kind_recording;
 
   /*--- Register Output of the iteration ---*/
-
+cout << "register output"
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
-
+cout << "set objective function" << endl;
   SetObjFunction();
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
@@ -317,7 +317,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   }
 
   AD::StopRecording();
-
+cout << "end" << endl;
 }
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
