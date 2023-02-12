@@ -47,7 +47,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
 
   IdentifyUniqueEdges();
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << " done." << endl;
 
   PrintTableInfo();
@@ -59,20 +59,20 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
 
   trap_map_prog_enth = CTrapezoidalMap(GetDataP(name_prog), GetDataP(name_enth), table_data.cols(), edges, edge_to_triangle);
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << "Precomputing interpolation coefficients..." << endl;
-  
+
 
   ComputeInterpCoeffs(name_prog, name_enth);
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << "LUT fluid model ready for use" << endl;
 }
 
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
   file_reader.ReadRawLUT(var_file_name_lut);
@@ -88,7 +88,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   triangles = file_reader.GetTriangles();
   hull = file_reader.GetHull();
 
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE)
     cout << " done." << endl;
 }
 
@@ -142,7 +142,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
      for each of the points in the table */
 
   vector<vector<unsigned long> > neighborElemsOfPoint;
-  
+
   neighborElemsOfPoint.resize(n_points);
   for (unsigned long iElem = 0; iElem < n_triangles; iElem++) {
     /* loop over 3 points per triangle */
@@ -279,7 +279,7 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
   global_M.Invert();
   global_M.Transpose();
- 
+
   for (unsigned int i=0; i<M; i++){
     for (unsigned int j=0; j<M; j++){
       interp_mat_inv[i][j] = global_M(i,j);
@@ -312,8 +312,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
 
       /* first, copy the single triangle from the large triangle list*/
       std::array<unsigned long,3> triangle{0};
-      for (int p = 0; p < 3; p++) 
-        triangle[p] = triangles[id_triangle][p]; 
+      for (int p = 0; p < 3; p++)
+        triangle[p] = triangles[id_triangle][p];
 
       *val_var = Interpolate(GetDataP(val_name_var), triangle, interp_coeffs);
       exit_code = 0;
@@ -351,7 +351,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
                                             const string& name_enth) {
   unsigned long exit_code = 0;
   unsigned long nearest_neighbor = 0;
-  unsigned long id_triangle;
+  unsigned long id_triangle=0;
   std::array<su2double,3> interp_coeffs{0};
   std::array<unsigned long,3> triangle{0};
 
@@ -387,9 +387,9 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
   for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
     if (val_names_var[i_var].compare("NULL") == 0 ||
         val_names_var[i_var].compare("Null") == 0 ||
-        val_names_var[i_var].compare("null") == 0 || 
-        val_names_var[i_var].compare("ZERO") == 0 || 
-        val_names_var[i_var].compare("Zero") == 0 || 
+        val_names_var[i_var].compare("null") == 0 ||
+        val_names_var[i_var].compare("ZERO") == 0 ||
+        val_names_var[i_var].compare("Zero") == 0 ||
         val_names_var[i_var].compare("zero") == 0 )
     {
       *val_vars[i_var] = 0.0;
@@ -397,8 +397,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
       if (exit_code == 0){
 
         /* first, copy the single triangle from the large triangle list*/
-        for (int p = 0; p < 3; p++) 
-          triangle[p] = triangles[id_triangle][p]; 
+        for (int p = 0; p < 3; p++)
+          triangle[p] = triangles[id_triangle][p];
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var]), triangle, interp_coeffs);
       }
       else
@@ -473,7 +473,7 @@ bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned
 
   su2double tri_prog_1 = GetDataP(name_prog)[triangles[val_id_triangle][1]];
   su2double tri_enth_1 = GetDataP(name_enth)[triangles[val_id_triangle][1]];
-  
+
   su2double tri_prog_2 = GetDataP(name_prog)[triangles[val_id_triangle][2]];
   su2double tri_enth_2 = GetDataP(name_enth)[triangles[val_id_triangle][2]];
 
