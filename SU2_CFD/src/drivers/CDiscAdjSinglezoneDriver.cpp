@@ -293,7 +293,7 @@ cout << "direct run" << endl;
   RecordingState = kind_recording;
 
   /*--- Register Output of the iteration ---*/
-cout << "register output"
+cout << "register output"<<endl;
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
