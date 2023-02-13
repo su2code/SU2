@@ -25,9 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/SU2_DEF.hpp"
-
-using namespace std;
+#include "../include/drivers/CDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
 

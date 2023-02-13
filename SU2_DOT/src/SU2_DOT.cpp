@@ -25,9 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/SU2_DOT.hpp"
-
-using namespace std;
+#include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
 
