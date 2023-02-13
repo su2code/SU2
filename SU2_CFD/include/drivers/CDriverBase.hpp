@@ -121,6 +121,9 @@ class CDriverBase {
    */
   virtual void Postprocessing(){}
 
+/// \addtogroup PySU2
+/// @{
+
   /*!
    * \brief Get the number of design variables.
    * \return Number of design variables.
@@ -320,6 +323,7 @@ class CDriverBase {
    * \brief Communicate the boundary mesh displacements.
    */
   void CommunicateMeshDisplacements(void);
+/// \}
 
  protected:
   /*!

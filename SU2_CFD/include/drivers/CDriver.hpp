@@ -403,6 +403,9 @@ class CDriver : public CDriverBase {
    */
   virtual void SetInitialMesh() {}
 
+/// \addtogroup PySU2
+/// \{
+
   /*!
    * \brief Process the boundary conditions and update the multi-grid structure.
    */
@@ -643,6 +646,8 @@ class CDriver : public CDriverBase {
    * \param[in] alpha - Angle (Zpos).
    */
   void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
+/// \}
 
   /*!
    * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
