@@ -528,12 +528,13 @@ void CDeformationDriver::Postprocessing() {
   if (driver_config->GetDeform_Mesh()) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (numerics_container[iZone] != nullptr) {
-        for (unsigned int iTerm = 0; iTerm < MAX_TERMS * omp_get_max_threads(); iTerm++) {
+        for (int thread = 0; thread < omp_get_max_threads(); thread++) {
+          const int iTerm = FEA_TERM + thread * MAX_TERMS;
           delete numerics_container[iZone][INST_0][MESH_0][MESH_SOL][iTerm];
-          delete[] numerics_container[iZone][INST_0][MESH_0][MESH_SOL];
-          delete[] numerics_container[iZone][INST_0][MESH_0];
-          delete[] numerics_container[iZone][INST_0];
         }
+        delete[] numerics_container[iZone][INST_0][MESH_0][MESH_SOL];
+        delete[] numerics_container[iZone][INST_0][MESH_0];
+        delete[] numerics_container[iZone][INST_0];
       }
       /*--- The remaining levels in the container are deleted in CommonPostprocessing ---*/
     }

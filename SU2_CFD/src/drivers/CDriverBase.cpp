@@ -105,10 +105,12 @@ void CDriverBase::CommonPostprocessing() {
 
   if (grid_movement != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        delete grid_movement[iZone][iInst];
+      if (grid_movement[iZone] != nullptr) {
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+          delete grid_movement[iZone][iInst];
+        }
+        delete[] grid_movement[iZone];
       }
-      delete[] grid_movement[iZone];
     }
     delete[] grid_movement;
   }
