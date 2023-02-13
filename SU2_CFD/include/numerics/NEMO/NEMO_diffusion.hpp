@@ -94,7 +94,7 @@ public:
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
-  unsigned short
+  unsigned short iDim, iVar,
   nPrimVar, nPrimVarGrad;       /*!< \brief Iterators in dimension an variable. */
   su2double
   *Mean_PrimVar,                /*!< \brief Mean primitive variables. */

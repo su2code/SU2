@@ -26,7 +26,6 @@
  */
 
 #include "../../include/fluid/CPengRobinson.hpp"
-#include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 
 CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w)
     : CIdealGas(gamma, R) {

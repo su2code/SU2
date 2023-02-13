@@ -293,7 +293,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   for (auto iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
     }

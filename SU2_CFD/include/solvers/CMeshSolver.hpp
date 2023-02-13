@@ -125,7 +125,6 @@ public:
   /*!
    * \brief Grid deformation using the linear elasticity equations.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Numerics used in the solution.
    * \param[in] config - Definition of the particular problem.
    */
   void DeformMesh(CGeometry **geometry,
@@ -134,10 +133,11 @@ public:
 
   /*!
    * \brief Set the stiffness of the mesh.
-   * \param[in] numerics - Numerics used in the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMesh_Stiffness(CNumerics **numerics,
+  void SetMesh_Stiffness(CGeometry **geometry,
+                         CNumerics **numerics,
                          CConfig *config) override;
 
   /*!
