@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -415,7 +415,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   END_SU2_OMP_PARALLEL
 }
 
-void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+void CMeshSolver::SetMesh_Stiffness(CNumerics **numerics, CConfig *config){
 
   if (stiffness_set) return;
 

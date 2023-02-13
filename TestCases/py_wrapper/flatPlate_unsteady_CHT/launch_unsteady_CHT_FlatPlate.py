@@ -3,7 +3,7 @@
 ## \file launch_unsteady_CHT_FlatPlate.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -75,24 +75,20 @@ def main():
   CHTMarker = 'plate'       # Specified by the user
 
   # Get all the tags with the CHT option
-  CHTMarkerList =  SU2Driver.GetAllCHTMarkersTag()
+  CHTMarkerList =  SU2Driver.GetCHTMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
   #Check if the specified marker has a CHT option and if it exists on this rank.
   if CHTMarker in CHTMarkerList and CHTMarker in allMarkerIDs.keys():
     CHTMarkerID = allMarkerIDs[CHTMarker]
 
   # Number of vertices on the specified marker (per rank)
-  nVertex_CHTMarker = 0         #total number of vertices (physical + halo)
-  nVertex_CHTMarker_HALO = 0    #number of halo vertices
-  nVertex_CHTMarker_PHYS = 0    #number of physical vertices
+  nVertex_CHTMarker = 0         # total number of vertices (physical + halo)
 
   if CHTMarkerID != None:
-    nVertex_CHTMarker = SU2Driver.GetNumberVertices(CHTMarkerID)
-    nVertex_CHTMarker_HALO = SU2Driver.GetNumberHaloVertices(CHTMarkerID)
-    nVertex_CHTMarker_PHYS = nVertex_CHTMarker - nVertex_CHTMarker_HALO
+    nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
@@ -115,6 +111,7 @@ def main():
     # Set this temperature to all the vertices on the specified CHT marker
     for iVertex in range(nVertex_CHTMarker):
       SU2Driver.SetVertexTemperature(CHTMarkerID, iVertex, WallTemp)
+
     # Tell the SU2 drive to update the boundary conditions
     SU2Driver.BoundaryConditionsUpdate()
     # Run one time iteration (e.g. dual-time)

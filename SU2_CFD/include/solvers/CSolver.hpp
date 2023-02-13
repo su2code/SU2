@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4167,8 +4167,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  inline virtual void SetMesh_Stiffness(CGeometry **geometry,
-                                        CNumerics **numerics,
+  inline virtual void DeformMesh(CGeometry *geometry,
+                                 CNumerics **numerics,
+                                 CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  inline virtual void SetMesh_Stiffness(CNumerics **numerics,
                                         CConfig *config) { }
 
   /*!

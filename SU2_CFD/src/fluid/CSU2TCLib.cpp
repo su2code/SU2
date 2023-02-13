@@ -2,7 +2,7 @@
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland, J. Needels
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -751,8 +751,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     /*--- Allocate and initialize electron data arrays ---*/
     CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
-    ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);      
-   
+    ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
+
     // e: 1 state
     CharElTemp(0,0) = 0.000000000000000E+00;
     ElDegeneracy(0,0) = 1;
@@ -1079,7 +1079,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(6,5,0) = -1.6409054E-02; Omega11(6,5,1) = 4.6352852E-01;  Omega11(6,5,2) = -4.5479735E+00; Omega11(6,5,3) = 7.4250671E+07;
     Omega11(6,6,0) = -1.000000E+00;  Omega11(6,6,1) = -1.000000E+00;  Omega11(6,6,2) = -1.000000E+00;  Omega11(6,6,3) = -1.000000E+00;
 
-
     // Omega^(2,2) ----------------------
     Omega22(0,0,0) = -1.000000E+00;  Omega22(0,0,1) = -1.000000E+00;  Omega22(0,0,2) = -1.000000E+00;  Omega22(0,0,3) = -1.000000E+00;
     Omega22(0,1,0) = -4.2254948E-03; Omega22(0,1,1) = -5.2965163E-02; Omega22(0,1,2) = 1.9157708E+00;  Omega22(0,1,3) = 6.3263309E-04;
@@ -1237,6 +1236,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
   }
 
   return Cvves;
+
 }
 
 vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
@@ -1679,6 +1679,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   omega = omegaVT + omegaCV;
 
   return omega;
+
 }
 
 void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve, const su2double *dTdU, const su2double* dTvedU, su2double **val_jacobian){
@@ -1714,6 +1715,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
   }
 
   return hs;
+
 }
 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
@@ -1726,6 +1728,7 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
    DiffusionCoeffWBE();
 
   return DiffusionCoeff;
+
 }
 
 su2double CSU2TCLib::GetViscosity(){
@@ -1751,6 +1754,7 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
     ThermalConductivitiesSuth();
 
   return ThermalConductivities;
+
 }
 
 void CSU2TCLib::DiffusionCoeffWBE(){
