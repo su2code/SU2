@@ -128,6 +128,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarLinsol(const CConfig* confi
 // clang-format on
 
 void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver) {
+cout <<"nijso:cadjflowoutput"<<endl;
   const auto adjturb_solver = solver[ADJTURB_SOL];
   const auto adjspecies_solver = solver[ADJSPECIES_SOL];
 

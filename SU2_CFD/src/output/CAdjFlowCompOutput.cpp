@@ -167,7 +167,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 }
 
 void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
-
+cout<<"cadjflowcompoutput"<<endl;
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 

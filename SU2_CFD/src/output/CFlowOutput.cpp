@@ -1075,6 +1075,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
 // clang-format on
 
 void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
+cout<<"cflow"<<endl;
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
@@ -1209,7 +1210,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
           AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
         }
       }
-        
+
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       break;
     case SPECIES_MODEL::NONE:
@@ -1419,7 +1420,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         string scalar_name = config->GetUserScalarName(i_scalar);
         SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
       }
-      
+
       SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
       /*--- no source term for enthalpy ---*/
       /*--- source terms for auxiliary species transport ---*/
@@ -2975,7 +2976,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else file << " lbf.s/ft^2.\n";
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
-          
+
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp \n";
           break;

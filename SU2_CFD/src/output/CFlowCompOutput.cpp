@@ -355,7 +355,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 }
 
 void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
-
+cout<<"cflowcomp"<<endl;
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
