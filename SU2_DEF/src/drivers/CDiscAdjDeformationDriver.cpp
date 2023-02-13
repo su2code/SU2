@@ -98,8 +98,6 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
   UsedTimeCompute = 0.0;
 }
 
-CDiscAdjDeformationDriver::~CDiscAdjDeformationDriver(void) {}
-
 void CDiscAdjDeformationDriver::Input_Preprocessing() {
   /*--- Initialize a char to store the zone filename. ---*/
 
@@ -334,6 +332,7 @@ void CDiscAdjDeformationDriver::Run() {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
+  ofstream Gradient_file;
   Gradient_file.precision(driver_config->OptionIsSet("OUTPUT_PRECISION") ? driver_config->GetOutput_Precision() : 6);
 
   /*--- For multi-zone computations the gradient contributions are summed up and written into one file. ---*/
@@ -382,91 +381,15 @@ void CDiscAdjDeformationDriver::Postprocessing() {
   }
   delete[] Gradient;
 
-  delete driver_config;
-  driver_config = nullptr;
-
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (numerics_container[iZone] != nullptr) {
-      delete[] numerics_container[iZone];
-    }
-  }
-  delete[] numerics_container;
-  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (solver_container[iZone] != nullptr) {
-      delete[] solver_container[iZone];
-    }
-  }
-  delete[] solver_container;
-  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
-
-  if (geometry_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != nullptr) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-          delete geometry_container[iZone][iInst][MESH_0];
-          delete[] geometry_container[iZone][iInst];
-        }
-        delete[] geometry_container[iZone];
-      }
-    }
-    delete[] geometry_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete[] FFDBox[iZone];
-  }
-  delete[] FFDBox;
-  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
-
-  if (surface_movement != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete surface_movement[iZone];
-    }
-    delete[] surface_movement;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
-
-  if (grid_movement != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (grid_movement[iZone] != nullptr) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-          delete grid_movement[iZone][iInst];
-        }
-        delete[] grid_movement[iZone];
-      }
-    }
-    delete[] grid_movement;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
-
-  if (config_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete config_container[iZone];
-    }
-    delete[] config_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-
-  if (output_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete output_container[iZone];
-    }
-    delete[] output_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-
-  if (nInst != nullptr) delete[] nInst;
+  CommonPostprocessing();
 
   /*--- Exit the solver cleanly. ---*/
 
   if (rank == MASTER_NODE)
-    cout << endl << "------------------------- Exit Success (SU2_DEF_AD) ------------------------" << endl << endl;
+    cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
 }
 
 void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* config,

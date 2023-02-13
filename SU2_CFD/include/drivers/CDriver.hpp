@@ -74,6 +74,8 @@ class CDriver : public CDriverBase {
       fsi,         /*!< \brief FSI simulation flag.*/
       fem_solver;  /*!< \brief FEM fluid solver simulation flag. */
 
+  CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
+
   CIteration*** iteration_container;      /*!< \brief Container vector with all the iteration methods. */
   CIntegration**** integration_container; /*!< \brief Container vector with all the integration methods. */
   vector<vector<unique_ptr<CInterpolator>>>

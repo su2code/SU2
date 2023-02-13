@@ -73,7 +73,6 @@ class CDriverBase {
                                            are solved). */
   CSurfaceMovement** surface_movement;  /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement*** grid_movement; /*!< \brief Volume grid movement classes of the problem. */
-  CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
 
   CConfig* main_config;     /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
   CGeometry* main_geometry; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
@@ -327,6 +326,11 @@ class CDriverBase {
    * \brief Initialize containers.
    */
   void SetContainers_Null();
+
+  /*!
+   * \brief Delete containers.
+   */
+  void CommonPostprocessing();
 
   /*!
    * \brief Read in the config and mesh files.

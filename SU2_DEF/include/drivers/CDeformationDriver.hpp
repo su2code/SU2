@@ -49,11 +49,6 @@ class CDeformationDriver : public CDriverBase {
   CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CDeformationDriver(void);
-
-  /*!
    * \brief Preprocess the driver data.
    */
   void Preprocess();
