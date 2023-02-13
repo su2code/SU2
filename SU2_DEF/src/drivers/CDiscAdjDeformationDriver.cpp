@@ -55,10 +55,6 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  /*--- Initialize containers. --- */
-
-  SetContainers_Null();
-
   /*--- Preprocessing of the config files. ---*/
 
   Input_Preprocessing();
@@ -108,6 +104,10 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
   driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
 
   nZone = driver_config->GetnZone();
+
+  /*--- Initialize containers. --- */
+
+  SetContainers_Null();
 
   /*--- Loop over all zones to initialize the various classes. In most
    * cases, nZone is equal to one. This represents the solution of a partial

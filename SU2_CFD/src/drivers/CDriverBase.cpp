@@ -55,12 +55,6 @@ void CDriverBase::SetContainers_Null() {
   for (iZone = 0; iZone < nZone; iZone++) {
     nInst[iZone] = 1;
   }
-
-  driver_config = nullptr;
-  driver_output = nullptr;
-
-  main_config = nullptr;
-  main_geometry = nullptr;
 }
 
 void CDriverBase::CommonPostprocessing() {
