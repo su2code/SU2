@@ -142,7 +142,7 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone = TestCase('visc_cone')
-    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
@@ -161,7 +161,7 @@ def main():
 
     # Viscous single wedge - super catalytic walls
     super_cat = TestCase('super_cat')
-    super_cat.cfg_dir = "nonequilibrium/viscous"
+    super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
@@ -173,7 +173,7 @@ def main():
 
     # Viscous single wedge - partially catalytic walls
     partial_cat = TestCase('partial_cat')
-    partial_cat.cfg_dir = "nonequilibrium/viscous"
+    partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
