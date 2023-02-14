@@ -1,7 +1,6 @@
 /*!
  * \file SU2_DEF.hpp
  * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
  * \author F. Palacios, T. Economon
  * \version 7.5.1 "Blackbird"
  *
@@ -26,20 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
+#include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+
+#include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
-
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-
-#include "../../SU2_CFD/include/solvers/CSolver.hpp"
-#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
+#include "drivers/CDeformationDriver.hpp"
 
 using namespace std;
