@@ -1674,7 +1674,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     /*--- Update en---*/
     if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
       nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
-      nodes->SetEntropy(iPoint, GetFluidModel()->GetStaticEnergy());
+      nodes->SetEntropy(iPoint, GetFluidModel()->GetEntropy());
     }
 
     /* Check for non-realizable states for reporting. */

@@ -125,6 +125,7 @@ public:
   /*!
    * \brief Grid deformation using the linear elasticity equations.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Numerics used in the solution.
    * \param[in] config - Definition of the particular problem.
    */
   void DeformMesh(CGeometry **geometry,
