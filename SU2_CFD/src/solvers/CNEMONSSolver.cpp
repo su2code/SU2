@@ -381,11 +381,11 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   /*--- Allocate arrays ---*/
   dYdn = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
-  for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
-  for(iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -396,17 +396,17 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
-      for (iVar = 0ul; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         Res_Visc[iVar] = 0.0;
         Res_Sour[iVar] = 0.0;
       }
 
       /*--- Assign wall velocity to "Vector" array ---*/
-      for (iDim = 0ul; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+      for (auto iDim = 0ul; iDim < nDim; iDim++) Vector[iDim] = 0.0;
 
       /*--- Set the residual, truncation error, and velocity value ---*/
       nodes->SetVelocity_Old(iPoint,Vector);
-      for (iDim = 0ul; iDim < nDim; iDim++) {
+      for (auto iDim = 0ul; iDim < nDim; iDim++) {
         LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
@@ -416,7 +416,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       const auto GradV  = nodes->GetGradient_Primitive(iPoint);
       su2double dTdn   = 0.0;
       su2double dTvedn = 0.0;
-      for (iDim = 0ul; iDim < nDim; iDim++) {
+      for (auto iDim = 0ul; iDim < nDim; iDim++) {
         dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
       }
@@ -431,20 +431,20 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
         Ds  = nodes->GetDiffusionCoeff(iPoint);
 
         /*--- Calculate normal derivative of mass fraction ---*/
-        for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           Ys = V[RHOS_INDEX+iSpecies]/rho;
           dYdn[iSpecies] = 0.0;
-          for (iDim = 0ul; iDim < nDim; iDim++)
+          for (auto iDim = 0ul; iDim < nDim; iDim++)
             dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
                 Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
         }
 
         /*--- Calculate supplementary quantities ---*/
         SdYdn = 0.0;
-        for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
           SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
 
-        for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           Ys   = V[RHOS_INDEX+iSpecies]/rho;
           //eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
           //hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
@@ -493,7 +493,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
       if (implicit) {
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
-        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+        for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
@@ -502,7 +502,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
     }
   }
 
-  for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     delete [] GradY[iSpecies];
   delete [] GradY;
   delete [] dYdn;
@@ -729,7 +729,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         }
 
         /*--- Calculate species residual at wall ---*/
-        for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
           Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn+Yst[iSpecies]*SdYdn)*Area;
         }
@@ -761,8 +761,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
           /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
           // Species mass fraction
-          for (iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
-            for (jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
+          for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+            for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
               Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
             Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
           }

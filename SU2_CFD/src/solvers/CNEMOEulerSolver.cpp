@@ -654,7 +654,7 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
   /*--- Rename density vector ---*/
   vector<su2double> rhos;
   rhos.resize(nSpecies,0.0);
-  for (unsigned short iSpecies=0; iSpecies < nSpecies; iSpecies++ ){
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++ ){
     rhos[iSpecies] = V[iSpecies];
   }
 
@@ -1613,9 +1613,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
-  unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
+  unsigned short RHO_INDEX, nSpecies;
 
-  unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
@@ -1635,31 +1634,31 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   nSpecies = config->GetnSpecies();
   su2double *Spec_Density = new su2double[nSpecies];
-  for(iSpecies=0; iSpecies<nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
     Spec_Density[iSpecies] = 0.0;               /*--- To avoid a compiler warning. ---*/
 
   RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (auto iDim = 0ul; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
       Area = GeometryToolbox::Norm(nDim, Normal);
 
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Retrieve solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      for (auto iVar = 0ul; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
+      for (auto iVar = 0ul; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -1686,7 +1685,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = V_domain[RHO_INDEX];
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
 
         Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
@@ -1698,7 +1697,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
         Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Total speed of sound ---*/
@@ -1733,7 +1732,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
         /*--- Compute new velocity vector at the inlet ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
 
         /*--- Static temperature from the speed of sound relation ---*/
@@ -1752,19 +1751,19 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         //NEED EVE AS WELL
 
         /*--- Conservative variables, using the derived quantities ---*/
-        for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
           U_inlet[iSpecies] = Spec_Density[iSpecies];
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           U_inlet[nSpecies+iDim] = Velocity[iDim]*Density;
         U_inlet[nVar-2] = Energy*Density;
         //U_inlet[nVar-1]=Eve
 
         /*--- Primitive variables, using the derived quantities ---*/
-        for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
           V_inlet[iSpecies] = Spec_Density[iSpecies];
         V_inlet[nSpecies] = Temperature;
         //V_inlet[nSpecies+1] = Tve
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           V_inlet[nSpecies+2] = Velocity[iDim];
         V_inlet[nSpecies+nDim+2] = Pressure;
         V_inlet[RHO_INDEX] = Density;
@@ -1788,7 +1787,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Vel_Mag /= config->GetVelocity_Ref();
 
         /*--- Get primitives from current inlet state. ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
         Pressure    = nodes->GetPressure(iPoint);
         SoundSpeed2 = Gamma*Pressure/U_domain[0];
@@ -1796,12 +1795,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
         Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Speed of sound squared for fictitious inlet state ---*/
         SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
         SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
@@ -1815,13 +1814,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Conservative variables, using the derived quantities ---*/
         U_inlet[0] = Density;
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
         U_inlet[nDim+1] = Energy*Density;
 
         /*--- Primitive variables, using the derived quantities ---*/
         V_inlet[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0ul; iDim < nDim; iDim++)
           V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
@@ -1971,7 +1970,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       su2double Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
 
       /*--- Compute Species Concentrations ---*/
-      for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+      for (auto iSpecies = 0ul; iSpecies<nSpecies;iSpecies++){
         Ys[iSpecies] = V_domain[iSpecies]/Density;
       }
 
@@ -1981,8 +1980,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         /*--- Supersonic exit flow: there are no incoming characteristics,
          so no boundary condition is necessary. Set outlet state to current
          state so that upwinding handles the direction of propagation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = U_domain[iVar];
-        for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
+        for (auto iVar = 0ul; iVar < nVar; iVar++)     U_outlet[iVar] = U_domain[iVar];
+        for (auto iVar = 0ul; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
 
       } else {
 
@@ -2221,7 +2220,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     /*--- Viscous contribution ---*/
-    bool viscous = config->GetViscous();
+    const bool viscous = config->GetViscous();
     if (viscous) {
 
       /*--- Set the normal vector and the coordinates ---*/
