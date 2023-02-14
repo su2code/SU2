@@ -25,17 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/SU2_DOT.hpp"
-
-using namespace std;
+#include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
 
   char config_file_name[MAX_STRING_SIZE];
-
-  /*--- Create a pointer to the main SU2_DEF Driver. ---*/
-
-  CDiscAdjDeformationDriver* driver = nullptr;
 
   /*--- MPI initialization. ---*/
 
@@ -58,21 +52,19 @@ int main(int argc, char* argv[]) {
 
   /*--- Initialize the mesh deformation driver. ---*/
 
-  driver = new CDiscAdjDeformationDriver(config_file_name, comm);
+  CDiscAdjDeformationDriver driver(config_file_name, comm);
 
   /*--- Preprocess the solver data. ---*/
 
-  driver->Preprocess();
+  driver.Preprocess();
 
   /*--- Launch the main external loop of the solver. ---*/
 
-  driver->Run();
+  driver.Run();
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver->Postprocessing();
-
-  delete driver;
+  driver.Postprocessing();
 
   /*--- Finalize MPI parallelization. ---*/
 

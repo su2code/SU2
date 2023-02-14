@@ -42,16 +42,6 @@ void CDriverBase::SetContainers_Null() {
    * down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
    * below. ---*/
 
-  config_container = nullptr;
-  output_container = nullptr;
-  geometry_container = nullptr;
-  solver_container = nullptr;
-  numerics_container = nullptr;
-
-  surface_movement = nullptr;
-  grid_movement = nullptr;
-  FFDBox = nullptr;
-
   config_container = new CConfig*[nZone]();
   output_container = new COutput*[nZone]();
   geometry_container = new CGeometry***[nZone]();
@@ -59,19 +49,85 @@ void CDriverBase::SetContainers_Null() {
   numerics_container = new CNumerics*****[nZone]();
   surface_movement = new CSurfaceMovement*[nZone]();
   grid_movement = new CVolumetricMovement**[nZone]();
-  FFDBox = new CFreeFormDefBox**[nZone]();
 
   nInst = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
     nInst[iZone] = 1;
   }
+}
 
-  driver_config = nullptr;
-  driver_output = nullptr;
+void CDriverBase::CommonPostprocessing() {
 
-  main_config = nullptr;
-  main_geometry = nullptr;
+  if (numerics_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete[] numerics_container[iZone];
+    }
+    delete[] numerics_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+
+  if (solver_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete[] solver_container[iZone];
+    }
+    delete[] solver_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
+
+  if (geometry_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != nullptr) {
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+          delete geometry_container[iZone][iInst][MESH_0];
+          delete[] geometry_container[iZone][iInst];
+        }
+        delete[] geometry_container[iZone];
+      }
+    }
+    delete[] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+
+  if (surface_movement != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete surface_movement[iZone];
+    }
+    delete[] surface_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+
+  if (grid_movement != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (grid_movement[iZone] != nullptr) {
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+          delete grid_movement[iZone][iInst];
+        }
+        delete[] grid_movement[iZone];
+      }
+    }
+    delete[] grid_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
+
+  if (config_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete config_container[iZone];
+    }
+    delete[] config_container;
+  }
+  delete driver_config;
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+
+  if (output_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete output_container[iZone];
+    }
+    delete[] output_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+
+  delete[] nInst;
 }
 
 unsigned short CDriverBase::GetNumberDesignVariables() const { return main_config->GetnDV(); }
