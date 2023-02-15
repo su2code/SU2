@@ -1006,7 +1006,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   const su2double Alpha= config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
   const su2double Mach = config->GetMach();
-  const su2double Reynolds = config->GetReynolds();
 
   const bool unsteady = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   const bool viscous  = config->GetViscous();
@@ -1106,7 +1105,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetViscosity_FreeStream(Viscosity_FreeStream);
 
     /*--- Compute Reynolds number ---*/
-    Reynolds = (Density_FreeStream*Velocity_Reynolds*config->GetLength_Reynolds())/Viscosity_FreeStream;
+    const su2double Reynolds = (Density_FreeStream*Velocity_Reynolds*config->GetLength_Reynolds())/Viscosity_FreeStream;
     config->SetReynolds(Reynolds);
 
     /*--- Turbulence kinetic energy ---*/
@@ -1956,7 +1955,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       /*--- Check whether the flow is supersonic at the exit. The type
        of boundary update depends on this. ---*/
       su2double Density = V_domain[RHO_INDEX];
-      su2double Velocity2 = Vn = 0.0;
+      su2double Velocity2 = 0.0;
+      su2double Vn = 0.0;
       su2double Velocity[MAXNDIM] = {0.0};
       for (auto iDim = 0ul; iDim < nDim; iDim++) {
         Velocity[iDim] = V_domain[VEL_INDEX+iDim];
@@ -2001,7 +2001,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
         Density    = pow(P_Exit/Entropy,1.0/Gamma);
         Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+        const su2double SoundSpeed = sqrt(Gamma*P_Exit/Density);
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
         Velocity2  = 0.0;
         for (auto iDim = 0ul; iDim < nDim; iDim++) {

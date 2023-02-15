@@ -363,7 +363,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
   su2double sqvel = 0.0;
   const su2double rho = V[RHO_INDEX];
   const su2double eve = U[nSpecies+nDim+1]/rho;
-  su2double vU = vV = vW = 0.0;
+  su2double vU, vV, vW;
+  vU = vV = vW = 0.0;
   for (auto iDim = 0ul; iDim < nDim; iDim++) {
     vU    += V[VEL_INDEX+iDim] * val_normal[iDim];
     vV    += V[VEL_INDEX+iDim] * l[iDim];
@@ -456,7 +457,8 @@ void CNEMONumerics::GetPMatrix_inv(const su2double *U, const su2double *V, const
   /*--- Pre-compute useful quantities ---*/
   const su2double rho = V[RHO_INDEX];
   const su2double eve = U[nSpecies+nDim+1]/rho;
-  su2double vU = vV = vW = 0.0;
+  su2double vU, vV, vW;
+  vU = vV = vW = 0.0;
   for (auto iDim = 0ul; iDim < nDim; iDim++) {
     vU += V[VEL_INDEX+iDim] * val_normal[iDim];
     vV += V[VEL_INDEX+iDim] * l[iDim];
