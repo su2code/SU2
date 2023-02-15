@@ -195,9 +195,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
   else yinv = 0.0;
 
-  /*--- Rename for convenience ---*/
-  const su2double vel2 = GeometryToolbox::SquaredNorm(nDim, &V_i[VEL_INDEX]);
-
+  /*--- Rename mass flux for convenience ---*/
   for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     Y[iSpecies] = V_i[RHOS_INDEX+iSpecies] / rho;
 

@@ -942,7 +942,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
     su2double num = 0.0;
     su2double denom = 0.0;
 
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       /* We impose a limit on the maximum percentage that the
        density (sum of all species) and energy can change over a nonlinear iteration. */
 
@@ -2001,8 +2001,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
         Density    = pow(P_Exit/Entropy,1.0/Gamma);
         Pressure   = P_Exit;
-        const su2double SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
         Velocity2  = 0.0;
         for (auto iDim = 0ul; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];

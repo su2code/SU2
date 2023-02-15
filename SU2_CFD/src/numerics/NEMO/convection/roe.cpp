@@ -136,7 +136,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     Lambda[iSpecies] = ProjVelocity;
 
-  for (auto iDim = 0ul; iDim < nDim-1; iDim++)
+  for (auto iDim = 0; iDim < nDim-1; iDim++)
     Lambda[nSpecies+iDim] = ProjVelocity;
 
   Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
@@ -147,7 +147,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iSpecies]-ProjVelocity_i,
                                          ProjVelocity_j-Lambda[iSpecies] ));
-  for (auto iDim = 0ul; iDim < nDim-1; iDim++)
+  for (auto iDim = 0; iDim < nDim-1; iDim++)
     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));
   Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),

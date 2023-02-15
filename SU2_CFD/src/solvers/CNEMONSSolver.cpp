@@ -349,8 +349,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
   //TODO: SCALE WITH EDDY VISC
   /*--- Local variables ---*/
-  unsigned short iDim, iSpecies, iVar;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iPoint, total_index;
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *dYdn, SdYdn;

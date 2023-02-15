@@ -172,7 +172,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
-  for (auto iVar = 0ul; iVar < nSpecies+nDim-1; iVar++)
+  for (auto iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda_i[iVar]          = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
                                                       epsilon*epsilon));
   Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
@@ -208,7 +208,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Flow eigenvalues at j (Lambda-) ---*/
-  for (auto iVar = 0ul; iVar < nSpecies+nDim-1; iVar++)
+  for (auto iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
                                                       epsilon*epsilon));
   Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -

@@ -167,7 +167,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Compute the implicit part ---*/
   if (implicit) {
 
-  su2double dist_ij_2[nDim] = {0.0};
+  su2double dist_ij_2[MAXNDIM] = {0.0};
   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, dist_ij_2);
   dist_ij = GeometryToolbox::SquaredNorm(nDim, dist_ij_2);
 
