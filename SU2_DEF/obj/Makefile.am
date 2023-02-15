@@ -33,7 +33,6 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_DEF
 
 ___bin_SU2_DEF_SOURCES = \
-  ../include/SU2_DEF.hpp \
   ../src/SU2_DEF.cpp
 
 
