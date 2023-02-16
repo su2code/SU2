@@ -1178,6 +1178,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DATADRIVEN_FLUID_INITIAL_DENSITY", DataDriven_initial_density, 1.225);
   /*!\brief DATADRIVEN_FLUID_INITIAL_ENERGY \n DESCRIPTION: Initial value for the static energy in the Newton solvers in the data-driven fluid model. \n \ingroup Config*/
   addDoubleOption("DATADRIVEN_FLUID_INITIAL_ENERGY", DataDriven_initial_energy, 1e5);
+
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
@@ -1545,9 +1546,6 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
   addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
-
-  /*!\brief MLP_FILENAME \n DESCRIPTION: Input file for a multi-layer perceptron input file for fluid model definition. w/ extension) \n DEFAULT: MLP_collection.mlp \ingroup Config*/
-  addStringOption("MLP_FILENAME", MLP_filename, string("MLP_collection.mlp"));
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, INLET_TYPE::TOTAL_CONDITIONS);

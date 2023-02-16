@@ -1675,7 +1675,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     /*--- Update en---*/
     if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
       nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
-      nodes->SetEntropy(iPoint, GetFluidModel()->GetStaticEnergy());
+      nodes->SetEntropy(iPoint, GetFluidModel()->GetEntropy());
     }
 
     /* Check for non-realizable states for reporting. */
@@ -4725,6 +4725,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         GetFluidModel()->SetTDState_PT(P_Total, T_Total);
         Enthalpy_e = GetFluidModel()->GetStaticEnergy()+ GetFluidModel()->GetPressure()/GetFluidModel()->GetDensity();
         Entropy_e = GetFluidModel()->GetEntropy();
+
         /* --- Compute the boundary state u_e --- */
         Velocity2_e = Velocity2_i;
         if (nDim == 2){

@@ -345,6 +345,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       break;
       
     case DATADRIVEN_FLUID:
+    
       auxFluidModel = new CDataDrivenFluid(config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();

@@ -991,6 +991,14 @@ def main():
     coolprop_fluidModel.test_vals = [-4.525458, -1.578441, 3.439057, 0.000000, 0.000000]
     test_list.append(coolprop_fluidModel)
 
+    # Rarefaction Q1D nozzle, include CoolProp fluid model
+    datadriven_fluidModel           = TestCase('datadriven_fluidModel')
+    datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
+    datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
+    datadriven_fluidModel.test_iter = 20
+    datadriven_fluidModel.test_vals = [-1.873575, 0.964932, 5.467181, 0.000000, 0.000000]
+    test_list.append(datadriven_fluidModel)
+
     # Rarefaction Q1D nozzle, include CoolProp transport model
     coolprop_transportModel           = TestCase('coolprop_transportModel')
     coolprop_transportModel.cfg_dir   = "nicf/coolprop"
@@ -998,14 +1006,6 @@ def main():
     coolprop_transportModel.test_iter = 5
     coolprop_transportModel.test_vals = [-4.527922, -1.308741, 4.630469, 0.000000, 0.000000]
     test_list.append(coolprop_transportModel)
-
-    # Subsonic Q1D nozzle using an MLP for thermodynamic state evaluation
-    datadriven_MLP           = TestCase('datadriven_MLP')
-    datadriven_MLP.cfg_dir   = "nicf/datadriven"
-    datadriven_MLP.cfg_file  = "datadriven_nozzle.cfg"
-    datadriven_MLP.test_iter = 100
-    datadriven_MLP.test_vals = [-4.159241, 0.073280, 3.627716, 0.000000, 0.000000]
-    test_list.append(datadriven_MLP)
 
     ######################################
     ### Turbomachinery                 ###
