@@ -62,8 +62,8 @@ class CDriverBase {
       *nInst,            /*!< \brief Total number of instances in the problem (per zone). */
       **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones. */
 
-  CConfig* driver_config; /*!< \brief Definition of the driver configuration. */
-  COutput* driver_output; /*!< \brief Definition of the driver output. */
+  CConfig* driver_config = nullptr; /*!< \brief Definition of the driver configuration. */
+  COutput* driver_output = nullptr; /*!< \brief Definition of the driver output. */
 
   CConfig** config_container;           /*!< \brief Definition of the particular problem. */
   COutput** output_container;           /*!< \brief Pointer to the COutput class. */
@@ -73,10 +73,9 @@ class CDriverBase {
                                            are solved). */
   CSurfaceMovement** surface_movement;  /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement*** grid_movement; /*!< \brief Volume grid movement classes of the problem. */
-  CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
 
-  CConfig* main_config;     /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
-  CGeometry* main_geometry; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
+  CConfig* main_config = nullptr;     /*!< \brief Reference to base (i.e. ZONE 0) configuration (used in driver API). */
+  CGeometry* main_geometry = nullptr; /*!< \brief Reference to base (i.e. ZONE, INST, MESH 0) geometry (used in driver API). */
 
  public:
   /*!
@@ -121,6 +120,9 @@ class CDriverBase {
    * \brief A virtual member.
    */
   virtual void Postprocessing(){}
+
+/// \addtogroup PySU2
+/// @{
 
   /*!
    * \brief Get the number of design variables.
@@ -321,12 +323,18 @@ class CDriverBase {
    * \brief Communicate the boundary mesh displacements.
    */
   void CommunicateMeshDisplacements(void);
+/// \}
 
  protected:
   /*!
    * \brief Initialize containers.
    */
   void SetContainers_Null();
+
+  /*!
+   * \brief Delete containers.
+   */
+  void CommonPostprocessing();
 
   /*!
    * \brief Read in the config and mesh files.
