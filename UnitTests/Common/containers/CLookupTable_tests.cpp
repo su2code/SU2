@@ -2,14 +2,14 @@
  * \file CLookupTable_tests.cpp
  * \brief Unit tests for the lookup table.
  * \author N. Beishuizen
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- smaller and trivial lookup table ---*/
-  
+
   CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","ProgressVariable","EnthalpyTot");
 
   /*--- string names of the controlling variables ---*/
@@ -50,7 +50,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
  /*--- look up a single value for density ---*/
 
   su2double prog = 0.55;
-  su2double enth = -0.5; 
+  su2double enth = -0.5;
   string look_up_tag = "Density";
   su2double look_up_dat;
   look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth); 
@@ -59,7 +59,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   /*--- look up a single value for viscosity ---*/
 
   prog = 0.6;
-  enth = 0.9; 
+  enth = 0.9;
   look_up_tag = "Viscosity";
   look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth); 
   CHECK(look_up_dat == Approx(0.0000674286));
@@ -81,7 +81,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   look_up_tag = "Density";
   look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth); 
   CHECK(look_up_dat == Approx(1.1738796125));
- 
+
 }
 
 TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {

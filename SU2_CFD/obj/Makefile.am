@@ -3,14 +3,14 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.5.0 "Blackbird"
+# \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -89,6 +89,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/CLookUpTable.cpp \
+  ../src/numerics/CStructuredTable.cpp \
   ../src/numerics/CTrapezoidalMap.cpp \
   ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
@@ -101,9 +102,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/flow/flow_diffusion.cpp \
   ../src/numerics/flow/flow_sources.cpp \
   ../src/numerics/NEMO/convection/roe.cpp \
-  ../src/numerics/NEMO/convection/ausm.cpp \
-  ../src/numerics/NEMO/convection/ausmplusup2.cpp \
-  ../src/numerics/NEMO/convection/ausmpwplus.cpp \
+  ../src/numerics/NEMO/convection/ausm_slau.cpp \
   ../src/numerics/NEMO/convection/lax.cpp \
   ../src/numerics/NEMO/convection/msw.cpp \
   ../src/numerics/NEMO/CNEMONumerics.cpp \

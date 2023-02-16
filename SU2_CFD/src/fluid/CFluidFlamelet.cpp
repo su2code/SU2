@@ -28,6 +28,7 @@
 
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
+#include "../../../Common/include/containers/CStructuredTable.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
@@ -79,8 +80,9 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       cout << "***   initializing the lookup table   ***" << endl;
       cout << "*****************************************" << endl;
     }
-    look_up_table =
-      new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+    // look_up_table =
+    //   new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+    structured_table = new CStructuredTable(config->GetDataDriven_FileNames()[0], controlling_variables);
     break;
   
   case ENUM_DATADRIVEN_METHOD::MLP:
@@ -138,7 +140,8 @@ CFluidFlamelet::~CFluidFlamelet() {
   switch (manifold_format)
   {
   case ENUM_DATADRIVEN_METHOD::LUT:
-    delete look_up_table;
+    //delete look_up_table;
+    delete structured_table;
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
     delete iomap_TD;
@@ -213,7 +216,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
   Density = Pressure * (molar_weight / 1000.0) / (UNIVERSAL_GAS_CONSTANT * Temperature);
 
-  mass_diffusivity = Kt / (Density * Cp);
+  //mass_diffusivity = Kt / (Density * Cp);
 }
 
 unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_scalars) {
@@ -282,7 +285,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   val_controlling_vars.resize(n_CV);
 
   /*--- Thermodynamic state variables ---*/
-  size_t n_TD = 5;
+  size_t n_TD = 6;
   varnames_TD.resize(n_TD);
   val_vars_TD.resize(n_TD);
   dTD_dCV.resize(n_TD, n_CV);
@@ -298,8 +301,8 @@ void CFluidFlamelet::PreprocessLookUp() {
   val_vars_TD[3] = &Mu;
   varnames_TD[4] = "Conductivity";
   val_vars_TD[4] = &Kt;
-  // varnames_TD[5] = "DiffusionCoefficient";
-  // val_vars_TD[5] = &mass_diffusivity;
+  varnames_TD[5] = "DiffusionCoefficient";
+  val_vars_TD[5] = &mass_diffusivity;
   // varnames_TD[6] = "MolarWeightMix";
   // val_vars_TD[6] = &molar_weight;
 
@@ -348,10 +351,13 @@ void CFluidFlamelet::PreprocessLookUp() {
 unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, su2matrix<su2double> dOutputs_dInputs, MLPToolbox::CIOMap* iomap) {
   unsigned long exit_code = 0;
 
-  vector<string> LUT_varnames;
+  su2vector<string> LUT_varnames;
   vector<su2double*> LUT_val_vars;
   su2matrix<su2double*> gradient_refs;
 
+
+   su2vector<su2double> CV_LUT;
+   CV_LUT.resize(n_CV);
   switch (manifold_format)
   {
   case ENUM_DATADRIVEN_METHOD::LUT:
@@ -361,10 +367,14 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
       LUT_varnames[iVar] = varnames[iVar];
       LUT_val_vars[iVar] = val_vars[iVar];
     }
-    if(PreferentialDiffusion){
-      exit_code = look_up_table->LookUp_XYZ(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH], val_controlling_vars[I_MIXFRAC]);
-    }else
-      exit_code = look_up_table->LookUp_XY(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH]);
+   CV_LUT[I_PROGVAR] = val_controlling_vars[I_MIXFRAC];
+   CV_LUT[I_MIXFRAC] = val_controlling_vars[I_PROGVAR];
+    // if(PreferentialDiffusion){
+    //   exit_code = look_up_table->LookUp_XYZ(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH], val_controlling_vars[I_MIXFRAC]);
+    // }else
+    //   exit_code = look_up_table->LookUp_XY(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH]);
+    exit_code = 0;
+    structured_table->Interpolate(CV_LUT, varnames, val_vars);
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
     gradient_refs.resize(val_vars.size(), n_CV);

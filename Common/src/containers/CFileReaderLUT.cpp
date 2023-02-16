@@ -2,14 +2,14 @@
  * \file CFileReaderLUT.hpp
  * \brief reading lookup table for tabulated fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,11 @@
  */
 
 #include "../../Common/include/containers/CFileReaderLUT.hpp"
-#include "../../Common/include/option_structure.hpp"
-#include "../../Common/include/parallelization/mpi_structure.hpp"
+
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
+#include "../../Common/include/option_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 using namespace std;
 
@@ -127,7 +128,19 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
         GetNextNonEmptyLine(file_stream, line);
         table_levels[i_level] = stod(line);
       }
+
+      /*--- Checking whether table levels are ordered and appearance of duplicates ---*/
+      for (auto i_level = 0u; i_level < n_levels - 1; i_level++) {
+        if (table_levels[i_level] > table_levels[i_level + 1])
+          SU2_MPI::Error("Table levels are not provided in ascending order.", CURRENT_FUNCTION);
+      }
+      auto duplicate = adjacent_find(table_levels.begin(), table_levels.end()) != table_levels.end();
+      if (duplicate)
+        SU2_MPI::Error("Duplicate table levels are present in LUT file", CURRENT_FUNCTION);
     }
+
+    
+
     /*--- number of variables in LUT ---*/
     if (line.compare("[Number of variables]") == 0) {
       GetNextNonEmptyLine(file_stream, line);

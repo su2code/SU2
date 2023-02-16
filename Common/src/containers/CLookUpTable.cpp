@@ -2,14 +2,14 @@
  * \file CLookupTable.cpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -618,23 +618,6 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   unsigned long exit_code = LookUp_XY(val_names_var, look_up_data, val_CV1, val_CV2, i_level);
 
   return exit_code;
-}
-
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog,
-                                            su2double val_enth, std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_name_var, val_var, val_prog, val_enth);
-}
-
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var,
-                                            std::vector<su2double*>& val_vars, su2double val_prog, su2double val_enth,
-                                            std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
-}
-
-unsigned long CLookUpTable::LookUp_ProgEnth(const std::vector<std::string>& val_names_var,
-                                            std::vector<su2double>& val_vars, su2double val_prog, su2double val_enth,
-                                            std::string name_prog, std::string name_enth) {
-  return LookUp_XY(val_names_var, val_vars, val_prog, val_enth);
 }
 
 unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
