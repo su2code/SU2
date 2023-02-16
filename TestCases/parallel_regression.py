@@ -183,29 +183,17 @@ def main():
     partial_cat.tol = 0.00001
     test_list.append(partial_cat)
 
-    # Viscous cylinder, ionization, Wilkes-Blottner-Eucken
-    partial_ion_wbe = TestCase('ion_wbe')
-    partial_ion_wbe.cfg_dir = "nonequilibrium/visc_cylinder"
-    partial_ion_wbe.cfg_file = "cyl_ion_wbe.cfg"
-    partial_ion_wbe.test_iter = 10
-    partial_ion_wbe.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
-    partial_ion_wbe.su2_exec = "mpirun -n 2 SU2_CFD"
-    partial_ion_wbe.timeout = 1600
-    partial_ion_wbe.new_output = True
-    partial_ion_wbe.tol = 0.00001
-    test_list.append(partial_ion_wbe)
-
     # Viscous cylinder, ionization, Gupta-Yos
-    partial_ion_gy = TestCase('ion_gy')
-    partial_ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
-    partial_ion_gy.cfg_file = "cyl_ion_gy.cfg"
-    partial_ion_gy.test_iter = 10
-    partial_ion_gy.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
-    partial_ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
-    partial_ion_gy.timeout = 1600
-    partial_ion_gy.new_output = True
-    partial_ion_gy.tol = 0.00001
-    test_list.append(partial_ion_gy)
+    ion_gy = TestCase('ion_gy')
+    ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
+    ion_gy.cfg_file = "cyl_ion_gy.cfg"
+    ion_gy.test_iter = 10
+    ion_gy.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
+    ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
+    ion_gy.timeout = 1600
+    ion_gy.new_output = True
+    ion_gy.tol = 0.00001
+    test_list.append(ion_gy)
 
     ##########################
     ### Compressible Euler ###
