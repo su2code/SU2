@@ -3,20 +3,20 @@
 ## \file profiling.py
 #  \brief Python script for postprocessing the SU2 custom profiling (profiling.csv)
 #  \author T. Economon
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -71,7 +71,7 @@ for val in range(maxID):
 
   # Sort the pieces to make it pretty
   fracs[val], labels[val],calls[val] = (list(x) for x in zip(*sorted(zip(fracs[val], labels[val], calls[val]))))
-  
+
   # Call to make the pie chart
   pie_wedge_collection = ax.pie(fracs[val], explode=explode[val], labels=labels[val],labeldistance=1.05, autopct='%1.1f%%', shadow=False, startangle=0);
   for pie_wedge in pie_wedge_collection[0]:
@@ -91,7 +91,7 @@ for val in range(maxID):
   ax.set_ylabel('Calls')
   fig.autofmt_xdate()
   fig.subplots_adjust(wspace=0.5)
-  
+
   # Save a figure for this group
   filename = 'profile_group_' + str(val) + '.png'
   fig.savefig(filename,format='png')

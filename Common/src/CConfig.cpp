@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -414,7 +414,7 @@ void CConfig::addStringListOption(const string name, unsigned short & num_marker
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) {
+void CConfig::addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
@@ -491,6 +491,15 @@ void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_
   COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Inlet_Species, Marker_Inlet_Species,
                                                              inlet_species_val, nSpecies_per_Inlet);
   option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
+                                 su2double**& Turb_Properties_val, unsigned short& nTurb_Properties) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Inlet_Turb, Marker_Inlet_Turb,
+                                                             Turb_Properties_val, nTurb_Properties);
+  option_map.insert(pair<string, COptionBase*>(name, val));
 }
 
 template <class Tenum>
@@ -831,7 +840,6 @@ void CConfig::SetPointersNull(void) {
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
   DoubleInfo_WallFunctions = nullptr;
-  Kind_Wall                = nullptr;
 
   Config_Filenames = nullptr;
 
@@ -839,7 +847,7 @@ void CConfig::SetPointersNull(void) {
 
   Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
   Marker_SymWall              = nullptr;    Marker_PerBound             = nullptr;
-  Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;
+  Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;    Marker_Inlet_Turb          = nullptr;
   Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr;    Marker_Fluid_Load          = nullptr;
   Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;    Marker_Inlet_Species       = nullptr;
   Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet    = nullptr;    Marker_Smoluchowski_Maxwell= nullptr;
@@ -866,7 +874,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
-  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -1094,6 +1102,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("LM_OPTIONS", nLM_Options, LM_Options, LM_Options_Map);
+  /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
+  addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
   /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
@@ -1117,6 +1129,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Add the Vorticity Confinement term*/
+  addBoolOption("VORTICITY_CONFINEMENT", VorticityConfinement, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
@@ -1150,7 +1164,11 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
+  /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
+  addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
+  addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
@@ -1159,6 +1177,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
+  /*!\brief THERMODYNAMIC_PRESSURE  \n DESCRIPTION: Thermodynamics(operating) Pressure (101325 Pa), only for incompressible flows) \ingroup Config*/
+  addDoubleOption("THERMODYNAMIC_PRESSURE", Pressure_Thermodynamic, 101325.0);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
@@ -1174,6 +1194,10 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, TRANSCOEFFMODEL::WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  /* DESCRIPTION: Specify mass fraction of each species for NEMO inlet*/
+  addDoubleListOption("INLET_GAS_COMPOSITION", nSpecies_inlet, Inlet_MassFrac);
+  /*!\brief INLET_TEMPERATURE_VE \n DESCRIPTION: NEMO inlet temperature_ve (K), if left 0 K, set to Ttr value \ingroup Config*/
+  addDoubleOption("INLET_TEMPERATURE_VE", Inlet_Temperature_ve, 0.0);
   /* DESCRIPTION: Specify if mixture is frozen */
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
@@ -1220,7 +1244,7 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("MU_T_REF", nMu_Temperature_Ref, Mu_Temperature_Ref);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
   addDoubleListOption("SUTHERLAND_CONSTANT", nMu_S, Mu_S);
-  
+
   /*--- Options related to Viscosity Model ---*/
   /*!\brief MIXINGVISCOSITY_MODEL \n DESCRIPTION: Mixing model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: DAVIDSON \ingroup Config*/
   addEnumOption("MIXING_VISCOSITY_MODEL", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
@@ -1350,7 +1374,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbIntensityAndViscRatioFreeStream[0], 0.05);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
@@ -1360,7 +1384,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("INITIAL_BCTHRUST", Initial_BCThrust, 4000.0);
   /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", TurbIntensityAndViscRatioFreeStream[1], 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
   addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /*!\brief AOA  \n DESCRIPTION: Angle of attack (degrees, only for compressible flows) \ingroup Config*/
@@ -1505,7 +1529,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
-
+  /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
+   Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
+   ViscosityRatio2, ...) */
+  addInletTurbOption("MARKER_INLET_TURBULENT", nMarker_Inlet_Turb, Marker_Inlet_Turb, Inlet_TurbVal, nTurb_Properties);
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -1871,9 +1898,6 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  ad_coeff_heat[0] = 0.5; ad_coeff_heat[1] = 0.02;
-  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, ad_coeff_heat);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
@@ -1922,9 +1946,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
-  /*!\brief CONV_NUM_METHOD_HEAT
-   *  \n DESCRIPTION: Convective numerical method \n DEFAULT: UPWIND */
-  addEnumOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Space_Map, SPACE_UPWIND);
+  /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
+  /*!\brief CONV_NUM_METHOD_HEAT \n DESCRIPTION: Convective numerical method */
+  addConvectOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Kind_Centered_Heat, Kind_Upwind_Heat);
 
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
@@ -2308,8 +2333,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: FEM flow solver definition \ingroup Config*/
   /*--- Options related to the finite element flow solver---*/
 
-  /* DESCRIPTION: Riemann solver used for DG (ROE, LAX-FRIEDRICH, AUSM, AUSMPW+, HLLC, VAN_LEER) */
-  addEnumOption("RIEMANN_SOLVER_FEM", Riemann_Solver_FEM, Upwind_Map, ROE);
+  /* DESCRIPTION: Riemann solver used for DG (ROE, LAX-FRIEDRICH, AUSM, HLLC, VAN_LEER) */
+  addEnumOption("RIEMANN_SOLVER_FEM", Riemann_Solver_FEM, Upwind_Map, UPWIND::ROE);
   /* DESCRIPTION: Constant factor applied for quadrature with straight elements (2.0 by default) */
   addDoubleOption("QUADRATURE_FACTOR_STRAIGHT_FEM", Quadrature_Factor_Straight, 2.0);
   /* DESCRIPTION: Constant factor applied for quadrature with curved elements (3.0 by default) */
@@ -3214,7 +3239,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3231,7 +3256,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2022, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3383,6 +3408,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 #endif
 
+  /*--- Check if CoolProp is used with non-dimensionalization. ---*/
+  if (Kind_FluidModel == COOLPROP && Ref_NonDim != DIMENSIONAL) {
+    SU2_MPI::Error("CoolProp can not be used with non-dimensionalization.", CURRENT_FUNCTION);
+  }
+
   /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
     if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
@@ -3432,6 +3462,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
+  }
+
+  /*--- Postprocess LM_OPTIONS into structure. ---*/
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+    lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
+
+    /*--- Check if problem is 2D and LM2015 has been selected ---*/
+    if (lmParsedOptions.LM2015 && val_nDim == 2) {
+      SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -3507,9 +3547,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
+  auto SetScalarDefaults = [](bool muscl, unsigned short& KindConvScheme, UPWIND& KindUpwind, LIMITER& KindLimiter) {
+    if (KindConvScheme == NO_CONVECTIVE) {
+      KindConvScheme = SPACE_UPWIND;
+      KindUpwind = UPWIND::SCALAR_UPWIND;
+    } else if (KindConvScheme == SPACE_CENTERED) {
+      SU2_MPI::Error("Centered schemes are not available for scalar transport", CURRENT_FUNCTION);
+    }
+    if (!muscl) KindLimiter = LIMITER::NONE;
+  };
+  SetScalarDefaults(MUSCL_Turb, Kind_ConvNumScheme_Turb, Kind_Upwind_Turb, Kind_SlopeLimit_Turb);
+  SetScalarDefaults(MUSCL_Heat, Kind_ConvNumScheme_Heat, Kind_Upwind_Heat, Kind_SlopeLimit_Heat);
+  SetScalarDefaults(MUSCL_Species, Kind_ConvNumScheme_Species, Kind_Upwind_Species, Kind_SlopeLimit_Species);
+
   if (!MUSCL_Flow || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = LIMITER::NONE;
-  if (!MUSCL_Turb || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = LIMITER::NONE;
-  if (!MUSCL_Species || (Kind_ConvNumScheme_Species == SPACE_CENTERED)) Kind_SlopeLimit_Species = LIMITER::NONE;
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
@@ -3791,7 +3842,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
       /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
-       equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models. 
+       equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models.
        * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active.--- */
       if (nMolecular_Weight != nSpecies_Init + 1 || nSpecific_Heat_Cp != nSpecies_Init + 1) {
         SU2_MPI::Error(
@@ -3891,16 +3942,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     if (!ideal_gas && !nemo) {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-        SU2_MPI::Error(
-            "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids",
-            CURRENT_FUNCTION);
+      if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
+        SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
       }
-    }
-
-    if (nemo) {
-      if (Kind_Upwind_Flow == AUSMPWPLUS)
-        SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
     }
 
     if (GetBoolTurbomachinery()) {
@@ -4349,8 +4393,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_4th_Flow = jst_coeff[1];
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
-  Kappa_2nd_Heat = ad_coeff_heat[0];
-  Kappa_4th_Heat = ad_coeff_heat[1];
 
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -4684,7 +4726,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
-   0.1m ---*/
+   1.0m ---*/
 
   RefElemLength = 1.0;
   if (SystemMeasurements == US) RefElemLength /= 0.3048;
@@ -4729,10 +4771,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
-    SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
-  }
-
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
@@ -4765,7 +4803,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_TYPE::SetDerivative(Reynolds, 1.0);
         break;
       case D_TURB2LAM:
-       SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
+       SU2_TYPE::SetDerivative(TurbIntensityAndViscRatioFreeStream[1], 1.0);
         break;
       default:
         /*--- All other cases are handled in the specific solver ---*/
@@ -4868,6 +4906,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
+  }
+
+  /*--- Vorticity confinement feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows. ---*/
+
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER
+    || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES
+    || Kind_Solver == MAIN_SOLVER::INC_RANS
+    || Kind_Solver == MAIN_SOLVER::NEMO_EULER
+    || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES
+    || Axisymmetric)
+    && VorticityConfinement) {
+    SU2_MPI::Error("Vorticity confinement feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows.", CURRENT_FUNCTION);
   }
 
   /*--- Check the coefficients for the polynomial models. ---*/
@@ -4974,95 +5024,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Streamwise_Periodic_Temperature = false;
   }
 
-  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
-   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_HeatTransfer) || (nMarker_CHTInterface > 0)) {
-
-     /*--- The total number of wall markers. ---*/
-     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + nMarker_CHTInterface;
-
-     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
-     if (nRough_Wall == 0) {
-
-       nRough_Wall = nWall;
-       Roughness_Height = new su2double [nWall];
-       Kind_Wall = new WALL_TYPE [nWall];
-       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
-         Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = WALL_TYPE::SMOOTH;
-       }
-       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
-         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = WALL_TYPE::SMOOTH;
-       }
-
-       /*--- Check for mismatch in number of rough walls and solid walls. ---*/
-     } else if (nRough_Wall > nWall) {
-        SU2_MPI::Error("Mismatch in number of rough walls and solid walls. Number of rough walls cannot be more than solid walls.", CURRENT_FUNCTION);
-       /*--- Check name of the marker and assign the corresponding roughness. ---*/
-     } else {
-       /*--- Store roughness heights in a temp array. ---*/
-       vector<su2double> temp_rough;
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
-         temp_rough.push_back(Roughness_Height[iMarker]);
-
-       /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
-       delete Roughness_Height;
-       delete Kind_Wall;
-       Roughness_Height = new su2double [nWall];
-       Kind_Wall = new WALL_TYPE [nWall];
-       unsigned short jMarker, chkRough = 0;
-
-       /*--- Initialize everything to smooth. ---*/
-       for (iMarker = 0; iMarker < nWall; iMarker++) {
-         Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
-       }
-
-       /*--- Look through heat flux, isothermal, heat transfer and cht_interface markers and assign proper values. ---*/
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
-         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
-           if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++)
-           if (Marker_Isothermal[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_HeatTransfer; jMarker++)
-           if (Marker_HeatTransfer[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-
-         for (jMarker = 0; jMarker < nMarker_CHTInterface; jMarker++)
-           if (Marker_CHTInterface[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + jMarker] = temp_rough[iMarker];
-             chkRough++;
-           }
-       }
-
-       /*--- Update kind_wall when a non zero roughness value is specified. ---*/
-       for (iMarker = 0; iMarker < nWall; iMarker++)
-         if (Roughness_Height[iMarker] != 0.0)
-           Kind_Wall[iMarker] = WALL_TYPE::ROUGH;
-
-       /*--- Check if a non solid wall marker was specified as rough. ---*/
-       if (chkRough != nRough_Wall)
-         SU2_MPI::Error("Only solid walls can be rough.", CURRENT_FUNCTION);
-     }
-   }
+  if (nRough_Wall > 0) {
+    /*--- Validate name of the markers. ---*/
+    for (iMarker = 0; iMarker < nRough_Wall; ++iMarker) {
+      auto CheckMarker = [&](unsigned short nMarker, const string* markerName) {
+        for (auto jMarker = 0u; jMarker < nMarker; ++jMarker) {
+          if (markerName[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+      if (!CheckMarker(nMarker_HeatFlux, Marker_HeatFlux) &&
+          !CheckMarker(nMarker_Isothermal, Marker_Isothermal) &&
+          !CheckMarker(nMarker_HeatTransfer, Marker_HeatTransfer) &&
+          !CheckMarker(nMarker_CHTInterface, Marker_CHTInterface)) {
+        SU2_MPI::Error("Marker " + Marker_RoughWall[iMarker] + " is not a viscous wall.", CURRENT_FUNCTION);
+      }
+    }
+  }
 
   /*--- Handle default options for topology optimization ---*/
 
@@ -5337,6 +5317,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     case TURB_FAMILY::KW:
       nTurbVar = 2; break;
   }
+  /*--- Check whether the number of entries of the MARKER_INLET_TURBULENT equals the number of turbulent properties
+       used for the respective turbulent model. nTurb_Properties must be equal to 1 or 2 depending on whether SA or
+       SST model are used.--- */
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SST && nTurb_Properties != 2)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SST Model is used \n"
+        "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
+        CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
@@ -5347,7 +5335,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
-        Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS &&
+        Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
 
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
@@ -5425,6 +5414,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
+
+  if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
+    SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
+  }
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -6048,6 +6041,38 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "." << endl;
             break;
         }
+        switch (Kind_Trans_Model) {
+          case TURB_TRANS_MODEL::NONE:  break;
+          case TURB_TRANS_MODEL::LM: {
+            cout << "Transition model: Langtry and Menter's 4 equation model";
+            if (lmParsedOptions.LM2015) {
+              cout << " w/ cross-flow corrections (2015)" << endl;
+            } else {
+              cout << " (2009)" << endl;
+            }
+            break;
+          }
+        }
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+
+          cout << "Correlation Functions: ";
+          switch (lmParsedOptions.Correlation) {
+            case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+            case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+            case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+            case TURB_TRANS_CORRELATION::DEFAULT:
+              switch (Kind_Turb_Model) {
+                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
+                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+              }
+              break;
+          }
+        }
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
@@ -6582,7 +6607,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == LAX) {
+        if (Kind_Centered_Flow == CENTERED::LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms.\n";
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << ".\n";
           cout << "First order integration." << endl;
@@ -6595,21 +6620,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-        if (Kind_Upwind_Flow == ROE)    cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSM)   cout << "AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SW)     cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == L2ROE)  cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == LMROE)  cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SLAU)   cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::ROE)    cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSM)   cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SW)     cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::L2ROE)  cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::LMROE)  cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SLAU)   cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == UPWIND::AUSMPLUSM)  cout << "AUSM+M solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == MAIN_SOLVER::EULER         || Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER ||
             Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
@@ -6635,7 +6660,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
-        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
+        if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
         if (MUSCL_Turb) {
           PrintLimiterInfo(Kind_SlopeLimit_Turb);
         } else {
@@ -6647,21 +6672,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if ((Kind_Solver == MAIN_SOLVER::ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS)) {
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) {
-        if (Kind_Centered_AdjFlow == JST) {
+        if (Kind_Centered_AdjFlow == CENTERED::JST) {
           cout << "Jameson-Schmidt-Turkel scheme for the adjoint inviscid terms."<< endl;
           cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
           << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
           cout << "Second order integration." << endl;
         }
-        if (Kind_Centered_AdjFlow == LAX) {
+        if (Kind_Centered_AdjFlow == CENTERED::LAX) {
           cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
           cout << "First order integration." << endl;
         }
       }
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
-        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
+        if (Kind_Upwind_AdjFlow == UPWIND::ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
           PrintLimiterInfo(Kind_SlopeLimit_AdjFlow);
         } else {
@@ -6675,7 +6700,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::ADJ_RANS) && (!Frozen_Visc_Cont)) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
-        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
+        if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
         if (MUSCL_AdjTurb) {
           PrintLimiterInfo(Kind_SlopeLimit_AdjTurb);
         } else {
@@ -6734,10 +6759,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Discontinuous Galerkin Finite element solver" << endl;
 
         switch( Riemann_Solver_FEM ) {
-          case ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
-          case LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
-          case AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
-          case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          case UPWIND::ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
+          case UPWIND::LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
+          case UPWIND::AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
+          case UPWIND::HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          default: break;
         }
 
         if(Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_EULER) {
@@ -7924,8 +7950,6 @@ CConfig::~CConfig() {
 
   delete[] Marker_All_SendRecv;
 
-  delete[] Kind_Wall;
-
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
     delete [] DV_Value;
@@ -8275,7 +8299,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 }
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
-                                    unsigned short val_kind_centered, unsigned short val_kind_upwind,
+                                    CENTERED val_kind_centered, UPWIND val_kind_upwind,
                                     LIMITER val_kind_slopelimit, bool val_muscl,
                                     unsigned short val_kind_fem) {
   Kind_ConvNumScheme = val_kind_convnumscheme;
@@ -8315,6 +8339,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     }
   };
 
+  auto SetHeatParam = [&]() {
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat,
+                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+    }
+  };
+
   auto SetSpeciesParam = [&]() {
     if (val_system == RUNTIME_SPECIES_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
@@ -8335,21 +8367,21 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
   switch (val_solver) {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_INC_EULER:
       SetFlowParam();
       break;
     case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       SetFlowParam();
       SetSpeciesParam();
-
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, LIMITER::NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
+      SetHeatParam();
       break;
     case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       SetFlowParam();
       SetTurbParam();
       SetSpeciesParam();
+      SetHeatParam();
 
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
@@ -8357,14 +8389,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
                               MUSCL_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, LIMITER::NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
       break;
     case MAIN_SOLVER::FEM_EULER:
     case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
     case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8390,18 +8422,20 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
 
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, LIMITER::NONE , NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;
@@ -8786,6 +8820,14 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
 
+const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
+  /*--- If Turbulent Inlet is not provided for the marker, return free stream values. ---*/
+  for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {
+    if (Marker_Inlet_Turb[iMarker] == val_marker) return Inlet_TurbVal[iMarker];
+  }
+  return TurbIntensityAndViscRatioFreeStream;
+}
+
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
@@ -9083,40 +9125,15 @@ su2double CConfig::GetWall_HeatTransfer_Temperature(string val_marker) const {
   return HeatTransfer_WallTemp[0];
 }
 
-pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
-  unsigned short iMarker = 0;
-  short          flag = -1;
-  pair<WALL_TYPE, su2double> WallProp;
-
-  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_HeatTransfer || nMarker_CHTInterface > 0) {
-    for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
-      if (Marker_HeatFlux[iMarker] == val_marker) {
-        flag = iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-      if (Marker_Isothermal[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++)
-      if (Marker_HeatTransfer[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
-    for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
-      if (Marker_CHTInterface[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker;
-        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
-        return WallProp;
-      }
+pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(const string& val_marker) const {
+  su2double roughness = 0.0;
+  for (auto iMarker = 0u; iMarker < nRough_Wall; iMarker++) {
+    if (val_marker.compare(Marker_RoughWall[iMarker]) == 0) {
+      roughness = Roughness_Height[iMarker];
+      break;
+    }
   }
-
-  WallProp = make_pair(WALL_TYPE::SMOOTH, 0.0);
-  return WallProp;
+  return make_pair(roughness > 0 ? WALL_TYPE::ROUGH : WALL_TYPE::SMOOTH, roughness);
 }
 
 WALL_FUNCTIONS CConfig::GetWallFunction_Treatment(string val_marker) const {

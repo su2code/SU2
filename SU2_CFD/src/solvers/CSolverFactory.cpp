@@ -2,14 +2,14 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -92,6 +92,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
     case MAIN_SOLVER::RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[TRANS_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::INC_RANS:
@@ -99,6 +100,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[TRANS_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
@@ -211,6 +213,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
   CSolver *genericSolver = nullptr;
 
   TURB_MODEL kindTurbModel = config->GetKind_Turb_Model();
+  TURB_TRANS_MODEL kindTransModel = config->GetKind_Trans_Model();
 
   SolverMetaData metaData;
 
@@ -287,7 +290,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::TRANSITION:
-      genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
+      genericSolver = CreateTransSolver(kindTransModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::SPECIES:
@@ -365,6 +368,26 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
   }
 
   return turbSolver;
+}
+
+CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
+
+  CSolver *transSolver = nullptr;
+
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    switch (kindTransModel) {
+      case TURB_TRANS_MODEL::LM :
+        transSolver = new CTransLMSolver(geometry, config, iMGLevel);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        transSolver->Postprocessing(geometry, solver, config, iMGLevel);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        break;
+      case TURB_TRANS_MODEL::NONE:
+        break;
+    }
+  }
+
+  return transSolver;
 }
 
 CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){

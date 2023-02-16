@@ -2,14 +2,14 @@
  * \file CTurbSSTVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
-                                       su2double val_dist, su2double val_density) {
+                                       su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
@@ -83,6 +83,13 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
 
   arg2 = max(2.0*arg2A, arg2B);
   F2(iPoint) = tanh(pow(arg2, 2.0));
+
+  /*--- LM model for F1 ---*/
+  if (trans_model == TURB_TRANS_MODEL::LM) {
+    su2double Ry = val_density*val_dist*sqrt(Solution(iPoint,0))/val_viscosity;
+    su2double F3 = exp(-pow(Ry/120.0, 8.0));
+    F1(iPoint) = max(F1(iPoint), F3);
+  }
 
   AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw(iPoint));
   AD::EndPreacc();

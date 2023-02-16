@@ -5,14 +5,14 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -192,7 +192,8 @@ FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarTyp
 
   for (auto index = dia_ptr[row_i]+1; index < row_ptr[row_i+1]; index++) {
     auto col_j = col_ind[index];
-    if (col_j < col_ub)
+    /*--- Always include halos. ---*/
+    if (col_j < col_ub || col_j >= nPointDomain)
       MatrixVectorProductAdd(&matrix[index*nVar*nEqn], &vec[col_j*nEqn], prod);
   }
 }

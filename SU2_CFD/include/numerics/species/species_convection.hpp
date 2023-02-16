@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        convective fluxes in species problems.
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,14 +51,12 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::idx;
+  using Base::bounded_scalar;
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i[idx.Density()]);
-    AD::SetPreaccIn(V_j[idx.Density()]);
-  };
+  void ExtraADPreaccIn() override {}
 
   /*!
    * \brief Species transport specific steps in the ComputeResidual method
@@ -83,5 +81,5 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Species(); }
 };

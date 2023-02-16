@@ -2,14 +2,14 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,11 +51,16 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
   /*--- Continuous adjoint Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
 
   if ((InnerIter == 0) || (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)) {
-    if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_EULER)
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_EULER, RUNTIME_FLOW_SYS);
-    if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_NAVIER_STOKES)
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_NAVIER_STOKES, RUNTIME_FLOW_SYS);
-    if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_RANS, RUNTIME_FLOW_SYS);
+    const auto kind_solver = config[val_iZone]->GetKind_Solver();
+    switch (kind_solver) {
+      case MAIN_SOLVER::ADJ_EULER:
+      case MAIN_SOLVER::ADJ_NAVIER_STOKES:
+      case MAIN_SOLVER::ADJ_RANS:
+        config[val_iZone]->SetGlobalParam(kind_solver, RUNTIME_FLOW_SYS);
+        break;
+      default:
+        break;
+    }
 
     /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
@@ -78,7 +83,7 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
       /*--- Solve transition model ---*/
 
       if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
-        config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_TRANS_SYS);
+        config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_RANS, RUNTIME_TRANS_SYS);
         integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                            RUNTIME_TRANS_SYS, val_iZone, val_iInst);
       }
@@ -127,19 +132,13 @@ void CAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  switch (config[val_iZone]->GetKind_Solver()) {
+  const auto kind_solver = config[val_iZone]->GetKind_Solver();
+  switch (kind_solver) {
     case MAIN_SOLVER::ADJ_EULER:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_EULER, RUNTIME_ADJFLOW_SYS);
-      break;
-
     case MAIN_SOLVER::ADJ_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS);
-      break;
-
     case MAIN_SOLVER::ADJ_RANS:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_RANS, RUNTIME_ADJFLOW_SYS);
+      config[val_iZone]->SetGlobalParam(kind_solver, RUNTIME_ADJFLOW_SYS);
       break;
-
     default:
       break;
   }

@@ -2,14 +2,14 @@
  * \file CPrimalGrid_tests.cpp
  * \brief Unit tests for the primal grid classes
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,16 +51,16 @@ TEST_CASE("Center of gravity computation", "[Primal Grid]") {
   name.SetCoord_CG(nDim, coordinates);   \
   REQUIRE(name.GetCG(0) == Approx(x)); \
   REQUIRE(name.GetCG(1) == Approx(y)); \
-  REQUIRE(name.GetCG(2) == Approx(z)); 
+  REQUIRE(name.GetCG(2) == Approx(z));
 
   // It is sufficient to test the CG computation for Hexahedron.
   // Routine is the same for all elements (impl. in CPrimalGrid)
   CHexahedron hexa(0,1,2,3,4,5,6,7);
   REQUIRE_CG(hexa, 0.7676307957, 0.0664236806, -0.0020626777);
-  
+
   for (int i = 0; i < 8; i++){
     delete [] coordinates[i];
   }
   delete [] coordinates;
-  
+
 }

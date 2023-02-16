@@ -2,14 +2,14 @@
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -254,6 +254,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3)
      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
+    AddVolumeOutput("THERMAL_CONDUCTIVITY_TR", "Thermal_Conductivity_tr", "PRIMITIVE", "Translational-rotational thermal conductivity");
+    AddVolumeOutput("THERMAL_CONDUCTIVITY_VE", "Thermal_Conductivity_ve", "PRIMITIVE", "Vibrational-electronic thermal conductivity");
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
@@ -332,6 +334,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+    SetVolumeOutputValue("THERMAL_CONDUCTIVITY_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
+    SetVolumeOutputValue("THERMAL_CONDUCTIVITY_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
   }
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)

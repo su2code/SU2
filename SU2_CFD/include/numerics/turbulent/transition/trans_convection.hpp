@@ -1,16 +1,16 @@
 /*!
- * \file SU2_DEF.hpp
- * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
- * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \file trans_convection.hpp
+ * \brief Delarations of numerics classes for discretization of
+ *        convective fluxes in transition problems.
+ * \author S. Kang
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,20 +26,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include "../../Common/include/parallelization/mpi_structure.hpp"
-#include "../../Common/include/parallelization/omp_structure.hpp"
+#include "../turb_convection.hpp"
 
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
+/*!
+ * \class CUpwSca_TransLM
+ * \brief Re-use the SST convective fluxes for the scalar upwind discretization of LM transition model equations.
+ * \ingroup ConvDiscr
+ */
+template <class FlowIndices>
+using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
 
-#include "../../SU2_CFD/include/solvers/CSolver.hpp"
-#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
-
-using namespace std;

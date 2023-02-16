@@ -2,14 +2,14 @@
  * \file CTurbSAVariable.hpp
  * \brief Declaration of the variables of the SA turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,6 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
 
@@ -60,20 +59,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CTurbSAVariable() override = default;
-
-  /*!
-   * \brief Get the intermittency of the BC transition model.
-   * \param[in] iPoint - Point index.
-   * \return Value of the intermittency of the BC transition model.
-   */
-  inline su2double GetGammaBC(unsigned long iPoint) const override { return gamma_BC(iPoint); }
-
-  /*!
-   * \brief Set the intermittency of the BC transition model.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_gamma - New value of the intermittency.
-   */
-  inline void SetGammaBC(unsigned long iPoint, su2double val_gamma) override { gamma_BC(iPoint) = val_gamma; }
 
   /*!
    * \brief Get the DES length scale

@@ -3,14 +3,14 @@
 ## \file flatPlate_rigidMotion.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -76,10 +76,10 @@ def main():
   MovingMarker = 'plate'       #specified by the user
 
   # Get all the tags with the moving option
-  MovingMarkerList =  SU2Driver.GetAllDeformMeshMarkersTag()
+  MovingMarkerList =  SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
   # Check if the specified marker has a moving option and if it exists on this rank.
   if MovingMarker in MovingMarkerList and MovingMarker in allMarkerIDs.keys():
@@ -87,13 +87,9 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_MovingMarker = 0         #total number of vertices (physical + halo)
-  nVertex_MovingMarker_HALO = 0    #number of halo vertices
-  nVertex_MovingMarker_PHYS = 0    #number of physical vertices
 
   if MovingMarkerID != None:
-    nVertex_MovingMarker = SU2Driver.GetNumberVertices(MovingMarkerID)
-    nVertex_MovingMarker_HALO = SU2Driver.GetNumberHaloVertices(MovingMarkerID)
-    nVertex_MovingMarker_PHYS = nVertex_MovingMarker - nVertex_MovingMarker_HALO
+    nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)\
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
@@ -104,9 +100,9 @@ def main():
   # Extract the initial position of each node on the moving marker
   CoordX = np.zeros(nVertex_MovingMarker)
   CoordY = np.zeros(nVertex_MovingMarker)
-  CoordZ = np.zeros(nVertex_MovingMarker)
   for iVertex in range(nVertex_MovingMarker):
-    CoordX[iVertex], CoordY[iVertex], CoordZ[iVertex] = SU2Driver.GetInitialMeshCoord(MovingMarkerID, iVertex)
+    iPoint = SU2Driver.GetMarkerNode(MovingMarkerID, iVertex)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetInitialCoordinates(iPoint)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -117,9 +113,11 @@ def main():
 
   while (TimeIter < nTimeIter):
     # Define the rigid body displacement and set the new coords of each node on the marker
-    d_y = 0.0175*sin(2*pi*time)
+    value = 0.0, 0.0175*sin(2*pi*time)
+
     for iVertex in range(nVertex_MovingMarker):
-      SU2Driver.SetMeshDisplacement(MovingMarkerID, int(iVertex), 0.0, d_y, 0.0)
+      SU2Driver.SetMarkerDisplacements(MovingMarkerID, int(iVertex), value)
+
     # Time iteration preprocessing
     SU2Driver.Preprocess(TimeIter)
     # Run one time iteration (e.g. dual-time)

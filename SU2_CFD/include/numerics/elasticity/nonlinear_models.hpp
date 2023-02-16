@@ -2,14 +2,14 @@
  * \file nonlinear_models.hpp
  * \brief Declarations of nonlinear constitutive models.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CFEM_NeoHookean_Comp final : public CFEANonlinearElasticity {
 
@@ -83,7 +83,7 @@ private:
  * \brief Constitutive and stress tensors for a Knowles stored-energy function, nearly incompressible.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CFEM_Knowles_NearInc final : public CFEANonlinearElasticity {
 
@@ -134,7 +134,7 @@ private:
  * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CFEM_DielectricElastomer final : public CFEANonlinearElasticity {
 
@@ -182,7 +182,7 @@ private:
  * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CFEM_IdealDE final : public CFEANonlinearElasticity {
 

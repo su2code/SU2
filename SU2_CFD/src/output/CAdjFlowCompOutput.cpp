@@ -2,14 +2,14 @@
  * \file CAdjFlowCompOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,14 +35,14 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
-  if (nRequestedHistoryFields == 0){
+  if (nRequestedHistoryFields == 0) {
     requestedHistoryFields.emplace_back("ITER");
     requestedHistoryFields.emplace_back("RMS_RES");
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
-  if (nRequestedScreenFields == 0){
+  if (nRequestedScreenFields == 0) {
     if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
@@ -53,7 +53,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
     nRequestedScreenFields = requestedScreenFields.size();
   }
 
-  if (nRequestedVolumeFields == 0){
+  if (nRequestedVolumeFields == 0) {
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("SENSITIVITY");
@@ -93,7 +93,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
 CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {}
 
-void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
+void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config) {
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   /// DESCRIPTION: Root-mean square residual of the adjoint density.
@@ -103,9 +103,12 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Y", "rms[A_RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum z-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum z-component.", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum z-component.", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
+
 
   AddHistoryOutputFields_AdjScalarRMS_RES(config);
   /// END_GROUP
@@ -118,7 +121,9 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
   AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum y-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum z-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Maximum residual of the adjoint energy.
   AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
 
@@ -134,7 +139,9 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: BGS residual of the adjoint momentum y-component
   AddHistoryOutput("BGS_ADJ_MOMENTUM-Y", "bgs[A_RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum y-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum z-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) {
+    AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: BGS residual of the adjoint energy.
   AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
 
@@ -159,14 +166,14 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutputFields_AdjScalarLinsol(config);
 
-  if (config->GetDeform_Mesh()){
+  if (config->GetDeform_Mesh()) {
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
 
 }
 
-void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
+void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
@@ -191,7 +198,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));
   }
 
-  if (multiZone){
+  if (multiZone) {
     SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
@@ -220,7 +227,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   LoadHistoryData_AdjScalar(config, solver);
 }
 
-void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
+void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
 
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
@@ -274,7 +281,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 }
 
-void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
   CPoint*    Node_Geo     = geometry->nodes;
@@ -287,7 +294,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   SetVolumeOutputValue("ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(iPoint, 2));
-  if (nDim == 3){
+  if (nDim == 3) {
     SetVolumeOutputValue("ADJ_MOMENTUM-Z", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
     SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(iPoint, 4));
   } else {
@@ -298,7 +305,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   SetVolumeOutputValue("RES_ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0) - Node_AdjFlow->GetSolution_Old(iPoint, 0));
   SetVolumeOutputValue("RES_ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1) - Node_AdjFlow->GetSolution_Old(iPoint, 1));
   SetVolumeOutputValue("RES_ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(iPoint, 2) - Node_AdjFlow->GetSolution_Old(iPoint, 2));
-  if (nDim == 3){
+  if (nDim == 3) {
     SetVolumeOutputValue("RES_ADJ_MOMENTUM-Z", iPoint, Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
     SetVolumeOutputValue("RES_ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(iPoint, 4) - Node_AdjFlow->GetSolution_Old(iPoint, 4));
   } else {
@@ -313,14 +320,14 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   LoadVolumeData_AdjScalar(config, solver, iPoint);
 }
 
-void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {
 
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
 
 }
 
 
-bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config){
+bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config) {
 
   return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
          ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));

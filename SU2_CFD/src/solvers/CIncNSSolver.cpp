@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -386,7 +386,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
       scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     }
-  
+
     /*--- Incompressible flow, primitive variables --- */
 
     bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
@@ -810,7 +810,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         const su2double U_Plus = VelTangMod / U_Tau;
 
         /*--- Y+ defined by White & Christoph ---*/
- 
+
         const su2double kUp = kappa * U_Plus;
 
         // incompressible adiabatic result

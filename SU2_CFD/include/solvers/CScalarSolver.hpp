@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,10 @@
 #include <vector>
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../variables/CScalarVariable.hpp"
+#include "../variables/CFlowVariable.hpp"
+#include "../variables/CPrimitiveIndices.hpp"
 #include "CSolver.hpp"
 
 /*!
@@ -49,13 +52,17 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR]; /*!< \brief contains lower limits for turbulence variables. Note that ::min()
-                                             returns the smallest positive value for floats. */
-  su2double upperlimit[MAXNVAR]; /*!< \brief contains upper limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR]; /*!< \brief contains lower limits for scalar variables. */
+  su2double upperlimit[MAXNVAR]; /*!< \brief contains upper limits for scalar variables. */
 
   su2double Solution_Inf[MAXNVAR]; /*!< \brief Far-field solution. */
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
+
+  const CPrimitiveIndices<unsigned short> prim_idx; /*!< \brief Indices of the primitive flow variables. */
+
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -82,7 +89,7 @@ class CScalarSolver : public CSolver {
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \tparam SolverSpecificNumericsFunc - lambda-function, that implements solver specific contributions to numerics.
    * \note The functor has to implement (iPoint, jPoint)
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -96,7 +103,8 @@ class CScalarSolver : public CSolver {
                                          CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
     /*--- Points in edge ---*/
 
@@ -110,7 +118,9 @@ class CScalarSolver : public CSolver {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
@@ -136,6 +146,144 @@ class CScalarSolver : public CSolver {
   }
 
   /*!
+   * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
+   * \tparam SolverSpecificNumericsFunc - lambda that implements solver specific contributions to viscous numerics.
+   * \note The functor has to implement (iPoint)
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  template <class SolverSpecificNumericsFunc>
+  void BC_Fluid_Interface_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, CGeometry *geometry,
+                               CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                               CConfig *config) {
+    if (solver_container[FLOW_SOL] == nullptr) return;
+
+    const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+    su2activevector PrimVar_j(nPrimVar);
+    su2double solution_j[MAXNVAR] = {0.0};
+
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
+
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+        const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        const auto nDonorVertex = GetnSlidingStates(iMarker,iVertex);
+
+        su2double Normal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+
+        su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+        auto* Jacobian_i = Jacobian.GetBlock(iPoint, iPoint);
+
+        /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+
+        for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
+
+          for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+          /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+          const su2double weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+          /*--- Set primitive variables ---*/
+
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j.data() );
+
+          /*--- Set the scalar variable states ---*/
+
+          for (auto iVar = 0u; iVar < nVar; ++iVar)
+            solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+          conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+
+          /*--- Set the normal vector ---*/
+
+          conv_numerics->SetNormal(Normal);
+
+          if (dynamic_grid)
+            conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+          if (conv_numerics->GetBoundedScalar()) {
+            const su2double* velocity = &PrimVar_j[prim_idx.Velocity()];
+            const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+            conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, true, density, velocity, Normal));
+          }
+
+          auto residual = conv_numerics->ComputeResidual(config);
+
+          /*--- Accumulate the residuals to compute the average ---*/
+
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            LinSysRes(iPoint,iVar) += weight*residual[iVar];
+            for (auto jVar = 0u; jVar < nVar; jVar++)
+              Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
+          }
+        }
+
+        /*--- Set the normal vector and the coordinates ---*/
+
+        visc_numerics->SetNormal(Normal);
+        su2double Coord_Reflected[MAXNDIM];
+        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                                geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+
+        /*--- Primitive variables ---*/
+
+        visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j.data());
+
+        /*--- Scalar variables and their gradients ---*/
+
+        visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+        visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+
+        /*--- Allow derived solvers to set more variables in numerics. ---*/
+
+        SolverSpecificNumerics(iPoint);
+
+        /*--- Compute and update residual ---*/
+
+        auto residual = visc_numerics->ComputeResidual(config);
+
+        LinSysRes.SubtractBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+
+        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*!
+   * \brief Applies a convective flux correction to negate the effects of flow divergence at a BC node.
+   * \note This function should be used for nodes that are part of a boundary marker, it computes a mass flux
+   * from density and velocity at the node, and the outward-pointing normal (-1 * normal of vertex).
+   * \return The mass flux.
+   */
+  inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,
+                                       const su2double* velocity, const su2double* normal) {
+    const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, normal);
+    LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -edgeMassFlux);
+    if (implicit) Jacobian.AddVal2Diag(iPoint, -edgeMassFlux);
+    return edgeMassFlux;
+  }
+
+  /*!
    * \brief Gradient and Limiter computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -143,9 +291,15 @@ class CScalarSolver : public CSolver {
    */
   void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
+
  private:
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -164,12 +318,6 @@ class CScalarSolver : public CSolver {
     Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
   }
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
@@ -199,8 +347,20 @@ class CScalarSolver : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
-                       unsigned short iMesh) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
+
+  /*!
+   * \brief Impose the Far Field boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
@@ -256,6 +416,20 @@ class CScalarSolver : public CSolver {
   void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
 
   /*!
+   * \brief Impose the fluid interface boundary condition using transfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) override {
+    /*--- By default instantiate the generic implementation w/o extra variables, derived solvers can override. ---*/
+    BC_Fluid_Interface_impl([](unsigned long){}, geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
+
+  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -266,6 +440,17 @@ class CScalarSolver : public CSolver {
     }
     END_SU2_OMP_FOR
   }
+
+  /*!
+   * \brief This base implementation simply copies the time step of the flow solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration) override;
 
   /*!
    * \brief Prepare an implicit iteration.
@@ -297,7 +482,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -309,7 +494,7 @@ class CScalarSolver : public CSolver {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) final;
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -326,4 +511,71 @@ class CScalarSolver : public CSolver {
    * \brief Scalar solvers support OpenMP+MPI.
    */
   inline bool GetHasHybridParallel() const override { return true; }
+
+  /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  * \param[in] donor_index- index of the donor node to get
+  */
+  inline su2double GetSlidingState(unsigned short val_marker,
+                                   unsigned long val_vertex,
+                                   unsigned short val_state,
+                                   unsigned long donor_index) const final {
+    return SlidingState[val_marker][val_vertex][val_state][donor_index];
+  }
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
+    int iVar;
+
+    for( iVar = 0; iVar < nVar+1; iVar++){
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
+        delete [] SlidingState[val_marker][val_vertex][iVar];
+    }
+
+    for( iVar = 0; iVar < nVar+1; iVar++)
+      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+  }
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  inline void SetSlidingState(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_state,
+                              unsigned long donor_index,
+                              su2double component) final {
+    SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+  }
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
+    return SlidingStateNodes[val_marker][val_vertex];
+  }
+
 };

@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
-  unsigned short iDim, iVar, nLineLets;
+  unsigned short iDim, iVar;
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, *Normal;
@@ -169,11 +169,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new su2double* [nVar];
@@ -895,41 +890,24 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 }
 
 void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
-  unsigned long iPoint, Point_Fine;
-  unsigned short iMesh, iChildren, iVar;
-  su2double Area_Children, Area_Parent, *Solution, *Solution_Fine;
 
-  bool restart = config->GetRestart();
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  const bool restart = config->GetRestart();
+  const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
   if (restart) {
-    Solution = new su2double[nVar];
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-          Solution_Fine = solver_container[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-          }
-        }
-        solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
-
-      }
+    for (auto iMesh = 1ul; iMesh <= config->GetnMGLevels(); iMesh++) {
+      MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
+                           *geometry[iMesh], solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
       solver_container[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
-    delete [] Solution;
   }
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (auto iMesh = 0ul; iMesh <= config->GetnMGLevels(); iMesh++) {
     if ((TimeIter == 0) && (dual_time)) {
       solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->Set_Solution_time_n1();
@@ -951,7 +929,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool muscl          = config->GetMUSCL_AdjFlow();
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
+  bool center_jst     = (config->GetKind_Centered_AdjFlow() == CENTERED::JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
@@ -1034,7 +1012,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned long iEdge, iPoint, jPoint;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool jst_scheme = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_AdjFlow() == CENTERED::JST) && (iMesh == MESH_0));
   bool grid_movement  = config->GetGrid_Movement();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3841,8 +3819,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  unsigned long index;
+  su2double *Coord;
   string filename, restart_filename;
 
   /*--- Restart the solution from file information ---*/
@@ -3922,19 +3900,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
     solver[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][ADJFLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);

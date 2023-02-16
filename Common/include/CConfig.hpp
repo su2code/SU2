@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string FluidName;              /*!< \brief name of the applied fluid. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -124,6 +125,7 @@ private:
   Low_Mach_Precon,          /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
   Low_Mach_Corr,            /*!< \brief Flag to know if we are using a low Mach number correction. */
   GravityForce,             /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+  VorticityConfinement,     /*!< \brief Flag to know if the Vorticity Confinement is included in the formulation. */
   SubsonicEngine,           /*!< \brief Engine intake subsonic region. */
   Frozen_Visc_Cont,         /*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,         /*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
@@ -146,6 +148,7 @@ private:
   su2double dCMy_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMz_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
+  su2double Confinement_Param; /*!< \brief Confinement paramenter for Vorticity Confinement method. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -193,6 +196,8 @@ private:
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
+  nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
+  nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
@@ -243,6 +248,7 @@ private:
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
+  *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
   *Marker_Shroud,                 /*!< \brief Shroud markers. */
@@ -280,8 +286,8 @@ private:
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-  su2double **Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for supersonic inlet boundaries (NEMO solver). */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
+  su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;                /*!< \brief Specified fan face pressure for nacelle boundaries. */
@@ -491,6 +497,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
@@ -530,28 +537,36 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
+  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+
+  CENTERED
   Kind_Centered,                /*!< \brief Centered scheme. */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
-  Kind_Centered_Template,       /*!< \brief Centered scheme for the template model. */
+  Kind_Centered_Heat,           /*!< \brief Centered scheme for the heat transfer model. */
+  Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
+
+
+  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
+  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
+  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
+  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+
+  UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
-  Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
-  Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
-  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
-  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
-  bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
-  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+  Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
+  Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -578,13 +593,14 @@ private:
   SPECIES_MODEL Kind_Species_Model; /*!< \brief Species model definition. */
   TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
+  TURB_TRANS_CORRELATION Kind_Trans_Correlation;  /*!< \brief Transition correlation model definition. */
+  su2double hRoughness;             /*!< \brief RMS roughness for Transition model. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
-  WALL_TYPE *Kind_Wall;            /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -614,8 +630,6 @@ private:
   Kappa_1st_Flow,           /*!< \brief Lax 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,           /*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
-  Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
   Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
   Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
@@ -704,8 +718,10 @@ private:
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
+  unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -841,6 +857,7 @@ private:
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  su2double TurbIntensityAndViscRatioFreeStream[2]; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
@@ -848,8 +865,7 @@ private:
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
-  TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
-  Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
+  ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
@@ -1086,7 +1102,6 @@ private:
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
-  ad_coeff_heat[2],      /*!< \brief artificial dissipation (heat) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
   geo_loc[2],            /*!< \brief SU2_GEO section locations array for the COption class. */
@@ -1103,7 +1118,7 @@ private:
   hs_axes[3],            /*!< \brief principal axes (x, y, z) of the ellipsoid containing the heat source. */
   hs_center[3];          /*!< \brief position of the center of the heat source. */
 
-  unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
+  UPWIND Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
@@ -1146,6 +1161,7 @@ private:
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
+  LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -1174,6 +1190,7 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  nSpecies_inlet,                           /*!< \brief No. of species for NEMO inlet. */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
@@ -1188,6 +1205,8 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
+  su2double *Inlet_MassFrac;                /*!< \brief Specified Mass fraction vectors for NEMO inlet boundaries. */
+  su2double Inlet_Temperature_ve;           /*!< \brief Specified Tve for supersonic inlet boundaries (NEMO solver). */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1274,7 +1293,7 @@ private:
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
-  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field);
+  void addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field);
 
   void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field);
 
@@ -1300,6 +1319,9 @@ private:
 
   void addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
+
+  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
+                          su2double** & Turb_Properties, unsigned short & nTurb_Properties);
 
   template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
@@ -1565,6 +1587,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
+  /*!
+   * \brief Get the value of the Confinement Parameter.
+   * \return Value of the constant: Confinement Parameter
+   */
+  su2double GetConfinement_Param(void) const { return Confinement_Param; }
 
   /*!
    * \brief Get the values of the CFL adaption parameters.
@@ -1929,10 +1957,16 @@ public:
   su2double GetIntermittency_FreeStream(void) const { return Intermittency_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream momentum thickness Reynolds number.
+   * \return Freestream momentum thickness Reynolds number.
+   */
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
-  su2double GetTurbulenceIntensity_FreeStream(void) const { return TurbulenceIntensity_FreeStream; }
+  su2double GetTurbulenceIntensity_FreeStream(void) const { return TurbIntensityAndViscRatioFreeStream[0]; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
@@ -1968,7 +2002,7 @@ public:
    * \brief Get the value of the turbulent to laminar viscosity ratio.
    * \return Ratio of turbulent to laminar viscosity ratio.
    */
-  su2double GetTurb2LamViscRatio_FreeStream(void) const { return Turb2LamViscRatio_FreeStream;}
+  su2double GetTurb2LamViscRatio_FreeStream(void) const { return TurbIntensityAndViscRatioFreeStream[1]; }
 
   /*!
    * \brief Get the value of the Reynolds length.
@@ -2294,9 +2328,9 @@ public:
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
-  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
-                             bool val_muscl,                        unsigned short val_kind_fem);
+  void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
+                             UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
+                             bool val_muscl,  unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
@@ -2565,6 +2599,12 @@ public:
    * \param[in] val_omega_freestream - Value of the freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
+
+  /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
 
   /*!
    * \brief Set the non-dimensional freestream energy.
@@ -3682,7 +3722,7 @@ public:
    */
   bool GetAUSMMethod(void) const {
     switch (Kind_Upwind_Flow) {
-      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS:
+      case UPWIND::AUSM : case UPWIND::AUSMPLUSUP: case UPWIND::AUSMPLUSUP2: case UPWIND::AUSMPLUSM:
         return true;
       default:
         return false;
@@ -3746,6 +3786,11 @@ public:
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+
+  /*!
+   * \brief Returns the name of the fluid we are using in CoolProp.
+   */
+  string GetFluid_Name(void) const { return FluidName; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.
@@ -4294,6 +4339,18 @@ public:
   TURB_TRANS_MODEL GetKind_Trans_Model(void) const { return Kind_Trans_Model; }
 
   /*!
+   * \brief Get the kind of the transition correlations.
+   * \return Kind of the transition correlation.
+   */
+  TURB_TRANS_CORRELATION GetKind_Trans_Correlation(void) const { return Kind_Trans_Correlation; }
+
+  /*!
+   * \brief Get RMS roughness for Transtion model from config
+   * \return Value of roughness.
+   */
+  su2double GethRoughness(void) const { return hRoughness; }
+
+  /*!
    * \brief Get the kind of the species model.
    * \return Kind of the species model.
    */
@@ -4330,7 +4387,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of center scheme for the convective terms.
    */
-  unsigned short GetKind_Centered(void) const { return Kind_Centered; }
+  CENTERED GetKind_Centered(void) const { return Kind_Centered; }
 
   /*!
    * \brief Get kind of upwind scheme for the convective terms.
@@ -4339,7 +4396,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetKind_Upwind(void) const { return Kind_Upwind; }
+  UPWIND GetKind_Upwind(void) const { return Kind_Upwind; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
@@ -4510,7 +4567,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the flow equations.
    */
-  ENUM_CENTERED GetKind_Centered_Flow(void) const { return static_cast<ENUM_CENTERED>(Kind_Centered_Flow); }
+  CENTERED GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -4526,7 +4583,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the flow equations.
    */
-  unsigned short GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
+  UPWIND GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
 
   /*!
    * \brief Get the kind of finite element convective numerical scheme for the flow equations.
@@ -4608,18 +4665,6 @@ public:
   su2double GetKappa_4th_Flow(void) const { return Kappa_4th_Flow; }
 
   /*!
-   * \brief Value of the calibrated constant for the JST method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equations.
-   */
-  su2double GetKappa_2nd_Heat(void) const { return Kappa_2nd_Heat; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST-like method (center scheme).
-   * \return Calibrated constant for the JST-like method for the heat equation.
-   */
-  su2double GetKappa_4th_Heat(void) const { return Kappa_4th_Heat; }
-
-  /*!
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
@@ -4655,7 +4700,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
+  CENTERED GetKind_Centered_AdjFlow(void) const { return Kind_Centered_AdjFlow; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint flow equations.
@@ -4663,7 +4708,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint flow equations.
    */
-  unsigned short GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
+  UPWIND GetKind_Upwind_AdjFlow(void) const { return Kind_Upwind_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the high order method (center scheme).
@@ -4707,7 +4752,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
+  CENTERED GetKind_Centered_Turb(void) const { return Kind_Centered_Turb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the turbulence equations.
@@ -4715,7 +4760,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the turbulence equations.
    */
-  unsigned short GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
+  UPWIND GetKind_Upwind_Turb(void) const { return Kind_Upwind_Turb; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4759,7 +4804,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Centered_Species() const { return Kind_Centered_Species; }
+  CENTERED GetKind_Centered_Species() const { return Kind_Centered_Species; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the Species equations.
@@ -4767,7 +4812,22 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+  UPWIND GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for species transport.
+   */
+  bool GetBounded_Species() const { return (Kind_Upwind_Species == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is on for turbulence transport.
+   */
+  bool GetBounded_Turb() const { return (Kind_Upwind_Turb == UPWIND::BOUNDED_SCALAR); }
+
+  /*!
+   * \brief Returns true if bounded scalar mode is used for any equation.
+   */
+  bool GetBounded_Scalar() const { return GetBounded_Species() || GetBounded_Turb(); }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
@@ -4783,7 +4843,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
+  CENTERED GetKind_Centered_AdjTurb(void) const { return Kind_Centered_AdjTurb; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the adjoint turbulence equations.
@@ -4791,7 +4851,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the adjoint turbulence equations.
    */
-  unsigned short GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
+  UPWIND GetKind_Upwind_AdjTurb(void) const { return Kind_Upwind_AdjTurb; }
 
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
@@ -5949,6 +6009,12 @@ public:
   bool GetGravityForce(void) const { return GravityForce; }
 
   /*!
+   * \brief Get information about the Vorticity Confinement.
+   * \return <code>TRUE</code> if it uses Vorticity Confinement; otherwise <code>FALSE</code>.
+   */
+  bool GetVorticityConfinement(void) const { return VorticityConfinement; }
+
+  /*!
    * \brief Get information about the body force.
    * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
    */
@@ -6629,6 +6695,20 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
+   * \brief Get the mass fraction vector for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  const su2double* GetInlet_MassFrac() const { return Inlet_MassFrac; }
+
+  /*!
+   * \brief Get the Tve value for a NEMO inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet velocity vector.
+   */
+  su2double GetInlet_Temperature_ve() const { return Inlet_Temperature_ve; }
+
+  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -6648,6 +6728,13 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(string val_index) const;
+
+  /*!
+   * \brief Get the turbulent properties values at an inlet boundary
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet turbulent values.
+   */
+  const su2double* GetInlet_TurbVal(string val_index) const;
 
   /*!
    * \brief Get the total pressure at an nacelle boundary.
@@ -6893,7 +6980,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall type and roughness height.
    */
-  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(string val_marker) const;
+  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(const string& val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
@@ -8898,7 +8985,7 @@ public:
    * \note This value is obtained from the config file, and it is constant during the computation.
    * \return Kind of Riemann solver for the DG method (FEM flow solver).
    */
-  unsigned short GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
+  UPWIND GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
 
   /*!
    * \brief Get the factor applied during quadrature of straight elements.
@@ -9650,6 +9737,12 @@ public:
    * \return SA option data structure.
    */
   SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
+
+  /*!
+   * \brief Get parsed LM option data structure.
+   * \return LM option data structure.
+   */
+  LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
   /*!
    * \brief Set Lambda L for Streamwise Periodic
