@@ -428,7 +428,7 @@ vector<passivedouble> CDriver::GetMarkerPrimitiveStates(unsigned short iMarker, 
   }
 
   const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
-  const auto nPrim = 5;
+  const auto nPrim = nDim + 2; // TODO: Use nPrimVar ?
   vector<passivedouble> values(nPrim, 0.0);
 
   if (nDim == 2) {
