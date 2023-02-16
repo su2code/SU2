@@ -28,7 +28,6 @@
 #pragma once
 
 #include "../../Common/include/containers/CLookUpTable.hpp"
-#include "../../Common/include/containers/CStructuredTable.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 #include "CFluidModel.hpp"
@@ -66,7 +65,6 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> lookup_scalar;
 
   CLookUpTable* look_up_table;
-  CStructuredTable* structured_table;
   MLPToolbox::CLookUp_ANN* look_up_ANN;
 
   su2vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */

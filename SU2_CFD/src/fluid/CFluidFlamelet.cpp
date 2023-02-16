@@ -28,7 +28,6 @@
 
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
-#include "../../../Common/include/containers/CStructuredTable.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
@@ -80,9 +79,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       cout << "***   initializing the lookup table   ***" << endl;
       cout << "*****************************************" << endl;
     }
-    // look_up_table =
-    //   new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
-    structured_table = new CStructuredTable(config->GetDataDriven_FileNames()[0], controlling_variables);
+    look_up_table =
+      new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
     break;
   
   case ENUM_DATADRIVEN_METHOD::MLP:
@@ -140,8 +138,7 @@ CFluidFlamelet::~CFluidFlamelet() {
   switch (manifold_format)
   {
   case ENUM_DATADRIVEN_METHOD::LUT:
-    //delete look_up_table;
-    delete structured_table;
+    delete look_up_table;
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
     delete iomap_TD;
@@ -351,7 +348,7 @@ void CFluidFlamelet::PreprocessLookUp() {
 unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, su2matrix<su2double> dOutputs_dInputs, MLPToolbox::CIOMap* iomap) {
   unsigned long exit_code = 0;
 
-  su2vector<string> LUT_varnames;
+  vector<string> LUT_varnames;
   vector<su2double*> LUT_val_vars;
   su2matrix<su2double*> gradient_refs;
 
@@ -367,14 +364,11 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
       LUT_varnames[iVar] = varnames[iVar];
       LUT_val_vars[iVar] = val_vars[iVar];
     }
-   CV_LUT[I_PROGVAR] = val_controlling_vars[I_MIXFRAC];
-   CV_LUT[I_MIXFRAC] = val_controlling_vars[I_PROGVAR];
-    // if(PreferentialDiffusion){
-    //   exit_code = look_up_table->LookUp_XYZ(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH], val_controlling_vars[I_MIXFRAC]);
-    // }else
-    //   exit_code = look_up_table->LookUp_XY(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH]);
-    exit_code = 0;
-    structured_table->Interpolate(CV_LUT, varnames, val_vars);
+    if(PreferentialDiffusion){
+      exit_code = look_up_table->LookUp_XYZ(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH], val_controlling_vars[I_MIXFRAC]);
+    }else
+      exit_code = look_up_table->LookUp_XY(LUT_varnames, LUT_val_vars, val_controlling_vars[I_PROGVAR], val_controlling_vars[I_ENTH]);
+
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
     gradient_refs.resize(val_vars.size(), n_CV);

@@ -67,12 +67,12 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   /* find the table limits */
   
   auto limitsEnth = look_up_table.GetTableLimitsY();
-  CHECK(SU2_TYPE::GetValue(*limitsEnth.first) == Approx(-1.0));
-  CHECK(SU2_TYPE::GetValue(*limitsEnth.second) == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(limitsEnth.first) == Approx(-1.0));
+  CHECK(SU2_TYPE::GetValue(limitsEnth.second) == Approx(1.0));
 
   auto limitsProgvar = look_up_table.GetTableLimitsX();
-  CHECK(SU2_TYPE::GetValue(*limitsProgvar.first) == Approx(0.0));
-  CHECK(SU2_TYPE::GetValue(*limitsProgvar.second) == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(limitsProgvar.first) == Approx(0.0));
+  CHECK(SU2_TYPE::GetValue(limitsProgvar.second) == Approx(1.0));
 
   /* lookup value outside of lookup table */
 
@@ -117,12 +117,12 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   /* find the table limits */
   
   auto limitsEnth = look_up_table.GetTableLimitsY();
-  CHECK(SU2_TYPE::GetValue(*limitsEnth.first) == Approx(-1.0));
-  CHECK(SU2_TYPE::GetValue(*limitsEnth.second) == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(limitsEnth.first) == Approx(-1.0));
+  CHECK(SU2_TYPE::GetValue(limitsEnth.second) == Approx(1.0));
 
   auto limitsProgvar = look_up_table.GetTableLimitsX();
-  CHECK(SU2_TYPE::GetValue(*limitsProgvar.first) == Approx(0.0));
-  CHECK(SU2_TYPE::GetValue(*limitsProgvar.second) == Approx(1.0));
+  CHECK(SU2_TYPE::GetValue(limitsProgvar.first) == Approx(0.0));
+  CHECK(SU2_TYPE::GetValue(limitsProgvar.second) == Approx(1.0));
 
   /* lookup value outside of lookup table */
 

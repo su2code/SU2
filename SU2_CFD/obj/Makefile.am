@@ -89,7 +89,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/CLookUpTable.cpp \
-  ../src/numerics/CStructuredTable.cpp \
   ../src/numerics/CTrapezoidalMap.cpp \
   ../src/numerics/CFileReaderLUT.cpp \
   ../src/numerics/flow/convection/roe.cpp \
