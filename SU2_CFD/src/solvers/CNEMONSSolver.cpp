@@ -492,7 +492,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
       if (implicit) {
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
-        for (unsigned short iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+        for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
