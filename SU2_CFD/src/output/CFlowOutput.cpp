@@ -155,7 +155,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 // clang-format on
 
 void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry *geometry, CConfig *config, bool output){
-
+cout << "SetAnalyseSurface start" << endl;
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
@@ -655,7 +655,7 @@ cout << "marker 4" << endl;
   }
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
-
+    cout << "not discrete adjoint" << endl;
     cout.precision(6);
     cout.setf(ios::scientific, ios::floatfield);
     cout << endl << "Computing surface mean values." << endl << endl;
@@ -736,6 +736,7 @@ cout << "marker 4" << endl;
   }
 cout << "exiting" << endl;
   std::cout << std::resetiosflags(std::cout.flags());
+cout << "exiting" << endl;
 }
 
 void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry,

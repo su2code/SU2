@@ -724,7 +724,7 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */ 
+  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
@@ -778,7 +778,7 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */    
+  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1234,12 +1234,12 @@ private:
   su2double flame_normal[3];
 
   /*--- lookup table ---*/
-  unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
-  unsigned short n_lookups;             /* number of lookud up variables */
-  unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
-  unsigned short n_user_scalars;
-  unsigned short n_user_sources;
-  unsigned short n_control_vars;
+  unsigned short n_scalars = 0;           /* number of transported scalars for the flamelet LUT approach*/
+  unsigned short n_lookups = 0;             /* number of looked up variables */
+  unsigned short n_table_sources = 0;       /* the number of transported scalar source terms for the LUT */
+  unsigned short n_user_scalars = 0;
+  unsigned short n_user_sources = 0;
+  unsigned short n_control_vars = 0;
 
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
@@ -3161,7 +3161,7 @@ public:
 
   /*!
    * \brief Get Python customizable initial condition.
-   * \return true if customizable initial condition 
+   * \return true if customizable initial condition
    */
   bool GetInitial_PyCustom(void) const { return initial_PyCustom; }
 
