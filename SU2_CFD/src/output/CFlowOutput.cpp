@@ -176,11 +176,15 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool flamelet       = config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET;
   const auto nSpecies       = config->GetnSpecies();
   const auto nScalars       = config->GetNScalars();
-
+cout << "nSpecies = " << nSpecies << endl;
+cout << "nScalars = " << nScalars << endl;
+cout << "species=" << species << endl;
+cout << "flamelet=" << flamelet << endl;
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
   const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
+  cout << "declaring species and scalars" << endl;
   const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
   const CVariable* scalar_nodes  = flamelet ? solver[SPECIES_SOL]->GetNodes() : nullptr;
 
@@ -198,6 +202,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_VelocityIdeal     (nMarker,0.0);
   vector<su2double> Surface_Area              (nMarker,0.0);
   vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
+  cout << "su2activematrix" << endl;
   su2activematrix Surface_Species(nMarker, nSpecies);
   Surface_Species = su2double(0.0);
   su2activematrix Surface_Scalars(nMarker, nScalars);
@@ -216,11 +221,12 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   su2double  Tot_Surface_TotalPressure     = 0.0;
   su2double  Tot_Momentum_Distortion       = 0.0;
   su2double  Tot_SecondOverUniformity      = 0.0;
+  cout << "su2vector " << endl;
   vector<su2double> Tot_Surface_Species(nSpecies,0.0);
   vector<su2double> Tot_Surface_Scalar(nScalars,0.0);
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
-
+cout << "loop over markers" << endl;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
@@ -298,14 +304,14 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_Pressure[iMarker]         += Pressure*Weight;
           Surface_TotalTemperature[iMarker] += TotalTemperature*Weight;
           Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
-          if (species)
+          if (species) {
             for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
               Surface_Species(iMarker, iVar) += species_nodes->GetSolution(iPoint, iVar)*Weight;
-
-          if (flamelet)
+          }
+          if (flamelet) {
             for (unsigned short iVar = 0; iVar < config->GetNScalars(); iVar++)
               Surface_Scalars(iMarker, iVar) += scalar_nodes->GetSolution(iPoint, iVar)*Weight;
-
+          }
           /*--- For now, always used the area to weight the uniformities. ---*/
 
           Weight = abs(Area);
@@ -333,6 +339,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_TotalPressure_Local     (nMarker_Analyze,0.0);
   vector<su2double> Surface_Area_Local              (nMarker_Analyze,0.0);
   vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
+  cout << "su2activematrix 2" << endl;
   su2activematrix Surface_Species_Local(nMarker_Analyze,nSpecies);
   Surface_Species_Local = su2double(0.0);
   su2activematrix Surface_Scalars_Local(nMarker_Analyze,nScalars);
@@ -351,6 +358,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_TotalPressure_Total     (nMarker_Analyze,0.0);
   vector<su2double> Surface_Area_Total              (nMarker_Analyze,0.0);
   vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
+  cout << "total" << endl;
   su2activematrix Surface_Species_Total(nMarker_Analyze,nSpecies);
   Surface_Species_Total = su2double(0.0);
   su2activematrix Surface_Scalars_Total(nMarker_Analyze,nScalars);
@@ -359,7 +367,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
-
+cout << "marker analyze" << endl;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     if (config->GetMarker_All_Analyze(iMarker) == YES)  {
@@ -382,10 +390,14 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_TotalPressure_Local[iMarker_Analyze]     += Surface_TotalPressure[iMarker];
           Surface_Area_Local[iMarker_Analyze]              += Surface_Area[iMarker];
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
-          for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-            Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
-          for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-            Surface_Scalars_Local(iMarker_Analyze, iVar) += Surface_Scalars(iMarker, iVar);
+          if (species) {
+            for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+              Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
+          }
+          if (flamelet) {
+            for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+              Surface_Scalars_Local(iMarker_Analyze, iVar) += Surface_Scalars(iMarker, iVar);
+          }
         }
 
       }
@@ -1122,7 +1134,6 @@ cout<<"cflow"<<endl;
   }
 
   switch(config->GetKind_Species_Model()) {
-    cout << "nijso: species" << endl;
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
         SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
