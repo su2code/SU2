@@ -68,6 +68,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_C
         break;
     }
 
+
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;
@@ -98,7 +99,6 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_C
       default:
         break;
     }
-    cout << "Precomputing interpolation coefficients..." << endl;
   }
 
   ComputeInterpCoeffs();
@@ -577,7 +577,13 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val
                                       su2double val_CV2, unsigned long i_level) {
   unsigned long exit_code = 1;
 
-  if (val_name_var.compare("NULL") == 0) {
+  if (val_name_var.compare("NULL") == 0 ||
+      val_name_var.compare("Null") == 0 ||
+      val_name_var.compare("null") == 0 ||
+      val_name_var.compare("ZERO") == 0 ||
+      val_name_var.compare("Zero") == 0 ||
+      val_name_var.compare("zero") == 0 )
+    { 
     *val_var = 0.0;
     exit_code = 0;
     return exit_code;
@@ -646,18 +652,21 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   }
 
   /* loop over variable names and interpolate / get values */
-  if (exit_code == 0) {
-    for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
-      if (val_names_var[i_var].compare("NULL") == 0) {
-        *val_vars[i_var] = 0.0;
-      } else {
+  for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
+    if (val_names_var[i_var].compare("NULL") == 0 || val_names_var[i_var].compare("Null") == 0 ||
+        val_names_var[i_var].compare("null") == 0 || val_names_var[i_var].compare("ZERO") == 0 ||
+        val_names_var[i_var].compare("Zero") == 0 || val_names_var[i_var].compare("zero") == 0 ) {
+      *val_vars[i_var] = 0.0;
+      exit_code = 0;
+    } else {
+      if (exit_code == 0) {
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) triangle[p] = triangles[i_level][id_triangle][p];
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
+      } else {
+        InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var[i_var], val_vars[i_var], i_level);
       }
     }
-  } else {
-    InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var, val_vars, i_level);
   }
   return exit_code;
 }

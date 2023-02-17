@@ -2981,6 +2981,37 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case SURFACE_SPECIES_VARIANCE:
       objFun += weight * config.GetSurface_Species_Variance(0);
       break;
+    case SURFACE_SCALAR_00:
+      objFun += weight * config.GetSurface_Scalar_00(0);
+      break;
+    case SURFACE_SCALAR_01:
+      objFun += weight * config.GetSurface_Scalar_01(0);
+      break;
+    case SURFACE_SCALAR_02:
+      objFun += weight * config.GetSurface_Scalar_02(0);
+      break;
+    case SURFACE_SCALAR_03:
+      objFun += weight * config.GetSurface_Scalar_03(0);
+      break;
+    case SURFACE_SCALAR_04:
+      objFun += weight * config.GetSurface_Scalar_04(0);
+      break;
+    case SURFACE_SCALAR_05:
+      objFun += weight * config.GetSurface_Scalar_05(0);
+      break;
+    case SURFACE_SCALAR_06:
+      objFun += weight * config.GetSurface_Scalar_06(0);
+      break;
+    case SURFACE_SCALAR_07:
+      objFun += weight * config.GetSurface_Scalar_07(0);
+      break;
+    case SURFACE_SCALAR_08:
+      objFun += weight * config.GetSurface_Scalar_08(0);
+      break;
+    case SURFACE_SCALAR_09:
+      objFun += weight * config.GetSurface_Scalar_09(0);
+      break;
+
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;
       break;

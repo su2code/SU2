@@ -379,6 +379,16 @@ private:
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
   su2double* Surface_Species_0;              /*!< \brief Average Species_0 at the boundaries. */
   su2double* Surface_Species_Variance;       /*!< \brief Species Variance at the boundaries. */
+  su2double* Surface_Scalar_00;              /*!< \brief Average of scalar 0 at the boundaries. */
+  su2double* Surface_Scalar_01;              /*!< \brief Average of scalar 1 at the boundaries. */
+  su2double* Surface_Scalar_02;              /*!< \brief Average of scalar 2 at the boundaries. */
+  su2double* Surface_Scalar_03;              /*!< \brief Average of scalar 3 at the boundaries. */
+  su2double* Surface_Scalar_04;              /*!< \brief Average of scalar 4 at the boundaries. */
+  su2double* Surface_Scalar_05;              /*!< \brief Average of scalar 5 at the boundaries. */
+  su2double* Surface_Scalar_06;              /*!< \brief Average of scalar 6 at the boundaries. */
+  su2double* Surface_Scalar_07;              /*!< \brief Average of scalar 7 at the boundaries. */
+  su2double* Surface_Scalar_08;              /*!< \brief Average of scalar 8 at the boundaries. */
+  su2double* Surface_Scalar_09;              /*!< \brief Average of scalar 9 at the boundaries. */
   su2double *Surface_DC60;                   /*!< \brief Specified surface DC60 for nacelle boundaries. */
   su2double *Surface_IDC;                    /*!< \brief Specified IDC for nacelle boundaries. */
   su2double *Surface_IDC_Mach;               /*!< \brief Specified IDC mach for nacelle boundaries. */
@@ -1243,7 +1253,7 @@ private:
   unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
   unsigned short n_user_scalars;
   unsigned short n_user_sources;
-  unsigned short n_controlling_variables;
+  unsigned short n_control_vars;
 
   bool preferential_diffusion;
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
@@ -2158,13 +2168,13 @@ public:
    */
   su2double *GetFlameNormal(void) { return flame_normal; }
 
-    /*!
+  /*!
    * \brief Get the flame thickness for flamelet model initialization
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameThickness(void) { return flame_thickness; }
 
-    /*!
+  /*!
    * \brief Get the burnt region thickness for flamelet mdoel initialization
    * \return flame thickness for flamelet model initialization
    */
@@ -2183,19 +2193,22 @@ public:
   void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
 
   /*!
-   * \brief Set the number of controllign variables for the combustion problem.
+   * \brief Set the number of controlling variables for flamelet model.
    */
-  void SetNControllingVars(unsigned short n_CV) { this->n_controlling_variables = n_CV; }
-
-  unsigned short GetNControllingVars(void) const { return n_controlling_variables; }
+  void SetNControlVars(unsigned short n_control_vars) { this->n_control_vars = n_control_vars; }
 
   /*!
-   * \brief Get the number of transported scalars for combustion
+   * \brief Get the number of control variables for flamelet model.
+   */
+  unsigned short GetNControlVars(void) const { return n_control_vars; }
+
+  /*!
+   * \brief Get the number of transported scalars for flamelet model.
    */
   unsigned short GetNScalars(void) const { return n_scalars; }
 
   /*!
-   * \brief Get the number of user scalars in combustion simulation  
+   * \brief Get the number of user scalars for flamelet model.
    */
   unsigned short GetNUserScalars(void) const { return n_user_scalars; }
 
@@ -2204,7 +2217,7 @@ public:
    */
   string GetUserScalarName(unsigned short i_user_scalar) const { if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE"; }
 
-/*!
+  /*!
    * \brief Get the name of the user scalar source term.
    */
   string GetUserSourceName(unsigned short i_user_source) const { if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE"; }
@@ -2264,15 +2277,15 @@ public:
   su2double GetElasticyMod(unsigned short id_val) const { return ElasticityMod[id_val]; }
 
   /*!
-    * \brief Decide whether to apply DE effects to the model.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to apply DE effects to the model.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
   bool GetDE_Effects(void) const { return DE_Effects; }
 
   /*!
-    * \brief Decide whether to predict the DE effects for the next time step.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to predict the DE effects for the next time step.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
    bool GetDE_Predicted(void);
 
   /*!
@@ -6917,6 +6930,15 @@ public:
   const su2double* GetInlet_SpeciesVal(string val_index) const;
 
   /*!
+   * \brief Set the species values at an inlet boundary
+   * \param[in] val - value of the variable
+   * \param[in] iMarker - marker index
+   * \param[in] iVar - index to the variable
+   */
+  void SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const;
+
+
+  /*!
    * \brief Get the turbulent properties values at an inlet boundary
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet turbulent values.
@@ -7934,6 +7956,22 @@ public:
   void SetSurface_Species_Variance(unsigned short val_marker, su2double val_surface_species_variance) { Surface_Species_Variance[val_marker] = val_surface_species_variance; }
 
   /*!
+   * \brief Set the average of scalar_0 at the surface.
+   * \param[in] val_marker - Index corresponding to boundary.
+   * \param[in] val_surface_scalar_0 - Value of avg species_0.
+   */
+  void SetSurface_Scalar_00(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_00[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_01(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_01[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_02(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_02[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_03(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_03[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_04(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_04[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_05(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_05[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_06(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_06[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_07(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_07[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_08(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_08[val_marker] = val_surface_scalar; }
+  void SetSurface_Scalar_09(unsigned short val_marker, su2double val_surface_scalar) { Surface_Scalar_09[val_marker] = val_surface_scalar; }
+
+  /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
@@ -8212,6 +8250,22 @@ public:
    * \return The species variance.
    */
   su2double GetSurface_Species_Variance(unsigned short val_marker) const { return Surface_Species_Variance[val_marker]; }
+
+  /*!
+   * \brief Get avg scalar_0 at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The avg species_0.
+   */
+  su2double GetSurface_Scalar_00(unsigned short val_marker) const { return Surface_Scalar_00[val_marker]; }
+  su2double GetSurface_Scalar_01(unsigned short val_marker) const { return Surface_Scalar_01[val_marker]; }
+  su2double GetSurface_Scalar_02(unsigned short val_marker) const { return Surface_Scalar_02[val_marker]; }
+  su2double GetSurface_Scalar_03(unsigned short val_marker) const { return Surface_Scalar_03[val_marker]; }
+  su2double GetSurface_Scalar_04(unsigned short val_marker) const { return Surface_Scalar_04[val_marker]; }
+  su2double GetSurface_Scalar_05(unsigned short val_marker) const { return Surface_Scalar_05[val_marker]; }
+  su2double GetSurface_Scalar_06(unsigned short val_marker) const { return Surface_Scalar_06[val_marker]; }
+  su2double GetSurface_Scalar_07(unsigned short val_marker) const { return Surface_Scalar_07[val_marker]; }
+  su2double GetSurface_Scalar_08(unsigned short val_marker) const { return Surface_Scalar_08[val_marker]; }
+  su2double GetSurface_Scalar_09(unsigned short val_marker) const { return Surface_Scalar_09[val_marker]; }
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

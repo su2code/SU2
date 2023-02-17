@@ -73,7 +73,6 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
   Temperature             = Solution(iPoint,nDim+1);
   check_temp              = SetTemperature(iPoint, Temperature);
-  /*--- end flamelet block ---*/ 
 
   /*--- Set the value of the density ---*/
 

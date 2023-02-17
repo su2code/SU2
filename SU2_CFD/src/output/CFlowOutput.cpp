@@ -27,6 +27,8 @@
 
 #include <sstream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 #include "../../include/output/CFlowOutput.hpp"
 
@@ -86,6 +88,16 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+      /// DESCRIPTION: Average flamelet user scalars
+      for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
+        std::stringstream str_i_var;
+        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+        AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+      }
+    }
+
   }
   /// END_GROUP
 
@@ -128,6 +140,16 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+      /// DESCRIPTION: Average flamelet user scalars
+      for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
+        std::stringstream str_i_var;
+        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+        AddHistoryOutputPerSurface("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+      }
+    }
+
   }
   /// END_GROUP
 }
@@ -152,13 +174,16 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool flamelet       = config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET;
   const auto nSpecies       = config->GetnSpecies();
+  const auto nScalars       = config->GetNScalars();
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
   const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
   const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
+  const CVariable* scalar_nodes  = flamelet ? solver[SPECIES_SOL]->GetNodes() : nullptr;
 
   vector<su2double> Surface_MassFlow          (nMarker,0.0);
   vector<su2double> Surface_Mach              (nMarker,0.0);
@@ -176,6 +201,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
   su2activematrix Surface_Species(nMarker, nSpecies);
   Surface_Species = su2double(0.0);
+  su2activematrix Surface_Scalars(nMarker, nScalars);
+  Surface_Scalars = su2double(0.0);
 
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
@@ -191,6 +218,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   su2double  Tot_Momentum_Distortion       = 0.0;
   su2double  Tot_SecondOverUniformity      = 0.0;
   vector<su2double> Tot_Surface_Species(nSpecies,0.0);
+  vector<su2double> Tot_Surface_Scalar(nScalars,0.0);
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
 
@@ -275,6 +303,10 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
               Surface_Species(iMarker, iVar) += species_nodes->GetSolution(iPoint, iVar)*Weight;
 
+          if (flamelet)
+            for (unsigned short iVar = 0; iVar < config->GetNScalars(); iVar++)
+              Surface_Scalars(iMarker, iVar) += scalar_nodes->GetSolution(iPoint, iVar)*Weight;
+
           /*--- For now, always used the area to weight the uniformities. ---*/
 
           Weight = abs(Area);
@@ -304,6 +336,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
   su2activematrix Surface_Species_Local(nMarker_Analyze,nSpecies);
   Surface_Species_Local = su2double(0.0);
+  su2activematrix Surface_Scalars_Local(nMarker_Analyze,nScalars);
+  Surface_Scalars_Local = su2double(0.0);
 
   vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
   vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
@@ -320,6 +354,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
   su2activematrix Surface_Species_Total(nMarker_Analyze,nSpecies);
   Surface_Species_Total = su2double(0.0);
+  su2activematrix Surface_Scalars_Total(nMarker_Analyze,nScalars);
+  Surface_Scalars_Total = su2double(0.0);
 
   vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
@@ -349,6 +385,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
           for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
             Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
+          for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+            Surface_Scalars_Local(iMarker_Analyze, iVar) += Surface_Scalars(iMarker, iVar);
         }
 
       }
@@ -379,7 +417,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   Allreduce(Surface_Area_Local, Surface_Area_Total);
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
   Allreduce_su2activematrix(Surface_Species_Local, Surface_Species_Total);
-
+  Allreduce_su2activematrix(Surface_Scalars_Local, Surface_Scalars_Total);
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
@@ -401,6 +439,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
         Surface_Species_Total(iMarker_Analyze, iVar) /= Weight;
+      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+        Surface_Scalars_Total(iMarker_Analyze, iVar) /= Weight;
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -413,6 +453,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
         Surface_Species_Total(iMarker_Analyze, iVar) = 0.0;
+      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+        Surface_Scalars_Total(iMarker_Analyze, iVar) = 0.0;
     }
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
@@ -512,6 +554,36 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           config->SetSurface_Species_0(iMarker_Analyze, Species);
       }
     }
+
+    if (flamelet) {
+      for (unsigned short i_var = 0; i_var < nScalars; i_var++) {
+        su2double scalar = Surface_Scalars_Total(iMarker_Analyze, i_var);
+        std::stringstream str_i_var;
+        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+        SetHistoryOutputPerSurfaceValue("SURFACE_SCALAR_" + str_i_var.str(), scalar, iMarker_Analyze);
+        Tot_Surface_Scalar[i_var] += scalar;
+        if (i_var == 0)
+          config->SetSurface_Scalar_00(iMarker_Analyze, scalar);
+        if (i_var == 1)
+          config->SetSurface_Scalar_01(iMarker_Analyze, scalar);
+        if (i_var == 2)
+          config->SetSurface_Scalar_02(iMarker_Analyze, scalar);
+        if (i_var == 3)
+          config->SetSurface_Scalar_03(iMarker_Analyze, scalar);
+        if (i_var == 4)
+          config->SetSurface_Scalar_04(iMarker_Analyze, scalar);
+        if (i_var == 5)
+          config->SetSurface_Scalar_05(iMarker_Analyze, scalar);
+        if (i_var == 6)
+          config->SetSurface_Scalar_06(iMarker_Analyze, scalar);
+        if (i_var == 7)
+          config->SetSurface_Scalar_07(iMarker_Analyze, scalar);
+        if (i_var == 8)
+          config->SetSurface_Scalar_08(iMarker_Analyze, scalar);
+        if (i_var == 9)
+          config->SetSurface_Scalar_09(iMarker_Analyze, scalar);
+      }
+    }
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -547,6 +619,14 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
     SetAnalyzeSurface_SpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
+  }
+
+  if (flamelet) {
+    for (unsigned short i_var = 0; i_var < nScalars; i_var++){
+      std::stringstream str_i_var;
+      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+      SetHistoryOutputValue("SURFACE_SCALAR_" + str_i_var.str(), Tot_Surface_Scalar[i_var]);
+    }
   }
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
@@ -935,9 +1015,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       if(config->GetPreferentialDiffusion())
         AddHistoryOutput("RMS_MIXTURE_FRACTION", "rms[Mixfrac]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_species=0u; i_species < config->GetNUserScalars(); i_species++){
-        string species_name = config->GetUserScalarName(i_species);
-        AddHistoryOutput("RMS_"+species_name, "rms["+species_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+species_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        string scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
     }
@@ -1106,7 +1186,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         string species_name = config->GetUserScalarName(iReactant);
-        SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControllingVars() + iReactant)));
+        SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControlVars() + iReactant)));
       }
 
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
@@ -1177,7 +1257,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
           AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
         }
       }
-        
+
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       break;
     case SPECIES_MODEL::NONE:
@@ -1391,25 +1471,23 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       /*--- values from auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
         string species_name = config->GetUserScalarName(iReactant);
-        SetVolumeOutputValue(species_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControllingVars() + iReactant));
+        SetVolumeOutputValue(species_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + iReactant));
       }
       
       SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint, I_PROGVAR));
-      /*--- no source term for enthalpy ---*/
-      /*--- source terms for auxiliary species transport ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-        string species_name = config->GetUserScalarName(iReactant);
-        SetVolumeOutputValue("SOURCE_" + species_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControllingVars() + iReactant));
-      }
-
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
       if(config->GetPreferentialDiffusion())
         SetVolumeOutputValue("RES_MIXFRAC", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_MIXFRAC));
       /*--- residual for auxiliary species transport equations ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-        string species_name = config->GetUserScalarName(iReactant);
-        SetVolumeOutputValue("RES_" + species_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControllingVars() + iReactant));
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
+
+      /*--- auxiliary species transport equations ---*/
+      for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
+        string scalar_name = config->GetUserScalarName(i_scalar);
+        SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
+        SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint, config->GetNControlVars() + i_scalar));
+        SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControlVars() + i_scalar));
       }
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
@@ -1418,9 +1496,9 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         if(config->GetPreferentialDiffusion())
           SetVolumeOutputValue("LIMITER_MIXFRAC", iPoint, Node_Species->GetLimiter(iPoint, I_MIXFRAC));
         /*--- limiter for auxiliary species transport equations ---*/
-        for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-          string species_name = config->GetUserScalarName(iReactant);
-          SetVolumeOutputValue("LIMITER_" + species_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControllingVars() + iReactant));
+        for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
+          string scalar_name = config->GetUserScalarName(i_scalar);
+          SetVolumeOutputValue("LIMITER_" + scalar_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControlVars() + i_scalar));
         }
       }
 
@@ -1429,8 +1507,6 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         if (config->GetLUTLookupName(i_lookup)!="NULL")
           SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint, i_lookup));
       }
-      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
-
 
       break;
     }
@@ -2953,7 +3029,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else file << " lbf.s/ft^2.\n";
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
           break;
-          
+
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp \n";
           break;

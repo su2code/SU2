@@ -3,7 +3,7 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,22 +38,18 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
   n_user_scalars = config->GetNUserScalars();
+  n_scalars = config->GetNScalars();
   PreferentialDiffusion = config->GetPreferentialDiffusion();
-  if(PreferentialDiffusion){
-    n_CV = 3;
-  }else
-    n_CV = 2;
-
-  n_scalars = n_CV + n_user_scalars;
+  n_CV = n_scalars - n_user_scalars;
 
   if (rank == MASTER_NODE) {
-    cout << "n_scalars = " << n_scalars << endl;
-    cout << "n_CV = " << n_CV << endl;
-    cout << "n_user_scalars = " << n_user_scalars << endl;
+    cout << "Number of scalars:           " << n_scalars << endl;
+    cout << "Number of user scalars:      " << n_user_scalars << endl;
+    cout << "Number of control variables: " << n_CV << endl;
   }
 
   controlling_variables.resize(n_CV);
-  config->SetNControllingVars(n_CV);
+  config->SetNControlVars(n_CV);
 
   controlling_variables[I_PROGVAR] = "ProgressVariable";
   controlling_variables[I_ENTH] = "EnthalpyTot";
@@ -108,7 +104,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
-        S_tot = S_PROD + S_CONS * Y ---*/ 
+        S_tot = S_PROD + S_CONS * Y ---*/
 
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
@@ -162,11 +158,9 @@ unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
 
   val_controlling_vars[I_PROGVAR] = prog;
   val_controlling_vars[I_ENTH] = enth;
-  su2matrix<su2double> dummy_matrix;
-  dummy_matrix.resize(val_vars_LookUp.size(), n_CV);
 
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp, dummy_matrix, iomap_LookUp);
+  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp, iomap_LookUp);
 
   return exit_code;
 }
@@ -180,7 +174,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources, dSources_dCV, iomap_Sources);
+  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources, iomap_Sources);
 
   /*--- the source term for the progress variable is always positive by construction, but we clip from below  --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -206,7 +200,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
+  Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
 
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight);
@@ -221,7 +215,7 @@ unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_sca
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD, dPD_dCV, iomap_PD);
+  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD, iomap_PD);
   return exit_code;
 }
 
@@ -230,11 +224,10 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double   delta_temp_final = 0.01, /* convergence criterion for temperature in [K] */
-              relaxation = 0.5,        /* Newton solver relaxation factor. */
-              enth_iter = initial_value, /* Initial enthalpy value, default stetting is zero. */
-              delta_enth,              /* Enthalpy residual. */
-              delta_temp_iter;         /* Temperature residual. */
+  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  su2double enth_iter = initial_value; 
+  su2double delta_enth;
+  su2double delta_temp_iter = 1e10;
 
   unsigned long exit_code = 0,
                 counter_limit = 50,
@@ -245,34 +238,27 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   val_controlling_vars[I_PROGVAR] = val_prog;
   if(PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_mixfrac;
 
-  if(manifold_format == ENUM_DATADRIVEN_METHOD::MLP) look_up_ANN->SetGradientComputation(false);
-
   while (!converged && (counter++ < counter_limit)) {
     val_controlling_vars[I_ENTH] = enth_iter;
     /*--- look up temperature and heat capacity ---*/
-    Evaluate_Dataset(varnames_TD, val_vars_TD, dTD_dCV, iomap_TD);
+    Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
-    if(abs(delta_temp_iter) < delta_temp_final){
-      converged = true;
-    }else{
-      /*--- calculate delta_enthalpy following dh = cp * dT ---*/
-      delta_enth = Cp * delta_temp_iter;
 
-      /*--- update enthalpy ---*/
-      enth_iter += relaxation * delta_enth;
+    /* calculate delta_enthalpy following dh = cp * dT */
+    delta_enth = Cp * delta_temp_iter;
+     
+    /*--- update enthalpy ---*/
+    enth_iter += delta_enth;
 
-      counter ++;
-    }
   }
 
   /*--- set enthalpy value ---*/
   *val_enth = enth_iter;
 
-  if (!converged) {
+  if (counter >= counter_limit) {
     exit_code = 1;
   }
-  if(manifold_format == ENUM_DATADRIVEN_METHOD::MLP) look_up_ANN->SetGradientComputation(true);
   return exit_code;
 }
 
@@ -285,7 +271,6 @@ void CFluidFlamelet::PreprocessLookUp() {
   size_t n_TD = 6;
   varnames_TD.resize(n_TD);
   val_vars_TD.resize(n_TD);
-  dTD_dCV.resize(n_TD, n_CV);
 
   /*--- The string in varnames_TD is the actual string as it appears in the LUT file ---*/
   varnames_TD[0] = "Temperature";
@@ -306,7 +291,6 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
   val_vars_Sources.resize(n_table_sources);
-  dSources_dCV.resize(n_table_sources, n_CV);
 
   for(size_t iSource=0; iSource < n_table_sources; iSource++){
     varnames_Sources[iSource] = table_source_names[iSource];
@@ -325,7 +309,6 @@ void CFluidFlamelet::PreprocessLookUp() {
   if(PreferentialDiffusion){
     varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
     val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-    dPD_dCV.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS, n_CV);
 
     varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
     varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
@@ -345,7 +328,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   }
 }
 
-unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, su2matrix<su2double> dOutputs_dInputs, MLPToolbox::CIOMap* iomap) {
+unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, MLPToolbox::CIOMap* iomap) {
   unsigned long exit_code = 0;
 
   vector<string> LUT_varnames;
@@ -371,12 +354,7 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
 
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
-    gradient_refs.resize(val_vars.size(), n_CV);
-    for(auto iVar=0u; iVar<val_vars.size(); iVar++){
-      for(auto iCv=0u; iCv<n_CV; iCv++)
-        gradient_refs[iVar][iCv] = &dOutputs_dInputs[iVar][iCv];
-    }
-    exit_code = look_up_ANN->Predict_ANN(iomap,val_controlling_vars, val_vars, gradient_refs);
+    exit_code = look_up_ANN->Predict_ANN(iomap,val_controlling_vars, val_vars);
 
     break;
   default:

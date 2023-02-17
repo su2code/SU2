@@ -39,6 +39,19 @@ def main():
     test_list = []
 
     #########################
+    ## FLAMELET solver ###
+    #########################
+
+    # 2D planar laminar premixed flame on isothermal burner restar
+    fgm_planar_restart = TestCase('fgm_planar')
+    fgm_planar_restart.cfg_dir = "flamelet/laminar_premixed_flame"
+    fgm_planar_restart.cfg_file = "fgm_planar_restart.cfg"
+    fgm_planar_restart.test_iter = 10
+    fgm_planar_restart.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
+    fgm_planar_restart.new_output = True
+    test_list.append(fgm_planar_restart)
+
+    #########################
     ## NEMO solver ###
     #########################
 

@@ -128,7 +128,11 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
+<<<<<<< HEAD
           args: -b ${{github.ref}} -t feature_multilayer_perceptron -c feature_multilayer_perceptron -s ${{matrix.testscript}}
+=======
+          args: -b ${{github.ref}} -t develop -c feature_new_flamelet -s ${{matrix.testscript}}
+>>>>>>> 89b2cda70d05938b9935fc518b3ab9a21599eb35
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:

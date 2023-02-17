@@ -109,7 +109,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat || flamelet) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
@@ -238,9 +238,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     if (multiZone) {
       SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(nDim + 1)));
     }
-  }
-  if (flamelet) {
-    SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(nDim + 1)));
   }
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
