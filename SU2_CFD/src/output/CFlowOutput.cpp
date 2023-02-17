@@ -391,10 +391,12 @@ cout << "marker analyze" << endl;
           Surface_Area_Local[iMarker_Analyze]              += Surface_Area[iMarker];
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
           if (species) {
+            cout << "species" << endl;
             for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
               Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
           }
           if (flamelet) {
+            cout << "flamelet" << endl;
             for (unsigned short iVar = 0; iVar < nScalars; iVar++)
               Surface_Scalars_Local(iMarker_Analyze, iVar) += Surface_Scalars(iMarker, iVar);
           }
@@ -405,11 +407,12 @@ cout << "marker analyze" << endl;
     }
 
   }
-
+cout << "allreduce" <<endl;
   auto Allreduce = [](const vector<su2double>& src, vector<su2double>& dst) {
     SU2_MPI::Allreduce(src.data(), dst.data(), src.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   };
 
+cout << "allreduce su2activematrix" <<endl;
   auto Allreduce_su2activematrix = [](const su2activematrix& src, su2activematrix& dst) {
     SU2_MPI::Allreduce(src.data(), dst.data(), src.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   };
@@ -427,12 +430,13 @@ cout << "marker analyze" << endl;
   Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total);
   Allreduce(Surface_Area_Local, Surface_Area_Total);
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
+  cout << "allreduce su2activematrix"<<endl;
   Allreduce_su2activematrix(Surface_Species_Local, Surface_Species_Total);
   Allreduce_su2activematrix(Surface_Scalars_Local, Surface_Scalars_Total);
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
-
+cout << "loop over markers 2" << endl;
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
     if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
@@ -448,10 +452,14 @@ cout << "marker analyze" << endl;
       Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
-      for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-        Surface_Species_Total(iMarker_Analyze, iVar) /= Weight;
-      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-        Surface_Scalars_Total(iMarker_Analyze, iVar) /= Weight;
+      if (species) {
+        for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+          Surface_Species_Total(iMarker_Analyze, iVar) /= Weight;
+      }
+      if (flamelet) {
+        for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+          Surface_Scalars_Total(iMarker_Analyze, iVar) /= Weight;
+      }
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -462,14 +470,18 @@ cout << "marker analyze" << endl;
       Surface_Pressure_Total[iMarker_Analyze]         = 0.0;
       Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
-      for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-        Surface_Species_Total(iMarker_Analyze, iVar) = 0.0;
-      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-        Surface_Scalars_Total(iMarker_Analyze, iVar) = 0.0;
+      if (species) {
+        for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+          Surface_Species_Total(iMarker_Analyze, iVar) = 0.0;
+      }
+      if (flamelet) {
+        for (unsigned short iVar = 0; iVar < nScalars; iVar++)
+          Surface_Scalars_Total(iMarker_Analyze, iVar) = 0.0;
+      }
     }
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
-
+cout << "area" << endl;
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
 
     /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
@@ -487,7 +499,7 @@ cout << "marker analyze" << endl;
     }
 
   }
-
+cout << "marker analyze 3" << endl;
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
@@ -557,6 +569,7 @@ cout << "marker analyze" << endl;
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
     if (species) {
+      cout << "species" << endl;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
         su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
         SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
@@ -567,6 +580,7 @@ cout << "marker analyze" << endl;
     }
 
     if (flamelet) {
+      cout << "flamelet" <<endl;
       for (unsigned short i_var = 0; i_var < nScalars; i_var++) {
         su2double scalar = Surface_Scalars_Total(iMarker_Analyze, i_var);
         std::stringstream str_i_var;
@@ -603,7 +617,7 @@ cout << "marker analyze" << endl;
    outlet values (temperature, uniformity, etc.) for our design problems,
    which require the outlet to be listed first. This is a simple first version
    that could be generalized to a different orders/lists/etc. ---*/
-
+cout << "marker 4" << endl;
   if (nMarker_Analyze >= 2) {
     su2double PressureDrop = (Surface_Pressure_Total[1] - Surface_Pressure_Total[0]) * config->GetPressure_Ref();
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
@@ -720,7 +734,7 @@ cout << "marker analyze" << endl;
     cout.unsetf(ios_base::floatfield);
 
   }
-
+cout << "exiting" << endl;
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
