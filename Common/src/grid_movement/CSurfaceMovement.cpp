@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4672,7 +4672,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry ****geometry, CConfig **config) {
 
 
   unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
@@ -4683,13 +4683,13 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
   bool polar = (config[ZONE_0]->GetFFD_CoordSystem() == POLAR);
 
-  unsigned short nDim = geometry[ZONE_0]->GetnDim();
+  unsigned short nDim = geometry[ZONE_0][INST_0][MESH_0]->GetnDim();
 
   for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
 
     /*--- Merge the parallel FFD info ---*/
 
-    surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
+    surface_movement[iZone]->MergeFFDInfo(geometry[iZone][INST_0][MESH_0], config[iZone]);
 
     if (iZone > 0){
 

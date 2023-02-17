@@ -1,21 +1,21 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -47,7 +47,7 @@ import scipy.optimize
 
 obj_scale = 1/1.25e-3 # scale the objective so that it starts at 1-4
 con_scale = 1/0.5     # 1 over upper bound (e.g. max volume)
-var_scale = 1.0       # variable scale 
+var_scale = 1.0       # variable scale
 
 # maximum number of iterations
 maxJev_t = 1000
@@ -341,7 +341,7 @@ ub = np.ones((N,))*var_scale
 bounds = np.array((lb,ub),float).transpose()
 
 ## 1st Phase: Run with "gray" filter settings ##
-# get the constraint and function within some tolerance 
+# get the constraint and function within some tolerance
 line = "1: Gray filter (initialization)"
 print(line); logfile.write(line+"\n"); logfile.flush()
 
@@ -361,7 +361,7 @@ while nJacEval < maxJev_i:
   line = " Iter {:d}: f= {:f}  h= {:e}  r= {:f}  nfev= {:d}  njev= {:d}".\
     format(itCount, obj._fval, obj._hval, obj._r, optimum.nfev, optimum.nit)
   print(line); logfile.write(line+"\n"); logfile.flush()
-  
+
   if obj._hval > htol: # increase penalty
     obj.update()
   elif optimum.success: # check convergence

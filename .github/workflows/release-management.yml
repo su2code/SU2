@@ -65,4 +65,4 @@ jobs:
           asset_path: ${{matrix.os_bin}}.zip
           asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
           asset_content_type: application/zip
-          
+
