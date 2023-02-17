@@ -3937,7 +3937,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) {
-      SU2_MPI::Error("Only Gupta-Yos Transport model available for ionized flows using SU2TCLIB.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Only Gupta-Yos transport model available for ionized flows using SU2TCLIB.", CURRENT_FUNCTION);
     }
 
     if (Kind_FluidModel == MUTATIONPP &&
@@ -3947,7 +3947,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && nWall_Catalytic != 0) {
-      SU2_MPI::Error("Wall Catalyicity is not yet available for ionized flows in SU2_NEMO.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Catalytic wall recombination is not yet available for ionized flows in SU2_NEMO.", CURRENT_FUNCTION);
     }
 
     if (!ideal_gas && !nemo) {

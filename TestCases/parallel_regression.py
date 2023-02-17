@@ -188,7 +188,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 10
-    ion_gy.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04, 0.0, 0.0]
+    ion_gy.test_vals = [-11.629871, -4.156742, -4.692113, -4.949447, -5.146196, -4.991664, -6.893329, 5.990109, 5.990004, -0.014849, 0.000000, 90090.000000]
     ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
     ion_gy.timeout = 1600
     ion_gy.new_output = True

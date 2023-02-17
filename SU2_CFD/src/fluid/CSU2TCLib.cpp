@@ -111,7 +111,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
 
-    /*--- Catayltic wall table---*/
+    /*--- Catalytic wall table ---*/
     // Creation/Destruction (+1/-1), Index of monoatomic reactants.
     // Argon not used.
     CatRecombTable(0,0) = 0; CatRecombTable(0,1) = 0;
@@ -272,7 +272,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega22(1,0,0) = -8.3493693E-03;  Omega22(1,0,1) = 1.7808911E-01;   Omega22(1,0,2) = -1.4466155E+00;  Omega22(1,0,3) = 1.9324210E+03;
     Omega22(1,1,0) = -7.7439615E-03;  Omega22(1,1,1) = 1.7129007E-01;   Omega22(1,1,2) = -1.4809088E+00;  Omega22(1,1,3) = 2.1284951E+03;
 
-    /*--- Catayltic wall table---*/
+    /*--- Catalytic wall table ---*/
     // Creation/Destruction (+1/-1), Index of monoatomic reactants.
     // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
     CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
@@ -1887,13 +1887,18 @@ su2double CSU2TCLib::ComputeCollisionCrossSection(unsigned iSpecies, unsigned jS
   const su2double Na = AVOGAD_CONSTANT;
   
   if (coulomb) {
-    
+
     const su2double e_cgs = FUND_ELEC_CHARGE_CGS; // CGS unit of fundamental electric charge 
     const su2double kb_cgs = BOLTZMANN_CONSTANT * 1E7; // CGS unit of Boltzmann Constant 
     const su2double ne_cgs = Na * rhos[0] / MolarMass[0] * 1E-6; // CGS unit of electron number density
         
     const su2double debyeLength = sqrt(kb_cgs * T / 4 / pi / ne_cgs / pow(e_cgs,2));
     const su2double T_star = debyeLength / (pow(e_cgs,2) / (kb_cgs * T));
+
+    /*--- Compute the collisionion cross section ---*/
+    // Note: Omega11 is used for diffusion, viscosity, translational, internal, and reaction components of
+    //       thermal conductivity
+    //       Omega22 is used used for viscosity and translational component of thermal conductivity
 
     if (Omega11(iSpecies, jSpecies, 0) == 1.0 && d1) {
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
