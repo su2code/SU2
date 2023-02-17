@@ -458,7 +458,7 @@ class CDriver : public CDriverBase {
    * \param[in] iMarker -  Marker identifier.
    * \return Number of vertices.
    */
-  //unsigned long GetNumberVertices(unsigned short iMarker) const;
+  unsigned long GetNumberVertices(unsigned short iMarker) const;
 
 
   /*!
@@ -473,19 +473,19 @@ class CDriver : public CDriverBase {
    * \brief Get the number of conservative state variables.
    * \return Number of conservative state variables.
    */
-  //unsigned long GetNumberStateVariables() const;
+  unsigned long GetNumberStateVariables() const;
 
    /*!
    * \brief Get the number of conservative state variables.
    * \return Number of conservative state variables.
    */
-  //unsigned long GetNumberStateVariables(const int SOLVER) const;
+  unsigned long GetNumberStateVariables(const int SOLVER) const;
 
   /*!
    * \brief Get the number of vertices in the mesh.
    * \return Number of vertices.
    */
-  //unsigned long GetNumberVertices() const;
+  unsigned long GetNumberVertices() const;
 
   /*!
    * \brief Get the number of halo vertices from a specified marker.

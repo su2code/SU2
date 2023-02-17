@@ -168,11 +168,11 @@ passivedouble CDriver::Get_LiftCoeff() const {
 /* Functions to obtain information from the geometry/mesh                  */
 /////////////////////////////////////////////////////////////////////////////
 
-// unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
+ unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
 
-//   return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];
+   return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];
 
-// }
+ }
 
 // /* coordinates of the point on the mesh*/
 // vector<passivedouble> CDriver::GetCoords(unsigned long iPoint, unsigned short iMesh) const {
@@ -190,7 +190,7 @@ passivedouble CDriver::Get_LiftCoeff() const {
 //   return coord_passive;
 // }
 
-// unsigned long CDriver::GetNumberVertices() const { return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); }
+ unsigned long CDriver::GetNumberVertices() const { return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); }
 
 // unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) const {
 
@@ -286,10 +286,11 @@ passivedouble CDriver::Get_LiftCoeff() const {
 
 unsigned long CDriver::GetnTimeIter() const { return config_container[ZONE_0]->GetnTime_Iter(); }
 
-// number of points on the mesh
-//unsigned long CDriver::GetnPoints(unsigned short iMesh) const {
-//  return geometry_container[ZONE_0][INST_0][iMesh]->GetnPointDomain();
-//}
+unsigned long CDriver::GetnPoints(unsigned short iMesh) const {
+
+  return geometry_container[ZONE_0][INST_0][iMesh]->GetnPointDomain();
+
+}
 
 
 unsigned long CDriver::GetTime_Iter() const { return TimeIter; }
@@ -463,65 +464,64 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
 
-// void CDriver::SetStates(vector<vector<passivedouble>> values) {
-//   const auto nPoint = GetNumberVertices();
+ void CDriver::SetStates(vector<vector<passivedouble>> values) {
+   const auto nPoint = GetNumberVertices();
 
-//   if (values.size() != nPoint) {
-//     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
-//   }
+   if (values.size() != nPoint) {
+     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+   }
 
-//   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-//     SetStates(iPoint, values[iPoint]);
-//   }
-// }
+   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+     SetStates(iPoint, values[iPoint]);
+   }
+ }
 
-// void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values) {
-//   const auto nVar = GetNumberStateVariables();
+ void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values) {
+   const auto nVar = GetNumberStateVariables();
 
-//   if (values.size() != nVar) {
-//     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
-//   }
+   if (values.size() != nVar) {
+     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+   }
 
-//   for (auto iVar = 0u; iVar < nVar; iVar++) {
-//     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
-//   }
-// }
+   for (auto iVar = 0u; iVar < nVar; iVar++) {
+     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+   }
+ }
 
-// void CDriver::SetStates(vector<vector<passivedouble>> values, const int SOLVER) {
-//   const auto nPoint = GetNumberVertices();
+ void CDriver::SetStates(vector<vector<passivedouble>> values, const int SOLVER) {
+   const auto nPoint = GetNumberVertices();
 
-//   if (values.size() != nPoint) {
-//     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
-//   }
+   if (values.size() != nPoint) {
+     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+   }
 
-//   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-//     SetStates(iPoint, values[iPoint]);
-//   }
-// }
+   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+     SetStates(iPoint, values[iPoint]);
+   }
+ }
 
-// void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values, const int SOLVER) {
-//   const auto nVar = GetNumberStateVariables(SOLVER);
-//   if (values.size() != nVar) {
-//     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
-//   }
+ void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values, const int SOLVER) {
+   const auto nVar = GetNumberStateVariables(SOLVER);
+   if (values.size() != nVar) {
+     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+   }
 
-//   for (auto iVar = 0u; iVar < nVar; iVar++) {
-//     solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
-//   }
-// }
+   for (auto iVar = 0u; iVar < nVar; iVar++) {
+     solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+   }
+ }
 
-// unsigned long CDriver::GetNumberStateVariables() const {
-//   if (!config_container[ZONE_0]->GetFluidProblem()) {
-//     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-//   }
+ unsigned long CDriver::GetNumberStateVariables() const {
+   if (!config_container[ZONE_0]->GetFluidProblem()) {
+     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+   }
 
-//   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-// }
+   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+ }
 
-// unsigned long CDriver::GetNumberStateVariables(const int SOLVER) const {
-
-//   return solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetnVar();
-// }
+ unsigned long CDriver::GetNumberStateVariables(const int SOLVER) const {
+   return solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetnVar();
+ }
 
 
 void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
