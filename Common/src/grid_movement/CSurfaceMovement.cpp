@@ -4672,7 +4672,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry ****geometry, CConfig **config) {
 
 
   unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
@@ -4683,13 +4683,13 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
   bool polar = (config[ZONE_0]->GetFFD_CoordSystem() == POLAR);
 
-  unsigned short nDim = geometry[ZONE_0]->GetnDim();
+  unsigned short nDim = geometry[ZONE_0][INST_0][MESH_0]->GetnDim();
 
   for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
 
     /*--- Merge the parallel FFD info ---*/
 
-    surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
+    surface_movement[iZone]->MergeFFDInfo(geometry[iZone][INST_0][MESH_0], config[iZone]);
 
     if (iZone > 0){
 
