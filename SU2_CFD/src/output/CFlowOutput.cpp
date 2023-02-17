@@ -1122,6 +1122,7 @@ cout<<"cflow"<<endl;
   }
 
   switch(config->GetKind_Species_Model()) {
+    cout << "nijso: species" << endl;
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
         SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
@@ -1151,7 +1152,7 @@ cout<<"cflow"<<endl;
 
     case SPECIES_MODEL::NONE: break;
   }
-
+cout << "end " << endl;
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){

@@ -412,29 +412,29 @@ cout<<"cflowcomp"<<endl;
     SetHistoryOutputValue("CHANGE_IN_AOA", config->GetAoA()-flow_solver->GetPrevious_AoA());
     SetHistoryOutputValue("CL_DRIVER_COMMAND", flow_solver->GetAoA_inc());
   }
-
+cout << "load historydata" << endl;
   LoadHistoryData_Scalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
-
+cout << "setanalyzesurface"<<endl;
   SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aerodynamic coefficients --- */
-
+cout << "setaerodynamiccoefficients" << endl;
   SetAerodynamicCoefficients(config, flow_solver);
 
   if (config->GetViscous()) {
     SetHistoryOutputValue("BUFFET", flow_solver->GetTotal_Buffet_Metric());
   }
-
+cout << "setheatcoefficients"<<endl;
   SetHeatCoefficients(config, flow_solver);
 
   /*--- Set rotating frame coefficients --- */
-
+cout <<"setrotatingframecoefficients"<<endl;
   SetRotatingFrameCoefficients(flow_solver);
 
   /*--- Set Cp diff fields ---*/
-
+cout <<"set_cpinverse"<<endl;
   Set_CpInverseDesign(flow_solver, geometry, config);
 
   /*--- Set nearfield diff fields ---*/
@@ -442,9 +442,9 @@ cout<<"cflowcomp"<<endl;
   if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
-
+cout << "setcustom"<<endl;
   SetCustomOutputs(solver, geometry, config);
-
+cout << "setcustomandcombo"<<endl;
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
 }
