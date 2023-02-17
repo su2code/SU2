@@ -84,28 +84,27 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
                                         const su2double *val_V,
                                         const su2double *val_normal,
                                         su2double *val_Proj_Flux) {
-  unsigned short iSpecies, iVar;
-  su2double rho, u, v, w, rhoEve, P, H;
+
   const su2double *rhos;
 
   /*--- Initialize vectors ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     val_Proj_Flux[iVar] = 0.0;
 
   /*--- Rename for convienience ---*/
-  rho    = val_V[RHO_INDEX];
-  u      = val_V[VEL_INDEX];
-  v      = val_V[VEL_INDEX+1];
-  w      = val_V[VEL_INDEX+2];
-  P      = val_V[P_INDEX];
-  H      = val_V[H_INDEX];
-  rhoEve = val_U[nSpecies+nDim+1];
+  const su2double rho = val_V[RHO_INDEX];
+  const su2double u = val_V[VEL_INDEX];
+  const su2double v = val_V[VEL_INDEX+1];
+  const su2double w = val_V[VEL_INDEX+2];
+  const su2double P = val_V[P_INDEX];
+  const su2double H = val_V[H_INDEX];
+  const su2double rhoEve = val_U[nSpecies+nDim+1];
   rhos   = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
     /*--- iDim = 0 (x-direction) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
     val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
     val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
@@ -113,7 +112,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
     val_Proj_Flux[nSpecies+3]  = (rhoEve*u)         * val_normal[0];
 
     /*---- iDim = 1 (y-direction) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
     val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
     val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
@@ -123,7 +122,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
   else {
 
     /*--- iDim = 0 (x-direction) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
     val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
     val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
@@ -132,7 +131,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
     val_Proj_Flux[nSpecies+4]  = (rhoEve*u)         * val_normal[0];
 
     /*--- iDim = 0 (y-direction) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
     val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
     val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
@@ -141,7 +140,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
     val_Proj_Flux[nSpecies+4] += (rhoEve*v)         * val_normal[1];
 
     /*--- iDim = 0 (z-direction) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*w) * val_normal[2];
     val_Proj_Flux[nSpecies]   += (rho*w*u)          * val_normal[2];
     val_Proj_Flux[nSpecies+1] += (rho*w*v)          * val_normal[2];
@@ -157,33 +156,32 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
                                        su2double **val_Proj_Jac_Tensor) {
 
   const su2double *rhos;
-
   rhos = &val_V[RHOS_INDEX];
 
   /*--- Initialize the Jacobian tensor ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    for (unsigned short jVar = 0; jVar < nVar; jVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = 0.0;
 
   /*--- Rename for convenience ---*/
-  su2double rho    = val_V[RHO_INDEX];
-  su2double H      = val_V[H_INDEX];
-  su2double rhoEve = val_U[nSpecies+nDim+1];
+  const su2double rho = val_V[RHO_INDEX];
+  const su2double H = val_V[H_INDEX];
+  const su2double rhoEve = val_U[nSpecies+nDim+1];
 
   su2double u[MAXNDIM];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
     u[iDim] = val_V[VEL_INDEX+iDim];
 
   /*--- Calculate projected velocity ---*/
   su2double proj_vel = GeometryToolbox::DotProduct(nDim, u, val_normal);
 
   /*--- Species density rows ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (unsigned short jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+    for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++) {
       val_Proj_Jac_Tensor[iSpecies][jSpecies] += -(rhos[iSpecies]/rho) * proj_vel;
     }
     val_Proj_Jac_Tensor[iSpecies][iSpecies]   += proj_vel;
-    for (unsigned short iDim  = 0; iDim < nDim; iDim++) {
+    for (auto iDim  = 0ul; iDim < nDim; iDim++) {
       val_Proj_Jac_Tensor[iSpecies][nSpecies+iDim] += (rhos[iSpecies]/rho) * val_normal[iDim];
       val_Proj_Jac_Tensor[nSpecies+iDim][iSpecies] += val_dPdU[iSpecies]*val_normal[iDim] - proj_vel*u[iDim];
     }
@@ -192,8 +190,8 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
   }
 
   /*--- Momentum rows ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
+    for (auto jDim = 0ul; jDim < nDim; jDim++) {
       val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+jDim] += val_dPdU[nSpecies+jDim]*val_normal[iDim] + u[iDim]*val_normal[jDim];
     }
     val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+iDim]   += proj_vel;
@@ -202,18 +200,18 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
   }
 
   /*--- Total energy row ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+iDim] += val_dPdU[nSpecies+iDim]*proj_vel + H*val_normal[iDim];
   val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim]   += (1+val_dPdU[nSpecies+nDim])*proj_vel;
   val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim+1] +=  val_dPdU[nSpecies+nDim+1] *proj_vel;
 
   /*--- Vib.-el. energy row ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho*val_normal[iDim];
   val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+nDim+1] = proj_vel;
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    for (unsigned short jVar = 0; jVar < nVar; jVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = val_scale * val_Proj_Jac_Tensor[iVar][jVar];
 }
 
@@ -240,17 +238,17 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   su2activematrix Flux_Tensor(nVar,nDim);
 
   /*--- Initialize ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       Flux_Tensor[iVar][iDim] = 0.0;
   }
 
   /*--- Rename variables for convenience ---*/
   const auto& Ds  = val_diffusioncoeff;
   const su2double mu  = val_lam_viscosity+val_eddy_viscosity;
-  su2double ktr = val_therm_conductivity;
-  su2double kve = val_therm_conductivity_ve;
+  const su2double ktr = val_therm_conductivity;
+  const su2double kve = val_therm_conductivity_ve;
   const su2double rho = val_primvar[RHO_INDEX];
   const su2double T = val_primvar[T_INDEX];
   const su2double Tve = val_primvar[TVE_INDEX];
@@ -260,8 +258,8 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
 
   /*--- Pre-compute mixture quantities ---*/  //TODO
   su2double Vector[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
+    for (auto iSpecies = 0ul; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
@@ -270,23 +268,23 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
 
     /*--- Species diffusion velocity ---*/
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
 
     /*--- Shear-stress/momentum related terms ---*/
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
-    for (auto jDim = 0; jDim < nDim; jDim++) {
+    for (auto jDim = 0ul; jDim < nDim; jDim++) {
       Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
       Flux_Tensor[nSpecies+nDim][iDim] += tau[iDim][jDim]*val_primvar[VEL_INDEX+jDim];
     }
 
     /*--- Diffusion terms ---*/
-    for (auto iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs[iSpecies];
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * val_eve[iSpecies];
     }
@@ -296,8 +294,8 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[nSpecies+nDim+1][iDim] += kve*GV[TVE_INDEX][iDim];
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }
@@ -356,32 +354,28 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
                                const su2double *val_normal, const su2double *l, const su2double *m,
                                su2double **val_p_tensor) const {
 
-  // P matrix is equivalent to the L matrix in Gnoffo
-  unsigned short iSpecies, iDim, iVar, jVar;
-  su2double sqvel, rho, a, a2, eve;
-  su2double vU, vV, vW;
-
   /*--- Initialize the P matrix to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
       val_p_tensor[iVar][jVar] = 0.0;
 
   /*--- Pre-compute useful quantities ---*/
-  sqvel = 0.0;
-  rho = V[RHO_INDEX];
-  eve = U[nSpecies+nDim+1]/rho;
-  vU = 0.0;  vV = 0.0;  vW = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  su2double sqvel = 0.0;
+  const su2double rho = V[RHO_INDEX];
+  const su2double eve = U[nSpecies+nDim+1]/rho;
+  su2double vU, vV, vW;
+  vU = vV = vW = 0.0;
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     vU    += V[VEL_INDEX+iDim] * val_normal[iDim];
     vV    += V[VEL_INDEX+iDim] * l[iDim];
     vW    += V[VEL_INDEX+iDim] * m[iDim];
     sqvel += V[VEL_INDEX+iDim] * V[VEL_INDEX+iDim];
   }
-  a  = V[A_INDEX];
-  a2 = V[A_INDEX]*V[A_INDEX];
+  const su2double a  = V[A_INDEX];
+  const su2double a2 = V[A_INDEX]*V[A_INDEX];
 
   if(nDim == 2) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
       val_p_tensor[iSpecies][nSpecies]   += 0.0;
       val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
@@ -395,7 +389,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
 
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (auto iDim = 0ul; iDim < nDim; iDim++){
       val_p_tensor[nSpecies+iDim][nSpecies]     += l[iDim];
       val_p_tensor[nSpecies+iDim][nSpecies+1]   += (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
       val_p_tensor[nSpecies+iDim][nSpecies+2]   += (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
@@ -414,7 +408,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
 
   } else {
 
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;
       val_p_tensor[iSpecies][nSpecies]   = 0.0;
       val_p_tensor[iSpecies][nSpecies+1] = 0.0;
@@ -430,7 +424,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+4][iSpecies] = 0.0;
     }
 
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (auto iDim = 0ul; iDim < nDim; iDim++){
       val_p_tensor[nSpecies+iDim][nSpecies]     = l[iDim];
       val_p_tensor[nSpecies+iDim][nSpecies+1]   = m[iDim];
       val_p_tensor[nSpecies+iDim][nSpecies+2]   = (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
@@ -456,30 +450,27 @@ void CNEMONumerics::GetPMatrix_inv(const su2double *U, const su2double *V, const
                                    const su2double *val_normal, const su2double *l, const su2double *m,
                                    su2double **val_invp_tensor) const {
 
-  unsigned short iSpecies, jSpecies, iDim, iVar, jVar;
-  su2double rho, a, a2, eve;
-  su2double vU, vV, vW;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
       val_invp_tensor[iVar][jVar] = 0.0;
 
   /*--- Pre-compute useful quantities ---*/
-  rho = V[RHO_INDEX];
-  eve = U[nSpecies+nDim+1]/rho;
-  vU = 0.0;  vV = 0.0;  vW = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  const su2double rho = V[RHO_INDEX];
+  const su2double eve = U[nSpecies+nDim+1]/rho;
+  su2double vU, vV, vW;
+  vU = vV = vW = 0.0;
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     vU += V[VEL_INDEX+iDim] * val_normal[iDim];
     vV += V[VEL_INDEX+iDim] * l[iDim];
     vW += V[VEL_INDEX+iDim] * m[iDim];
   }
-  a  = V[A_INDEX];
-  a2 = V[A_INDEX]*V[A_INDEX];
+  const su2double a  = V[A_INDEX];
+  const su2double a2 = V[A_INDEX]*V[A_INDEX];
 
   if (nDim == 2) {
 
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+      for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++) {
         val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
       }
       val_invp_tensor[iSpecies][iSpecies]   += a2;
@@ -516,8 +507,8 @@ void CNEMONumerics::GetPMatrix_inv(const su2double *U, const su2double *V, const
 
   } else {
 
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+      for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++) {
         val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
       }
       val_invp_tensor[iSpecies][iSpecies]   += a2;
