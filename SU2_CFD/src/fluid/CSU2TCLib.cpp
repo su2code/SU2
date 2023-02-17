@@ -1898,7 +1898,7 @@ su2double CSU2TCLib::ComputeCollisionCrossSection(unsigned iSpecies, unsigned jS
     /*--- Compute the collisionion cross section ---*/
     // Note: Omega11 is used for diffusion, viscosity, translational, internal, and reaction components of
     //       thermal conductivity
-    //       Omega22 is used used for viscosity and translational component of thermal conductivity
+    //       Omega22 is used for viscosity and translational components of thermal conductivity
 
     if (Omega11(iSpecies, jSpecies, 0) == 1.0 && d1) {
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
