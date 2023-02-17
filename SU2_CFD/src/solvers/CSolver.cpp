@@ -4329,7 +4329,15 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
       }
     }
   }
-  else SU2_MPI::Error("Did not read file for reference solution (ROM)", CURRENT_FUNCTION);
+  else {
+    std::cout << "Setting reference solution to zero. " << std::endl;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        nodes->Set_RefSolution(iPoint, iVar, 0.0);
+      }
+    }
+  }
+  //else SU2_MPI::Error("Did not read file for reference solution (ROM)", CURRENT_FUNCTION);
   
   /*--- Initial Solution / Coordinates (read from file) ---*/
   /* The initial condition is determined by the specific initial solution. */
@@ -4674,15 +4682,15 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   }
   }
   
-  /*--- Masked Nodes (read from file) ---*/
-  
+  /*--- Masked Nodes: 1: no hyper-reduction; 2: read from file ---*/
+  // 1
   if (use_all_nodes) {
     std::cout << "Using all nodes for hyper-reduction." << std::endl;
     for (unsigned long i = 0; i < nPointDomain; i++){
       Mask.push_back(i);
     }
   }
-  
+  // 2
   if (read_mask_from_file) {
     std::cout << "Using precomputed nodes." << std::endl;
     std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << hypernodes_filename << std::endl;
@@ -4701,11 +4709,13 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
         }
       }
     }
+    else {
+      SU2_MPI::Error("Unable to read file with selected nodes for hyper-reduction.", CURRENT_FUNCTION); }
   }
   
+  // Save selected nodes to a file for reuse
   if (!read_mask_from_file) {
   ofstream fs;
-  //std::string fname = "masked_nodes_"+to_string(desired_nodes)+".csv";
   fs.open(hypernodes_filename);
   for(unsigned long i=0; i < Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4732,12 +4742,13 @@ bool CSolver::MaskedNode(unsigned long iPoint) {
 
 
 void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
-  // output: Masked Edges
+  // output: Masked Edges and Mask Neighbors
   
-  unsigned long iEdge, iPoint, jPoint, kNeigh;
+  /*--- Find edges corresponding to neighbor depth of 1 ---*/
   
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    unsigned long iPoint = geometry->edges->GetNode(iEdge, 0);
+    unsigned long jPoint = geometry->edges->GetNode(iEdge, 1);
     
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);
@@ -4747,25 +4758,20 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
       Edge_masked.push_back(iEdge);
       if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
     }
-    
   }
   
-  unsigned long desired_nodes = config->GetnHyper_Nodes();
-  
-  /*--- Include neighbors of neighbors for viscous part of residual ---*/
+  /*--- Include neighbors of neighbors (depth 2) ---*/
   
   switch( config->GetKind_Solver() ) {
-
     case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::INC_NAVIER_STOKES: {
-      // Get neighbor of neighbor
       
       std::vector<unsigned long> temp_neighs;
       
       // locate all neighbors of neighbors but dont pull any Masked/Selected nodes
       for (unsigned long i : MaskNeighbors) {
         
-        for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(i); kNeigh++) {
-          jPoint = geometry->nodes->GetPoint(i,kNeigh);
+        for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(i); kNeigh++) {
+          unsigned long jPoint = geometry->nodes->GetPoint(i,kNeigh);
           
           if (!MaskedNode(jPoint)) {
             temp_neighs.push_back(jPoint);
@@ -4776,29 +4782,30 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
       for (unsigned long i : temp_neighs) {
         MaskNeighbors.insert(i);
       }
-      
     }
-       
   }
   
-  ofstream fs;
-  std::string fname = "masked_nodes_neighs_greedy_"+to_string(desired_nodes)+".csv";
-  fs.open(fname);
-  set <unsigned long> :: iterator itr;
-  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
-    fs << *itr << "," ;
+  bool debug = false;
+  if (debug) {
+    unsigned long desired_nodes = config->GetnHyper_Nodes();
+    ofstream fs;
+    std::string fname = "masked_nodes_neighs_greedy_"+to_string(desired_nodes)+".csv";
+    fs.open(fname);
+    set <unsigned long> :: iterator itr;
+    for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
+      fs << *itr << "," ;
+    }
+    fs << "\n";
+    fs.close();
+    
+    //std::string fname2 = "masked_nodes_edges.csv";
+    //fs.open(fname2);
+    //for (unsigned long i : Edge_masked) {
+    //  fs << i << "," ;
+    //}
+    //fs << "\n";
+    //fs.close();
   }
-  fs << "\n";
-  fs.close();
-  
-  //std::string fname2 = "masked_nodes_edges.csv";
-  //fs.open(fname2);
-  //for (unsigned long i : Edge_masked) {
-  //  fs << i << "," ;
-  //}
-  //fs << "\n";
-  //fs.close();
-  
 }
 
 bool CSolver::GetROMConvergence() {

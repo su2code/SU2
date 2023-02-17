@@ -1741,13 +1741,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
   else AD::StartNoSharedReading();
   
-  if (rom) nEdge = Edge_masked.size();
-  else     nEdge = geometry->GetnEdge();
-  
-  for (i = 0; i < nEdge; i++) {
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+  for(auto k = 0ul; k < color.size; ++k) {
 
-    if (rom) iEdge = Edge_masked[i];
-    else     iEdge = i;
+    auto iEdge = color.indices[k];
+  
+  //if (rom) nEdge = Edge_masked.size();
+  //else     nEdge = geometry->GetnEdge();
+  
+  //for (i = 0; i < nEdge; i++) {
+
+  //  if (rom) iEdge = Edge_masked[i];
+  //  else     iEdge = i;
     
     unsigned short iDim, iVar;
 
@@ -1922,7 +1931,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   END_SU2_OMP_FOR
-  //} // end color loop
+  } // end color loop
 
   /*--- Restore preaccumulation and adjoint evaluation state. ---*/
   AD::ResumePreaccumulation(pausePreacc);

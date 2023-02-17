@@ -2883,15 +2883,15 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to reduced order modelling ---*/
   
   /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
-  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.csv"));
   /*!\brief HYPER_NODES_FILENAME\n DESCRIPTION: Input file containing hyper-reduction nodes. \ingroup Config*/
   addStringOption("HYPER_NODES_FILENAME", HyperNodes_FileName, string("NONE"));
-  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
-  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
-  /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
-  addStringOption("INITIAL_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
+  /*!\brief INIT_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
+  addStringOption("INIT_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
+  /*!\brief INIT_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
+  addStringOption("INIT_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
   /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
-  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("NONE"));
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
   addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
@@ -5982,6 +5982,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if (Reduced_Model) {
       cout << "Reduced order model definitions:" << endl;
       cout << "   Test basis file name:         " << Rom_FileName << "." << endl;
+      cout << "   Inital coordinates file name: " << Init_Coord_FileName << "." << endl;
       cout << "   Inital solution file name:    " << Init_Snapshot_FileName << "." << endl;
       cout << "   Reference solution file name: " << Ref_Snapshot_FileName << "." << endl;
     }

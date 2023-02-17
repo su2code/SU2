@@ -995,11 +995,13 @@ class CFVMFlowSolverBase : public CSolver {
     vector<su2double> r(m,0.0);
     vector<su2double> r_ns(m,0.0);  // not scaled residual
     
+    // Toggle for preconditioner
+    bool precon = false;
+    
     /*--- Obtain hyper-reduced residual ---*/
     
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     unsigned long InnerIter = config->GetInnerIter();
-    unsigned long index = 0;
     
     if (InnerIter == 0) SetAlpha_ROM(1000000000);
     
@@ -1007,22 +1009,33 @@ class CFVMFlowSolverBase : public CSolver {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
       
+      su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+      
       const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
       const su2double* Residual = LinSysRes.GetBlock(iPoint);
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        
+        unsigned long total_index = iPoint_mask*nVar + iVar;
         su2double Res = -(Residual[iVar] + Res_TruncError[iVar]);
-        r_ns[index] = Res;
+        r_ns[total_index] = Res;
         
-        /*-- Compute weights for scaled residuals --*/
+        /*-- Compute weights for scaled residuals at first iteration --*/
         if (InnerIter == 0) {
-          if (iPoint_mask == 0) Weights.push_back(0);
+          //if (iPoint_mask == 0) Weights.push_back(0);
           //Weights[iVar] += abs(r_ns[index]) / nPointDomain;
-          // Weights[iVar] += r_ns[index] * r_ns[index];
-          Weights[iVar] = 1;
+          //Weights[iVar] += r_ns[index] * r_ns[index];
+          
+          // Jacobi preconditioner
+          if (precon) {
+            unsigned long index_jii = iVar*nVar + iVar;
+            Weights.push_back(1.0 / J_ii[index_jii]);
+          }
+          else Weights.push_back(1.0);
         }
-        index++;
+        if (precon) {
+          unsigned long index_jii = iVar*nVar + iVar;
+          Weights[total_index] = (1.0 / J_ii[index_jii]);
+        }
       }
     }
     END_SU2_OMP_FOR
@@ -1030,11 +1043,12 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*-- Compute scaled residuals --*/
     
-    index = 0;
+    unsigned long index = 0;
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        r[index] = r_ns[index] / sqrt(Weights[iVar]);
+        //r[index] = r_ns[index] / sqrt(Weights[iVar]);
         //r[index] = (1.0) * r_ns[index];
+        r[index] = r_ns[index] * Weights[index] ;
         index++;
       }
     }
@@ -1070,7 +1084,10 @@ class CFVMFlowSolverBase : public CSolver {
               if (kNeigh == 0) {
                 unsigned long k = iPoint;
                 unsigned long total_index_phik = kVar + k*nVar;
-                TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii[index_jik];
+                unsigned long J_ii_cur = J_ii[index_jik];
+                if (precon) {
+                  if (iVar == kVar) J_ii_cur = 1.0; }
+                TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii_cur;
               }
             }
           } // end compute of W_ij
@@ -1086,7 +1103,7 @@ class CFVMFlowSolverBase : public CSolver {
       for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
         
         for (unsigned short i = 0; i < nVar; i++){
-          double prod2 = r[iPoint_mask*nVar + i] * TestBasis[jPoint*m + iPoint_mask*nVar + i];
+          double prod2 = r_ns[iPoint_mask*nVar + i] * TestBasis[jPoint*m + iPoint_mask*nVar + i];
           r_red[jPoint] += prod2;
         }
       }

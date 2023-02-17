@@ -205,7 +205,6 @@ public:
   vector<su2double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
   set<unsigned long> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
-  unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
   su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double Coord1_Old;                     /*!<\brief previous value of the reduced coordinate 1 (rom) */
