@@ -1539,10 +1539,10 @@ public:
    */
   const su2double *GetHold_GridFixed_Coord(void) const { return grid_fix; }
 
-   /*!
-    * \brief Get the values of subsonic engine.
-    * \return Values of subsonic engine.
-    */
+  /*!
+   * \brief Get the values of subsonic engine.
+   * \return Values of subsonic engine.
+   */
    const su2double *GetSubsonicEngine_Values(void) const { return eng_val; }
 
   /*!
