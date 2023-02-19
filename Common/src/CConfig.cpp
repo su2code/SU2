@@ -854,8 +854,8 @@ void CConfig::SetPointersNull(void) {
   Marker_Isothermal           = nullptr;    Marker_HeatFlux             = nullptr;    Marker_EngineInflow        = nullptr;
   Marker_Load                 = nullptr;    Marker_Disp_Dir             = nullptr;    Marker_RoughWall           = nullptr;
   Marker_EngineExhaust        = nullptr;    Marker_Displacement         = nullptr;    Marker_Load                = nullptr;
-  Marker_Load_Dir             = nullptr;    Marker_Load_Sine            = nullptr;    Marker_Clamped             = nullptr;
-  Marker_FlowLoad             = nullptr;    Marker_Internal             = nullptr;
+  Marker_Load_Dir             = nullptr;    Marker_Clamped             = nullptr;
+  Marker_Internal             = nullptr;
   Marker_All_TagBound         = nullptr;    Marker_CfgFile_TagBound     = nullptr;    Marker_All_KindBC          = nullptr;
   Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv         = nullptr;    Marker_All_PerBound        = nullptr;
   Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface    = nullptr;    Marker_Riemann             = nullptr;
@@ -866,7 +866,7 @@ void CConfig::SetPointersNull(void) {
 
   Isothermal_Temperature = nullptr;    HeatTransfer_Coeff     = nullptr;    HeatTransfer_WallTemp  = nullptr;
   Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
-  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
+  Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
   Roughness_Height       = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
@@ -903,7 +903,7 @@ void CConfig::SetPointersNull(void) {
 
   Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
   Disp_Dir = nullptr;            Disp_Dir_Value = nullptr;          Disp_Dir_Multiplier = nullptr;
-  Load_Sine_Dir = nullptr;       Load_Sine_Amplitude = nullptr;     Load_Sine_Frequency = nullptr;
+  //Load_Sine_Dir = nullptr;       Load_Sine_Amplitude = nullptr;     Load_Sine_Frequency = nullptr;
   Electric_Field_Mod = nullptr;  Electric_Field_Dir = nullptr;      RefNode_Displacement = nullptr;
 
   Electric_Constant = nullptr;
@@ -1435,7 +1435,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
   /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
-  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
+  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, 1.0);
   /* DESCRIPTION: Type of mesh motion */
   addEnumOption("REF_DIMENSIONALIZATION", Ref_NonDim, NonDim_Map, DIMENSIONAL);
 
@@ -1443,8 +1443,8 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to various boundary markers ---*/
 
   /*!\brief HTP_AXIS\n DESCRIPTION: Location of the HTP axis*/
-  htp_axis[0] = 0.0; htp_axis[1] = 0.0;
-  addDoubleArrayOption("HTP_AXIS", 2, htp_axis);
+  //htp_axis[0] = 0.0; htp_axis[1] = 0.0;
+  //addDoubleArrayOption("HTP_AXIS", 2, htp_axis);
   /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -1584,10 +1584,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPANWISE_KIND \n DESCRIPTION: type of algorithm to identify the span-wise sections at the turbo boundaries.
    \n OPTIONS: see \link SpanWise_Map \endlink \n Default: AUTOMATIC */
   addEnumOption("SPANWISE_KIND", Kind_SpanWise, SpanWise_Map, AUTOMATIC);
-  /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery architecture.
+  /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachinery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
-  /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
+  /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
@@ -1611,7 +1611,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
-  /*!\brief Smluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
+  /*!\brief Smoluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
    Format: ( Heat flux marker,  wall temperature (static), momentum accomodation coefficient, thermal accomodation coefficient ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_SMOLUCHOWSKI_MAXWELL", nMarker_Smoluchowski_Maxwell, Marker_Smoluchowski_Maxwell, Isothermal_Temperature); //Missing TMAC and TAC
   /*!\brief WALL_ROUGHNESS  \n DESCRIPTION: Specified roughness heights at wall boundary marker(s)
@@ -1630,8 +1630,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
-  /* DESCRIPTION: Actuator disk double surface */
-  addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
+  // /* DESCRIPTION: Actuator disk double surface */
+  // addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
   distortion[0] =  5.0; distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, distortion);
@@ -1661,7 +1661,7 @@ void CConfig::SetConfig_Options() {
   addInletOption("MARKER_DISPLACEMENT", nMarker_Disp_Dir, Marker_Disp_Dir, Disp_Dir_Value, Disp_Dir_Multiplier, Disp_Dir);
   /* DESCRIPTION: Sine load boundary marker(s)
    Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
-  addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
+  //addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
   /*!\brief SINE_LOAD\n DESCRIPTION: option to apply the load as a sine*/
   addBoolOption("SINE_LOAD", Sine_Load, false);
   sineload_coeff[0] = 0.0; sineload_coeff[1] = 0.0; sineload_coeff[2] = 0.0;
@@ -1671,7 +1671,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
   /* DESCRIPTION: Flow load boundary marker(s) */
-  addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
+  //addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
@@ -1822,6 +1822,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
+  /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
+  addStringListOption("CONV_FIELD", nConvField, ConvField);
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -1830,15 +1832,13 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("CONV_CAUCHY_ELEMS", Cauchy_Elems, 100);
   /*!\brief CONV_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
   addDoubleOption("CONV_CAUCHY_EPS", Cauchy_Eps, 1E-10);
-  /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
-  addStringListOption("CONV_FIELD", nConvField, ConvField);
 
   /*!\brief CONV_WINDOW_STARTITER\n DESCRIPTION: Iteration number after START_ITER_WND  to begin convergence monitoring\n DEFAULT: 15 \ingroup Config*/
   addUnsignedLongOption("CONV_WINDOW_STARTITER", Wnd_StartConv_Iter, 15);
-  /*!\brief CONV_WINDOW_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
-  addUnsignedShortOption("CONV_WINDOW_CAUCHY_ELEMS", Wnd_Cauchy_Elems, 100);
   /*!\brief CONV_WINDOW_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-3 \ingroup Config*/
   addDoubleOption("CONV_WINDOW_CAUCHY_EPS", Wnd_Cauchy_Eps, 1E-3);
+  /*!\brief CONV_WINDOW_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
+  addUnsignedShortOption("CONV_WINDOW_CAUCHY_ELEMS", Wnd_Cauchy_Elems, 100);
   /*!\brief WINDOW_CAUCHY_CRIT \n DESCRIPTION: Determines, if the cauchy convergence criterion should be used for windowed time averaged objective functions*/
   addBoolOption("WINDOW_CAUCHY_CRIT",Wnd_Cauchy_Crit, false);
   /*!\brief CONV_WINDOW_FIELD
@@ -2051,7 +2051,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
-
+nijso
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
   /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
@@ -5429,10 +5429,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_Smoluchowski_Maxwell,
   iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
-  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
+  iMarker_Displacement, iMarker_Load, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir,
   iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
@@ -5448,8 +5448,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   nMarker_HeatFlux + nMarker_HeatTransfer +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
-  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
+  nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
+  nMarker_Clamped + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_ZoneInterface;
 
   /*--- Add the possible send/receive domains ---*/
@@ -5780,22 +5780,22 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Load_Sine[iMarker_Load_Sine];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = LOAD_SINE_BOUNDARY;
-    iMarker_CfgFile++;
-  }
+  // for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
+  //   Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Load_Sine[iMarker_Load_Sine];
+  //   Marker_CfgFile_KindBC[iMarker_CfgFile] = LOAD_SINE_BOUNDARY;
+  //   iMarker_CfgFile++;
+  // }
 
   for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_Load[iMarker_Fluid_Load];
     iMarker_CfgFile++;
   }
 
-  for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FlowLoad[iMarker_FlowLoad];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = FLOWLOAD_BOUNDARY;
-    iMarker_CfgFile++;
-  }
+  // for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
+  //   Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FlowLoad[iMarker_FlowLoad];
+  //   Marker_CfgFile_KindBC[iMarker_CfgFile] = FLOWLOAD_BOUNDARY;
+  //   iMarker_CfgFile++;
+  // }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Monitoring[iMarker_CfgFile] = NO;
@@ -5956,9 +5956,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
-  iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
+  iMarker_Load, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
-  iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
@@ -7239,14 +7239,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_FlowLoad != 0) {
-    BoundaryTable << "Flow load boundary";
-    for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-      BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
-      if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
+  // if (nMarker_FlowLoad != 0) {
+  //   BoundaryTable << "Flow load boundary";
+  //   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
+  //     BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
+  //     if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
+  //   }
+  //   BoundaryTable.PrintFooter();
+  // }
 
   if (nMarker_Internal != 0) {
     BoundaryTable << "Internal boundary";
@@ -7446,14 +7446,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Load_Sine != 0) {
-    BoundaryTable << "Sine-Wave boundary";
-    for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
-      BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
-      if (iMarker_Load_Sine < nMarker_Load_Sine-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
+  // if (nMarker_Load_Sine != 0) {
+  //   BoundaryTable << "Sine-Wave boundary";
+  //   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
+  //     BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
+  //     if (iMarker_Load_Sine < nMarker_Load_Sine-1)  BoundaryTable << " ";
+  //   }
+  //   BoundaryTable.PrintFooter();
+  // }
 
   if (nMarker_Emissivity != 0) {
     BoundaryTable << "Radiative boundary";
@@ -9484,26 +9484,26 @@ const su2double* CConfig::GetDisp_Dir(string val_marker) const {
   return Disp_Dir[iMarker_Disp_Dir];
 }
 
-su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) const {
-  unsigned short iMarker_Load_Sine;
-  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
-    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
-  return Load_Sine_Amplitude[iMarker_Load_Sine];
-}
+// su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) const {
+//   unsigned short iMarker_Load_Sine;
+//   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+//     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+//   return Load_Sine_Amplitude[iMarker_Load_Sine];
+// }
 
-su2double CConfig::GetLoad_Sine_Frequency(string val_marker) const {
-  unsigned short iMarker_Load_Sine;
-  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
-    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
-  return Load_Sine_Frequency[iMarker_Load_Sine];
-}
+// su2double CConfig::GetLoad_Sine_Frequency(string val_marker) const {
+//   unsigned short iMarker_Load_Sine;
+//   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+//     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+//   return Load_Sine_Frequency[iMarker_Load_Sine];
+// }
 
-const su2double* CConfig::GetLoad_Sine_Dir(string val_marker) const {
-  unsigned short iMarker_Load_Sine;
-  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
-    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
-  return Load_Sine_Dir[iMarker_Load_Sine];
-}
+// const su2double* CConfig::GetLoad_Sine_Dir(string val_marker) const {
+//   unsigned short iMarker_Load_Sine;
+//   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+//     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+//   return Load_Sine_Dir[iMarker_Load_Sine];
+// }
 
 su2double CConfig::GetWall_Emissivity(string val_marker) const {
 
@@ -9517,12 +9517,12 @@ su2double CConfig::GetWall_Emissivity(string val_marker) const {
   return Wall_Emissivity[iMarker_Emissivity];
 }
 
-su2double CConfig::GetFlowLoad_Value(string val_marker) const {
-  unsigned short iMarker_FlowLoad;
-  for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
-    if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
-  return FlowLoad_Value[iMarker_FlowLoad];
-}
+//su2double CConfig::GetFlowLoad_Value(string val_marker) const {
+//  unsigned short iMarker_FlowLoad;
+//  for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
+//    if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
+//  return FlowLoad_Value[iMarker_FlowLoad];
+//}
 
 short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
 

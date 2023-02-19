@@ -96,7 +96,7 @@ private:
   *TemperatureLimits;             /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
-  bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
+  //bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
   unsigned short nFFD_Iter;       /*!< \brief Iteration for the point inversion problem. */
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
@@ -216,8 +216,8 @@ private:
   nMarker_Damper,                 /*!< \brief Number of damper surface markers. */
   nMarker_Load_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Disp_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
-  nMarker_Load_Sine,              /*!< \brief Number of load surface markers defined by magnitude and direction. */
-  nMarker_FlowLoad,               /*!< \brief Number of load surface markers. */
+  //nMarker_Load_Sine,              /*!< \brief Number of load surface markers defined by magnitude and direction. */
+  //nMarker_FlowLoad,               /*!< \brief Number of load surface markers. */
   nMarker_Internal,               /*!< \brief Number of internal flow markers. */
   nMarker_All,                    /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,                    /*!< \brief Max number of number of markers using the grid information. */
@@ -328,10 +328,10 @@ private:
   su2double *Disp_Dir_Multiplier;            /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
   su2double **Load_Dir;                      /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double **Disp_Dir;                      /*!< \brief Specified structural displacement direction (unit vector). */
-  su2double *Load_Sine_Amplitude;            /*!< \brief Specified amplitude for a sine-wave load. */
-  su2double *Load_Sine_Frequency;            /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
-  su2double **Load_Sine_Dir;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-  su2double *FlowLoad_Value;                 /*!< \brief Specified force for flow load boundaries. */
+  //su2double *Load_Sine_Amplitude;            /*!< \brief Specified amplitude for a sine-wave load. */
+  //su2double *Load_Sine_Frequency;            /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
+  //su2double **Load_Sine_Dir;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+  //su2double *FlowLoad_Value;                 /*!< \brief Specified force for flow load boundaries. */
   su2double *ActDiskInlet_MassFlow;          /*!< \brief Specified inlet mass flow for actuator disk. */
   su2double *ActDiskInlet_Temperature;       /*!< \brief Specified inlet temperature for actuator disk. */
   su2double *ActDiskInlet_TotalTemperature;  /*!< \brief Specified inlet total temperature for actuator disk. */
@@ -1106,7 +1106,7 @@ private:
   distortion[2],         /*!< \brief SU2_GEO section locations array for the COption class. */
   ea_lim[3],             /*!< \brief equivalent area limit array for the COption class. */
   grid_fix[6],           /*!< \brief fixed grid (non-deforming region) array for the COption class. */
-  htp_axis[2],           /*!< \brief HTP axis for the COption class. */
+  //htp_axis[2],           /*!< \brief HTP axis for the COption class. */
   ffd_axis[3],           /*!< \brief FFD axis for the COption class. */
   inc_crit[3],           /*!< \brief incremental criteria array for the COption class. */
   extrarelfac[2],        /*!< \brief extra relaxation factor for Giles BC in the COption class. */
@@ -1539,11 +1539,11 @@ public:
    */
   const su2double *GetHold_GridFixed_Coord(void) const { return grid_fix; }
 
-  /*!
-   * \brief Get the values of subsonic engine.
-   * \return Values of subsonic engine.
-   */
-  const su2double *GetSubsonicEngine_Values(void) const { return eng_val; }
+   /*!
+    * \brief Get the values of subsonic engine.
+    * \return Values of subsonic engine.
+    */
+   const su2double *GetSubsonicEngine_Values(void) const { return eng_val; }
 
   /*!
    * \brief Get the cycle of a subsonic engine.
@@ -5694,11 +5694,11 @@ public:
    */
   bool GetEngine_HalfModel(void) const { return Engine_HalfModel; }
 
-  /*!
-   * \brief Actuator disk defined with a double surface.
-   * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
-   */
-  bool GetActDisk_SU2_DEF(void) const { return ActDisk_SU2_DEF; }
+  ///*!
+  // * \brief Actuator disk defined with a double surface.
+  // * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
+  // */
+  //bool GetActDisk_SU2_DEF(void) const { return ActDisk_SU2_DEF; }
 
   /*!
    * \brief Value of the design variable step, we use this value in design problems.
@@ -8166,28 +8166,28 @@ public:
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Sine_Amplitude(string val_index) const;
+  // su2double GetLoad_Sine_Amplitude(string val_index) const;
 
   /*!
    * \brief Get the frequency of the sine-wave at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load frequency.
    */
-  su2double GetLoad_Sine_Frequency(string val_index) const;
+  // su2double GetLoad_Sine_Frequency(string val_index) const;
 
   /*!
    * \brief Get the force direction at a sine-wave loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  const su2double* GetLoad_Sine_Dir(string val_index) const;
+  // const su2double* GetLoad_Sine_Dir(string val_index) const;
 
-  /*!
-   * \brief Get the force value at an load boundary.
-   * \param[in] val_index - Index corresponding to the load boundary.
-   * \return The load value.
-   */
-  su2double GetFlowLoad_Value(string val_index) const;
+  ///*!
+  // * \brief Get the force value at an load boundary.
+  // * \param[in] val_index - Index corresponding to the load boundary.
+  // * \return The load value.
+  // */
+  //su2double GetFlowLoad_Value(string val_index) const;
 
   /*!
    * \brief Cyclic pitch amplitude for rotor blades.
