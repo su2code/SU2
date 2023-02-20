@@ -923,8 +923,8 @@ private:
   bool RampAndRelease;            /*!< \brief option for ramp load and release */
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
-  Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
+  //su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
+  //Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
 
   su2double Motion_Origin[3] = {0.0}, /*!< \brief Mesh motion origin. */
@@ -8189,17 +8189,17 @@ public:
   // */
   //su2double GetFlowLoad_Value(string val_index) const;
 
-  /*!
-   * \brief Cyclic pitch amplitude for rotor blades.
-   * \return The specified cyclic pitch amplitude.
-   */
-  su2double GetCyclic_Pitch(void) const { return Cyclic_Pitch; }
+  // /*!
+  //  * \brief Cyclic pitch amplitude for rotor blades.
+  //  * \return The specified cyclic pitch amplitude.
+  //  */
+  // su2double GetCyclic_Pitch(void) const { return Cyclic_Pitch; }
 
-  /*!
-   * \brief Collective pitch setting for rotor blades.
-   * \return The specified collective pitch setting.
-   */
-  su2double GetCollective_Pitch(void) const { return Collective_Pitch; }
+  // /*!
+  //  * \brief Collective pitch setting for rotor blades.
+  //  * \return The specified collective pitch setting.
+  //  */
+  // su2double GetCollective_Pitch(void) const { return Collective_Pitch; }
 
   /*!
    * \brief Get name of the arbitrary mesh motion input file.
