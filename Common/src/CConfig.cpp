@@ -3936,8 +3936,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Transport model not available for NEMO solver using SU2TCLIB. Please use the WILKE, SUTHERLAND or GUPTAYOS transport model instead.", CURRENT_FUNCTION);
     }
 
-    if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) {
-      SU2_MPI::Error("Only Gupta-Yos transport model available for ionized flows using SU2TCLIB.", CURRENT_FUNCTION);
+    if (Kind_Solver == NEMO_NAVIER_STOKES) {
+      if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) {
+        SU2_MPI::Error("Only Gupta-Yos transport model available for ionized flows using SU2TCLIB.", CURRENT_FUNCTION);
+      }
     }
 
     if (Kind_FluidModel == MUTATIONPP &&

@@ -58,7 +58,9 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /* Initialize mixture object */
   mix.reset(new Mutation::Mixture(opt));
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
+  // x1000 to have Molar Mass in kg/kmol
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies);
 
   if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
   else { nHeavy = nSpecies; nEl = 0; }

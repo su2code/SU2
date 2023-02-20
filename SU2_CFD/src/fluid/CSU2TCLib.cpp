@@ -1952,21 +1952,23 @@ void CSU2TCLib::DiffusionCoeffGY(){
     DiffusionCoeff[iSpecies] = 0.0;
 
     /*--- Calculate molar concentration ---*/
-    const su2double Mi    = MolarMass[iSpecies];
+    const su2double Mi    = (MolarMass[iSpecies] + EPS);
     const su2double gam_i = rhos[iSpecies] / (Density*Mi);
     su2double denom = 0.0;
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       if (jSpecies != iSpecies) { 
 
-        const su2double Mj    = MolarMass[jSpecies];
+        const su2double Mj    = (MolarMass[jSpecies] + EPS);
         const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
         const su2double kb = BOLTZMANN_CONSTANT;
 
         const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
-        const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
+        su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
+        if (d1_ij > 1E16) d1_ij = 1E16;
+
         const su2double D_ij = kb*T_col/(Pressure*d1_ij);
         denom += gam_j/D_ij;
       }
@@ -1987,16 +1989,18 @@ void CSU2TCLib::ViscosityGY(){
     su2double denom = 0.0;
 
     /*--- Calculate molar concentration ---*/
-    const su2double Mi    = MolarMass[iSpecies];
+    const su2double Mi    = (MolarMass[iSpecies] + EPS);
     const su2double gam_i = rhos[iSpecies] / (Density*Mi);
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      const su2double Mj    = MolarMass[jSpecies];
+      const su2double Mj    = (MolarMass[jSpecies] + EPS);
       const su2double gam_j = rhos[jSpecies] / (Density*Mj);
 
       const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
-      const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
+      su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
+      if (d2_ij > 1E16) d2_ij = 1E16;
+
       denom += gam_j*d2_ij;
     }
     /*--- Calculate species laminar viscosity ---*/
@@ -2028,32 +2032,37 @@ void CSU2TCLib::ThermalConductivitiesGY(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     /*--- Calculate molar concentration ---*/
-    const su2double Mi      = MolarMass[iSpecies];
-    const su2double mi      = Mi/Na;
-    const su2double gam_i   = rhos[iSpecies] / (Density*Mi);
+    const su2double Mi    = (MolarMass[iSpecies] + EPS);
+    const su2double mi    = Mi/Na;
+    const su2double gam_i = rhos[iSpecies] / (Density*Mi);
     su2double denom_t = 0.0;
     su2double denom_r = 0.0;
     su2double denom_re = 0.0;
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      const su2double Mj    = MolarMass[jSpecies];
+      const su2double Mj    = (MolarMass[jSpecies] + EPS);
       const su2double mj    = Mj/Na;
       const su2double gam_j = rhos[iSpecies] / (Density*Mj);
       const su2double a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
       const su2double T_col = ((iSpecies == 0 && ionization) || (jSpecies == 0 && ionization)) ? Tve : T; 
 
-      const su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
-      const su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
-      
-      if (jSpecies == 0 && ionization) {
-        denom_t += 3.54*gam_j*d2_ij;
-      } else {
-        denom_t += a_ij*gam_j*d2_ij;
-      }
+      su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
+      su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
+      if (d1_ij >1E16) d1_ij = 1E16;
+      if (d2_ij >1E16) d2_ij = 1E16;      
+
+      if (jSpecies == 0 && ionization) { denom_t += 3.54*gam_j*d2_ij; }
+      else { denom_t += a_ij*gam_j*d2_ij; }
+
       denom_r += gam_j*d1_ij;
       denom_re += gam_j*d2_ij;
     }
+
+    /*--- Prevent divide by 0 ---*/
+    if (denom_t == 0.0) denom_t = EPS;
+    if (denom_r == 0.0) denom_r = EPS;
+    if (denom_re == 0.0) denom_re = EPS;
 
     /*--- Translational contribution to thermal conductivity ---*/
     if (!(ionization && iSpecies == 0)) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
