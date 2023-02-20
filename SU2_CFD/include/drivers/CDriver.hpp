@@ -74,6 +74,8 @@ class CDriver : public CDriverBase {
       fsi,         /*!< \brief FSI simulation flag.*/
       fem_solver;  /*!< \brief FEM fluid solver simulation flag. */
 
+  CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
+
   CIteration*** iteration_container;      /*!< \brief Container vector with all the iteration methods. */
   CIntegration**** integration_container; /*!< \brief Container vector with all the integration methods. */
   vector<vector<unique_ptr<CInterpolator>>>
@@ -402,6 +404,9 @@ class CDriver : public CDriverBase {
    */
   virtual void SetInitialMesh() {}
 
+/// \addtogroup PySU2
+/// \{
+
   /*!
    * \brief Process the boundary conditions and update the multi-grid structure.
    */
@@ -642,6 +647,8 @@ class CDriver : public CDriverBase {
    * \param[in] alpha - Angle (Zpos).
    */
   void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
+/// \}
 
   /*!
    * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
