@@ -40,8 +40,7 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_DOT_AD
 endif
 
-su2_dot_sources = ../include/SU2_DOT.hpp \
-		../src/SU2_DOT.cpp
+su2_dot_sources = ../src/SU2_DOT.cpp
 
 su2_dot_ldadd =
 su2_dot_cxx_flags = -std=c++11
