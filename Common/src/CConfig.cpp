@@ -8676,44 +8676,34 @@ bool CConfig::GetSurface_Movement(unsigned short kind_movement) const {
   return false;
 }
 
-unsigned short CConfig::GetMarker_Moving(string val_marker) const {
-  unsigned short iMarker_Moving;
+unsigned short CConfig::GetMarker_Moving(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this moving boundary. ---*/
-  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
-    if (Marker_Moving[iMarker_Moving] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Moving; iMarker++)
+    if (Marker_Moving[iMarker] == val_marker) break;
 
-  return iMarker_Moving;
+  return iMarker;
 }
 
-bool CConfig::GetMarker_Moving_Bool(string val_marker) const {
-  unsigned short iMarker_Moving;
-
-  /*--- Find the marker for this moving boundary, if it exists. ---*/
-  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
-    if (Marker_Moving[iMarker_Moving] == val_marker) return true;
-
-  return false;
-}
-
-unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) const {
-  unsigned short iMarker_Deform_Mesh;
+unsigned short CConfig::GetMarker_Deform_Mesh(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this interface boundary. ---*/
-  for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++)
-    if (Marker_Deform_Mesh[iMarker_Deform_Mesh] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Deform_Mesh; iMarker++)
+    if (Marker_Deform_Mesh[iMarker] == val_marker) break;
 
-  return iMarker_Deform_Mesh;
+  return iMarker;
 }
 
-unsigned short CConfig::GetMarker_Deform_Mesh_Sym_Plane(string val_marker) const {
-  unsigned short iMarker_Deform_Mesh_Sym_Plane;
+unsigned short CConfig::GetMarker_Deform_Mesh_Sym_Plane(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this interface boundary. ---*/
-  for (iMarker_Deform_Mesh_Sym_Plane = 0; iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane; iMarker_Deform_Mesh_Sym_Plane++)
-    if (Marker_Deform_Mesh_Sym_Plane[iMarker_Deform_Mesh_Sym_Plane] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Deform_Mesh_Sym_Plane; iMarker++)
+    if (Marker_Deform_Mesh_Sym_Plane[iMarker] == val_marker) break;
 
-  return iMarker_Deform_Mesh_Sym_Plane;
+  return iMarker;
 }
 
 unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
