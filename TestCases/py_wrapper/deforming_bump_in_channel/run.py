@@ -92,8 +92,6 @@ def main():
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # Imposed deformation
 def DeformFunction(x,t):
