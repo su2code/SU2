@@ -120,8 +120,8 @@ class CUpwAUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables of the problem
-   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
@@ -131,7 +131,9 @@ class CUpwAUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
 /*!
  * \class CUpwAUSMPLUSM_NEMO
  * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model.
- * https://doi.org/10.1016/j.apm.2019.09.005 \ingroup ConvDiscr \author F. Morgado
+ * https://doi.org/10.1016/j.apm.2019.09.005
+ * \ingroup ConvDiscr
+ * \author F. Morgado
  */
 class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
  private:
@@ -163,7 +165,9 @@ class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
 /*!
  * \class CUpwAUSMPLUSUP2_NEMO
  * \brief Class for solving an approximate Riemann AUSM+-up2, Two-Temperature Model.
- * https://doi.org/10.1016/j.jcp.2013.02.046 \ingroup ConvDiscr \author W. Maier, A. Sachedeva, C. Garbacz
+ * https://doi.org/10.1016/j.jcp.2013.02.046
+ * \ingroup ConvDiscr
+ * \author W. Maier, A. Sachedeva, C. Garbacz
  */
 class CUpwAUSMPLUSUP2_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
  private:
@@ -184,8 +188,8 @@ class CUpwAUSMPLUSUP2_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables of the problem
-   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
@@ -193,17 +197,18 @@ class CUpwAUSMPLUSUP2_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
 };
 
 /*!
- * \class CUpwAUSMPWplus_NEMO
- * \brief Class for solving an approximate Riemann AUSM.
+ * \class CUpwSLAU_NEMO
+ * \brief Class for solving the Low-Dissipation AUSM for the NEMO solver.
  * \ingroup ConvDiscr
- * \author F. Palacios, W.Maier, C. Garbacz
+ * \author E. Molina, P. Gomes, W. Maier
  */
-class CUpwAUSMPWplus_NEMO : public CUpwAUSM_SLAU_Base_NEMO {
- private:
-  su2double alpha;
+class CUpwSLAU_NEMO : public CUpwAUSM_SLAU_Base_NEMO {
+protected:
+  bool slau_low_diss;
+  bool slau2;
 
   /*!
-   * \brief Compute the interface Mach number, soundspeeds and pressure for AUSMpw+ scheme.
+   * \brief Compute the interface Mach number, soundspeeds and pressure for SLAU schemes.
    * \param[in] config - Definition of the particular problem.
    * \param[out] pressure - The pressure at the control volume face.
    * \param[out] interface_mach - The interface Mach number M_(1/2).
@@ -212,52 +217,16 @@ class CUpwAUSMPWplus_NEMO : public CUpwAUSM_SLAU_Base_NEMO {
   virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
                                           su2double* interface_soundspeed) override;
 
- public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables of the problem
-   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwAUSMPWplus_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
-                      unsigned short val_nPrimVarGrad, const CConfig* config);
-};
-
-
-/*!
- * \class CUpwSLAU_NEMO
- * \brief Class for solving the Low-Dissipation AUSM in NEMO.
- * \ingroup ConvDiscr
- * \author E. Molina, P. Gomes, W. Maier
- */
-class CUpwSLAU_NEMO : public CUpwAUSM_SLAU_Base_NEMO {
- private:
-
-  bool slau_low_diss;
-  bool slau2;
-
-  /*!
-   * \brief Compute the interface Mach number, soundspeeds and pressure for SLAU scheme.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] pressure - The pressure at the control volume face.
-   * \param[out] interface_mach - The interface Mach number M_(1/2).
-   * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
-   */
-  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
-                                          su2double* interface_soundspeed) final;
-
 public:
 
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables of the problem
-   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_low_dissipation - ?????? TODO
+   * \param[in] val_low_dissipation - Bool to determine if low dissipation used.
    */
   CUpwSLAU_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                 unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
@@ -266,21 +235,20 @@ public:
 
 /*!
  * \class CUpwSLAU2_NEMO
- * \brief Class for solving the Low-Dissipation AUSM 2 in NEMO.
+ * \brief Class for solving the Simple Low-Dissipation AUSM 2 for the NEMO solver.
  * \ingroup ConvDiscr
  * \author E. Molina, P. Gomes, W. Maier
  */
-class CUpwSLAU2_NEMO : public CUpwSLAU2_NEMO {
+class CUpwSLAU2_NEMO final : public CUpwSLAU_NEMO {
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables of the problem
-   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_low_dissipation - ?????? TODO
+   * \param[in] val_low_dissipation - Bool to determine if low dissipation used.
    */
   CUpwSLAU2_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                  unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
