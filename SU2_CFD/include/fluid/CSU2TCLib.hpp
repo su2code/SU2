@@ -70,7 +70,9 @@ private:
   std::array<su2double,1> Sk_ref; /*!< \brief Vector containing Sutherland's constant for thermal conductivities */
 
   const su2double T_ref_suth = 273.15; /*!<\brief Reference temperature for Sutherland's model [K] */
-
+  
+  // Coulomb potential constant values source: Scalabrin, NUMERICAL SIMULATION OF WEAKLY IONIZED HYPERSONIC
+  // FLOW OVER REENTRY CAPSULES, 2007.
   /*--- Attractive Coulombic potential constants ---*/
   const su2double D1_a = 0.784;
   const su2double C1_a = -0.476;

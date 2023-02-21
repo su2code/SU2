@@ -1349,6 +1349,16 @@ def main():
     pywrapper_rigidMotion.unsteady      = True
     test_list.append(pywrapper_rigidMotion)
 
+    # Deforming Bump in Channel
+    pywrapper_deformingBump = TestCase('pywrapper_deformingBump')
+    pywrapper_deformingBump.cfg_dir = "py_wrapper/deforming_bump_in_channel"
+    pywrapper_deformingBump.cfg_file = "config.cfg"
+    pywrapper_deformingBump.test_iter = 1
+    pywrapper_deformingBump.test_vals = [0.5, 0, -2.55436, -1.084594, -0.024882, 2.907803, 8.785498, -0.363585]
+    pywrapper_deformingBump.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    pywrapper_deformingBump.unsteady = True
+    test_list.append(pywrapper_deformingBump)
+
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################
