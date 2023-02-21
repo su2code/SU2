@@ -132,4 +132,3 @@ clean:
 install: all
 	${INSTALL} ${PYLIB} ${bindir}
 	${INSTALL} ${SOLIB} ${bindir}
-

@@ -1196,7 +1196,7 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies = 0;              /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
@@ -1234,12 +1234,12 @@ private:
   su2double flame_normal[3];
 
   /*--- lookup table ---*/
-  unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
-  unsigned short n_lookups;             /* number of lookud up variables */
-  unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
-  unsigned short n_user_scalars;
-  unsigned short n_user_sources;
-  unsigned short n_control_vars;
+  unsigned short n_scalars = 0;             /* number of transported scalars for the flamelet LUT approach*/
+  unsigned short n_lookups = 0;             /* number of lookud up variables */
+  unsigned short n_table_sources = 0;       /* the number of transported scalar source terms for the LUT */
+  unsigned short n_user_scalars = 0;
+  unsigned short n_user_sources = 0;
+  unsigned short n_control_vars = 0;
 
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
