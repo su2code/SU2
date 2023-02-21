@@ -1927,14 +1927,15 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
   } 
 
   const su2double Omega_ij = ComputeCollisionCrossSection(iSpecies, jSpecies, T, d1, coulomb);
-  
   const su2double pi = PI_NUMBER;
+  su2double delta = 0.0;
 
   if (d1) {
-    return 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d1_ij
+    delta = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d1_ij
   } else {
-    return 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d2_ij
+    delta = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d2_ij
   }
+  return fmin(delta, 1E16)
 }
 
 void CSU2TCLib::DiffusionCoeffGY(){
@@ -1967,7 +1968,6 @@ void CSU2TCLib::DiffusionCoeffGY(){
         const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
         su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
-        if (d1_ij > 1E16) d1_ij = 1E16;
 
         const su2double D_ij = kb*T_col/(Pressure*d1_ij);
         denom += gam_j/D_ij;
@@ -1999,7 +1999,6 @@ void CSU2TCLib::ViscosityGY(){
       const su2double T_col = (iSpecies == 0 && ionization) ? Tve : T; 
 
       su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
-      if (d2_ij > 1E16) d2_ij = 1E16;
 
       denom += gam_j*d2_ij;
     }
@@ -2049,8 +2048,6 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
       su2double d1_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, true);
       su2double d2_ij = ComputeCollisionDelta(iSpecies, jSpecies, Mi, Mj, T_col, false);
-      if (d1_ij >1E16) d1_ij = 1E16;
-      if (d2_ij >1E16) d2_ij = 1E16;      
 
       if (jSpecies == 0 && ionization) { denom_t += 3.54*gam_j*d2_ij; }
       else { denom_t += a_ij*gam_j*d2_ij; }
@@ -2060,9 +2057,9 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     }
 
     /*--- Prevent divide by 0 ---*/
-    if (denom_t == 0.0) denom_t = EPS;
-    if (denom_r == 0.0) denom_r = EPS;
-    if (denom_re == 0.0) denom_re = EPS;
+    if (denom_t <= 0.0) denom_t = EPS;
+    if (denom_r <= 0.0) denom_r = EPS;
+    if (denom_re <= 0.0) denom_re = EPS;
 
     /*--- Translational contribution to thermal conductivity ---*/
     if (!(ionization && iSpecies == 0)) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
