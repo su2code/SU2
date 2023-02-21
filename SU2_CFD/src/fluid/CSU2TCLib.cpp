@@ -1935,7 +1935,7 @@ su2double CSU2TCLib::ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies,
   } else {
     delta = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij; // d2_ij
   }
-  return fmin(delta, 1E16)
+  return fmin(delta, 1E16);
 }
 
 void CSU2TCLib::DiffusionCoeffGY(){
