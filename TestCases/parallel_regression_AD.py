@@ -38,6 +38,19 @@ def main():
 
     test_list = []
 
+    ##################################
+    ### Disc. adj. flamelet solver ###
+    ##################################
+
+    # 2D planar laminar premixed flame on isothermal burner restar
+    discadj_flamelet_ch4_hx = TestCase('discadj_flamelet_ch4_hx')
+    discadj_flamelet_ch4_hx.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_hx_ad"
+    discadj_flamelet_ch4_hx.cfg_file = "lam_prem_ch4_hx_ad.cfg"
+    discadj_flamelet_ch4_hx.test_iter = 10
+    discadj_flamelet_ch4_hx.test_vals = [-10.002400, -9.676878, -9.773050, -8.751629, -15.830129, -19.235020, -5.546185]
+    discadj_flamelet_ch4_hx.new_output = True
+    test_list.append(discadj_flamelet_ch4_hx)
+
     #####################################
     ### Disc. adj. compressible Euler ###
     #####################################
