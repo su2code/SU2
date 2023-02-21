@@ -34,7 +34,7 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing.
   try:
-    SU2Driver = pysu2.CSinglezoneDriver('config.cfg', 1, comm);
+    SU2Driver = pysu2.CSinglezoneDriver('config.cfg', 1, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ', exception)
     raise
