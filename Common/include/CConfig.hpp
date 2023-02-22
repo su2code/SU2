@@ -6715,26 +6715,38 @@ public:
    * \brief Get the internal index for a moving boundary <i>val_marker</i>.
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Moving(string val_marker) const;
+  unsigned short GetMarker_Moving(const string& val_marker) const;
 
   /*!
-   * \brief Get bool if marker is moving. <i>val_marker</i>.
-   * \param[in] val_marker - String of the marker to test.
-   * \return Bool if the marker is a moving boundary <i>val_marker</i>.
+   * \brief Get a bool for whether a marker is moving. <i>val_marker</i>.
+   * \param[in] val_marker - Name of the marker to test.
+   * \return True if the marker is a moving boundary <i>val_marker</i>.
    */
-  bool GetMarker_Moving_Bool(string val_marker) const;
+  inline bool GetMarker_Moving_Bool(const string& val_marker) const {
+    return GetMarker_Moving(val_marker) < nMarker_Moving;
+  }
 
   /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Deform_Mesh(string val_marker) const;
+  unsigned short GetMarker_Deform_Mesh(const string& val_marker) const;
 
   /*!
    * \brief Get the internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Deform_Mesh_Sym_Plane(string val_marker) const;
+  unsigned short GetMarker_Deform_Mesh_Sym_Plane(const string& val_marker) const;
+
+  /*!
+   * \brief Get a bool for whether the marker is deformed. <i>val_marker</i>.
+   * \param[in] val_marker - Name of the marker to test.
+   * \return True if the marker is a deforming boundary <i>val_marker</i>.
+   */
+  inline bool GetMarker_Deform_Mesh_Bool(const string& val_marker) const {
+    return GetMarker_Deform_Mesh(val_marker) < nMarker_Deform_Mesh ||
+        GetMarker_Deform_Mesh_Sym_Plane(val_marker) < nMarker_Deform_Mesh_Sym_Plane;
+  }
 
   /*!
    * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
