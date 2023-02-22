@@ -101,22 +101,20 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
    * Standard farfield BC should be 0.0. But to improve large gradients at the start of the simulation,
    * for compressible flow, it is set at a negative number to further reduce SA production term. Incompressible does not have this problem ---*/
 
-  su2double lowlimit; su2double nInf;
+  su2double lowlimit; su2double AmplificationFactor_Inf;
   if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
     lowlimit = -20;
-    nInf = -20;
+    AmplificationFactor_Inf = -20;
   }
   else {
     lowlimit = 1e-4;
-    nInf = 0;
+    AmplificationFactor_Inf = 0;
   }
 
   lowerlimit[0] = lowlimit;
   upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100)*10;
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  const su2double AmplificationFactor_Inf  = nInf;
-
   Solution_Inf[0] = AmplificationFactor_Inf;
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/

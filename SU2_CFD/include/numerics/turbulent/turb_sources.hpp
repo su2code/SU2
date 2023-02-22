@@ -165,7 +165,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
 		/*--- Slight deviation from theory to obtain better results. Coder et al: Ct4 = 0.05  ---*/
 	    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) var.ct4 = 0.025;
-	    else var.ct4 = 0.045;
+	    else var.ct4 = 0.05;
 	  }
 
       ft2::get( var);
