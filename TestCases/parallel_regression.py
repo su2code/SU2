@@ -44,7 +44,7 @@ def main():
 
     # 2D planar laminar premixed flame on isothermal burner restar
     cfd_flamelet_ch4 = TestCase('cfd_flamelet_ch4')
-    cfd_flamelet_ch4.cfg_dir = "flamelet/02_laminar_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
     cfd_flamelet_ch4.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
