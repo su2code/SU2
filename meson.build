@@ -232,6 +232,7 @@ if get_option('enable-mpp')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
     cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
+    cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
     'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
     'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
