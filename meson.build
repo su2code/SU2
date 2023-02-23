@@ -235,7 +235,8 @@ if get_option('enable-mpp')
       cmake_opts.add_cmake_defines({
       'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-  })
+      })
+  endif
   mpp_subproj = cmake.subproject('Mutationpp')
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
