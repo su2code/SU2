@@ -237,7 +237,7 @@ if get_option('enable-mpp')
     'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
   endif
-  mpp_subproj = cmake.subproject('Mutationpp')
+  mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
