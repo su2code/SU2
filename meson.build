@@ -229,13 +229,13 @@ endforeach
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
-  cmake = import('cmake')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
+    cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
-      cmake_opts.add_cmake_defines({
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
-      'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-      })
+    cmake_opts.add_cmake_defines({
+    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+    })
   endif
   mpp_subproj = cmake.subproject('Mutationpp')
   mpp_dep = mpp_subproj.dependency('mutation++')
