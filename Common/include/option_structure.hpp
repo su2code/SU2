@@ -1262,7 +1262,6 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
   LMParsedOptions.ProdLim = IsPresent(LM_OPTIONS::PRODLIM);
 
   int NFoundCorrelations = 0;
-  int NFoundCorrelations_SLM = 0;
   if (IsPresent(LM_OPTIONS::MALAN)) {
     LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
     NFoundCorrelations++;
@@ -1291,6 +1290,8 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
     NFoundCorrelations++;
   }
+
+  int NFoundCorrelations_SLM = 0;
   if (IsPresent(LM_OPTIONS::MENTER_SLM)) {
     LMParsedOptions.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::MENTER_SLM;
     NFoundCorrelations_SLM++;

@@ -471,6 +471,13 @@ public:
   inline unsigned long GetClosestWall_Marker(unsigned long iPoint) {return ClosestWall_Marker(iPoint);}
 
   /*!
+   * \brief Get the rank of the closest wall marker.
+   * \param[in] iPoint - Index of the point.
+   * \param[out] ClosestWall_Rank - RankID of the closest wall boundary.
+   */
+  inline unsigned long GetClosestWall_Rank(unsigned long iPoint) {return ClosestWall_Rank(iPoint);}
+
+  /*!
    * \brief Get the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.

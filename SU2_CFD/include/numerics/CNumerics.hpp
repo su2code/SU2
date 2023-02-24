@@ -736,15 +736,31 @@ public:
 
   /*!
    * \brief Get the value of the Transition Momentum Thickness Reynolds number from correlations.
-   * \param[in] Corr_Rec_i - Value of the Transition Momentum Thickness Reynolds number at point i.
+   * \param[out] Corr_Rec_i - Value of the Transition Momentum Thickness Reynolds number at point i.
    */
   inline virtual su2double GetCorr_Rec() {return 0.0;}
 
    /*!
    * \brief Get the value of the Momentum Thickness Reynolds number.
-   * \param[in] Corr_Rec_i - Value of the Momentum Thickness Reynolds number at point i.
+   * \param[out] re_t - Value of the Momentum Thickness Reynolds number at point i.
    */
   inline virtual su2double GetRe_t() {return 0.0;}
+  inline virtual su2double GetTu() {return 0.0;}
+  inline virtual su2double GetLambda_theta() {return 0.0;}
+  inline virtual su2double Getduds() {return 0.0;}
+  inline virtual su2double GetRe_v() {return 0.0;}
+  inline virtual su2double GetProd() {return 0.0;}
+  inline virtual su2double GetDestr() {return 0.0;}
+  inline virtual su2double GetF_onset1() {return 0.0;}
+  inline virtual su2double GetF_onset2() {return 0.0;}
+  inline virtual su2double GetF_onset3() {return 0.0;}
+  inline virtual su2double GetF_onset() {return 0.0;}
+
+   /*!
+   * \brief Set the value of the F2 blending function into SLM transition model.
+   * \param[in] val_F2 - F2 blending function.
+   */
+  inline virtual void SetF2(su2double val_F2) {}
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

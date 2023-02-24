@@ -205,9 +205,7 @@ class TransLMCorrelations {
       case TURB_TRANS_CORRELATION_SLM::MENTER_SLM: {
 
         /*-- Thwaites parameter ---*/
-        // su2double  lambda_theta_local = 7.57e-3 * du_ds * wall_dist * wall_dist * Density / Laminar_Viscosity + 0.0128;
         su2double  lambda_theta_local = lambda_theta;
-        lambda_theta_local = min(max(lambda_theta_local, -1.0), 1.0);
 
         /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/
         su2double FPG = 0.0;
@@ -266,10 +264,14 @@ class TransLMCorrelations {
         // This is not reported in the paper
         //FPG = max(FPG, 0.0);
 
-        const su2double C_TU1 = 100.0;
-        const su2double C_TU2 = 1000.0;
-        const su2double C_TU3 = 1.0;
-        rethetac = C_TU1 + C_TU2 * exp(-C_TU3 * Tu_L * FPG);
+        if (Tu_L <= 1.3) {
+          const su2double FirstTerm = -589.428 * Tu_L;
+          const su2double SecondTerm = 0.2196 / max(pow(Tu_L, 2.0), 1e-12);
+          rethetac = 1173.51 + FirstTerm + SecondTerm;
+        } else {
+          rethetac = 331.50 * pow(Tu_L-0.5658, -0.671);
+        }
+        rethetac = rethetac * FPG;
 
         break;
       } case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: {

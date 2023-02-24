@@ -832,7 +832,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
         // Check if the Prod_lim_k has to be introduced based on input options
-        if ((config->GetLMParsedOptions()).ProdLim) {
+        if ((config->GetLMParsedOptions()).SLM) {
           const su2double Re_theta_c_lim = 1100.0;
           const su2double C_k = 1.0;
           const su2double C_SEP = 1.0;

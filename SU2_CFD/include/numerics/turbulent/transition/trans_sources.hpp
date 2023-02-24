@@ -56,6 +56,17 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   TURB_FAMILY TurbFamily;
   su2double hRoughness;
 
+  su2double Re_v_Here;
+  su2double Corr_Rec_Here;
+  su2double Prod_Here = 0.0;
+  su2double Destr_Here = 0.0;
+  su2double F_onset1_Here = 0.0;
+  su2double F_onset2_Here = 0.0;
+  su2double F_onset3_Here = 0.0;
+  su2double F_onset_Here = 0.0;
+  su2double lambda_theta_Here = 0.0;
+  su2double duds_Here = 0.0;
+
   su2double IntermittencySep = 1.0;
   su2double IntermittencyEff = 1.0;
 
@@ -135,6 +146,8 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       /*--- Corr_RetC correlation*/
       const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, TransVar_i[1]);
+      // AGGIUNTO PER DEBUG
+      Corr_Rec_Here = Corr_Rec;
 
       /*--- F_length correlation*/
       const su2double Corr_F_length = TransCorrelations.FLength_Correlations(Tu, TransVar_i[1]);
@@ -154,6 +167,11 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
+
+      // AGGIUNTO PER DEBUG
+      Re_v_Here = Re_v;
+
+
       const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
       su2double F_onset2 = 1.0;
       su2double F_onset3 = 1.0;
@@ -166,6 +184,10 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
       const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+      F_onset1_Here = F_onset1;
+      F_onset2_Here = F_onset2;
+      F_onset3_Here = F_onset3;
+      F_onset_Here = F_onset;
 
       /*-- Gradient of velocity magnitude ---*/
 
@@ -245,6 +267,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         Retheta_old = Corr_Ret;
       }
 
+      lambda_theta_Here = lambda;
+      duds_Here = du_ds;
+
       /*-- Corr_RetT_SCF Correlations--*/
       su2double ReThetat_SCF = 0.0;
       if (options.CrossFlow) {
@@ -292,6 +317,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       /*-- destruction term of Intermeittency(Gamma) --*/
       const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
 
+      Prod_Here = Pg;
+      Destr_Here = Dg;
+
       /*-- production term of ReThetaT --*/
       const su2double PRethetat = c_theta * Density_i / time_scale * (Corr_Ret - TransVar_i[1]) * (1.0 - f_theta);
 
@@ -322,6 +350,19 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+
+
+  inline su2double GetRe_v() override {return Re_v_Here;} 
+  inline su2double GetCorr_Rec() override {return Corr_Rec_Here;} 
+  inline su2double GetProd() override {return Prod_Here;} 
+  inline su2double GetDestr() override {return Destr_Here;} 
+  inline su2double GetF_onset1() override {return F_onset1_Here;} 
+  inline su2double GetF_onset2() override {return F_onset2_Here;} 
+  inline su2double GetF_onset3() override {return F_onset3_Here;} 
+  inline su2double GetF_onset() override {return F_onset_Here;} 
+  inline su2double GetLambda_theta() override {return lambda_theta_Here;} 
+  inline su2double Getduds() override {return duds_Here;} 
+
 };
 
 
@@ -358,6 +399,17 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
   su2double Re_t;
   su2double Corr_Rec;
   su2double AuxVar;
+  su2double F2;
+  su2double Tu_Here = 0.0;
+  su2double duds_Here = 0.0;
+  su2double lambda_theta_Here = 0.0;
+  su2double Re_v_Here = 0.0;
+  su2double Prod_Here = 0.0;
+  su2double Destr_Here = 0.0;
+  su2double F_onset1_Here = 0.0;
+  su2double F_onset2_Here = 0.0;
+  su2double F_onset3_Here = 0.0;
+  su2double F_onset_Here = 0.0;
 
   su2double Residual;
   su2double* Jacobian_i;
@@ -412,7 +464,13 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
     const su2double vel_v = V_i[1 + idx.Velocity()];
     const su2double vel_w = (nDim == 3) ? V_i[2 + idx.Velocity()] : 0.0;
 
-    const su2double Velocity_Mag = sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w);
+    su2double Velocity[nDim];
+    Velocity[0] = vel_u;
+    Velocity[1] = vel_v;
+    if(nDim == 3) Velocity[2] = vel_w;
+
+
+    const su2double Velocity_Mag = max(sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w), 1e-20);
 
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
@@ -425,50 +483,51 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
     if (dist_i > 1e-10) {
       su2double Tu_L = 1.0;
-      if (TurbFamily == TURB_FAMILY::KW) Tu_L = max(min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (ScalarVar_i[1]*dist_i), 100.0), 0.027);
+      if (TurbFamily == TURB_FAMILY::KW) Tu_L = min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (ScalarVar_i[1]*dist_i), 100.0);
+      // if (TurbFamily == TURB_FAMILY::KW) Tu_L = min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (Velocity_Mag), 100.0);
       if (TurbFamily == TURB_FAMILY::SA) Tu_L = config->GetTurbulenceIntensity_FreeStream() * 100;
+
+      Tu_Here = Tu_L;
 
       /*--- F_length ---*/
       su2double F_length = 100.0;
 
       /*--- F_onset ---*/
       su2double R_t = 1.0;
-      if (TurbFamily == TURB_FAMILY::KW) R_t = Density_i * ScalarVar_i[0] / Laminar_Viscosity_i / ScalarVar_i[1];
+      if (TurbFamily == TURB_FAMILY::KW) R_t = Density_i * ScalarVar_i[0] / (Laminar_Viscosity_i * ScalarVar_i[1]);
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
       /*-- Gradient of velocity magnitude ---*/
 
-      su2double dU_dx = 0.5 / Velocity_Mag * (2. * vel_u * PrimVar_Grad_i[1][0] + 2. * vel_v * PrimVar_Grad_i[2][0]);
-      if (nDim == 3) dU_dx += 0.5 / Velocity_Mag * (2. * vel_w * PrimVar_Grad_i[3][0]);
+      // su2double du_ds = 0.0;
+      // for (int i = 0; i < nDim; i++)
+      //   for (int j = 0; j < nDim; j++)
+      //     du_ds = du_ds + Velocity[i]*Velocity[j]*PrimVar_Grad_i[i][j];
 
-      su2double dU_dy = 0.5 / Velocity_Mag * (2. * vel_u * PrimVar_Grad_i[1][1] + 2. * vel_v * PrimVar_Grad_i[2][1]);
-      if (nDim == 3) dU_dy += 0.5 / Velocity_Mag * (2. * vel_w * PrimVar_Grad_i[3][1]);
+      // du_ds = du_ds/(Velocity_Mag*Velocity_Mag);
 
-      su2double dU_dz = 0.0;
-      if (nDim == 3)
-        dU_dz =
-            0.5 / Velocity_Mag *
-            (2. * vel_u * PrimVar_Grad_i[1][2] + 2. * vel_v * PrimVar_Grad_i[2][2] + 2. * vel_w * PrimVar_Grad_i[3][2]);
-
-      su2double du_ds = vel_u / Velocity_Mag * dU_dx + vel_v / Velocity_Mag * dU_dy;
-      if (nDim == 3) du_ds += vel_w / Velocity_Mag * dU_dz;
-
-      const su2double lambda_theta = 7.57e-3 * du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
+      // const su2double lambda_theta = -7.57e-3 * du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
+      const su2double lambda_theta = max(min(-7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128, 1.0), -1.0);
+      // const su2double lambda_theta = du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i;
+      // duds_Here = du_ds;
+      duds_Here = AuxVar;
+      lambda_theta_Here = lambda_theta;
+      
       // const su2double lambda_theta = 7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
 
       /*--- Corr_RetC correlation*/
       Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
-      // Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
+      Corr_Rec = Re_t;  // If the MENTER_SLM correlation is used then they are the same thing
 
       if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::CODER_SLM || options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM) {
         // If these correlations are used, then the value of Corr_Rec has to be used instead of the TransVar[1] of the original LM model 
         F_length = TransCorrelations.FLength_Correlations(Tu_L, Re_t);
         Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu_L, Re_t);
       }
-      if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) Corr_Rec = Re_t;
 
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
+      Re_v_Here = Re_v;
       const su2double F_onset1 = Re_v / (2.2 * Corr_Rec);
       su2double F_onset2 = 1.0;
       su2double F_onset3 = 1.0;
@@ -481,6 +540,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
       su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+
+      F_onset1_Here = F_onset1;
+      F_onset2_Here = F_onset2;
+      F_onset3_Here = F_onset3;
+      F_onset_Here = F_onset;
 
       if (options.CrossFlow) {
         
@@ -532,7 +596,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
       }
      
-      const su2double f_turb = exp(-pow(R_t / 4, 4));
+      const su2double f_turb = exp(-pow(R_t / 2, 4));
 
       /*-- production term of Intermeittency(Gamma) --*/
       const su2double Pg =
@@ -540,6 +604,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
       /*-- destruction term of Intermeittency(Gamma) --*/
       const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
+      
+      Prod_Here = Pg;
+      Destr_Here = Dg;
 
       /*--- Source ---*/
       Residual += (Pg - Dg) * Volume;
@@ -560,6 +627,18 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
   inline su2double GetRe_t() override {return Re_t;}
   inline su2double GetCorr_Rec() override {return Corr_Rec;} 
+  inline su2double GetTu() override {return Tu_Here;}
+  inline su2double GetLambda_theta() override {return lambda_theta_Here;} 
+  inline su2double Getduds() override {return duds_Here;} 
+  inline su2double GetRe_v() override {return Re_v_Here;} 
+  inline su2double GetProd() override {return Prod_Here;} 
+  inline su2double GetDestr() override {return Destr_Here;} 
+  inline su2double GetF_onset1() override {return F_onset1_Here;} 
+  inline su2double GetF_onset2() override {return F_onset2_Here;} 
+  inline su2double GetF_onset3() override {return F_onset3_Here;} 
+  inline su2double GetF_onset() override {return F_onset_Here;} 
   inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
+  // non serve più
+  inline void SetF2(su2double val_F2) override { F2 = val_F2;}
 
 };

@@ -1717,11 +1717,33 @@ public:
    * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
    */
   inline virtual void SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) {};
+  inline virtual void SetTu(unsigned long iPoint, su2double val_Tu) {};
+  inline virtual void SetLambda_theta(unsigned long iPoint, su2double val_Lambda_theta) {};
+  inline virtual void Setduds(unsigned long iPoint, su2double val_duds) {};
+  inline virtual void SetRe_v(unsigned long iPoint, su2double val_Re_v) {};
+  inline virtual void SetProd(unsigned long iPoint, su2double val_Prod) {};
+  inline virtual void SetDestr(unsigned long iPoint, su2double val_Destr) {};
+  inline virtual void SetF_onset1(unsigned long iPoint, su2double val_F_onset1) {};
+  inline virtual void SetF_onset2(unsigned long iPoint, su2double val_F_onset2) {};
+  inline virtual void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) {};
+  inline virtual void SetF_onset(unsigned long iPoint, su2double val_F_onset1) {};
+  inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y) {};
 
   /*!
    * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
    */
   inline virtual su2double GetCorr_Rec(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTu(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetLambda_theta(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Getduds(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetRe_v(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProd(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestr(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset1(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset2(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset3(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset(unsigned long iPoint) const { return 0.0; }
+  inline virtual pair<su2double, su2double> GetNormal(unsigned long iPoint) const { return make_pair(0.0, 0.0); }
 
   /*!
    * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
