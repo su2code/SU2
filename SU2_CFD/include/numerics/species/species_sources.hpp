@@ -117,68 +117,6 @@ private:
   bool implicit;
   bool inc_rans;
 
-  /*!
-   * \brief Add contribution due to axisymmetric formulation to 2D residual
-   */
-  inline void ResidualAxisymmetric(void) {
-    su2double yinv,Density_i,Velocity_i[3];
-    if (Coord_i[1] > EPS) {
-
-      AD::SetPreaccIn(Coord_i[1]);
-
-      yinv = 1.0/Coord_i[1];
-
-      /*--- the incompressible density. Note that this is different for compressible flows ---*/
-
-      Density_i = V_i[nDim+2];
-
-      /*--- Set primitive variables at points iPoint. ---*/
-
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Velocity_i[iDim] = V_i[iDim+1];
-
-      /*--- Inviscid component of the source term. ---*/
-
-      for (auto iVar=0u; iVar < nVar; iVar++)
-        Residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
-
-      if (implicit) {
-        for (auto iVar=0u; iVar < nVar; iVar++) {
-          Jacobian_i[iVar][iVar] -= yinv*Volume*Velocity_i[1];
-        }
-      }
-
-      /*--- Add the viscous terms if necessary. ---*/
-
-      if (viscous) {
-        Laminar_Viscosity_i    = V_i[nDim+4];
-        Eddy_Viscosity_i       = V_i[nDim+5];
-        Thermal_Conductivity_i = V_i[nDim+6];
-
-        su2double Mass_Diffusivity_Tur = 0.0;
-        if (inc_rans)
-          Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
-
-        for (auto iVar=0u; iVar < nVar; iVar++)
-          Residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
-      }
-
-    } else {
-
-      for (auto iVar=0u; iVar < nVar; iVar++)
-        Residual[iVar] = 0.0;
-
-      if (implicit) {
-        for (auto iVar=0u; iVar < nVar; iVar++) {
-          for (auto jVar=0u; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-      }
-
-    }
-
-  }
-
 public:
   /*!
    * \brief Constructor of the class.
