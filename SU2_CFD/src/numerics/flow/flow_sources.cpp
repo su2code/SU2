@@ -784,8 +784,13 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
     //residual[3] = smz*Volume;
     residual[3] = se*Volume;
   } else {
-    SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
-  }
+	  //    SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
+	  	residual[0] = 0.0;
+	  	residual[1] = 0.0;
+	  	residual[2] = 0.0;
+	  	residual[3] = 0.0;
+	  	residual[4] = 0.0;
+	    }
 
   /*--- For now the source term Jacobian is just set to zero ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
