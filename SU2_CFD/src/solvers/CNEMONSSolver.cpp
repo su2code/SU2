@@ -117,7 +117,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
   //const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
@@ -145,8 +145,6 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
-  unsigned long iPoint, iVar;
-  unsigned short iSpecies;
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
@@ -156,13 +154,13 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
   const unsigned short RHO_INDEX  = nodes->GetRhoIndex();
 
   /*--- Modify species density to mass concentration ---*/
-  for ( iPoint = 0; iPoint < nPoint; iPoint++){
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     su2double primitives_aux[MAXNVAR] = {0.0};
-    for( iVar = 0; iVar < nPrimVar; iVar++)
+    for (auto iVar = 0ul; iVar < nPrimVar; iVar++)
       primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
-    for ( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
       primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
-    for( iVar = 0; iVar < nPrimVar; iVar++)
+    for (auto iVar = 0ul; iVar < nPrimVar; iVar++)
       nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
   }
 
@@ -177,14 +175,14 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CNumerics* numerics = numerics_container[VISC_TERM];
 
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points, coordinates and normal vector in edge ---*/
-    auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+    const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    const auto jPoint = geometry->edges->GetNode(iEdge, 1);
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(jPoint) );
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
@@ -260,12 +258,12 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   const su2double pcontrol = 1.0;
 
   /*--- Get the locations of the primitive variables ---*/
-  const unsigned short T_INDEX       = nodes->GetTIndex();
-  const unsigned short TVE_INDEX     = nodes->GetTveIndex();
+  const unsigned short T_INDEX = nodes->GetTIndex();
+  const unsigned short TVE_INDEX = nodes->GetTveIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for(auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -274,10 +272,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Initialize the convective & viscous residuals to zero ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
     /*--- Set the residual on the boundary with the specified heat flux ---*/
     // TODO: Look into this!
@@ -286,12 +284,12 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);
     su2double dTdn   = 0.0;
     su2double dTvedn = 0.0;
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
       dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
     }
-    su2double ktr = nodes->GetThermalConductivity(iPoint);
-    su2double kve = nodes->GetThermalConductivity_ve(iPoint);
+    const su2double ktr = nodes->GetThermalConductivity(iPoint);
+    const su2double kve = nodes->GetThermalConductivity_ve(iPoint);
 
     /*--- Compute residual ---*/
     Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
@@ -305,7 +303,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
@@ -351,8 +349,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
   //TODO: SCALE WITH EDDY VISC
   /*--- Local variables ---*/
-  unsigned short iDim, iSpecies, iVar;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iPoint, total_index;
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *dYdn, SdYdn;
@@ -383,11 +380,11 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   /*--- Allocate arrays ---*/
   dYdn = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -398,17 +395,17 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         Res_Visc[iVar] = 0.0;
         Res_Sour[iVar] = 0.0;
       }
 
       /*--- Assign wall velocity to "Vector" array ---*/
-      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+      for (auto iDim = 0ul; iDim < nDim; iDim++) Vector[iDim] = 0.0;
 
       /*--- Set the residual, truncation error, and velocity value ---*/
       nodes->SetVelocity_Old(iPoint,Vector);
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0ul; iDim < nDim; iDim++) {
         LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
@@ -418,7 +415,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       const auto GradV  = nodes->GetGradient_Primitive(iPoint);
       su2double dTdn   = 0.0;
       su2double dTvedn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0ul; iDim < nDim; iDim++) {
         dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
       }
@@ -433,20 +430,20 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
         Ds  = nodes->GetDiffusionCoeff(iPoint);
 
         /*--- Calculate normal derivative of mass fraction ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           Ys = V[RHOS_INDEX+iSpecies]/rho;
           dYdn[iSpecies] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0ul; iDim < nDim; iDim++)
             dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
                 Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
         }
 
         /*--- Calculate supplementary quantities ---*/
         SdYdn = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
           SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
 
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           Ys   = V[RHOS_INDEX+iSpecies]/rho;
           //eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
           //hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
@@ -495,7 +492,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
       if (implicit) {
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
-        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+        for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
@@ -504,7 +501,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
     }
   }
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     delete [] GradY[iSpecies];
   delete [] GradY;
   delete [] dYdn;
@@ -546,18 +543,18 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Retrieve the specified wall temperature ---*/
-  su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
+  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
 
   su2double **Jacobian_i = nullptr;
   if (implicit) {
     Jacobian_i = new su2double* [nVar];
-    for (auto iVar = 0u; iVar < nVar; iVar++)
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar] ();
   }
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -565,8 +562,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-    su2double Area = GeometryToolbox::Norm(nDim, Normal);
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
 
     /*--- Compute closest normal neighbor ---*/
@@ -576,7 +573,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
 
-    su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    const su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
@@ -584,21 +581,21 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     nodes->SetVelocity_Old(iPoint, zero);
 
     /*--- Initialize viscous residual to zero ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
+    for (auto iVar = 0ul; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
-    su2double Ti   = nodes->GetTemperature(iPoint);
-    su2double Tj   = nodes->GetTemperature(Point_Normal);
-    su2double Tvei = nodes->GetTemperature_ve(iPoint);
-    su2double Tvej = nodes->GetTemperature_ve(Point_Normal);
+    const su2double Ti   = nodes->GetTemperature(iPoint);
+    const su2double Tj   = nodes->GetTemperature(Point_Normal);
+    const su2double Tvei = nodes->GetTemperature_ve(iPoint);
+    const su2double Tvej = nodes->GetTemperature_ve(Point_Normal);
 
     /*--- Rename variables for convenience ---*/
-    su2double ktr = nodes->GetThermalConductivity(iPoint);
-    su2double kve = nodes->GetThermalConductivity_ve(iPoint);
+    const su2double ktr = nodes->GetThermalConductivity(iPoint);
+    const su2double kve = nodes->GetThermalConductivity_ve(iPoint);
 
     /*--- Apply to the linear system ---*/
     Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
@@ -609,8 +606,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     if (implicit) {
 
       /*--- Initialize Jacobian to zero ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        for (auto jVar = 0u; jVar < nVar; jVar++)
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        for (auto jVar = 0ul; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
@@ -618,7 +615,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       const auto dTvedU = nodes->GetdTvedU(iPoint);
       const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
                                               kve*theta/dist_ij*dTvedU[iVar])*Area;
         Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dist_ij*dTvedU[iVar]*Area;
@@ -643,7 +640,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   END_SU2_OMP_FOR
 
   if (Jacobian_i)
-    for (auto iVar = 0u; iVar < nVar; iVar++)
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       delete [] Jacobian_i[iVar];
   delete [] Jacobian_i;
 
@@ -661,7 +658,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                  sour_numerics, config, val_marker);
 
   /*--- Local variables ---*/
-  unsigned short iSpecies, jSpecies, iVar, jVar, kVar;
   su2double **GradY, **dVdU;
 
   /*--- Assign booleans ---*/
@@ -681,14 +677,14 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Allocate arrays ---*/
   GradY = new su2double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
   dVdU = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     dVdU[iVar] = new su2double[nVar];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -708,7 +704,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the viscous residual to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
+      for (auto iVar = 0ul; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
 
       /*--- Get primitive information ---*/
       const auto& Vi = nodes->GetPrimitive(iPoint);
@@ -726,21 +722,21 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
         /*--- Calculate supplementary quantities ---*/
         su2double dYdn = 0.0, SdYdn = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
           SdYdn += rho*Di[iSpecies]*dYdn;
         }
 
         /*--- Calculate species residual at wall ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
           Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn+Yst[iSpecies]*SdYdn)*Area;
         }
 
         if (implicit) {
           /*--- Initialize the transformation matrix ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++) {
+          for (auto iVar = 0ul; iVar < nVar; iVar++)
+            for (auto jVar = 0ul; jVar < nVar; jVar++) {
               dVdU[iVar][jVar] = 0.0;
               Jacobian_j[iVar][jVar] = 0.0;
               Jacobian_i[iVar][jVar] = 0.0;
@@ -748,12 +744,12 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
           /*--- Populate transformation matrix ---*/
           // dYsdrk
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+            for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
               dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
             dVdU[iSpecies][iSpecies] += 1.0/rho;
           }
-          for (iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0ul; iVar < nVar; iVar++) {
             dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
             dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
           }
@@ -764,15 +760,15 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
           /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
           // Species mass fraction
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+            for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
               Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
             Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
           }
 
           // Temperature
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+            for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++) {
               Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
             }
             Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
@@ -781,16 +777,16 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
           }
 
           // Vib.-El. Temperature
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
+            for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
               Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
             Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
           }
 
           /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              for (kVar = 0; kVar < nVar; kVar++)
+          for (auto iVar = 0ul; iVar < nVar; iVar++)
+            for (auto jVar = 0ul; jVar < nVar; jVar++)
+              for (auto kVar = 0ul; kVar < nVar; kVar++)
                 Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
 
           /*--- Apply to the linear system ---*/
@@ -821,13 +817,13 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         /*--- Compute catalytic recombination flux ---*/
         // Ref: 10.2514/6.2022-1636
         // ws = gam_s*Ys*rho_wall*sqrt(Ru*Tw/(2*Pi*M_combine)*Area
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
           int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
           Res_Visc[iSpecies] = RxnTable(iSpecies,0)*factor*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
         }
       }
 
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
         Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies])*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
@@ -837,10 +833,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     }
   }
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     delete [] GradY[iSpecies];
   delete [] GradY;
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
 }
@@ -853,26 +849,26 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                             unsigned short val_marker) {
 
 
-  bool ionization = config->GetIonization();
+  const bool ionization = config->GetIonization();
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION", CURRENT_FUNCTION);
   }
 
   /*--- Define 'proportional control' constant ---*/
-  su2double C = 1;
+  const su2double C = 1;
 
   /*---Define under-relaxation factors --- */
-  su2double alpha_V = 0.1;
-  su2double alpha_T = 1.0;
+  const su2double alpha_V = 0.1;
+  const su2double alpha_T = 1.0;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Retrieve the specified wall temperature and accomodation coefficients---*/
-  su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
-  su2double TMAC  = 1.0;
-  su2double TAC   = 1.0;
+  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
+  const su2double TMAC  = 1.0;
+  const su2double TAC   = 1.0;
 
   /*--- Extract necessary indices ---*/
   const unsigned short T_INDEX   = nodes->GetTIndex();
@@ -881,7 +877,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for(auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for(auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -889,10 +885,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
     su2double UnitNormal[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
 
     /*--- Compute closest normal neighbor ---*/
@@ -902,42 +898,42 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
-    su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    const su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
     /*--- Calculate Pressure ---*/
-    su2double Pi   = nodes->GetPressure(iPoint);
+    const su2double Pi   = nodes->GetPressure(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
-    su2double Ti   = nodes->GetTemperature(iPoint);
-    su2double Tj   = nodes->GetTemperature(jPoint);
-    su2double Tvei = nodes->GetTemperature_ve(iPoint);
-    su2double Tvej = nodes->GetTemperature_ve(jPoint);
+    const su2double Ti   = nodes->GetTemperature(iPoint);
+    const su2double Tj   = nodes->GetTemperature(jPoint);
+    const su2double Tvei = nodes->GetTemperature_ve(iPoint);
+    const su2double Tvej = nodes->GetTemperature_ve(jPoint);
 
     /*--- Rename variables for convenience ---*/
-    su2double ktr  = nodes->GetThermalConductivity(iPoint);
-    su2double kve  = nodes->GetThermalConductivity_ve(iPoint);
+    const su2double ktr  = nodes->GetThermalConductivity(iPoint);
+    const su2double kve  = nodes->GetThermalConductivity_ve(iPoint);
 
     /*--- Retrieve Cv*density ---*/
-    su2double rhoCvtr = nodes->GetRhoCv_tr(iPoint);
-    su2double rhoCvve = nodes->GetRhoCv_ve(iPoint);
+    const su2double rhoCvtr = nodes->GetRhoCv_tr(iPoint);
+    const su2double rhoCvve = nodes->GetRhoCv_ve(iPoint);
 
     /*--- Retrieve Flow Data ---*/
-    su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
-    su2double Density   = nodes->GetDensity(iPoint);
-    su2double Gamma     = nodes->GetGamma(iPoint);
+    const  su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
+    const su2double Density   = nodes->GetDensity(iPoint);
+    const su2double Gamma     = nodes->GetGamma(iPoint);
 
     /*--- Retrieve Primitive Gradients ---*/
     const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
     /*--- Calculate specific gas constant --- */
-    su2double GasConstant = FluidModel->ComputeGasConstant();
+    const su2double GasConstant = FluidModel->ComputeGasConstant();
 
     /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
-    su2double dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
-    su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
+    const su2double dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
+    const su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
 
     /*--- Calculate molecular mean free path ---*/
-    su2double Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
+    const su2double Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
     /*--- Calculate Temperature Slip ---*/
     su2double Tslip = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
@@ -947,18 +943,18 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Calculate temperature gradients tangent to surface ---*/
     su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       Vector_Tangent_dT[iDim]   = Grad_PrimVar[T_INDEX][iDim] - dTn * UnitNormal[iDim];
       Vector_Tangent_dTve[iDim] = Grad_PrimVar[TVE_INDEX][iDim] - dTven * UnitNormal[iDim];
     }
 
     /*--- Calculate Heatflux tangent to surface ---*/
     su2double Vector_Tangent_HF[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
 
     /*--- Initialize viscous residual to zero ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar ++) Res_Visc[iVar] = 0.0;
+    for (auto iVar = 0ul; iVar < nVar; iVar ++) Res_Visc[iVar] = 0.0;
 
     /*--- Compute wall shear stress (using the stress tensor) ---*/
     su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
@@ -968,20 +964,20 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     GeometryToolbox::TangentProjection(nDim,Tau,UnitNormal,TauTangent);
 
     /*--- Store the Slip Velocity at the wall */
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++)
       Vector[iDim] = Lambda/Viscosity*(2.0-TMAC)/TMAC*(TauTangent[iDim])-3.0/4.0*(Gamma-1.0)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
 
     /*--- Apply under-relaxation ---*/
     Tslip    = (1.0-alpha_T)*nodes->GetTemperature(iPoint)+(alpha_T)*Tslip;
     Tslip_ve = (1.0-alpha_T)*nodes->GetTemperature_ve(iPoint)+(alpha_T)*Tslip_ve;
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0ul; iDim < nDim; iDim++){
       Vector[iDim] = (1.0-alpha_V)*nodes->GetVelocity(iPoint,iDim)+(alpha_V)*Vector[iDim];
     }
 
     nodes->SetVelocity_Old(iPoint,Vector);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
       nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
     }
