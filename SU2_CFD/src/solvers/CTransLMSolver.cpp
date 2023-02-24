@@ -226,11 +226,11 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
             long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
             for (auto iDim = 0u; iDim < nDim; iDim++)
               NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
-            //cout << "NormalHere(x, y, z) = " << NormalHere[0] << ", " << NormalHere[1] << ", " << NormalHere[2] << endl;
           }
 
           for (auto iDim = 0u; iDim < nDim; iDim++)
             NormalHere[iDim] /= geometry->bound[iMarker][iElem]->GetnNodes();
+
           su2double NormalMag = 0.0;
           for (auto iDim = 0u; iDim < nDim; iDim++)
             NormalMag += NormalHere[iDim]*NormalHere[iDim];
@@ -239,6 +239,7 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
           for (auto iDim = 0u; iDim < nDim; iDim++)
             NormalHere[iDim] /= NormalMag;
 
+          // cout << "NormalHere(x, y, z) = " << NormalHere[0] << ", " << NormalHere[1] << ", " << NormalHere[2] << endl;
           // cout << "FianlNormalHere(x, y, z) = " << NormalHere[0] << ", " << NormalHere[1] << ", " << NormalHere[2] << endl << endl;
 
           WallNormal[iMarker][iElem] = NormalHere;
@@ -262,6 +263,8 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
           return make_pair(dimensions, [WallNormal,iMarker,iElem](unsigned short iDim){
             // cout << "iMarker = " << iMarker << " iElem = " << iElem << " iDim = " << iDim << endl;
+            // cout << "WallNormal(x, y, z) = " << WallNormal[iMarker][iElem][0] << ", " << WallNormal[iMarker][iElem][1] << ", " << WallNormal[iMarker][iElem][2] << endl;
+      
             return WallNormal[iMarker][iElem][iDim];
           });
         });
@@ -279,11 +282,13 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       int NearestWallRank = geometry->nodes->GetClosestWall_Rank(iPoint);
       unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
       unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
+      // cout << "NearestWallRank = " << NearestWallRank << " NearestWallElement = " << NearestWallElement << " NearestWallMarker = " << NearestWallMarker << endl;
       
       NormalPerPoint[iPoint] = new su2double [MAXNDIM];
       for(auto iDim = 0; iDim < nDim; iDim++)
-        NormalPerPoint[iPoint][iDim] = Normals_global[NearestWallRank][NearestWallMarker][NearestWallMarker][iDim];
+        NormalPerPoint[iPoint][iDim] = Normals_global[NearestWallRank][NearestWallMarker][NearestWallElement][iDim];
 
+      // cout << "NormalHere(x, y, z) = " << NormalPerPoint[iPoint][0] << ", " << NormalPerPoint[iPoint][1] << ", " << NormalPerPoint[iPoint][2] << endl;
       nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, NormalPerPoint[iPoint]));
       nodes->SetNormal(iPoint, NormalPerPoint[iPoint][0], NormalPerPoint[iPoint][1]);
     }
