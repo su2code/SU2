@@ -198,104 +198,96 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   CommonPreprocessing(geometry, config, Output);
 
 
-  /////////////////////
-  // ATTENZIONE! Forse devo farlo solamente per i punti che sono nello strato limite! Quindi magari nelle sources devo usare la function che mi definisce lo strato limite!
-  // Al di fuori di essa devo usare la solita du/ds? Perchè altrimenti il contorno più vicino ad un certo punto diventa il farfield, e non ha senso! 
-  // UPDATE: Mi sa che la wall distance è rispetto alla parete, quindi effettivamente l'elemento più vicino è sempre a parete.
-  /////////////////////
-
-  // cout << "Sono qui" << endl;
   if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
     /*--- Reconstructon of auxiliary variables gradient ---*/
 
     // Each rank collects all normals
     
-    vector<vector<vector<su2double>>> WallNormal;
-    WallNormal.resize(config->GetnMarker_All());
-    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      if (config->GetViscous_Wall(iMarker)) {
-        WallNormal[iMarker].resize(geometry->GetnElem_Bound(iMarker));
+    // vector<vector<vector<su2double>>> WallNormal;
+    // WallNormal.resize(config->GetnMarker_All());
+    // for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    //   if (config->GetViscous_Wall(iMarker)) {
+    //     WallNormal[iMarker].resize(geometry->GetnElem_Bound(iMarker));
 
-        // cout << "geometry->nVertex[iMarker] = " << geometry->nVertex[iMarker] << endl;
-        for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-          vector<su2double> NormalHere(nDim, 0.0);
+    //     // cout << "geometry->nVertex[iMarker] = " << geometry->nVertex[iMarker] << endl;
+    //     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+    //       vector<su2double> NormalHere(nDim, 0.0);
 
-          for (unsigned short iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
-            // Extract global coordinate of the node
-            unsigned long iPointHere = geometry->bound[iMarker][iElem]->GetNode(iNode);
-            long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
-          }
+    //       for (unsigned short iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
+    //         // Extract global coordinate of the node
+    //         unsigned long iPointHere = geometry->bound[iMarker][iElem]->GetNode(iNode);
+    //         long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
+    //         for (auto iDim = 0u; iDim < nDim; iDim++)
+    //           NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
+    //       }
 
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            NormalHere[iDim] /= geometry->bound[iMarker][iElem]->GetnNodes();
+    //       for (auto iDim = 0u; iDim < nDim; iDim++)
+    //         NormalHere[iDim] /= geometry->bound[iMarker][iElem]->GetnNodes();
 
-          su2double NormalMag = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            NormalMag += NormalHere[iDim]*NormalHere[iDim];
-          NormalMag = sqrt(NormalMag);
+    //       su2double NormalMag = 0.0;
+    //       for (auto iDim = 0u; iDim < nDim; iDim++)
+    //         NormalMag += NormalHere[iDim]*NormalHere[iDim];
+    //       NormalMag = sqrt(NormalMag);
 
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            NormalHere[iDim] /= NormalMag;
+    //       for (auto iDim = 0u; iDim < nDim; iDim++)
+    //         NormalHere[iDim] /= NormalMag;
 
-          // cout << "NormalHere(x, y, z) = " << NormalHere[0] << ", " << NormalHere[1] << ", " << NormalHere[2] << endl;
-          // cout << "FianlNormalHere(x, y, z) = " << NormalHere[0] << ", " << NormalHere[1] << ", " << NormalHere[2] << endl << endl;
+    //       WallNormal[iMarker][iElem] = NormalHere;
+    //     }
+    //   } else {
+    //     WallNormal[iMarker].resize(1);
+    //     WallNormal[iMarker][0].resize(3);
+    //     WallNormal[iMarker][0][0] = 0.0;
+    //     WallNormal[iMarker][0][1] = 0.0;
+    //     WallNormal[iMarker][0][2] = 0.0;
+    //   }
+    // }
 
-          WallNormal[iMarker][iElem] = NormalHere;
-        }
-      } else {
-        WallNormal[iMarker].resize(1);
-        WallNormal[iMarker][0].resize(3);
-        WallNormal[iMarker][0][0] = 0.0;
-        WallNormal[iMarker][0][1] = 0.0;
-        WallNormal[iMarker][0][2] = 0.0;
-      }
-    }
+    // auto normal_i =
+    // make_pair( config->GetnMarker_All(), [config,geometry,WallNormal](unsigned long iMarker){
+    //     auto nElem_Bou = geometry->GetnElem_Bound(iMarker);
+    //     if (!config->GetViscous_Wall(iMarker)) nElem_Bou = 1;
 
-    auto normal_i =
-    make_pair( config->GetnMarker_All(), [config,geometry,WallNormal](unsigned long iMarker){
-        auto nElem_Bou = geometry->GetnElem_Bound(iMarker);
-        if (!config->GetViscous_Wall(iMarker)) nElem_Bou = 1;
+    //     return make_pair(nElem_Bou, [WallNormal,iMarker](unsigned long iElem){
+    //       const auto dimensions = 3;
 
-        return make_pair(nElem_Bou, [WallNormal,iMarker](unsigned long iElem){
-          const auto dimensions = 3;
+    //       return make_pair(dimensions, [WallNormal,iMarker,iElem](unsigned short iDim){
+            
+    //         return WallNormal[iMarker][iElem][iDim];
+    //       });
+    //     });
+    //   });
 
-          return make_pair(dimensions, [WallNormal,iMarker,iElem](unsigned short iDim){
-            // cout << "iMarker = " << iMarker << " iElem = " << iElem << " iDim = " << iDim << endl;
-            // cout << "WallNormal(x, y, z) = " << WallNormal[iMarker][iElem][0] << ", " << WallNormal[iMarker][iElem][1] << ", " << WallNormal[iMarker][iElem][2] << endl;
+    // NdFlattener<3>Normals_Local(normal_i);
+    // NdFlattener<4> Normals_global(Nd_MPI_Environment(), Normals_Local);
+    // su2double** NormalPerPoint = new su2double* [nPoint];
+
+    // auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    // SU2_OMP_FOR_STAT(omp_chunk_size)
+    // for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {    
+
+    //   // Extract nearest wall element and wall marker
+    //   int NearestWallRank = geometry->nodes->GetClosestWall_Rank(iPoint);
+    //   unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
+    //   unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
       
-            return WallNormal[iMarker][iElem][iDim];
-          });
-        });
-      });
+    //   NormalPerPoint[iPoint] = new su2double [MAXNDIM];
+    //   for(auto iDim = 0; iDim < nDim; iDim++)
+    //     NormalPerPoint[iPoint][iDim] = Normals_global[NearestWallRank][NearestWallMarker][NearestWallElement][iDim];
 
-    NdFlattener<3>Normals_Local(normal_i);
-    NdFlattener<4> Normals_global(Nd_MPI_Environment(), Normals_Local);
-    su2double** NormalPerPoint = new su2double* [nPoint];
+    //    nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, NormalPerPoint[iPoint]));
+    //   nodes->SetNormal(iPoint, NormalPerPoint[iPoint][0], NormalPerPoint[iPoint][1]);
+    // }
+    // END_SU2_OMP_FOR
 
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {    
-
-      // Extract nearest wall element and wall marker
-      int NearestWallRank = geometry->nodes->GetClosestWall_Rank(iPoint);
-      unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
-      unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
-      // cout << "NearestWallRank = " << NearestWallRank << " NearestWallElement = " << NearestWallElement << " NearestWallMarker = " << NearestWallMarker << endl;
-      
-      NormalPerPoint[iPoint] = new su2double [MAXNDIM];
-      for(auto iDim = 0; iDim < nDim; iDim++)
-        NormalPerPoint[iPoint][iDim] = Normals_global[NearestWallRank][NearestWallMarker][NearestWallElement][iDim];
-
-      // cout << "NormalHere(x, y, z) = " << NormalPerPoint[iPoint][0] << ", " << NormalPerPoint[iPoint][1] << ", " << NormalPerPoint[iPoint][2] << endl;
-      nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, NormalPerPoint[iPoint]));
-      nodes->SetNormal(iPoint, NormalPerPoint[iPoint][0], NormalPerPoint[iPoint][1]);
+      auto Normal = geometry->nodes->GetNormal(iPoint);
+      nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
+      nodes->SetNormal(iPoint, Normal[0], Normal[1]);
     }
     END_SU2_OMP_FOR
-
-
-    // cout << "primo for" << endl;
 
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
       SetAuxVar_Gradient_GG(geometry, config);
@@ -304,20 +296,17 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       SetAuxVar_Gradient_LS(geometry, config);
     }
 
-    //SU2_OMP_BARRIER
-
-    // cout << "Dopo Gradienti" << endl;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
       su2double AuxVarHere = 0.0;
+      auto Normal = geometry->nodes->GetNormal(iPoint);
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        AuxVarHere += NormalPerPoint[iPoint][iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+        AuxVarHere += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
       nodes->SetAuxVar(iPoint, 0, AuxVarHere);
     }
     END_SU2_OMP_FOR
 
-    // cout << "Ho finito" << endl;
   }
 
 }

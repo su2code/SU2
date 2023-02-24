@@ -4106,5 +4106,81 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
         }
       }
     }
+
+
+    su2vector<su2vector<su2matrix<su2double>>> WallNormal_container;
+    WallNormal_container.resize(nZone) = su2vector<su2matrix<su2double>>();
+    for (int iZone = 0; iZone < nZone; iZone++){
+      const CConfig* config = config_container[iZone];
+      const CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
+      WallNormal_container[iZone].resize(geometry->GetnMarker());
+      for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++){
+        if (config->GetViscous_Wall(iMarker)) {
+          WallNormal_container[iZone][iMarker].resize(geometry->GetnElem_Bound(iMarker), 3);
+
+          // cout << "geometry->nVertex[iMarker] = " << geometry->nVertex[iMarker] << endl;
+          for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+            su2vector<su2double> NormalHere;
+            NormalHere.resize(3) = su2double(0.0);
+
+            for (unsigned short iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
+              // Extract global coordinate of the node
+              unsigned long iPointHere = geometry->bound[iMarker][iElem]->GetNode(iNode);
+              long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
+              for (auto iDim = 0u; iDim < 3; iDim++)
+                NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
+            }
+
+            for (auto iDim = 0u; iDim < 3; iDim++)
+              NormalHere[iDim] /= geometry->bound[iMarker][iElem]->GetnNodes();
+
+            su2double NormalMag = 0.0;
+            for (auto iDim = 0u; iDim < 3; iDim++)
+              NormalMag += NormalHere[iDim]*NormalHere[iDim];
+            NormalMag = sqrt(NormalMag);
+
+            for (auto iDim = 0u; iDim < 3; iDim++)
+              NormalHere[iDim] /= NormalMag;
+
+            for (auto iDim = 0u; iDim < 3; iDim++)
+              WallNormal_container[iZone][iMarker](iElem, iDim) = NormalHere[iDim];
+
+          }
+        } else {
+          WallNormal_container[iZone][iMarker].resize(1, 3) = su2double(0.0);
+        }
+      }
+    }
+
+    auto normal_i =
+    make_pair(nZone, [config_container,geometry_container,iInst,WallNormal_container](unsigned long iZone){
+      const CConfig* config = config_container[iZone];
+      const CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
+      const auto nMarker = geometry->GetnMarker();
+      const auto WallNormal = WallNormal_container[iZone];
+
+      return make_pair( nMarker, [config,geometry,WallNormal](unsigned long iMarker){
+        auto nElem_Bou = geometry->GetnElem_Bound(iMarker);
+        if (!config->GetViscous_Wall(iMarker)) nElem_Bou = 1;
+
+        return make_pair(nElem_Bou, [WallNormal,iMarker](unsigned long iElem){
+          const auto dimensions = 3;
+
+          return make_pair(dimensions, [WallNormal,iMarker,iElem](unsigned short iDim){
+            
+            return WallNormal[iMarker](iElem, iDim);
+          });
+        });
+      });
+    });
+
+    NdFlattener<4>Normals_Local(normal_i);
+    NdFlattener<5> Normals_global(Nd_MPI_Environment(), Normals_Local);
+
+
+    // use it to update roughnesses
+    for(int jZone=0; jZone<nZone; jZone++){
+      geometry_container[jZone][iInst][MESH_0]->nodes->SetWallNormals(Normals_global);
+    }
   }
 }

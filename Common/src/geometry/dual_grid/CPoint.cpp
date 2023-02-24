@@ -141,6 +141,8 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
+  Normals.resize(npoint, 3) = su2double(0.0);
+
 }
 
 void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) {
