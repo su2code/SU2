@@ -42,7 +42,7 @@ def main():
     ### Disc. adj. flamelet solver ###
     ##################################
 
-    # 2D planar laminar premixed flame on isothermal burner restar
+    # 2D planar laminar premixed flame on isothermal burner (restart)
     discadj_flamelet_ch4_hx = TestCase('discadj_flamelet_ch4_hx')
     discadj_flamelet_ch4_hx.cfg_dir = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
     discadj_flamelet_ch4_hx.cfg_file = "lam_prem_ch4_hx_ad.cfg"
