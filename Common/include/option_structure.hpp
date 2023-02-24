@@ -778,11 +778,13 @@ static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,  /*!< \brief Gust direction-X. */
-  Y_DIR = 1   /*!< \brief Gust direction-Y. */
+  Y_DIR = 1,  /*!< \brief Gust direction-Y. */
+  Z_DIR = 2   /*!< \brief Gust direction-Z. */
 };
 static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
   MakePair("X_DIR", X_DIR)
   MakePair("Y_DIR", Y_DIR)
+  MakePair("Z_DIR", Z_DIR)
 };
 
 // If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
