@@ -34,7 +34,7 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing.
   try:
-    SU2Driver = pysu2.CSinglezoneDriver('config.cfg', 1, comm);
+    SU2Driver = pysu2.CSinglezoneDriver('config.cfg', 1, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ', exception)
     raise
@@ -92,8 +92,6 @@ def main():
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # Imposed deformation
 def DeformFunction(x,t):
