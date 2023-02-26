@@ -70,6 +70,24 @@ private:
   std::array<su2double,1> Sk_ref; /*!< \brief Vector containing Sutherland's constant for thermal conductivities */
 
   const su2double T_ref_suth = 273.15; /*!<\brief Reference temperature for Sutherland's model [K] */
+  
+  // Coulomb potential constant values source: Scalabrin, NUMERICAL SIMULATION OF WEAKLY IONIZED HYPERSONIC
+  // FLOW OVER REENTRY CAPSULES, 2007.
+  /*--- Attractive Coulombic potential constants ---*/
+  const su2double D1_a = 0.784;
+  const su2double C1_a = -0.476;
+  const su2double c1_a = 0.0313;
+  const su2double D2_a = 1.262;
+  const su2double C2_a = -0.146;
+  const su2double c2_a = 0.0377;
+
+  /*--- Repulsive Coulombic potential constants ---*/
+  const su2double D1_r = 0.765;
+  const su2double C1_r = 0.138;
+  const su2double c1_r = 0.0106;
+  const su2double D2_r = 1.235;
+  const su2double C2_r = 0.157;
+  const su2double c2_r = 0.0274;
 
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
@@ -77,8 +95,8 @@ private:
   Blottner,                      /*!< \brief Blottner viscosity coefficients */
   Dij;                           /*!< \brief Binary diffusion coefficients. */
 
-  C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
-  Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
+  C3DDoubleMatrix Omega11,       /*!< \brief Collision integrals (Omega^(1,1)) */
+  Omega22;                       /*!< \brief Collision integrals (Omega^(2,2)) */
 
   /*--- Implicit variables ---*/
   su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
@@ -248,6 +266,29 @@ public:
    * \brief Calculate T-R and V-E thermal conductivities vector with Sutherland's transport model.
    */
   void ThermalConductivitiesSuth();
+
+  /*!
+   *\brief Compute the collision terms (deltas)
+   *\param[in] iSpecies - Species of gas
+   *\param[in] jSpecies - Collision partner of species i
+   *\param[in] Mi - Molar mass of species i
+   *\param[in] Mj - Molar mass of species j
+   *\param[in] T - Temperature of gas
+   *\param[in] d1 - Whether delta_1 or delta_2 is computed
+   *\param[out] Delta_1 or Delta_2 - Collision term between species i and j
+   */
+  su2double ComputeCollisionDelta(unsigned iSpecies, unsigned jSpecies, su2double Mi, su2double Mj, su2double T, bool d1);
+  
+  /*!
+   *\brief Compute the collision cross section
+   *\param[in] iSpecies - Species of gas
+   *\param[in] jSpecies - Collision partner of species i
+   *\param[in] T - Temperature of gas
+   *\param[in] d1 - Whether omega^(1,1) or omega^(2,2)
+   *\param[in] coulomb - Whether to use Coulomb potential
+   *\param[out] Omega_ij - collision cross section
+   */
+  su2double ComputeCollisionCrossSection(unsigned iSpecies, unsigned jSpecies, su2double T, bool d1, bool coulomb);
 
   /*!
    * \brief Get reference temperature.
