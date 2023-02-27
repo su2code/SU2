@@ -2,14 +2,14 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.Bunschoten M.Mayer A.Capiello
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
   Newton_Relaxation = config->GetRelaxation_DataDriven();
-  Newton_Tolerance = 1e-8;
+  Newton_Tolerance = 1e-10;
   MaxIter_Newton = 500;
 
   /*--- Preprocessing of inputs and outputs for the interpolation method. ---*/
@@ -354,13 +354,13 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   MLP_inputs[idx_e] = e;
 
   /* Evaluate MLP collection for the given values for density and energy */
-  unsigned long exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  unsigned long exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
 
   /* Apply exponential transformation to the MLP outputs for the first and second
      derivative of the entropy w.r.t density */
   // Optional:
-  //dsdrho_e = -exp(dsdrho_e);
-  //d2sdrho2 = exp(d2sdrho2);
+  dsdrho_e = -exp(dsdrho_e);
+  d2sdrho2 = exp(d2sdrho2);
 
   return exit_code;
 }

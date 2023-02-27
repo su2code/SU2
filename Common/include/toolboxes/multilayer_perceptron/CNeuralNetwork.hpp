@@ -2,14 +2,14 @@
  * \file CNeuralNetwork.hpp
  * \brief Declaration of the neural network class
  * \author E.C.Bunschoten
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,38 +32,50 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <map>
 
 #include "../../CConfig.hpp"
 #include "../../linear_algebra/blas_structure.hpp"
 #include "CLayer.hpp"
 
+
 namespace MLPToolbox {
 class CNeuralNetwork {
+  /*!
+   *\class CNeuralNetwork
+   *\brief The CNeuralNetwork class allows for the evaluation of a loaded MLP architecture for
+   * a given set of inputs. The class also contains a list of the various supported activation
+   * function types (linear, relu, elu, gelu, selu, sigmoid, swish, tanh, exp)which can be 
+   * applied to the layers in the network. Currently, only dense, feed-forward type neural 
+   * nets are supported in this implementation. 
+   */
  private:
-  su2vector<std::string> input_names,  // MLP input variable names.
-      output_names;                    // MLP output variable names.
+  su2vector<std::string> input_names,  /*!< MLP input variable names. */
+      output_names;                    /*!< MLP output variable names. */
 
-  unsigned long n_hidden_layers = 0;  // Number of hidden layers (layers between input and output layer).
+  unsigned long n_hidden_layers = 0;  /*!< Number of hidden layers (layers between input and output layer). */
 
-  CLayer *inputLayer = nullptr,  // Pointer to network input layer.
-      *outputLayer = nullptr;    // Pointer to network output layer.
+  CLayer *inputLayer = nullptr,  /*!< Pointer to network input layer. */
+      *outputLayer = nullptr;    /*!< Pointer to network output layer. */
 
-  std::vector<CLayer*> hiddenLayers;  // Hidden layer collection.
-  su2vector<CLayer*> total_layers;    // Hidden layers plus in/output layers
+  std::vector<CLayer*> hiddenLayers;  /*!< Hidden layer collection. */
+  su2vector<CLayer*> total_layers;    /*!< Hidden layers plus in/output layers */
 
-  su2vector<su2activematrix> weights_mat;  // Weights of synapses connecting layers
+  su2vector<su2activematrix> weights_mat;  /*!< Weights of synapses connecting layers */
 
-  su2vector<std::pair<su2double, su2double>> input_norm,  // Normalization factors for network inputs
-      output_norm;                                        // Normalization factors for network outputs
+  su2vector<std::pair<su2double, su2double>> input_norm,  /*!< Normalization factors for network inputs */ 
+      output_norm;                                        /*!< Normalization factors for network outputs */
 
-  su2vector<su2double> last_inputs;  // Inputs from previous lookup operation. Evaluation of the network
-                                     // is skipped if current inputs are the same as the last inputs.
+  su2vector<su2double> last_inputs;  /*!< Inputs from previous lookup operation. Evaluation of the network */
+                                     /*!< is skipped if current inputs are the same as the last inputs. */
 
-  su2double* ANN_outputs;                 // Pointer to network outputs
-  su2matrix<su2double> dOutputs_dInputs;  // Network output derivatives w.r.t inputs
+  su2double* ANN_outputs;                 /*!< Pointer to network outputs */
+  su2matrix<su2double> dOutputs_dInputs;  /*!< Network output derivatives w.r.t inputs */
 
-  /*--- Activation function types that are currently supported ---*/
-  enum ENUM_ACTIVATION_FUNCTION {
+  /*!
+   * \brief Available activation function enumeration.
+  */
+  enum class ENUM_ACTIVATION_FUNCTION {
     NONE = 0,
     LINEAR = 1,
     RELU = 2,
@@ -75,8 +87,25 @@ class CNeuralNetwork {
     TANH = 8,
     EXPONENTIAL = 9
   };
-  su2vector<ENUM_ACTIVATION_FUNCTION> activation_function_types;
-  su2vector<string> activation_function_names;
+
+  /*!
+   * \brief Available activation function map.
+  */
+  std::map<std::string, ENUM_ACTIVATION_FUNCTION> activation_function_map {
+    {"none", ENUM_ACTIVATION_FUNCTION::NONE},
+    {"linear", ENUM_ACTIVATION_FUNCTION::LINEAR},
+    {"relu", ENUM_ACTIVATION_FUNCTION::RELU},
+    {"gelu", ENUM_ACTIVATION_FUNCTION::GELU},
+    {"selu", ENUM_ACTIVATION_FUNCTION::SELU},
+    {"sigmoid", ENUM_ACTIVATION_FUNCTION::SIGMOID},
+    {"swish", ENUM_ACTIVATION_FUNCTION::SWISH},
+    {"tanh", ENUM_ACTIVATION_FUNCTION::TANH},
+    {"exponential", ENUM_ACTIVATION_FUNCTION::EXPONENTIAL}
+  };
+
+  su2vector<ENUM_ACTIVATION_FUNCTION> activation_function_types; /*!< Activation function type for each layer in the network. */
+  su2vector<string> activation_function_names;  /*!< Activation function name for each layer in the network. */
+
  public:
   ~CNeuralNetwork() {
     delete inputLayer;
@@ -90,19 +119,19 @@ class CNeuralNetwork {
    * \brief Set the input layer of the network.
    * \param[in] n_neurons - Number of inputs
    */
-  void defineInputLayer(unsigned long n_neurons);
+  void DefineInputLayer(unsigned long n_neurons);
 
   /*!
    * \brief Set the output layer of the network.
    * \param[in] n_neurons - Number of outputs
    */
-  void defineOutputLayer(unsigned long n_neurons);
+  void DefineOutputLayer(unsigned long n_neurons);
 
   /*!
    * \brief Add a hidden layer to the network
    * \param[in] n_neurons - Hidden layer size.
    */
-  void push_hidden_layer(unsigned long n_neurons);
+  void PushHiddenLayer(unsigned long n_neurons);
 
   /*!
    * \brief Set the weight value of a specific synapse.
@@ -111,7 +140,7 @@ class CNeuralNetwork {
    * \param[in] j_neuron - neuron index of connecting neuron.
    * \param[in] value - weight value.
    */
-  void setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value) {
+  void SetWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value) {
     weights_mat[i_layer][j_neuron][i_neuron] = value;
   };
 
@@ -121,8 +150,8 @@ class CNeuralNetwork {
    * \param[in] i_neuron - Neuron index of current layer.
    * \param[in] value - Bias value.
    */
-  void setBias(unsigned long i_layer, unsigned long i_neuron, su2double value) {
-    total_layers[i_layer]->setBias(i_neuron, value);
+  void SetBias(unsigned long i_layer, unsigned long i_neuron, su2double value) {
+    total_layers[i_layer]->SetBias(i_neuron, value);
   }
 
   /*!
@@ -130,23 +159,23 @@ class CNeuralNetwork {
    * \param[in] i_layer - Layer index.
    * \param[in] input - Activation function name.
    */
-  void setActivationFunction(unsigned long i_layer, std::string input);
+  void SetActivationFunction(unsigned long i_layer, std::string input);
 
   /*!
    * \brief Display the network architecture in the terminal.
    */
-  void displayNetwork() const;
+  void DisplayNetwork() const;
 
   /*!
    * \brief Size the weight layers in the network according to its architecture.
    */
-  void sizeWeights();
+  void SizeWeights();
 
   /*!
    * \brief Size the vector of previous inputs.
    * \param[in] n_inputs - Number of inputs.
    */
-  void sizeInputs(unsigned long n_inputs) {
+  void SizeInputs(unsigned long n_inputs) {
     last_inputs.resize(n_inputs);
     for (unsigned long iInput = 0; iInput < n_inputs; iInput++) last_inputs[iInput] = 0.0;
   }
@@ -155,27 +184,27 @@ class CNeuralNetwork {
    * \brief Get the number of connecting regions in the network.
    * \returns number of spaces in between layers.
    */
-  unsigned long getNWeightLayers() const { return total_layers.size() - 1; }
+  unsigned long GetNWeightLayers() const { return total_layers.size() - 1; }
 
   /*!
    * \brief Get the total number of layers in the network
    * \returns number of netowork layers.
    */
-  unsigned long getNLayers() const { return total_layers.size(); }
+  unsigned long GetNLayers() const { return total_layers.size(); }
 
   /*!
    * \brief Get neuron count in a layer.
    * \param[in] iLayer - Layer index.
    * \returns number of neurons in the layer.
    */
-  unsigned long getNNeurons(unsigned long iLayer) const { return total_layers[iLayer]->getNNeurons(); }
+  unsigned long GetNNeurons(unsigned long iLayer) const { return total_layers[iLayer]->GetNNeurons(); }
 
   /*!
    * \brief Evaluate the network.
    * \param[in] inputs - Network input variable values.
    * \param[in] compute_gradient - Compute the derivatives of the outputs wrt inputs.
    */
-  void predict(su2vector<su2double>& inputs, bool compute_gradient = false);
+  void Predict(su2vector<su2double>& inputs, bool compute_gradient = false);
 
   /*!
    * \brief Set the normalization factors for the input layer
@@ -243,7 +272,7 @@ class CNeuralNetwork {
    * \param[in] iOutput - output index.
    * \returns Prediction value.
    */
-  su2double GetANN_Output(std::size_t iOutput) const { return ANN_outputs[iOutput]; }
+  su2double GetANNOutput(std::size_t iOutput) const { return ANN_outputs[iOutput]; }
 
   /*!
    * \brief Get network output derivative w.r.t specific input.
@@ -251,7 +280,7 @@ class CNeuralNetwork {
    * \param[in] iInput - input variable index.
    * \returns Output derivative w.r.t input.
    */
-  su2double GetANN_Output_Input_Derivative(std::size_t iOutput, std::size_t iInput) const {
+  su2double GetdOutputdInput(std::size_t iOutput, std::size_t iInput) const {
     return dOutputs_dInputs[iOutput][iInput];
   }
 
@@ -272,17 +301,17 @@ class CNeuralNetwork {
    */
   su2double ComputeX(std::size_t iLayer, std::size_t iNeuron) const {
     su2double x;
-    x = total_layers[iLayer]->getBias(iNeuron);
-    std::size_t nNeurons_previous = total_layers[iLayer - 1]->getNNeurons();
+    x = total_layers[iLayer]->GetBias(iNeuron);
+    std::size_t nNeurons_previous = total_layers[iLayer - 1]->GetNNeurons();
     for (std::size_t jNeuron = 0; jNeuron < nNeurons_previous; jNeuron++) {
-      x += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer - 1]->getOutput(jNeuron);
+      x += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer - 1]->GetOutput(jNeuron);
     }
     return x;
   }
   su2double ComputedOutputdInput(std::size_t iLayer, std::size_t iNeuron, std::size_t iInput) const {
     su2double doutput_dinput = 0;
-    for (auto jNeuron = 0u; jNeuron < total_layers[iLayer - 1]->getNNeurons(); jNeuron++) {
-      doutput_dinput += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer - 1]->getdYdX(jNeuron, iInput);
+    for (auto jNeuron = 0u; jNeuron < total_layers[iLayer - 1]->GetNNeurons(); jNeuron++) {
+      doutput_dinput += weights_mat[iLayer - 1][iNeuron][jNeuron] * total_layers[iLayer - 1]->GetdYdX(jNeuron, iInput);
     }
     return doutput_dinput;
   }

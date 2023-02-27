@@ -2,14 +2,14 @@
  * \file CIOMap.hpp
  * \brief Declaration of input-to-output mapping class for artifical neural networks
  * \author E. Bunschoten
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,7 +98,7 @@ class CIOMap
    * \brief Set MLP index in IO map
    * \param[in] iMLP - loaded MLP index
    */
-  void Push_MLP_index(std::size_t iMLP) { MLP_indices.push_back(iMLP); }
+  void PushMLPindex(std::size_t iMLP) { MLP_indices.push_back(iMLP); }
 
   /*!
   * \brief Pair call inputs and outputs with the inputs and outputs of
@@ -177,7 +177,7 @@ class CIOMap
    * \param[in] inputs - call inputs
    * \return Vector with call inputs in the correct order of the loaded MLP
    */
-  su2vector<su2double> GetMLP_Inputs(std::size_t i_Map, su2vector<su2double>& inputs) const {
+  su2vector<su2double> GetMLPInputs(std::size_t i_Map, su2vector<su2double>& inputs) const {
     su2vector<su2double> MLP_input;
     MLP_input.resize(Input_Map[i_Map].size());
 
