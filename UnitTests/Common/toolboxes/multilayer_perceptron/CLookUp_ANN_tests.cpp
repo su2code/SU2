@@ -60,7 +60,7 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
 
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
   CHECK(z == Approx(0.344829));
 
   /*--- MLP evaluation on point outside the training data range ---*/
@@ -68,6 +68,6 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   y = -10;
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
   CHECK(z == Approx(0.012737));
 }
