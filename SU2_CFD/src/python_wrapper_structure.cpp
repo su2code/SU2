@@ -866,6 +866,21 @@ void CDriver::CommunicateMeshDisplacement(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/* Functions related to dynamic mesh */
+////////////////////////////////////////////////////////////////////////////////
+
+void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
+
+  config_container[iZone]->SetRotation_Rate(0, rot_x);
+  config_container[iZone]->SetRotation_Rate(1, rot_y);
+  config_container[iZone]->SetRotation_Rate(2, rot_z);
+  if (rank == MASTER_NODE) {
+	  cout << endl << " Set new angular velocity about x, y, z axes" << endl;
+  }
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /* Functions related to flow loads */
 ////////////////////////////////////////////////////////////////////////////////
 

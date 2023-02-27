@@ -618,6 +618,14 @@ public:
   void SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
 
   /*!
+     * \brief Set the dynamic mesh rotation rates.
+     * \param[in] rot_x - Value of Angular velocity about x-axes.
+     * \param[in] rot_y - Value of Angular velocity about y-axes.
+     * \param[in] rot_z - Value of Angular velocity about z-axes.
+     */
+    void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+
+  /*!
    * \brief Communicate the boundary mesh displacements in a python call
    */
   void CommunicateMeshDisplacement(void);
