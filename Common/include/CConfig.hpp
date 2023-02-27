@@ -5816,6 +5816,13 @@ public:
   su2double GetTranslation_Rate(unsigned short iDim) const { return Translation_Rate[iDim];}
 
   /*!
+   * \brief Set the translational velocity of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Translational velocity of the mesh.
+   */
+  void SetTranslation_Rate(unsigned short iDim, su2double val) { Translation_Rate[iDim] = val;}
+
+  /*!
    * \brief Get the translational velocity of the marker.
    * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    * \param[in] iDim - spatial component

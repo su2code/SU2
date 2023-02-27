@@ -869,15 +869,26 @@ void CDriver::CommunicateMeshDisplacement(void) {
 /* Functions related to dynamic mesh */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
-
-  config_container[iZone]->SetRotation_Rate(0, rot_x);
-  config_container[iZone]->SetRotation_Rate(1, rot_y);
-  config_container[iZone]->SetRotation_Rate(2, rot_z);
+void CDriver::SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot) {
   if (rank == MASTER_NODE) {
-	  cout << endl << " Set new angular velocity about x, y, z axes" << endl;
+    cout << endl << " Setting new translational velocity in x, y, z direction.";
   }
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetTranslation_Rate(0, xDot);
+    config_container[iZone]->SetTranslation_Rate(1, yDot);
+    config_container[iZone]->SetTranslation_Rate(2, zDot);
+  }
+}
 
+void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
+  if (rank == MASTER_NODE) {
+    cout << endl << " Setting new angular velocity about x, y, z axes.";
+  }
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetRotation_Rate(0, rot_x);
+    config_container[iZone]->SetRotation_Rate(1, rot_y);
+    config_container[iZone]->SetRotation_Rate(2, rot_z);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
