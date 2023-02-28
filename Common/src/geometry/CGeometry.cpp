@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2592,7 +2592,8 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           other GridMovements are rigid. ---*/
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
          config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-         !config->GetMarker_Moving_Bool(Local_TagBound)) {
+         !config->GetMarker_Moving_Bool(Local_TagBound) &&
+         !config->GetMarker_Deform_Mesh_Bool(Local_TagBound)) {
 
       /*--- Loop over all global markers, and find the local-global pair via
             matching unique string tags. ---*/

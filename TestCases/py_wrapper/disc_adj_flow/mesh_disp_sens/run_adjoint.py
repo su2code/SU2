@@ -3,14 +3,14 @@
 ## \file run_adjoint.py
 #  \brief Python script to launch SU2_CFD_AD
 #  \author Ruben Sanchez
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ from optparse import OptionParser	# use a parser for configuration
 import pysu2ad as pysu2          # imports the SU2 adjoint-wrapped module
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -57,7 +57,7 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
   else:
-    comm = 0 
+    comm = 0
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
@@ -67,12 +67,12 @@ def main():
   MarkerName = 'wallF'       # Specified by the user
 
   # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
+  MarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
-  #Check if the specified marker exists and if it belongs to this rank.
+  # Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
@@ -80,7 +80,7 @@ def main():
   nVertex_Marker = 0         #total number of vertices (physical + halo)
 
   if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
+    nVertex_Marker = SU2Driver.GetNumberMarkerNodes(MarkerID)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -91,27 +91,27 @@ def main():
 
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
-  
+
   # Run one time-step (static: one simulation)
   SU2Driver.Run()
-  
+
   # Postprocess
-  SU2Driver.Postprocess()  
-  
+  SU2Driver.Postprocess()
+
   # Update the solver for the next time iteration
   SU2Driver.Update()
-  
+
   # Monitor the solver and output solution to file if required
   SU2Driver.Monitor(0)
-  
+
   # Output the solution to file
   SU2Driver.Output(0)
-  
+
   # Sensitivities of the marker
-  print("\n------------------------------ Sensitivities -----------------------------\n")  
+  print("\n------------------------------ Sensitivities -----------------------------\n")
   for iVertex in range(nVertex_Marker):
     sensX, sensY, sensZ = SU2Driver.GetMeshDisp_Sensitivity(MarkerID, iVertex)
-    
+
     if (iVertex == 30):
       print(1000,1000,iVertex, sensX, sensY, sensZ)
 
@@ -121,7 +121,7 @@ def main():
   if SU2Driver != None:
     del SU2Driver
 
-  
+
 
 # -------------------------------------------------------------------
 #  Run Main Program
@@ -129,4 +129,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

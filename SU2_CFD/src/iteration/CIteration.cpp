@@ -2,14 +2,14 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -163,7 +163,7 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
   /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
 
-  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+  solver[MESH_SOL]->SetMesh_Stiffness(numerics[MESH_SOL], config);
 
   /*--- Deform the volume grid around the new boundary locations ---*/
 

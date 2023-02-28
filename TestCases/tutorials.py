@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -104,7 +104,7 @@ def main():
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     DAspecies3_primitiveVenturi.new_output = True
     test_list.append(DAspecies3_primitiveVenturi)
-    
+
     # 2 species (1 eq) kenics static mixer for composition-dependent model
     kenics_mixer_tutorial           = TestCase('kenics_mixer_tutorial')
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
@@ -189,7 +189,7 @@ def main():
     tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.no_restart = True
     test_list.append(tutorial_trans_flatplate)
-    
+
     # Transitional FlatPlate T3A
     tutorial_trans_flatplate_T3A            = TestCase('transitional_flatplate_tutorial_T3A')
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
@@ -198,7 +198,7 @@ def main():
     tutorial_trans_flatplate_T3A.test_vals  = [-5.837191, -2.092249, -3.982626, -0.302018, -1.916974, 1.668678, -3.496294, 0.391531]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
-    
+
     # Transitional FlatPlate T3Am
     tutorial_trans_flatplate_T3Am            = TestCase('transitional_flatplate_tutorial_T3Am')
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
@@ -207,7 +207,7 @@ def main():
     tutorial_trans_flatplate_T3Am.test_vals  = [-6.063550, -1.945057, -3.946359, -0.549026, -3.863798, 2.664577, -2.517606, 1.112977]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
-    
+
     # Transitional E387 SA
     tutorial_trans_e387_sa            = TestCase('tutorial_trans_e387_sa')
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
@@ -216,7 +216,7 @@ def main():
     tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081543, -0.795267, 1.022557, 0.150240, 2, -9.580670]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
-    
+
     # Transitional E387 SST
     tutorial_trans_e387_sst            = TestCase('tutorial_trans_e387_sst')
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
