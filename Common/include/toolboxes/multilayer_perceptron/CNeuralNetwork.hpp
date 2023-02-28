@@ -38,43 +38,42 @@
 #include "../../linear_algebra/blas_structure.hpp"
 #include "CLayer.hpp"
 
-
 namespace MLPToolbox {
 class CNeuralNetwork {
   /*!
    *\class CNeuralNetwork
    *\brief The CNeuralNetwork class allows for the evaluation of a loaded MLP architecture for
    * a given set of inputs. The class also contains a list of the various supported activation
-   * function types (linear, relu, elu, gelu, selu, sigmoid, swish, tanh, exp)which can be 
-   * applied to the layers in the network. Currently, only dense, feed-forward type neural 
-   * nets are supported in this implementation. 
+   * function types (linear, relu, elu, gelu, selu, sigmoid, swish, tanh, exp)which can be
+   * applied to the layers in the network. Currently, only dense, feed-forward type neural
+   * nets are supported in this implementation.
    */
  private:
-  su2vector<std::string> input_names,  /*!< MLP input variable names. */
-      output_names;                    /*!< MLP output variable names. */
+  su2vector<std::string> input_names, /*!< MLP input variable names. */
+      output_names;                   /*!< MLP output variable names. */
 
-  unsigned long n_hidden_layers = 0;  /*!< Number of hidden layers (layers between input and output layer). */
+  unsigned long n_hidden_layers = 0; /*!< Number of hidden layers (layers between input and output layer). */
 
-  CLayer *inputLayer = nullptr,  /*!< Pointer to network input layer. */
-      *outputLayer = nullptr;    /*!< Pointer to network output layer. */
+  CLayer *inputLayer = nullptr, /*!< Pointer to network input layer. */
+      *outputLayer = nullptr;   /*!< Pointer to network output layer. */
 
-  std::vector<CLayer*> hiddenLayers;  /*!< Hidden layer collection. */
-  su2vector<CLayer*> total_layers;    /*!< Hidden layers plus in/output layers */
+  std::vector<CLayer*> hiddenLayers; /*!< Hidden layer collection. */
+  su2vector<CLayer*> total_layers;   /*!< Hidden layers plus in/output layers */
 
-  su2vector<su2activematrix> weights_mat;  /*!< Weights of synapses connecting layers */
+  su2vector<su2activematrix> weights_mat; /*!< Weights of synapses connecting layers */
 
-  su2vector<std::pair<su2double, su2double>> input_norm,  /*!< Normalization factors for network inputs */ 
-      output_norm;                                        /*!< Normalization factors for network outputs */
+  su2vector<std::pair<su2double, su2double>> input_norm, /*!< Normalization factors for network inputs */
+      output_norm;                                       /*!< Normalization factors for network outputs */
 
-  su2vector<su2double> last_inputs;  /*!< Inputs from previous lookup operation. Evaluation of the network */
-                                     /*!< is skipped if current inputs are the same as the last inputs. */
+  su2vector<su2double> last_inputs; /*!< Inputs from previous lookup operation. Evaluation of the network */
+                                    /*!< is skipped if current inputs are the same as the last inputs. */
 
-  su2double* ANN_outputs;                 /*!< Pointer to network outputs */
-  su2matrix<su2double> dOutputs_dInputs;  /*!< Network output derivatives w.r.t inputs */
+  su2double* ANN_outputs;                /*!< Pointer to network outputs */
+  su2matrix<su2double> dOutputs_dInputs; /*!< Network output derivatives w.r.t inputs */
 
   /*!
    * \brief Available activation function enumeration.
-  */
+   */
   enum class ENUM_ACTIVATION_FUNCTION {
     NONE = 0,
     LINEAR = 1,
@@ -90,21 +89,21 @@ class CNeuralNetwork {
 
   /*!
    * \brief Available activation function map.
-  */
-  std::map<std::string, ENUM_ACTIVATION_FUNCTION> activation_function_map {
-    {"none", ENUM_ACTIVATION_FUNCTION::NONE},
-    {"linear", ENUM_ACTIVATION_FUNCTION::LINEAR},
-    {"relu", ENUM_ACTIVATION_FUNCTION::RELU},
-    {"gelu", ENUM_ACTIVATION_FUNCTION::GELU},
-    {"selu", ENUM_ACTIVATION_FUNCTION::SELU},
-    {"sigmoid", ENUM_ACTIVATION_FUNCTION::SIGMOID},
-    {"swish", ENUM_ACTIVATION_FUNCTION::SWISH},
-    {"tanh", ENUM_ACTIVATION_FUNCTION::TANH},
-    {"exponential", ENUM_ACTIVATION_FUNCTION::EXPONENTIAL}
-  };
+   */
+  std::map<std::string, ENUM_ACTIVATION_FUNCTION> activation_function_map{
+      {"none", ENUM_ACTIVATION_FUNCTION::NONE},
+      {"linear", ENUM_ACTIVATION_FUNCTION::LINEAR},
+      {"relu", ENUM_ACTIVATION_FUNCTION::RELU},
+      {"gelu", ENUM_ACTIVATION_FUNCTION::GELU},
+      {"selu", ENUM_ACTIVATION_FUNCTION::SELU},
+      {"sigmoid", ENUM_ACTIVATION_FUNCTION::SIGMOID},
+      {"swish", ENUM_ACTIVATION_FUNCTION::SWISH},
+      {"tanh", ENUM_ACTIVATION_FUNCTION::TANH},
+      {"exponential", ENUM_ACTIVATION_FUNCTION::EXPONENTIAL}};
 
-  su2vector<ENUM_ACTIVATION_FUNCTION> activation_function_types; /*!< Activation function type for each layer in the network. */
-  su2vector<string> activation_function_names;  /*!< Activation function name for each layer in the network. */
+  su2vector<ENUM_ACTIVATION_FUNCTION>
+      activation_function_types;               /*!< Activation function type for each layer in the network. */
+  su2vector<string> activation_function_names; /*!< Activation function name for each layer in the network. */
 
  public:
   ~CNeuralNetwork() {

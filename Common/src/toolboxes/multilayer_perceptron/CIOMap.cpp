@@ -25,22 +25,21 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../../include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 #include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
-#include <iostream>
-#include <string>
+
 #include <cmath>
 #include <fstream>
+#include <iostream>
+#include <string>
 
 #include "../../../include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
 
 MLPToolbox::CIOMap::CIOMap(CLookUp_ANN* MLP_collection, su2vector<std::string>& inputs,
                            su2vector<std::string>& outputs) {
-
-    /* Generate an input-output map given a set of call inputs and call outputs. These inputs 
-  mapped to the inputs of the loaded MLPs in the MLP_collection object. The call outputs are
-  then matched to the MLPs with matching inputs.
-  */
+  /* Generate an input-output map given a set of call inputs and call outputs. These inputs
+mapped to the inputs of the loaded MLPs in the MLP_collection object. The call outputs are
+then matched to the MLPs with matching inputs.
+*/
   PairVariableswithMLPs(MLP_collection, inputs, outputs);
 
   // Perform checks on input-output validity

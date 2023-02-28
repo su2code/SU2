@@ -48,7 +48,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
   Newton_Relaxation = config->GetRelaxation_DataDriven();
   Newton_Tolerance = 1e-10;
-  MaxIter_Newton = 500;
+  MaxIter_Newton = 50;
 
   /*--- Preprocessing of inputs and outputs for the interpolation method. ---*/
   MapInputs_to_Outputs();
@@ -133,6 +133,15 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
   dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+
+  /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions ---*/
+  su2double dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
+  su2double dhde_rho = 1 + dPde_rho / rho;
+
+  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  dhdP_rho = dhdrho_e * (1 / dPdrho_e) + dhde_rho * (1 / dPde_rho);
+  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  dsdP_rho = dsde_rho / dPde_rho;
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -278,8 +287,8 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
 
     su2double Enthalpy = e + Pressure / rho;
     /*--- Determine pressure and temperature residuals ---*/
-    delta_h = Enthalpy - h;
-    delta_s = Entropy - s;
+    // delta_h = Enthalpy - h;
+    // delta_s = Entropy - s;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
     if ((abs(delta_h / h) < Newton_Tolerance) && (abs(delta_s / s) < Newton_Tolerance)) {

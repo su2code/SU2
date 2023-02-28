@@ -31,9 +31,9 @@
 #include <iostream>
 #include <map>
 
+//#include "../../../include/option_structure.hpp"
 #include "../../../include/toolboxes/multilayer_perceptron/CLayer.hpp"
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
-#include "../../../include/option_structure.hpp"
 
 using namespace std;
 

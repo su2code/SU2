@@ -6153,6 +6153,11 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
+      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
+      su2double relax_Newton = config->GetRelaxation_DataDriven();
+      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       Pressure_i = GetFluidModel()->GetPressure();
@@ -6502,6 +6507,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        GetNodes()->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
 
     }
     END_SU2_OMP_FOR

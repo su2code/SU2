@@ -42,11 +42,11 @@ class CLayer {
    *\brief This class functions as one of the hidden, input, or output layers in the multi-layer perceptron
    * class. The CLayer class is used to communicate information (activation function inputs and outputs and gradients)
    * between the CNeuralNetwork class and the CNeuron class. Currently, only a single activation function
-   * can be applied to the neuron inputs within the layer. 
+   * can be applied to the neuron inputs within the layer.
    */
  private:
   unsigned long number_of_neurons; /*!< Neuron count in current layer */
-  su2vector<CNeuron>neurons;                /*!< Array of neurons in current layer */
+  su2vector<CNeuron> neurons;      /*!< Array of neurons in current layer */
   bool is_input;                   /*!< Input layer identifyer */
   std::string activation_type;     /*!< Activation function type applied to the current layer*/
  public:

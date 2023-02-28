@@ -63,7 +63,7 @@ class CLookUp_ANN {
    * \param[in] ANN - pointer to target NeuralNetwork class
    * \param[in] filename - filename containing ANN architecture information
    */
-  void GenerateANN(CNeuralNetwork &ANN, std::string filename);
+  void GenerateANN(CNeuralNetwork& ANN, std::string filename);
 
  public:
   /*!
@@ -109,8 +109,8 @@ class CLookUp_ANN {
    * \param[in] input - map to inputs (true) or outputs (false)
    */
   std::vector<pair<std::size_t, std::size_t>> FindVariableIndices(std::size_t i_ANN,
-                                                                   su2vector<std::string> variable_names,
-                                                                   bool input) const;
+                                                                  su2vector<std::string> variable_names,
+                                                                  bool input) const;
 };
 
 }  // namespace MLPToolbox

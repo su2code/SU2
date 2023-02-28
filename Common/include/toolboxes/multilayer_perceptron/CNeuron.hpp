@@ -37,7 +37,7 @@ namespace MLPToolbox {
 class CNeuron {
   /*!
    *\class CNeuron
-   *\brief This class functions as a neuron within the CLayer class, making up the 
+   *\brief This class functions as a neuron within the CLayer class, making up the
    * CNeuralNetwork class. The CNeuron class functions as a location to store activation
    * function inputs and outputs, as well as gradients and biases. These are accessed
    * through the CLayer class for network evalution operations.

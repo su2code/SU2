@@ -29,9 +29,10 @@
 
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
-#include <iomanip>
+
 #include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
 
@@ -51,7 +52,7 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string
   cout << "+------------------------------------------------------------------+\n";
   cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
   cout << "+------------------------------------------------------------------+" << endl;
-  
+
   for (auto i_MLP = 0u; i_MLP < n_inputs; i_MLP++) {
     if (rank == MASTER_NODE) cout << "Generating neural network for " << input_filenames[i_MLP] << endl;
     GenerateANN(NeuralNetworks[i_MLP], input_filenames[i_MLP]);
@@ -60,8 +61,8 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string
 }
 
 vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariableIndices(size_t i_ANN,
-                                                                           su2vector<string> variable_names,
-                                                                           bool input) const {
+                                                                          su2vector<string> variable_names,
+                                                                          bool input) const {
   /*--- Find loaded MLPs that have the same input variable names as the variables listed in variable_names ---*/
 
   vector<pair<size_t, size_t>> variable_indices;
@@ -69,8 +70,7 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariableIndices(size_t
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0u; jVar < variable_names.size(); jVar++) {
-      string ANN_varname =
-          input ? NeuralNetworks[i_ANN].GetInputName(iVar) : NeuralNetworks[i_ANN].GetOutputName(iVar);
+      string ANN_varname = input ? NeuralNetworks[i_ANN].GetInputName(iVar) : NeuralNetworks[i_ANN].GetOutputName(iVar);
       if (variable_names[jVar].compare(ANN_varname) == 0) {
         variable_indices.push_back(make_pair(jVar, iVar));
       }
@@ -80,7 +80,7 @@ vector<pair<size_t, size_t>> MLPToolbox::CLookUp_ANN::FindVariableIndices(size_t
 }
 
 unsigned long MLPToolbox::CLookUp_ANN::PredictANN(CIOMap* input_output_map, su2vector<su2double>& inputs,
-                                                   su2vector<su2double*>& outputs) {
+                                                  su2vector<su2double*>& outputs) {
   /*--- Evaluate MLP based on target input and output variables ---*/
   bool within_range,              // Within MLP training set range.
       MLP_was_evaluated = false;  // MLP was evaluated within training set range.
@@ -141,7 +141,7 @@ unsigned long MLPToolbox::CLookUp_ANN::PredictANN(CIOMap* input_output_map, su2v
   return MLP_was_evaluated ? 0 : 1;
 }
 
-void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork &ANN, string fileName) {
+void MLPToolbox::CLookUp_ANN::GenerateANN(CNeuralNetwork& ANN, string fileName) {
   /*--- Generate MLP architecture based on information in MLP input file ---*/
 
   /* Read MLP input file */
