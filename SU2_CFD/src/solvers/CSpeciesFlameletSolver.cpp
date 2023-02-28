@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -165,7 +165,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
 }
 
@@ -250,7 +250,7 @@ void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solve
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
   bool Restart = (config->GetRestart() || config->GetRestart_Flow());
-  
+
   /*--- do not use initial condition when custom python is active ---*/
   if (config->GetInitial_PyCustom()) {
     if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
@@ -298,7 +298,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     unsigned long n_not_iterated_global;
     unsigned long n_not_in_domain_global;
     unsigned long n_points_burnt_global;
-    unsigned long n_points_flame_global;  
+    unsigned long n_points_flame_global;
     unsigned long n_points_unburnt_global;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
@@ -699,7 +699,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
         enth_init = nodes->GetSolution(iPoint, I_ENTH);
         enth_wall = enth_init;
-        
+
         n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
@@ -749,7 +749,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
         LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
       }
-      
+
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {
@@ -841,7 +841,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
         LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
       }
-      
+
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {

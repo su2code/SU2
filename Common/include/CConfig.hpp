@@ -724,7 +724,7 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */ 
+  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
@@ -778,7 +778,7 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */    
+  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1227,26 +1227,28 @@ private:
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
-  /*--- flamelet subsolver ---*/
-  su2double flame_thickness;
-  su2double flame_burnt_thickness;
-  su2double flame_offset[3];
-  su2double flame_normal[3];
+  /*--- Additional flamelet solver options ---*/
+  su2double flame_thickness;       /*!< \brief Initial solution for flamelet solver: flame reaction zone thickness. */
+  su2double flame_burnt_thickness; /*!< \brief Initial solution for flamelet solver: burnt zone thickness. */
+  su2double flame_offset[3];       /*!< \brief Initial solution for flamelet solver: point on the plane separating
+                                               burnt from unburnt zone. */
+  su2double flame_normal[3];       /*!< \brief Initial solution for flamelet solver: normal of the plane separating
+                                               burnt from unburnt zone, pointing into direction of burnt. */
 
   /*--- lookup table ---*/
-  unsigned short n_scalars = 0;             /* number of transported scalars for the flamelet LUT approach*/
-  unsigned short n_lookups = 0;             /* number of lookud up variables */
-  unsigned short n_table_sources = 0;       /* the number of transported scalar source terms for the LUT */
-  unsigned short n_user_scalars = 0;
-  unsigned short n_user_sources = 0;
-  unsigned short n_control_vars = 0;
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
 
-  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
-  string file_name_lut;                 /*!< \brief file name of the look up table. */
-  string* user_scalar_names;
-  string* user_source_names;
+  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
+  vector<string> table_source_names;  /*!< \brief Names of transported scalar source variables. */
+  string* table_lookup_names;         /*!< \brief Names of LUT variables. */
+  string file_name_lut;               /*!< \brief Filename of the LUT. */
+  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
+  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2140,25 +2142,29 @@ public:
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
   /*!
-   * \brief Get the flame offset for flamelet model initialization
+   * \brief Get the flame offset (point on plane separating burnt and unburnt zone)
+            for flamelet model initialization.
    * \return flame offset for flamelet model initialization
    */
   su2double *GetFlameOffset(void) { return flame_offset; }
 
   /*!
-   * \brief Get the flame normal for flamelet model initialization
+   * \brief Get the flame normal (of the plane separating burnt and unburnt zone)
+            for flamelet model initialization. The normal points in the direction of the burnt zone.
    * \return flame offset for flamelet model initialization
    */
   su2double *GetFlameNormal(void) { return flame_normal; }
 
   /*!
-   * \brief Get the flame thickness for flamelet model initialization
+   * \brief Get the flame thickness (reaction zone) for flamelet model initialization.
+            This is the thickness of the transition layer from unburnt to burnt conditions.
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameThickness(void) { return flame_thickness; }
 
   /*!
-   * \brief Get the burnt region thickness for flamelet mdoel initialization
+   * \brief Get the burnt region thickness for flamelet model initialization.
+            This is the thickness of the hot, burnt zone after the reaction zone.
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
@@ -2203,6 +2209,9 @@ public:
    */
   unsigned short GetNLookups(void) const { return n_lookups; }
 
+  /*!
+   * \brief Set the total number of LUT sources
+   */
   void SetNLUTSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
 
   /*!
@@ -3161,7 +3170,7 @@ public:
 
   /*!
    * \brief Get Python customizable initial condition.
-   * \return true if customizable initial condition 
+   * \return true if customizable initial condition
    */
   bool GetInitial_PyCustom(void) const { return initial_PyCustom; }
 
