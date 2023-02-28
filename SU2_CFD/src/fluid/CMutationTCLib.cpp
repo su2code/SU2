@@ -2,14 +2,14 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,43 +58,38 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /* Initialize mixture object */
   mix.reset(new Mutation::Mixture(opt));
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
+  // x1000 to have Molar Mass in kg/kmol
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies);
 
-  if (mix->hasElectrons()) {
-    if (config->GetViscous()) {
-      SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
-    } else {
-      nHeavy = nSpecies-1;
-      nEl = 1;
-    }
-  }
-  else { nHeavy = nSpecies;   nEl = 0; }
+  if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
+  else { nHeavy = nSpecies; nEl = 0; }
 
   /*--- Set up catalytic recombination table. ---*/
   // Creation/Destruction (+1/-1), Index of monoatomic reactants
-  // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
+  // Monoatomic species (N,O) recombine into diaatomic (N2, O2) species
   if (gas_model == "N2") {
-    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
-    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1; // N2
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // N
 
   } else if (gas_model == "air_5"){
-    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
-    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
-    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
-    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
-    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0; // N
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // O
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4; // NO
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0; // N2
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1; // O2
 
   } else if (gas_model == "air_6") {
-    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
-    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
-    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
-    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
-    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
-    CatRecombTable(5,0) =  0; CatRecombTable(5,1) = 4;
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0; // N
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // O
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4; // NO
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0; // N2
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1; // O2
+    CatRecombTable(5,0) =  0; CatRecombTable(5,1) = 4; // Ar
 
   } else {
     if (config->GetCatalytic())
-      SU2_MPI::Error("Cataylic wall recombination not implemented for specified Mutation gas model.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Catalytic wall recombination not implemented for specified Mutation gas model.", CURRENT_FUNCTION);
   }
 
 }

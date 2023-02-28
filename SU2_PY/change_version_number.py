@@ -1,22 +1,22 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -42,13 +42,13 @@ parser.add_option("-y", action="store_true", dest="yes", help="Answer yes to all
 if not options.version:
     parser.error("new version number must be provided with -v option")
 
-oldvers  = '7.5.0 "Blackbird"'
-oldvers_q= r'7.5.0 \"Blackbird\"'
+oldvers  = '7.5.1 "Blackbird"'
+oldvers_q= r'7.5.1 \"Blackbird\"'
 newvers  = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q= str(options.version) + ' \\"' + str(options.releasename) + '\\"'
-#oldvers = 'Copyright 2012-2022, SU2'
+#oldvers = 'Copyright 2012-2023, SU2'
 #oldvers_q = oldvers
-#newvers = 'Copyright 2012-2022, SU2'
+#newvers = 'Copyright 2012-2023, SU2'
 #newvers_q = newvers
 
 if sys.version_info[0] > 2:
@@ -81,7 +81,7 @@ for line in f.readlines():
 f.close()
 print(filelist)
 
-# Prompt user before continuing 
+# Prompt user before continuing
 yorn = ''
 while(not yorn.lower()=='y' and not options.yes):
   yorn = raw_input('Replace %s with %s and %s with %s in the listed files? [Y/N]: '%(oldvers,newvers, oldvers_q, newvers_q))
