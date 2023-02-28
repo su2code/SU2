@@ -163,6 +163,40 @@ class CUpwAUSMPLUSM_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
 };
 
 /*!
+ * \class CUpwAUSMPLUSUP_NEMO
+ * \brief Class for solving an approximate Riemann AUSM+-Up, Two-Temperature Model.
+ * \ingroup ConvDiscr
+ * \author Amit Sachdeva, P. Gomes, W. Maier
+ */
+class CUpwAUSMPLUSUP_NEMO final : public CUpwAUSM_SLAU_Base_NEMO {
+ private:
+  su2double Kp, Ku, sigma;
+
+  /*!
+   * \brief Compute the interface Mach number, soundspeeds and pressure for AUSM+-Up scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] pressure - The pressure at the control volume face.
+   * \param[out] interface_mach - The interface Mach number M_(1/2).
+   * \param[out] interface_soundspeed - The interface soundspeed (vector for i and j faces if necessary).
+   */
+  virtual void ComputeInterfaceQuantities(const CConfig* config, su2double* pressure, su2double& interface_mach,
+                                          su2double* interface_soundspeed) override;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUSUP_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                       unsigned short val_nPrimVarGrad, const CConfig* config);
+};
+
+
+/*!
  * \class CUpwAUSMPLUSUP2_NEMO
  * \brief Class for solving an approximate Riemann AUSM+-up2, Two-Temperature Model.
  * https://doi.org/10.1016/j.jcp.2013.02.046
@@ -230,7 +264,6 @@ public:
    */
   CUpwSLAU_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                 unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
-
 };
 
 /*!
@@ -252,5 +285,4 @@ public:
    */
   CUpwSLAU2_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                  unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
-
 };

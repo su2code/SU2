@@ -1968,6 +1968,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
+            case UPWIND::AUSMPLUSUP:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSUP_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSUP_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
             case UPWIND::AUSMPLUSUP2:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSUP2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);

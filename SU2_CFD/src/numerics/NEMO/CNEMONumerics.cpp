@@ -226,10 +226,6 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
                                        su2double val_therm_conductivity_ve,
                                        const CConfig *config) {
 
-  if (ionization) {
-    SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
-  }
-
   // Requires a slightly non-standard primitive vector:
   // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
   // and gradient GV = [GY1, ... , GYn, GT, GTve, ... ]
@@ -342,6 +338,12 @@ void CNEMONumerics::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
     case 10:
       return COMPUTE_VISCOUS_JACS(10, 5);
+
+    case 11:
+      return COMPUTE_VISCOUS_JACS(11, 7);
+
+    case 12:
+      return COMPUTE_VISCOUS_JACS(12, 7);
 
     default:
       return COMPUTE_VISCOUS_JACS(DynamicSize,DynamicSize);
