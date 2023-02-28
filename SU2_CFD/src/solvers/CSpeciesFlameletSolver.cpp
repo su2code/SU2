@@ -488,16 +488,6 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
 
-    /*--- Update scalar sources in the fluidmodel ---*/
-
-    /*--- Axisymmetry source term for the scalar equation. ---*/
-    if (axisymmetric) {
-      /*--- Set y coordinate ---*/
-      first_numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
-      /*-- gradients necessary for axisymmetric flows only? ---*/
-      first_numerics->SetScalarVarGradient(nodes->GetGradient(i_point), nullptr);
-    }
-
     /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
     first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
 
@@ -512,6 +502,54 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
+
+    /*--- Update scalar sources in the fluidmodel ---*/
+
+    /*--- Axisymmetry source term for the scalar equation. ---*/
+ if (axisymmetric) {
+    CNumerics *numerics  = numerics_container[SOURCE_SECOND_TERM  + omp_get_thread_num()*MAX_TERMS];
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set primitive variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set scalar variables w/o reconstruction ---*/
+
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      /*--- Axisymmetry source term for the scalar equation. ---*/
+      /*--- Set y coordinate ---*/
+
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+
+      /*--- Set gradients ---*/
+
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+    END_SU2_OMP_FOR
+  }
+
 }
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,

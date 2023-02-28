@@ -173,7 +173,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
-  const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const bool flamelet       = config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET;
   const auto nSpecies       = config->GetnSpecies();
   const auto nScalars       = config->GetNScalars();
@@ -721,7 +721,7 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   const unsigned short nMarker      = config->GetnMarker_All();
   const unsigned short Kind_Average = config->GetKind_Average();
 
-  const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const auto nSpecies       = config->GetnSpecies();
 
   const bool axisymmetric               = config->GetAxisymmetric();
@@ -1054,10 +1054,24 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET: {
+      AddHistoryOutput("MAX_PROGRESS_VARIABLE", "max[PV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
+      /*--- auxiliary species transport ---*/
+      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        string scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("MAX_"+scalar_name, "max["+scalar_name+"]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -1091,10 +1105,24 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_TRANS_MODEL::NONE: break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET: {
+      AddHistoryOutput("BGS_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
+      /*--- auxiliary species transport ---*/
+      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        string scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -1178,11 +1206,17 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
 
     case SPECIES_MODEL::FLAMELET: {
       SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_RMS(I_PROGVAR)));
+      SetHistoryOutputValue("MAX_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_Max(I_PROGVAR)));
       SetHistoryOutputValue("RMS_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_RMS(I_ENTH)));
+      SetHistoryOutputValue("MAX_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_Max(I_ENTH)));
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         string species_name = config->GetUserScalarName(iReactant);
         SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControlVars() + iReactant)));
+        SetHistoryOutputValue("MAX_" + species_name, log10(solver[SPECIES_SOL]->GetRes_Max(config->GetNControlVars() + iReactant)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_BGS(config->GetNControlVars() + iReactant)));
+        }
       }
 
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());

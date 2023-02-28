@@ -107,10 +107,9 @@
 #include <fenv.h>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
-  config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0),
-  TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
+CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
-  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
+    /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
 #ifdef HAVE_MPI
   #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
     SU2_MPI::Init_AMPI();
@@ -602,6 +601,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     }
   }
 
+  /*--- Keep a reference to the main (ZONE 0) config. ---*/
+
+  main_config = config_container[ZONE_0];
+
   /*--- Determine whether or not the FEM solver is used, which decides the type of
    *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
 
@@ -706,6 +709,9 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   }
 
+  /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry. ---*/
+
+  main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
 void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry) {

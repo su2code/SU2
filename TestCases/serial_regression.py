@@ -70,11 +70,11 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone = TestCase('visc_cone')
-    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
-    visc_cone.test_vals_aarch64 = [-5.215229, -5.739368, -20.545048, -20.618699, -20.502531, 1.262784, -3.205454, -0.015696, 0.093207, 32656.000000]
+    visc_cone.test_vals = [-5.215236, -5.739371, -20.556662, -20.517023, -20.436970, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
+    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.556662, -20.517023, -20.436970, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 

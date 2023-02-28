@@ -38,18 +38,27 @@ def main():
 
     test_list = []
 
-    #########################
-    ## FLAMELET solver ###
-    #########################
+    #######################
+    ### Flamelet solver ###
+    #######################
 
-    # 2D planar laminar premixed flame on isothermal burner restar
-    fgm_planar_restart = TestCase('fgm_planar')
-    fgm_planar_restart.cfg_dir = "flamelet/laminar_premixed_flame"
-    fgm_planar_restart.cfg_file = "fgm_planar_restart.cfg"
-    fgm_planar_restart.test_iter = 10
-    fgm_planar_restart.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
-    fgm_planar_restart.new_output = True
-    test_list.append(fgm_planar_restart)
+    # 2D planar laminar premixed methane flame on isothermal burner (restart)
+    cfd_flamelet_ch4 = TestCase('cfd_flamelet_ch4')
+    cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
+    cfd_flamelet_ch4.test_iter = 10
+    cfd_flamelet_ch4.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
+    cfd_flamelet_ch4.new_output = True
+    test_list.append(cfd_flamelet_ch4)
+
+    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
+    cfd_flamelet_ch4_cht = TestCase('cfd_flamelet_ch4_cht')
+    cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
+    cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd__master.cfg"
+    cfd_flamelet_ch4_cht.test_iter = 10
+    cfd_flamelet_ch4_cht.reference_file = "restart_0_ref.dat"
+    cfd_flamelet_ch4_cht.test_file = "restart_0.dat"
+    test_list.append(cfd_flamelet_ch4_cht)
 
     #########################
     ## NEMO solver ###
@@ -155,11 +164,11 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone = TestCase('visc_cone')
-    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
@@ -174,10 +183,10 @@ def main():
 
     # Viscous single wedge - super catalytic walls
     super_cat = TestCase('super_cat')
-    super_cat.cfg_dir = "nonequilibrium/viscous"
+    super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
+    super_cat.test_vals = [-5.232590, -5.757884, -20.641547, -20.640244, -20.539243, 1.246889, -3.205235, -0.028406, 0.250857, 32459.000000]
     super_cat.su2_exec = "mpirun -n 2 SU2_CFD"
     super_cat.timeout = 1600
     super_cat.new_output = True
@@ -186,7 +195,7 @@ def main():
 
     # Viscous single wedge - partially catalytic walls
     partial_cat = TestCase('partial_cat')
-    partial_cat.cfg_dir = "nonequilibrium/viscous"
+    partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
@@ -195,6 +204,18 @@ def main():
     partial_cat.new_output = True
     partial_cat.tol = 0.00001
     test_list.append(partial_cat)
+
+    # Viscous cylinder, ionization, Gupta-Yos
+    ion_gy = TestCase('ion_gy')
+    ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
+    ion_gy.cfg_file = "cyl_ion_gy.cfg"
+    ion_gy.test_iter = 10
+    ion_gy.test_vals = [-11.629873, -4.165563, -4.702662, -4.950351, -5.146155, -4.993878, -6.893332, 5.990109, 5.990004, -0.014849, 0.000000, 90090.000000]
+    ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
+    ion_gy.timeout = 1600
+    ion_gy.new_output = True
+    ion_gy.tol = 0.00001
+    test_list.append(ion_gy)
 
     ##########################
     ### Compressible Euler ###
@@ -1349,6 +1370,16 @@ def main():
     pywrapper_rigidMotion.command       = TestCase.Command("mpirun -np 2", "python", "launch_flatPlate_rigidMotion.py --parallel -f")
     pywrapper_rigidMotion.unsteady      = True
     test_list.append(pywrapper_rigidMotion)
+
+    # Deforming Bump in Channel
+    pywrapper_deformingBump = TestCase('pywrapper_deformingBump')
+    pywrapper_deformingBump.cfg_dir = "py_wrapper/deforming_bump_in_channel"
+    pywrapper_deformingBump.cfg_file = "config.cfg"
+    pywrapper_deformingBump.test_iter = 1
+    pywrapper_deformingBump.test_vals = [0.5, 0, -2.55436, -1.084594, -0.024882, 2.907803, 8.785498, -0.363585]
+    pywrapper_deformingBump.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    pywrapper_deformingBump.unsteady = True
+    test_list.append(pywrapper_deformingBump)
 
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
