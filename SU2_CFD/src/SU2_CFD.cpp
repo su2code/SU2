@@ -73,6 +73,9 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
+  /*--- AD initialization ---*/
+  AD::Initialize();
+
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
@@ -163,6 +166,9 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
 #endif
+
+  /*--- Finalize AD. ---*/
+  AD::Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();

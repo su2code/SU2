@@ -186,13 +186,6 @@ namespace AD{
   inline void EndPreacc() {}
 
   /*!
-   * \brief Initializes an externally differentiated function. Input and output variables are set with SetExtFuncIn/SetExtFuncOut
-   * \param[in] storePrimalInput - Specifies whether the primal input values are stored for the reverse call of the external function.
-   * \param[in] storePrimalOutput - Specifies whether the primal output values are stored for the reverse call of the external function.
-   */
-  inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput) {}
-
-  /*!
    * \brief Sets the scalar input of a externally differentiated function.
    * \param[in] data - the scalar input variable.
    */
@@ -237,11 +230,6 @@ namespace AD{
   */
   template<class T>
   inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
-
-  /*!
-   * \brief Ends an external function section by deleting the structures.
-   */
-  inline void EndExtFunc() {}
 
   /*!
    * \brief Evaluates and saves gradient data from a variable.
@@ -491,15 +479,6 @@ namespace AD{
     }
   }
 
-  FORCEINLINE void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
-    if (!storePrimalInput){
-      FuncHelper.disableInputPrimalStore();
-    }
-    if (!storePrimalOutput){
-      FuncHelper.disableOutputPrimalStore();
-    }
-  }
-
   FORCEINLINE void SetExtFuncIn(const su2double &data) {
     FuncHelper.addInput(data);
   }
@@ -551,8 +530,6 @@ namespace AD{
     checkpoint->clear();
   }
 
-  FORCEINLINE void EndExtFunc() { }
-
   FORCEINLINE bool BeginPassive() {
     if(AD::getTape().isActive()) {
       StopRecording();
@@ -589,6 +566,9 @@ namespace AD{
 #endif
   }
 #endif // CODI_REVERSE_TYPE
+
+  void Initialize();
+  void Finalize();
 
 } // namespace AD
 

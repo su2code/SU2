@@ -49,4 +49,13 @@ namespace AD {
   ExtFuncHelper FuncHelper;
 
 #endif
+
+  void Initialize() {
+#ifdef CODI_REVERSE_TYPE
+    FuncHelper.disableInputPrimalStore();
+    FuncHelper.disableOutputPrimalStore();
+#endif
+  }
+
+  void Finalize() {}
 }

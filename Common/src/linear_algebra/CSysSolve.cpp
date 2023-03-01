@@ -866,110 +866,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     TapeActive = AD::TapeActive();
 
+    /*--- Declare external function inputs, outputs, and data ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      AD::StartExtFunc(false, false);
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    AD::StopRecording();
-#endif
-  }
-
-  /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
-
-  HandleTemporariesIn(LinSysRes, LinSysSol);
-
-  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-
-  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-
-  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-
-  /*--- Build preconditioner. ---*/
-
-  precond->Build();
-
-  /*--- Solve system. ---*/
-
-  unsigned long IterLinSol = 0;
-  ScalarType residual = 0.0;
-
-  switch (KindSolver) {
-    case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case PASTIX_LDLT : case PASTIX_LU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
-      IterLinSol = 1;
-      residual = 1e-20;
-      break;
-    default:
-      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
-  }
-
-  SU2_OMP_MASTER
-  {
-    Residual = residual;
-    Iterations = IterLinSol;
-  }
-  END_SU2_OMP_MASTER
-
-  HandleTemporariesOut(LinSysSol);
-
-  delete precond;
-
-  if(TapeActive) {
-
-    /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
-
-    if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
-    else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
-    else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
-
-    /*--- Build preconditioner for the transposed Jacobian ---*/
-
-    if (RequiresTranspose) Jacobian.TransposeInPlace();
-
-    switch(KindPrecond) {
-      case ILU:
-        if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
-        break;
-      case JACOBI:
-      case LINELET:
-        if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
-        break;
-      case LU_SGS:
-        /*--- Nothing to build. ---*/
-        break;
-      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        /*--- It was already built. ---*/
-        break;
-      default:
-        SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-        break;
-    }
-
-    /*--- Start recording if it was stopped for the linear solver ---*/
-#ifdef CODI_REVERSE_TYPE
-    AD::StartRecording();
-
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
       AD::FuncHelper.addUserData(&LinSysRes);
       AD::FuncHelper.addUserData(&LinSysSol);
@@ -979,14 +878,111 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       AD::FuncHelper.addUserData(this);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    auto placeholder = [](){};
-    AD::FuncHelper.callPrimalFuncWithADType(placeholder);
-    AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
-
-    SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
 #endif
   }
+
+  unsigned long IterLinSol = 0;
+
+  /*--- Declaration of the external function ---*/
+  auto externalFunction = [&]() {
+    /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
+
+    HandleTemporariesIn(LinSysRes, LinSysSol);
+
+    auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
+
+    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+
+    auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+
+    /*--- Build preconditioner. ---*/
+
+    precond->Build();
+
+    /*--- Solve system. ---*/
+
+    ScalarType residual = 0.0;
+
+    switch (KindSolver) {
+      case BCGSTAB:
+        IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case FGMRES:
+        IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case RESTARTED_FGMRES:
+        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case SMOOTHER:
+        IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case PASTIX_LDLT : case PASTIX_LU:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+        Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+        IterLinSol = 1;
+        residual = 1e-20;
+        break;
+      default:
+        SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
+    }
+
+    SU2_OMP_MASTER
+    {
+      Residual = residual;
+      Iterations = IterLinSol;
+    }
+    END_SU2_OMP_MASTER
+
+    HandleTemporariesOut(LinSysSol);
+
+    delete precond;
+
+    if(TapeActive) {
+
+      /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
+      const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
+
+      if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+      else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+      else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+
+      /*--- Build preconditioner for the transposed Jacobian ---*/
+
+      if (RequiresTranspose) Jacobian.TransposeInPlace();
+
+      switch(KindPrecond) {
+        case ILU:
+          if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
+          break;
+        case JACOBI:
+        case LINELET:
+          if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
+          break;
+        case LU_SGS:
+          /*--- Nothing to build. ---*/
+          break;
+        case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+          /*--- It was already built. ---*/
+          break;
+        default:
+          SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+          break;
+      }
+    }
+  }; /*--- Finish declaration of the external function ---*/
+
+#ifdef CODI_REVERSE_TYPE
+  /*--- Call the external function with appropriate AD handling ---*/
+  AD::FuncHelper.callPrimalFuncWithADType(externalFunction);
+
+  AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
+#else
+  /*--- Without reverse AD, call the external function directly ---*/
+  externalFunction();
+#endif
 
   return IterLinSol;
 }
