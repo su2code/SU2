@@ -139,7 +139,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   su2double dhde_rho = 1 + dPde_rho / rho;
 
   dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
-  dhdP_rho = dhdrho_e * (1 / dPdrho_e) + dhde_rho * (1 / dPde_rho);
+  dhdP_rho = dhde_rho * (1 / dPde_rho);
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
 }
@@ -287,8 +287,8 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
 
     su2double Enthalpy = e + Pressure / rho;
     /*--- Determine pressure and temperature residuals ---*/
-    // delta_h = Enthalpy - h;
-    // delta_s = Entropy - s;
+    delta_h = Enthalpy - h;
+    delta_s = Entropy - s;
 
     /*--- Continue iterative process if residuals are outside tolerances ---*/
     if ((abs(delta_h / h) < Newton_Tolerance) && (abs(delta_s / s) < Newton_Tolerance)) {
@@ -368,8 +368,8 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   /* Apply exponential transformation to the MLP outputs for the first and second
      derivative of the entropy w.r.t density */
   // Optional:
-  dsdrho_e = -exp(dsdrho_e);
-  d2sdrho2 = exp(d2sdrho2);
+  // dsdrho_e = -exp(dsdrho_e);
+  // d2sdrho2 = exp(d2sdrho2);
 
   return exit_code;
 }

@@ -1671,12 +1671,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     bool physical = nodes->SetPrimVar(iPoint, GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
-    /*--- Update en---*/
-    if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-      nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
-      nodes->SetEntropy(iPoint, GetFluidModel()->GetEntropy());
-    }
-
     /* Check for non-realizable states for reporting. */
 
     if (!physical) nonPhysicalPoints++;
@@ -4689,8 +4683,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
       su2double relax_Newton = config->GetRelaxation_DataDriven();
-      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
 
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
@@ -6155,8 +6149,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
       su2double relax_Newton = config->GetRelaxation_DataDriven();
-      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 

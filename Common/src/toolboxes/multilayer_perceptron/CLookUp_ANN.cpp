@@ -47,11 +47,14 @@ MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string
   number_of_variables = n_inputs;
 
   NeuralNetworks.resize(n_inputs);
-  cout << setfill(' ');
-  cout << endl;
-  cout << "+------------------------------------------------------------------+\n";
-  cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
-  cout << "+------------------------------------------------------------------+" << endl;
+  
+  if (rank == MASTER_NODE) {
+    cout << setfill(' ');
+    cout << endl;
+    cout << "+------------------------------------------------------------------+\n";
+    cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
+    cout << "+------------------------------------------------------------------+" << endl;
+  }
 
   for (auto i_MLP = 0u; i_MLP < n_inputs; i_MLP++) {
     if (rank == MASTER_NODE) cout << "Generating neural network for " << input_filenames[i_MLP] << endl;

@@ -25,7 +25,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
 #include <cmath>
 #include <fstream>
@@ -33,6 +32,7 @@
 #include <string>
 
 #include "../../../include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 
 MLPToolbox::CIOMap::CIOMap(CLookUp_ANN* MLP_collection, su2vector<std::string>& inputs,
                            su2vector<std::string>& outputs) {

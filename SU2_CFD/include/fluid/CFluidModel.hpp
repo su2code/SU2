@@ -330,13 +330,13 @@ class CFluidModel {
   * \brief Set the initial guess for the density in Newton solvers
   * \param[in] rho - Initial value for density.
   */
-  virtual void SetDensity(su2double rho) {}
+  virtual void SetInitialDensity(su2double rho) {}
 
   /*!
   * \brief Set the initial guess for the static energy in Newton solvers
   * \param[in] e - Initial value for static energy.
   */
-  virtual void SetEnergy(su2double e) {}
+  virtual void SetInitialEnergy(su2double e) {}
 
   /*!
   * \brief Get fluid model extrapolation instance
