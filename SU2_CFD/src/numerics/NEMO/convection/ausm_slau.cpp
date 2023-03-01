@@ -501,13 +501,14 @@ void CUpwAUSMPLUSUP_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2d
 
   /*--- Compute interface speed of sound (aF) ---*/
 
-  const su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
-  const su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
+  const su2double astarL = sqrt(2.0*(Gamma_i-1.0)/(Gamma_i+1.0)*Enthalpy_i);
+  const su2double astarR = sqrt(2.0*(Gamma_j-1.0)/(Gamma_j+1.0)*Enthalpy_j);
 
   const su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
   const su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
 
   const su2double A_F = min(ahatL,ahatR);
+  interface_soundspeed[0] = interface_soundspeed[1] = A_F;
 
   /*--- Left and right pressures and Mach numbers ---*/
 
@@ -552,16 +553,17 @@ void CUpwAUSMPLUSUP_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2d
   /*--- Pressure and velocity diffusion terms ---*/
 
   const su2double rhoF = 0.5*(Density_i+Density_j);
-  const su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
+  const su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*A_F*A_F);
 
-  const su2double Pu = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
+  const su2double Pu = -Ku*fa*betaLP*betaRM*2.0*rhoF*A_F*(ProjVelocity_j-ProjVelocity_i);
 
   /*--- Finally the fluxes ---*/
 
-  const su2double mF = mLP + mRM + Mp;
+  interface_mach = mLP + mRM + Mp;
   su2double mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
 
-  pressure[0] = pressure[1] = pressure[2] = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
+    pressure[iDim] = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
 }
 
 CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
