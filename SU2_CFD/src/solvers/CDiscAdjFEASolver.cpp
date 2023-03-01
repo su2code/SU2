@@ -126,6 +126,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   if (fea_dv) ReadDV(config);
 
+  SolverName = "ADJ.FEA";
 }
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
