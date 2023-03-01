@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/containers/CPyWrapperMatrixView.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../output/COutput.hpp"
 #include "../solvers/CSolver.hpp"
@@ -38,7 +39,6 @@
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
  */
-
 class CDriverBase {
  protected:
   int rank,               /*!< \brief MPI Rank. */
@@ -189,25 +189,24 @@ class CDriverBase {
   bool GetNodeDomain(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the initial (un-deformed) coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Initial node coordinates (nDim).
+   * \brief Get a read-only view of the initial (undeformed) coordinates of all mesh nodes.
    */
-  vector<passivedouble> GetInitialCoordinates(unsigned long iPoint) const;
+  inline CPyWrapperMatrixView InitialCoordinates() const {
+    if (!main_config->GetDeform_Mesh()) {
+      SU2_MPI::Error("Initial coordinates are only available with DEFORM_MESH= YES", CURRENT_FUNCTION);
+    }
+    auto* coords =
+        const_cast<su2activematrix*>(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+    return CPyWrapperMatrixView(*coords, "InitialCoordinates", true);
+  }
 
   /*!
-   * \brief Get the current coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Node coordinates (nDim).
+   * \brief Get a read/write view of the current coordinates of all mesh nodes.
    */
-  vector<passivedouble> GetCoordinates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Set the coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \param[in] values - Node coordinates (nDim).
-   */
-  void SetCoordinates(unsigned long iPoint, vector<passivedouble> values);
+  inline CPyWrapperMatrixView Coordinates() {
+    auto& coords = const_cast<su2activematrix&>(main_geometry->nodes->GetCoord());
+    return CPyWrapperMatrixView(coords, "Coordinates", false);
+  }
 
   /*!
    * \brief Get the number of markers in the mesh.
@@ -323,6 +322,39 @@ class CDriverBase {
    * \brief Communicate the boundary mesh displacements.
    */
   void CommunicateMeshDisplacements(void);
+
+  /*!
+   * \brief Get all the active solver names with their associated indices (which can be used to access their data).
+   */
+  map<string, unsigned short> GetSolverIndices() const;
+
+  /*!
+   * \brief Get a read/write view of the current solution on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView Solution(unsigned short iSolver) {
+    auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSolver];
+    if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
+    auto& solution = solver->GetNodes()->GetSolution();
+    return CPyWrapperMatrixView(solution, "Solution of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get the flow solver primitive variable names with their associated indices.
+   * These correspond to the column indices in the matrix returned by Primitives.
+   */
+  map<string, unsigned short> GetPrimitiveIndices() const;
+
+  /*!
+   * \brief Get a read/write view of the current primitive variables on all mesh nodes of the flow solver.
+   * \warning Primitive variables are only available for flow solvers.
+   */
+  inline CPyWrapperMatrixView Primitives() {
+    auto* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    if (solver == nullptr) SU2_MPI::Error("The flow solver does not exist.", CURRENT_FUNCTION);
+    auto& primitives = const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive());
+    return CPyWrapperMatrixView(primitives, "Primitives", false);
+  }
+
 /// \}
 
  protected:

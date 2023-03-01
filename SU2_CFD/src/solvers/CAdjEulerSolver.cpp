@@ -345,6 +345,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
+  SolverName = "ADJ.FLOW";
 }
 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
