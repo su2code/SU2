@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -143,7 +143,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
-    su2double y_aux = val_scalars[n_control_vars + i_aux];     
+    su2double y_aux = val_scalars[n_control_vars + i_aux];
     su2double source_prod = table_sources[1 + 2*i_aux];
     su2double source_cons = table_sources[1 + 2*i_aux + 1];
     source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
@@ -173,7 +173,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_enth = table_scalar_names[I_ENTH];
 
   su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
-  su2double enth_iter = initial_value; 
+  su2double enth_iter = initial_value;
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
@@ -191,7 +191,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
 
     /* calculate delta_enthalpy following dh = cp * dT */
     delta_enth = Cp * delta_temp_iter;
-     
+
     /*--- update enthalpy ---*/
     enth_iter += delta_enth;
 
@@ -233,7 +233,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
   val_vars_Sources.resize(n_table_sources);
-  
+
   for(size_t iSource=0; iSource < n_table_sources; iSource++){
     varnames_Sources[iSource] = table_source_names[iSource];
     val_vars_Sources[iSource] = &table_sources[iSource];

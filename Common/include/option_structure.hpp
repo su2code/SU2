@@ -472,7 +472,6 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
- // nijso: the values of int are important for some cases (fsi)
  enum SOLVER_TYPE : const int {
    FLOW_SOL=0,       /*!< \brief Position of the mean flow solution in the solver container array. */
    ADJFLOW_SOL=1,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
