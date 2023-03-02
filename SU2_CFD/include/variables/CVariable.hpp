@@ -2056,6 +2056,11 @@ public:
   inline virtual const su2double *GetMesh_Coord(unsigned long iPoint) const { return nullptr; }
 
   /*!
+   * \brief A virtual member. Get the undeformed coordinates for the entire domain.
+   */
+  inline virtual const MatrixType *GetMesh_Coord() const { return nullptr; }
+
+  /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]

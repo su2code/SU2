@@ -46,6 +46,8 @@ public:
   struct CIndices {
     const IndexType nDim;
     CIndices(IndexType ndim, IndexType) : nDim(ndim) {}
+    inline IndexType NDim() const { return nDim; }
+    inline IndexType NSpecies() const { return 0; }
     inline IndexType Pressure() const { return 0; }
     inline IndexType Velocity() const { return 1; }
     inline IndexType Temperature() const { return nDim+1; }
@@ -59,6 +61,7 @@ public:
     inline IndexType CvTotal() const { return nDim+8; }
 
     /*--- For compatible interface with NEMO. ---*/
+    inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Enthalpy() const { return std::numeric_limits<IndexType>::max(); }
   };

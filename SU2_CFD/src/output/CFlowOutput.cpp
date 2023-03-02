@@ -33,9 +33,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
-#include "../../include/variables/CEulerVariable.hpp"
-#include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CNEMOEulerVariable.hpp"
+#include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
@@ -747,6 +745,63 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
+void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx,
+                                                  CustomOutput& output) const {
+  const auto nameToIndex = PrimitiveNameToIndexMap(idx);
+
+  std::stringstream knownVariables;
+  for (const auto& items : nameToIndex) {
+    knownVariables << items.first + '\n';
+  }
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\n";
+
+  auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
+    /*--- Primitives of the flow solver. ---*/
+    const auto flowOffset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+    const auto it = nameToIndex.find(var);
+    if (it != nameToIndex.end()) return flowOffset + it->second;
+
+    /*--- Index-based (no name) access to variables of other solvers. ---*/
+    auto GetIndex = [](const std::string& s, int nameLen) {
+      /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
+      return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
+    };
+    if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+    if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
+    return CustomOutput::NOT_A_VARIABLE;
+  };
+
+  output.otherOutputs.clear();
+  output.varIndices.clear();
+  output.varIndices.reserve(output.varSymbols.size());
+
+  for (const auto& var : output.varSymbols) {
+    output.varIndices.push_back(IndexOfVariable(nameToIndex, var));
+
+    if (output.type == OperationType::FUNCTION && output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Custom outputs of type 'Function' cannot reference solver variables.", CURRENT_FUNCTION);
+    }
+    /*--- Symbol is a valid solver variable. ---*/
+    if (output.varIndices.back() < CustomOutput::NOT_A_VARIABLE) continue;
+
+    /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
+    if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Inactive solver variable (" + var + ") used in function " + output.name + "\n"
+                      "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
+    }
+
+    /*--- An index equal to NOT_A_VARIABLE may refer to a history output. ---*/
+    output.varIndices.back() += output.otherOutputs.size();
+    output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+    if (output.otherOutputs.back() == nullptr) {
+      SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                     "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+    }
+  }
+}
+
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
@@ -755,17 +810,10 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   for (auto& output : customOutputs) {
     if (output.varIndices.empty()) {
       /*--- Setup indices for the symbols in the expression. ---*/
+      const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+          config->GetNEMOProblem(), nDim, config->GetnSpecies());
+      ConvertVariableSymbolsToIndices(primIdx, output);
 
-      if (config->GetNEMOProblem()) {
-        ConvertVariableSymbolsToIndices(
-            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else {
-        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
-      }
       /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
       if (output.type != OperationType::PROBE) {
