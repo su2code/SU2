@@ -1276,13 +1276,6 @@ class CGeometry {
   void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
-   * \brief Update the multi-grid structure for the customized initial conditions
-   * \param geometry_container - Geometrical definition.
-   * \param config - Definition of the particular problem.
-   */
-  void UpdateCustomInitialConditions(CGeometry **geometry_container, CConfig *config);
-
-  /*!
    * \brief A virtual member.
    * \param config - Config
    */

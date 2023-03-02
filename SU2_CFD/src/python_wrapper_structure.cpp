@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
@@ -56,11 +55,6 @@ void CDriver::PythonInterface_Preprocessing(CConfig** config, CGeometry**** geom
         solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
       }
     }
-
-    if (config[iZone]->GetInitial_PyCustom() > 0){
-      if (rank == MASTER_NODE) cout << endl << "----------------- Python Initialization Preprocessing ( Zone "<< iZone <<" ) -----------------" << endl;
-    }
-
   }
 }
 
@@ -164,134 +158,11 @@ passivedouble CDriver::Get_LiftCoeff() const {
   return SU2_TYPE::GetValue(CLift);
 }
 
-/////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain information from the geometry/mesh                  */
-/////////////////////////////////////////////////////////////////////////////
-
- unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
-
-   return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];
-
- }
-
-// /* coordinates of the point on the mesh*/
-// vector<passivedouble> CDriver::GetCoords(unsigned long iPoint, unsigned short iMesh) const {
-//   vector<su2double> coord(3,0.0);
-//   vector<passivedouble> coord_passive(3, 0.0);
-
-//   for (auto iDim = 0 ; iDim < nDim ; iDim++){
-//     coord[iDim] = geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetCoord(iPoint,iDim);
-//   }
-
-//   coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
-//   coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
-//   coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
-
-//   return coord_passive;
-// }
-
- unsigned long CDriver::GetNumberVertices() const { return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); }
-
-// unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) const {
-
-//   unsigned long nHaloVertices, iVertex, iPoint;
-
-//   nHaloVertices = 0;
-//   for(iVertex = 0; iVertex < geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker]; iVertex++){
-//     iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-//     if(!(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint))) nHaloVertices += 1;
-//   }
-
-//   return nHaloVertices;
-
-// }
-
-// unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
-
-//   unsigned long iPoint, GlobalIndex;
-
-//   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-//   GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetGlobalIndex(iPoint);
-
-//   return GlobalIndex;
-
-// }
-
-// bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
-
-//   unsigned long iPoint;
-
-//   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-//   if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint)) return false;
-//   else return true;
-
-// }
-
-// /*--- Get the index to the solver ---*/
-// unsigned long CDriver::GetSolverIndex(string solverName) const {
-//   return static_cast<unsigned long>(SolverType_Map.find(solverName)->second);
-// }
-
-// vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
-
-//   vector<su2double> coord(3,0.0);
-//   vector<passivedouble> coord_passive(3, 0.0);
-
-//   auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-//   for (auto iDim = 0 ; iDim < nDim ; iDim++){
-//    coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
-//   }
-
-//   coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
-//   coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
-//   coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
-
-//   return coord_passive;
-// }
-
-// vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
-
-//   su2double *Normal;
-//   su2double Area;
-//   vector<su2double> ret_Normal(3, 0.0);
-//   vector<passivedouble> ret_Normal_passive(3, 0.0);
-
-//   Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-
-//   if (!unitNormal) {
-
-//     ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
-//     ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
-//     if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
-
-//     return ret_Normal_passive;
-//   }
-
-//   Area = GeometryToolbox::Norm(nDim, Normal);
-
-//   ret_Normal[0] = Normal[0]/Area;
-//   ret_Normal[1] = Normal[1]/Area;
-//   if(nDim>2) ret_Normal[2] = Normal[2]/Area;
-
-//   ret_Normal_passive[0] = SU2_TYPE::GetValue(ret_Normal[0]);
-//   ret_Normal_passive[1] = SU2_TYPE::GetValue(ret_Normal[1]);
-//   ret_Normal_passive[2] = SU2_TYPE::GetValue(ret_Normal[2]);
-
-//   return ret_Normal_passive;
-// }
-
 //////////////////////////////////////////////////////////////////////////////////
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetnTimeIter() const { return config_container[ZONE_0]->GetnTime_Iter(); }
-
-unsigned long CDriver::GetnPoints(unsigned short iMesh) const {
-
-  return geometry_container[ZONE_0][INST_0][iMesh]->GetnPointDomain();
-
-}
-
 
 unsigned long CDriver::GetTime_Iter() const { return TimeIter; }
 
@@ -463,66 +334,6 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
 
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
-
- void CDriver::SetStates(vector<vector<passivedouble>> values) {
-   const auto nPoint = GetNumberVertices();
-
-   if (values.size() != nPoint) {
-     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
-   }
-
-   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-     SetStates(iPoint, values[iPoint]);
-   }
- }
-
- void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values) {
-   const auto nVar = GetNumberStateVariables();
-
-   if (values.size() != nVar) {
-     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
-   }
-
-   for (auto iVar = 0u; iVar < nVar; iVar++) {
-     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
-   }
- }
-
- void CDriver::SetStates(vector<vector<passivedouble>> values, const int SOLVER) {
-   const auto nPoint = GetNumberVertices();
-
-   if (values.size() != nPoint) {
-     SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
-   }
-
-   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-     SetStates(iPoint, values[iPoint]);
-   }
- }
-
- void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values, const int SOLVER) {
-   const auto nVar = GetNumberStateVariables(SOLVER);
-   if (values.size() != nVar) {
-     SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
-   }
-
-   for (auto iVar = 0u; iVar < nVar; iVar++) {
-     solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
-   }
- }
-
- unsigned long CDriver::GetNumberStateVariables() const {
-   if (!config_container[ZONE_0]->GetFluidProblem()) {
-     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-   }
-
-   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
- }
-
- unsigned long CDriver::GetNumberStateVariables(const int SOLVER) const {
-   return solver_container[ZONE_0][INST_0][MESH_0][SOLVER]->GetnVar();
- }
-
 
 void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
   su2double alpha_rad = alpha * PI_NUMBER / 180.0;
@@ -817,6 +628,3 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
 
   return FlowLoad_passive;
 }
-
- #undef ENABLE_MAPS
-

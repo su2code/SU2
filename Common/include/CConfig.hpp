@@ -724,7 +724,6 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */ 
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
@@ -778,7 +777,6 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */    
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -3160,12 +3158,6 @@ public:
   unsigned short GetnMarker_PyCustom(void) const { return nMarker_PyCustom; }
 
   /*!
-   * \brief Get Python customizable initial condition.
-   * \return true if customizable initial condition 
-   */
-  bool GetInitial_PyCustom(void) const { return initial_PyCustom; }
-
-  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3558,13 +3550,6 @@ public:
   void SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
   /*!
-   * \brief Set if the initial condition is going to be customized in Python <i>val_PyCustom</i>
-   *        (read from the config file).
-   * \param[in] val_PyCustom - 0 or 1 depending if the the initial condition is going to be customized in Python.
-   */
-  void SetInitial_All_PyCustom(unsigned short val_PyCustom) { Initial_All_PyCustom = val_PyCustom; }
-
-  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3713,12 +3698,6 @@ public:
    * \return 0 or 1 depending if the marker is going to be customized in Python.
    */
   unsigned short GetMarker_All_PyCustom(unsigned short val_marker) const { return Marker_All_PyCustom[val_marker];}
-
-  /*!
-   * \brief Get the Python customization for the initial condition
-   * \return 0 or 1 depending if the initial condition is going to be customized in Python.
-   */
-  unsigned short GetInitial_All_PyCustom(unsigned short val_initial) const { return Initial_All_PyCustom;}
 
   /*!
    * \brief Get the airfoil sections in the slicing process.

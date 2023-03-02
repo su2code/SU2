@@ -830,7 +830,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_TurbomachineryFlag   = nullptr; Marker_All_TurbomachineryFlag   = nullptr;
   Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
 
-  Marker_CfgFile_PyCustom     = nullptr;   Marker_All_PyCustom      = nullptr;    Initial_All_PyCustom = false;
+  Marker_CfgFile_PyCustom     = nullptr;   Marker_All_PyCustom      = nullptr;
 
   Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
@@ -1518,10 +1518,6 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MARKER_PYTHON_CUSTOM\n DESCRIPTION: Python customizable marker(s) \ingroup Config*/
   addStringListOption("MARKER_PYTHON_CUSTOM", nMarker_PyCustom, Marker_PyCustom);
-  /*!\brief INITIAL_PYTHON_CUSTOM\n DESCRIPTION: flag for using Python customizable initial condition
-   * \ingroup Config
-   */
-  addBoolOption("INITIAL_PYTHON_CUSTOM", initial_PyCustom, false);
 
   /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
@@ -6404,11 +6400,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (iMarker_PyCustom < nMarker_PyCustom-1) cout << ", ";
         else cout << ".";
       }
-      cout << endl;
-    }
-
-    if (initial_PyCustom != 0) {
-      cout << "Using customizable initial condition" << endl;
       cout << endl;
     }
 
