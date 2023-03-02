@@ -777,10 +777,6 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-<<<<<<< HEAD
-=======
-  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */
->>>>>>> d72b1dcfdb8fcc1095125146039ccc59d040077a
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
