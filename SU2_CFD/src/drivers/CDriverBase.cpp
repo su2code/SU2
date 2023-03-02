@@ -29,6 +29,7 @@
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/variables/CPrimitiveIndices.hpp"
 
 using namespace std;
 
@@ -176,46 +177,6 @@ bool CDriverBase::GetNodeDomain(unsigned long iPoint) const {
     SU2_MPI::Error("Node index exceeds mesh size.", CURRENT_FUNCTION);
   }
   return main_geometry->nodes->GetDomain(iPoint);
-}
-
-vector<passivedouble> CDriverBase::GetInitialCoordinates(unsigned long iPoint) const {
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Node index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-vector<passivedouble> CDriverBase::GetCoordinates(unsigned long iPoint) const {
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Node index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-  vector<passivedouble> values;
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = main_geometry->nodes->GetCoord(iPoint, iDim);
-    values.push_back(SU2_TYPE::GetValue(value));
-  }
-  return values;
-}
-
-void CDriverBase::SetCoordinates(unsigned long iPoint, vector<passivedouble> values) {
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Node index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    main_geometry->nodes->SetCoord(iPoint, iDim, values[iDim]);
-  }
 }
 
 unsigned short CDriverBase::GetNumberMarkers() const { return main_config->GetnMarker_All(); }
@@ -430,4 +391,25 @@ void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVer
 void CDriverBase::CommunicateMeshDisplacements(void) {
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
+}
+
+map<string, unsigned short> CDriverBase::GetSolverIndices() const {
+  map<string, unsigned short> indexMap;
+  for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+    const auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    if (solver != nullptr) {
+      if (solver->GetSolverName().empty()) SU2_MPI::Error("Solver name was not defined.", CURRENT_FUNCTION);
+      indexMap[solver->GetSolverName()] = iSol;
+    }
+  }
+  return indexMap;
+}
+
+map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
+  if (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL] == nullptr) {
+    SU2_MPI::Error("The flow solver does not exist.", CURRENT_FUNCTION);
+  }
+  return PrimitiveNameToIndexMap(CPrimitiveIndices<unsigned short>(
+      main_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+      main_config->GetNEMOProblem(), nDim, main_config->GetnSpecies()));
 }

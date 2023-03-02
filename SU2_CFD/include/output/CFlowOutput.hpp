@@ -30,6 +30,10 @@
 #include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
+/*--- Forward declare to avoid including here. ---*/
+template <class>
+struct CPrimitiveIndices;
+
 class CFlowOutput : public CFVMOutput{
 protected:
   unsigned long lastInnerIter;
