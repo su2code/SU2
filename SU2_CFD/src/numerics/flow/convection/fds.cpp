@@ -92,7 +92,6 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
-  //const su2double T_Ref = config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT ? 298.15: 0.0;
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
@@ -128,17 +127,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     MeanVelocity[iDim]  = 0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     ProjVelocity       += MeanVelocity[iDim]*Normal[iDim];
   }
-  /*
-  su2double Velocity_Magnitude_i = 0.0;
-  su2double Velocity_Magnitude_j = 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_Magnitude_i += V_i[iDim+1]*V_i[iDim+1];
-    Velocity_Magnitude_j += V_j[iDim+1]*V_j[iDim+1];
-  }
-
-  Enthalpy_i = Cp_i * (Temperature_i - T_Ref)+ 0.5 * Velocity_Magnitude_i + Pressure_i / DensityInc_i; Enthalpy_j = Cp_j * (Temperature_j - T_Ref) + 0.5 * Velocity_Magnitude_j + Pressure_j / DensityInc_j;
-  */
   /*--- Projected velocity adjustment due to mesh motion ---*/
 
   if (dynamic_grid) {

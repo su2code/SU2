@@ -53,7 +53,6 @@ protected:
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
-  su2double T_Ref;            /*!< \brief Temperature Reference. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
@@ -192,8 +191,6 @@ protected:
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
-
-  bool species;                   /*!< \brief Flag for species transport problems */
 
 public:
   /*!

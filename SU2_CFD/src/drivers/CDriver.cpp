@@ -1901,9 +1901,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if (config->GetWind_Gust() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceWindGust(nDim, nVar_Flow, config);
       }
-      else if (config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT){
-        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncSpecies(nDim, nVar_Flow, config);
-      }
       else {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
       }
