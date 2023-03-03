@@ -56,8 +56,8 @@ def main():
     discadj_flamelet_ch4_hx.cfg_dir = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
     discadj_flamelet_ch4_hx.cfg_file = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.test_iter = 10
-    discadj_flamelet_ch4_hx.test_vals = [-10.002400, -9.676878, -9.773050, -8.751629, -15.830129, -19.235020, -5.546185]
-    discadj_flamelet_ch4_hx.new_output = True
+    discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.dat"
+    discadj_flamelet_ch4_hx.test_file = "restart_adj_avgsclr03_ref.dat"
     test_list.append(discadj_flamelet_ch4_hx)
 
     #####################################
