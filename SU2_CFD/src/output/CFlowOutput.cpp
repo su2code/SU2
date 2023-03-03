@@ -79,21 +79,20 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   } else if (rank == MASTER_NODE) {
     cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for at least 2 surfaces (outlet, inlet, ...)\n" << endl;
   }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-
-    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-      /// DESCRIPTION: Average flamelet user scalars
-      for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
-        std::stringstream str_i_var;
-        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-        AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-      }
+  }
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    /// DESCRIPTION: Average flamelet user scalars
+    for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
+      std::stringstream str_i_var;
+      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+      AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
     }
 
   }
@@ -131,23 +130,21 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
   AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-
-    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-      /// DESCRIPTION: Average flamelet user scalars
-      for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
-        std::stringstream str_i_var;
-        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-        AddHistoryOutputPerSurface("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-      }
+  }
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    /// DESCRIPTION: Average flamelet user scalars
+    for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
+      std::stringstream str_i_var;
+      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
+      AddHistoryOutputPerSurface("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
     }
-
   }
   /// END_GROUP
 }
@@ -1065,7 +1062,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       /*--- auxiliary species transport ---*/
       for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
-        AddHistoryOutput("MAX_"+scalar_name, "max["+scalar_name+"]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
     }
