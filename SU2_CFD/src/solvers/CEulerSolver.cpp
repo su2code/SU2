@@ -1671,12 +1671,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     bool physical = nodes->SetPrimVar(iPoint, GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
-    /*--- Update en---*/
-    if(config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-      nodes->SetDataExtrapolation(iPoint, GetFluidModel()->GetExtrapolation());
-      nodes->SetEntropy(iPoint, GetFluidModel()->GetStaticEnergy());
-    }
-
     /* Check for non-realizable states for reporting. */
 
     if (!physical) nonPhysicalPoints++;
@@ -2030,6 +2024,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool vorticity_confinement = config->GetVorticityConfinement();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
@@ -2226,6 +2221,42 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+  }
+
+  if (vorticity_confinement) {
+
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    /*--- calculate and set the average volume ---*/
+    const su2double AvgVolume = config->GetDomainVolume() / geometry->GetGlobal_nPointDomain();
+    second_numerics->SetAvgVolume(AvgVolume);
+
+    /*--- set vorticity magnitude as auxilliary variable ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
+      nodes->SetAuxVar(iPoint, 0, VorticityMag);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- calculate the gradient of the vorticity magnitude (AuxVarGradient) ---*/
+    SetAuxVar_Gradient_GG(geometry, config);
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+      second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
+      second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0);
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      auto residual = second_numerics->ComputeResidual(config);
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+
   }
 
   /*--- Check if a verification solution is to be computed. ---*/
@@ -4652,8 +4683,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
       su2double relax_Newton = config->GetRelaxation_DataDriven();
-      GetFluidModel()->SetDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-      GetFluidModel()->SetEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
 
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
@@ -6116,6 +6147,11 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
+      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
+      su2double relax_Newton = config->GetRelaxation_DataDriven();
+      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       Pressure_i = GetFluidModel()->GetPressure();
@@ -6465,6 +6501,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        GetNodes()->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
 
     }
     END_SU2_OMP_FOR

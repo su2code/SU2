@@ -2,14 +2,14 @@
  * \file CLookUp_ANN.hpp
  * \brief Declaration of artificial neural network interpolation class
  * \author E. Bunschoten
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,7 @@ class CLookUp_ANN {
 
  private:
   int rank{0};
-  su2vector<CNeuralNetwork*> NeuralNetworks; /*!< std::vector containing all loaded neural networks. */
+  su2vector<CNeuralNetwork> NeuralNetworks; /*!< std::vector containing all loaded neural networks. */
 
   unsigned short number_of_variables; /*!< Number of loaded ANNs. */
 
@@ -63,7 +63,7 @@ class CLookUp_ANN {
    * \param[in] ANN - pointer to target NeuralNetwork class
    * \param[in] filename - filename containing ANN architecture information
    */
-  void GenerateANN(CNeuralNetwork* ANN, std::string filename);
+  void GenerateANN(CNeuralNetwork& ANN, std::string filename);
 
  public:
   /*!
@@ -80,11 +80,7 @@ class CLookUp_ANN {
    * \param[in] outputs - pointers to output variables
    * \returns Within output normalization range.
    */
-  unsigned long Predict_ANN(CIOMap* input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs);
-
-  ~CLookUp_ANN() {
-    for (std::size_t i_ANN = 0; i_ANN < number_of_variables; i_ANN++) delete NeuralNetworks[i_ANN];
-  };
+  unsigned long PredictANN(CIOMap* input_output_map, su2vector<su2double>& inputs, su2vector<su2double*>& outputs);
 
   /*!
    * \brief Get number of loaded ANNs
@@ -97,14 +93,14 @@ class CLookUp_ANN {
    * \param[in] output_names - output variable names to check
    * \param[in] input_output_map - pointer to input-output map to be checked
    */
-  bool Check_Use_of_Outputs(su2vector<std::string>& output_names, CIOMap* input_output_map) const;
+  bool CheckUseOfOutputs(su2vector<std::string>& output_names, CIOMap* input_output_map) const;
 
   /*!
    * \brief Check if all input variables are present in the loaded ANNs
    * \param[in] input_names - input variable names to check
    * \param[in] input_output_map - pointer to input-output map to be checked
    */
-  bool Check_Use_of_Inputs(su2vector<std::string>& input_names, CIOMap* input_output_map) const;
+  bool CheckUseOfInputs(su2vector<std::string>& input_names, CIOMap* input_output_map) const;
 
   /*!
    * \brief Map variable names to ANN inputs or outputs
@@ -112,9 +108,9 @@ class CLookUp_ANN {
    * \param[in] variable_names - variable names to map to ANN inputs or outputs
    * \param[in] input - map to inputs (true) or outputs (false)
    */
-  std::vector<pair<std::size_t, std::size_t>> FindVariable_Indices(std::size_t i_ANN,
-                                                                   su2vector<std::string> variable_names,
-                                                                   bool input) const;
+  std::vector<pair<std::size_t, std::size_t>> FindVariableIndices(std::size_t i_ANN,
+                                                                  su2vector<std::string> variable_names,
+                                                                  bool input) const;
 };
 
 }  // namespace MLPToolbox

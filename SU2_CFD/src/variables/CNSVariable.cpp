@@ -43,6 +43,13 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 
+  if (config->GetKind_FluidModel() == ENUM_FLUIDMODEL::DATADRIVEN_FLUID){
+    DataDrivenFluid = true;
+    DatasetExtrapolation.resize(nPoint) = 0;
+    NIterNewtonsolver.resize(nPoint) = 0;
+    FluidEntropy.resize(nPoint) = su2double(0.0);
+  }
+
 }
 
 void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
@@ -197,6 +204,12 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+
+  /*--- Set look-up variables in case of data-driven fluid model ---*/
+  if (DataDrivenFluid) {
+    SetDataExtrapolation(iPoint, FluidModel->GetExtrapolation());
+    SetEntropy(iPoint, FluidModel->GetEntropy());
+  }
 
   return RightVol;
 }

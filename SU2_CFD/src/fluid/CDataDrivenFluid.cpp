@@ -2,14 +2,14 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.Bunschoten M.Mayer A.Capiello
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,8 +47,8 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
   Newton_Relaxation = config->GetRelaxation_DataDriven();
-  Newton_Tolerance = 1e-8;
-  MaxIter_Newton = 500;
+  Newton_Tolerance = 1e-10;
+  MaxIter_Newton = 50;
 
   /*--- Preprocessing of inputs and outputs for the interpolation method. ---*/
   MapInputs_to_Outputs();
@@ -133,6 +133,15 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
   dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+
+  /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions ---*/
+  su2double dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
+  su2double dhde_rho = 1 + dPde_rho / rho;
+
+  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  dhdP_rho = dhde_rho * (1 / dPde_rho);
+  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  dsdP_rho = dsde_rho / dPde_rho;
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -354,7 +363,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   MLP_inputs[idx_e] = e;
 
   /* Evaluate MLP collection for the given values for density and energy */
-  unsigned long exit_code = lookup_mlp->Predict_ANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  unsigned long exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
 
   /* Apply exponential transformation to the MLP outputs for the first and second
      derivative of the entropy w.r.t density */

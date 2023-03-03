@@ -2592,7 +2592,8 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           other GridMovements are rigid. ---*/
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
          config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-         !config->GetMarker_Moving_Bool(Local_TagBound)) {
+         !config->GetMarker_Moving_Bool(Local_TagBound) &&
+         !config->GetMarker_Deform_Mesh_Bool(Local_TagBound)) {
 
       /*--- Loop over all global markers, and find the local-global pair via
             matching unique string tags. ---*/
