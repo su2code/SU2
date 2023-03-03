@@ -42,6 +42,15 @@ def main():
     ### Disc. adj. flamelet solver ###
     ##################################
 
+    # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
+    discadj_flamelet_ch4_cht = TestCase('discadj_flamelet_ch4_cht')
+    discadj_flamelet_ch4_cht.cfg_dir = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
+    discadj_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_ad__master.cfg"
+    discadj_flamelet_ch4_cht.test_iter = 10
+    discadj_flamelet_ch4_cht.reference_file = "restart_adj_T_0_ref.dat"
+    discadj_flamelet_ch4_cht.test_file = "restart_adj_T_0.dat"
+    test_list.append(discadj_flamelet_ch4_cht)
+
     # 2D planar laminar premixed flame on isothermal burner (restart)
     discadj_flamelet_ch4_hx = TestCase('discadj_flamelet_ch4_hx')
     discadj_flamelet_ch4_hx.cfg_dir = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
