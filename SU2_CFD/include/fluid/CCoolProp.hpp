@@ -50,6 +50,7 @@ class CCoolProp final : public CFluidModel {
   su2double acentric_factor{0.0};      /*!< \brief acentric factor */
 #ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+  su2double epsilon{0.01};  /*!< threshold for pressure */
 #endif
 
  public:

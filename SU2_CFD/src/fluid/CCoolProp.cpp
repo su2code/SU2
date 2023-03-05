@@ -55,15 +55,15 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   dPde_rho = fluid_entity->first_partial_deriv(CoolProp::iP, CoolProp::iUmass, CoolProp::iDmass);
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
-  if (fluid_entity->phase() == 6) {
+  if (fluid_entity->phase() == CoolProp::iphase_twophase) {
     // assume it is pure gas
     fluid_entity->specify_phase(CoolProp::iphase_gas);
-    if (abs(Pressure / Pressure_Critical - 1) < 0.01) {
+    if (abs(Pressure / Pressure_Critical - 1) < epsilon) {
       // if P is very cloase to Pc, the CoolProp has issue
-      Pressure = Pressure_Critical * 0.99;
+      Pressure = Pressure_Critical * (1-epsilon);
     }
     fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
-    if (abs(fluid_entity->rhomass() / Density - 1) * 100 < 1) {
+    if (abs(fluid_entity->rhomass() / Density - 1) < epsilon) {
       // origial phase is near saturation gas, then just compute sound speed
       SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
     }
@@ -79,8 +79,8 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
 }
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
-  if (abs(P / Pressure_Critical - 1) < 0.01) {
-    P = Pressure_Critical * 0.99;
+  if (abs(P / Pressure_Critical - 1) < epsilon) {
+    P = Pressure_Critical * (1-epsilon);
   }
   fluid_entity->update(CoolProp::PT_INPUTS, P, T);
   su2double rho = fluid_entity->rhomass();
@@ -89,8 +89,8 @@ void CCoolProp::SetTDState_PT(su2double P, su2double T) {
 }
 
 void CCoolProp::SetTDState_Prho(su2double P, su2double rho) {
-  if (abs(P / Pressure_Critical - 1) < 0.01) {
-    P = Pressure_Critical * 0.99;
+  if (abs(P / Pressure_Critical - 1) < epsilon) {
+    P = Pressure_Critical * (1-epsilon);
   }
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   su2double e = fluid_entity->umass();
@@ -98,8 +98,8 @@ void CCoolProp::SetTDState_Prho(su2double P, su2double rho) {
 }
 
 void CCoolProp::SetEnergy_Prho(su2double P, su2double rho) {
-  if (abs(P / Pressure_Critical - 1) < 0.01) {
-    P = Pressure_Critical * 0.99;
+  if (abs(P / Pressure_Critical - 1) < epsilon) {
+    P = Pressure_Critical * (1-epsilon);
   }
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   StaticEnergy = fluid_entity->umass();
@@ -113,8 +113,8 @@ void CCoolProp::SetTDState_hs(su2double h, su2double s) {
 }
 
 void CCoolProp::SetTDState_Ps(su2double P, su2double s) {
-  if (abs(P / Pressure_Critical - 1) < 0.01) {
-    P = Pressure_Critical * 0.99;
+  if (abs(P / Pressure_Critical - 1) < epsilon) {
+    P = Pressure_Critical * (1-epsilon);
   }
   fluid_entity->update(CoolProp::PSmass_INPUTS, P, s);
   su2double rho = fluid_entity->rhomass();
