@@ -70,6 +70,11 @@ if __name__ == '__main__':
   # Set up the build environment, i.e. clone or download all submodules
   init_submodules('auto')
 
+  # Exit after setting up submodules, if system-wide Meson and Ninja are
+  # going to be used
+  if (os.environ.get('SU2_MESON') == 'no'):
+    sys.exit(0)
+
   # Build ninja if it cannot be found
   build_ninja()
 

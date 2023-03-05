@@ -95,8 +95,9 @@ def init_submodules(method = 'auto'):
     submodule_status(alt_name_codi, sha_version_codi)
     submodule_status(alt_name_medi, sha_version_medi)
     submodule_status(alt_name_opdi, sha_version_opdi)
-    submodule_status(alt_name_meson, sha_version_meson)
-    submodule_status(alt_name_ninja, sha_version_ninja)
+    if (os.environ.get('SU2_MESON') != 'no'):
+      submodule_status(alt_name_meson, sha_version_meson)
+      submodule_status(alt_name_ninja, sha_version_ninja)
     submodule_status(alt_name_mpp, sha_version_mpp)
     submodule_status(alt_name_coolprop, sha_version_coolprop)
     submodule_status(alt_name_mel, sha_version_mel)
@@ -105,8 +106,9 @@ def init_submodules(method = 'auto'):
     download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
     download_module(medi_name, alt_name_medi, github_repo_medi, sha_version_medi)
     download_module(opdi_name, alt_name_opdi, github_repo_opdi, sha_version_opdi)
-    download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
-    download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
+    if (os.environ.get('SU2_MESON') != 'no'):
+      download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
+      download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
     download_module(coolprop_name, alt_name_coolprop, github_repo_coolprop, sha_version_coolprop)
     download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
