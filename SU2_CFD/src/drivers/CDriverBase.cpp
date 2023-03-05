@@ -315,7 +315,7 @@ unsigned long CDriverBase::GetMarkerNode(unsigned short iMarker, unsigned long i
   if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
-  return geometry_container[MESH_0][INST_0][ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+  return main_geometry->vertex[iMarker][iVertex]->GetNode();
 }
 
 vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker, unsigned long iVertex,
@@ -403,6 +403,27 @@ map<string, unsigned short> CDriverBase::GetSolverIndices() const {
     }
   }
   return indexMap;
+}
+
+std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
+  if (solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL] == nullptr) {
+    SU2_MPI::Error("The FEA solver does not exist.", CURRENT_FUNCTION);
+  }
+  const auto nDim = main_geometry->GetnDim();
+  std::map<string, unsigned short> names;
+  names["DISPLACEMENT_X"] = 0;
+  names["DISPLACEMENT_Y"] = 1;
+  if (nDim == 3) names["DISPLACEMENT_Z"] = 2;
+
+  if (main_config->GetTime_Domain()) {
+    names["VELOCITY_X"] = nDim;
+    names["VELOCITY_Y"] = nDim + 1;
+    if (nDim == 3) names["VELOCITY_Z"] = nDim + 2;
+    names["ACCELERATION_X"] = 2 * nDim;
+    names["ACCELERATION_Y"] = 2 * nDim + 1;
+    if (nDim == 3) names["ACCELERATION_Z"] = 2 * nDim + 2;
+  }
+  return names;
 }
 
 map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
