@@ -547,30 +547,30 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       su2double Inlet_Vars[MAXNVAR];
       Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
       if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
-      }else {
-        /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
-        CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+         Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
+      } else {
+         /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+         CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
-        /*--- Obtain density and laminar viscosity at inlet boundary node ---*/
+         /*--- Obtain density and laminar viscosity at inlet boundary node ---*/
 
-        su2double Density_Inlet;
-        if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-          Density_Inlet = V_inlet[prim_idx.Density()];
-          FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
-        } else {
-          const su2double* Scalar_Inlet = nullptr;
-          if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+         su2double Density_Inlet;
+         if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+           Density_Inlet = V_inlet[prim_idx.Density()];
+           FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+         } else {
+           const su2double* Scalar_Inlet = nullptr;
+           if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
             Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-          }
-          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
-          Density_Inlet = FluidModel->GetDensity();
-        }
-        const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
-        const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
-        const su2double Nu_Factor = Turb_Properties[0];
+           }
+           FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+           Density_Inlet = FluidModel->GetDensity();
+         }
+         const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+         const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+         const su2double Nu_Factor = Turb_Properties[0];
 
-        Inlet_Vars[0] = Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
+         Inlet_Vars[0] = Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
       }
 
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
