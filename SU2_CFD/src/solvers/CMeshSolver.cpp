@@ -165,6 +165,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINE
     }
     Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
+
+  SolverName = "MESH";
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {

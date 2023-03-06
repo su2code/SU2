@@ -327,7 +327,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
-  /*--- Add the solver name (max 8 characters). ---*/
+  /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
   /*--- Finally, check that the static arrays will be large enough (keep this

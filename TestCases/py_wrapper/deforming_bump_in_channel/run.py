@@ -52,17 +52,17 @@ def main():
   TimeIter = SU2Driver.GetTime_Iter()
   nTimeIter = SU2Driver.GetnTimeIter()
   time = TimeIter * deltaT
-  
+
   # Extract the initial position of each node on the moving marker.
   CoordX = np.zeros(nVertex)
   CoordY = np.zeros(nVertex)
   for iVertex in range(nVertex):
     iPoint = SU2Driver.GetMarkerNode(MarkerID, iVertex)
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetInitialCoordinates(iPoint)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.InitialCoordinates().Get(iPoint)
 
   if rank == 0:
     print("\n------------------------------ Begin Solver -----------------------------\n")
-  
+
   # The time loop is defined in Python so that we have acces to SU2 functionalities at each time step.
   while (TimeIter < nTimeIter):
     # Apply the surface deformation.
@@ -72,12 +72,12 @@ def main():
 
     # Time iteration preprocessing.
     SU2Driver.Preprocess(TimeIter)
-    
+
     # Run one time iteration (e.g. dual-time).
     SU2Driver.Run()
     SU2Driver.Postprocess()
     SU2Driver.Update()
-    
+
     # Monitor the solver and output solution to file if required.
     stopCalc = SU2Driver.Monitor(TimeIter)
     SU2Driver.Output(TimeIter)
