@@ -87,7 +87,7 @@ void CFluidScalar::SetMassDiffusivityModel(const CConfig* config) {
 
 void CFluidScalar::ComputeMassDiffusivity() {
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    MassDiffusivityPointers[iVar]->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivityPointers[iVar]->SetDiffusivity(Density, Mu, Cp, Kt);
     massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
   }
 }
