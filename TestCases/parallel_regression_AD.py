@@ -351,8 +351,10 @@ def main():
     discadj_flamelet_ch4_hx.test_iter      = 10
     discadj_flamelet_ch4_hx.command        = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     discadj_flamelet_ch4_hx.timeout        = 20000
-    discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.csv.ref"
-    discadj_flamelet_ch4_hx.test_file      = "restart_adj_avgsclr03.csv"
+    #discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.csv.ref"
+    #discadj_flamelet_ch4_hx.test_file      = "restart_adj_avgsclr03.csv"
+    discadj_flamelet_ch4_hx.reference_file = "history.csv.ref"
+    discadj_flamelet_ch4_hx.test_file      = "history.csv"
     pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
     test_list.append(discadj_flamelet_ch4_hx)
 
