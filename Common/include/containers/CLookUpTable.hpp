@@ -54,6 +54,7 @@ class CLookUpTable {
       n_triangles,                   /*!< \brief Number of triangles per table level.*/
       n_hull_points;                 /*!< \brief Number of outer boundary points per table level.*/
 
+  double table_size = 0;
   unsigned long n_variables, n_table_levels = 1;
 
   su2vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/

@@ -40,7 +40,7 @@ using namespace std;
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                                  vector<std::array<unsigned long, 2> > const& edges,
-                                 su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
+                                 su2vector<vector<unsigned long> > const& val_edge_to_triangle, const bool display_info) {
   int rank = SU2_MPI::GetRank();
   su2double startTime = SU2_MPI::Wtime(); 
 
@@ -148,14 +148,14 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
     for (unsigned long j_y=0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
       size_y_edge_at_band_mid += sizeof(su2double)  / 1e6 + sizeof(unsigned long)  / 1e6;
 
-  double size_total = size_unique_bands +
+  size_total = size_unique_bands +
                       size_edge_limits_x +
                       size_edge_limits_y +
                       size_edge_to_triangle +
                       size_y_edge_at_band_mid;
 
   /* print size of trapezoidal map components to screen */
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (display_info)){
     cout << setfill(' ');
     cout << "\n" << endl;
     cout << "+------------------------------------------------------------------+\n";

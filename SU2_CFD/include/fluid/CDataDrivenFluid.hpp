@@ -3,14 +3,14 @@
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.Bunschoten
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -163,13 +163,13 @@ class CDataDrivenFluid : public CFluidModel {
    * \brief Set the initial guess for the density in Newton solvers
    * \param[in] rho - Initial value for density.
    */
-  void SetDensity(su2double rho) override { rho_start = rho; }
+  void SetInitialDensity(su2double rho) override { rho_start = rho; }
 
   /*!
    * \brief Set the initial guess for the static energy in Newton solvers
    * \param[in] e - Initial value for static energy.
    */
-  void SetEnergy(su2double e) override { e_start = e; }
+  void SetInitialEnergy(su2double e) override { e_start = e; }
 
   /*!
    * \brief Get fluid model extrapolation instance

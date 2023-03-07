@@ -2,14 +2,14 @@
  * \file CLookUp_ANN_tests.cpp
  * \brief Unit tests for NdFlattener template classes.
  * \author M. Aehle
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
 
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
   CHECK(z == Approx(0.344829));
 
   /*--- MLP evaluation on point outside the training data range ---*/
@@ -68,6 +68,6 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   y = -10;
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-  ANN.Predict_ANN(&iomap, MLP_inputs, MLP_outputs);
+  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
   CHECK(z == Approx(0.012737));
 }

@@ -53,13 +53,13 @@ class CTrapezoidalMap {
   /* The value that each edge which intersects the band takes within that
    * same band. Used to sort the edges */
   su2vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
-
+  double size_total;
  public:
   CTrapezoidalMap() = default;
 
   CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                   const std::vector<std::array<unsigned long, 2> >& edges,
-                  const su2vector<std::vector<unsigned long> >& edge_to_triangle);
+                  const su2vector<std::vector<unsigned long> >& edge_to_triangle,const bool display_info=true);
 
   /*!
    * \brief return the index to the triangle that contains the coordinates (val_x,val_y)
@@ -97,4 +97,6 @@ class CTrapezoidalMap {
   inline bool IsInsideHullX(su2double val_x) {
     return (val_x >= unique_bands_x.front()) && (val_x <= unique_bands_x.back());
   }
+
+  double GetSize() const { return size_total; };
 };

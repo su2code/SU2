@@ -132,7 +132,6 @@ lib_sources = \
   ../src/toolboxes/multilayer_perceptron/CIOMap.cpp\
   ../src/toolboxes/multilayer_perceptron/CNeuralNetwork.cpp\
   ../src/toolboxes/multilayer_perceptron/CLayer.cpp\
-  ../src/toolboxes/multilayer_perceptron/CNeuron.cpp\
   ../src/toolboxes/multilayer_perceptron/CReadNeuralNetwork.cpp\
   ../src/linear_algebra/CSysVector.cpp \
   ../src/linear_algebra/CSysMatrix.cpp \

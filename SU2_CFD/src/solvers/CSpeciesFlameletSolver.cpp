@@ -707,7 +707,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
       /*--- Set the species variable state at the inlet. ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), inlet_scalar);
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_inlet[prim_idx.Velocity()];
@@ -850,8 +850,8 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         condition (Dirichlet) and remove any
         contribution to the residual at this node. ---*/
 
-        nodes->SetSolution(iPoint, I_ENTH, enth_wall);
-        nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
+        nodes->SetSolution(iPoint, I_ENTH, 0.5*(enth_wall + enth_init));
+        nodes->SetSolution_Old(iPoint, I_ENTH, 0.5*(enth_wall + enth_init));
 
         LinSysRes(iPoint, I_ENTH) = 0.0;
 
@@ -891,7 +891,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
 
-        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
+        LinSysRes(iPoint, I_ENTH) -= 0.5*thermal_conductivity*dTdn*Area;
       }
       
     }

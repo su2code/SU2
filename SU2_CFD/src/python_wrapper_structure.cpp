@@ -167,11 +167,11 @@ passivedouble CDriver::Get_LiftCoeff() const {
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetnTimeIter() const { return config_container[ZONE_0]->GetnTime_Iter(); }
+unsigned long CDriver::GetNumberTimeIter() const { return config_container[ZONE_0]->GetnTime_Iter(); }
 
-unsigned long CDriver::GetTime_Iter() const { return TimeIter; }
+unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
-passivedouble CDriver::GetUnsteady_TimeStep() const {
+passivedouble CDriver::GetUnsteadyTimeStep() const {
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
@@ -448,79 +448,6 @@ void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passiv
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
   solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->GetNodes()->Set_FlowTraction(iPoint, NodalForce);
-}
-
-vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) const {
-  unsigned long iPoint;
-  vector<su2double> Displacements(3, 0.0);
-  vector<passivedouble> Displacements_passive(3, 0.0);
-
-  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
-  CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
-
-  Displacements[0] = solver->GetNodes()->GetSolution(iPoint, 0);
-  Displacements[1] = solver->GetNodes()->GetSolution(iPoint, 1);
-  if (geometry->GetnDim() == 3)
-    Displacements[2] = solver->GetNodes()->GetSolution(iPoint, 2);
-  else
-    Displacements[2] = 0.0;
-
-  Displacements_passive[0] = SU2_TYPE::GetValue(Displacements[0]);
-  Displacements_passive[1] = SU2_TYPE::GetValue(Displacements[1]);
-  Displacements_passive[2] = SU2_TYPE::GetValue(Displacements[2]);
-
-  return Displacements_passive;
-}
-
-vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) const {
-  unsigned long iPoint;
-  vector<su2double> Velocity(3, 0.0);
-  vector<passivedouble> Velocity_passive(3, 0.0);
-
-  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
-  CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
-
-  if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) {
-    Velocity[0] = solver->GetNodes()->GetSolution_Vel(iPoint, 0);
-    Velocity[1] = solver->GetNodes()->GetSolution_Vel(iPoint, 1);
-    if (geometry->GetnDim() == 3)
-      Velocity[2] = solver->GetNodes()->GetSolution_Vel(iPoint, 2);
-    else
-      Velocity[2] = 0.0;
-  }
-
-  Velocity_passive[0] = SU2_TYPE::GetValue(Velocity[0]);
-  Velocity_passive[1] = SU2_TYPE::GetValue(Velocity[1]);
-  Velocity_passive[2] = SU2_TYPE::GetValue(Velocity[2]);
-
-  return Velocity_passive;
-}
-
-vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) const {
-  unsigned long iPoint;
-  vector<su2double> Velocity_n(3, 0.0);
-  vector<passivedouble> Velocity_n_passive(3, 0.0);
-
-  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
-  CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
-
-  if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) {
-    Velocity_n[0] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 0);
-    Velocity_n[1] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 1);
-    if (geometry->GetnDim() == 3)
-      Velocity_n[2] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 2);
-    else
-      Velocity_n[2] = 0.0;
-  }
-
-  Velocity_n_passive[0] = SU2_TYPE::GetValue(Velocity_n[0]);
-  Velocity_n_passive[1] = SU2_TYPE::GetValue(Velocity_n[1]);
-  Velocity_n_passive[2] = SU2_TYPE::GetValue(Velocity_n[2]);
-
-  return Velocity_n_passive;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

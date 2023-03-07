@@ -188,7 +188,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
     su2double y_aux = val_scalars[n_CV + i_aux];     
     su2double source_prod = table_sources[1 + 2*i_aux];
     su2double source_cons = table_sources[1 + 2*i_aux + 1];
-    source_scalar[n_CV + i_aux] = source_prod + source_cons * y_aux;
+    source_scalar[n_CV + i_aux] = source_prod - source_cons * y_aux;
   }
 
   return exit_code;
@@ -224,7 +224,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  su2double delta_temp_final = 0.5; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
   su2double enth_iter = initial_value; 
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
@@ -354,7 +354,7 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
 
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
-    exit_code = look_up_ANN->Predict_ANN(iomap,val_controlling_vars, val_vars);
+    exit_code = look_up_ANN->PredictANN(iomap,val_controlling_vars, val_vars);
 
     break;
   default:

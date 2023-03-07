@@ -72,9 +72,11 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_C
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;
+  table_size = 0;
   for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
     trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level),
-                                            table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
+                                            table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level], false);
+    table_size += trap_map_x_y[i_level].GetSize();
     /* Display a progress bar to monitor table generation process */
     if (rank == MASTER_NODE) {
       su2double progress = su2double(i_level) / n_table_levels;
@@ -94,6 +96,8 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_C
         cout << "Construction of trapezoidal map took " << stopTime - startTime << " seconds\n" << endl;
         break;
       case 3:
+        cout << endl;
+        cout << "| Memory footprint:" << setw(45) << right << floor(table_size) << " MB |" << endl;
         cout << "Construction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
         break;
       default:
@@ -127,6 +131,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
 
   for (unsigned long i_level = 0; i_level < n_table_levels; i_level++) {
     n_points[i_level] = file_reader.GetNPoints(i_level);
+    
     n_triangles[i_level] = file_reader.GetNTriangles(i_level);
     n_hull_points[i_level] = file_reader.GetNHullPoints(i_level);
     table_data[i_level] = file_reader.GetTableData(i_level);
