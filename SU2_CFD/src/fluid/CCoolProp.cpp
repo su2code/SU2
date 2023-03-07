@@ -60,7 +60,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
     fluid_entity->specify_phase(CoolProp::iphase_gas);
     Check_Pressure(Pressure);
     fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
-    if (abs(fluid_entity->rhomass() / Density - 1) < epsilon) {
+    if (abs(fluid_entity->rhomass() / Density - 1) < dp) {
       // origial phase is near saturation gas, then just compute sound speed
       SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
     } else {
