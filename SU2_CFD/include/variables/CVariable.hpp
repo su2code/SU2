@@ -497,6 +497,7 @@ public:
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -1903,10 +1904,10 @@ public:
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
+   * \brief Get the velocity (Structural Analysis).
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double* GetSolution_Vel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1916,11 +1917,10 @@ public:
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
+   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
+  inline virtual su2double* GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -2046,6 +2046,11 @@ public:
    * \return Pointer to the reference coordinates.
    */
   inline virtual const su2double *GetMesh_Coord(unsigned long iPoint) const { return nullptr; }
+
+  /*!
+   * \brief A virtual member. Get the undeformed coordinates for the entire domain.
+   */
+  inline virtual const MatrixType *GetMesh_Coord() const { return nullptr; }
 
   /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.
