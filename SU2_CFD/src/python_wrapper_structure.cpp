@@ -55,11 +55,6 @@ void CDriver::PythonInterface_Preprocessing(CConfig** config, CGeometry**** geom
         solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
       }
     }
-
-    if (config[iZone]->GetInitial_PyCustom() > 0){
-      if (rank == MASTER_NODE) cout << endl << "----------------- Python Initialization Preprocessing ( Zone "<< iZone <<" ) -----------------" << endl;
-    }
-
   }
 }
 
@@ -560,6 +555,3 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
 
   return FlowLoad_passive;
 }
-
- #undef ENABLE_MAPS
-

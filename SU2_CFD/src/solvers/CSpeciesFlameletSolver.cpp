@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -165,7 +165,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
 }
 
@@ -259,12 +259,12 @@ void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solve
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
   bool Restart = (config->GetRestart() || config->GetRestart_Flow());
-  
+
   /*--- do not use initial condition when custom python is active ---*/
-  if (config->GetInitial_PyCustom()) {
-    if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
-    return;
-  }
+  //if (config->GetInitial_PyCustom()) {
+  //  if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
+  //  return;
+  //}
 
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
@@ -312,7 +312,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     unsigned long n_not_iterated_global,
                   n_not_in_domain_global;
     unsigned long n_points_burnt_global;
-    unsigned long n_points_flame_global;  
+    unsigned long n_points_flame_global;
     unsigned long n_points_unburnt_global;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
@@ -446,16 +446,6 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
 
-    /*--- Update scalar sources in the fluidmodel ---*/
-
-    /*--- Axisymmetry source term for the scalar equation. ---*/
-    if (axisymmetric) {
-      /*--- Set y coordinate ---*/
-      first_numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
-      /*-- gradients necessary for axisymmetric flows only? ---*/
-      first_numerics->SetScalarVarGradient(nodes->GetGradient(i_point), nullptr);
-    }
-
     /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
     first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
 
@@ -470,6 +460,54 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
+
+    /*--- Update scalar sources in the fluidmodel ---*/
+
+    /*--- Axisymmetry source term for the scalar equation. ---*/
+ if (axisymmetric) {
+    CNumerics *numerics  = numerics_container[SOURCE_SECOND_TERM  + omp_get_thread_num()*MAX_TERMS];
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set primitive variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set scalar variables w/o reconstruction ---*/
+
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      /*--- Axisymmetry source term for the scalar equation. ---*/
+      /*--- Set y coordinate ---*/
+
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+
+      /*--- Set gradients ---*/
+
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+    END_SU2_OMP_FOR
+  }
+
 }
 
 void CSpeciesFlameletSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
@@ -893,7 +931,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
 
         LinSysRes(iPoint, I_ENTH) -= 0.5*thermal_conductivity*dTdn*Area;
       }
-      
+
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {
@@ -925,7 +963,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      //if(config->GetSpecies_StrongBC()){
+      if(config->GetSpecies_StrongBC()){
 
         /*--- Initial guess for enthalpy ---*/
 
@@ -954,38 +992,38 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
           Jacobian.DeleteValsRowi(total_index);
         }
-      // }else{
-      //   /*--- Weak BC formulation ---*/
-      //   const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      }else{
+        /*--- Weak BC formulation ---*/
+        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      //   const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
 
-      //   const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      //   /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      //   const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      //   const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      //   su2double Edge_Vector[MAXNDIM];
-      //   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-      //   su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-      //   su2double dist_ij = sqrt(dist_ij_2);
+        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+        su2double Edge_Vector[MAXNDIM];
+        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+        su2double dist_ij = sqrt(dist_ij_2);
 
-      //   /*--- Compute the normal gradient in temperature using Twall ---*/
+        /*--- Compute the normal gradient in temperature using Twall ---*/
 
-      //   su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
+        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall)/dist_ij;
 
-      //   /*--- Get thermal conductivity ---*/
+        /*--- Get thermal conductivity ---*/
 
-      //   su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
 
-      //   /*--- Apply a weak boundary condition for the energy equation.
-      //   Compute the residual due to the prescribed heat flux. ---*/
+        /*--- Apply a weak boundary condition for the energy equation.
+        Compute the residual due to the prescribed heat flux. ---*/
 
-      //   LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
-      // }
-      
+        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity*dTdn*Area;
+      }
+
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {

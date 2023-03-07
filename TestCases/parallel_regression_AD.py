@@ -340,6 +340,38 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
 
+    ##################################
+    ### Disc. adj. flamelet solver ###
+    ##################################
+
+    # 2D planar laminar premixed flame on isothermal burner (restart)
+    discadj_flamelet_ch4_hx                = TestCase('discadj_flamelet_ch4_hx')
+    discadj_flamelet_ch4_hx.cfg_dir        = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
+    discadj_flamelet_ch4_hx.cfg_file       = "lam_prem_ch4_hx_ad.cfg"
+    discadj_flamelet_ch4_hx.test_iter      = 10
+    discadj_flamelet_ch4_hx.command        = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    discadj_flamelet_ch4_hx.timeout        = 20000
+    #discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.csv.ref"
+    #discadj_flamelet_ch4_hx.test_file      = "restart_adj_avgsclr03.csv"
+    discadj_flamelet_ch4_hx.reference_file = "history.csv.ref"
+    discadj_flamelet_ch4_hx.test_file      = "history.csv"
+    pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
+    test_list.append(discadj_flamelet_ch4_hx)
+
+    # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
+    discadj_flamelet_ch4_cht                = TestCase('discadj_flamelet_ch4_cht')
+    discadj_flamelet_ch4_cht.cfg_dir        = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
+    discadj_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_ad__master.cfg"
+    discadj_flamelet_ch4_cht.test_iter      = 10
+    discadj_flamelet_ch4_cht.command        = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    discadj_flamelet_ch4_cht.timeout        = 20000
+    discadj_flamelet_ch4_cht.reference_file = "restart_adj_T_0.csv.ref"
+    discadj_flamelet_ch4_cht.test_file      = "restart_adj_T_0.csv"
+    discadj_flamelet_ch4_cht.multizone      = True
+    pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
+    test_list.append(discadj_flamelet_ch4_cht)
+
+
     ##################################################
     ### Structural Adjoint - Topology Optimization ###
     ##################################################

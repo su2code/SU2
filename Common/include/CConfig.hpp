@@ -731,7 +731,6 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  bool initial_PyCustom;              /*!< \brief flag for using custom python boundary conditions */ 
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
@@ -785,7 +784,6 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool Initial_All_PyCustom;          /*!< \brief Python customizable initial condition */    
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1204,7 +1202,7 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies = 0;              /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
@@ -1235,33 +1233,35 @@ private:
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
-  /*--- flamelet subsolver ---*/
-  FLAME_INIT_TYPE Kind_FlameInit;
-  su2double flame_thickness;
-  su2double flame_burnt_thickness;
-  su2double flame_offset[3];
-  su2double flame_normal[3];
-  su2double spark_location[3];
-  su2double spark_radius;
-  su2double spark_reaction_rate;
-  unsigned long spark_iteration_start;
-  unsigned long spark_duration;
+  /*--- Additional flamelet solver options ---*/
+  FLAME_INIT_TYPE Kind_FlameInit;   /*!< \brief flamelet solver initialization type: flame front or spark. */
+  su2double flame_thickness;        /*!< \brief Initial solution for flamelet solver: flame reaction zone thickness. */
+  su2double flame_burnt_thickness;  /*!< \brief Initial solution for flamelet solver: burnt zone thickness. */
+  su2double flame_offset[3];        /*!< \brief Initial solution for flamelet solver: point on the plane separating
+                                               burnt from unburnt zone. */
+  su2double flame_normal[3];        /*!< \brief Initial solution for flamelet solver: normal of the plane separating
+                                               burnt from unburnt zone, pointing into direction of burnt. */
+  su2double spark_location[3];      /*!< \brief Cartesian coordinates of spark center. */
+  su2double spark_radius;           /*!< \brief Spark radius. */
+  su2double spark_reaction_rate;    /*!< \brief Reaction rate applied to progress variable solution within spark sphere. */
+  unsigned long spark_iteration_start;  /*!< \brief Iteration at which spark will initialize. */
+  unsigned long spark_duration;         /*!< \brief Number of iterations when spark will be active. */
 
   /*--- lookup table ---*/
-  unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
-  unsigned short n_lookups;             /* number of lookud up variables */
-  unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
-  unsigned short n_user_scalars;
-  unsigned short n_user_sources;
-  unsigned short n_control_vars;
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
 
-  bool preferential_diffusion;
-  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
-  //string file_name_lut;                 /*!< \brief file name of the look up table. */
-  string* user_scalar_names;
-  string* user_source_names;
+  bool preferential_diffusion;        /*!< \brief Enable preferential diffusion. */
+  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
+  vector<string> table_source_names;  /*!< \brief Names of transported scalar source variables. */
+  string* table_lookup_names;         /*!< \brief Names of LUT variables. */
+  string file_name_lut;               /*!< \brief Filename of the LUT. */
+  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
+  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2157,25 +2157,29 @@ public:
   FLAME_INIT_TYPE GetKind_Flame_Init(void) const { return Kind_FlameInit; }
 
   /*!
-   * \brief Get the flame offset for flamelet model initialization
+   * \brief Get the flame offset (point on plane separating burnt and unburnt zone)
+            for flamelet model initialization.
    * \return flame offset for flamelet model initialization
    */
   su2double *GetFlameOffset(void) { return flame_offset; }
 
   /*!
-   * \brief Get the flame normal for flamelet model initialization
+   * \brief Get the flame normal (of the plane separating burnt and unburnt zone)
+            for flamelet model initialization. The normal points in the direction of the burnt zone.
    * \return flame offset for flamelet model initialization
    */
   su2double *GetFlameNormal(void) { return flame_normal; }
 
   /*!
-   * \brief Get the flame thickness for flamelet model initialization
+   * \brief Get the flame thickness (reaction zone) for flamelet model initialization.
+            This is the thickness of the transition layer from unburnt to burnt conditions.
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameThickness(void) { return flame_thickness; }
 
   /*!
-   * \brief Get the burnt region thickness for flamelet mdoel initialization
+   * \brief Get the burnt region thickness for flamelet model initialization.
+            This is the thickness of the hot, burnt zone after the reaction zone.
    * \return flame thickness for flamelet model initialization
    */
   su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
@@ -2227,6 +2231,9 @@ public:
    */
   unsigned short GetNLookups(void) const { return n_lookups; }
 
+  /*!
+   * \brief Set the total number of LUT sources
+   */
   void SetNLUTSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
 
   /*!
@@ -3187,12 +3194,6 @@ public:
   unsigned short GetnMarker_PyCustom(void) const { return nMarker_PyCustom; }
 
   /*!
-   * \brief Get Python customizable initial condition.
-   * \return true if customizable initial condition 
-   */
-  bool GetInitial_PyCustom(void) const { return initial_PyCustom; }
-
-  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3585,13 +3586,6 @@ public:
   void SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
   /*!
-   * \brief Set if the initial condition is going to be customized in Python <i>val_PyCustom</i>
-   *        (read from the config file).
-   * \param[in] val_PyCustom - 0 or 1 depending if the the initial condition is going to be customized in Python.
-   */
-  void SetInitial_All_PyCustom(unsigned short val_PyCustom) { Initial_All_PyCustom = val_PyCustom; }
-
-  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3740,12 +3734,6 @@ public:
    * \return 0 or 1 depending if the marker is going to be customized in Python.
    */
   unsigned short GetMarker_All_PyCustom(unsigned short val_marker) const { return Marker_All_PyCustom[val_marker];}
-
-  /*!
-   * \brief Get the Python customization for the initial condition
-   * \return 0 or 1 depending if the initial condition is going to be customized in Python.
-   */
-  unsigned short GetInitial_All_PyCustom(unsigned short val_initial) const { return Initial_All_PyCustom;}
 
   /*!
    * \brief Get the airfoil sections in the slicing process.

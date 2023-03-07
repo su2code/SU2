@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -224,8 +224,8 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double delta_temp_final = 0.5; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
-  su2double enth_iter = initial_value; 
+  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  su2double enth_iter = initial_value;
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
 
@@ -247,7 +247,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
 
     /* calculate delta_enthalpy following dh = cp * dT */
     delta_enth = Cp * delta_temp_iter;
-     
+
     /*--- update enthalpy ---*/
     enth_iter += delta_enth;
 

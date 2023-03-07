@@ -1440,7 +1440,6 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    // nijso: we currently use axisymmetry with species transport using a simple inline function.
     if (config->GetAxisymmetric() == YES) {
       numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
     }

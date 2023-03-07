@@ -472,7 +472,6 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
- // nijso: the values of int are important for some cases (fsi)
  enum SOLVER_TYPE : const int {
    FLOW_SOL=0,       /*!< \brief Position of the mean flow solution in the solver container array. */
    ADJFLOW_SOL=1,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
@@ -490,25 +489,6 @@ enum RUNTIME_TYPE {
    FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
    ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
    TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
- };
- 
- static const MapType<std::string, SOLVER_TYPE> SolverType_Map = {
-   MakePair("FLOW_SOL", FLOW_SOL)
-   MakePair("ADJFLOW_SOL", ADJFLOW_SOL)
-   MakePair("TURB_SOL", TURB_SOL)
-   MakePair("ADJTURB_SOL", ADJTURB_SOL)
-   MakePair("FEA_SOL", FEA_SOL)
-   MakePair("ADJFEA_SOL", ADJFEA_SOL)
-   MakePair("TEMPLATE_SOL", TEMPLATE_SOL)
-   MakePair("TRANS_SOL", TRANS_SOL)
-   MakePair("HEAT_SOL", HEAT_SOL)
-   MakePair("ADJHEAT_SOL", ADJHEAT_SOL)
-   MakePair("RAD_SOL", RAD_SOL)
-   MakePair("ADJRAD_SOL", ADJRAD_SOL)
-   MakePair("MESH_SOL", MESH_SOL)
-   MakePair("ADJMESH_SOL", ADJMESH_SOL)
-   MakePair("SPECIES_SOL", SPECIES_SOL)
-   MakePair("ADJSPECIES_SOL", ADJSPECIES_SOL)
  };
 
 const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */

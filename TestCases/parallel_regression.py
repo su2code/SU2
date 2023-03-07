@@ -38,18 +38,27 @@ def main():
 
     test_list = []
 
-    #########################
-    ## FLAMELET solver ###
-    #########################
+    #######################
+    ### Flamelet solver ###
+    #######################
 
-    # 2D planar laminar premixed flame on isothermal burner restar
-    fgm_planar_restart = TestCase('fgm_planar')
-    fgm_planar_restart.cfg_dir = "flamelet/laminar_premixed_flame"
-    fgm_planar_restart.cfg_file = "fgm_planar_restart.cfg"
-    fgm_planar_restart.test_iter = 10
-    fgm_planar_restart.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
-    fgm_planar_restart.new_output = True
-    test_list.append(fgm_planar_restart)
+    # 2D planar laminar premixed methane flame on isothermal burner (restart)
+    cfd_flamelet_ch4 = TestCase('cfd_flamelet_ch4')
+    cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
+    cfd_flamelet_ch4.test_iter = 10
+    cfd_flamelet_ch4.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
+    cfd_flamelet_ch4.new_output = True
+    test_list.append(cfd_flamelet_ch4)
+
+    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
+    cfd_flamelet_ch4_cht = TestCase('cfd_flamelet_ch4_cht')
+    cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
+    cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd__master.cfg"
+    cfd_flamelet_ch4_cht.test_iter = 10
+    cfd_flamelet_ch4_cht.reference_file = "restart_0_ref.dat"
+    cfd_flamelet_ch4_cht.test_file = "restart_0.dat"
+    test_list.append(cfd_flamelet_ch4_cht)
 
     #########################
     ## NEMO solver ###

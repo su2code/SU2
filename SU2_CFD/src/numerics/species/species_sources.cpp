@@ -90,7 +90,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   if (Coord_i[1] > EPS) {
-
     AD::SetPreaccIn(Coord_i[1]);
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
@@ -200,12 +199,6 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
     }
   }
 
-   /*--- Contribution due to 2D axisymmetric formulation ---*/
-   
-   if (axisymmetric) ResidualAxisymmetric();
-
-   /*--- Implicit part ---*/
-   
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
 

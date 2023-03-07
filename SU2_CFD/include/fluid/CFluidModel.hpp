@@ -374,10 +374,13 @@ class CFluidModel {
   virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
 
   /*!
-   * \brief Virtual member. nijso: todo: is this really necessary?
+   * \brief Virtual member.
    */
   virtual unsigned long SetScalarSources(su2double* val_scalars) { return 0; }
 
+  /*!
+   * \brief Virtual member.
+   */
   virtual unsigned long SetScalarLookups(su2double* val_scalars) { return 0; }
 
   /*!
