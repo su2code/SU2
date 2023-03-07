@@ -458,19 +458,19 @@ class CDriver : public CDriverBase {
    * \brief Get the number of external iterations.
    * \return Number of external iterations.
    */
-  unsigned long GetnTimeIter() const;
+  unsigned long GetNumberTimeIter() const;
 
   /*!
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetTime_Iter() const;
+  unsigned long GetTimeIter() const;
 
   /*!
    * \brief Get the unsteady time step.
    * \return Unsteady time step.
    */
-  passivedouble GetUnsteady_TimeStep() const;
+  passivedouble GetUnsteadyTimeStep() const;
 
   /*!
    * \brief Get the name of the output file for the surface.
@@ -564,30 +564,6 @@ class CDriver : public CDriverBase {
    */
   void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX, passivedouble LoadY,
                     passivedouble LoadZ);
-
-  /*!
-   * \brief Return the displacements from the FEA solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of displacements.
-   */
-  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Return the velocities from the FEA Solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of velocities.
-   */
-  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Return the velocities from the FEA Solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of velocities at time n.
-   */
-  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
