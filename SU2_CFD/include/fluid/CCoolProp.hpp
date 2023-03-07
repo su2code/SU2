@@ -30,11 +30,10 @@
 #if defined(HAVE_COOLPROP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_COOLPROP
 namespace CoolProp {
-  class AbstractState;
+class AbstractState;
 }
 #endif
 #include <memory>
-
 
 /*!
  * \class CCoolProp
@@ -43,15 +42,28 @@ namespace CoolProp {
  */
 class CCoolProp final : public CFluidModel {
  private:
-  su2double Gamma{1.4};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gas_Constant{297};    /*!< \brief specific Gas Constant. */
-  su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
-  su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
+  su2double Gamma{1.4};                /*!< \brief Ratio of Specific Heats. */
+  su2double Gas_Constant{297};         /*!< \brief specific Gas Constant. */
+  su2double Pressure_Critical{0.0};    /*!< \brief critical pressure */
+  su2double Temperature_Critical{0.0}; /*!< \brief critical temperature */
   su2double acentric_factor{0.0};      /*!< \brief acentric factor */
 #ifdef USE_COOLPROP
-  std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
-  su2double epsilon{0.01};  /*!< threshold for pressure */
+  std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
+  su2double epsilon{0.01};                               /*!< threshold for pressure */
 #endif
+  /*!
+   * \brief Avoid critical pressure
+   * \return .
+   */
+  void Check_Pressure(su2double Pressure) {
+    if (abs(Pressure / Pressure_Critical - 1) < epsilon) {
+      if (Pressure >= Pressure_Critical) {
+        Pressure = Pressure_Critical * (1 + epsilon);
+      } else {
+        Pressure = Pressure_Critical * (1 - epsilon);
+      }
+    }
+  }
 
  public:
   /*!
@@ -146,5 +158,4 @@ class CCoolProp final : public CFluidModel {
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
-
 };
