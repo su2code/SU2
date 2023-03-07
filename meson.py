@@ -26,6 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os, subprocess, shutil, urllib.request, zipfile
+from pathlib import Path
 sys.path.append(sys.path[0] + os.path.sep + 'meson_scripts')
 from init import init_submodules
 from init import remove_file
@@ -69,6 +70,9 @@ if __name__ == '__main__':
 
   # Set up the build environment, i.e. clone or download all submodules
   init_submodules('auto')
+
+  # Leave a timestamp
+  Path('su2config.timestamp').touch()
 
   # Exit after setting up submodules, if system-wide Meson and Ninja are
   # going to be used
