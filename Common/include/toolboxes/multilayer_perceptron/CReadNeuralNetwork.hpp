@@ -33,7 +33,6 @@
 #include <vector>
 
 #include "../../CConfig.hpp"
-#include "../../containers/CFileReaderLUT.hpp"
 namespace MLPToolbox {
 
 class CReadNeuralNetwork {

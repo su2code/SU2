@@ -93,6 +93,7 @@ class CNeuralNetwork {
   std::map<std::string, ENUM_ACTIVATION_FUNCTION> activation_function_map{
       {"none", ENUM_ACTIVATION_FUNCTION::NONE},
       {"linear", ENUM_ACTIVATION_FUNCTION::LINEAR},
+      {"elu", ENUM_ACTIVATION_FUNCTION::ELU},
       {"relu", ENUM_ACTIVATION_FUNCTION::RELU},
       {"gelu", ENUM_ACTIVATION_FUNCTION::GELU},
       {"selu", ENUM_ACTIVATION_FUNCTION::SELU},

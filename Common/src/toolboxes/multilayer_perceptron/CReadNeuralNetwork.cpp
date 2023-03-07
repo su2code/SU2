@@ -27,7 +27,6 @@
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
 
-#include "../../../include/containers/CFileReaderLUT.hpp"
 using namespace std;
 
 MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in) { filename = filename_in; }
