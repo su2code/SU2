@@ -381,7 +381,7 @@ def main():
     dot_flamelet_ch4_hx.timeout        = 20000
     dot_flamelet_ch4_hx.reference_file = "of_grad.csv.ref"
     dot_flamelet_ch4_hx.test_file      = "of_grad.csv"
-    dot_flamelet_ch4_hx.tol_percent    = 0.01
+    dot_flamelet_ch4_hx.tol_percent    = 1e-5
     pass_list.append(dot_flamelet_ch4_hx.run_filediff())
     test_list.append(dot_flamelet_ch4_hx)
 
@@ -397,7 +397,7 @@ def main():
     dot_flamelet_ch4_cht.timeout        = 20000
     dot_flamelet_ch4_cht.reference_file = "of_grad.csv.ref"
     dot_flamelet_ch4_cht.test_file      = "of_grad.csv"
-    dot_flamelet_ch4_cht.tol_percent    = 0.01
+    dot_flamelet_ch4_cht.tol_percent    = 1e-5
     pass_list.append(dot_flamelet_ch4_cht.run_filediff())
     test_list.append(dot_flamelet_ch4_cht)
 
