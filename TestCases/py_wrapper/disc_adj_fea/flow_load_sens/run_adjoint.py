@@ -68,10 +68,10 @@ def main():
   MarkerName = 'RightBeamS'       # Specified by the user
 
   # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
+  MarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
   #Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
@@ -106,7 +106,10 @@ def main():
   disp=[]
   # Recover the sensitivity
   sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
-  disp.append(SU2Driver.GetFEA_Displacements(MarkerID,5))
+
+  fea_sol = SU2Driver.GetSolverIndices()["FEA"]
+  marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
+  disp.append(marker_disp.Get(5))
 
   print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
   print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])

@@ -202,10 +202,10 @@ elif get_option('enable-openblas')
 endif
 
 if get_option('enable-librom')
-   
+
    assert(get_option('librom_root')!='',
        'Must specify librom folder (-Dlibrom_root=path/to/libROM)')
-   
+
    su2_cpp_args += '-DHAVE_LIBROM'
 
    librom_root = get_option('librom_root')
@@ -268,10 +268,10 @@ endif
 subdir('Common/src')
 # compile SU2_CFD executable
 subdir('SU2_CFD/src')
-# compile SU2_DOT executable
-subdir('SU2_DOT/src')
 # compile SU2_DEF executable
 subdir('SU2_DEF/src')
+# compile SU2_DOT executable
+subdir('SU2_DOT/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
 # compile SU2_SOL executable
@@ -292,7 +292,7 @@ message('''---------------------------------------------------------------------
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
          -------------------------------------------------------------------------
-         
+
          Option          Value
          ---------------------
          TecIO:          @2@
@@ -336,7 +336,7 @@ if get_option('enable-librom')
   message(''' To run SU2 with libROM library, add this line to your .bashrc file:
 
           export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
-          
+
           '''.format(get_option('librom_root')))
 
 endif

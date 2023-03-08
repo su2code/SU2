@@ -75,29 +75,25 @@ def main():
   CHTMarker = 'plate'       # Specified by the user
 
   # Get all the tags with the CHT option
-  CHTMarkerList =  SU2Driver.GetAllCHTMarkersTag()
+  CHTMarkerList =  SU2Driver.GetCHTMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
   #Check if the specified marker has a CHT option and if it exists on this rank.
   if CHTMarker in CHTMarkerList and CHTMarker in allMarkerIDs.keys():
     CHTMarkerID = allMarkerIDs[CHTMarker]
 
   # Number of vertices on the specified marker (per rank)
-  nVertex_CHTMarker = 0         #total number of vertices (physical + halo)
-  nVertex_CHTMarker_HALO = 0    #number of halo vertices
-  nVertex_CHTMarker_PHYS = 0    #number of physical vertices
+  nVertex_CHTMarker = 0         # total number of vertices (physical + halo)
 
   if CHTMarkerID != None:
-    nVertex_CHTMarker = SU2Driver.GetNumberVertices(CHTMarkerID)
-    nVertex_CHTMarker_HALO = SU2Driver.GetNumberHaloVertices(CHTMarkerID)
-    nVertex_CHTMarker_PHYS = nVertex_CHTMarker - nVertex_CHTMarker_HALO
+    nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -115,6 +111,7 @@ def main():
     # Set this temperature to all the vertices on the specified CHT marker
     for iVertex in range(nVertex_CHTMarker):
       SU2Driver.SetVertexTemperature(CHTMarkerID, iVertex, WallTemp)
+
     # Tell the SU2 drive to update the boundary conditions
     SU2Driver.BoundaryConditionsUpdate()
     # Run one time iteration (e.g. dual-time)
