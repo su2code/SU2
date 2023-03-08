@@ -58,7 +58,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   if (fluid_entity->phase() == CoolProp::iphase_twophase) {
     // assume it is pure gas
     fluid_entity->specify_phase(CoolProp::iphase_gas);
-    Check_Pressure(Pressure);
+    CheckPressure(Pressure);
     fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
     if (abs(fluid_entity->rhomass() / Density - 1) < dp) {
       // origial phase is near saturation gas, then just compute sound speed
@@ -74,7 +74,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
 }
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
-  Check_Pressure(P);
+  CheckPressure(P);
   fluid_entity->update(CoolProp::PT_INPUTS, P, T);
   su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();
@@ -82,14 +82,14 @@ void CCoolProp::SetTDState_PT(su2double P, su2double T) {
 }
 
 void CCoolProp::SetTDState_Prho(su2double P, su2double rho) {
-  Check_Pressure(P);
+  CheckPressure(P);
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   su2double e = fluid_entity->umass();
   SetTDState_rhoe(rho, e);
 }
 
 void CCoolProp::SetEnergy_Prho(su2double P, su2double rho) {
-  Check_Pressure(P);
+  CheckPressure(P);
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   StaticEnergy = fluid_entity->umass();
 }
@@ -102,7 +102,7 @@ void CCoolProp::SetTDState_hs(su2double h, su2double s) {
 }
 
 void CCoolProp::SetTDState_Ps(su2double P, su2double s) {
-  Check_Pressure(P);
+  CheckPressure(P);
   fluid_entity->update(CoolProp::PSmass_INPUTS, P, s);
   su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();

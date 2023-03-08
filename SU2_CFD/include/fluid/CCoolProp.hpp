@@ -47,23 +47,19 @@ class CCoolProp final : public CFluidModel {
   su2double Pressure_Critical{0.0};    /*!< \brief critical pressure */
   su2double Temperature_Critical{0.0}; /*!< \brief critical temperature */
   su2double acentric_factor{0.0};      /*!< \brief acentric factor */
-  su2double dp{0.01};             /*!< threshold for pressure */
+  const su2double dp{0.01};            /*!< threshold for pressure */
 #ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
 #endif
   /*!
    * \brief Avoid critical pressure
-   * \return .
+   * \param[in,out] Pressure: Modified so that it is not too close to critical pressure to avoid issues in CoolProp.
    */
-  void Check_Pressure(su2double Pressure) {
-    if (abs(Pressure / Pressure_Critical - 1) < dp) {
-      if (Pressure >= Pressure_Critical) {
-        Pressure = Pressure_Critical * (1 + dp);
-      }
-      else {
-        Pressure = Pressure_Critical * (1 - dp);
-      }
-    }
+  void CheckPressure(su2double& Pressure) const {
+    if (Pressure > Pressure_Critical)
+      Pressure = fmax(Pressure, (1 + dp) * Pressure_Critical);
+    else
+      Pressure = fmin(Pressure, (1 - dp) * Pressure_Critical);
   }
 
  public:
