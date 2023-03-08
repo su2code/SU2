@@ -646,7 +646,7 @@ public:
         default : {
           string newstring;
           newstring.append(this->name);
-          newstring.append(": undefined design variable type found in configuration file.");
+          newstring.append(": undefined design variable type found in configuration file. ");
           return newstring;
         }
       }

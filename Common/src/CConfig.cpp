@@ -2385,7 +2385,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief DESIGN_VARIABLE_FEA
    *  \n DESCRIPTION: Design variable for FEA problems \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, NODV_FEA);
-// nijso
   /*  DESCRIPTION: Consider a reference solution for the structure (optimization applications)
   *  Options: NO, YES \ingroup Config */
   addBoolOption("REFERENCE_GEOMETRY", RefGeom, false);
@@ -2442,7 +2441,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DYN_TIME", Total_DynTime, 1.0);
   /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
   addDoubleOption("NEWMARK_BETA", Newmark_beta, 0.25);
-  /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
+  /* DESCRIPTION: Parameter gamma for Newmark scheme (s) */
   addDoubleOption("NEWMARK_GAMMA", Newmark_gamma, 0.5);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
@@ -2522,7 +2521,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determines if the convergence history of each individual zone is written to file */
   addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, false);
 
-  /* DESCRIPTION: Determines if the special output is written out */
+  /* DESCRIPTION: Determines if the forces breakdown is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
 
@@ -2624,7 +2623,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
 
-  /* DESCRIPTION: Node number for the CV to be visualized */
+  /* DESCRIPTION: Node number for the CV to be visualized (tecplot) (nijso: delete?) */
   addLongOption("VISUALIZE_CV", Visualize_CV, -1);
 
   /*!\par CONFIG_CATEGORY: Inverse design problem \ingroup Config*/
@@ -2639,10 +2638,10 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Unsupported options \ingroup Config*/
   /*--- Options that are experimental and not intended for general use ---*/
 
-  /* DESCRIPTION: Write extra output */
+  /* DESCRIPTION: Write extra output (EXPERIMENTAL, NOT FOR GENERAL USE) */
   addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
 
-  /* DESCRIPTION: Write extra heat output for a given zone heat solver zone */
+  /* DESCRIPTION: Write extra heat output for a given heat solver zone */
   addLongOption("EXTRA_HEAT_ZONE_OUTPUT", ExtraHeatOutputZone, -1);
 
   /*--- options related to the FFD problem ---*/
