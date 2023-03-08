@@ -102,7 +102,7 @@ def main():
   CoordY = np.zeros(nVertex_MovingMarker)
   for iVertex in range(nVertex_MovingMarker):
     iPoint = SU2Driver.GetMarkerNode(MovingMarkerID, iVertex)
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetInitialCoordinates(iPoint)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.InitialCoordinates().Get(iPoint)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
