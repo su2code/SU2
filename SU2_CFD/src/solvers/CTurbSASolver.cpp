@@ -569,10 +569,9 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
          const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
          const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
          const su2double Nu_Factor = Turb_Properties[0];
+         Inlet_Vars[0] = Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
          if (config->GetSAParsedOptions().bc) {
-           Inlet_Vars[0] = 0.005 * Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
-         } else {
-           Inlet_Vars[0] = Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
+           Inlet_Vars[0] *= 0.005;
          }
       }
 
