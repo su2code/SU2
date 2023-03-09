@@ -272,14 +272,7 @@ private:
   *Marker_FlowLoad,               /*!< \brief Flow Load markers. */
   *Marker_Internal,               /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;           /*!< \brief Global index for markers using grid information. */
-  su2double RBF_SupportRadius;               /*!< \brief RBF Support Radius. */
-  su2double RBF_GreedyTolerance;             /*!< \brief RBF Tollerance for the Greedy algorithm. */
-  
-  bool RBF_MeshDeformation;                  /*!< \brief Activate RBF mesh deformation. */
-  bool RBF_SensSmooth;                       /*!< \brief Smooth Sensitivity with rbf. */
-  int RBF_nMultiLevelSteps;                  /*!< \brief number of levels for the Greedy algorithm of RBF. */
-  int RBF_MaxnControlPoints;                 /*!< \brief Number of control points for RBF mesh deformation. */
-  su2double RBF_VolumeReductionFactor;       /*!< \brief RBF Volume Reduction Factor. */
+
   su2double *Exhaust_Temperature_Target;     /*!< \brief Specified total temperatures for nacelle boundaries. */
   su2double *Exhaust_Pressure_Target;        /*!< \brief Specified total pressures for nacelle boundaries. */
   su2double *Inlet_Ttotal;                   /*!< \brief Specified total temperatures for inlet boundaries. */

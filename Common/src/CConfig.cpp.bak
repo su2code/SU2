@@ -2371,7 +2371,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("KNOWLES_B", Knowles_B, 1.0);
   /* DESCRIPTION: Knowles N constant */
   addDoubleOption("KNOWLES_N", Knowles_N, 1.0);
-  
+
   /*  DESCRIPTION: Include DE effects
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DE_EFFECTS", DE_Effects, false);
@@ -2552,24 +2552,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Tolerance to prune small coefficients from the RBF interpolation matrix. */
   addDoubleOption("RADIAL_BASIS_FUNCTION_PRUNE_TOLERANCE", RadialBasisFunction_PruneTol, 1e-6);
-  
-   addDoubleOption("RBF_SUPPORT_RADIUS", RBF_SupportRadius, 1);
-
-  /* DESCRIPTION: Tolerance used in the greedy point selection*/
-  addDoubleOption("RBF_GREEDY_TOLERANCE", RBF_GreedyTolerance, 1E-4);
-
-  /* DESCRIPTION: Radial Basis Function mesh deformation is in use*/
-  addBoolOption("RBF_MESH_DEFORMATION", RBF_MeshDeformation, false);
-
-  /* DESCRIPTION: Factor that multiplies the maximum surface displacement.
-   *              Used in order to identify the volume nodes to be displaced*/
-  addDoubleOption("RBF_VOLUME_REDUCTION_FACTOR", RBF_VolumeReductionFactor, 5);
-
-  /* DESCRIPTION: Maximum number of control points to be used in each sublevel of the procedure*/
-  addIntegerOption("RBF_MAX_CONTROL_POINTS", RBF_MaxnControlPoints, 100);
-
-  /* DESCRIPTION: Maximum number of levels in the multistep approach*/
-  addIntegerOption("RBF_MULTILEVEL_STEPS", RBF_nMultiLevelSteps, 1);
 
    /*!\par INLETINTERPOLATION \n
    * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
