@@ -46,7 +46,7 @@ def init_submodules(method = 'auto'):
   # The sha tag must be maintained manually to point to the correct commit
   sha_version_codi = '76a63ec8805eee146b1a5f6629676d3e78383f9e'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
+  sha_version_medi = 'aafc2d1966ba1233640af737e71c77c1a86183fd'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
   sha_version_opdi = 'f33b507c24f7448d4cf4df16ab5c53ea254b8774'
   github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
