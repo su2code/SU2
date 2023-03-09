@@ -48,17 +48,16 @@ def main():
   nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0
 
   # Retrieve some control parameters from the driver.
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter * deltaT
 
   # Extract the initial position of each node on the moving marker.
   CoordX = np.zeros(nVertex)
   CoordY = np.zeros(nVertex)
   for iVertex in range(nVertex):
-    iPoint = SU2Driver.GetMarkerNode(MarkerID, iVertex)
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.InitialCoordinates().Get(iPoint)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.MarkerInitialCoordinates(MarkerID).Get(iVertex)
 
   if rank == 0:
     print("\n------------------------------ Begin Solver -----------------------------\n")
