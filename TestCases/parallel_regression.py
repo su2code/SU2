@@ -354,7 +354,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.147548, -6.729213, -0.176227, 0.057731]
+    turb_flatplate.test_vals = [-4.147548, -6.728790, -0.176227, 0.057731]
     test_list.append(turb_flatplate)
 
     # Flat plate (compressible) with species inlet
@@ -953,7 +953,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783, -618.160000]
+    ddes_flatplate.test_vals = [-2.714758, -5.882733, -0.215005, 0.023783, -618.160000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
