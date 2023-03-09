@@ -131,7 +131,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number ; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
 
   /*!
    * \brief Get fluid mass diffusivity.

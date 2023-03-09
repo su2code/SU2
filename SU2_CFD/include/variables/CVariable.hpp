@@ -1120,6 +1120,7 @@ public:
    * \return Value of the mass diffusivity.
    */
   inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
