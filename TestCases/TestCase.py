@@ -321,6 +321,7 @@ class TestCase:
             print("Output from the failed case:")
             subprocess.call(["cat", logfilename])
 
+        diff_time_start = datetime.datetime.now()
         if not timed_out and passed:
             # Compare files
             fromfile = self.reference_file
@@ -341,8 +342,10 @@ class TestCase:
                     # Else test word by word with given tolerance
                     else:
 
-                        diff = [];
-                        max_delta = 0
+                        diff            = [];
+                        max_delta       = 0
+                        compare_counter = 0
+                        ignore_counter  = 0
 
                         # Assert that both files have the same number of lines
                         if len(fromlines) != len(tolines):
@@ -354,8 +357,8 @@ class TestCase:
 
                             if passed == False: break
 
-                            from_line = fromlines[i_line].split()
-                            to_line   = tolines[i_line].split()
+                            from_line = fromlines[i_line].split(",")
+                            to_line   = tolines[i_line].split(",")
 
                             # Assert that both lines have the same number of words
                             if len(from_line) != len(to_line):
@@ -372,25 +375,27 @@ class TestCase:
                                 from_isfloat = is_float(from_word)
                                 to_isfloat   = is_float(to_word)
                                 if from_isfloat != to_isfloat:
-                                    diff   = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
-                                    passed = False
-                                    delta  = 0.0
+                                    diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+                                    passed    = False
+                                    delta     = 0.0
                                     max_delta = "Not applicable"
                                     break
 
                                 # Make actual comparison
                                 if from_isfloat:
                                     try:
-                                        delta = abs( (float(from_word) - float(to_word)) / float(from_word) )
+                                        delta     = abs( (float(from_word) - float(to_word)) / float(from_word) )
                                         max_delta = max(max_delta, delta)
+                                        compare_counter += 1
                                     except ZeroDivisionError:
-                                        print("WARNING: Division by zero in line " + str(i_line) + ", entry " + str(i_word) + ". Ignoring that entry...")
-                                        break
+                                        ignore_counter += 1
+                                        continue
                                 else:
                                     delta  = 0.0
+                                    compare_counter += 1
                                     if from_word != to_word:
-                                        diff   = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
-                                        passed = False
+                                        diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+                                        passed    = False
                                         max_delta = "Not applicable"
                                         break
                                 
@@ -422,10 +427,18 @@ class TestCase:
         else:
             passed = False
 
-        print('CPU architecture=%s'%self.cpu_arch)
-        print('test duration: %.2f min'%(running_time/60.0))
+        diff_time_stop = datetime.datetime.now()
+        diff_time      = (diff_time_stop - diff_time_start).microseconds
+
         if self.tol_percent != 0.0:
-            print('maximum difference: ' + str(max_delta))
+            print('Compared entries:    ' + str(compare_counter))
+            print('Ignored entries:     ' + str(ignore_counter))
+            print('Maximum difference:  ' + str(max_delta))
+
+        print('CPU architecture:    %s'%self.cpu_arch)
+        print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
+        print('Test duration:       %.2f min'%(running_time/60.0))
+        print('Diff duration:       %.2f sec'%(diff_time/1e6))
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()
