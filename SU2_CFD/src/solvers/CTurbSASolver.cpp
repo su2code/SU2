@@ -549,7 +549,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       if (config->GetInlet_Profile_From_File()) {
          Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
       } else {
-         /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+         /*--- Obtain fluid model for computing the nu tilde to impose at the inlet boundary. ---*/
          CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
          /*--- Obtain density and laminar viscosity at inlet boundary node ---*/
