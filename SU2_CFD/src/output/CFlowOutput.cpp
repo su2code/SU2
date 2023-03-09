@@ -1159,8 +1159,9 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+    }
   }
 }
 
@@ -1190,8 +1191,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
       AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+    }
   }
 }
 
@@ -1324,6 +1327,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+      SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
         SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }

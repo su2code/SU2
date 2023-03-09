@@ -87,4 +87,12 @@ class CScalarVariable : public CVariable {
   inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final {
     return HB_Source(iPoint, iVar);
   }
+
+  /*!
+   * \brief Get the value of the mass diffusivity
+   * \param[in] iPoint - Point index.
+   * \param[in] val_ivar - eqn. index to the mass diffusivity.
+   * \return Value of the mass diffusivity
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 };
