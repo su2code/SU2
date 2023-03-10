@@ -45,8 +45,7 @@ class CConstantSchmidt final : public CDiffusivityModel {
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                      su2double kt) override {
+  void SetDiffusivity(su2double rho, su2double mu_lam, su2double cp, su2double kt) override {
     diff_ = mu_lam / (rho * sc_lam_);
   }
 
