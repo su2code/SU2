@@ -250,7 +250,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
 bool CSinglezoneDriver::Monitor(unsigned long Iter){
 
-  unsigned long nInnerIter, InnerIter, nTimeIter;
+  unsigned long nInnerIter, nTimeIter;
   su2double MaxTime, CurTime;
   bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
 
