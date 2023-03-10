@@ -111,7 +111,7 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-  cout << "CSinglezoneDriver preprocessing"<<endl;
+
   bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
 
   /*--- Set runtime option ---*/
@@ -122,7 +122,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   if (TimeDomain == YES){
     config_container[ZONE_0]->SetTimeIter(TimeIter);
   } else {
-    cout << "setting max. inner iterations to " << TimeIter << endl;
     config_container[ZONE_0]->SetnInner_Iter(TimeIter);
   }
 
@@ -285,7 +284,7 @@ bool CSinglezoneDriver::Monitor(unsigned long Iter){
 
 
   if (TimeDomain == YES) {
-    cout << "time domain = YES" << endl;
+
     /*--- Check whether the outer time integration has reached the final time ---*/
 
     TimeConvergence = GetTimeConvergence();
