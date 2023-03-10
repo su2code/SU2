@@ -74,10 +74,34 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+  bool axisymmetric = false;
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
-
   bool transition_LM;
 
+  /*!
+   * \brief Add contribution from convection and diffusion due to axisymmetric formulation to 2D residual
+   */
+  inline void ResidualAxisymmetricConvectionDiffusion(su2double sigma) {
+    if (Coord_i[1] < EPS) return;
+
+    const su2double yinv = 1.0 / Coord_i[1];
+    //const su2double rhov = Density_i * V_i[idx.Velocity() + 1];
+    const su2double& nut = ScalarVar_i[0];
+
+    /*--- Compute blended constants ---*/
+    //const su2double sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
+
+    /*--- Convection-Diffusion ---*/
+    /* Note that we do not have an axisymmetric term here for the convection because we solve d(nu)/dt + u_j*d(nu)/dx_j */
+    const su2double cdnut_axi = - (1.0/sigma)*(Laminar_Viscosity_i + nut) * ScalarVar_Grad_i[0][1];
+
+    /*--- Add terms to the residuals ---*/
+
+    Residual -= yinv * Volume * cdnut_axi;
+
+    //Jacobian_i[0][0] -= yinv * Volume * rhov;
+
+  }
  public:
   /*!
    * \brief Constructor of the class.
@@ -87,6 +111,7 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
+        axisymmetric(config->GetAxisymmetric()),
         options(config->GetSAParsedOptions()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
@@ -214,6 +239,11 @@ class CSourceBase_TurbSA : public CNumerics {
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
       Jacobian_i[0] *= Volume;
+
+      /*--- Contribution due to 2D axisymmetric formulation ---*/
+
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(var.sigma);
+
     }
 
     AD::SetPreaccOut(Residual);
@@ -503,6 +533,9 @@ class CCompressibilityCorrection final : public ParentClass {
         aux_cc += pow(PrimVar_Grad_i[idx.Velocity() + iDim][jDim], 2);
       }
     }
+    //if (config->GetAxisymmetric())
+    //  if (Coord_i[1] < EPS) aux_cc += pow((V_i[idx.Velocity()+1])/Coord_i[1], 2);
+
     const su2double d_CompCorrection = 2.0 * c5 * ScalarVar_i[0] / pow(sound_speed, 2) * aux_cc * Volume;
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
 
@@ -586,7 +619,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const bool sustaining_terms = false;
-  const bool axisymmetric = false;
+  bool axisymmetric = false;
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
@@ -622,7 +655,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*!
    * \brief Add contribution from convection and diffusion due to axisymmetric formulation to 2D residual
    */
-  inline void ResidualAxisymmetricConvectionDiffusion(su2double alfa_blended, su2double zeta) {
+  inline void ResidualAxisymmetricConvectionDiffusion() {
     if (Coord_i[1] < EPS) return;
 
     const su2double yinv = 1.0 / Coord_i[1];
@@ -850,7 +883,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
-      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion();
 
       /*--- Implicit part ---*/
 
