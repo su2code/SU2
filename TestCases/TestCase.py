@@ -430,15 +430,16 @@ class TestCase:
         diff_time_stop = datetime.datetime.now()
         diff_time      = (diff_time_stop - diff_time_start).microseconds
 
+        print('CPU architecture:    %s'%self.cpu_arch)
+        print('Test duration:       %.2f min'%(running_time/60.0))
+        print('Diff duration:       %.2f sec'%(diff_time/1e6))
+        
         if self.tol_percent != 0.0:
             print('Compared entries:    ' + str(compare_counter))
             print('Ignored entries:     ' + str(ignore_counter))
             print('Maximum difference:  ' + str(max_delta))
+            print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
 
-        print('CPU architecture:    %s'%self.cpu_arch)
-        print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
-        print('Test duration:       %.2f min'%(running_time/60.0))
-        print('Diff duration:       %.2f sec'%(diff_time/1e6))
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()
