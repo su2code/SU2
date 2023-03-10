@@ -354,7 +354,7 @@ def main():
     discadj_flamelet_ch4_hx.timeout        = 20000
     discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.csv.ref"
     discadj_flamelet_ch4_hx.test_file      = "restart_adj_avgsclr03.csv"
-    discadj_flamelet_ch4_hx.tol_percent    = 1e-4
+    discadj_flamelet_ch4_hx.tol_percent    = 1e-2
     pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
     test_list.append(discadj_flamelet_ch4_hx)
 
@@ -367,7 +367,7 @@ def main():
     discadj_flamelet_ch4_cht.test_iter      = 10
     discadj_flamelet_ch4_cht.reference_file = "restart_adj_T_0.csv.ref"
     discadj_flamelet_ch4_cht.test_file      = "restart_adj_T_0.csv"
-    discadj_flamelet_ch4_cht.tol_percent    = 1e-4
+    discadj_flamelet_ch4_cht.tol_percent    = 1e-2
     discadj_flamelet_ch4_cht.timeout        = 20000
     pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
     test_list.append(discadj_flamelet_ch4_cht)

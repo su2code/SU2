@@ -384,7 +384,7 @@ class TestCase:
                                 # Make actual comparison
                                 if from_isfloat:
                                     try:
-                                        delta     = abs( (float(from_word) - float(to_word)) / float(from_word) )
+                                        delta     = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
                                         max_delta = max(max_delta, delta)
                                         compare_counter += 1
                                     except ZeroDivisionError:
@@ -433,11 +433,11 @@ class TestCase:
         print('CPU architecture:    %s'%self.cpu_arch)
         print('Test duration:       %.2f min'%(running_time/60.0))
         print('Diff duration:       %.2f sec'%(diff_time/1e6))
-        
+
         if self.tol_percent != 0.0:
             print('Compared entries:    ' + str(compare_counter))
             print('Ignored entries:     ' + str(ignore_counter))
-            print('Maximum difference:  ' + str(max_delta))
+            print('Maximum difference:  ' + str(max_delta) + ' %')
             print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
 
         print('==================== End Test: %s ====================\n'%self.tag)
