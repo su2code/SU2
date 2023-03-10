@@ -62,18 +62,15 @@ def initVelocity(coord):
     y = coord[1]
     #z = coord[2] # only for 3D
 
-    velx = 0.0
+    velx = 1.0
     vely = 0.0
     velz = 0.0
+
     line = 0.016
 
     if (y>line):
         velx = 0.0
         vely = -1.0
-        velz = 0.0
-    else:
-        velx = 1.0
-        vely = 0.0
         velz = 0.0
 
     return [velx, vely, velz]
