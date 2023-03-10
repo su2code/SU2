@@ -1442,12 +1442,12 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
 
-    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
+    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.725129, -4.311366, -4.610113, -5.833264, 0.552520, -4.945381, 5.000000, -1.834845, 5.000000, -5.496023, 5.000000, -1.733470, 2.277964, 0.972376, 0.608230, 0.697358]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.843487, -3.585775, -3.486490, -7.560246, -5.094190, 5.000000, -1.898139, 5.000000, -3.329399, 5.000000, -2.113219, 2.482224, 0.974144, 0.607217, 0.900862]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
