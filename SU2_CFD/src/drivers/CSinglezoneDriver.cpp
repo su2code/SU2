@@ -110,7 +110,7 @@ void CSinglezoneDriver::StartSolver() {
 
 }
 
-void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+void CSinglezoneDriver::Preprocess(unsigned long Iter) {
 
   bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
 
@@ -120,9 +120,9 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set the current time iteration in the config ---*/
   if (TimeDomain == YES){
-    config_container[ZONE_0]->SetTimeIter(TimeIter);
+    config_container[ZONE_0]->SetTimeIter(Iter);
   } else {
-    config_container[ZONE_0]->SetnInner_Iter(TimeIter);
+    config_container[ZONE_0]->SetnInner_Iter(Iter);
   }
 
   /*--- Store the current physical time in the config container, as
@@ -130,7 +130,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    general once the drivers are more stable. ---*/
 
   if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY)
-    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
@@ -138,13 +138,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   if (config_container[ZONE_0]->GetFluidProblem()) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
-                                                                            config_container[ZONE_0], TimeIter);
+                                                                            config_container[ZONE_0], Iter);
   }
   else if (config_container[ZONE_0]->GetHeatProblem()) {
     /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
     solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
-                                                                            config_container[ZONE_0], TimeIter);
+                                                                            config_container[ZONE_0], Iter);
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -158,7 +158,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
           mesh cordinates are read from the restart files. ---*/
   if (!(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint()))
-    DynamicMeshUpdate(TimeIter);
+    DynamicMeshUpdate(Iter);
 
 }
 
