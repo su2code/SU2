@@ -28,7 +28,7 @@
 # ### INSTRUCTIONS
 #
 # run this script using:
-# $ mpirun -np 2 python launch_species_init.py --parallel -f config.cfg
+# $ python launch_species_init.py --parallel -f species_init.cfg
 #
 # ###
 
@@ -198,6 +198,8 @@ def main():
 
   # ### We are finished, let's exit ###
   SU2Driver.Output(Iter)
+  if SU2Driver != None:
+    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program
