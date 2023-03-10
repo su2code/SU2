@@ -102,7 +102,7 @@ def main():
   SU2Driver.Update()
 
   # Monitor the solver and output solution to file if required
-  SU2Driver.Monitor(0)
+  SU2Driver.Monitor(1)
 
   # Output the solution to file
   SU2Driver.Output(0)

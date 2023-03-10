@@ -9284,6 +9284,12 @@ public:
   void SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
 
   /*!
+   * \brief Set the number of inner iterations
+   * \param[in] val_iter - Number of inner iteration
+   */
+  void SetnInner_Iter(unsigned long val_iter) { nInnerIter = val_iter; }
+
+  /*!
    * \brief Get the number of pseudo-time iterations
    * \return Number of pseudo-time steps run for the single-zone problem
    */

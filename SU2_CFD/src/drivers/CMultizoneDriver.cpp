@@ -193,7 +193,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    StopCalc = Monitor(TimeIter);
+    StopCalc = Monitor(TimeIter + 1);
 
     /*--- Output the solution in files. ---*/
 
@@ -608,7 +608,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const auto nOuterIter = driver_config->GetnOuter_Iter();
 
     const auto InnerConvergence = driver_output->GetConvergence();
-    const bool MaxIterationsReached = (OuterIter+1 >= nOuterIter);
+    const bool MaxIterationsReached = (OuterIter >= nOuterIter);
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
@@ -630,7 +630,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
 
     const bool FinalTimeReached = (CurTime >= MaxTime);
-    const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
+    const bool MaxIterationsReached = (TimeIter >= nTimeIter);
 
     if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";

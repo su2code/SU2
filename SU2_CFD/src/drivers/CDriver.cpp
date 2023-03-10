@@ -2999,7 +2999,7 @@ void CFluidDriver::StartSolver(){
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(Iter);
+    Monitor(Iter + 1);
 
     /*--- Output the solution in files. ---*/
 

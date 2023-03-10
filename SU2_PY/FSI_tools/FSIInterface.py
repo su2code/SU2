@@ -2019,7 +2019,7 @@ class Interface:
                 # --- Update, monitor and output the fluid solution before the next time step  ---#
                 if myid in self.fluidSolverProcessors:
                   FluidSolver.Update()
-                  FluidSolver.Monitor(TimeIter)
+                  FluidSolver.Monitor(TimeIter + 1)
                   FluidSolver.Output(TimeIter)
 
                 if TimeIter >= TimeIterTreshold:

@@ -88,7 +88,7 @@ void CSinglezoneDriver::StartSolver() {
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(TimeIter);
+    Monitor(TimeIter + 1);
 
     /*--- Output the solution in files. ---*/
 
@@ -111,14 +111,20 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  cout << "CSinglezoneDriver preprocessing"<<endl;
+  bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
 
   /*--- Set runtime option ---*/
 
   Runtime_Options();
 
   /*--- Set the current time iteration in the config ---*/
-
-  config_container[ZONE_0]->SetTimeIter(TimeIter);
+  if (TimeDomain == YES){
+    config_container[ZONE_0]->SetTimeIter(TimeIter);
+  } else {
+    cout << "setting max. inner iterations to " << TimeIter << endl;
+    config_container[ZONE_0]->SetnInner_Iter(TimeIter);
+  }
 
   /*--- Store the current physical time in the config container, as
    this can be used for verification / MMS. This should also be more
@@ -243,7 +249,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   }
 }
 
-bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
+bool CSinglezoneDriver::Monitor(unsigned long Iter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
@@ -263,7 +269,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   if (TimeDomain == NO){
 
     InnerConvergence     = output_container[ZONE_0]->GetConvergence();
-    MaxIterationsReached = InnerIter+1 >= nInnerIter;
+    MaxIterationsReached = Iter >= nInnerIter;
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
@@ -279,13 +285,13 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
 
   if (TimeDomain == YES) {
-
+    cout << "time domain = YES" << endl;
     /*--- Check whether the outer time integration has reached the final time ---*/
 
     TimeConvergence = GetTimeConvergence();
 
     FinalTimeReached     = CurTime >= MaxTime;
-    MaxIterationsReached = TimeIter+1 >= nTimeIter;
+    MaxIterationsReached = Iter >= nTimeIter;
 
     if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";

@@ -30,7 +30,7 @@ class SU2Interface:
         self.FluidSolver.Run()
         self.FluidSolver.Postprocess()
         # write outputs
-        self.FluidSolver.Monitor(0)
+        self.FluidSolver.Monitor(1)
         self.FluidSolver.Output(0)
         self.comm.barrier()
 
