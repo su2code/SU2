@@ -198,8 +198,6 @@ def main():
 
   # ### We are finished, let's exit ###
   SU2Driver.Output(Iter)
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program
