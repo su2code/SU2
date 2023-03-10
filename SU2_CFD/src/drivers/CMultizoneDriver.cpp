@@ -191,9 +191,11 @@ void CMultizoneDriver::StartSolver() {
 
     Update();
 
+    TimeIter++;
+
     /*--- Monitor the computations after each iteration. ---*/
 
-    StopCalc = Monitor(TimeIter + 1);
+    StopCalc = Monitor(TimeIter);
 
     /*--- Output the solution in files. ---*/
 
@@ -202,8 +204,6 @@ void CMultizoneDriver::StartSolver() {
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
-
-    TimeIter++;
 
   }
 

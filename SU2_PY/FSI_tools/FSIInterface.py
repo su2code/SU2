@@ -2011,6 +2011,9 @@ class Interface:
 
                 self.MPIBarrier()
 
+                TimeIter += 1
+                time += deltaT
+
                 # --- Update the FSI history file --- #
                 if TimeIter > TimeIterTreshold:
                   self.MPIPrint('\nBGS is converged (strong coupling)')
@@ -2019,7 +2022,7 @@ class Interface:
                 # --- Update, monitor and output the fluid solution before the next time step  ---#
                 if myid in self.fluidSolverProcessors:
                   FluidSolver.Update()
-                  FluidSolver.Monitor(TimeIter + 1)
+                  FluidSolver.Monitor(TimeIter)
                   FluidSolver.Output(TimeIter)
 
                 if TimeIter >= TimeIterTreshold:
@@ -2034,8 +2037,6 @@ class Interface:
                   if myid in self.solidSolverProcessors:
                     SolidSolver.updateSolution()
 
-                TimeIter += 1
-                time += deltaT
           #--- End of the temporal loop --- #
 
           self.MPIBarrier()

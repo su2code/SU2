@@ -86,9 +86,11 @@ void CSinglezoneDriver::StartSolver() {
 
     Update();
 
+    TimeIter++;
+
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(TimeIter + 1);
+    Monitor(TimeIter);
 
     /*--- Output the solution in files. ---*/
 
@@ -103,8 +105,6 @@ void CSinglezoneDriver::StartSolver() {
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
-
-    TimeIter++;
 
   }
 
