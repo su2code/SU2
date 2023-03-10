@@ -92,17 +92,16 @@ def main():
     nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)\
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Extract the initial position of each node on the moving marker
   CoordX = np.zeros(nVertex_MovingMarker)
   CoordY = np.zeros(nVertex_MovingMarker)
   for iVertex in range(nVertex_MovingMarker):
-    iPoint = SU2Driver.GetMarkerNode(MovingMarkerID, iVertex)
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.InitialCoordinates().Get(iPoint)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.MarkerInitialCoordinates(MovingMarkerID).Get(iVertex)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
