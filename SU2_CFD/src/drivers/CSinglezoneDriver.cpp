@@ -255,7 +255,6 @@ bool CSinglezoneDriver::Monitor(unsigned long Iter){
   bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
-  InnerIter  = config_container[ZONE_0]->GetInnerIter();
   nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
   MaxTime    = config_container[ZONE_0]->GetMax_Time();
   CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
