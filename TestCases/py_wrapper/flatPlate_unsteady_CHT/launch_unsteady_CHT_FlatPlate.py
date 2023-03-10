@@ -120,14 +120,16 @@ def main():
     SU2Driver.Postprocess()
     # Update the solver for the next time iteration
     SU2Driver.Update()
-    # Monitor the solver and output solution to file if required
-    stopCalc = SU2Driver.Monitor(TimeIter + 1)
-    SU2Driver.Output(TimeIter)
-    if (stopCalc == True):
-      break
+
     # Update control parameters
     TimeIter += 1
     time += deltaT
+
+    # Monitor the solver and output solution to file if required
+    stopCalc = SU2Driver.Monitor(TimeIter)
+    SU2Driver.Output(TimeIter)
+    if (stopCalc == True):
+      break
 
   if SU2Driver != None:
     del SU2Driver

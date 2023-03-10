@@ -23,15 +23,17 @@ class SU2Interface:
         self.have_mpi, self.comm, self.status, self.myid = setup_mpi()
         self.FluidSolver = pysu2.CSinglezoneDriver(config_filename, 1, self.comm)
 
+    Iter = 0
     def run_solver(self):
         self.comm.barrier()
         # run solver
-        self.FluidSolver.Preprocess(0)
+        self.FluidSolver.Preprocess(Iter)
         self.FluidSolver.Run()
         self.FluidSolver.Postprocess()
+        Iter += 1
         # write outputs
-        self.FluidSolver.Monitor(1)
-        self.FluidSolver.Output(0)
+        self.FluidSolver.Monitor(Iter)
+        self.FluidSolver.Output(Iter)
         self.comm.barrier()
 
     def save_forces(self):

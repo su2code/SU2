@@ -2997,9 +2997,11 @@ void CFluidDriver::StartSolver(){
     /*--- Terminate the simulation if only the Jacobian must be computed. ---*/
     if (config_container[ZONE_0]->GetJacobian_Spatial_Discretization_Only()) break;
 
+    Iter++;
+
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(Iter + 1);
+    Monitor(Iter);
 
     /*--- Output the solution in files. ---*/
 
@@ -3008,8 +3010,6 @@ void CFluidDriver::StartSolver(){
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
-
-    Iter++;
 
   }
 #ifdef VTUNEPROF
