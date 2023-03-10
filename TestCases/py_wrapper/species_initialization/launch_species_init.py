@@ -25,47 +25,43 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-# ----------------------------------------------------------------------
-#  Imports
-# ----------------------------------------------------------------------
-
-
-
 # ### INSTRUCTIONS
 #
 # run this script using:
-# $ mpirun -np 2 python launch_species_init.py --parallel -f config.cfg 
+# $ mpirun -np 2 python launch_species_init.py --parallel -f config.cfg
 #
 # ###
 
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 import sys
 from optparse import OptionParser	# use a parser for configuration
-import pysu2			            # imports the SU2 wrapped module
+import pysu2			                # imports the SU2 wrapped module
 from math import *
-import numpy as np
 
 # create a function for initial species distribution
-# we want the vertical inlet to be filled with species_0=1 
+# we want the vertical inlet to be filled with species_0=1
 # and the horizontal part with species_0=0
 def initSpecies(coord):
-    x = coord[0]
+    #x = coord[0] # not used
     y = coord[1]
     #z = coord[2] # only for 3D
- 
+
     species_0 = 0.0
     line = 0.016
 
     if (y>line):
       species_0 = 1.0
 
-    return species_0   
+    return species_0
 
 # create initial velocity field
 def initVelocity(coord):
-    x = coord[0]
+    #x = coord[0] # not used
     y = coord[1]
-    #z = coord[2] # only for 3D 
-   
+    #z = coord[2] # only for 3D
+
     velx = 0.0
     vely = 0.0
     velz = 0.0
@@ -79,11 +75,11 @@ def initVelocity(coord):
         velx = 1.0
         vely = 0.0
         velz = 0.0
-    
+
     return [velx, vely, velz]
 
 
-# now loop over all vertices in the domain and set the species progress variable  
+# now loop over all vertices in the domain and set the species progress variable
 def SetInitialSpecies(driver):
     # ### get the mesh coordinates ###
     coords = driver.Coordinates()
@@ -118,11 +114,11 @@ def SetInitialSpecies(driver):
     # loop over all points and get the progress variable
     for iPoint in range(nPoints):
       species_0 = initSpecies(coords.Get(iPoint))
-      solution.Set(iPoint, (species_0, 1.0-species_0))    
+      solution.Set(iPoint, (species_0, 1.0-species_0))
       vel = initVelocity(coords.Get(iPoint))
-      
-      flowsolution.Set(iPoint, velxIndex, vel[0] )    
-      flowsolution.Set(iPoint, velyIndex, vel[1] )    
+
+      flowsolution.Set(iPoint, velxIndex, vel[0] )
+      flowsolution.Set(iPoint, velyIndex, vel[1] )
 
 # -------------------------------------------------------------------
 #  Main
@@ -178,7 +174,7 @@ def main():
   nIter = 1
   # starting iteration
   Iter = 0
-  # total number of iterations 
+  # total number of iterations
   maxIter = 10
   while (Iter < maxIter):
     print("Iter = ",Iter)
@@ -195,7 +191,7 @@ def main():
     SU2Driver.Update()
 
     # stopping criterion, based on convergence and nr of iterations
-    # we do not want to stop when we have reached the maximum number of 
+    # we do not want to stop when we have reached the maximum number of
     # nIter iterations
     stopCalc = SU2Driver.Monitor(0)
     if (stopCalc == True):
