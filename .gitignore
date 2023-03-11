@@ -98,5 +98,5 @@ ninja
 # Ignore vscode folder
 .vscode/
 
-# Ignore SU2 configuration timestamp created by meson.py
-su2config.timestamp
+# Ignore SU2 pre-configuration timestamp created by preconfigure.py
+su2preconfig.timestamp

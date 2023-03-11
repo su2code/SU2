@@ -3,7 +3,7 @@
 ## \file init.py
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
-#  \author T. Albring
+#  \author T. Albring and F. Poli
 #  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
@@ -38,7 +38,14 @@ def remove_file(path, retries=3, sleep=0.1):
       break
 
 
-def init_submodules(method = 'auto'):
+def init_submodules(method = 'auto',
+                    own_meson = False,
+                    own_codi = True,
+                    own_medi = True,
+                    own_opdi = True,
+                    own_mpp  = True,
+                    own_cool = True,
+                    own_mel  = True):
 
   cur_dir = sys.path[0]
 
@@ -92,26 +99,38 @@ def init_submodules(method = 'auto'):
   # If directory was cloned using git, use submodule feature
   # to check and initialize submodules if necessary
   if is_git:
-    submodule_status(alt_name_codi, sha_version_codi)
-    submodule_status(alt_name_medi, sha_version_medi)
-    submodule_status(alt_name_opdi, sha_version_opdi)
-    if (os.environ.get('SU2_MESON') != 'no'):
+    if own_codi:
+      submodule_status(alt_name_codi, sha_version_codi)
+    if own_medi:
+      submodule_status(alt_name_medi, sha_version_medi)
+    if own_opdi:
+      submodule_status(alt_name_opdi, sha_version_opdi)
+    if own_meson:
       submodule_status(alt_name_meson, sha_version_meson)
       submodule_status(alt_name_ninja, sha_version_ninja)
-    submodule_status(alt_name_mpp, sha_version_mpp)
-    submodule_status(alt_name_coolprop, sha_version_coolprop)
-    submodule_status(alt_name_mel, sha_version_mel)
+    if own_mpp:
+      submodule_status(alt_name_mpp, sha_version_mpp)
+    if own_cool:
+      submodule_status(alt_name_coolprop, sha_version_coolprop)
+    if own_mel:
+      submodule_status(alt_name_mel, sha_version_mel)
   # Otherwise download the zip file from git
   else:
-    download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
-    download_module(medi_name, alt_name_medi, github_repo_medi, sha_version_medi)
-    download_module(opdi_name, alt_name_opdi, github_repo_opdi, sha_version_opdi)
-    if (os.environ.get('SU2_MESON') != 'no'):
+    if own_codi:
+      download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
+    if own_medi:
+      download_module(medi_name, alt_name_medi, github_repo_medi, sha_version_medi)
+    if own_opdi:
+      download_module(opdi_name, alt_name_opdi, github_repo_opdi, sha_version_opdi)
+    if own_meson:
       download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
       download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
-    download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
-    download_module(coolprop_name, alt_name_coolprop, github_repo_coolprop, sha_version_coolprop)
-    download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
+    if own_mpp:
+      download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
+    if own_cool:
+      download_module(coolprop_name, alt_name_coolprop, github_repo_coolprop, sha_version_coolprop)
+    if own_mel:
+      download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
 
 
 def is_git_directory(path = '.'):

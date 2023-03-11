@@ -8,8 +8,8 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++11'])
 
 fsmod = import('fs')
-if not fsmod.exists('su2config.timestamp')
-  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+if not fsmod.exists('su2preconfig.timestamp')
+  error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
 endif
 
 pymod = import('python')
