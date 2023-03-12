@@ -86,8 +86,6 @@ void CSinglezoneDriver::StartSolver() {
 
     Update();
 
-    TimeIter++;
-
     /*--- Monitor the computations after each iteration. ---*/
 
     Monitor(TimeIter);
@@ -105,6 +103,8 @@ void CSinglezoneDriver::StartSolver() {
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
+
+    TimeIter++;
 
   }
 
@@ -248,13 +248,14 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   }
 }
 
-bool CSinglezoneDriver::Monitor(unsigned long Iter){
+bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
-  unsigned long nInnerIter, nTimeIter;
+  unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
   bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
+  InnerIter  = config_container[ZONE_0]->GetInnerIter();
   nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
   MaxTime    = config_container[ZONE_0]->GetMax_Time();
   CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
@@ -267,7 +268,7 @@ bool CSinglezoneDriver::Monitor(unsigned long Iter){
   if (TimeDomain == NO){
 
     InnerConvergence     = output_container[ZONE_0]->GetConvergence();
-    MaxIterationsReached = Iter >= nInnerIter;
+    MaxIterationsReached = InnerIter+1 >= nInnerIter;
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
@@ -289,7 +290,7 @@ bool CSinglezoneDriver::Monitor(unsigned long Iter){
     TimeConvergence = GetTimeConvergence();
 
     FinalTimeReached     = CurTime >= MaxTime;
-    MaxIterationsReached = Iter >= nTimeIter;
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
     if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";

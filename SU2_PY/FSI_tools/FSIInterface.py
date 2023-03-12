@@ -2011,9 +2011,6 @@ class Interface:
 
                 self.MPIBarrier()
 
-                TimeIter += 1
-                time += deltaT
-
                 # --- Update the FSI history file --- #
                 if TimeIter > TimeIterTreshold:
                   self.MPIPrint('\nBGS is converged (strong coupling)')
@@ -2036,6 +2033,9 @@ class Interface:
                   self.displacementPredictor(FSI_config, SolidSolver, deltaT)
                   if myid in self.solidSolverProcessors:
                     SolidSolver.updateSolution()
+
+                TimeIter += 1
+                time += deltaT
 
           #--- End of the temporal loop --- #
 

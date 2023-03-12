@@ -87,6 +87,10 @@ def main():
     if (stopCalc == True):
       break
 
+    # Update control parameters
+    TimeIter += 1
+    time += deltaT
+
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
 

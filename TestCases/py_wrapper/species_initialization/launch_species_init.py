@@ -167,37 +167,37 @@ def main():
   if options.with_MPI == True:
     comm.Barrier()
 
-  # number of iterations per Run (inner iterations)
-  nIter = 1
+  # number of inner terations per Run (config option ITER= )
+  nIter = 10
+
   # starting iteration
   Iter = 0
-  # total number of iterations
-  maxIter = 10
+
+  # total number of outer iterations: N=1 for steady cases
+  maxIter = 1
+
   while (Iter < maxIter):
     print("Iter = ",Iter)
 
-    # this routine sets the iterations to run, we want 1 iteration
+    # this routine sets the number of inner iterations ITER= for steady cases
     SU2Driver.Preprocess(nIter)
 
     # This runs for the number of iterations nIter
     SU2Driver.Run()
-    # update number of iterations
-    Iter = Iter + 1
 
     SU2Driver.Postprocess()
     SU2Driver.Update()
 
     # stopping criterion, based on convergence and nr of iterations
-    # we do not want to stop when we have reached the maximum number of
-    # nIter iterations
-    stopCalc = SU2Driver.Monitor(0)
+    # we stop after 1 outer iteration
+    stopCalc = SU2Driver.Monitor(1)
     if (stopCalc == True):
       break
 
-    SU2Driver.Output(Iter)
+    SU2Driver.Output(1)
 
   # ### We are finished, let's exit ###
-  SU2Driver.Output(Iter)
+  SU2Driver.Output(1)
   if SU2Driver != None:
     del SU2Driver
 

@@ -89,15 +89,11 @@ def main():
   if options.with_MPI == True:
     comm.Barrier()
 
-  Iter = 0
-
   # Time iteration preprocessing
-  SU2Driver.Preprocess(Iter)
+  SU2Driver.Preprocess(0)
 
   # Run one time-step (static: one simulation)
   SU2Driver.Run()
-
-  Iter += 1
 
   # Postprocess
   SU2Driver.Postprocess()
@@ -106,10 +102,10 @@ def main():
   SU2Driver.Update()
 
   # Monitor the solver and output solution to file if required
-  SU2Driver.Monitor(Iter)
+  SU2Driver.Monitor(0)
 
   # Output the solution to file
-  SU2Driver.Output(Iter)
+  SU2Driver.Output(0)
 
   # Sensitivities of the marker
   print("\n------------------------------ Sensitivities -----------------------------\n")
