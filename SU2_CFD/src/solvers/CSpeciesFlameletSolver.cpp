@@ -191,11 +191,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     /*--- Get lookup scalars ---*/
     fluid_model_local->SetScalarLookups(scalars);
-    for(auto i_lookup=0u; i_lookup<config->GetNLookups(); i_lookup++){
+    for(auto i_lookup = 0u; i_lookup<config->GetNLookups(); i_lookup++) {
       nodes->SetLookupScalar(i_point, fluid_model_local->GetScalarLookups(i_lookup), i_lookup);
     }
 
-    for(auto i_scalar=0u; i_scalar < nVar; i_scalar++)
+    for(auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
       nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
 
     su2double T = flowNodes->GetTemperature(i_point);
@@ -366,7 +366,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     SU2_MPI::Reduce(&n_points_burnt_local,   &n_points_burnt_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
     SU2_MPI::Reduce(&n_points_flame_local,   &n_points_flame_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       cout << endl;
       cout << " Number of points in unburnt region: " << n_points_unburnt_global << "." << endl;
       cout << " Number of points in burnt region  : " << n_points_burnt_global   << "." << endl;
@@ -687,7 +687,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
       /*--- Set enthalpy on the wall ---*/
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-      if(config->GetSpecies_StrongBC()){
+      if (config->GetSpecies_StrongBC()) {
 
         /*--- Initial guess for enthalpy value ---*/
 
@@ -776,7 +776,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      if(config->GetSpecies_StrongBC()){
+      if (config->GetSpecies_StrongBC()) {
 
         /*--- Initial guess for enthalpy ---*/
 
