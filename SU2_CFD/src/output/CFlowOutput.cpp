@@ -1060,7 +1060,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
@@ -1112,7 +1112,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       AddHistoryOutput("MAX_PROGRESS_VARIABLE", "max[PV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
@@ -1163,7 +1163,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       AddHistoryOutput("BGS_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
