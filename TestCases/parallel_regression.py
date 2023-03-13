@@ -376,7 +376,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.147548, -6.729213, -0.176227, 0.057731]
+    turb_flatplate.test_vals = [-4.147548, -6.728790, -0.176227, 0.057731]
     test_list.append(turb_flatplate)
 
     # Flat plate (compressible) with species inlet
@@ -975,7 +975,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783, -618.160000]
+    ddes_flatplate.test_vals = [-2.714758, -5.882733, -0.215005, 0.023783, -618.160000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -1464,12 +1464,12 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
 
-    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
+    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.725129, -4.311366, -4.610113, -5.833264, 0.552520, -4.945381, 5.000000, -1.834845, 5.000000, -5.496023, 5.000000, -1.733470, 2.277964, 0.972376, 0.608230, 0.697358]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.843487, -3.585775, -3.486490, -7.560246, -5.094190, 5.000000, -1.898139, 5.000000, -3.329399, 5.000000, -2.113219, 2.482224, 0.974144, 0.607217, 0.900862]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
