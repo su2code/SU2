@@ -148,13 +148,6 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
                           CNumerics(val_nDim, val_nVar, config) {
 
   incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-  //axisymmetric = config->GetAxisymmetric();
-  //viscous = config->GetViscous();
-  //implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
-  //flamelet  = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
-  //inc_rans = (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS);
-
-  //Sc_t = config->GetSchmidt_Number_Turbulent();
 
   Residual       = new su2double [nVar];
   scalar_sources = new su2double [nVar];
@@ -179,18 +172,8 @@ CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_
 CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  //AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(scalar_sources, nVar);
   AD::SetPreaccIn(Volume);
-
-/*
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6);
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+7);
-  }
-*/
 
   /*--- Implicit part for production term (to do). ---*/
   for (auto i_var = 0; i_var < nVar; i_var++) {
