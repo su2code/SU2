@@ -113,7 +113,7 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
       }
       break;
     case CONDUCTIVITYMODEL::FLAMELET:
-      /*--- conductivity is obtained from the LUT ---*/
+      /*--- Conductivity is obtained from the LUT ---*/
       return nullptr;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
@@ -141,7 +141,7 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
           new CConstantLewisDiffusivity(config->GetConstant_Lewis_Number(iSpecies)));
       break;
     case DIFFUSIVITYMODEL::FLAMELET:
-      /* do nothing. Diffusivity is obtained from the table and set in setTDState_T */
+      /*--- Diffusivity is obtained from the LUT ---*/
       return nullptr;
       break;
     default:

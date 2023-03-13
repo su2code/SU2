@@ -3661,11 +3661,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
       case SPECIES_MODEL::FLAMELET:
         /*--- 2-equation flamelet model ---*/
-        columnName << "PROGVAR    " << setw(24) << "ENTHALPY   " << setw(24);
+        columnName << config->GetLUTScalarName(I_PROGVAR) << setw(24) << config->GetLUTScalarName(I_ENTH) << setw(24);
         columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
         /*--- auxiliary species transport equations ---*/
-        columnName << "CO         " << setw(24) << "NOX        " << setw(24);
-        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[2] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[3]<<"\t";
+        for (unsigned short iReactant = 0; iReactant < config->GetNUserScalars(); iReactant++) {
+          columnName << config->GetUserScalarName(iReactant) << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[config->GetNControlVars() + iReactant] << "\t";
+        }
         break;
     }
 

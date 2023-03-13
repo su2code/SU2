@@ -429,7 +429,7 @@ su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
       if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
           (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
 
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 

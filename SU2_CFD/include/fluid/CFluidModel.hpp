@@ -173,9 +173,6 @@ class CFluidModel {
                                                su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
 
-  //virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
-  //virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
-
   /*!
    * \brief Get fluid dynamic viscosity.
    */

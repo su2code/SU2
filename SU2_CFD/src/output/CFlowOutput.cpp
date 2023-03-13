@@ -822,6 +822,64 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
+void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx,
+                                                  CustomOutput& output) const {
+  const auto nameToIndex = PrimitiveNameToIndexMap(idx);
+
+  std::stringstream knownVariables;
+  for (const auto& items : nameToIndex) {
+    knownVariables << items.first + '\n';
+  }
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\n";
+
+  auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
+    /*--- Primitives of the flow solver. ---*/
+    const auto flowOffset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+    const auto it = nameToIndex.find(var);
+    if (it != nameToIndex.end()) return flowOffset + it->second;
+
+    /*--- Index-based (no name) access to variables of other solvers. ---*/
+    auto GetIndex = [](const std::string& s, int nameLen) {
+      /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
+      return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
+    };
+    if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("FLAMELET", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+    if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
+    return CustomOutput::NOT_A_VARIABLE;
+  };
+
+  output.otherOutputs.clear();
+  output.varIndices.clear();
+  output.varIndices.reserve(output.varSymbols.size());
+
+  for (const auto& var : output.varSymbols) {
+    output.varIndices.push_back(IndexOfVariable(nameToIndex, var));
+
+    if (output.type == OperationType::FUNCTION && output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Custom outputs of type 'Function' cannot reference solver variables.", CURRENT_FUNCTION);
+    }
+    /*--- Symbol is a valid solver variable. ---*/
+    if (output.varIndices.back() < CustomOutput::NOT_A_VARIABLE) continue;
+
+    /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
+    if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Inactive solver variable (" + var + ") used in function " + output.name + "\n"
+                      "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
+    }
+
+    /*--- An index equal to NOT_A_VARIABLE may refer to a history output. ---*/
+    output.varIndices.back() += output.otherOutputs.size();
+    output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+    if (output.otherOutputs.back() == nullptr) {
+      SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                     "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+    }
+  }
+}
+
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
@@ -831,16 +889,10 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
     if (output.varIndices.empty()) {
       /*--- Setup indices for the symbols in the expression. ---*/
 
-      if (config->GetNEMOProblem()) {
-        ConvertVariableSymbolsToIndices(
-            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else {
-        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
-      }
+      const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+          config->GetNEMOProblem(), nDim, config->GetnSpecies());
+      ConvertVariableSymbolsToIndices(primIdx, output);
+
       /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
       if (output.type != OperationType::PROBE) {
@@ -1008,7 +1060,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
@@ -1060,7 +1112,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       AddHistoryOutput("MAX_PROGRESS_VARIABLE", "max[PV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
@@ -1111,7 +1163,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       AddHistoryOutput("BGS_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
-      for(auto i_scalar=0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         string scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
@@ -1471,7 +1523,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   switch (config->GetKind_Species_Model()) {
-    
+
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
