@@ -251,12 +251,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
                                                  unsigned long ExtIter) {
   bool Restart = (config->GetRestart() || config->GetRestart_Flow());
 
-  /*--- do not use initial condition when custom python is active ---*/
-  //if (config->GetInitial_PyCustom()) {
-  //  if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
-  //  return;
-  //}
-
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;

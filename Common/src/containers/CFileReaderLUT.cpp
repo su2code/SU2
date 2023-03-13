@@ -368,4 +368,3 @@ bool CFileReaderLUT::GetStrippedLine(ifstream& file_stream, string& line) const 
   /*--- return true if line is not empty, else return false ---*/
   return !line.empty();
 }
-

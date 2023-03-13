@@ -173,9 +173,6 @@ class CFluidModel {
                                                su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
 
-  //virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
-  //virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
-
   /*!
    * \brief Get fluid dynamic viscosity.
    */
@@ -202,7 +199,7 @@ class CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline virtual su2double GetMassDiffusivity(int iVar) {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivity->SetDiffusivity(Density, Mu, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }

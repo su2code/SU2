@@ -1,6 +1,6 @@
 /*!
  * \file CPyWrapperMatrixView.hpp
- * \brief A simple matrix view to use with the python wrapper.
+ * \brief Simple matrix views to use with the python wrapper.
  * \author P. Gomes
  * \version 7.5.1 "Blackbird"
  *
@@ -27,28 +27,67 @@
 
 #pragma once
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
-#include "C2DContainer.hpp"
+#include "../geometry/dual_grid/CVertex.hpp"
 #include "../parallelization/mpi_structure.hpp"
+#include "C2DContainer.hpp"
+
+/*!
+ * \brief Python wrapper matrix interface
+ * The accessors in this macro provide a passive double interface to matrix of
+ * su2double. This can be extended to allow access to derivative information.
+ * Classes that use this macro encapsulate the access to the raw data (su2double)
+ * via the functions "Access(row, col) -> su2double&" (const and non-const versions).
+ * We use a macro because it is diffult to use modern C++ idioms (e.g. CRTP) with
+ * SWIG. In addition to "Access" classes must have member variables "rows_", "cols_",
+ * and "read_only_".
+ */
+#define PY_WRAPPER_MATRIX_INTERFACE                                                                              \
+  /*! \brief Returns the shape of the matrix. */                                                                 \
+  std::pair<unsigned long, unsigned long> Shape() const { return std::make_pair(rows_, cols_); }                 \
+                                                                                                                 \
+  /*! \brief Returns whether the data is read-only [true] or if it can be modified [false]. */                   \
+  bool IsReadOnly() const { return read_only_; }                                                                 \
+                                                                                                                 \
+  /*! \brief Gets the value for a (row, column) pair. */                                                         \
+  passivedouble operator()(unsigned long row, unsigned long col) const { return Get(row, col); }                 \
+                                                                                                                 \
+  /*! \brief Gets the value for a (row, column) pair. */                                                         \
+  passivedouble Get(unsigned long row, unsigned long col) const { return SU2_TYPE::GetValue(Access(row, col)); } \
+                                                                                                                 \
+  /*! \brief Gets the values for a row of the matrix. */                                                         \
+  std::vector<passivedouble> Get(unsigned long row) const {                                                      \
+    std::vector<passivedouble> vals(cols_);                                                                      \
+    for (unsigned long j = 0; j < cols_; ++j) vals[j] = Get(row, j);                                             \
+    return vals;                                                                                                 \
+  }                                                                                                              \
+  /*! \brief Sets the value for a (row, column) pair. This clears derivative information. */                     \
+  void Set(unsigned long row, unsigned long col, passivedouble val) { Access(row, col) = val; }                  \
+                                                                                                                 \
+  /*! \brief Sets the values for a row of the matrix. */                                                         \
+  void Set(unsigned long row, std::vector<passivedouble> vals) {                                                 \
+    unsigned long j = 0;                                                                                         \
+    for (const auto& val : vals) Set(row, j++, val);                                                             \
+  }
 
 /*!
  * \class CPyWrapperMatrixView
  * \ingroup PySU2
- * \brief A simple matrix view to use with the python wrapper. The accessors
- * in this class provide a passive double interface to su2activematrix.
- * This can be extended to allow access to derivative information of su2double.
+ * \brief This class wraps su2activematrix for the python wrapper matrix interface.
+ * It is generaly used to wrap access to solver variables defined for the entire volume.
  */
 class CPyWrapperMatrixView {
- private:
+ protected:
   static_assert(su2activematrix::IsRowMajor, "");
   su2double* data_ = nullptr;
   unsigned long rows_ = 0, cols_ = 0;
   std::string name_;
   bool read_only_ = false;
 
+  /*--- Define the functions required by the interface macro. ---*/
   inline const su2double& Access(unsigned long row, unsigned long col) const {
     if (row > rows_ || col > cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMatrixView");
     return data_[row * cols_ + col];
@@ -68,48 +107,59 @@ class CPyWrapperMatrixView {
    * \note "read_only" can be set to true to prevent the data from being modified.
    */
   CPyWrapperMatrixView(su2activematrix& mat, const std::string& name, bool read_only)
-    : data_(mat.data()), rows_(mat.rows()), cols_(mat.cols()), name_(name), read_only_(read_only) {}
+      : data_(mat.data()), rows_(mat.rows()), cols_(mat.cols()), name_(name), read_only_(read_only) {}
 
-  /*!
-   * \brief Returns the shape of the matrix.
-   */
-  std::pair<unsigned long, unsigned long> Shape() const { return std::make_pair(rows_, cols_); }
+  /*--- Use the macro to generate the interface. ---*/
+  PY_WRAPPER_MATRIX_INTERFACE
+};
 
-  /*!
-   * \brief Returns whether the data is read-only [true] or if it can be modified [false].
-   */
-  bool IsReadOnly() const { return read_only_; }
+/*!
+ * \class CPyWrapperMarkerMatrixView
+ * \ingroup PySU2
+ * \brief This class wraps su2activematrix for the python wrapper matrix interface restricting it
+ * to the vertices of a given marker.
+ */
+class CPyWrapperMarkerMatrixView {
+ private:
+  static_assert(su2activematrix::IsRowMajor, "");
+  su2double* data_ = nullptr;
+  const CVertex* const* vertices_ = nullptr;
+  unsigned long rows_ = 0, cols_ = 0;
+  std::string name_;
+  bool read_only_ = false;
 
-  /*!
-   * \brief Gets the value for a (row, column) pair.
-   */
-  passivedouble operator() (unsigned long row, unsigned long col) const { return Get(row, col); }
-
-  /*!
-   * \brief Gets the value for a (row, column) pair.
-   */
-  passivedouble Get(unsigned long row, unsigned long col) const { return SU2_TYPE::GetValue(Access(row, col)); }
-
-  /*!
-   * \brief Gets the values for a row of the matrix.
-   */
-  std::vector<passivedouble> Get(unsigned long row) const {
-    std::vector<passivedouble> vals(cols_);
-    for (unsigned long j = 0; j < cols_; ++j) vals[j] = Get(row, j);
-    return vals;
+  /*--- Define the functions required by the interface macro. ---*/
+  inline const su2double& Access(unsigned long row, unsigned long col) const {
+    if (row > rows_ || col > cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMarkerMatrixView");
+    return data_[vertices_[row]->GetNode() * cols_ + col];
+  }
+  inline su2double& Access(unsigned long row, unsigned long col) {
+    if (read_only_) SU2_MPI::Error(name_ + " is read-only", "CPyWrapperMarkerMatrixView");
+    const auto& const_me = *this;
+    return const_cast<su2double&>(const_me.Access(row, col));
   }
 
-  /*!
-   * \brief Sets the value for a (row, column) pair.
-   * \note This clears derivative information (consistently with C++ operator= with passive rhs).
-   */
-  void Set(unsigned long row, unsigned long col, passivedouble val) { Access(row, col) = val; }
+ public:
+  CPyWrapperMarkerMatrixView() = default;
 
   /*!
-   * \brief Sets the values for a row of the matrix.
+   * \brief Construct the view of the matrix.
+   * \note "name" should be set to the variable name being returned to give better information to users.
+   * \note "read_only" can be set to true to prevent the data from being modified.
    */
-  void Set(unsigned long row, std::vector<passivedouble> vals) {
-    unsigned long j = 0;
-    for (const auto& val : vals) Set(row, j++, val);
+  CPyWrapperMarkerMatrixView(su2activematrix& mat, const CVertex* const* vertices, unsigned long n_vertices,
+                             const std::string& name, bool read_only)
+      : data_(mat.data()),
+        vertices_(vertices),
+        rows_(n_vertices),
+        cols_(mat.cols()),
+        name_(name),
+        read_only_(read_only) {
+    if (mat.rows() < n_vertices) {
+      SU2_MPI::Error(name + " has fewer rows than the number of vertices in the marker.", "CPyWrapperMarkerMatrixView");
+    }
   }
+
+  /*--- Use the macro to generate the interface. ---*/
+  PY_WRAPPER_MATRIX_INTERFACE
 };
