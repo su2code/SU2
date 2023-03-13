@@ -51,6 +51,15 @@ def main():
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
+   # axisymmetric 2D planar laminar premixed methane flame on isothermal burner (restart)
+    cfd_flamelet_ch4_axi = TestCase('cfd_flamelet_ch4_axi')
+    cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
+    cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
+    cfd_flamelet_ch4_axi.test_iter = 10
+    cfd_flamelet_ch4_axi.test_vals = [-15.229677, -15.060158, -15.304078, -8.446904, -15.011948, -15.920890]
+    cfd_flamelet_ch4_axi.new_output = True
+    test_list.append(cfd_flamelet_ch4_axi)
+
     # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
     cfd_flamelet_ch4_cht = TestCase('cfd_flamelet_ch4_cht')
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
