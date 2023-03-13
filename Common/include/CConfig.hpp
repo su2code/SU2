@@ -2248,7 +2248,7 @@ public:
    * \brief Get the file name of the look up table
    * \return File name of the look up table
    */
-  string GetFileNameLUT(void){ return file_name_lut; };
+  string GetFileNameLUT(void) { return file_name_lut; };
 
   /*!
    * \brief Get the Young's modulus of elasticity.

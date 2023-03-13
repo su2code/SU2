@@ -771,7 +771,7 @@ public:
    * \brief Set wall distances a specific value
    */
   void SetWallDistance(su2double val) override {
-    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
+    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++) {
       nodes->SetWall_Distance(iPoint, val);
     }
   }

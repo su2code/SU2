@@ -889,16 +889,10 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
     if (output.varIndices.empty()) {
       /*--- Setup indices for the symbols in the expression. ---*/
 
-      if (config->GetNEMOProblem()) {
-        ConvertVariableSymbolsToIndices(
-            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else {
-        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
-      }
+      const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+          config->GetNEMOProblem(), nDim, config->GetnSpecies());
+      ConvertVariableSymbolsToIndices(primIdx, output);
+
       /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
       if (output.type != OperationType::PROBE) {
@@ -1529,7 +1523,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   switch (config->GetKind_Species_Model()) {
-    
+
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {

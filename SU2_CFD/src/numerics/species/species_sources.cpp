@@ -122,7 +122,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       if (turbulence)
         Mass_Diffusivity_Tur = V_i[idx.EddyViscosity()] / Sc_t;
 
-      for (auto iVar=0u; iVar < nVar; iVar++){
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
       }
     }
@@ -180,7 +180,7 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
   AD::StartPreacc();
   AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(scalar_sources, nVar);
-  AD::SetPreaccIn(Volume); 
+  AD::SetPreaccIn(Volume);
 
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
