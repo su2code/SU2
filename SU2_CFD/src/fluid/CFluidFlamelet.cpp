@@ -34,7 +34,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
+  /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
   n_control_vars = config->GetNControlVars();
   n_scalars      = config->GetNScalars();
@@ -159,7 +159,6 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   string name_enth = table_scalar_names[I_ENTH];
   string name_prog = table_scalar_names[I_PROGVAR];
 
-
   /*--- add all quantities and their address to the look up vectors ---*/
   look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
 
@@ -167,12 +166,15 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 
+/* --- Total enthalpy is the transported variable, but we usually have temperature as a boundary condition,
+       so we do a reverse lookup */
 unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val_prog, su2double val_temp, su2double initial_value) {
 
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  su2double delta_temp_final = 0.001;
   su2double enth_iter = initial_value;
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;

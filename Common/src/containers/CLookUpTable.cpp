@@ -68,7 +68,6 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_C
         break;
     }
 
-
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;

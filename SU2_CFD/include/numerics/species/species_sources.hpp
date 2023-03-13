@@ -92,7 +92,6 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
 
 };
 
-
 /*!
  * \class CSourcePieceWise_transportedScalar_general
  * \brief Class for integrating the source terms of the transported scalar turbulence model equations.
@@ -147,6 +146,5 @@ public:
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_transportedScalar_general(void) override;
-
 
 };
