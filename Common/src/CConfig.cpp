@@ -5346,6 +5346,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "The use of MARKER_INLET_TURBULENT requires the number of entries when SST Model is used \n"
         "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
         CURRENT_FUNCTION);
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SA && nTurb_Properties != 1)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SA Model is used \n"
+        "to be equal to 1 : ratio turbulent to laminar viscosity",
+        CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
@@ -5387,10 +5392,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check whether the number of entries of the constant Lewis number equals the number of transported scalar
        equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
        models--- */
-    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init + 1)
       SU2_MPI::Error(
           "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
-          "to be equal to the number of entries of SPECIES_INIT",
+          "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
@@ -8838,7 +8843,11 @@ const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
   for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {
     if (Marker_Inlet_Turb[iMarker] == val_marker) return Inlet_TurbVal[iMarker];
   }
-  return TurbIntensityAndViscRatioFreeStream;
+  if (Kind_Turb_Model == TURB_MODEL::SST) {
+    return TurbIntensityAndViscRatioFreeStream;
+  } else {
+    return &NuFactor_FreeStream;
+  }
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

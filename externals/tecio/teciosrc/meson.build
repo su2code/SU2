@@ -12,14 +12,17 @@ if (host_machine.system() == 'windows')
   tecio_cpp_flags += ['-DMSWIN']
 endif
 
-if build_machine.system() != 'windows'
-  if meson.get_compiler('cpp').get_id() != 'intel'
-    tecio_cpp_flags += ['-Wno-misleading-indentation',
-                        '-Wno-uninitialized',
-                        '-Wno-placement-new',
-                        '-Wno-pedantic',
-                        '-Wno-error=deprecated-copy']
-  endif
+if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() != 'intel'
+  desired_warnings = ['-Wno-misleading-indentation',
+                      '-Wno-uninitialized',
+                      '-Wno-placement-new',
+                      '-Wno-pedantic',
+                      '-Wno-error=deprecated-copy']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      tecio_cpp_flags += flag
+    endif
+  endforeach
 endif
 
 tecio_include = include_directories('../', './')
@@ -97,7 +100,7 @@ tecio = static_library('tecio',
            'readValueArray.cpp',
            'TecioSZL.cpp',
            'exportSubzonePlt.cpp',
-           install : false, 
+           install : false,
 	   cpp_args: [default_warning_flags, tecio_cpp_flags],
 	   include_directories: tecio_include)
 
