@@ -57,7 +57,6 @@
 #else
 #include "opdi/backend/macro/macroBackend.hpp"
 #endif
-#include "codi/externals/codiOpdiTool.hpp"
 #include "opdi.hpp"
 #endif
 

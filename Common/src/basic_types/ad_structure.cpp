@@ -46,7 +46,16 @@ namespace AD {
   SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
-  ExtFuncHelper* FuncHelper;
+  ExtFuncHelper FuncHelper;
 
 #endif
+
+  void Initialize() {
+#ifdef CODI_REVERSE_TYPE
+    FuncHelper.disableInputPrimalStore();
+    FuncHelper.disableOutputPrimalStore();
+#endif
+  }
+
+  void Finalize() {}
 }

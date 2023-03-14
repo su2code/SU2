@@ -68,12 +68,12 @@
 #include <medi/medi.hpp>
 using namespace medi;
 
-#include <codi/externals/codiMpiTypes.hpp>
+#include <codi/tools/mpi/codiMpiTypes.hpp>
 
 class CMediMPIWrapper;
 typedef CMediMPIWrapper SU2_MPI;
 
-typedef CoDiMpiTypes<su2double> MediTypes;
+typedef codi::CoDiMpiTypes<su2double> MediTypes;
 typedef MediTypes::Tool MediTool;
 
 extern MediTypes* mediTypes;

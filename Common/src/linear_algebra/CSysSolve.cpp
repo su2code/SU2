@@ -864,127 +864,125 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
-    TapeActive = AD::getGlobalTape().isActive();
+    TapeActive = AD::TapeActive();
 
+    /*--- Declare external function inputs, outputs, and data ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      AD::StartExtFunc(false, false);
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
+      AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+      AD::FuncHelper.addUserData(&LinSysRes);
+      AD::FuncHelper.addUserData(&LinSysSol);
+      AD::FuncHelper.addUserData(&Jacobian);
+      AD::FuncHelper.addUserData(geometry);
+      AD::FuncHelper.addUserData(config);
+      AD::FuncHelper.addUserData(this);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    AD::StopRecording();
 #endif
   }
-
-  /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
-
-  HandleTemporariesIn(LinSysRes, LinSysSol);
-
-  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-
-  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-
-  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-
-  /*--- Build preconditioner. ---*/
-
-  precond->Build();
-
-  /*--- Solve system. ---*/
 
   unsigned long IterLinSol = 0;
-  ScalarType residual = 0.0;
 
-  switch (KindSolver) {
-    case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case PASTIX_LDLT : case PASTIX_LU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
-      IterLinSol = 1;
-      residual = 1e-20;
-      break;
-    default:
-      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
-  }
+  /*--- Declaration of the external function ---*/
+  auto externalFunction = [&]() {
+    /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-  SU2_OMP_MASTER
-  {
-    Residual = residual;
-    Iterations = IterLinSol;
-  }
-  END_SU2_OMP_MASTER
+    HandleTemporariesIn(LinSysRes, LinSysSol);
 
-  HandleTemporariesOut(LinSysSol);
+    auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-  delete precond;
+    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
 
-  if(TapeActive) {
+    auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
-    /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
+    /*--- Build preconditioner. ---*/
 
-    if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
-    else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
-    else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+    precond->Build();
 
-    /*--- Build preconditioner for the transposed Jacobian ---*/
+    /*--- Solve system. ---*/
 
-    if (RequiresTranspose) Jacobian.TransposeInPlace();
+    ScalarType residual = 0.0;
 
-    switch(KindPrecond) {
-      case ILU:
-        if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
+    switch (KindSolver) {
+      case BCGSTAB:
+        IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
         break;
-      case JACOBI:
-      case LINELET:
-        if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
+      case FGMRES:
+        IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
         break;
-      case LU_SGS:
-        /*--- Nothing to build. ---*/
+      case RESTARTED_FGMRES:
+        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
         break;
-      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        /*--- It was already built. ---*/
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case SMOOTHER:
+        IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+        break;
+      case PASTIX_LDLT : case PASTIX_LU:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+        Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+        IterLinSol = 1;
+        residual = 1e-20;
         break;
       default:
-        SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-        break;
+        SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
     }
 
-    /*--- Start recording if it was stopped for the linear solver ---*/
-#ifdef CODI_REVERSE_TYPE
-    AD::StartRecording();
-
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    SU2_OMP_MASTER
     {
-      AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-      AD::FuncHelper->addUserData(&LinSysRes);
-      AD::FuncHelper->addUserData(&LinSysSol);
-      AD::FuncHelper->addUserData(&Jacobian);
-      AD::FuncHelper->addUserData(geometry);
-      AD::FuncHelper->addUserData(config);
-      AD::FuncHelper->addUserData(this);
+      Residual = residual;
+      Iterations = IterLinSol;
     }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    END_SU2_OMP_MASTER
 
-    AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
+    HandleTemporariesOut(LinSysSol);
 
-    SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
+    delete precond;
+
+    if(TapeActive) {
+
+      /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
+      const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
+
+      if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+      else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+      else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+
+      /*--- Build preconditioner for the transposed Jacobian ---*/
+
+      if (RequiresTranspose) Jacobian.TransposeInPlace();
+
+      switch(KindPrecond) {
+        case ILU:
+          if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
+          break;
+        case JACOBI:
+        case LINELET:
+          if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
+          break;
+        case LU_SGS:
+          /*--- Nothing to build. ---*/
+          break;
+        case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+          /*--- It was already built. ---*/
+          break;
+        default:
+          SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+          break;
+      }
+    }
+  }; /*--- Finish declaration of the external function ---*/
+
+#ifdef CODI_REVERSE_TYPE
+  /*--- Call the external function with appropriate AD handling ---*/
+  AD::FuncHelper.callPrimalFuncWithADType(externalFunction);
+
+  AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
+#else
+  /*--- Without reverse AD, call the external function directly ---*/
+  externalFunction();
 #endif
-  }
 
   return IterLinSol;
 }
