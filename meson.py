@@ -25,9 +25,10 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess
+import sys, os
 sys.path.append(sys.path[0])
 import preconfigure
+
 
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
