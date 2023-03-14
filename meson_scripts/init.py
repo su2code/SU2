@@ -44,11 +44,11 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '96ac78ec5bcc5ac25b785e79b16ed76fca22d736'
+  sha_version_codi = '427c2dc754a628ad3c9310c766c988ac5ce21bc7'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
+  sha_version_medi = 'aafc2d1966ba1233640af737e71c77c1a86183fd'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_opdi = '1aabf5bd1ed77611742eb655002f2ac7a3dddef9'
+  sha_version_opdi = 'f33b507c24f7448d4cf4df16ab5c53ea254b8774'
   github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
   sha_version_meson = '41c650a040d50e0912d268af7a903a9ce1456dfa'
   github_repo_meson = 'https://github.com/mesonbuild/meson'

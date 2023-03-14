@@ -569,10 +569,10 @@ class Interface:
             iPoint = FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
             GlobalIndex = FluidSolver.GetNodeGlobalIndex(iPoint)
             if self.nDim == 2:
-                posx, posy = FluidSolver.GetInitialCoordinates(iPoint)
+                posx, posy = FluidSolver.InitialCoordinates().Get(iPoint)
                 posz = 0
             else:
-                posx, posy, posz = FluidSolver.GetInitialCoordinates(iPoint)
+                posx, posy, posz = FluidSolver.InitialCoordinates().Get(iPoint)
             if GlobalIndex not in self.FluidHaloNodeList[myid].keys():
               fluidIndexing_temp[GlobalIndex] = self.__getGlobalIndex('fluid', myid, localIndex)
               self.localFluidInterface_array_X_init[localIndex] = posx

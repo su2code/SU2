@@ -37,13 +37,13 @@ directors="1",
 threads="1"
 ) pysu2
 %{
+#include "../../Common/include/containers/CPyWrapperMatrixView.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDriverBase.hpp"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 #include "../../SU2_DEF/include/drivers/CDeformationDriver.hpp"
-
 %}
 
 // ----------- USED MODULES ------------
@@ -53,6 +53,7 @@ threads="1"
 
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_pair.i"
 %include "std_map.i"
 %include "typemaps.i"
 //%include "numpy.i"
@@ -65,12 +66,11 @@ namespace std {
    %template() vector<bool>;
    %template() vector<unsigned short>;
    %template() vector<unsigned long>;
-   %template() vector<vector<unsigned long>>;
    %template() vector<double>;
-   %template() vector<vector<double>>;
    %template() vector<string>;
    %template() map<string, unsigned short>;
    %template() map<string, string>;
+   %template() pair<unsigned long, unsigned long>;
 }
 
 // ----------- API CLASSES ----------------
@@ -92,6 +92,7 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
+%include "../../Common/include/containers/CPyWrapperMatrixView.hpp"
 %include "../../SU2_CFD/include/drivers/CDriverBase.hpp"
 %include "../../SU2_CFD/include/drivers/CDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"

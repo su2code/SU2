@@ -211,7 +211,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
     Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "FEA";
 }
 
