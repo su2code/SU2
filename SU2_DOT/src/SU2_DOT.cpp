@@ -41,6 +41,10 @@ int main(int argc, char* argv[]) {
 #endif
   SU2_MPI::Comm comm = SU2_MPI::GetComm();
 
+  /*--- AD initialization. ---*/
+
+  AD::Initialize();
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used). ---*/
 
@@ -65,6 +69,10 @@ int main(int argc, char* argv[]) {
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
   driver.Postprocessing();
+
+  /*--- Finalize AD. ---*/
+
+  AD::Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
 
