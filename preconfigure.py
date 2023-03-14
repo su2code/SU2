@@ -82,12 +82,12 @@ def run(own_meson = False,
                   own_cool = own_cool,
                   own_mel  = own_mel)
 
-  # Leave a timestamp
-  Path('su2preconfig.timestamp').touch()
-
   if (own_meson):
     # Build ninja if it cannot be found
     build_ninja()
+
+  # Leave a timestamp
+  Path('su2preconfig.timestamp').touch()
 
 
 if __name__ == '__main__':
