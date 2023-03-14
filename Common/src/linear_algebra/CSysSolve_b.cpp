@@ -34,7 +34,7 @@
 template<class ScalarType>
 void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m,
                                       const su2double::Real* y, const su2double::Real* y_b, size_t n,
-                                      codi::DataStore* d) {
+                                      codi::ExternalFunctionUserData* d) {
 
   CSysVector<su2double>* LinSysRes_b = nullptr;
   d->getDataByIndex(LinSysRes_b, 0);

@@ -136,6 +136,8 @@ if omp
   # add opdi dependency
   if get_option('enable-autodiff')
     codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+    codi_rev_args += '-DCODI_EnableOpenMP'
+    codi_rev_args += '-DCODI_EnableOpDiLib'
 
     if get_option('opdi-backend') == 'macro'
       su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
