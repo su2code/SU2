@@ -56,9 +56,7 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv)
 
-  /*--- OpenMP initialization ---*/
-
-  omp_initialize();
+  /*--- OpenMP setup ---*/
 
   omp_set_num_threads(num_threads);
 
