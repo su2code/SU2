@@ -98,7 +98,7 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
  * \ingroup SourceDiscr
  * \author N. Beishuizen
  */
-class CSourcePieceWise_transportedScalar_general final : public CNumerics {
+class CSourcePieceWiseTransportedScalarGeneral final : public CNumerics {
 
 private:
   su2double *Residual = nullptr;
