@@ -372,7 +372,7 @@ public:
    * \brief Set the values of the volumetric scalar sources for the flamelet LUT approach.
    * \param[in] val_scalar_sources - Values of the scalar sources.
    */
-  virtual void SetScalarSources(su2double *val_scalar_sources) {/* empty */}
+  virtual void SetScalarSources(const su2double *val_scalar_sources) {/* empty */}
 
   /*!
    * \brief Set the gradient of the scalar variables.

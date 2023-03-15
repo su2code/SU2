@@ -80,7 +80,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    * \param[out] exit_code = error code
    */
-  unsigned long SetScalarSources(su2double* val_scalars);
+  unsigned long SetScalarSources(const su2double* val_scalars);
 
   /*!
    * \brief Retrieve and set the lookup values for the species

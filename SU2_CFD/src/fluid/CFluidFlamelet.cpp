@@ -120,7 +120,7 @@ unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
 }
 
 /*--- set the source terms for the transport equations ---*/
-unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
+unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
 
   table_sources[0] = 0.0;
 

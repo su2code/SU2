@@ -360,7 +360,7 @@ class CFluidModel {
   /*!
    * \brief Virtual member.
    */
-  virtual unsigned long SetScalarSources(su2double* val_scalars) { return 0; }
+  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Virtual member.

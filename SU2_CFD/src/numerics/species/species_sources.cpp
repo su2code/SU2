@@ -142,7 +142,7 @@ template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned 
 template class CSourceAxisymmetric_Species<CNEMOEulerVariable::CIndices<unsigned short> >;
 
 
-CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_general(unsigned short val_nDim,
+CSourcePieceWiseTransportedScalarGeneral::CSourcePieceWiseTransportedScalarGeneral(unsigned short val_nDim,
                                                    unsigned short val_nVar,
                                                    const CConfig* config) :
                           CNumerics(val_nDim, val_nVar, config) {
@@ -158,7 +158,7 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   }
 }
 
-CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_general(void) {
+CSourcePieceWiseTransportedScalarGeneral::~CSourcePieceWiseTransportedScalarGeneral(void) {
   delete [] Residual;
   delete [] scalar_sources;
    if (Jacobian_i != nullptr) {
@@ -169,7 +169,7 @@ CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_
   }
 }
 
-CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CSourcePieceWiseTransportedScalarGeneral::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(scalar_sources, nVar);
