@@ -54,6 +54,9 @@ CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPIC
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  /*--- Initialize AD ---*/
+  AD::Initialize();
 }
 
 CDriverBase::~CDriverBase(void) {}
