@@ -123,8 +123,8 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
-   * \brief Set the reaction source terms for the transported species equations
-   * \param[in] val_scalar_sources - Pointer to combustion source terms (2 per equation)
+   * \brief Set the source terms for the transported species equations
+   * \param[in] val_scalar_sources - Pointer to source terms
    */
   inline void SetScalarSources(const su2double *val_scalar_sources) override {
     for (auto i_var = 0u; i_var < nVar; i_var++)

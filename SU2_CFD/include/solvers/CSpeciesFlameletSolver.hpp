@@ -50,11 +50,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpeciesFlameletSolver() = default;
-
-  /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -62,7 +57,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
+   * \param[in] Output - Boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
                      unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
@@ -79,7 +74,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Compute the primitive variables (diffusivities)
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
+   * \param[in] Output - Boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
@@ -161,8 +156,14 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) override;
 
+  /*!
+   * \brief Set the number of unsuccessful table lookups.
+   */
   inline void SetNTableMisses(unsigned short val_n_table_misses) override { n_table_misses = val_n_table_misses; }
 
+  /*!
+   * \brief Get the number of unsuccessful table lookups.
+   */
   inline unsigned long GetNTableMisses() override { return n_table_misses; }
 
   /*!
@@ -177,10 +178,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Set the conjugate heat variables.
-   * \param[in] val_marker        - marker index
-   * \param[in] val_vertex        - vertex index
-   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \brief Get the conjugate heat variables.
+   * \param[in] val_marker - The marker index.
+   * \param[in] val_vertex - The vertex index.
+   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
    */
   inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex,
                                             unsigned short pos_var) const override {
@@ -189,11 +190,11 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
 
   /*!
    * \brief Set the conjugate heat variables.
-   * \param[in] val_marker        - marker index
-   * \param[in] val_vertex        - vertex index
-   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
-   * \param[in] relaxation factor - relaxation factor for the change of the variables
-   * \param[in] val_var           - value of the variable
+   * \param[in] val_marker - The marker index.
+   * \param[in] val_vertex - The vertex index.
+   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
+   * \param[in] relaxation_factor - The relaxation factor for the change of the variables.
+   * \param[in] val_var - The value of the variable.
    */
   inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var,
                                        su2double relaxation_factor, su2double val_var) override {
@@ -201,4 +202,3 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
 };
-
