@@ -34,7 +34,27 @@
 using namespace std;
 
 CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator)
-    : config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), TimeIter(0), nZone(val_nZone) {}
+    : config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), TimeIter(0), nZone(val_nZone) {
+
+  /*--- Some initializations are placed here so that they are also seen by the python wrapper. Note that the python
+   * wrapper instantiates a driver directly. ---*/
+
+  /*--- MPI is required to be initialized already, e.g, via SU2_MPI::Init, SU2_MPI::Init_thread, or via mpi4py in the
+   * python wrapper. ---*/
+
+  /*--- Initialize MeDiPack ---*/
+#ifdef HAVE_MPI
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+  SU2_MPI::Init_AMPI();
+#endif
+#endif
+
+  /*--- Set up MPI ---*/
+  SU2_MPI::SetComm(MPICommunicator);
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+}
 
 CDriverBase::~CDriverBase(void) {}
 
