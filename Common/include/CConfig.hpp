@@ -2158,14 +2158,14 @@ public:
             This is the thickness of the transition layer from unburnt to burnt conditions.
    * \return flame thickness for flamelet model initialization
    */
-  su2double GetFlameThickness(void) { return flame_thickness; }
+  su2double GetFlameThickness(void) const { return flame_thickness; }
 
   /*!
    * \brief Get the burnt region thickness for flamelet model initialization.
             This is the thickness of the hot, burnt zone after the reaction zone.
    * \return flame thickness for flamelet model initialization
    */
-  su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
+  su2double GetFlameBurntThickness(void) const { return flame_burnt_thickness; }
 
   /*!
    * \brief Set the number of scalars for flamelet model.
