@@ -1003,7 +1003,7 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     unsigned long InnerIter = config->GetInnerIter();
     
-    if (InnerIter == 0) SetAlpha_ROM(1000000000);
+    if (InnerIter == 0) SetAlpha_ROM(0.1);
     
     //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
@@ -1040,6 +1040,25 @@ class CFVMFlowSolverBase : public CSolver {
     }
     END_SU2_OMP_FOR
     
+
+    if (false) {
+      ofstream fs1;
+      std::string fname1 = "jacobian.csv";
+      fs1.open(fname1);
+      for (unsigned long i = 0; i < m; i++){
+        unsigned long iPoint_mask = (i+nVar) / nVar; // (int logic)
+        unsigned long iPoint = Mask[iPoint_mask];
+        unsigned short iVar = i % nVar; // modulo
+        for (unsigned long j = 0; j < nPointDomain*nVar; j++) {
+          unsigned long jPoint_mask = (j+nVar) / nVar; // (int logic)
+          unsigned long jPoint = Mask[jPoint_mask];
+          unsigned short jVar = j % nVar; // modulo
+          fs1 << setprecision(10) << Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << "\n" ;
+        }
+      }
+      fs1.close();
+    }
+    
     
     /*-- Compute scaled residuals --*/
     
@@ -1059,41 +1078,74 @@ class CFVMFlowSolverBase : public CSolver {
     
     vector<su2double> TestBasis(m*nsnaps, 0.0);
     
-    for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    for (unsigned long i = 0; i < m; i++){
+      unsigned long iPoint_mask = (i+nVar) / nVar; // (int logic)
       unsigned long iPoint = Mask[iPoint_mask];
+      unsigned short iVar = i % nVar; // modulo
       
-      su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
-      
-      for (unsigned short jPoint = 0; jPoint < nsnaps; jPoint++) {
-      
-        for (unsigned short kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
-          unsigned short kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+      for (unsigned short j = 0; j < nsnaps; j++) {
+        //unsigned long index_wij = i*nsnaps + j; // row-order
+        unsigned long index_wij = i + j*m; // column-order
         
-          su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
-          
-          /*--- Compute this block of W_ij = J_ik * Phi_kj, i = 0:nVar, j = jPoint, k = 0:nVar ---*/
-          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-            unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
-            for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-              unsigned long total_index_phik = kVar + kPoint*nVar;
-              unsigned long index_jik        = kVar*nVar + iVar;
-              
-              TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
-              
-              /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
-              if (kNeigh == 0) {
-                unsigned long k = iPoint;
-                unsigned long total_index_phik = kVar + k*nVar;
-                unsigned long J_ii_cur = J_ii[index_jik];
-                if (precon) {
-                  if (iVar == kVar) J_ii_cur = 1.0; }
-                TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii_cur;
-              }
+        /*--- Compute this block of W_ij = J_ik * Phi_kj, k = 0:nVar ---*/
+        for (unsigned short kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
+          unsigned long kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+          for (unsigned short kVar = 0; kVar < nVar; kVar++){
+            unsigned long index_phi_kj = kPoint*nVar + kVar;
+            su2double Jik = Jacobian.GetBlock(iPoint, kPoint, iVar, kVar);
+            
+            TestBasis[index_wij] += Jik * TrialBasis[index_phi_kj][j];
+            
+            /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
+            if (kNeigh == 0) {
+              unsigned long k = iPoint;
+              unsigned long index_phi_kj = k*nVar + kVar;
+              su2double Jii = Jacobian.GetBlock(iPoint, k, iVar, kVar);
+              if (precon) {
+                if (iVar == kVar) Jii = 1.0; }
+              TestBasis[index_wij] += Jii * TrialBasis[index_phi_kj][j];
             }
-          } // end compute of W_ij
-        }
+          }
+        } // end compute of W_ij
       }
     }
+    
+    
+    //for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    //  unsigned long iPoint = Mask[iPoint_mask];
+    //
+    //  su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+    //
+    //  for (unsigned short jPoint = 0; jPoint < nsnaps; jPoint++) {
+    //
+    //    for (unsigned short kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
+    //      unsigned short kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+    //
+    //      su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+    //
+    //      /*--- Compute this block of W_ij = J_ik * Phi_kj, i = 0:nVar, j = jPoint, k = 0:nVar ---*/
+    //      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    //        unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
+    //        for (unsigned short kVar = 0; kVar < nVar; kVar++) {
+    //          unsigned long total_index_phik = kVar + kPoint*nVar;
+    //          unsigned long index_jik        = kVar*nVar + iVar;
+    //
+    //          TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
+    //          TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
+    //          /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
+    //          if (kNeigh == 0) {
+    //            unsigned long k = iPoint;
+    //            unsigned long total_index_phik = kVar + k*nVar;
+    //            unsigned long J_ii_cur = J_ii[index_jik];
+    //            if (precon) {
+    //              if (iVar == kVar) J_ii_cur = 1.0; }
+    //            TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii_cur;
+    //          }
+    //        }
+    //      } // end compute of W_ij
+    //    }
+    //  }
+    //}
     
     /*--- Calculate reduced residual ---*/
     

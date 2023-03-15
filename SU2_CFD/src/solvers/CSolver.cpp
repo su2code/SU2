@@ -4827,7 +4827,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
       RomConverged = true;
       return;
     }
-    else if ( abs( (GenCoordsY[1] - Coord1_Old) / Coord1_Old ) < 1e-15 ) {
+    else if ( abs( (GenCoordsY[0] - Coord1_Old) / Coord1_Old ) < 1e-15 ) {
       RomConverged = true;
       return;
     }
