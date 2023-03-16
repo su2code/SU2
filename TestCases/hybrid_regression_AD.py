@@ -231,7 +231,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 100
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401682674, -0.5859858866082689, -0.00036377840086080753, -0.00310056701747564] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.131742, -0.553318, -0.000364, -0.003101] #last 4 columns
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
@@ -244,7 +244,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
     pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
-    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.5210057520523224, 1.3751902987065319, 0.000000] #last 4 columns
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.520967, 1.375188, 0.000000] #last 4 columns
     pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 0.000001
