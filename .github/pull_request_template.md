@@ -1,6 +1,6 @@
 ## Proposed Changes
 *Give a brief overview of your contribution here in a few sentences.*
- 
+
 
 
 ## Related Work
@@ -14,5 +14,6 @@
 - [ ] I am submitting my contribution to the develop branch.
 - [ ] My contribution generates no new compiler warnings (try with --warnlevel=3 when using meson).
 - [ ] My contribution is commented and consistent with SU2 style (https://su2code.github.io/docs_v7/Style-Guide/).
+- [ ] I used the pre-commit hook to prevent dirty commits and used `pre-commit run --all` to format old commits.
 - [ ] I have added a test case that demonstrates my contribution, if necessary.
 - [ ] I have updated appropriate documentation (Tutorials, Docs Page, config_template.cpp), if necessary.
