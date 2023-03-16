@@ -77,15 +77,18 @@ def main():
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
+  # Only print on the rank to which the marker belongs.
+
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
-  if rank == 0:
+  if MarkerID != None:
     print("\n------------------------------ Begin Solver -----------------------------\n")
   sys.stdout.flush()
   if options.with_MPI == True:
     comm.Barrier()
 
   # Define the load at the target vertex
-  SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
+  if MarkerID != None:
+    SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
 
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
@@ -102,17 +105,19 @@ def main():
   # Output the solution to file
   SU2Driver.Output(0)
 
-  sens=[]
-  disp=[]
-  # Recover the sensitivity
-  sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
+  if MarkerID != None:
+    sens=[]
+    disp=[]
 
-  fea_sol = SU2Driver.GetSolverIndices()["FEA"]
-  marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
-  disp.append(marker_disp.Get(5))
+    # Recover the sensitivity
+    sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
 
-  print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
-  print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
+    fea_sol = SU2Driver.GetSolverIndices()["FEA"]
+    marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
+    disp.append(marker_disp.Get(5))
+
+    print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
+    print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
