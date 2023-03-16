@@ -78,6 +78,7 @@ def main():
     MarkerID = allMarkerIDs[MarkerName]
 
   # Only print on the rank to which the marker belongs.
+  # WARNING: We only do this for the regression test, there is no guarantee that a marker will only belong to one rank.
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if MarkerID != None:
