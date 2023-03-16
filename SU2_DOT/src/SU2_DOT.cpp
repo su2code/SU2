@@ -28,7 +28,6 @@
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
 
   /*--- MPI initialization. ---*/

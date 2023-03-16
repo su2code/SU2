@@ -56,18 +56,24 @@
 
 /*--- Convenience SFINAE typedef to conditionally
  * enable/disable function template overloads. ---*/
-template<bool condition>
-using su2enable_if = typename std::enable_if<condition,bool>::type;
+template <bool condition>
+using su2enable_if = typename std::enable_if<condition, bool>::type;
 
 /*--- Compile-time type selection. ---*/
-template<bool B, class T, class F> struct su2conditional { using type = T; };
-template<class T, class F> struct su2conditional<false, T, F> { using type = F; };
+template <bool B, class T, class F>
+struct su2conditional {
+  using type = T;
+};
+template <class T, class F>
+struct su2conditional<false, T, F> {
+  using type = F;
+};
 
-template<bool B, class T, class F>
-using su2conditional_t = typename su2conditional<B,T,F>::type;
+template <bool B, class T, class F>
+using su2conditional_t = typename su2conditional<B, T, F>::type;
 
 /*! \brief Static cast "In" to "Out", in debug builds a dynamic cast is used. */
-template<class Out, class In>
+template <class Out, class In>
 FORCEINLINE Out su2staticcast_p(In ptr) {
   static_assert(std::is_pointer<In>::value, "This expects a pointer");
 #ifndef NDEBUG
@@ -85,7 +91,7 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 /*--- Depending on the datatype defined during the configuration,
  * include the correct definition, and create the main typedef. ---*/
 
-#if defined(CODI_REVERSE_TYPE) // reverse mode AD
+#if defined(CODI_REVERSE_TYPE)  // reverse mode AD
 #include "codi.hpp"
 #include "codi/tools/data/externalFunctionUserData.hpp"
 
@@ -94,19 +100,19 @@ using su2double = codi::RealReverseIndexOpenMP;
 #else
 #if defined(CODI_INDEX_TAPE)
 using su2double = codi::RealReverseIndex;
-//#elif defined(CODI_PRIMAL_TAPE)
-//using su2double = codi::RealReversePrimal;
-//#elif defined(CODI_PRIMAL_INDEX_TAPE)
-//using su2double = codi::RealReversePrimalIndex;
+// #elif defined(CODI_PRIMAL_TAPE)
+// using su2double = codi::RealReversePrimal;
+// #elif defined(CODI_PRIMAL_INDEX_TAPE)
+// using su2double = codi::RealReversePrimalIndex;
 #else
 using su2double = codi::RealReverse;
 #endif
 #endif
-#elif defined(CODI_FORWARD_TYPE) // forward mode AD
+#elif defined(CODI_FORWARD_TYPE)  // forward mode AD
 #include "codi.hpp"
 using su2double = codi::RealForward;
 
-#else // primal / direct / no AD
+#else  // primal / direct / no AD
 using su2double = double;
 #endif
 

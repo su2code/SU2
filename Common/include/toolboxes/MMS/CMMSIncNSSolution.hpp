@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <cmath>
@@ -38,14 +37,12 @@
  *        laminar incompressible Navier-Stokes equations.
  * \author T. Economon, E. van der Weide
  */
-class CMMSIncNSSolution final: public CVerificationSolution {
-
-protected:
-
+class CMMSIncNSSolution final : public CVerificationSolution {
+ protected:
   /*--- Variables that define the solution and MMS source term. ---*/
-  su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
-  su2double Density;      /*!< \brief Density, must be constant. */
-  su2double Temperature;  /*!< \brief Temperature, just to be safe. */
+  su2double Viscosity;   /*!< \brief Viscosity, must be constant. */
+  su2double Density;     /*!< \brief Density, must be constant. */
+  su2double Temperature; /*!< \brief Temperature, just to be safe. */
 
   /*--- Constants, which describe this manufactured solution. This is a
    viscous solution where the primitive variables vary as a combination
@@ -53,13 +50,12 @@ protected:
    Knupp P, "Code verification by the method of manufactured solutions,"
    SAND 2000-1444, Sandia National Laboratories, Albuquerque, NM, 2000. ---*/
 
-  su2double P_0;      /*!< \brief Parameter for the pressure solution. */
-  su2double u_0;      /*!< \brief Parameter for the x-velocity solution. */
-  su2double v_0;      /*!< \brief Parameter for the y-velocity solution. */
-  su2double epsilon;  /*!< \brief Parameter for the velocity solutions. */
+  su2double P_0;     /*!< \brief Parameter for the pressure solution. */
+  su2double u_0;     /*!< \brief Parameter for the x-velocity solution. */
+  su2double v_0;     /*!< \brief Parameter for the y-velocity solution. */
+  su2double epsilon; /*!< \brief Parameter for the velocity solutions. */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -72,10 +68,7 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Configuration of the particular problem.
    */
-  CMMSIncNSSolution(unsigned short val_nDim,
-                    unsigned short val_nvar,
-                    unsigned short val_iMesh,
-                    CConfig*       config);
+  CMMSIncNSSolution(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -88,9 +81,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const su2double *val_coords,
-                   const su2double val_t,
-                   su2double       *val_solution) const override;
+  void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -98,9 +89,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const su2double *val_coords,
-                  const su2double val_t,
-                  su2double       *val_solution) const override;
+  void GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
@@ -108,9 +97,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const su2double *val_coords,
-                        const su2double val_t,
-                        su2double       *val_source) const override;
+  void GetMMSSourceTerm(const su2double* val_coords, const su2double val_t, su2double* val_source) const override;
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.

@@ -27,34 +27,48 @@
 
 import os, sys, shutil, copy
 from optparse import OptionParser
-sys.path.append(os.environ['SU2_RUN'])
+
+sys.path.append(os.environ["SU2_RUN"])
 import SU2
 
 # -------------------------------------------------------------------
 #  Main
 # -------------------------------------------------------------------
 
+
 def main():
 
     # Command Line Options
-    parser=OptionParser()
-    parser.add_option("-f", "--file",       dest="filename",
-                      help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--partitions", dest="partitions", default=2,
-                      help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-c", "--compute",    dest="compute",    default="True",
-                      help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
+    parser = OptionParser()
+    parser.add_option(
+        "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
+    )
+    parser.add_option(
+        "-n",
+        "--partitions",
+        dest="partitions",
+        default=2,
+        help="number of PARTITIONS",
+        metavar="PARTITIONS",
+    )
+    parser.add_option(
+        "-c",
+        "--compute",
+        dest="compute",
+        default="True",
+        help="COMPUTE direct and adjoint problem",
+        metavar="COMPUTE",
+    )
 
-    (options, args)=parser.parse_args()
-    options.partitions  = int( options.partitions )
-    options.compute     = options.compute.upper() == 'TRUE'
+    (options, args) = parser.parse_args()
+    options.partitions = int(options.partitions)
+    options.compute = options.compute.upper() == "TRUE"
 
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
 
-    parallel_computation( options.filename    ,
-                          options.partitions  ,
-                          options.compute      )
+    parallel_computation(options.filename, options.partitions, options.compute)
+
 
 #: def main()
 
@@ -63,9 +77,8 @@ def main():
 #  CFD Solution
 # -------------------------------------------------------------------
 
-def parallel_computation( filename           ,
-                          partitions  = 0    ,
-                          compute     = True  ):
+
+def parallel_computation(filename, partitions=0, compute=True):
 
     # Config
     config = SU2.io.Config(filename)
@@ -85,9 +98,9 @@ def parallel_computation( filename           ,
     state.update(info)
 
     # Solution merging
-    if config.SOLVER == 'FEM_ELASTICITY':
+    if config.SOLVER == "FEM_ELASTICITY":
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
-    elif config.SOLVER == 'FLUID_STRUCTURE_INTERACTION':
+    elif config.SOLVER == "FLUID_STRUCTURE_INTERACTION":
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
 
@@ -95,6 +108,7 @@ def parallel_computation( filename           ,
     state.update(info)
 
     return state
+
 
 #: parallel_computation()
 
@@ -104,6 +118,5 @@ def parallel_computation( filename           ,
 # -------------------------------------------------------------------
 
 # this is only accessed if running from command prompt
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

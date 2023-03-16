@@ -28,10 +28,7 @@
 
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 
-void CLinearPartitioner::Initialize(unsigned long global_count,
-                                    unsigned long offset,
-                                    bool isDisjoint) {
-
+void CLinearPartitioner::Initialize(unsigned long global_count, unsigned long offset, bool isDisjoint) {
   /*--- Store MPI size ---*/
 
   size = SU2_MPI::GetSize();
@@ -41,17 +38,16 @@ void CLinearPartitioner::Initialize(unsigned long global_count,
   firstIndex.resize(size);
   lastIndex.resize(size);
   sizeOnRank.resize(size);
-  cumulativeSizeBeforeRank.resize(size+1);
+  cumulativeSizeBeforeRank.resize(size + 1);
 
   /*--- Compute the number of points that will be on each processor.
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
 
   unsigned long quotient = 0;
-  if (global_count >= (unsigned long)size)
-    quotient = global_count/size;
+  if (global_count >= (unsigned long)size) quotient = global_count / size;
 
-  int remainder = int(global_count%size);
+  int remainder = int(global_count % size);
   for (int ii = 0; ii < size; ii++) {
     sizeOnRank[ii] = quotient + int(ii < remainder);
   }
@@ -64,32 +60,27 @@ void CLinearPartitioner::Initialize(unsigned long global_count,
   if (isDisjoint) adjust = 1;
 
   firstIndex[0] = offset;
-  lastIndex[0]  = firstIndex[0] + sizeOnRank[0] - adjust;
+  lastIndex[0] = firstIndex[0] + sizeOnRank[0] - adjust;
   cumulativeSizeBeforeRank[0] = 0;
   for (int iProc = 1; iProc < size; iProc++) {
-    firstIndex[iProc] = lastIndex[iProc-1] + adjust;
-    lastIndex[iProc]  = firstIndex[iProc]  + sizeOnRank[iProc] - adjust;
-    cumulativeSizeBeforeRank[iProc] = (cumulativeSizeBeforeRank[iProc-1] +
-                                       sizeOnRank[iProc-1]);
+    firstIndex[iProc] = lastIndex[iProc - 1] + adjust;
+    lastIndex[iProc] = firstIndex[iProc] + sizeOnRank[iProc] - adjust;
+    cumulativeSizeBeforeRank[iProc] = (cumulativeSizeBeforeRank[iProc - 1] + sizeOnRank[iProc - 1]);
   }
   cumulativeSizeBeforeRank[size] = global_count;
-
 }
 
 unsigned long CLinearPartitioner::GetRankContainingIndex(unsigned long index) const {
-
   /*--- Initial guess ---*/
 
-  unsigned long iProcessor = min<unsigned long>(index/sizeOnRank[0], size-1);
+  unsigned long iProcessor = min<unsigned long>(index / sizeOnRank[0], size - 1);
 
   /*--- Move up or down until we find the processor. ---*/
 
   if (index >= cumulativeSizeBeforeRank[iProcessor])
-    while(index >= cumulativeSizeBeforeRank[iProcessor+1])
-      iProcessor++;
+    while (index >= cumulativeSizeBeforeRank[iProcessor + 1]) iProcessor++;
   else
-    while(index < cumulativeSizeBeforeRank[iProcessor])
-      iProcessor--;
+    while (index < cumulativeSizeBeforeRank[iProcessor]) iProcessor--;
 
   return iProcessor;
 }

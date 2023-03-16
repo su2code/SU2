@@ -135,11 +135,8 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
           SU2_MPI::Error("Table levels are not provided in ascending order.", CURRENT_FUNCTION);
       }
       auto duplicate = adjacent_find(table_levels.begin(), table_levels.end()) != table_levels.end();
-      if (duplicate)
-        SU2_MPI::Error("Duplicate table levels are present in LUT file", CURRENT_FUNCTION);
+      if (duplicate) SU2_MPI::Error("Duplicate table levels are present in LUT file", CURRENT_FUNCTION);
     }
-
-    
 
     /*--- number of variables in LUT ---*/
     if (line.compare("[Number of variables]") == 0) {

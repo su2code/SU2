@@ -6,10 +6,10 @@ sudo: required
 
 language: c++
 
-cache: 
+cache:
     - ccache
     - pip
-    - directories: 
+    - directories:
       - $HOME/.pyenv_cache
 
 compiler:
@@ -19,7 +19,7 @@ notifications:
     email:
         recipients:
             - su2code-dev@lists.stanford.edu
-  
+
 branches:
     only:
         - develop
@@ -81,7 +81,7 @@ before_script:
 
     # Get the tutorial cases
     - git clone --depth=1 -b develop https://github.com/su2code/su2code.github.io ./Tutorials
-    
+
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
 
