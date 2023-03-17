@@ -92,7 +92,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
       std::stringstream str_i_var;
       str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-      AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
     }
 
   }
@@ -830,7 +830,7 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
   for (const auto& items : nameToIndex) {
     knownVariables << items.first + '\n';
   }
-  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\n";
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\nSCALAR[0,1,...]\n";
 
   auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
     /*--- Primitives of the flow solver. ---*/
@@ -843,11 +843,11 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
       /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
       return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
     };
+
     if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
-    if (var.rfind("FLAMELET", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("SCALAR", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 6);
     if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
     if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
-
     return CustomOutput::NOT_A_VARIABLE;
   };
 
@@ -1184,9 +1184,18 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
     AddHistoryOutput("LINSOL_RESIDUAL_TRANS", "LinSolResTrans", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for transition solver.");
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
+      AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+      break;
+    }
+    case SPECIES_MODEL::FLAMELET: {
+      AddHistoryOutput("LINSOL_ITER_FLAMELET", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for flamelet solver.");
+      AddHistoryOutput("LINSOL_RESIDUAL_FLAMELET", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for flamelet solver.");
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 // clang-format on
@@ -1266,8 +1275,8 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
         }
       }
 
-      SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
-      SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+      SetHistoryOutputValue("LINSOL_ITER_FLAMELET", solver[SPECIES_SOL]->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(solver[SPECIES_SOL]->GetResLinSolver()));
       break;
     }
 
