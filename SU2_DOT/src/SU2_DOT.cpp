@@ -41,9 +41,8 @@ int main(int argc, char* argv[]) {
 #endif
   SU2_MPI::Comm comm = SU2_MPI::GetComm();
 
-  /*--- AD initialization. ---*/
-
-  AD::Initialize();
+  /*--- Further initializations are placed in the constructor of CDriverBase, to ensure that they are also seen by the
+   python wrapper. */
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used). ---*/
