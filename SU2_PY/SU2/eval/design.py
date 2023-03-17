@@ -279,7 +279,7 @@ def obj_p(config, state, this_obj, def_objs):
     ):
         penalty = (constraint - funcval) ** 2.0
     # If 'DEFAULT' objtype this returns the function value.
-    else:
+    elif (def_objs[this_obj]['OBJTYPE']=='DEFAULT'):
         penalty = funcval
     return penalty
 
