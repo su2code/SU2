@@ -2311,8 +2311,8 @@ public:
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT 
-   */ 
+   * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
+   */
   inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
 
   inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
@@ -2323,7 +2323,7 @@ public:
 
   inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
   inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
-  
-  inline virtual su2double *GetScalarSources(unsigned long iPoint) { return nullptr; }
+
+  inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual su2double *GetScalarLookups(unsigned long iPoint) { return nullptr; }
 };

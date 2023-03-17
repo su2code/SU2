@@ -2158,24 +2158,24 @@ public:
             This is the thickness of the transition layer from unburnt to burnt conditions.
    * \return flame thickness for flamelet model initialization
    */
-  su2double GetFlameThickness(void) { return flame_thickness; }
+  su2double GetFlameThickness(void) const { return flame_thickness; }
 
   /*!
    * \brief Get the burnt region thickness for flamelet model initialization.
             This is the thickness of the hot, burnt zone after the reaction zone.
    * \return flame thickness for flamelet model initialization
    */
-  su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
+  su2double GetFlameBurntThickness(void) const { return flame_burnt_thickness; }
 
   /*!
    * \brief Set the number of scalars for flamelet model.
    */
-  void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
+  void SetNScalars(unsigned short val_nScalars) { n_scalars = val_nScalars; }
 
   /*!
    * \brief Set the number of controlling variables for flamelet model.
    */
-  void SetNControlVars(unsigned short n_control_vars) { this->n_control_vars = n_control_vars; }
+  void SetNControlVars(unsigned short val_nControlVars) { n_control_vars = val_nControlVars; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
@@ -2195,12 +2195,16 @@ public:
   /*!
    * \brief Get the name of the user scalar.
    */
-  string GetUserScalarName(unsigned short i_user_scalar) const { if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE"; }
+  string GetUserScalarName(unsigned short i_user_scalar) const {
+    if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE";
+  }
 
   /*!
    * \brief Get the name of the user scalar source term.
    */
-  string GetUserSourceName(unsigned short i_user_source) const { if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE"; }
+  string GetUserSourceName(unsigned short i_user_source) const {
+    if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE";
+  }
 
   /*!
    * \brief Get the number of transported scalars for combustion
@@ -2210,7 +2214,7 @@ public:
   /*!
    * \brief Set the total number of LUT sources
    */
-  void SetNLUTSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
+  void SetNLUTSources(unsigned short val_nTableSources) { n_table_sources = val_nTableSources; }
 
   /*!
    * \brief Get the number of transported scalars source terms for combustion
@@ -2221,7 +2225,7 @@ public:
    * \brief Store the names of scalar variables that are being solved
    * \param[out] stores the names in vector table_scalar_names
    */
-  inline void SetLUTScalarNames(vector<string> &table_scalar_names) { this->table_scalar_names = table_scalar_names; }
+  inline void SetLUTScalarNames(vector<string> &val_tableScalarNames) { table_scalar_names = val_tableScalarNames; }
 
   /*!
    * \brief Get the name of the independent variable from the lookup table
@@ -2237,7 +2241,7 @@ public:
    * \brief Store the names of scalar source term variables
    * \param[out] stores the names in vector table_source_names
    */
-  inline void SetLUTSourceNames(vector<string> &table_source_names) { this->table_source_names = table_source_names; }
+  inline void SetLUTSourceNames(vector<string> &val_tableSourceNames) { table_source_names = val_tableSourceNames; }
 
   /*!
    * \brief Get the scalar source term name i_source
@@ -2248,7 +2252,7 @@ public:
    * \brief Get the file name of the look up table
    * \return File name of the look up table
    */
-  string GetFileNameLUT(void) { return file_name_lut; };
+  string GetFileNameLUT(void) const { return file_name_lut; };
 
   /*!
    * \brief Get the Young's modulus of elasticity.

@@ -104,7 +104,7 @@ CFluidFlamelet::~CFluidFlamelet() {
 }
 
 /*--- do a lookup for the list of variables in table_lookup_names, for visualization purposes ---*/
-unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
+unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
 
   su2double enth = val_scalars[I_ENTH];
   su2double prog = val_scalars[I_PROGVAR];
@@ -120,7 +120,7 @@ unsigned long CFluidFlamelet::SetScalarLookups(su2double* val_scalars) {
 }
 
 /*--- set the source terms for the transport equations ---*/
-unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
+unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
 
   table_sources[0] = 0.0;
 
@@ -168,7 +168,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
 /* --- Total enthalpy is the transported variable, but we usually have temperature as a boundary condition,
        so we do a reverse lookup */
-unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val_prog, su2double val_temp, su2double initial_value) {
+unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2double val_prog, const su2double val_temp, su2double initial_value) {
 
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
