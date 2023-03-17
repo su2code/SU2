@@ -42,6 +42,7 @@ using namespace std;
 
 CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     : CDriverBase(confFile, 1, MPICommunicator) {
+<<<<<<< HEAD
 /*--- Initialize MeDiPack (must also be here to initialize it from Python). ---*/
 #ifdef HAVE_MPI
 #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
@@ -53,6 +54,8 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+=======
+>>>>>>> origin/develop
 
   /*--- Preprocessing of the config files. ---*/
 
