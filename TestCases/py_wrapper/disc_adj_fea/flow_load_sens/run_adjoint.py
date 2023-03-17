@@ -56,10 +56,8 @@ def main():
   if options.with_MPI == True:
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
   else:
     comm = 0
-    rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
