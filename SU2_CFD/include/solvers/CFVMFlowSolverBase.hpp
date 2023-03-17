@@ -1046,11 +1046,11 @@ class CFVMFlowSolverBase : public CSolver {
       std::string fname1 = "jacobian.csv";
       fs1.open(fname1);
       for (unsigned long i = 0; i < m; i++){
-        unsigned long iPoint_mask = (i+nVar) / nVar; // (int logic)
+        unsigned long iPoint_mask = (i+nVar) / nVar - 1; // (int logic)
         unsigned long iPoint = Mask[iPoint_mask];
         unsigned short iVar = i % nVar; // modulo
         for (unsigned long j = 0; j < nPointDomain*nVar; j++) {
-          unsigned long jPoint_mask = (j+nVar) / nVar; // (int logic)
+          unsigned long jPoint_mask = (j+nVar) / nVar - 1; // (int logic)
           unsigned long jPoint = Mask[jPoint_mask];
           unsigned short jVar = j % nVar; // modulo
           fs1 << setprecision(10) << Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << "\n" ;
@@ -1079,7 +1079,7 @@ class CFVMFlowSolverBase : public CSolver {
     vector<su2double> TestBasis(m*nsnaps, 0.0);
     
     for (unsigned long i = 0; i < m; i++){
-      unsigned long iPoint_mask = (i+nVar) / nVar; // (int logic)
+      unsigned long iPoint_mask = (i+nVar) / nVar - 1; // (int logic)
       unsigned long iPoint = Mask[iPoint_mask];
       unsigned short iVar = i % nVar; // modulo
       
