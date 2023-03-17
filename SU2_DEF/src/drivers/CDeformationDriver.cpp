@@ -36,7 +36,6 @@ using namespace std;
 
 CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     : CDriverBase(confFile, 1, MPICommunicator) {
-
   /*--- Preprocessing of the config files. ---*/
 
   Input_Preprocessing();
