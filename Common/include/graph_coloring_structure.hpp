@@ -44,7 +44,7 @@ using namespace std;
  * \version 7.5.1 "Blackbird"
  */
 class CGraphColoringStructure {
-public:
+ public:
   /*!
    * \brief Function, which determines the colors for the vertices of the given graph.
    * \param[in]  config             - Definition of the particular problem.
@@ -55,9 +55,7 @@ public:
    * \param[out] nGlobalColors      - Global number of colors in the graph.
    * \param[out] colorLocalVertices - The color of the local vertices of the graph.
    */
-  void GraphVertexColoring(CConfig                              *config,
-                           const vector<unsigned long>          &nVerticesPerRank,
-                           const vector<vector<unsigned long> > &entriesVertices,
-                           int                                  &nGlobalColors,
-                           vector<int>                          &colorLocalVertices);
+  void GraphVertexColoring(CConfig* config, const vector<unsigned long>& nVerticesPerRank,
+                           const vector<vector<unsigned long> >& entriesVertices, int& nGlobalColors,
+                           vector<int>& colorLocalVertices);
 };

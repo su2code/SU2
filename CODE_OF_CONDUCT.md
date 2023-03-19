@@ -28,7 +28,7 @@ Examples of unacceptable behavior by participants include:
 * Trolling, insulting/derogatory comments, and personal or political attacks.
 * Public or private harassment.
 * Publishing others' private information, such as a physical or electronic
-  address, without explicit permission. 
+  address, without explicit permission.
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting.
 
@@ -67,7 +67,7 @@ faith may face temporary or permanent repercussions as determined by other
 members of the project's leadership.
 
 Consequences may include:
-* Downgrade or removal of repository permissions such as admin and write 
+* Downgrade or removal of repository permissions such as admin and write
   permissions.
 * Removal from the su2code organization on Github.
 * Being blocked from the su2code repository.
@@ -79,4 +79,3 @@ This Code of Conduct is adapted from the [Contributor Covenant][homepage], versi
 available at https://www.contributor-covenant.org/version/1/4/code-of-conduct.html
 
 [homepage]: https://www.contributor-covenant.org
-

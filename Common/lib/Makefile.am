@@ -166,4 +166,3 @@ libSU2_AD_a_SOURCES = $(lib_sources)
 libSU2_AD_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
 libSU2_AD_a_LIBADD =  ${lib_ldadd}
 endif
-

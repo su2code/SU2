@@ -27,14 +27,11 @@
 
 #include "../../../include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
 
-CNSUnitQuadSolution::CNSUnitQuadSolution(void) : CVerificationSolution() { }
+CNSUnitQuadSolution::CNSUnitQuadSolution(void) : CVerificationSolution() {}
 
-CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
-                                         unsigned short val_nVar,
-                                         unsigned short val_iMesh,
-                                         CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
+                                         CConfig* config)
+    : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   /*--- Write a message that the solution is initialized for the
    Navier-Stokes case on a unit quad. Note that heat conduction
    is neglected for this case. ---*/
@@ -49,75 +46,61 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
   }
 
   /*--- Coefficients, needed to determine the solution. ---*/
-  Gm1       = config->GetGamma() - 1.0;
-  flowAngle = config->GetAoA()*PI_NUMBER/180.0;
+  Gm1 = config->GetGamma() - 1.0;
+  flowAngle = config->GetAoA() * PI_NUMBER / 180.0;
   Viscosity = config->GetMu_ConstantND();
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
-    SU2_MPI::Error("Steady mode must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    SU2_MPI::Error("Steady mode must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS &&
-     Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
-     Kind_Solver != MAIN_SOLVER::FEM_LES)
-    SU2_MPI::Error("Compressible flow equations must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES &&
+      Kind_Solver != MAIN_SOLVER::RANS && Kind_Solver != MAIN_SOLVER::FEM_EULER &&
+      Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
+      Kind_Solver != MAIN_SOLVER::FEM_LES)
+    SU2_MPI::Error("Compressible flow equations must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) &&
-     (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
-    SU2_MPI::Error("Navier Stokes equations must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if ((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) && (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
+    SU2_MPI::Error("Navier Stokes equations must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(config->GetKind_FluidModel() != IDEAL_GAS)
-    SU2_MPI::Error("Ideal gas must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_FluidModel() != IDEAL_GAS)
+    SU2_MPI::Error("Ideal gas must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(fabs(Gm1-0.5) > 1.e-8)
-    SU2_MPI::Error("Gamma must be 1.5 for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (fabs(Gm1 - 0.5) > 1.e-8) SU2_MPI::Error("Gamma must be 1.5 for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
-    SU2_MPI::Error("Constant viscosity must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
+    SU2_MPI::Error("Constant viscosity must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
-    SU2_MPI::Error("Constant Prandtl number must be selected for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
+    SU2_MPI::Error("Constant Prandtl number must be selected for the NS Unit Quad case", CURRENT_FUNCTION);
 
-  if(config->GetPrandtl_Lam() < 1.e+20)
-     SU2_MPI::Error("Laminar Prandtl number must be larger than 1.e+20 for the NS Unit Quad case",
-                   CURRENT_FUNCTION);
+  if (config->GetPrandtl_Lam() < 1.e+20)
+    SU2_MPI::Error("Laminar Prandtl number must be larger than 1.e+20 for the NS Unit Quad case", CURRENT_FUNCTION);
 }
 
-CNSUnitQuadSolution::~CNSUnitQuadSolution(void) { }
+CNSUnitQuadSolution::~CNSUnitQuadSolution(void) {}
 
-void CNSUnitQuadSolution::GetBCState(const su2double *val_coords,
-                                     const su2double val_t,
-                                     su2double       *val_solution) const {
-
+void CNSUnitQuadSolution::GetBCState(const su2double* val_coords, const su2double val_t,
+                                     su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
 }
 
-void CNSUnitQuadSolution::GetSolution(const su2double *val_coords,
-                                      const su2double val_t,
-                                      su2double       *val_solution) const {
-
+void CNSUnitQuadSolution::GetSolution(const su2double* val_coords, const su2double val_t,
+                                      su2double* val_solution) const {
   /*--- Compute the flow direction and the coordinates in
         the rotated frame. ---*/
   const su2double cosFlowAngle = cos(flowAngle);
   const su2double sinFlowAngle = sin(flowAngle);
 
-  const su2double xTilde = val_coords[0]*cosFlowAngle - val_coords[1]*sinFlowAngle;
-  const su2double yTilde = val_coords[0]*sinFlowAngle + val_coords[1]*cosFlowAngle;
+  const su2double xTilde = val_coords[0] * cosFlowAngle - val_coords[1] * sinFlowAngle;
+  const su2double yTilde = val_coords[0] * sinFlowAngle + val_coords[1] * cosFlowAngle;
 
   /*--- Compute the exact solution for this case. Note that it works
         both in 2D and 3D. ---*/
-  val_solution[0]      =  1.0;
-  val_solution[1]      =  cosFlowAngle*yTilde*yTilde;
-  val_solution[2]      = -sinFlowAngle*yTilde*yTilde;
-  val_solution[3]      =  0.0;
-  val_solution[nVar-1] =  (2.0*Viscosity*xTilde + 10.0)/Gm1
-                       +  0.5*yTilde*yTilde*yTilde*yTilde;
+  val_solution[0] = 1.0;
+  val_solution[1] = cosFlowAngle * yTilde * yTilde;
+  val_solution[2] = -sinFlowAngle * yTilde * yTilde;
+  val_solution[3] = 0.0;
+  val_solution[nVar - 1] = (2.0 * Viscosity * xTilde + 10.0) / Gm1 + 0.5 * yTilde * yTilde * yTilde * yTilde;
 }

@@ -35,7 +35,7 @@
  * \ingroup Interfaces
  */
 class CSlidingMesh final : public CInterpolator {
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -43,8 +43,7 @@ public:
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
-  CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config,
-               unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -52,7 +51,7 @@ public:
    */
   void SetTransferCoeff(const CConfig* const* config) override;
 
-private:
+ private:
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
    * \param[in] map         - array containing the index of the boundary points connected to the node
@@ -125,6 +124,6 @@ private:
    * \param[in] T2 - second point of triangle T
    * \param[in] T3 - third  point of triangle T
    */
-  static bool CheckPointInsideTriangle(const su2double* Point, const su2double* T1,
-                                       const su2double* T2, const su2double* T3);
+  static bool CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
+                                       const su2double* T3);
 };

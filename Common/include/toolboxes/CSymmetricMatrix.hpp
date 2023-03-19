@@ -37,7 +37,8 @@
  */
 class CSymmetricMatrix {
   static_assert(su2passivematrix::IsRowMajor, "Row major storage is assumed for LAPACK.");
-private:
+
+ private:
   su2passivematrix mat;
 
   // Not optimized dense matrix factorization and inversion for portability.
@@ -47,30 +48,28 @@ private:
   void CalcInv_sytri();
   void CalcInv_potri();
 
-public:
+ public:
   CSymmetricMatrix() = default;
-  CSymmetricMatrix(int N) {Initialize(N);}
+  CSymmetricMatrix(int N) { Initialize(N); }
 
   void Initialize(int N);
 
   inline int Size() const { return mat.rows(); }
 
-  inline passivedouble Get(int i, int j) const { return mat(std::min(i,j),std::max(i,j)); }
+  inline passivedouble Get(int i, int j) const { return mat(std::min(i, j), std::max(i, j)); }
 
-  inline void Set(int i, int j, passivedouble val) { mat(std::min(i,j),std::max(i,j)) = val; }
+  inline void Set(int i, int j, passivedouble val) { mat(std::min(i, j), std::max(i, j)) = val; }
 
-  inline passivedouble& operator() (int i, int j) { return mat(std::min(i,j),std::max(i,j)); }
+  inline passivedouble& operator()(int i, int j) { return mat(std::min(i, j), std::max(i, j)); }
 
-  inline const passivedouble& operator() (int i, int j) const { return mat(std::min(i,j),std::max(i,j)); }
+  inline const passivedouble& operator()(int i, int j) const { return mat(std::min(i, j), std::max(i, j)); }
 
-  template<class ForwardIt>
-  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
-  {
+  template <class ForwardIt>
+  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const {
     for (int i = 0; i < Size(); ++i) {
       *vec_out = 0.0;
       auto vec = vec_in;
-      for (int k = 0; k < Size(); ++k)
-        *vec_out += *(vec++) * Get(i,k);
+      for (int k = 0; k < Size(); ++k) *vec_out += *(vec++) * Get(i, k);
       ++vec_out;
     }
   }
@@ -80,5 +79,4 @@ public:
   void Invert(bool is_spd = false);
 
   su2passivematrix StealData();
-
 };

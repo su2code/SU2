@@ -1,7 +1,7 @@
 extraction:
   cpp:
      prepare:
-        packages: 
+        packages:
           - libboost-all-dev
      configure:
         command:
