@@ -187,7 +187,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849531, -3.238474, -3.6413e-04, -8.7087] #last 4 columns
+    discadj_fea.test_vals         = [-2.849844, -3.238713, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.test_vals_aarch64 = [-2.849570, -3.238519, -3.6413e-04, -8.7087] #last 4 columns
     test_list.append(discadj_fea)
 
@@ -344,17 +344,17 @@ def main():
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
     # Flow AD Mesh Displacement Sensitivity
-    pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_CFD_AD_MeshDisp')
-    pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
-    pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_flow.cfg"
-    pywrapper_FEA_AD_FlowLoad.test_iter     = 1000
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
-    pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
-    pywrapper_FEA_AD_FlowLoad.timeout       = 1600
-    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
-    pywrapper_FEA_AD_FlowLoad.new_output    = False
-    test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+    pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
+    pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
+    pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
+    pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
+    pywrapper_CFD_AD_MeshDisp.timeout       = 1600
+    pywrapper_CFD_AD_MeshDisp.tol           = 0.000001
+    pywrapper_CFD_AD_MeshDisp.new_output    = False
+    test_list.append(pywrapper_CFD_AD_MeshDisp)
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
 
 
     ###################################

@@ -28,7 +28,6 @@
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
 
   /*--- MPI initialization. ---*/
@@ -40,6 +39,9 @@ int main(int argc, char* argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_MPI::Comm comm = SU2_MPI::GetComm();
+
+  /*--- Further initializations are placed in the constructor of CDriverBase, to ensure that they are also seen by the
+   python wrapper. */
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used). ---*/
@@ -65,6 +67,10 @@ int main(int argc, char* argv[]) {
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
   driver.Postprocessing();
+
+  /*--- Finalize AD. ---*/
+
+  AD::Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
 

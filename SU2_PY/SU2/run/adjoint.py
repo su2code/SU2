@@ -31,78 +31,83 @@
 
 import copy
 
-from .. import io  as su2io
-from .merge     import merge     as su2merge
-from .interface import CFD       as SU2_CFD
+from .. import io as su2io
+from .merge import merge as su2merge
+from .interface import CFD as SU2_CFD
 
 # ----------------------------------------------------------------------
 #  Adjoint Simulation
 # ----------------------------------------------------------------------
 
-def adjoint( config ):
-    """ info = SU2.run.adjoint(config)
 
-        Runs an adjoint analysis with:
-            SU2.run.decomp()
-            SU2.run.CFD()
-            SU2.run.merge()
+def adjoint(config):
+    """info = SU2.run.adjoint(config)
 
-        Assumptions:
-            Does not run Gradient Projection
-            Does not rename restart filename to solution filename
-            Adds 'adjoint' suffix to convergence filename
+    Runs an adjoint analysis with:
+        SU2.run.decomp()
+        SU2.run.CFD()
+        SU2.run.merge()
 
-        Outputs:
-            info - SU2 State with keys:
-                HISTORY.ADJOINT_NAME
-                FILES.ADJOINT_NAME
+    Assumptions:
+        Does not run Gradient Projection
+        Does not rename restart filename to solution filename
+        Adds 'adjoint' suffix to convergence filename
 
-        Updates:
-            config.MATH_PROBLEM
+    Outputs:
+        info - SU2 State with keys:
+            HISTORY.ADJOINT_NAME
+            FILES.ADJOINT_NAME
 
-        Executes in:
-            ./
+    Updates:
+        config.MATH_PROBLEM
+
+    Executes in:
+        ./
     """
 
     # local copy
     konfig = copy.deepcopy(config)
 
     # setup problem
-    if konfig.get('GRADIENT_METHOD', 'CONTINUOUS_ADJOINT') == 'DISCRETE_ADJOINT':
-        konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+    if konfig.get("GRADIENT_METHOD", "CONTINUOUS_ADJOINT") == "DISCRETE_ADJOINT":
+        konfig["MATH_PROBLEM"] = "DISCRETE_ADJOINT"
     else:
-        konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
+        konfig["MATH_PROBLEM"] = "CONTINUOUS_ADJOINT"
 
-    konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
+    konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + "_adjoint"
 
     # Run Solution
     SU2_CFD(konfig)
 
     # merge
-    konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME']
+    konfig["SOLUTION_ADJ_FILENAME"] = konfig["RESTART_ADJ_FILENAME"]
     su2merge(konfig)
 
     # filenames
-    plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
-    plot_extension   = su2io.get_extension(plot_format)
-    history_filename = konfig['CONV_FILENAME'] + plot_extension
-    special_cases    = su2io.get_specialCases(konfig)
+    plot_format = konfig.get("TABULAR_FORMAT", "CSV")
+    plot_extension = su2io.get_extension(plot_format)
+    history_filename = konfig["CONV_FILENAME"] + plot_extension
+    special_cases = su2io.get_specialCases(konfig)
 
     # get history
-    history = su2io.read_history( history_filename, config.NZONES )
+    history = su2io.read_history(history_filename, config.NZONES)
 
     # update super config
-    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
-                    'OBJECTIVE_FUNCTION'  : konfig['OBJECTIVE_FUNCTION']   })
+    config.update(
+        {
+            "MATH_PROBLEM": konfig["MATH_PROBLEM"],
+            "OBJECTIVE_FUNCTION": konfig["OBJECTIVE_FUNCTION"],
+        }
+    )
 
     # files out
-    objective    = konfig['OBJECTIVE_FUNCTION']
+    objective = konfig["OBJECTIVE_FUNCTION"]
     if "," in objective:
-            objective="COMBO"
-    adj_title    = 'ADJOINT_' + objective
-    suffix       = su2io.get_adjointSuffix(objective)
-    restart_name = konfig['RESTART_FILENAME']
-    restart_name = su2io.add_suffix(restart_name,suffix)
+        objective = "COMBO"
+    adj_title = "ADJOINT_" + objective
+    suffix = su2io.get_adjointSuffix(objective)
+    restart_name = konfig["RESTART_FILENAME"]
+    restart_name = su2io.add_suffix(restart_name, suffix)
 
     # info out
     info = su2io.State()

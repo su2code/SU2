@@ -165,10 +165,7 @@ def main():
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.232590, -5.757884, -20.641547, -20.640244, -20.539243, 1.246889, -3.205235, -0.028406, 0.250857, 32459.000000]
-    super_cat.su2_exec = "mpirun -n 2 SU2_CFD"
-    super_cat.timeout = 1600
     super_cat.new_output = True
-    super_cat.tol = 0.00001
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -177,10 +174,7 @@ def main():
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
-    partial_cat.su2_exec = "mpirun -n 2 SU2_CFD"
-    partial_cat.timeout = 1600
     partial_cat.new_output = True
-    partial_cat.tol = 0.00001
     test_list.append(partial_cat)
 
     # Viscous cylinder, ionization, Gupta-Yos
@@ -189,10 +183,7 @@ def main():
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 10
     ion_gy.test_vals = [-11.629873, -4.165563, -4.702662, -4.950351, -5.146155, -4.993878, -6.893332, 5.990109, 5.990004, -0.014849, 0.000000, 90090.000000]
-    ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
-    ion_gy.timeout = 1600
     ion_gy.new_output = True
-    ion_gy.tol = 0.00001
     test_list.append(ion_gy)
 
     ##########################
@@ -1457,10 +1448,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.113626, -4.989076, -4.880565, -7.351737, 2.452701, -5.627391, 30.000000, -5.721303, 11.000000, -8.001991, 10.000000, -8.813670, 2.084143, 1.000000, 0.600000, 0.484143]
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1469,10 +1457,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.719472, -5.293846, -5.185419, -8.355307, 2.147874, -5.233215, 30.000000, -5.721396, 11.000000, -8.000062, 10.000000, -8.814100, 2.084145, 1.000000, 0.600000, 0.484145]
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing
@@ -1499,10 +1484,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.012157, -1.650191, -1.405134, -0.990205, 1.619918, -3.764227, 23.000000, -5.039466, 12.000000, -5.346201, 4.000000, -6.084514, 2.000000, 1.000000, 0.000000, 1.000000]
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.new_output = True
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.

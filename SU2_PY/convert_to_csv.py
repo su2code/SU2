@@ -28,17 +28,24 @@
 from optparse import OptionParser
 import os
 
-parser = OptionParser(usage = "%prog -i INPUT_FILE",
-        description = 'This script converts SU2 ASCII restart files generated with a version prior v7 to the CSV format')
-parser.add_option("-i", "--inputfile", dest="infile",
-                  help="ASCII restart file (*.dat)", metavar="INPUT_FILE")
-(options, args)=parser.parse_args()
+parser = OptionParser(
+    usage="%prog -i INPUT_FILE",
+    description="This script converts SU2 ASCII restart files generated with a version prior v7 to the CSV format",
+)
+parser.add_option(
+    "-i",
+    "--inputfile",
+    dest="infile",
+    help="ASCII restart file (*.dat)",
+    metavar="INPUT_FILE",
+)
+(options, args) = parser.parse_args()
 
 
 infile = open(options.infile, "r")
-out_name = options.infile.split('.')[0] + ".csv"
-if (os.path.isfile(out_name)):
-    print('File ' + out_name + ' already exists.')
+out_name = options.infile.split(".")[0] + ".csv"
+if os.path.isfile(out_name):
+    print("File " + out_name + " already exists.")
     exit(1)
 outfile = open(out_name, "w")
 
@@ -50,8 +57,8 @@ while 1:
     line = line.split()
     for i, val in enumerate(line):
         outfile.write(val.strip())
-        if i != len(line)-1:
-            outfile.write(', ')
-    outfile.write('\n')
+        if i != len(line) - 1:
+            outfile.write(", ")
+    outfile.write("\n")
 
-print('Converted ' + options.infile + ' to ' + out_name)
+print("Converted " + options.infile + " to " + out_name)
