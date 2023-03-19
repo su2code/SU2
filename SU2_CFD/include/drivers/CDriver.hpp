@@ -256,12 +256,13 @@ class CDriver : public CDriverBase {
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
-   * \brief Initialize Python interface functionalities
+   * \brief Initialize Python interface functionalities. When using multigrid,
+   * it is important to call this after modifying custom boundary values.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -478,54 +479,6 @@ class CDriver : public CDriverBase {
   string GetSurfaceFileName() const;
 
   /*!
-   * \brief Get the temperature at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Temperature of the vertex.
-   */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the temperature of a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallTemp - Value of the temperature.
-   */
-  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
-
-  /*!
-   * \brief Get the heat flux at a vertex on a specified marker (3 components).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return True if the vertex is a halo node.
-   */
-  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Wall normal component of the heat flux at the vertex.
-   */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
-   */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
-
-  /*!
-   * \brief Get the thermal conductivity at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Thermal conductivity at the vertex.
-   */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
    * \brief Preprocess the inlets via file input for all solvers.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -554,17 +507,6 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
-   * \brief Set the load in X direction for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX, passivedouble LoadY,
-                    passivedouble LoadZ);
-
-  /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -573,14 +515,6 @@ class CDriver : public CDriverBase {
    * \param[in] LoadX - Value of the load in the direction Z.
    */
   vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
-   * strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Set the adjoint of the flow tractions (from the extra step -

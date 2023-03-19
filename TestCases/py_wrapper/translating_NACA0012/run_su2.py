@@ -49,7 +49,7 @@ class SU2Interface:
             solver_marker_id = solver_marker_ids[marker]
             n_vertices = self.FluidSolver.GetNumberMarkerNodes(solver_marker_id)
             for i_vertex in range(n_vertices):
-                fxyz = self.FluidSolver.GetFlowLoad(solver_marker_id, i_vertex)
+                fxyz = self.FluidSolver.GetMarkerFlowLoad(solver_marker_id, i_vertex)
                 iPoint = self.FluidSolver.GetMarkerNode(solver_marker_id, i_vertex)
                 GlobalIndex = self.FluidSolver.GetNodeGlobalIndex(iPoint)
                 f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], fxyz[2]))
