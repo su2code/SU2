@@ -422,6 +422,72 @@ class CDriverBase {
         const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), main_geometry->vertex[iMarker],
         main_geometry->GetnVertex(iMarker), "MarkerPrimitives", false);
   }
+
+  /*!
+   * \brief Set the temperature of a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallTemp - Value of the temperature.
+   */
+  inline void SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble WallTemp)  {
+    main_geometry->SetCustomBoundaryTemperature(iMarker, iVertex, WallTemp);
+  }
+
+  /*!
+   * \brief Set the wall normal heat flux at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallHeatFlux - Value of the normal heat flux.
+   */
+  inline void SetMarkerCustomNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble WallHeatFlux) {
+    main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
+  }
+
+  /*!
+   * \brief Get the wall normal heat flux at a vertex on a specified marker of the flow or heat solver.
+   * \param[in] iSolver - Solver identifier, should be either a flow solver or the heat solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Wall normal component of the heat flux at the vertex.
+   */
+  inline passivedouble GetMarkerNormalHeatFlux(unsigned short iSolver, unsigned short iMarker, unsigned long iVertex) const {
+    if (iSolver != HEAT_SOL && iSolver != FLOW_SOL) {
+      SU2_MPI::Error("Normal heat flux is only available for flow or heat solvers.");
+    }
+    return SU2_TYPE::GetValue(GetSolverAndCheckMarker(iSolver, iMarker)->GetHeatFlux(iMarker, iVertex));
+  }
+
+  /*!
+   * \brief Sets the nodal force for the structural solver at a vertex of a marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] force - Force vector.
+   */
+  inline void SetMarkerCustomFEALoad(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> force) {
+    auto* solver = GetSolverAndCheckMarker(FEA_SOL, iMarker);
+    std::array<su2double, 3> load{};
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) load[iDim] = force[iDim];
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    solver->GetNodes()->Set_FlowTraction(iPoint, load);
+  }
+
+  /*!
+   * \brief Get the fluid force at a vertex of a solid wall marker of the flow solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   */
+  vector<passivedouble> GetMarkerFlowLoad(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> FlowLoad(GetNumberDimensions(), 0.0);
+    const auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+
+    if (main_config->GetSolid_Wall(iMarker)) {
+      for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+        FlowLoad[iDim] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker, iVertex, iDim));
+      }
+    }
+    return FlowLoad;
+  }
+
 /// \}
 
  protected:
