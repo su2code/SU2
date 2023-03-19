@@ -118,9 +118,6 @@ def main():
   # Finalize the solver and exit cleanly
   SU2Driver.Finalize()
 
-  if SU2Driver != None:
-    del SU2Driver
-
 
 
 # -------------------------------------------------------------------

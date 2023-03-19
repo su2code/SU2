@@ -129,8 +129,6 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program
