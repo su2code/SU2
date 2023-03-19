@@ -39,27 +39,14 @@
 using namespace std;
 
 MLPToolbox::CLookUp_ANN::CLookUp_ANN(const unsigned short n_inputs, const string* input_filenames) {
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  if (rank == MASTER_NODE) cout << "Generating ANN collection" << endl;
-
+  /*--- Define collection of MLPs for regression purposes ---*/
   number_of_variables = n_inputs;
 
   NeuralNetworks.resize(n_inputs);
-  
-  if (rank == MASTER_NODE) {
-    cout << setfill(' ');
-    cout << endl;
-    cout << "+------------------------------------------------------------------+\n";
-    cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
-    cout << "+------------------------------------------------------------------+" << endl;
-  }
 
+  /*--- Generate an MLP for every filename provided ---*/
   for (auto i_MLP = 0u; i_MLP < n_inputs; i_MLP++) {
-    if (rank == MASTER_NODE) cout << "Generating neural network for " << input_filenames[i_MLP] << endl;
     GenerateANN(NeuralNetworks[i_MLP], input_filenames[i_MLP]);
-    if (rank == MASTER_NODE) NeuralNetworks[i_MLP].DisplayNetwork();
   }
 }
 
@@ -217,10 +204,11 @@ bool MLPToolbox::CLookUp_ANN::CheckUseOfInputs(su2vector<string>& input_names, C
       inputs_are_present = false;
     };
   }
+  /*--- Raise error if input variables are missing ---*/
   if (missing_inputs.size() > 0) {
     string message{"Inputs "};
     for (size_t iVar = 0; iVar < missing_inputs.size(); iVar++) message += missing_inputs[iVar] + " ";
-    SU2_MPI::Error(message + "are not present in any loaded ANN.", CURRENT_FUNCTION);
+    throw std::invalid_argument(message + "are not present in any loaded ANN.");
   }
   return inputs_are_present;
 }
@@ -248,10 +236,26 @@ bool MLPToolbox::CLookUp_ANN::CheckUseOfOutputs(su2vector<string>& output_names,
       outputs_are_present = false;
     };
   }
+  /*--- Raise error if any outputs are missing ---*/
   if (missing_outputs.size() > 0) {
     string message{"Outputs "};
     for (size_t iVar = 0; iVar < missing_outputs.size(); iVar++) message += missing_outputs[iVar] + " ";
-    SU2_MPI::Error(message + "are not present in any loaded ANN.", CURRENT_FUNCTION);
+    throw std::invalid_argument( message + "are not present in any loaded ANN.");
   }
   return outputs_are_present;
+}
+
+void MLPToolbox::CLookUp_ANN::DisplayNetworkInfo() const {
+  /*--- Display network information on the loaded MLPs ---*/
+
+  cout << setfill(' ');
+  cout << endl;
+  cout << "+------------------------------------------------------------------+\n";
+  cout << "|                 Multi-Layer Perceptron (MLP) info                |\n";
+  cout << "+------------------------------------------------------------------+" << endl;
+
+  /* For every loaded MLP, display the inputs, outputs, activation functions, and architecture. */
+  for (auto i_MLP = 0u; i_MLP < NeuralNetworks.size(); i_MLP++) {
+    NeuralNetworks[i_MLP].DisplayNetwork();
+  }
 }

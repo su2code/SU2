@@ -34,8 +34,7 @@
 #include <string>
 #include <vector>
 
-#include "../../CConfig.hpp"
-#include "../../linear_algebra/blas_structure.hpp"
+#include "../../containers/C2DContainer.hpp"
 #include "CIOMap.hpp"
 #include "CNeuralNetwork.hpp"
 
@@ -53,7 +52,6 @@ class CLookUp_ANN {
    */
 
  private:
-  int rank{0};
   su2vector<CNeuralNetwork> NeuralNetworks; /*!< std::vector containing all loaded neural networks. */
 
   unsigned short number_of_variables; /*!< Number of loaded ANNs. */
@@ -108,9 +106,14 @@ class CLookUp_ANN {
    * \param[in] variable_names - variable names to map to ANN inputs or outputs
    * \param[in] input - map to inputs (true) or outputs (false)
    */
-  std::vector<pair<std::size_t, std::size_t>> FindVariableIndices(std::size_t i_ANN,
-                                                                  su2vector<std::string> variable_names,
-                                                                  bool input) const;
+  std::vector<std::pair<std::size_t, std::size_t>> FindVariableIndices(std::size_t i_ANN,
+                                                                       su2vector<std::string> variable_names,
+                                                                       bool input) const;
+
+  /*!
+   * \brief Display architectural information on the loaded MLPs
+   */
+  void DisplayNetworkInfo() const;
 };
 
 }  // namespace MLPToolbox

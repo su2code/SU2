@@ -32,7 +32,7 @@
 #include <limits>
 #include <vector>
 
-#include "../../CConfig.hpp"
+#include "../../containers/C2DContainer.hpp"
 namespace MLPToolbox {
 
 class CReadNeuralNetwork {

@@ -61,13 +61,13 @@ void MLPToolbox::CIOMap::PairVariableswithMLPs(CLookUp_ANN* MLP_collection, su2v
   // Looping over the loaded MLPs to check wether the MLP inputs match with the call inputs
   for (size_t iMLP = 0; iMLP < MLP_collection->GetNANNs(); iMLP++) {
     // Mapped call inputs to MLP inputs
-    std::vector<pair<size_t, size_t>> Input_Indices = MLP_collection->FindVariableIndices(iMLP, inputs, true);
+    std::vector<std::pair<size_t, size_t>> Input_Indices = MLP_collection->FindVariableIndices(iMLP, inputs, true);
     isInput = Input_Indices.size() > 0;
 
     if (isInput) {
       // Only when the MLP inputs match with a portion of the call inputs are the output variable checks performed
 
-      std::vector<pair<size_t, size_t>> Output_Indices = MLP_collection->FindVariableIndices(iMLP, outputs, false);
+      std::vector<std::pair<size_t, size_t>> Output_Indices = MLP_collection->FindVariableIndices(iMLP, outputs, false);
       isOutput = Output_Indices.size() > 0;
 
       if (isOutput) {

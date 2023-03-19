@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include "../../linear_algebra/blas_structure.hpp"
+#include "../../containers/C2DContainer.hpp"
 #include "CLookUp_ANN.hpp"
 
 namespace MLPToolbox {

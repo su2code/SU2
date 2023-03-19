@@ -37,6 +37,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      if (rank == MASTER_NODE) lookup_mlp->DisplayNetworkInfo();
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
       lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
@@ -47,7 +48,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
   Newton_Relaxation = config->GetRelaxation_DataDriven();
-  Newton_Tolerance = 2e-10;
+  Newton_Tolerance = 1e-10;
   MaxIter_Newton = 50;
 
   /*--- Preprocessing of inputs and outputs for the interpolation method. ---*/

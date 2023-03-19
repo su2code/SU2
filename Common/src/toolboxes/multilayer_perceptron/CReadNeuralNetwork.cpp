@@ -26,7 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
-
+#include <iostream>
+#include <fstream>
 using namespace std;
 
 MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in) { filename = filename_in; }
@@ -35,7 +36,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile() {
   ifstream file_stream;
   file_stream.open(filename.c_str(), ifstream::in);
   if (!file_stream.is_open()) {
-    SU2_MPI::Error(string("There is no MLP file called ") + filename, CURRENT_FUNCTION);
+    throw std::invalid_argument( "There is no MLP file called " + filename);
   }
 
   string line, word;
@@ -62,7 +63,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile() {
     if (line.compare("[neurons per layer]") == 0) {
       /* In case layer count was not yet provided, return an error */
       if (!found_layercount) {
-        SU2_MPI::Error("No layer count provided before defining neuron count per layer", CURRENT_FUNCTION);
+        throw std::invalid_argument( "No layer count provided before defining neuron count per layer");
       }
       /* Loop over layer count and size neuron count and bias count per layer accordingly */
       for (auto iLayer = 0u; iLayer < n_layers; iLayer++) {
@@ -86,7 +87,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile() {
     /* Read layer activation function types */
     if (line.compare("[activation function]") == 0) {
       if (!found_layercount) {
-        SU2_MPI::Error("No layer count provided before providing layer activation functions", CURRENT_FUNCTION);
+        throw std::invalid_argument( "No layer count provided before providing layer activation functions" );
       }
       for (auto iLayer = 0u; iLayer < n_layers; iLayer++) {
         getline(file_stream, line);
@@ -132,7 +133,7 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile() {
       }
 
       if (output_names.size() != (n_neurons[n_neurons.size() - 1])) {
-        SU2_MPI::Error("Number of output variable names inconsistent with number of MLP outputs", CURRENT_FUNCTION);
+        throw std::invalid_argument("No layer count provided before providing layer activation functions");
       }
     }
 
@@ -158,10 +159,10 @@ void MLPToolbox::CReadNeuralNetwork::ReadMLPFile() {
 
   /* Error checking */
   if (!found_input_names) {
-    SU2_MPI::Error("No MLP input variable names provided", CURRENT_FUNCTION);
+    throw std::invalid_argument("No MLP input variable names provided");
   }
   if (!found_output_names) {
-    SU2_MPI::Error("No MLP output variable names provided", CURRENT_FUNCTION);
+    throw std::invalid_argument("No MLP input variable names provided");
   }
 
   /* Read weights for each layer */

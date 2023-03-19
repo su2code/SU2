@@ -31,7 +31,7 @@
 #include <iostream>
 #include <limits>
 
-#include "../../CConfig.hpp"
+#include "../../containers/C2DContainer.hpp"
 
 namespace MLPToolbox {
 class CNeuron {
