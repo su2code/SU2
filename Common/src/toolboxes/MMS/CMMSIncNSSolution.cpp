@@ -27,14 +27,11 @@
 
 #include "../../../include/toolboxes/MMS/CMMSIncNSSolution.hpp"
 
-CMMSIncNSSolution::CMMSIncNSSolution(void) : CVerificationSolution() { }
+CMMSIncNSSolution::CMMSIncNSSolution(void) : CVerificationSolution() {}
 
-CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
-                                     unsigned short val_nVar,
-                                     unsigned short val_iMesh,
-                                     CConfig*       config)
-: CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
+                                     CConfig* config)
+    : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the incompressible Navier-Stokes equations. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -46,8 +43,8 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
   }
 
   /*--- Coefficients, needed to determine the solution. ---*/
-  Viscosity   = config->GetViscosity_FreeStreamND();
-  Density     = config->GetDensity_FreeStreamND();
+  Viscosity = config->GetViscosity_FreeStreamND();
+  Density = config->GetDensity_FreeStreamND();
   Temperature = config->GetTemperature_FreeStreamND();
 
   /*--- Constants, which describe this manufactured solution. This is a
@@ -56,89 +53,93 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
    Knupp P, "Code verification by the method of manufactured solutions,"
    SAND 2000-1444, Sandia National Laboratories, Albuquerque, NM, 2000. ---*/
 
-  P_0     =   1.0;
-  u_0     =   1.0;
-  v_0     =   1.0;
+  P_0 = 1.0;
+  u_0 = 1.0;
+  v_0 = 1.0;
   epsilon = 0.001;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
-    SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
-                   CURRENT_FUNCTION);
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case", CURRENT_FUNCTION);
 
-  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
+  if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
+      Kind_Solver != MAIN_SOLVER::INC_RANS)
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES)
-    SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
-                   CURRENT_FUNCTION);
+  if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES)
+    SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case", CURRENT_FUNCTION);
 
-  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+  if (config->GetKind_FluidModel() != CONSTANT_DENSITY)
     SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
-    SU2_MPI::Error("Constant viscosity must be selected for the MMS incompressible NS case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
+    SU2_MPI::Error("Constant viscosity must be selected for the MMS incompressible NS case", CURRENT_FUNCTION);
 
-  if(config->GetEnergy_Equation())
+  if (config->GetEnergy_Equation())
     SU2_MPI::Error("Energy equation must be disabled (isothermal) for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 }
 
-CMMSIncNSSolution::~CMMSIncNSSolution(void) { }
+CMMSIncNSSolution::~CMMSIncNSSolution(void) {}
 
-void CMMSIncNSSolution::GetBCState(const su2double *val_coords,
-                                   const su2double val_t,
-                                   su2double       *val_solution) const {
-
+void CMMSIncNSSolution::GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSIncNSSolution::GetSolution(const su2double *val_coords,
-                                    const su2double val_t,
-                                    su2double       *val_solution) const {
-
+void CMMSIncNSSolution::GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
   const su2double y = val_coords[1];
 
   /* Compute the primitives from the defined solution. */
-  const su2double u = u_0*(sin(x*x + y*y) + epsilon);
-  const su2double v = v_0*(cos(x*x + y*y) + epsilon);
-  const su2double p = P_0*(sin(x*x + y*y) +     2.0);
+  const su2double u = u_0 * (sin(x * x + y * y) + epsilon);
+  const su2double v = v_0 * (cos(x * x + y * y) + epsilon);
+  const su2double p = P_0 * (sin(x * x + y * y) + 2.0);
 
   /* For the incompressible solver, we return the primitive variables
    directly, as they are used for the working variables in the solver.
    Note that the implementation below is valid for both 2D and 3D. */
-  val_solution[0]      = p;
-  val_solution[1]      = u;
-  val_solution[2]      = v;
-  val_solution[3]      = 0.0;
-  val_solution[nVar-1] = Temperature;
-
+  val_solution[0] = p;
+  val_solution[1] = u;
+  val_solution[2] = v;
+  val_solution[3] = 0.0;
+  val_solution[nVar - 1] = Temperature;
 }
 
-void CMMSIncNSSolution::GetMMSSourceTerm(const su2double *val_coords,
-                                         const su2double val_t,
-                                         su2double       *val_source) const {
-
+void CMMSIncNSSolution::GetMMSSourceTerm(const su2double* val_coords, const su2double val_t,
+                                         su2double* val_source) const {
   /*--- Easier storage of the x- and y-coordinates. ---*/
   const su2double x = val_coords[0];
   const su2double y = val_coords[1];
 
   /*--- The expressions for the source terms are generated
    automatically by the sympy package in python.---*/
-  val_source[0] = 2*Density*(u_0*x*cos(pow(x, 2) + pow(y, 2)) - v_0*y*sin(pow(x, 2) + pow(y, 2)));
-  val_source[1] = 4*Density*pow(u_0, 2)*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 2*Density*u_0*v_0*y*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) + 2*P_0*x*cos(pow(x, 2) + pow(y, 2)) - 0.666666666666667*Viscosity*(-8.0*u_0*pow(x, 2)*sin(pow(x, 2) + pow(y, 2)) + 4.0*u_0*cos(pow(x, 2) + pow(y, 2)) + 4*v_0*x*y*cos(pow(x, 2) + pow(y, 2))) + 2*Viscosity*(2*u_0*pow(y, 2)*sin(pow(x, 2) + pow(y, 2)) - u_0*cos(pow(x, 2) + pow(y, 2)) + 2*v_0*x*y*cos(pow(x, 2) + pow(y, 2)));
-  val_source[2] = -2*Density*u_0*v_0*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*x*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 4*Density*pow(v_0, 2)*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*P_0*y*cos(pow(x, 2) + pow(y, 2)) + 0.666666666666667*Viscosity*(-4*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 8.0*v_0*pow(y, 2)*cos(pow(x, 2) + pow(y, 2)) + 4.0*v_0*sin(pow(x, 2) + pow(y, 2))) + 2*Viscosity*(2*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 2*v_0*pow(x, 2)*cos(pow(x, 2) + pow(y, 2)) + v_0*sin(pow(x, 2) + pow(y, 2)));
-  val_source[3]      = 0.0;
-  val_source[nVar-1] = 0.0;
-
+  val_source[0] = 2 * Density * (u_0 * x * cos(pow(x, 2) + pow(y, 2)) - v_0 * y * sin(pow(x, 2) + pow(y, 2)));
+  val_source[1] = 4 * Density * pow(u_0, 2) * x * (epsilon + sin(pow(x, 2) + pow(y, 2))) * cos(pow(x, 2) + pow(y, 2)) -
+                  2 * Density * u_0 * v_0 * y * (epsilon + sin(pow(x, 2) + pow(y, 2))) * sin(pow(x, 2) + pow(y, 2)) +
+                  2 * Density * u_0 * v_0 * y * (epsilon + cos(pow(x, 2) + pow(y, 2))) * cos(pow(x, 2) + pow(y, 2)) +
+                  2 * P_0 * x * cos(pow(x, 2) + pow(y, 2)) -
+                  0.666666666666667 * Viscosity *
+                      (-8.0 * u_0 * pow(x, 2) * sin(pow(x, 2) + pow(y, 2)) + 4.0 * u_0 * cos(pow(x, 2) + pow(y, 2)) +
+                       4 * v_0 * x * y * cos(pow(x, 2) + pow(y, 2))) +
+                  2 * Viscosity *
+                      (2 * u_0 * pow(y, 2) * sin(pow(x, 2) + pow(y, 2)) - u_0 * cos(pow(x, 2) + pow(y, 2)) +
+                       2 * v_0 * x * y * cos(pow(x, 2) + pow(y, 2)));
+  val_source[2] = -2 * Density * u_0 * v_0 * x * (epsilon + sin(pow(x, 2) + pow(y, 2))) * sin(pow(x, 2) + pow(y, 2)) +
+                  2 * Density * u_0 * v_0 * x * (epsilon + cos(pow(x, 2) + pow(y, 2))) * cos(pow(x, 2) + pow(y, 2)) -
+                  4 * Density * pow(v_0, 2) * y * (epsilon + cos(pow(x, 2) + pow(y, 2))) * sin(pow(x, 2) + pow(y, 2)) +
+                  2 * P_0 * y * cos(pow(x, 2) + pow(y, 2)) +
+                  0.666666666666667 * Viscosity *
+                      (-4 * u_0 * x * y * sin(pow(x, 2) + pow(y, 2)) +
+                       8.0 * v_0 * pow(y, 2) * cos(pow(x, 2) + pow(y, 2)) + 4.0 * v_0 * sin(pow(x, 2) + pow(y, 2))) +
+                  2 * Viscosity *
+                      (2 * u_0 * x * y * sin(pow(x, 2) + pow(y, 2)) + 2 * v_0 * pow(x, 2) * cos(pow(x, 2) + pow(y, 2)) +
+                       v_0 * sin(pow(x, 2) + pow(y, 2)));
+  val_source[3] = 0.0;
+  val_source[nVar - 1] = 0.0;
 }
 
-bool CMMSIncNSSolution::IsManufacturedSolution(void) const {
-  return true;
-}
+bool CMMSIncNSSolution::IsManufacturedSolution(void) const { return true; }

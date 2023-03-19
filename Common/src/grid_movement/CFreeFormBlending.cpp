@@ -27,6 +27,6 @@
 
 #include "../../include/grid_movement/CFreeFormBlending.hpp"
 
-CFreeFormBlending::CFreeFormBlending(){}
+CFreeFormBlending::CFreeFormBlending() {}
 
-CFreeFormBlending::~CFreeFormBlending(){}
+CFreeFormBlending::~CFreeFormBlending() {}
