@@ -36,7 +36,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /* -- number of auxiliary species transport equations: 1=CO, 2=NOx --- */
+  /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
   n_scalars = config->GetNScalars();
   PreferentialDiffusion = config->GetPreferentialDiffusion();
@@ -106,7 +106,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
         S_tot = S_PROD + S_CONS * Y ---*/
 
-  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
     table_source_names[1 + 2*i_aux]     = config->GetUserSourceName(2*i_aux);
     table_source_names[1 + 2*i_aux + 1] = config->GetUserSourceName(2*i_aux + 1);
@@ -182,7 +182,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double* val_scalars) {
   if(PreferentialDiffusion) source_scalar[I_MIXFRAC] = 0.0;
 
   /*--- source term for the auxiliary species transport equations---*/
-  for(size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
     su2double y_aux = val_scalars[n_CV + i_aux];     
@@ -224,7 +224,8 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
-  su2double delta_temp_final = 0.001; /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  su2double delta_temp_final = 0.001;
   su2double enth_iter = initial_value;
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
@@ -272,7 +273,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   varnames_TD.resize(n_TD);
   val_vars_TD.resize(n_TD);
 
-  /*--- The string in varnames_TD is the actual string as it appears in the LUT file ---*/
+  /*--- The string in varnames_TD as it appears in the LUT file ---*/
   varnames_TD[0] = "Temperature";
   val_vars_TD[0] = &Temperature;
   varnames_TD[1] = "mean_molar_weight";
@@ -292,7 +293,7 @@ void CFluidFlamelet::PreprocessLookUp() {
   varnames_Sources.resize(n_table_sources);
   val_vars_Sources.resize(n_table_sources);
 
-  for(size_t iSource=0; iSource < n_table_sources; iSource++){
+  for (size_t iSource = 0; iSource < n_table_sources; iSource++) {
     varnames_Sources[iSource] = table_source_names[iSource];
     val_vars_Sources[iSource] = &table_sources[iSource];
   }
@@ -301,9 +302,17 @@ void CFluidFlamelet::PreprocessLookUp() {
   varnames_LookUp.resize(n_lookups);
   val_vars_LookUp.resize(n_lookups);
 
-  for(size_t iLookup=0; iLookup < n_lookups; iLookup++){
+  for (size_t iLookup = 0; iLookup < n_lookups; iLookup++) {
     varnames_LookUp[iLookup] = table_lookup_names[iLookup];
     val_vars_LookUp[iLookup] = &lookup_scalar[iLookup];
+  }
+  
+  varnames_CV.resize(n_CV);
+  val_vars_CV.resize(n_CV);
+  lookup_CV.resize(n_CV);
+  for (auto iCV=0u; iCV < n_CV; iCV++) {
+    varnames_CV[iCV] = controlling_variables[iCV];
+    val_vars_CV[iCV] = &lookup_CV[iCV];
   }
   
   if(PreferentialDiffusion){

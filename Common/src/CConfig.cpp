@@ -874,7 +874,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
-  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_SpeciesVal_Init = nullptr; Inlet_TurbVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -1618,9 +1618,16 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_OUTLET_PRESSURE", RampOutletPressure, false);
   rampOutPres_coeff[0] = 100000.0; rampOutPres_coeff[1] = 1.0; rampOutPres_coeff[2] = 1000.0;
+  /*!\brief RAMP_INLET_SPECIES\n DESCRIPTION: option to ramp up or down the inlet species values*/
+  addBoolOption("RAMP_INLET_SPECIES", RampInletSpecies, false);
+  rampInSpec_coeff[0] = 0; rampInSpec_coeff[1]=1;
+  
   /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
   addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, rampOutPres_coeff);
+
+  addDoubleArrayOption("RAMP_INLET_SPECIES_COEFF",2, rampInSpec_coeff);
+
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
@@ -5439,6 +5446,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "The use of MARKER_INLET_TURBULENT requires the number of entries when SST Model is used \n"
         "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
         CURRENT_FUNCTION);
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SA && nTurb_Properties != 1)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SA Model is used \n"
+        "to be equal to 1 : ratio turbulent to laminar viscosity",
+        CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
   if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
@@ -5480,10 +5492,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check whether the number of entries of the constant Lewis number equals the number of transported scalar
        equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
        models--- */
-    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init + 1)
       SU2_MPI::Error(
           "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
-          "to be equal to the number of entries of SPECIES_INIT",
+          "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
@@ -5527,6 +5539,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
         }
         checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      }
+    }
+
+    if (RampInletSpecies) {
+      Inlet_SpeciesVal_Init = new su2double*[nMarker_Inlet_Species];
+      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+        Inlet_SpeciesVal_Init[iMarker] = new su2double[nSpecies];
+        for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
+          Inlet_SpeciesVal_Init[iMarker][iSpecies] = Inlet_SpeciesVal[iMarker][iSpecies];
+        }
       }
     }
 
@@ -8966,7 +8988,14 @@ const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
 
-void CConfig::SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const {
+const su2double* CConfig::GetInlet_SpeciesVal_Target(string val_marker) const {
+  unsigned short iMarker_Inlet_Species;
+  for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
+    if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
+  return Inlet_SpeciesVal_Init[iMarker_Inlet_Species];
+}
+
+void CConfig::SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++){
     if (Marker_Inlet[iMarker_Inlet] == val_marker)
@@ -8979,7 +9008,11 @@ const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
   for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {
     if (Marker_Inlet_Turb[iMarker] == val_marker) return Inlet_TurbVal[iMarker];
   }
-  return TurbIntensityAndViscRatioFreeStream;
+  if (Kind_Turb_Model == TURB_MODEL::SST) {
+    return TurbIntensityAndViscRatioFreeStream;
+  } else {
+    return &NuFactor_FreeStream;
+  }
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

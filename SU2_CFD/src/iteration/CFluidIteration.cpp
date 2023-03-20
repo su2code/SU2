@@ -74,6 +74,29 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   const auto main_solver = config[val_iZone]->GetKind_Solver();
   config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_FLOW_SYS);
 
+  /*--- Update inlet species values in case of species ramp ---*/
+  
+  if (config[val_iZone]->GetRampInletSpecies()) {
+    for (auto iMarker = 0u; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++) {
+      auto KindBC = config[val_iZone]->GetMarker_All_KindBC(iMarker);
+      if (KindBC == INLET_FLOW) {
+        string Marker_Tag = config[val_iZone]->GetMarker_All_TagBound(iMarker);
+        for (auto iScalar=0u; iScalar<config[val_iZone]->GetNScalars(); iScalar++) {
+          su2double scalar_init = config[val_iZone]->GetSpecies_Init()[iScalar];
+          su2double scalar_end = config[val_iZone]->GetInlet_SpeciesVal_Target(Marker_Tag)[iScalar];
+          su2double iter_end = config[val_iZone]->GetRampInletSpecies_Coeff(0);
+          su2double iter_freq = config[val_iZone]->GetRampInletSpecies_Coeff(1);
+          su2double scalar_local;
+          if (config[val_iZone]->GetInnerIter() < iter_end){
+            scalar_local = scalar_init + (scalar_end - scalar_init)*(config[val_iZone]->GetInnerIter() / iter_end);
+            if (config[val_iZone]->GetInnerIter() % SU2_TYPE::Int(iter_freq) == 0)
+              config[val_iZone]->SetInlet_SpeciesVal(scalar_local, Marker_Tag, iScalar);
+          }
+        }
+      }
+    }
+  }
+
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,

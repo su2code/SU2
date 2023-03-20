@@ -34,6 +34,12 @@ def print_vals(vals, name="Values"):
     """Print an array of floats."""
     print(name + ': ' + ', '.join('{:f}'.format(v) for v in vals))
 
+def is_float(test_string):
+    try:
+        float(test_string)
+        return True
+    except ValueError:
+        return False
 
 class TestCase:
 
@@ -104,6 +110,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_percent = 0.0
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
@@ -313,6 +320,7 @@ class TestCase:
             print("Output from the failed case:")
             subprocess.call(["cat", logfilename])
 
+        diff_time_start = datetime.datetime.now()
         if not timed_out and passed:
             # Compare files
             fromfile = self.reference_file
@@ -325,7 +333,76 @@ class TestCase:
                 try:
                     todate = time.ctime(os.stat(tofile).st_mtime)
                     tolines = open(tofile, 'U').readlines()
-                    diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
+
+                    # If tolerance is set to 0, make regular diff on whole file
+                    if self.tol_percent == 0.0:
+                        diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
+
+                    # Else test word by word with given tolerance
+                    else:
+
+                        diff            = [];
+                        max_delta       = 0
+                        compare_counter = 0
+                        ignore_counter  = 0
+
+                        # Assert that both files have the same number of lines
+                        if len(fromlines) != len(tolines):
+                            diff   = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                            passed = False
+                        
+                        # Loop through all lines
+                        for i_line in range(0, len(fromlines)):
+
+                            if passed == False: break
+
+                            from_line = fromlines[i_line].split(",")
+                            to_line   = tolines[i_line].split(",")
+
+                            # Assert that both lines have the same number of words
+                            if len(from_line) != len(to_line):
+                                diff   = ["ERROR: Number of words in line " + str(i_line+1) + " differ."]
+                                passed = False
+                                break
+                            
+                            # Loop through all words of one line
+                            for i_word in range(0, len(from_line)):
+                                from_word = from_line[i_word]
+                                to_word   = to_line[i_word]
+
+                                # Assert that both words are either numeric or non-numeric
+                                from_isfloat = is_float(from_word)
+                                to_isfloat   = is_float(to_word)
+                                if from_isfloat != to_isfloat:
+                                    diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+                                    passed    = False
+                                    delta     = 0.0
+                                    max_delta = "Not applicable"
+                                    break
+
+                                # Make actual comparison
+                                if from_isfloat:
+                                    try:
+                                        delta     = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                        max_delta = max(max_delta, delta)
+                                        compare_counter += 1
+                                    except ZeroDivisionError:
+                                        ignore_counter += 1
+                                        continue
+                                else:
+                                    delta  = 0.0
+                                    compare_counter += 1
+                                    if from_word != to_word:
+                                        diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+                                        passed    = False
+                                        max_delta = "Not applicable"
+                                        break
+                                
+                                if delta > self.tol_percent:
+                                    diff   = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+                                    passed = False
+                                    break
+
                 except OSError:
                     print("OS error, most likely from missing reference file:", fromfile)
                     print("Current working directory contents:")
@@ -349,8 +426,19 @@ class TestCase:
         else:
             passed = False
 
-        print('CPU architecture=%s'%self.cpu_arch)
-        print('test duration: %.2f min'%(running_time/60.0))
+        diff_time_stop = datetime.datetime.now()
+        diff_time      = (diff_time_stop - diff_time_start).microseconds
+
+        print('CPU architecture:    %s'%self.cpu_arch)
+        print('Test duration:       %.2f min'%(running_time/60.0))
+        print('Diff duration:       %.2f sec'%(diff_time/1e6))
+
+        if self.tol_percent != 0.0:
+            print('Compared entries:    ' + str(compare_counter))
+            print('Ignored entries:     ' + str(ignore_counter))
+            print('Maximum difference:  ' + str(max_delta) + ' %')
+            print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
+
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()

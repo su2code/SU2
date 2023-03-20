@@ -185,9 +185,7 @@ class CFluidModel {
    * \param[in] iVar - index to the species
    */
   virtual inline su2double GetPreferentialDiffusionScalar(size_t iVar) const { return 0.0; }
-  
-  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(0,0); }
-  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(0,0); }
+
 
   /*!
    * \brief Get fluid dynamic viscosity.
@@ -215,7 +213,7 @@ class CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline virtual su2double GetMassDiffusivity(int iVar) {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivity->SetDiffusivity(Density, Mu, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }

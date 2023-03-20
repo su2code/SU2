@@ -92,7 +92,6 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
 
 };
 
-
 /*!
  * \class CSourcePieceWise_transportedScalar_general
  * \brief Class for integrating the source terms of the transported scalar turbulence model equations.
@@ -104,18 +103,8 @@ class CSourcePieceWise_transportedScalar_general final : public CNumerics {
 private:
   su2double *Residual = nullptr;
   su2double **Jacobian_i = nullptr;
-  bool flamelet;
   su2double *scalar_sources = nullptr;
-
-  su2double Sc_t;
-
-  su2double source_pv;
-
-  bool incompressible;
-  bool viscous;
-  bool axisymmetric;
-  bool implicit;
-  bool inc_rans;
+   bool incompressible;
 
 public:
   /*!
@@ -147,6 +136,5 @@ public:
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_transportedScalar_general(void) override;
-
 
 };

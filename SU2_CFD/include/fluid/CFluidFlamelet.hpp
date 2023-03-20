@@ -63,9 +63,14 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
-
+  vector<su2double> lookup_CV;
+  
   CLookUpTable* look_up_table;
   MLPToolbox::CLookUp_ANN* look_up_ANN;
+
+  su2vector<string> varnames_CV;
+  su2vector<su2double*> val_vars_CV;
+  MLPToolbox::CIOMap * iomap_CV = nullptr;
 
   su2vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
   su2vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
@@ -152,16 +157,6 @@ class CFluidFlamelet final : public CFluidModel {
   inline su2double GetLaminarViscosity() { return Mu; }
 
   /*!
-   * \brief Get the enthalpy range in the lookup table
-   */
-  inline pair<su2double, su2double> GetTableLimitsEnth() {return look_up_table->GetTableLimitsY(); }
-
-  /*!
-   * \brief Get the progress variable range in the lookup table
-   */
-  inline pair<su2double, su2double> GetTableLimitsProg() { return look_up_table->GetTableLimitsX(); }
-
-  /*!
    * \brief Get the reaction source term of a species equation
    * \param[in] iVar - index to the species
    */
@@ -189,4 +184,6 @@ class CFluidFlamelet final : public CFluidModel {
   inline unsigned short GetNControllingVariables() { return n_CV; }
 
   unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, MLPToolbox::CIOMap* iomap=nullptr);
+
+
 };

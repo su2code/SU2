@@ -191,11 +191,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     /*--- Get lookup scalars ---*/
     fluid_model_local->SetScalarLookups(scalars);
-    for(auto i_lookup=0u; i_lookup<config->GetNLookups(); i_lookup++){
+    for (auto i_lookup = 0u; i_lookup<config->GetNLookups(); i_lookup++) {
       nodes->SetLookupScalar(i_point, fluid_model_local->GetScalarLookups(i_lookup), i_lookup);
     }
 
-    for(auto i_scalar=0u; i_scalar < nVar; i_scalar++)
+    for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
       nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
 
     su2double T = flowNodes->GetTemperature(i_point);
@@ -258,13 +258,7 @@ void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solve
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
-  bool Restart = (config->GetRestart() || config->GetRestart_Flow());
-
-  /*--- do not use initial condition when custom python is active ---*/
-  //if (config->GetInitial_PyCustom()) {
-  //  if (rank == MASTER_NODE) cout << "Initialization through custom python function." << endl;
-  //  return;
-  //}
+  const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
 
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
@@ -272,6 +266,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     su2double* scalar_init = new su2double[nVar];
+
     su2double* flame_offset = config->GetFlameOffset();
     su2double* flame_normal = config->GetFlameNormal();
 
@@ -362,14 +357,13 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           break;
         }
         
-
         if(config->GetPreferentialDiffusion()) scalar_init[I_MIXFRAC] = mixfrac_inlet;
-        
+
         n_not_iterated_local += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, mixfrac_inlet, temp_inlet, enth_inlet);
         scalar_init[I_ENTH] = enth_inlet;
 
         n_not_in_domain_local += fluid_model_local->SetScalarSources(scalar_init);
-
+        
         /* --- initialize the auxiliary transported scalars  (not controlling variables) --- */
         for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
@@ -395,7 +389,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     SU2_MPI::Reduce(&n_points_burnt_local,   &n_points_burnt_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
     SU2_MPI::Reduce(&n_points_flame_local,   &n_points_flame_global,   1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       cout << endl;
       cout << " Number of points in unburnt region: " << n_points_unburnt_global << "." << endl;
       cout << " Number of points in burnt region  : " << n_points_burnt_global   << "." << endl;
@@ -419,12 +413,75 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
 
+  su2double BetaInc2, Density, dRhodT, dRhodC, Temperature, Delta;
+
+  const bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+    /*--- Access the primitive variables at this node. ---*/
+
+    Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
+    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+
+    unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
+
+    su2double SolP = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + 0];
+    su2double SolT = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + nDim + 1];
+
+    /*--- We need the derivative of the equation of state to build the
+     preconditioning matrix. For now, the only option is the ideal gas
+     law, but in the future, dRhodT should be in the fluid model. ---*/
+
+    if (variable_density) {
+      dRhodT = -Density / Temperature;
+    } else {
+      dRhodT = 0.0;
+    }
+
+    /*--- Passive scalars have no impact on the density. ---*/
+
+    dRhodC = 0.0;
+
+    /*--- Modify matrix diagonal with term including volume and time step. ---*/
+
+    su2double Vol = geometry->nodes->GetVolume(iPoint);
+    Delta = Vol / (config->GetCFLRedCoeff_Species() * solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+
+    /*--- Calculating the inverse of the preconditioning matrix
+     that multiplies the time derivative during time integration. ---*/
+
+    if (implicit) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint * nVar + iVar;
+
+        su2double scalar = nodes->GetSolution(iPoint, iVar);
+
+        /*--- Compute the lag terms for the decoupled linear system from
+         the mean flow equations and add to the residual for the scalar.
+         In short, we are effectively making these terms explicit. ---*/
+
+        su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
+        su2double artcompc2 = SolT * dRhodT * scalar / (Density);
+
+        LinSysRes[total_index] += artcompc1 + artcompc2;
+
+        /*--- Add the extra Jacobian term to the scalar system. ---*/
+
+        su2double Jaccomp = scalar * dRhodC + Density;
+        su2double JacTerm = Jaccomp * Delta;
+
+        Jacobian.AddVal2Diag(iPoint, JacTerm);
+      }
+    }
+  }
 }
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool axisymmetric = config->GetAxisymmetric();
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool axisymmetric = config->GetAxisymmetric();
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -461,10 +518,8 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
-    /*--- Update scalar sources in the fluidmodel ---*/
-
-    /*--- Axisymmetry source term for the scalar equation. ---*/
- if (axisymmetric) {
+  /*--- Axisymmetry source term for the scalar equation. ---*/
+  if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_SECOND_TERM  + omp_get_thread_num()*MAX_TERMS];
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -483,9 +538,6 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Update scalar sources in the fluidmodel ---*/
-
-      /*--- Axisymmetry source term for the scalar equation. ---*/
       /*--- Set y coordinate ---*/
 
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
@@ -694,7 +746,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
   const su2double* inlet_scalar_original = config->GetInlet_SpeciesVal(Marker_Tag);
   su2double* inlet_scalar = const_cast<su2double*>(inlet_scalar_original);
-
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
   if(config->GetPreferentialDiffusion()) mfrac_inlet = inlet_scalar[I_MIXFRAC];
@@ -853,7 +904,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
                                                 unsigned short val_marker) {
   unsigned long iVertex, iPoint, total_index;
 
-  bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
@@ -873,7 +924,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
       /*--- Set enthalpy on the wall ---*/
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-      if(config->GetSpecies_StrongBC()){
+      if (config->GetSpecies_StrongBC()) {
 
         /*--- Initial guess for enthalpy value ---*/
 
@@ -945,7 +996,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
                                                         unsigned short val_marker) {
   unsigned long iVertex, iPoint, total_index;
 
-  bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   //su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
@@ -963,7 +1014,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      if(config->GetSpecies_StrongBC()){
+      if (config->GetSpecies_StrongBC()) {
 
         /*--- Initial guess for enthalpy ---*/
 

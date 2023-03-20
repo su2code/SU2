@@ -339,7 +339,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      
+
       /*--- flamelet fluid model does not need to be redefined after nondimensionalization ---*/
       redefine_fluid_model = false;
       break;
@@ -474,9 +474,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   config->SetDiffusivity_ConstantND(MassDiffusivityND);
 
 
-  /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
+  /*--- Delete the original (dimensional) FluidModel object. No fluid is used for incompressible cases. ---*/
 
-  if(redefine_fluid_model) delete auxFluidModel;
+  if (redefine_fluid_model) delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -667,7 +667,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-        
+
       case VISCOSITYMODEL::COOLPROP:
         ModelTable << "COOLPROP_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -731,7 +731,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         break;
-        
+
       case CONDUCTIVITYMODEL::COOLPROP:
         ModelTable << "COOLPROP";
         Unit << "W/m^2.K";

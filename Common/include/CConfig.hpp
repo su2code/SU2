@@ -287,6 +287,7 @@ private:
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
+  su2double **Inlet_SpeciesVal_Init;
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -1063,6 +1064,7 @@ private:
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the Rotating Frame values */
   bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet pressure */
+  bool RampInletSpecies;            /*!< \brief option for ramping up or down the inlet species values */
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
@@ -1117,6 +1119,7 @@ private:
   mixedout_coeff[3],     /*!< \brief default mixedout algorithm coefficients for the COption class. */
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
+  rampInSpec_coeff[2],
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
@@ -5194,6 +5197,12 @@ public:
   su2double GetRampOutletPressure_Coeff(unsigned short iCoeff) const { return rampOutPres_coeff[iCoeff];}
 
   /*!
+   * \brief Get coeff for inlet species values ramp.
+   * \return coefficients for inlet species values ramp (0:ramp iterations, 1:update frequency)
+   */
+  su2double GetRampInletSpecies_Coeff(unsigned short iCoeff) const { return rampInSpec_coeff[iCoeff]; }
+
+  /*!
    * \brief Get final Outlet Pressure value for the ramp.
    * \return final Outlet Pressure value.
    */
@@ -5215,6 +5224,12 @@ public:
    * \return Ramp Outlet pressure option.
    */
   bool GetRampOutletPressure(void) const { return RampOutletPressure;}
+
+  /*!
+   * \brief Get Inlet Species Ramp option.
+   * \return Ramp inlet species option.
+   */
+  bool GetRampInletSpecies(void) const {return RampInletSpecies; }
 
   /*!
    * \brief Get mixedout coefficients.
@@ -6930,12 +6945,19 @@ public:
   const su2double* GetInlet_SpeciesVal(string val_index) const;
 
   /*!
+   * \brief Get the target species values at an inlet boundary
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet species values.
+   */
+  const su2double* GetInlet_SpeciesVal_Target(string val_index) const;
+
+  /*!
    * \brief Set the species values at an inlet boundary
    * \param[in] val - value of the variable
    * \param[in] iMarker - marker index
    * \param[in] iVar - index to the variable
    */
-  void SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const;
+  void SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar);
 
 
   /*!
