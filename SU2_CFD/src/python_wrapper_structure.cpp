@@ -176,36 +176,6 @@ string CDriver::GetSurfaceFileName() const { return config_container[ZONE_0]->Ge
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<string> CDriver::GetCHTMarkerTags() const {
-  vector<string> tags;
-  const auto nMarker = config_container[ZONE_0]->GetnMarker_All();
-
-  // The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
-  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
-    if ((config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-         config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) &&
-        config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker)) {
-      tags.push_back(config_container[ZONE_0]->GetMarker_All_TagBound(iMarker));
-    }
-  }
-  return tags;
-}
-
-vector<string> CDriver::GetInletMarkerTags() const {
-  vector<string> tags;
-  const auto nMarker = config_container[ZONE_0]->GetnMarker_All();
-
-  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
-    bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
-    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-
-    if (isCustomizable && isInlet) {
-      tags.push_back(config_container[ZONE_0]->GetMarker_All_TagBound(iMarker));
-    }
-  }
-  return tags;
-}
-
 void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
   CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
