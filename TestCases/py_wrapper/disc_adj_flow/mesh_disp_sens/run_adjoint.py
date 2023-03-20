@@ -112,7 +112,7 @@ def main():
   for iVertex in range(nVertex_Marker):
     sensX, sensY, sensZ = SU2Driver.GetMeshDisp_Sensitivity(MarkerID, iVertex)
 
-    if (iVertex == 30):
+    if (iVertex == 30) and rank == 0:
       print(1000,1000,iVertex, sensX, sensY, sensZ)
 
   # Postprocess the solver and exit cleanly

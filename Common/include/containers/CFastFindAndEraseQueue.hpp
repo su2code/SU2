@@ -43,19 +43,18 @@
  * \param[in] CleanupThreshold - Number of marked items that triggers full cleanup.
  * \note It would not be a good idea to use non-trivial item types.
  */
-template<typename ItemType_ = unsigned long,
-         ItemType_ ErasedValue_ = std::numeric_limits<ItemType_>::max(),
-         size_t CleanupThreshold = 8192>
+template <typename ItemType_ = unsigned long, ItemType_ ErasedValue_ = std::numeric_limits<ItemType_>::max(),
+          size_t CleanupThreshold = 8192>
 class CFastFindAndEraseQueue {
-public:
-  enum {ErasedValue = ErasedValue_};
+ public:
+  enum { ErasedValue = ErasedValue_ };
   using ItemType = ItemType_;
   using Iterator = typename std::vector<ItemType>::const_iterator;
 
-private:
+ private:
   size_t erasedCounter = 0;                     /*!< \brief How many items have been marked since last cleanup. */
   std::vector<ItemType> items;                  /*!< \brief The stored items. */
-  std::unordered_map<ItemType,size_t> indexes;  /*!< \brief Map items to their location. */
+  std::unordered_map<ItemType, size_t> indexes; /*!< \brief Map items to their location. */
 
   /*!
    * \brief Cleanup, shifts non-erased items forward, re-mapping them.
@@ -74,7 +73,7 @@ private:
     erasedCounter = 0;
   }
 
-public:
+ public:
   /*!
    * \brief Default construct.
    */
@@ -85,7 +84,7 @@ public:
    */
   CFastFindAndEraseQueue(size_t N) {
     items.resize(N);
-    for (size_t i=0; i<N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
       items[i] = i;
       indexes[i] = i;
     }
@@ -112,7 +111,8 @@ public:
    * \brief Get the item in front of the queue.
    */
   ItemType front() const {
-    for (auto value : items) if (value != ErasedValue) return value;
+    for (auto value : items)
+      if (value != ErasedValue) return value;
     assert(false && "Queue is empty.");
     return ErasedValue;
   }
@@ -127,7 +127,7 @@ public:
 
     /*--- Get the item position. ---*/
     auto it = indexes.find(value);
-    if (it == indexes.end()) return false; // value is not here
+    if (it == indexes.end()) return false;  // value is not here
 
     const auto idx = it->second;
     assert(items[idx] != ErasedValue && "The item was already erased?!");
@@ -139,5 +139,4 @@ public:
 
     return true;
   }
-
 };

@@ -39,10 +39,10 @@ struct CTetrahedronConnectivity {
   enum { nFaces = N_FACES_TETRAHEDRON };
   enum { maxNodesFace = N_POINTS_TRIANGLE };
   enum { VTK_Type = TETRAHEDRON };
-  static constexpr unsigned short nNodesFace[4]={3,3,3,3};
-  static constexpr unsigned short Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
-  static constexpr unsigned short nNeighbor_Nodes[4]={3,3,3,3};
-  static constexpr unsigned short Neighbor_Nodes[4][3]={{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
+  static constexpr unsigned short nNodesFace[4] = {3, 3, 3, 3};
+  static constexpr unsigned short Faces[4][3] = {{0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}};
+  static constexpr unsigned short nNeighbor_Nodes[4] = {3, 3, 3, 3};
+  static constexpr unsigned short Neighbor_Nodes[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 };
 
 /*!
@@ -50,8 +50,8 @@ struct CTetrahedronConnectivity {
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios
  */
-class CTetrahedron final: public CPrimalGridWithConnectivity<CTetrahedronConnectivity> {
-public:
+class CTetrahedron final : public CPrimalGridWithConnectivity<CTetrahedronConnectivity> {
+ public:
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -59,8 +59,8 @@ public:
    * \param[in] val_point_2 - Index of the 3th point read from the grid file.
    * \param[in] val_point_3 - Index of the 4th point read from the grid file.
    */
-  CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
-               unsigned long val_point_2, unsigned long val_point_3);
+  CTetrahedron(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
+               unsigned long val_point_3);
 
   /*!
    * \brief Change the orientation of an element.

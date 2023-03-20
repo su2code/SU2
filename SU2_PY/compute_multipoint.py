@@ -33,17 +33,24 @@ import SU2
 
 # Command Line Options
 parser = OptionParser()
-parser.add_option("-f", "--file", dest="filename",
-                  help="read config from FILE", metavar="FILE")
-parser.add_option("-n", "--partitions", dest="partitions", default=2,
-                  help="number of PARTITIONS", metavar="PARTITIONS")
+parser.add_option(
+    "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
+)
+parser.add_option(
+    "-n",
+    "--partitions",
+    dest="partitions",
+    default=2,
+    help="number of PARTITIONS",
+    metavar="PARTITIONS",
+)
 
-(options, args)=parser.parse_args()
-options.partitions = int( options.partitions )
+(options, args) = parser.parse_args()
+options.partitions = int(options.partitions)
 
 # load config, start state
 config = SU2.io.Config(options.filename)
-state  = SU2.io.State()
+state = SU2.io.State()
 
 # prepare config
 config.NUMBER_PART = options.partitions
@@ -52,8 +59,10 @@ config.NUMBER_PART = options.partitions
 state.find_files(config)
 
 # run su2
-multipoint_drag = SU2.eval.func('MULTIPOINT_DRAG',config,state)
-grad_multipoint_drag= SU2.eval.grad('MULTIPOINT_DRAG','CONTINUOUS_ADJOINT',config,state)
+multipoint_drag = SU2.eval.func("MULTIPOINT_DRAG", config, state)
+grad_multipoint_drag = SU2.eval.grad(
+    "MULTIPOINT_DRAG", "CONTINUOUS_ADJOINT", config, state
+)
 
-print('MULTIPOINT_DRAG     =', multipoint_drag)
-print('GRADIENT MULTIPOINT_DRAG =', grad_multipoint_drag)
+print("MULTIPOINT_DRAG     =", multipoint_drag)
+print("GRADIENT MULTIPOINT_DRAG =", grad_multipoint_drag)
