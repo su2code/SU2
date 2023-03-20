@@ -487,18 +487,6 @@ class CDriver : public CDriverBase {
   void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
-   * \brief Get all the CHT boundary marker tags.
-   * \return List of CHT boundary markers tags.
-   */
-  vector<string> GetCHTMarkerTags() const;
-
-  /*!
-   * \brief Get all the inlet boundary marker tags.
-   * \return List of inlet boundary markers tags.
-   */
-  vector<string> GetInletMarkerTags() const;
-
-  /*!
    * \brief Set the position of the heat source.
    * \param[in] alpha - Angle of rotation respect to Z axis.
    * \param[in] pos_x - Position X.

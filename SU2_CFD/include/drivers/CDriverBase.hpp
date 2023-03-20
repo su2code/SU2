@@ -265,6 +265,18 @@ class CDriverBase {
   vector<string> GetDeformableMarkerTags() const;
 
   /*!
+   * \brief Get all the CHT boundary marker tags.
+   * \return List of CHT boundary markers tags.
+   */
+  vector<string> GetCHTMarkerTags() const;
+
+  /*!
+   * \brief Get all the inlet boundary marker tags.
+   * \return List of inlet boundary markers tags.
+   */
+  vector<string> GetInletMarkerTags() const;
+
+  /*!
    * \brief Get the number of elements in the marker.
    * \param[in] iMarker - Marker index.
    * \return Number of elements.
@@ -313,36 +325,70 @@ class CDriverBase {
                                                bool normalize = false) const;
 
   /*!
-   * \brief Get the displacements of a marker vertex.
+   * \brief Get the displacements currently imposed of a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Node displacements (nDim).
    */
-  vector<passivedouble> GetMarkerDisplacement(unsigned short iMarker, unsigned long iVertex) const;
+  inline vector<passivedouble> GetMarkerDisplacement(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> disp(GetNumberDimensions(), 0.0);
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      disp[iDim] = SU2_TYPE::GetValue(nodes->GetBound_Disp(iPoint, iDim));
+    }
+    return disp;
+  }
 
   /*!
    * \brief Set the mesh displacements of a marker vertex.
+   * \note This can be the input of the flow solver in an FSI setting.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Node displacements (nDim).
    */
-  void SetMarkerCustomDisplacement(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+  inline void SetMarkerCustomDisplacement(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
+      nodes->SetBound_Disp(iPoint, iDim, values[iDim]);
+    }
+  }
 
   /*!
-   * \brief Get the velocities of a marker vertex.
+   * \brief Get the mesh velocities currently imposed on a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Node velocities (nDim).
    */
-  vector<passivedouble> GetMarkerMeshVelocity(unsigned short iMarker, unsigned long iVertex) const;
+  inline vector<passivedouble> GetMarkerMeshVelocity(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> vel(GetNumberDimensions(), 0.0);
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      vel[iDim] = SU2_TYPE::GetValue(nodes->GetBound_Vel(iPoint, iDim));
+    }
+    return vel;
+  }
 
   /*!
    * \brief Set the velocities of a marker vertex.
+   * \note This can be the input of the flow solver in an unsteady FSI setting.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Node velocities (nDim).
    */
-  void SetMarkerCustomMeshVelocity(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+  inline void SetMarkerCustomMeshVelocity(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
+      nodes->SetBound_Vel(iPoint, iDim, values[iDim]);
+    }
+  }
 
   /*!
    * \brief Communicate the boundary mesh displacements.
@@ -425,6 +471,7 @@ class CDriverBase {
 
   /*!
    * \brief Set the temperature of a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a heat or flow solver in a CHT setting.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \param[in] WallTemp - Value of the temperature.
@@ -435,6 +482,7 @@ class CDriverBase {
 
   /*!
    * \brief Set the wall normal heat flux at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a heat or flow solver in a CHT setting.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \param[in] WallHeatFlux - Value of the normal heat flux.
@@ -445,6 +493,7 @@ class CDriverBase {
 
   /*!
    * \brief Get the wall normal heat flux at a vertex on a specified marker of the flow or heat solver.
+   * \note This can be the output of a heat or flow solver in a CHT setting.
    * \param[in] iSolver - Solver identifier, should be either a flow solver or the heat solver.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
