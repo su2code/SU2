@@ -34,8 +34,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char* argv[]) {
   /*--- Startup MPI, if supported ---*/
 #if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;

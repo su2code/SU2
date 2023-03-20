@@ -35,15 +35,14 @@
  * \author E. van der Weide
  */
 struct CADTNodeClass {
+  bool childrenAreTerminal[2]; /*!< \brief Whether or not the child leaves are terminal. */
+  unsigned long children[2];   /*!< \brief Child leaves. If childrenAreTerminal is true the children
+                                           contain the point ID's or bounding box ID's. Note that it
+                                           is allowed that one child is termimal and the other is not. */
+  unsigned long centralNodeID; /*!< \brief ID of a node, which is near the center of the leaf. */
 
-  bool          childrenAreTerminal[2];  /*!< \brief Whether or not the child leaves are terminal. */
-  unsigned long children[2];             /*!< \brief Child leaves. If childrenAreTerminal is true the children
-                                                     contain the point ID's or bounding box ID's. Note that it
-                                                     is allowed that one child is termimal and the other is not. */
-  unsigned long centralNodeID;           /*!< \brief ID of a node, which is near the center of the leaf. */
-
-  su2double *xMin;  /*!< \brief The minimum coordinates of this leaf. It points to a position in the large
-                                vector, which contains the coordinates of all leaves. */
-  su2double *xMax;  /*!< \brief The maximum coordinates of this leaf. It points to a position in the large
-                                vector, which contains the coordinates of all leaves. */
+  su2double* xMin; /*!< \brief The minimum coordinates of this leaf. It points to a position in the large
+                               vector, which contains the coordinates of all leaves. */
+  su2double* xMax; /*!< \brief The maximum coordinates of this leaf. It points to a position in the large
+                               vector, which contains the coordinates of all leaves. */
 };

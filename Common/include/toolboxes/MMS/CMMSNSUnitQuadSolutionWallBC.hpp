@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <cmath>
@@ -38,10 +37,8 @@
           laminar Navier-Stokes equations on a unit quad with wall boundary conditions.
  * \author E. van der Weide, T. Economon
  */
-class CMMSNSUnitQuadSolutionWallBC final: public CVerificationSolution {
-
-protected:
-
+class CMMSNSUnitQuadSolutionWallBC final : public CVerificationSolution {
+ protected:
   /*--- Variables that define the solution and MMS source term. ---*/
   su2double Gamma;        /*!< \brief Specific heat ratio. */
   su2double RGas;         /*!< \brief Gas constant. */
@@ -49,23 +46,22 @@ protected:
   su2double Conductivity; /*!< \brief Thermal conductivity, must be constant. */
   su2double TWall;        /*!< \brief Prescribed wall temperature at the upper wall. */
 
-  su2double Pressure_Ref;       /*!< \brief Reference pressure for non-dimensionalization. */
-  su2double Density_Ref;        /*!< \brief Reference density for non-dimensionalization.  */
-  su2double Velocity_Ref;       /*!< \brief Reference velocity for non-dimensionalization. */
+  su2double Pressure_Ref; /*!< \brief Reference pressure for non-dimensionalization. */
+  su2double Density_Ref;  /*!< \brief Reference density for non-dimensionalization.  */
+  su2double Velocity_Ref; /*!< \brief Reference velocity for non-dimensionalization. */
 
   /*--- Constants, which describe this manufactured solution. The primitive variables
         rho, T, u and v are described by analytical functions in such a way that the
         lower wall is an adiabatic no-slip wall and the upper wall is an isothermal
         no-slip wall. ---*/
-  su2double rho_0;    /*!< \brief Constant density. */
-  su2double u_0;      /*!< \brief Maximum x-velocity in the domain. */
-  su2double v_0;      /*!< \brief Maximum y-velocity in the domain. */
+  su2double rho_0; /*!< \brief Constant density. */
+  su2double u_0;   /*!< \brief Maximum x-velocity in the domain. */
+  su2double v_0;   /*!< \brief Maximum y-velocity in the domain. */
 
-  su2double a_T1;     /*!< \brief Parameter for the temperature solution. */
-  su2double a_T2;     /*!< \brief Parameter for the temperature solution. */
+  su2double a_T1; /*!< \brief Parameter for the temperature solution. */
+  su2double a_T2; /*!< \brief Parameter for the temperature solution. */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -78,10 +74,8 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Configuration of the particular problem.
    */
-  CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim,
-                               unsigned short val_nvar,
-                               unsigned short val_iMesh,
-                               CConfig*       config);
+  CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh,
+                               CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -94,9 +88,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const su2double *val_coords,
-                   const su2double val_t,
-                   su2double       *val_solution) const override;
+  void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -104,9 +96,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const su2double *val_coords,
-                  const su2double val_t,
-                  su2double       *val_solution) const override;
+  void GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
@@ -114,9 +104,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const su2double *val_coords,
-                        const su2double val_t,
-                        su2double       *val_source) const override;
+  void GetMMSSourceTerm(const su2double* val_coords, const su2double val_t, su2double* val_source) const override;
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
