@@ -360,7 +360,7 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
   return values;
 }
 
-vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDriverBase::GetMarkerDisplacement(unsigned short iMarker, unsigned long iVertex) const {
   vector<passivedouble> values(nDim, 0.0);
 
   if (main_config->GetDeform_Mesh()) {
@@ -373,7 +373,7 @@ vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker
   return values;
 }
 
-void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+void CDriverBase::SetMarkerCustomDisplacement(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
   if (!main_config->GetDeform_Mesh()) {
     SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
   }
@@ -387,7 +387,7 @@ void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long i
   }
 }
 
-vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDriverBase::GetMarkerMeshVelocity(unsigned short iMarker, unsigned long iVertex) const {
   vector<passivedouble> values(nDim, 0.0);
 
   if (main_config->GetDeform_Mesh()) {
@@ -400,7 +400,7 @@ vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, u
   return values;
 }
 
-void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+void CDriverBase::SetMarkerCustomMeshVelocity(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
   if (!main_config->GetDeform_Mesh()) {
     SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
   }

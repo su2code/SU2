@@ -2082,7 +2082,7 @@ class Interface:
             )
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 DispX, DispY, DispZ = self.haloNodesDisplacements[GlobalIndex]
-                FluidSolver.SetMarkerDisplacements(
+                FluidSolver.SetMarkerCustomDisplacement(
                     self.fluidInterfaceIdentifier,
                     int(iVertex),
                     np.array([DispX, DispY, DispZ]),
@@ -2091,7 +2091,7 @@ class Interface:
                 DispX = self.localFluidInterface_array_DispX[localIndex]
                 DispY = self.localFluidInterface_array_DispY[localIndex]
                 DispZ = self.localFluidInterface_array_DispZ[localIndex]
-                FluidSolver.SetMarkerDisplacements(
+                FluidSolver.SetMarkerCustomDisplacement(
                     self.fluidInterfaceIdentifier,
                     int(iVertex),
                     np.array([DispX, DispY, DispZ]),

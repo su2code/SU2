@@ -499,49 +499,6 @@ class CDriver : public CDriverBase {
   vector<string> GetInletMarkerTags() const;
 
   /*!
-   * \brief Return the sensitivities of the mesh boundary vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of sensitivities.
-   */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the sensitivity of the flow loads for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint of the flow tractions (from the extra step -
-   * the repeated methods should be unified once the postprocessing strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                           passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the adjoint of the structural displacements (from an outside source)
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
-  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
    * \brief Set the position of the heat source.
    * \param[in] alpha - Angle of rotation respect to Z axis.
    * \param[in] pos_x - Position X.
