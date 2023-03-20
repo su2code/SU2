@@ -26,24 +26,35 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os
+
 sys.path.append(sys.path[0])
 import preconfigure
 
 
-if __name__ == '__main__':
-  if sys.version_info[0] < 3:
-    raise Exception("Script must be run using Python 3")
+if __name__ == "__main__":
+    if sys.version_info[0] < 3:
+        raise Exception("Script must be run using Python 3")
 
-  # Preconfigure
-  preconfigure.run(own_meson = True)
+    # Preconfigure
+    preconfigure.run(own_meson=True)
 
-  # Add paths for meson and ninja to environment
-  os.environ["NINJA"] = sys.path[0] + os.path.sep + "ninja"
-  if os.name == 'nt':
-    os.environ["NINJA"] = os.environ["NINJA"] + '.exe'
-  if os.path.exists(sys.path[0] + os.path.sep + 'externals' + os.path.sep + 'meson' + os.path.sep + 'mesonbuild'):
-    sys.path.insert(0, str(sys.path[0] + os.path.sep + 'externals' +os.path.sep + 'meson'))
+    # Add paths for meson and ninja to environment
+    os.environ["NINJA"] = sys.path[0] + os.path.sep + "ninja"
+    if os.name == "nt":
+        os.environ["NINJA"] = os.environ["NINJA"] + ".exe"
+    if os.path.exists(
+        sys.path[0]
+        + os.path.sep
+        + "externals"
+        + os.path.sep
+        + "meson"
+        + os.path.sep
+        + "mesonbuild"
+    ):
+        sys.path.insert(
+            0, str(sys.path[0] + os.path.sep + "externals" + os.path.sep + "meson")
+        )
 
-  from mesonbuild import mesonmain
+    from mesonbuild import mesonmain
 
-  sys.exit(mesonmain.main())
+    sys.exit(mesonmain.main())

@@ -30,85 +30,147 @@
 # ----------------------------------------------------------------------
 
 from __future__ import division, print_function, absolute_import
-from optparse import OptionParser	# use a parser for configuration
-import SU2				# imports SU2 python tools
-import pysu2			# imports the SU2 wrapped module
+from optparse import OptionParser  # use a parser for configuration
+import SU2  # imports SU2 python tools
+import pysu2  # imports the SU2 wrapped module
 
 # -------------------------------------------------------------------
 #  Main
 # -------------------------------------------------------------------
 
+
 def main():
 
-  # Command line options
-  parser=OptionParser()
-  parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
-                    metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
-  parser.add_option("--parallel", action="store_true",
-                    help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
-                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-  parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
-                    help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
-  parser.add_option("--wave_equation", dest="wave_equation", default="False",
-                    help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
-  parser.add_option("--heat_equation", dest="heat_equation", default="False",
-                    help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
+    # Command line options
+    parser = OptionParser()
+    parser.add_option(
+        "-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE"
+    )
+    parser.add_option(
+        "--nDim",
+        dest="nDim",
+        default=2,
+        help="Define the number of DIMENSIONS",
+        metavar="DIMENSIONS",
+    )
+    parser.add_option(
+        "--nZone",
+        dest="nZone",
+        default=1,
+        help="Define the number of ZONES",
+        metavar="NZONE",
+    )
+    parser.add_option(
+        "--parallel",
+        action="store_true",
+        help="Specify if we need to initialize MPI",
+        dest="with_MPI",
+        default=False,
+    )
+    parser.add_option(
+        "--fsi",
+        dest="fsi",
+        default="False",
+        help="Launch the FSI driver",
+        metavar="FSI",
+    )
+    parser.add_option(
+        "--fem",
+        dest="fem",
+        default="False",
+        help="Launch the FEM driver (General driver)",
+        metavar="FEM",
+    )
+    parser.add_option(
+        "--harmonic_balance",
+        dest="harmonic_balance",
+        default="False",
+        help="Launch the Harmonic Balance (HB) driver",
+        metavar="HB",
+    )
+    parser.add_option(
+        "--poisson_equation",
+        dest="poisson_equation",
+        default="False",
+        help="Launch the poisson equation driver (General driver)",
+        metavar="POIS_EQ",
+    )
+    parser.add_option(
+        "--wave_equation",
+        dest="wave_equation",
+        default="False",
+        help="Launch the wave equation driver (General driver)",
+        metavar="WAVE_EQ",
+    )
+    parser.add_option(
+        "--heat_equation",
+        dest="heat_equation",
+        default="False",
+        help="Launch the heat equation driver (General driver)",
+        metavar="HEAT_EQ",
+    )
 
-  (options, args) = parser.parse_args()
-  options.nDim  = int( options.nDim )
-  options.nZone = int( options.nZone )
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.fem = options.fem.upper() == 'TRUE'
-  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
-  options.poisson_equation = options.poisson_equation.upper() == 'TRUE'
-  options.wave_equation    = options.wave_equation.upper()    == 'TRUE'
-  options.heat_equation    = options.heat_equation.upper()    == 'TRUE'
+    (options, args) = parser.parse_args()
+    options.nDim = int(options.nDim)
+    options.nZone = int(options.nZone)
+    options.fsi = options.fsi.upper() == "TRUE"
+    options.fem = options.fem.upper() == "TRUE"
+    options.harmonic_balance = options.harmonic_balance.upper() == "TRUE"
+    options.poisson_equation = options.poisson_equation.upper() == "TRUE"
+    options.wave_equation = options.wave_equation.upper() == "TRUE"
+    options.heat_equation = options.heat_equation.upper() == "TRUE"
 
-  if options.filename == None:
-    raise Exception("No config file provided. Use -f flag")
+    if options.filename == None:
+        raise Exception("No config file provided. Use -f flag")
 
-  if options.with_MPI == True:
-    from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial)
-    comm = MPI.COMM_WORLD
-  else:
-    comm = 0
-
-  # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  try:
-    if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
-    elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm);
-    elif (options.nZone >= 2):
-      SU2Driver = pysu2.CMultizoneDriver(options.filename, options.nZone, comm);
-    else:
-      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
-  except TypeError as exception:
-    print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
-      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+        from mpi4py import MPI  # use mpi4py for parallel run (also valid for serial)
+
+        comm = MPI.COMM_WORLD
     else:
-      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-    return
+        comm = 0
 
-  # Launch the solver for the entire computation
-  SU2Driver.StartSolver()
+    # Initialize the corresponding driver of SU2, this includes solver preprocessing
+    try:
+        if (options.nZone == 1) and (
+            options.fem
+            or options.poisson_equation
+            or options.wave_equation
+            or options.heat_equation
+        ):
+            SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm)
+        elif options.harmonic_balance:
+            SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm)
+        elif options.nZone >= 2:
+            SU2Driver = pysu2.CMultizoneDriver(options.filename, options.nZone, comm)
+        else:
+            SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm)
+    except TypeError as exception:
+        print("A TypeError occured in pysu2.CDriver : ", exception)
+        if options.with_MPI == True:
+            print(
+                "ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build."
+            )
+        else:
+            print(
+                "ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper."
+            )
+        return
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+    # Launch the solver for the entire computation
+    SU2Driver.StartSolver()
 
-  if SU2Driver != None:
-    del SU2Driver
+    # Postprocess the solver and exit cleanly
+    SU2Driver.Postprocessing()
+
+    if SU2Driver != None:
+        del SU2Driver
+
 
 # -------------------------------------------------------------------
 #  Run Main Program
 # -------------------------------------------------------------------
 
 # this is only accessed if running from command prompt
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
