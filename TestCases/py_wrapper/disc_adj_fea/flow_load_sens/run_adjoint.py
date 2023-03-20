@@ -108,7 +108,7 @@ def main():
     disp=[]
 
     # Recover the sensitivity
-    sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
+    sens.append(SU2Driver.GetMarkerFEALoadSensitivity(MarkerID, 5))
 
     fea_sol = SU2Driver.GetSolverIndices()["FEA"]
     marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
