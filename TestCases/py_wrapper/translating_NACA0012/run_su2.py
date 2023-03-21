@@ -52,7 +52,7 @@ class SU2Interface:
                 fxyz = self.FluidSolver.GetMarkerFlowLoad(solver_marker_id, i_vertex)
                 iPoint = self.FluidSolver.GetMarkerNode(solver_marker_id, i_vertex)
                 GlobalIndex = self.FluidSolver.GetNodeGlobalIndex(iPoint)
-                f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], fxyz[2]))
+                f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], 0.0))
         f.close()
 
 cfd_interface = SU2Interface('config.cfg')
