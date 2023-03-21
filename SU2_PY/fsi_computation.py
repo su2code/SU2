@@ -231,7 +231,7 @@ def main():
         comm.barrier()
 
     # --- Exit cleanly the fluid and solid solvers --- #
-    FluidSolver.Postprocessing()
+    FluidSolver.Finalize()
     if myid == rootProcess:
         SolidSolver.exit()
 

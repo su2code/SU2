@@ -154,9 +154,9 @@ int main(int argc, char *argv[]) {
 
   driver->StartSolver();
 
-  /*--- Postprocess all the containers, close history file, exit SU2. ---*/
+  /*--- Finalize solver, delete all the containers, close history file, exit SU2. ---*/
 
-  driver->Postprocessing();
+  driver->Finalize();
 
   delete driver;
 
