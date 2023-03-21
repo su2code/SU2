@@ -30,26 +30,28 @@ class SU2Interface:
         self.FluidSolver.Run()
         self.FluidSolver.Postprocess()
         # write outputs
-        self.FluidSolver.Monitor(0) 
+        self.FluidSolver.Monitor(0)
         self.FluidSolver.Output(0)
         self.comm.barrier()
 
     def save_forces(self):
-        solver_all_moving_markers = np.array(self.FluidSolver.GetAllDeformMeshMarkersTag())
-        solver_marker_ids = self.FluidSolver.GetAllBoundaryMarkers()
+        solver_all_moving_markers = np.array(self.FluidSolver.GetDeformableMarkerTags())
+        solver_markers = self.FluidSolver.GetMarkerTags()
+        solver_marker_ids = self.FluidSolver.GetMarkerIndices()
         # The surface marker and the partitioning of the solver usually don't agree.
         # Thus, it is necessary to figure out if the partition of the current mpi process has
         # a node that belongs to a moving surface marker.
-        has_moving_marker = [marker in solver_marker_ids.keys() for marker in solver_all_moving_markers]
+        has_moving_marker = [marker in solver_markers for marker in solver_all_moving_markers]
 
         f = open('forces_'+str(self.myid)+'.csv','w')
 
         for marker in solver_all_moving_markers[has_moving_marker]:
             solver_marker_id = solver_marker_ids[marker]
-            n_vertices = self.FluidSolver.GetNumberVertices(solver_marker_id)
+            n_vertices = self.FluidSolver.GetNumberMarkerNodes(solver_marker_id)
             for i_vertex in range(n_vertices):
                 fxyz = self.FluidSolver.GetFlowLoad(solver_marker_id, i_vertex)
-                GlobalIndex = self.FluidSolver.GetVertexGlobalIndex(solver_marker_id, i_vertex)
+                iPoint = self.FluidSolver.GetMarkerNode(solver_marker_id, i_vertex)
+                GlobalIndex = self.FluidSolver.GetNodeGlobalIndex(iPoint)
                 f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], fxyz[2]))
         f.close()
 

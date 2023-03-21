@@ -3,14 +3,14 @@
 ## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -182,7 +182,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.157169, -6.737133, -0.176253, 0.057446]
+    turb_flatplate.test_vals = [-4.157169, -6.736698, -0.176253, 0.057446]
     test_list.append(turb_flatplate)
 
     # ONERA M6 Wing
@@ -248,7 +248,7 @@ def main():
     #######################################
     ### Axisymmetric Compressible RANS  ###
     #######################################
-    
+
     # Axisymmetric air nozzle (transonic)
     axi_rans_air_nozzle_restart           = TestCase('axi_rans_air_nozzle_restart')
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
@@ -427,6 +427,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.274028, 0.145888, 0.000002, 0.312014]
     test_list.append(inc_turb_naca0012_sst_sust)
 
+    # Weakly coupled heat equation
+    inc_weakly_coupled = TestCase('inc_weakly_coupled')
+    inc_weakly_coupled.cfg_dir = "disc_adj_heat"
+    inc_weakly_coupled.cfg_file = "primal.cfg"
+    inc_weakly_coupled.test_iter = 10
+    inc_weakly_coupled.test_vals = [-17.240436, -16.184455, -16.069131, -17.230730, -18.350601, -13.768070, 5.545700]
+    test_list.append(inc_weakly_coupled)
+
     ######################################
     ### Moving Wall                    ###
     ######################################
@@ -487,7 +495,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783, -618.160000]
+    ddes_flatplate.test_vals = [-2.714758, -5.882733, -0.215005, 0.023783, -618.160000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 

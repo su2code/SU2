@@ -2,14 +2,14 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -163,7 +163,7 @@ class CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline virtual su2double GetMassDiffusivity(int iVar) {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivity->SetDiffusivity(Density, Mu, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }

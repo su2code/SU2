@@ -2,14 +2,14 @@
  * \file CSpeciesVariable.hpp
  * \brief Base class for defining the variables of the species transport model.
  * \author T. Kattmann
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ class CSpeciesVariable : public CScalarVariable {
    * \param[in] val_ivar - eqn. index to the mass diffusivity.
    * \return Value of the mass diffusivity
    */
-  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) {
+  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const {
     return Diffusivity(iPoint, val_ivar);
   }
 

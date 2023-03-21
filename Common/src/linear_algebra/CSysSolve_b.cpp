@@ -2,14 +2,14 @@
  * \file CSysSolve_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring, J. Blühdorn
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,11 +31,10 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-template<class ScalarType>
+template <class ScalarType>
 void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m,
                                       const su2double::Real* y, const su2double::Real* y_b, size_t n,
-                                      codi::DataStore* d) {
-
+                                      codi::ExternalFunctionUserData* d) {
   CSysVector<su2double>* LinSysRes_b = nullptr;
   d->getDataByIndex(LinSysRes_b, 0);
 
@@ -57,7 +56,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real*
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
   SU2_OMP_BARRIER
-  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
+  SU2_OMP_FOR_STAT(roundUpDiv(n, omp_get_num_threads()))
   for (unsigned long i = 0; i < n; i++) {
     (*LinSysRes_b)[i] = y_b[i];
     (*LinSysSol_b)[i] = 0.0;
@@ -66,8 +65,8 @@ void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real*
 
   solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
-  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
-  for (unsigned long i = 0; i < n; i ++) {
+  SU2_OMP_FOR_STAT(roundUpDiv(n, omp_get_num_threads()))
+  for (unsigned long i = 0; i < n; i++) {
     x_b[i] = SU2_TYPE::GetValue((*LinSysSol_b)[i]);
   }
   END_SU2_OMP_FOR

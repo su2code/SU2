@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes in NEMO.
  * \author S. R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,7 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     P_Tensor[iVar]    = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
   }
@@ -56,7 +56,7 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
@@ -71,7 +71,7 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
   delete [] Lambda;
   delete [] Epsilon;
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
   }
@@ -81,7 +81,7 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
   delete [] Flux;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
   }
@@ -95,16 +95,16 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Unit Normal ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Calculate Roe averaged variables ---*/
-  su2double R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+  const su2double R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
 
-  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+  for (auto iVar = 0ul; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
   const auto& roe_eves = fluidmodel->ComputeSpeciesEve(RoeV[TVE_INDEX]);
@@ -125,18 +125,18 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   GetPMatrix_inv(RoeU, RoeV, RoedPdU, UnitNormal, l, m, invP_Tensor);
 
   /*--- Compute projected velocities ---*/
-  su2double ProjVelocity   = GeometryToolbox::DotProduct(nDim, &RoeV[VEL_INDEX], UnitNormal);
-  su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX], UnitNormal);
-  su2double ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX], UnitNormal);
+  const su2double ProjVelocity   = GeometryToolbox::DotProduct(nDim, &RoeV[VEL_INDEX], UnitNormal);
+  const su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX], UnitNormal);
+  const su2double ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX], UnitNormal);
 
-  su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
-                            RoeV[P_INDEX]/RoeV[RHO_INDEX]);
+  const su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
+                                  RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 
   /*--- Calculate eigenvalues ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     Lambda[iSpecies] = ProjVelocity;
 
-  for (unsigned short iDim = 0; iDim < nDim-1; iDim++)
+  for (auto iDim = 0; iDim < nDim-1; iDim++)
     Lambda[nSpecies+iDim] = ProjVelocity;
 
   Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
@@ -144,10 +144,10 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   Lambda[nSpecies+nDim+1] = ProjVelocity;
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
     Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iSpecies]-ProjVelocity_i,
                                          ProjVelocity_j-Lambda[iSpecies] ));
-  for (unsigned short iDim = 0; iDim < nDim-1; iDim++)
+  for (auto iDim = 0; iDim < nDim-1; iDim++)
     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));
   Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
@@ -156,13 +156,13 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
                                      (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
   Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim+1]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[nSpecies+nDim+1] ));
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
       Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
     else
       Lambda[iVar] = fabs(Lambda[iVar]);
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
 
   /*--- Calculate inviscid projected Jacobians ---*/
@@ -173,17 +173,17 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     Diff_U[iVar] = U_j[iVar]-U_i[iVar];
 
   /*--- Roe's Flux approximation ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Flux[iVar] = 0.5 * (ProjFlux_i[iVar] + ProjFlux_j[iVar]);
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
 
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       Proj_ModJac_Tensor_ij = 0.0;
-      for (unsigned short kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0ul; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       Flux[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;

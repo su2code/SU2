@@ -2,14 +2,14 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,11 +36,12 @@
  */
 class CRadialBasisFunction final : public CInterpolator {
   static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");
-private:
+
+ private:
   unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
   passivedouble Density = 0.0, AvgCorrection = 0.0, MaxCorrection = 0.0;
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -48,8 +49,8 @@ public:
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
-  CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
-                       unsigned int iZone, unsigned int jZone);
+  CRadialBasisFunction(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
+                       unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -85,8 +86,8 @@ public:
    * \param[out] C_inv_trunc - The generator matrix as described above.
    */
   static void ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial, su2double radius,
-                                     const su2activematrix& coords, int& nPolynomial,
-                                     vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc);
+                                     const su2activematrix& coords, int& nPolynomial, vector<int>& keepPolynomialRow,
+                                     su2passivematrix& C_inv_trunc);
 
   /*!
    * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix
@@ -97,9 +98,9 @@ public:
    * \param[in,out] P - Polynomial part of the interpolation matrix, one row may be eliminated.
    * \return n_polynomial - Size of the polynomial part on exit (in practice nDim or nDim-1).
    */
-  static int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P);
+  static int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix& P);
 
-private:
+ private:
   /*!
    * \brief Helper function, prunes (by setting to zero) small interpolation coefficients,
    * i.e. <= tolerance*max(abs(coeffs)). The vector is re-scaled such that sum(coeffs)==1.
@@ -108,25 +109,24 @@ private:
    * \param[in,out] coeffs - Iterator to start of vector of interpolation coefficients.
    * \return Number of non-zero coefficients after pruning and correction factor.
    */
-  template<typename Float, typename Int, class ForwardIt>
-  static pair<Int,Float> PruneSmallCoefficients(Float tolerance, Int size, ForwardIt coeffs) {
-
+  template <typename Float, typename Int, class ForwardIt>
+  static pair<Int, Float> PruneSmallCoefficients(Float tolerance, Int size, ForwardIt coeffs) {
     /*--- Determine the pruning threshold. ---*/
     Float thresh = 0.0;
     auto end = coeffs;
-    for (Int i = 0; i < size; ++i)
-      thresh = max(thresh, fabs(*(end++)));
+    for (Int i = 0; i < size; ++i) thresh = max(thresh, fabs(*(end++)));
     thresh *= tolerance;
 
     /*--- Prune and count non-zeros. ---*/
     Int numNonZeros = 0;
     Float coeffSum = 0.0;
     for (auto it = coeffs; it != end; ++it) {
-      if (fabs(*it) > thresh) { // keep
+      if (fabs(*it) > thresh) {  // keep
         coeffSum += *it;
         ++numNonZeros;
-      }
-      else { *it = 0.0; } // prune
+      } else {
+        *it = 0.0;
+      }  // prune
     }
 
     /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
@@ -135,5 +135,4 @@ private:
 
     return make_pair(numNonZeros, correction);
   }
-
 };

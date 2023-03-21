@@ -2,14 +2,14 @@
  * \file CEdge.hpp
  * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,17 +38,18 @@ class CPhysicalGeometry;
  */
 class CEdge {
   static_assert(su2activematrix::IsRowMajor, "Needed to return normal as pointer.");
-private:
+
+ private:
   using Index = unsigned long;
   using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
-  NodeArray Nodes;           /*!< \brief Vector to store the node indices of the edge. */
-  su2activematrix Normal;    /*!< \brief Normal (area) of the edge. */
+  NodeArray Nodes;        /*!< \brief Vector to store the node indices of the edge. */
+  su2activematrix Normal; /*!< \brief Normal (area) of the edge. */
   const Index nEdge, nEdgeSIMD;
 
   friend class CPhysicalGeometry;
 
-public:
-  enum NodePosition : unsigned long {LEFT = 0, RIGHT = 1};
+ public:
+  enum NodePosition : unsigned long { LEFT = 0, RIGHT = 1 };
 
   /*!
    * \brief Constructor of the class.
@@ -68,14 +69,14 @@ public:
    * \param[in] iNode - Node index 0 or 1, LEFT or RIGHT.
    * \return Index of the node that composes the edge.
    */
-  inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
+  inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge, iNode); }
 
   /*!
    * \brief SIMD version of GetNode, iNode returned for contiguous iEdges.
    */
-  template<class T, size_t N>
-  FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdge, unsigned long iNode) const {
-    return simd::Array<T,N>(&Nodes(iEdge[0],iNode));
+  template <class T, size_t N>
+  FORCEINLINE simd::Array<T, N> GetNode(simd::Array<T, N> iEdge, unsigned long iNode) const {
+    return simd::Array<T, N>(&Nodes(iEdge[0], iNode));
   }
 
   /*!
@@ -116,10 +117,8 @@ public:
    * \param[in] coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  static su2double GetVolume(const su2double* coord_Edge_CG,
-                             const su2double* coord_FaceElem_CG,
-                             const su2double* coord_Elem_CG,
-                             const su2double* coord_Point);
+  static su2double GetVolume(const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
+                             const su2double* coord_Elem_CG, const su2double* coord_Point);
 
   /*!
    * \brief Compute the volume associated with an edge (2D version).
@@ -128,8 +127,7 @@ public:
    * \param[in] coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  static su2double GetVolume(const su2double* coord_Edge_CG,
-                             const su2double* coord_Elem_CG,
+  static su2double GetVolume(const su2double* coord_Edge_CG, const su2double* coord_Elem_CG,
                              const su2double* coord_Point);
 
   /*!
@@ -141,9 +139,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
    */
-  void SetNodes_Coord(unsigned long iEdge,
-                      const su2double* coord_Edge_CG,
-                      const su2double* coord_FaceElem_CG,
+  void SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
                       const su2double* coord_Elem_CG);
 
   /*!
@@ -154,19 +150,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
    */
-  void SetNodes_Coord(unsigned long iEdge,
-                      const su2double* coord_Edge_CG,
-                      const su2double* coord_Elem_CG);
+  void SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_Elem_CG);
 
   /*!
    * \brief Copy the the normal vector of a face.
    * \param[in] iEdge - Edge index.
    * \param[out] normal - Object into which the normal (dimensional) will be copied.
    */
-  template<class T>
+  template <class T>
   inline void GetNormal(unsigned long iEdge, T& normal) const {
-    for (auto iDim = 0ul; iDim < Normal.cols(); iDim++)
-      normal[iDim] = Normal(iEdge,iDim);
+    for (auto iDim = 0ul; iDim < Normal.cols(); iDim++) normal[iDim] = Normal(iEdge, iDim);
   }
 
   /*!
@@ -192,10 +185,9 @@ public:
    * \param[in] normal - Vector to initialize the normal vector.
    * \return Value of the normal vector.
    */
-  template<class T>
+  template <class T>
   void SetNormal(unsigned long iEdge, const T& normal) {
-    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
-      Normal(iEdge,iDim) = normal[iDim];
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) = normal[iDim];
   }
 
   /*!
@@ -203,10 +195,9 @@ public:
    * \param[in] iEdge - Edge index.
    * \param[in] normal - Vector to add to the normal vector.
    */
-  template<class T>
+  template <class T>
   void AddNormal(unsigned long iEdge, const T& normal) {
-    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
-      Normal(iEdge,iDim) += normal[iDim];
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) += normal[iDim];
   }
 
   /*!
@@ -214,10 +205,8 @@ public:
    * \param[in] iEdge - Edge index.
    * \param[in] normal - Vector to add to the normal vector.
    */
-  template<class T>
+  template <class T>
   void SubNormal(unsigned long iEdge, const T& normal) {
-    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
-      Normal(iEdge,iDim) -= normal[iDim];
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) -= normal[iDim];
   }
-
 };

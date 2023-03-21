@@ -2,14 +2,14 @@
  * \file CElementProperty.hpp
  * \brief Light classes to define finite element properties.
  * \author R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,14 +32,13 @@
  * \ingroup Elasticity_Equations
  * \brief Base class for defining element properties.
  * \author R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CProperty {
-protected:
+ protected:
+  unsigned long iMat_Prop = 0; /*!< \brief Index of the properties (E, Nu) for the structural model used. */
 
-  unsigned long iMat_Prop = 0;  /*!< \brief Index of the properties (E, Nu) for the structural model used. */
-
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
@@ -102,38 +101,38 @@ public:
   inline virtual void RegisterDensity(void) {}
 };
 
-
 /*!
  * \class CElementProperty
  * \ingroup Elasticity_Equations
  * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CElementProperty final : public CProperty {
-private:
+ private:
+  unsigned long iMat_Mod = 0;       /*!< \brief Index of the material model used. */
+  unsigned long iElectric_Prop = 0; /*!< \brief Index of the electric properties (Em) for the structural model used. */
+  unsigned long iDV = 0;            /*!< \brief Index of the group of design variables to which the element belongs. */
+  su2double design_rho = 1.0;       /*!< \brief Value of the design density for material-based topology optimization. */
+  su2double physical_rho = 1.0; /*!< \brief Value of the physical density for material-based topology optimization. */
 
-  unsigned long iMat_Mod = 0;        /*!< \brief Index of the material model used. */
-  unsigned long iElectric_Prop = 0;  /*!< \brief Index of the electric properties (Em) for the structural model used. */
-  unsigned long iDV = 0;             /*!< \brief Index of the group of design variables to which the element belongs. */
-  su2double design_rho = 1.0;        /*!< \brief Value of the design density for material-based topology optimization. */
-  su2double physical_rho = 1.0;      /*!< \brief Value of the physical density for material-based topology optimization. */
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
-   * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
-   * \param[in] valElectric_Prop - Index of the electric properties.
-   * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
-   * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
+   * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in
+   * option_structure.hpp. \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned
+   * to the element. \param[in] valElectric_Prop - Index of the electric properties. \param[in] valDV - Index of the
+   * design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA"). \param[in]
+   * valDensity - Value for Design and Physical densities (topology optimization variables).
    */
-  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop,
-                   unsigned long valElectric_Prop, unsigned long valDV,
-                   su2double valDensity = 1.0) : CProperty(valMat_Prop),
-    iMat_Mod(valMat_Model), iElectric_Prop(valElectric_Prop),
-    iDV(valDV), design_rho(valDensity), physical_rho(valDensity) {}
+  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop,
+                   unsigned long valDV, su2double valDensity = 1.0)
+      : CProperty(valMat_Prop),
+        iMat_Mod(valMat_Model),
+        iElectric_Prop(valElectric_Prop),
+        iDV(valDV),
+        design_rho(valDensity),
+        physical_rho(valDensity) {}
 
   /*!
    * \brief Destructor of the class.

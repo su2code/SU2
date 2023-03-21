@@ -3,14 +3,14 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,73 +45,84 @@ class CPhysicalGeometry;
  * \author F. Palacios
  */
 class CPoint {
-private:
+ private:
   friend class CPhysicalGeometry;
 
   const unsigned long nDim = 0;
 
-  su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
-  su2vector<unsigned long> Color;         /*!< \brief Color of the point in the partitioning strategy. */
+  su2vector<unsigned long> GlobalIndex; /*!< \brief Global index in the parallel simulation. */
+  su2vector<unsigned long> Color;       /*!< \brief Color of the point in the partitioning strategy. */
 
-  CCompressedSparsePatternUL Point;       /*!< \brief Points surrounding the central node of the control volume. */
-  CCompressedSparsePatternL Edge;         /*!< \brief Edges that set up a control volume (same sparse structure as Point). */
-  CCompressedSparsePatternL Elem;         /*!< \brief Elements that set up a control volume around a node. */
-  vector<vector<long> > Vertex;           /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
+  CCompressedSparsePatternUL Point; /*!< \brief Points surrounding the central node of the control volume. */
+  CCompressedSparsePatternL Edge;   /*!< \brief Edges that set up a control volume (same sparse structure as Point). */
+  CCompressedSparsePatternL Elem;   /*!< \brief Elements that set up a control volume around a node. */
+  vector<vector<long> > Vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one
+                                   for each marker in the same node). */
 
-  su2activevector Volume;                 /*!< \brief Volume or Area of the control volume in 3D and 2D. */
-  su2activevector Volume_n;               /*!< \brief Volume at time n. */
-  su2activevector Volume_nM1;             /*!< \brief Volume at time n-1. */
-  su2activevector Volume_Old;             /*!< \brief Old containers for Volume. */
-  su2activevector Volume_n_Old;           /*!< \brief Old containers for Volume at time n. */
-  su2activevector Volume_nM1_Old;         /*!< \brief Old containers for Volume at time n-1. */
-  su2activevector Periodic_Volume;        /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
+  su2activevector Volume;          /*!< \brief Volume or Area of the control volume in 3D and 2D. */
+  su2activevector Volume_n;        /*!< \brief Volume at time n. */
+  su2activevector Volume_nM1;      /*!< \brief Volume at time n-1. */
+  su2activevector Volume_Old;      /*!< \brief Old containers for Volume. */
+  su2activevector Volume_n_Old;    /*!< \brief Old containers for Volume at time n. */
+  su2activevector Volume_nM1_Old;  /*!< \brief Old containers for Volume at time n-1. */
+  su2activevector Periodic_Volume; /*!< \brief Missing component of volume or area of a control volume on a periodic
+                                      marker in 3D and 2D. */
 
-  su2vector<bool> Domain;                 /*!< \brief Indicates if a point must be computed or belong to another boundary */
-  su2vector<bool> Boundary;               /*!< \brief To see if a point belong to the boundary (including MPI). */
-  su2vector<bool> PhysicalBoundary;       /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  su2vector<bool> SolidBoundary;          /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  su2vector<bool> ViscousBoundary;        /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  su2vector<bool> PeriodicBoundary;       /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
+  su2vector<bool> Domain;   /*!< \brief Indicates if a point must be computed or belong to another boundary */
+  su2vector<bool> Boundary; /*!< \brief To see if a point belong to the boundary (including MPI). */
+  su2vector<bool>
+      PhysicalBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  su2vector<bool>
+      SolidBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  su2vector<bool>
+      ViscousBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  su2vector<bool>
+      PeriodicBoundary; /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
 
-  su2activematrix Coord;                  /*!< \brief vector with the coordinates of the node. */
-  su2activematrix Coord_Old;              /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
-  su2activematrix Coord_Sum;              /*!< \brief Sum of coordinates vector for geometry smoothing. */
-  su2activematrix Coord_n;                /*!< \brief Coordinates at time n for use with dynamic meshes. */
-  su2activematrix Coord_n1;               /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
-  su2activematrix Coord_p1;               /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
+  su2activematrix Coord; /*!< \brief vector with the coordinates of the node. */
+  su2activematrix
+      Coord_Old; /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
+  su2activematrix Coord_Sum; /*!< \brief Sum of coordinates vector for geometry smoothing. */
+  su2activematrix Coord_n;   /*!< \brief Coordinates at time n for use with dynamic meshes. */
+  su2activematrix Coord_n1;  /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
+  su2activematrix Coord_p1;  /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
 
-  su2activematrix GridVel;                /*!< \brief Velocity of the grid for dynamic mesh cases. */
-  CVectorOfMatrix GridVel_Grad;           /*!< \brief Gradient of the grid velocity for dynamic meshes. */
+  su2activematrix GridVel;      /*!< \brief Velocity of the grid for dynamic mesh cases. */
+  CVectorOfMatrix GridVel_Grad; /*!< \brief Gradient of the grid velocity for dynamic meshes. */
 
-  su2vector<unsigned long> Parent_CV;          /*!< \brief Index of the parent control volume in the agglomeration process. */
-  su2vector<unsigned short> nChildren_CV;      /*!< \brief Number of children in the agglomeration process. */
-  vector<vector<unsigned long> > Children_CV;  /*!< \brief Index of the children control volumes in the agglomeration process. */
-  su2vector<bool> Agglomerate_Indirect;        /*!< \brief This flag indicates if the indirect points can be agglomerated. */
-  su2vector<bool> Agglomerate;                 /*!< \brief This flag indicates if the element has been agglomerated. */
+  su2vector<unsigned long> Parent_CV; /*!< \brief Index of the parent control volume in the agglomeration process. */
+  su2vector<unsigned short> nChildren_CV; /*!< \brief Number of children in the agglomeration process. */
+  vector<vector<unsigned long> >
+      Children_CV; /*!< \brief Index of the children control volumes in the agglomeration process. */
+  su2vector<bool> Agglomerate_Indirect; /*!< \brief This flag indicates if the indirect points can be agglomerated. */
+  su2vector<bool> Agglomerate;          /*!< \brief This flag indicates if the element has been agglomerated. */
 
-  su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
+  su2vector<unsigned short> nNeighbor; /*!< \brief Number of neighbors, needed by some numerical methods. */
 
   /*--- Closest element on a viscous wall, and distance to it. ---*/
-  su2activevector Wall_Distance;          /*!< \brief Distance to the nearest wall. */
-  su2vector<int> ClosestWall_Rank; /*!< \brief Rank of process holding the closest wall element. */
+  su2activevector Wall_Distance;              /*!< \brief Distance to the nearest wall. */
+  su2vector<int> ClosestWall_Rank;            /*!< \brief Rank of process holding the closest wall element. */
   su2vector<unsigned short> ClosestWall_Zone; /*!< \brief Zone index of closest wall element. */
-  su2vector<unsigned short> ClosestWall_Marker; /*!< \brief Marker index of closest wall element, for given rank and zone index. */
-  su2vector<unsigned long> ClosestWall_Elem; /*!< \brief Element index of closest wall element, for givenrank, zone and marker index. */
+  su2vector<unsigned short>
+      ClosestWall_Marker; /*!< \brief Marker index of closest wall element, for given rank and zone index. */
+  su2vector<unsigned long>
+      ClosestWall_Elem; /*!< \brief Element index of closest wall element, for givenrank, zone and marker index. */
 
-  su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
-  su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
-  su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
-  su2activevector RoughnessHeight;          /*!< \brief Roughness of the nearest wall. */
+  su2activevector SharpEdge_Distance; /*!< \brief Distance to a sharp edge. */
+  su2activevector Curvature;          /*!< \brief Value of the surface curvature (SU2_GEO). */
+  su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
+  su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
 
-  su2matrix<int> AD_InputIndex;           /*!< \brief Indices of Coord variables in the adjoint vector. */
-  su2matrix<int> AD_OutputIndex;          /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
+  su2matrix<int>
+      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
   /*!
    * \brief Allocate fields required by the minimal constructor.
    */
   void MinimalAllocation(unsigned long npoint);
 
-public:
+ public:
   /*!
    * \brief "Full" constructor of the class.
    * \param[in] npoint - Number of points (dual volumes) in the problem.
@@ -144,14 +155,14 @@ public:
    * \param[in] iDim - Number of dimensions of the problem.
    * \return Coordinate that correspond with <i>iDim</i>.
    */
-  inline su2double GetCoord(unsigned long iPoint, unsigned long iDim) const { return Coord(iPoint,iDim); }
+  inline su2double GetCoord(unsigned long iPoint, unsigned long iDim) const { return Coord(iPoint, iDim); }
 
   /*!
    * \brief Get the coordinates of the control volume.
    * \param[in] iPoint - Index of the point.
    * \return pointer to the coordinate of the point.
    */
-  inline su2double *GetCoord(unsigned long iPoint) { return Coord[iPoint]; }
+  inline su2double* GetCoord(unsigned long iPoint) { return Coord[iPoint]; }
 
   /*!
    * \brief Get the entire matrix of coordinates of the control volumes.
@@ -164,7 +175,7 @@ public:
    * \param[in] iDim - Position to store the coordinate.
    * \param[in] coord - Coordinate for iDim.
    */
-  inline void SetCoord(unsigned long iPoint, unsigned long iDim, su2double coord) { Coord(iPoint,iDim) = coord; }
+  inline void SetCoord(unsigned long iPoint, unsigned long iDim, su2double coord) { Coord(iPoint, iDim) = coord; }
 
   /*!
    * \brief Set the coordinates for the control volume.
@@ -172,16 +183,15 @@ public:
    * \param[in] iDim - Position to store the coordinate.
    * \param[in] coord - Coordinate for iDim.
    */
-  inline void AddCoord(unsigned long iPoint, unsigned long iDim, su2double coord) { Coord(iPoint,iDim) += coord; }
+  inline void AddCoord(unsigned long iPoint, unsigned long iDim, su2double coord) { Coord(iPoint, iDim) += coord; }
 
   /*!
    * \brief Set the point coordinates.
    * \param[in] iPoint - Index of the point.
    * \param[in] coord - Coordinate of the point.
    */
-  inline void SetCoord(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord(iPoint,iDim) = coord[iDim];
+  inline void SetCoord(unsigned long iPoint, const su2double* coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord(iPoint, iDim) = coord[iDim];
   }
 
   /*!
@@ -208,12 +218,16 @@ public:
    * \param[in] nelem - Position where the element is stored.
    * \return Index of the element.
    */
-  inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem.getInnerIdx(iPoint,nelem); }
+  inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const {
+    return Elem.getInnerIdx(iPoint, nelem);
+  }
 
   /*!
    * \brief Get inner iterator to loop over neighbor elements.
    */
-  inline CCompressedSparsePatternL::CInnerIter GetElems(unsigned long iPoint) const { return Elem.getInnerIter(iPoint); }
+  inline CCompressedSparsePatternL::CInnerIter GetElems(unsigned long iPoint) const {
+    return Elem.getInnerIter(iPoint);
+  }
 
   /*!
    * \brief Set the points that compose the control volume.
@@ -229,7 +243,10 @@ public:
   /*!
    * \brief Reset the points that compose the control volume.
    */
-  inline void ResetPoints() { Point = CCompressedSparsePatternUL(); Edge = CCompressedSparsePatternL(); }
+  inline void ResetPoints() {
+    Point = CCompressedSparsePatternUL();
+    Edge = CCompressedSparsePatternL();
+  }
 
   /*!
    * \brief Get the number of points that compose the control volume.
@@ -244,12 +261,16 @@ public:
    * \param[in] point - Position where the point is stored.
    * \return Index of the point.
    */
-  inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const { return Point.getInnerIdx(iPoint,npoint); }
+  inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const {
+    return Point.getInnerIdx(iPoint, npoint);
+  }
 
   /*!
    * \brief Get inner iterator to loop over neighbor points.
    */
-  inline CCompressedSparsePatternUL::CInnerIter GetPoints(unsigned long iPoint) const { return Point.getInnerIter(iPoint); }
+  inline CCompressedSparsePatternUL::CInnerIter GetPoints(unsigned long iPoint) const {
+    return Point.getInnerIter(iPoint);
+  }
 
   /*!
    * \brief Set the edges that compose the control volume.
@@ -257,7 +278,9 @@ public:
    * \param[in] iedge - Edge to be added.
    * \param[in] nedge - Position in which is going to be stored the edge for each control volume.
    */
-  inline void SetEdge(unsigned long iPoint, long iedge, unsigned long nedge) { Edge.getInnerIdx(iPoint,nedge) = iedge; }
+  inline void SetEdge(unsigned long iPoint, long iedge, unsigned long nedge) {
+    Edge.getInnerIdx(iPoint, nedge) = iedge;
+  }
 
   /*!
    * \brief Get all the edges that compose the control volume.
@@ -265,12 +288,14 @@ public:
    * \param[in] nedge - Position where the edge is stored.
    * \return Index of the edge.
    */
-  inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge.getInnerIdx(iPoint,nedge); }
+  inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge.getInnerIdx(iPoint, nedge); }
 
   /*!
    * \brief Get inner iterator to loop over neighbor edges.
    */
-  inline CCompressedSparsePatternL::CInnerIter GetEdges(unsigned long iPoint) const { return Edge.getInnerIter(iPoint); }
+  inline CCompressedSparsePatternL::CInnerIter GetEdges(unsigned long iPoint) const {
+    return Edge.getInnerIter(iPoint);
+  }
 
   /*!
    * \brief Set the boundary vertex that compose the control volume.
@@ -289,8 +314,10 @@ public:
    * \return Index of the vertex.
    */
   inline long GetVertex(unsigned long iPoint, unsigned long iMarker) const {
-    if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
-    else return -1;
+    if (Boundary(iPoint))
+      return Vertex[iPoint][iMarker];
+    else
+      return -1;
   }
 
   /*!
@@ -300,7 +327,7 @@ public:
    * \param[in] nMarker - Max number of marker.
    */
   inline void SetBoundary(unsigned long iPoint, unsigned short nMarker) {
-    if (!Boundary(iPoint)) Vertex[iPoint].resize(nMarker,-1);
+    if (!Boundary(iPoint)) Vertex[iPoint].resize(nMarker, -1);
     Boundary(iPoint) = true;
   }
 
@@ -308,7 +335,10 @@ public:
    * \brief Reset the boundary of a control volume.
    * \param[in] iPoint - Index of the point.
    */
-  inline void ResetBoundary(unsigned long iPoint) { Vertex[iPoint].clear(); Boundary(iPoint) = false; }
+  inline void ResetBoundary(unsigned long iPoint) {
+    Vertex[iPoint].clear();
+    Boundary(iPoint) = false;
+  }
 
   /*!
    * \brief Mark the point as boundary.
@@ -602,7 +632,7 @@ public:
    */
   void SetVolume_n_Old();
 
-    /*!
+  /*!
    * \brief Set the Volume_nM1 to Volume_nM1_Old.
    */
   void SetVolume_nM1_Old();
@@ -613,7 +643,8 @@ public:
    * \param[in] parent_CV - Index of the parent control volume.
    */
   inline void SetParent_CV(unsigned long iPoint, unsigned long parent_CV) {
-    Parent_CV(iPoint) = parent_CV; Agglomerate(iPoint) = true;
+    Parent_CV(iPoint) = parent_CV;
+    Agglomerate(iPoint) = true;
   }
 
   /*!
@@ -623,7 +654,7 @@ public:
    * \param[in] children_CV - Index of the children control volume.
    */
   inline void SetChildren_CV(unsigned long iPoint, unsigned long nchildren_CV, unsigned long children_CV) {
-    Children_CV[iPoint].resize(nchildren_CV+1);
+    Children_CV[iPoint].resize(nchildren_CV + 1);
     Children_CV[iPoint][nchildren_CV] = children_CV;
   }
 
@@ -663,7 +694,9 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] agglomerate - The indirect neigbors can be agglomerated.
    */
-  inline void SetAgglomerate_Indirect(unsigned long iPoint, bool agglomerate) { Agglomerate_Indirect(iPoint) = agglomerate; };
+  inline void SetAgglomerate_Indirect(unsigned long iPoint, bool agglomerate) {
+    Agglomerate_Indirect(iPoint) = agglomerate;
+  };
 
   /*!
    * \brief Get the number of children of an agglomerated control volume.
@@ -677,28 +710,30 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] nchildren_CV - Number of children of the control volume.
    */
-  inline void SetnChildren_CV(unsigned long iPoint, unsigned short nchildren_CV) { nChildren_CV(iPoint) = nchildren_CV; }
+  inline void SetnChildren_CV(unsigned long iPoint, unsigned short nchildren_CV) {
+    nChildren_CV(iPoint) = nchildren_CV;
+  }
 
   /*!
    * \brief Get the coordinates of the control volume at time n.
    * \param[in] iPoint - Index of the point.
    * \return Coordinates of the control volume at time n.
    */
-  inline su2double *GetCoord_n(unsigned long iPoint) { return Coord_n[iPoint]; }
+  inline su2double* GetCoord_n(unsigned long iPoint) { return Coord_n[iPoint]; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n-1.
    * \param[in] iPoint - Index of the point.
    * \return Volume of the control volume at time n-1
    */
-  inline su2double *GetCoord_n1(unsigned long iPoint) { return Coord_n1[iPoint]; }
+  inline su2double* GetCoord_n1(unsigned long iPoint) { return Coord_n1[iPoint]; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n+1.
    * \param[in] iPoint - Index of the point.
    * \return Volume of the control volume at time n+1
    */
-  inline su2double *GetCoord_p1(unsigned long iPoint) { return Coord_p1[iPoint]; }
+  inline su2double* GetCoord_p1(unsigned long iPoint) { return Coord_p1[iPoint]; }
 
   /*!
    * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
@@ -715,9 +750,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] coord - Value of the grid coordinates at time n.
    */
-  inline void SetCoord_n(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n(iPoint,iDim) = coord[iDim];
+  inline void SetCoord_n(unsigned long iPoint, const su2double* coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_n(iPoint, iDim) = coord[iDim];
   }
 
   /*!
@@ -725,9 +759,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] coord - Value of the grid coordinates at time n-1.
    */
-  inline void SetCoord_n1(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n1(iPoint,iDim) = coord[iDim];
+  inline void SetCoord_n1(unsigned long iPoint, const su2double* coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_n1(iPoint, iDim) = coord[iDim];
   }
 
   /*!
@@ -735,9 +768,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] coord - Value of the grid coordinates at time n+1.
    */
-  inline void SetCoord_p1(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_p1(iPoint,iDim) = coord[iDim];
+  inline void SetCoord_p1(unsigned long iPoint, const su2double* coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_p1(iPoint, iDim) = coord[iDim];
   }
 
   /*!
@@ -745,16 +777,15 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Old coordinates at a point.
    */
-  inline su2double *GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
+  inline su2double* GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
 
   /*!
    * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
    * \param[in] iPoint - Index of the point.
    * \param[in] coord_old - Value of the coordinates.
    */
-  inline void SetCoord_Old(unsigned long iPoint, const su2double *coord_old) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Old(iPoint,iDim) = coord_old[iDim];
+  inline void SetCoord_Old(unsigned long iPoint, const su2double* coord_old) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_Old(iPoint, iDim) = coord_old[iDim];
   }
 
   /*!
@@ -767,16 +798,15 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Sum of coordinates at a point.
    */
-  inline su2double *GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
+  inline su2double* GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
 
   /*!
    * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
    * \param[in] iPoint - Index of the point.
    * \param[in] coord_sum - Value of the coordinates to add.
    */
-  inline void AddCoord_Sum(unsigned long iPoint, const su2double *coord_sum) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Sum(iPoint,iDim) += coord_sum[iDim];
+  inline void AddCoord_Sum(unsigned long iPoint, const su2double* coord_sum) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_Sum(iPoint, iDim) += coord_sum[iDim];
   }
 
   /*!
@@ -789,7 +819,7 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Grid velocity at the point.
    */
-  inline su2double *GetGridVel(unsigned long iPoint) { return GridVel[iPoint]; }
+  inline su2double* GetGridVel(unsigned long iPoint) { return GridVel[iPoint]; }
 
   /*!
    * \brief Get the grid velocity matrix for the entire domain.
@@ -802,16 +832,17 @@ public:
    * \param[in] iDim - Index of the coordinate.
    * \param[in] gridvel - Value of the grid velocity.
    */
-  inline void SetGridVel(unsigned long iPoint, unsigned long iDim, su2double gridvel) { GridVel(iPoint,iDim) = gridvel; }
+  inline void SetGridVel(unsigned long iPoint, unsigned long iDim, su2double gridvel) {
+    GridVel(iPoint, iDim) = gridvel;
+  }
 
   /*!
    * \brief Set the value of the grid velocity at the point.
    * \param[in] iPoint - Index of the point.
    * \param[in] gridvel - Value of the grid velocity.
    */
-  inline void SetGridVel(unsigned long iPoint, const su2double *gridvel) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      GridVel(iPoint,iDim) = gridvel[iDim];
+  inline void SetGridVel(unsigned long iPoint, const su2double* gridvel) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) GridVel(iPoint, iDim) = gridvel[iDim];
   }
 
   /*!
@@ -831,9 +862,9 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] adj_sol - Adjoint values of the Coord variables.
    */
-  inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
+  inline void SetAdjointSolution(unsigned long iPoint, const su2double* adj_sol) {
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      AD::SetDerivative(AD_OutputIndex(iPoint,iDim), SU2_TYPE::GetValue(adj_sol[iDim]));
+      AD::SetDerivative(AD_OutputIndex(iPoint, iDim), SU2_TYPE::GetValue(adj_sol[iDim]));
   }
 
   /*!
@@ -842,7 +873,7 @@ public:
    * \param[in] iDim - Dimension.
    */
   inline su2double GetAdjointSolution(unsigned long iPoint, unsigned long iDim) const {
-    return AD::GetDerivative(AD_InputIndex(iPoint,iDim));
+    return AD::GetDerivative(AD_InputIndex(iPoint, iDim));
   }
 
   /*!
@@ -852,13 +883,12 @@ public:
    */
   inline void RegisterCoordinates(unsigned long iPoint, bool input) {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      if(input) {
-        AD::RegisterInput(Coord(iPoint,iDim));
-        AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
-      }
-      else {
-        AD::RegisterOutput(Coord(iPoint,iDim));
-        AD::SetIndex(AD_OutputIndex(iPoint,iDim), Coord(iPoint,iDim));
+      if (input) {
+        AD::RegisterInput(Coord(iPoint, iDim));
+        AD::SetIndex(AD_InputIndex(iPoint, iDim), Coord(iPoint, iDim));
+      } else {
+        AD::RegisterOutput(Coord(iPoint, iDim));
+        AD::SetIndex(AD_OutputIndex(iPoint, iDim), Coord(iPoint, iDim));
       }
     }
   }
@@ -867,16 +897,15 @@ public:
    * \brief Set wall roughnesses according to stored closest wall information.
    * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
    */
-  template<typename Roughness_type>
-  void SetWallRoughness(Roughness_type const& roughness){
-    for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
+  template <typename Roughness_type>
+  void SetWallRoughness(Roughness_type const& roughness) {
+    for (unsigned long iPoint = 0; iPoint < GlobalIndex.size(); ++iPoint) {
       auto rankID = ClosestWall_Rank[iPoint];
       auto zoneID = ClosestWall_Zone[iPoint];
       auto markerID = ClosestWall_Marker[iPoint];
-      if(rankID >= 0){
+      if (rankID >= 0) {
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
       }
     }
   }
-
 };

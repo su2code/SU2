@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -492,6 +492,7 @@ public:
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -1116,6 +1117,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the mass diffusivity.
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the specific heat at constant P
    */
   inline virtual su2double GetSpecificHeatCp(unsigned long iPoint) const { return 0.0; }
@@ -1682,9 +1690,9 @@ public:
    * \return the value of the intermittency.
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
-  
+
   /*!
-   * \brief Set the intermittency.   
+   * \brief Set the intermittency.
    * \param[in] val_dist - Value of the  intermittency.
    */
   inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
@@ -1898,10 +1906,10 @@ public:
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
+   * \brief Get the velocity (Structural Analysis).
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double* GetSolution_Vel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1911,11 +1919,10 @@ public:
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
+   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
+  inline virtual su2double* GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -2041,6 +2048,11 @@ public:
    * \return Pointer to the reference coordinates.
    */
   inline virtual const su2double *GetMesh_Coord(unsigned long iPoint) const { return nullptr; }
+
+  /*!
+   * \brief A virtual member. Get the undeformed coordinates for the entire domain.
+   */
+  inline virtual const MatrixType *GetMesh_Coord() const { return nullptr; }
 
   /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.

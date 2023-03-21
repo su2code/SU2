@@ -2,14 +2,14 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,46 +45,47 @@ using namespace std;
  * \author H. Kline
  */
 class CInterpolator {
-protected:
+ protected:
   const int rank;            /*!< \brief MPI Rank. */
   const int size;            /*!< \brief MPI Size. */
   const unsigned donorZone;  /*!< \brief Index of donor zone. */
   const unsigned targetZone; /*!< \brief Index of target zone. */
 
-  unsigned long
-  MaxLocalVertex_Donor,              /*!< \brief Maximum vertices per processor. */
-  Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor. */
-  *Buffer_Receive_nVertex_Donor;     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain. */
+  unsigned long MaxLocalVertex_Donor, /*!< \brief Maximum vertices per processor. */
+      Buffer_Send_nVertex_Donor[1],   /*!< \brief Buffer to send number of vertices on the local processor. */
+      *Buffer_Receive_nVertex_Donor;  /*!< \brief Buffer to store the number of vertices per processor on the Donor
+                                         domain. */
 
-  su2vector<unsigned long> Buffer_Send_GlobalPoint;     /*!< \brief Buffer to send global point indices. */
-  su2vector<unsigned long> Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
+  su2vector<unsigned long> Buffer_Send_GlobalPoint;    /*!< \brief Buffer to send global point indices. */
+  su2vector<unsigned long> Buffer_Receive_GlobalPoint; /*!< \brief Buffer to receive global point indices. */
 
-  su2activematrix Buffer_Send_Coord;      /*!< \brief Buffer to send coordinate values. */
-  su2activematrix Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
+  su2activematrix Buffer_Send_Coord;    /*!< \brief Buffer to send coordinate values. */
+  su2activematrix Buffer_Receive_Coord; /*!< \brief Buffer to receive coordinate values. */
 
   /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
   su2vector<unsigned long> Buffer_Receive_nLinkedNodes;
-  /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
+  /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes
+   * begins. */
   su2vector<unsigned long> Buffer_Receive_StartLinkedNodes;
   /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
-   * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
+   * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for
+   * each*/
   su2vector<unsigned long> Buffer_Receive_LinkedNodes;
   /*! \brief Buffer to receive the rank that owns the vertex. */
   su2vector<unsigned long> Buffer_Receive_Proc;
 
-  unsigned long
-  nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
-  nLocalVertex_Target,               /*!< \brief Number of vertex of the target boundary owned by the thread. */
-  nGlobalVertex_Donor,               /*!< \brief Global number of vertex of the donor boundary. */
-  nLocalVertex_Donor,                /*!< \brief Number of vertex of the donor boundary owned by the thread. */
-  nGlobalVertex,                     /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary. */
-  nLocalLinkedNodes;                 /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary. */
+  unsigned long nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary. */
+      nLocalVertex_Target,            /*!< \brief Number of vertex of the target boundary owned by the thread. */
+      nGlobalVertex_Donor,            /*!< \brief Global number of vertex of the donor boundary. */
+      nLocalVertex_Donor,             /*!< \brief Number of vertex of the donor boundary owned by the thread. */
+      nGlobalVertex,     /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary. */
+      nLocalLinkedNodes; /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary. */
 
-  CGeometry**** const Geometry;      /*! \brief Vector which stores n zones of geometry. */
-  CGeometry* const donor_geometry;   /*! \brief Donor geometry. */
-  CGeometry* const target_geometry;  /*! \brief Target geometry. */
+  CGeometry**** const Geometry;     /*! \brief Vector which stores n zones of geometry. */
+  CGeometry* const donor_geometry;  /*! \brief Donor geometry. */
+  CGeometry* const target_geometry; /*! \brief Target geometry. */
 
-public:
+ public:
   struct CDonorInfo {
     vector<int> processor;
     vector<unsigned long> globalPoint;
@@ -107,8 +108,7 @@ public:
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
-  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
-                unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief No default construction allowed to force zones and geometry to always be set.
@@ -130,7 +130,7 @@ public:
   /*!
    * \brief Print information about the interpolation.
    */
-  virtual void PrintStatistics(void) const { }
+  virtual void PrintStatistics(void) const {}
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
@@ -146,7 +146,7 @@ public:
    */
   static bool CheckZonesInterface(const CConfig* donor, const CConfig* target);
 
-protected:
+ protected:
   /*!
    * \brief Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads.
    * \param[in] val_zone   - index of the zone

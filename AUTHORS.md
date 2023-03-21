@@ -43,6 +43,7 @@ in collaboration with the following main contributors and research teams:
 Copyright holders might be the individual person or their respective employer. If no real name is available, the Github user name is listed.
 
 ```
+Aidan Jungo
 Akshay.K.R
 Alejandro
 Alessandro Gastaldi
@@ -70,6 +71,7 @@ Eduardo Molina
 Edwin van der Weide
 Ethan Alan Hereth
 Florian Dittmann
+Francesco Poli
 Francisco D. Palacios
 Gaurav Bansal
 Giacomo Baldan
@@ -90,7 +92,9 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Josy P. Pullockara
 Kedar Naik
+Kürşat Yurt
 LaSerpe
 Lennaert Tol
 Lisa Kusch
@@ -121,6 +125,7 @@ Scott Imlay
 Steffen Schotthöfer
 Steven Endres
 Sunoh Kang
+T. N. Venkatesh
 Teus van der Stelt
 Thomas D. Economon
 Tim Albring
@@ -128,6 +133,7 @@ TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+Y. Chandukrishna
 Zan Xu
 aaronyicongfu
 aeroamit
@@ -153,4 +159,3 @@ srcopela
 tobadavid
 vfrancesmolla
 ```
-

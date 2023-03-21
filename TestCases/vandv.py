@@ -6,14 +6,14 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -58,7 +58,7 @@ def main():
     flatplate_sst1994m.test_vals_aarch64 = [-13.044282, -9.682503, -10.712657, -7.519027, -9.742878, -5.374663, 0.002809]
     test_list.append(flatplate_sst1994m)
 
-    # bump in channel - sst-v1994m 
+    # bump in channel - sst-v1994m
     bump_sst1994m           = TestCase('bump_sst1994m')
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
