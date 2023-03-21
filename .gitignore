@@ -100,3 +100,6 @@ ninja
 
 # Ignore SU2 pre-configuration timestamp created by preconfigure.py
 su2preconfig.timestamp
+
+# Clangd server files
+.cache

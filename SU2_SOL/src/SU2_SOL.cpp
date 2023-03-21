@@ -685,7 +685,7 @@ int main(int argc, char* argv[]) {
   config = nullptr;
 
   if (rank == MASTER_NODE)
-    cout << endl << "------------------------- Solver Postprocessing -------------------------" << endl;
+    cout << endl << "------------------------- Finalize Solver -------------------------" << endl;
 
   if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
