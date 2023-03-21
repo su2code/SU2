@@ -33,10 +33,9 @@ constexpr unsigned short CQuadrilateralConnectivity::Faces[4][2];
 constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Nodes[4];
 constexpr unsigned short CQuadrilateralConnectivity::Neighbor_Nodes[4][2];
 
-CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
-             unsigned long val_point_2, unsigned long val_point_3):
-  CPrimalGridWithConnectivity<CQuadrilateralConnectivity>(false)
-{
+CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
+                               unsigned long val_point_3)
+    : CPrimalGridWithConnectivity<CQuadrilateralConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
@@ -44,6 +43,4 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
   Nodes[3] = val_point_3;
 }
 
-void CQuadrilateral::Change_Orientation() {
-  std::swap(Nodes[1], Nodes[3]);
-}
+void CQuadrilateral::Change_Orientation() { std::swap(Nodes[1], Nodes[3]); }

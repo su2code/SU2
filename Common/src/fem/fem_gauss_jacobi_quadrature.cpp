@@ -79,13 +79,12 @@ Tom
 
 #include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
-void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
-                                                 const passivedouble   a,         const passivedouble   b,
-                                                 vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights) {
-
+void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble alpha, const passivedouble beta,
+                                                 const passivedouble a, const passivedouble b,
+                                                 vector<passivedouble>& GJPoints, vector<passivedouble>& GJWeights) {
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
   unsigned int nIntPoints = (unsigned int)GJPoints.size();
-  if(nIntPoints < 1 || nIntPoints > 100)
+  if (nIntPoints < 1 || nIntPoints > 100)
     SU2_MPI::Error("Invalid number of Gauss Jacobi integration points", CURRENT_FUNCTION);
 
   /*--- Call the function cgqf to do the actual work. ---*/
@@ -95,8 +94,8 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,   
 
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta,
-                                   passivedouble t[], passivedouble wts[])
+void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble t[],
+                                   passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -158,32 +157,32 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passiv
 //    Output, passivedouble WTS[NT], the weights.
 //
 {
-  passivedouble *aj;
-  passivedouble *bj;
+  passivedouble* aj;
+  passivedouble* bj;
   passivedouble zemu;
 
-  parchk ( kind, 2 * nt, alpha, beta );
-//
-//  Get the Jacobi matrix and zero-th moment.
-//
+  parchk(kind, 2 * nt, alpha, beta);
+  //
+  //  Get the Jacobi matrix and zero-th moment.
+  //
   aj = new passivedouble[nt];
   bj = new passivedouble[nt];
 
-  zemu = class_matrix ( kind, nt, alpha, beta, aj, bj );
-//
-//  Compute the knots and weights.
-//
-  sgqf ( nt, aj, bj, zemu, t, wts );
+  zemu = class_matrix(kind, nt, alpha, beta, aj, bj);
+  //
+  //  Compute the knots and weights.
+  //
+  sgqf(nt, aj, bj, zemu, t, wts);
 
-  delete [] aj;
-  delete [] bj;
+  delete[] aj;
+  delete[] bj;
 
   return;
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passivedouble beta,
-                                  passivedouble a, passivedouble b, passivedouble t[], passivedouble wts[])
+void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble a,
+                                  passivedouble b, passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -248,38 +247,35 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 //
 {
   int i;
-  int *mlt;
-  int *ndx;
-//
-//  Compute the Gauss quadrature formula for default values of A and B.
-//
-  cdgqf ( nt, kind, alpha, beta, t, wts );
-//
-//  Prepare to scale the quadrature formula to other weight function with
-//  valid A and B.
-//
+  int* mlt;
+  int* ndx;
+  //
+  //  Compute the Gauss quadrature formula for default values of A and B.
+  //
+  cdgqf(nt, kind, alpha, beta, t, wts);
+  //
+  //  Prepare to scale the quadrature formula to other weight function with
+  //  valid A and B.
+  //
   mlt = new int[nt];
-  for ( i = 0; i < nt; i++ )
-  {
+  for (i = 0; i < nt; i++) {
     mlt[i] = 1;
   }
   ndx = new int[nt];
-  for ( i = 0; i < nt; i++ )
-  {
+  for (i = 0; i < nt; i++) {
     ndx[i] = i + 1;
   }
-  scqf ( nt, t, mlt, wts, nt, ndx, wts, t, kind, alpha, beta, a, b );
+  scqf(nt, t, mlt, wts, nt, ndx, wts, t, kind, alpha, beta, a, b);
 
-  delete [] mlt;
-  delete [] ndx;
+  delete[] mlt;
+  delete[] ndx;
 
   return;
 }
 //****************************************************************************80
 
-passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedouble alpha,
-                                                   passivedouble beta, passivedouble aj[],
-                                                   passivedouble bj[])
+passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedouble alpha, passivedouble beta,
+                                                   passivedouble aj[], passivedouble bj[])
 
 //****************************************************************************80
 //
@@ -358,157 +354,121 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
   passivedouble temp2;
   passivedouble zemu;
 
-  temp = r8_epsilon ( );
+  temp = r8_epsilon();
 
-  parchk ( kind, 2 * m - 1, alpha, beta );
+  parchk(kind, 2 * m - 1, alpha, beta);
 
   temp2 = 0.5;
 
-  if ( 500.0 * temp < fabs ( pow ( tgamma ( temp2 ), 2 ) - pi ) )
-  {
+  if (500.0 * temp < fabs(pow(tgamma(temp2), 2) - pi)) {
     cout << "\n";
     cout << "CLASS_MATRIX - Fatal error!\n";
     cout << "  Gamma function does not match machine parameters.\n";
-    exit ( 1 );
+    exit(1);
   }
 
-  if ( kind == 1 )
-  {
+  if (kind == 1) {
     ab = 0.0;
 
-    zemu = 2.0 / ( ab + 1.0 );
+    zemu = 2.0 / (ab + 1.0);
 
-    for ( i = 0; i < m; i++ )
-    {
+    for (i = 0; i < m; i++) {
       aj[i] = 0.0;
     }
 
-    for ( i = 1; i <= m; i++ )
-    {
-      abi = i + ab * ( i % 2 );
+    for (i = 1; i <= m; i++) {
+      abi = i + ab * (i % 2);
       abj = 2 * i + ab;
-      bj[i-1] = sqrt ( abi * abi / ( abj * abj - 1.0 ) );
+      bj[i - 1] = sqrt(abi * abi / (abj * abj - 1.0));
     }
-  }
-  else if ( kind == 2 )
-  {
+  } else if (kind == 2) {
     zemu = pi;
 
-    for ( i = 0; i < m; i++ )
-    {
+    for (i = 0; i < m; i++) {
       aj[i] = 0.0;
     }
 
-    bj[0] =  sqrt ( 0.5 );
-    for ( i = 1; i < m; i++ )
-    {
+    bj[0] = sqrt(0.5);
+    for (i = 1; i < m; i++) {
       bj[i] = 0.5;
     }
-  }
-  else if ( kind == 3 )
-  {
+  } else if (kind == 3) {
     ab = alpha * 2.0;
-    zemu = pow ( 2.0, ab + 1.0 ) * pow ( tgamma ( alpha + 1.0 ), 2 )
-      / tgamma ( ab + 2.0 );
+    zemu = pow(2.0, ab + 1.0) * pow(tgamma(alpha + 1.0), 2) / tgamma(ab + 2.0);
 
-    for ( i = 0; i < m; i++ )
-    {
+    for (i = 0; i < m; i++) {
       aj[i] = 0.0;
     }
 
-    bj[0] = sqrt ( 1.0 / ( 2.0 * alpha + 3.0 ) );
-    for ( i = 2; i <= m; i++ )
-    {
-      bj[i-1] = sqrt ( i * ( i + ab ) / ( 4.0 * pow ( i + alpha, 2 ) - 1.0 ) );
+    bj[0] = sqrt(1.0 / (2.0 * alpha + 3.0));
+    for (i = 2; i <= m; i++) {
+      bj[i - 1] = sqrt(i * (i + ab) / (4.0 * pow(i + alpha, 2) - 1.0));
     }
-  }
-  else if ( kind == 4 )
-  {
+  } else if (kind == 4) {
     ab = alpha + beta;
     abi = 2.0 + ab;
-    zemu = pow ( 2.0, ab + 1.0 ) * tgamma ( alpha + 1.0 )
-      * tgamma ( beta + 1.0 ) / tgamma ( abi );
-    aj[0] = ( beta - alpha ) / abi;
-    bj[0] = sqrt ( 4.0 * ( 1.0 + alpha ) * ( 1.0 + beta )
-      / ( ( abi + 1.0 ) * abi * abi ) );
+    zemu = pow(2.0, ab + 1.0) * tgamma(alpha + 1.0) * tgamma(beta + 1.0) / tgamma(abi);
+    aj[0] = (beta - alpha) / abi;
+    bj[0] = sqrt(4.0 * (1.0 + alpha) * (1.0 + beta) / ((abi + 1.0) * abi * abi));
     a2b2 = beta * beta - alpha * alpha;
 
-    for ( i = 2; i <= m; i++ )
-    {
+    for (i = 2; i <= m; i++) {
       abi = 2.0 * i + ab;
-      aj[i-1] = a2b2 / ( ( abi - 2.0 ) * abi );
+      aj[i - 1] = a2b2 / ((abi - 2.0) * abi);
       abi = abi * abi;
-      bj[i-1] = sqrt ( 4.0 * i * ( i + alpha ) * ( i + beta ) * ( i + ab )
-        / ( ( abi - 1.0 ) * abi ) );
+      bj[i - 1] = sqrt(4.0 * i * (i + alpha) * (i + beta) * (i + ab) / ((abi - 1.0) * abi));
     }
-  }
-  else if ( kind == 5 )
-  {
-    zemu = tgamma ( alpha + 1.0 );
+  } else if (kind == 5) {
+    zemu = tgamma(alpha + 1.0);
 
-    for ( i = 1; i <= m; i++ )
-    {
-      aj[i-1] = 2.0 * i - 1.0 + alpha;
-      bj[i-1] = sqrt ( i * ( i + alpha ) );
+    for (i = 1; i <= m; i++) {
+      aj[i - 1] = 2.0 * i - 1.0 + alpha;
+      bj[i - 1] = sqrt(i * (i + alpha));
     }
-  }
-  else if ( kind == 6 )
-  {
-    zemu = tgamma ( ( alpha + 1.0 ) / 2.0 );
+  } else if (kind == 6) {
+    zemu = tgamma((alpha + 1.0) / 2.0);
 
-    for ( i = 0; i < m; i++ )
-    {
+    for (i = 0; i < m; i++) {
       aj[i] = 0.0;
     }
 
-    for ( i = 1; i <= m; i++ )
-    {
-      bj[i-1] = sqrt ( ( i + alpha * ( i % 2 ) ) / 2.0 );
+    for (i = 1; i <= m; i++) {
+      bj[i - 1] = sqrt((i + alpha * (i % 2)) / 2.0);
     }
-  }
-  else if ( kind == 7 )
-  {
+  } else if (kind == 7) {
     ab = alpha;
-    zemu = 2.0 / ( ab + 1.0 );
+    zemu = 2.0 / (ab + 1.0);
 
-    for ( i = 0; i < m; i++ )
-    {
+    for (i = 0; i < m; i++) {
       aj[i] = 0.0;
     }
 
-    for ( i = 1; i <= m; i++ )
-    {
-      abi = i + ab * ( i % 2 );
+    for (i = 1; i <= m; i++) {
+      abi = i + ab * (i % 2);
       abj = 2 * i + ab;
-      bj[i-1] = sqrt ( abi * abi / ( abj * abj - 1.0 ) );
+      bj[i - 1] = sqrt(abi * abi / (abj * abj - 1.0));
     }
-  }
-  else   // if ( kind == 8 )
+  } else  // if ( kind == 8 )
   {
     ab = alpha + beta;
-    zemu = tgamma ( alpha + 1.0 ) * tgamma ( - ( ab + 1.0 ) )
-      / tgamma ( - beta );
+    zemu = tgamma(alpha + 1.0) * tgamma(-(ab + 1.0)) / tgamma(-beta);
     apone = alpha + 1.0;
     aba = ab * apone;
-    aj[0] = - apone / ( ab + 2.0 );
-    bj[0] = - aj[0] * ( beta + 1.0 ) / ( ab + 2.0 ) / ( ab + 3.0 );
-    for ( i = 2; i <= m; i++ )
-    {
+    aj[0] = -apone / (ab + 2.0);
+    bj[0] = -aj[0] * (beta + 1.0) / (ab + 2.0) / (ab + 3.0);
+    for (i = 2; i <= m; i++) {
       abti = ab + 2.0 * i;
-      aj[i-1] = aba + 2.0 * ( ab + i ) * ( i - 1 );
-      aj[i-1] = - aj[i-1] / abti / ( abti - 2.0 );
+      aj[i - 1] = aba + 2.0 * (ab + i) * (i - 1);
+      aj[i - 1] = -aj[i - 1] / abti / (abti - 2.0);
     }
 
-    for ( i = 2; i <= m - 1; i++ )
-    {
+    for (i = 2; i <= m - 1; i++) {
       abti = ab + 2.0 * i;
-      bj[i-1] = i * ( alpha + i ) / ( abti - 1.0 ) * ( beta + i )
-        / ( abti * abti ) * ( ab + i ) / ( abti + 1.0 );
+      bj[i - 1] = i * (alpha + i) / (abti - 1.0) * (beta + i) / (abti * abti) * (ab + i) / (abti + 1.0);
     }
-    bj[m-1] = 0.0;
-    for ( i = 0; i < m; i++ )
-    {
-      bj[i] =  sqrt ( bj[i] );
+    bj[m - 1] = 0.0;
+    for (i = 0; i < m; i++) {
+      bj[i] = sqrt(bj[i]);
     }
   }
 
@@ -596,114 +556,98 @@ void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[],
   passivedouble r;
   passivedouble s;
 
-  prec = r8_epsilon ( );
+  prec = r8_epsilon();
 
-  if ( n == 1 )
-  {
+  if (n == 1) {
     return;
   }
 
-  e[n-1] = 0.0;
+  e[n - 1] = 0.0;
 
-  for ( l = 1; l <= n; l++ )
-  {
+  for (l = 1; l <= n; l++) {
     j = 0;
-    for ( ; ; )
-    {
-      for ( m = l; m <= n; m++ )
-      {
-        if ( m == n )
-        {
+    for (;;) {
+      for (m = l; m <= n; m++) {
+        if (m == n) {
           break;
         }
 
-        if ( fabs ( e[m-1] ) <= prec * ( fabs ( d[m-1] ) + fabs ( d[m] ) ) )
-        {
+        if (fabs(e[m - 1]) <= prec * (fabs(d[m - 1]) + fabs(d[m]))) {
           break;
         }
       }
-      p = d[l-1];
-      if ( m == l )
-      {
+      p = d[l - 1];
+      if (m == l) {
         break;
       }
-      if ( itn <= j )
-      {
+      if (itn <= j) {
         cout << "\n";
         cout << "IMTQLX - Fatal error!\n";
         cout << "  Iteration limit exceeded\n";
-        exit ( 1 );
+        exit(1);
       }
       j = j + 1;
-      g = ( d[l] - p ) / ( 2.0 * e[l-1] );
-      r =  sqrt ( g * g + 1.0 );
-      g = d[m-1] - p + e[l-1] / ( g + fabs ( r ) * r8_sign ( g ) );
+      g = (d[l] - p) / (2.0 * e[l - 1]);
+      r = sqrt(g * g + 1.0);
+      g = d[m - 1] - p + e[l - 1] / (g + fabs(r) * r8_sign(g));
       s = 1.0;
       c = 1.0;
       p = 0.0;
       mml = m - l;
 
-      for ( ii = 1; ii <= mml; ii++ )
-      {
+      for (ii = 1; ii <= mml; ii++) {
         i = m - ii;
-        f = s * e[i-1];
-        b = c * e[i-1];
+        f = s * e[i - 1];
+        b = c * e[i - 1];
 
-        if ( fabs ( g ) <= fabs ( f ) )
-        {
+        if (fabs(g) <= fabs(f)) {
           c = g / f;
-          r =  sqrt ( c * c + 1.0 );
+          r = sqrt(c * c + 1.0);
           e[i] = f * r;
           s = 1.0 / r;
           c = c * s;
-        }
-        else
-        {
+        } else {
           s = f / g;
-          r =  sqrt ( s * s + 1.0 );
+          r = sqrt(s * s + 1.0);
           e[i] = g * r;
           c = 1.0 / r;
           s = s * c;
         }
         g = d[i] - p;
-        r = ( d[i-1] - g ) * s + 2.0 * c * b;
+        r = (d[i - 1] - g) * s + 2.0 * c * b;
         p = s * r;
         d[i] = g + p;
         g = c * r - b;
         f = z[i];
-        z[i] = s * z[i-1] + c * f;
-        z[i-1] = c * z[i-1] - s * f;
+        z[i] = s * z[i - 1] + c * f;
+        z[i - 1] = c * z[i - 1] - s * f;
       }
-      d[l-1] = d[l-1] - p;
-      e[l-1] = g;
-      e[m-1] = 0.0;
+      d[l - 1] = d[l - 1] - p;
+      e[l - 1] = g;
+      e[m - 1] = 0.0;
     }
   }
-//
-//  Sorting.
-//
-  for ( ii = 2; ii <= m; ii++ )
-  {
+  //
+  //  Sorting.
+  //
+  for (ii = 2; ii <= m; ii++) {
     i = ii - 1;
     k = i;
-    p = d[i-1];
+    p = d[i - 1];
 
-    for ( j = ii; j <= n; j++ )
-    {
-      if ( d[j-1] < p )
-      {
-         k = j;
-         p = d[j-1];
+    for (j = ii; j <= n; j++) {
+      if (d[j - 1] < p) {
+        k = j;
+        p = d[j - 1];
       }
     }
 
-    if ( k != i )
-    {
-      d[k-1] = d[i-1];
-      d[i-1] = p;
-      p = z[i-1];
-      z[i-1] = z[k-1];
-      z[k-1] = p;
+    if (k != i) {
+      d[k - 1] = d[i - 1];
+      d[i - 1] = p;
+      p = z[i - 1];
+      z[i - 1] = z[k - 1];
+      z[k - 1] = p;
     }
   }
   return;
@@ -760,52 +704,47 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, passivedouble alpha, passiv
 {
   passivedouble tmp;
 
-  if ( kind <= 0 )
-  {
+  if (kind <= 0) {
     cout << "\n";
     cout << "PARCHK - Fatal error!\n";
     cout << "  KIND <= 0.\n";
-    exit ( 1 );
+    exit(1);
   }
-//
-//  Check ALPHA for Gegenbauer, Jacobi, Laguerre, Hermite, Exponential.
-//
-  if ( 3 <= kind && alpha <= -1.0 )
-  {
+  //
+  //  Check ALPHA for Gegenbauer, Jacobi, Laguerre, Hermite, Exponential.
+  //
+  if (3 <= kind && alpha <= -1.0) {
     cout << "\n";
     cout << "PARCHK - Fatal error!\n";
     cout << "  3 <= KIND and ALPHA <= -1.\n";
-    exit ( 1 );
+    exit(1);
   }
-//
-//  Check BETA for Jacobi.
-//
-  if ( kind == 4 && beta <= -1.0 )
-  {
+  //
+  //  Check BETA for Jacobi.
+  //
+  if (kind == 4 && beta <= -1.0) {
     cout << "\n";
     cout << "PARCHK - Fatal error!\n";
     cout << "  KIND == 4 and BETA <= -1.0.\n";
-    exit ( 1 );
+    exit(1);
   }
-//
-//  Check ALPHA and BETA for rational.
-//
-  if ( kind == 8 )
-  {
+  //
+  //  Check ALPHA and BETA for rational.
+  //
+  if (kind == 8) {
     tmp = alpha + beta + m + 1.0;
-    if ( 0.0 <= tmp || tmp <= beta )
-    {
+    if (0.0 <= tmp || tmp <= beta) {
       cout << "\n";
       cout << "PARCHK - Fatal error!\n";
       cout << "  KIND == 8 but condition on ALPHA and BETA fails.\n";
-      exit ( 1 );
+      exit(1);
     }
   }
   return;
 }
 //****************************************************************************80
 
-passivedouble CGaussJacobiQuadrature::r8_epsilon( )
+passivedouble CGaussJacobiQuadrature::r8_epsilon()
 
 //****************************************************************************80
 //
@@ -873,22 +812,18 @@ passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
 {
   passivedouble value;
 
-  if ( x < 0.0 )
-  {
+  if (x < 0.0) {
     value = -1.0;
-  }
-  else
-  {
+  } else {
     value = 1.0;
   }
   return value;
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[],
-                                  int nwts, int ndx[], passivedouble swts[], passivedouble st[],
-                                  int kind, passivedouble alpha, passivedouble beta, passivedouble a,
-                                  passivedouble b)
+void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[], int nwts,
+                                  int ndx[], passivedouble swts[], passivedouble st[], int kind, passivedouble alpha,
+                                  passivedouble beta, passivedouble a, passivedouble b)
 
 //****************************************************************************80
 //
@@ -971,150 +906,122 @@ void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt
   passivedouble temp;
   passivedouble tmp;
 
-  temp = r8_epsilon ( );
+  temp = r8_epsilon();
 
-  parchk ( kind, 1, alpha, beta );
+  parchk(kind, 1, alpha, beta);
 
-  if ( kind == 1 )
-  {
+  if (kind == 1) {
     al = 0.0;
     be = 0.0;
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
-  }
-  else if ( kind == 2 )
-  {
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
+  } else if (kind == 2) {
     al = -0.5;
     be = -0.5;
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
-  }
-  else if ( kind == 3 )
-  {
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
+  } else if (kind == 3) {
     al = alpha;
     be = alpha;
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
-  }
-  else if ( kind == 4 )
-  {
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
+  } else if (kind == 4) {
     al = alpha;
     be = beta;
 
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
-  }
-  else if ( kind == 5 )
-  {
-    if ( b <= 0.0 )
-    {
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
+  } else if (kind == 5) {
+    if (b <= 0.0) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  B <= 0\n";
-      exit ( 1 );
+      exit(1);
     }
     shft = a;
     slp = 1.0 / b;
     al = alpha;
     be = 0.0;
-  }
-  else if ( kind == 6 )
-  {
-    if ( b <= 0.0 )
-    {
+  } else if (kind == 6) {
+    if (b <= 0.0) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  B <= 0.\n";
-      exit ( 1 );
+      exit(1);
     }
     shft = a;
-    slp = 1.0 / sqrt ( b );
+    slp = 1.0 / sqrt(b);
     al = alpha;
     be = 0.0;
-  }
-  else if ( kind == 7 )
-  {
+  } else if (kind == 7) {
     al = alpha;
     be = 0.0;
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
-  }
-  else if ( kind == 8 )
-  {
-    if ( a + b <= 0.0 )
-    {
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
+  } else if (kind == 8) {
+    if (a + b <= 0.0) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  A + B <= 0.\n";
-      exit ( 1 );
+      exit(1);
     }
     shft = a;
     slp = a + b;
     al = alpha;
     be = beta;
-  }
-  else  // if ( kind == 9 )
+  } else  // if ( kind == 9 )
   {
     al = 0.5;
     be = 0.5;
-    if ( fabs ( b - a ) <= temp )
-    {
+    if (fabs(b - a) <= temp) {
       cout << "\n";
       cout << "SCQF - Fatal error!\n";
       cout << "  |B - A| too small.\n";
-      exit ( 1 );
+      exit(1);
     }
-    shft = ( a + b ) / 2.0;
-    slp = ( b - a ) / 2.0;
+    shft = (a + b) / 2.0;
+    slp = (b - a) / 2.0;
   }
 
-  p = pow ( slp, al + be + 1.0 );
+  p = pow(slp, al + be + 1.0);
 
-  for ( k = 0; k < nt; k++ )
-  {
+  for (k = 0; k < nt; k++) {
     st[k] = shft + slp * t[k];
-    l = abs ( ndx[k] );
+    l = abs(ndx[k]);
 
-    if ( l != 0 )
-    {
+    if (l != 0) {
       tmp = p;
-      for ( i = l - 1; i <= l - 1 + mlt[k] - 1; i++ )
-      {
+      for (i = l - 1; i <= l - 1 + mlt[k] - 1; i++) {
         swts[i] = wts[i] * tmp;
         tmp = tmp * slp;
       }
@@ -1124,8 +1031,8 @@ void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedouble bj[],
-                                  passivedouble zemu, passivedouble t[], passivedouble wts[])
+void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedouble bj[], passivedouble zemu,
+                                  passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -1177,35 +1084,31 @@ void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedoubl
 //
 {
   int i;
-//
-//  Exit if the zero-th moment is not positive.
-//
-  if ( zemu <= 0.0 )
-  {
+  //
+  //  Exit if the zero-th moment is not positive.
+  //
+  if (zemu <= 0.0) {
     cout << "\n";
     cout << "SGQF - Fatal error!\n";
     cout << "  ZEMU <= 0.\n";
-    exit ( 1 );
+    exit(1);
   }
-//
-//  Set up vectors for IMTQLX.
-//
-  for ( i = 0; i < nt; i++ )
-  {
+  //
+  //  Set up vectors for IMTQLX.
+  //
+  for (i = 0; i < nt; i++) {
     t[i] = aj[i];
   }
-  wts[0] = sqrt ( zemu );
-  for ( i = 1; i < nt; i++ )
-  {
+  wts[0] = sqrt(zemu);
+  for (i = 1; i < nt; i++) {
     wts[i] = 0.0;
   }
-//
-//  Diagonalize the Jacobi matrix.
-//
-  imtqlx ( nt, t, bj, wts );
+  //
+  //  Diagonalize the Jacobi matrix.
+  //
+  imtqlx(nt, t, bj, wts);
 
-  for ( i = 0; i < nt; i++ )
-  {
+  for (i = 0; i < nt; i++) {
     wts[i] = wts[i] * wts[i];
   }
 

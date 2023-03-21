@@ -27,14 +27,11 @@
 
 #include "../../../include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
 
-CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(void) : CVerificationSolution() { }
+CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(void) : CVerificationSolution() {}
 
-CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nDim,
-                                                           unsigned short val_nVar,
-                                                           unsigned short val_iMesh,
-                                                           CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-
+CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nDim, unsigned short val_nVar,
+                                                           unsigned short val_iMesh, CConfig* config)
+    : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations between two half spheres. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -48,17 +45,17 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
   /*--- Coefficients, needed to determine the solution. ---*/
   const su2double Prandtl = config->GetPrandtl_Lam();
 
-  RGas         = config->GetGas_Constant();
-  Gamma        = config->GetGamma();
-  Viscosity    = config->GetMu_Constant();
-  Conductivity = Viscosity*Gamma*RGas/(Prandtl*(Gamma-1.0));
+  RGas = config->GetGas_Constant();
+  Gamma = config->GetGamma();
+  Viscosity = config->GetMu_Constant();
+  Conductivity = Viscosity * Gamma * RGas / (Prandtl * (Gamma - 1.0));
 
   /*--- Initialize TWall to the default value of 300 K (in case the outer wall
         is not modelled as an isothermal wall) and try to retrieve the wall
         temperature from the boundary conditions. ---*/
   TWall = 300.0;
-  for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if(config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
       const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       TWall = config->GetIsothermal_Temperature(Marker_Tag);
     }
@@ -66,108 +63,93 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
 
   /*--- Get the reference values for pressure, density and velocity. ---*/
   Pressure_Ref = config->GetPressure_Ref();
-  Density_Ref  = config->GetDensity_Ref();
+  Density_Ref = config->GetDensity_Ref();
   Velocity_Ref = config->GetVelocity_Ref();
 
   /*--- The constants for the density and velocities. ---*/
-  rho_0 =   1.25;
-  u_0   = 135.78;
-  v_0   = -67.61;
-  w_0   =  82.75;
+  rho_0 = 1.25;
+  u_0 = 135.78;
+  v_0 = -67.61;
+  w_0 = 82.75;
 
   /*--- The constants for the temperature solution. ---*/
-  a_T1 =  1.05;
+  a_T1 = 1.05;
   a_T2 = -0.85;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(nDim != 3)
-    SU2_MPI::Error("Grid must be 3D for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if (nDim != 3) SU2_MPI::Error("Grid must be 3D for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 
-  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
-    SU2_MPI::Error("Steady mode must be selected for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    SU2_MPI::Error("Steady mode must be selected for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 
-  if(Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS &&
-     Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
-     Kind_Solver != MAIN_SOLVER::FEM_LES)
+  if (Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES &&
+      Kind_Solver != MAIN_SOLVER::RANS && Kind_Solver != MAIN_SOLVER::FEM_EULER &&
+      Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
+      Kind_Solver != MAIN_SOLVER::FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the MMS NS Two Half Spheres case",
                    CURRENT_FUNCTION);
 
-  if((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) &&
-     (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
-    SU2_MPI::Error("Navier Stokes equations must be selected for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if ((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) && (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
+    SU2_MPI::Error("Navier Stokes equations must be selected for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 
-  if((config->GetKind_FluidModel() != STANDARD_AIR) &&
-     (config->GetKind_FluidModel() != IDEAL_GAS))
-    SU2_MPI::Error("Standard air or ideal gas must be selected for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if ((config->GetKind_FluidModel() != STANDARD_AIR) && (config->GetKind_FluidModel() != IDEAL_GAS))
+    SU2_MPI::Error("Standard air or ideal gas must be selected for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
-    SU2_MPI::Error("Sutherland must be selected for viscosity for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
+    SU2_MPI::Error("Sutherland must be selected for viscosity for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
-    SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Spheres case",
-                   CURRENT_FUNCTION);
+  if (config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
+    SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 }
 
-CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution(void) { }
+CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution(void) {}
 
-void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double *val_coords,
-                                              const su2double val_t,
-                                              su2double       *val_solution) const {
-
+void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double* val_coords, const su2double val_t,
+                                              su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSNSTwoHalfSpheresSolution::GetSolution(const su2double *val_coords,
-                                               const su2double val_t,
-                                               su2double       *val_solution) const {
-
+void CMMSNSTwoHalfSpheresSolution::GetSolution(const su2double* val_coords, const su2double val_t,
+                                               su2double* val_solution) const {
   /* Easier storage of the x-, y- and z-coordinates. */
   const su2double x = val_coords[0];
   const su2double y = val_coords[1];
   const su2double z = val_coords[2];
 
   /* Determine the dimensional solution for the temperature. */
-  const su2double Pi   = PI_NUMBER;
-  const su2double r    = sqrt(x*x + y*y + z*z);
-  const su2double fact = (r-1.0)*(r-1.0)/(a_T1 + a_T2);
+  const su2double Pi = PI_NUMBER;
+  const su2double r = sqrt(x * x + y * y + z * z);
+  const su2double fact = (r - 1.0) * (r - 1.0) / (a_T1 + a_T2);
 
-  su2double T = 0.25*TWall*(3.0 + fact*(a_T1*cos(Pi*(r-2.0))
-              +                         a_T2*cos(Pi*(r-2.0)*2.0)));
+  su2double T = 0.25 * TWall * (3.0 + fact * (a_T1 * cos(Pi * (r - 2.0)) + a_T2 * cos(Pi * (r - 2.0) * 2.0)));
 
   /* Determine the dimensional solution for the velocities. */
-  su2double u = u_0*(r-1.0)*(2.0-r)*4.0;
-  su2double v = v_0*(r-1.0)*(2.0-r)*4.0;
-  su2double w = w_0*(r-1.0)*(2.0-r)*4.0;
+  su2double u = u_0 * (r - 1.0) * (2.0 - r) * 4.0;
+  su2double v = v_0 * (r - 1.0) * (2.0 - r) * 4.0;
+  su2double w = w_0 * (r - 1.0) * (2.0 - r) * 4.0;
 
   /* Compute the pressure from the density and temperature. */
   su2double rho = rho_0;
-  su2double p   = rho*RGas*T;
+  su2double p = rho * RGas * T;
 
   /* Determine the non-dimensional solution. */
   rho /= Density_Ref;
-  p   /= Pressure_Ref;
-  u   /= Velocity_Ref;
-  v   /= Velocity_Ref;
-  w   /= Velocity_Ref;
+  p /= Pressure_Ref;
+  u /= Velocity_Ref;
+  v /= Velocity_Ref;
+  w /= Velocity_Ref;
 
   /* Determine the non-dimensional conserved variables. */
   val_solution[0] = rho;
-  val_solution[1] = rho*u;
-  val_solution[2] = rho*v;
-  val_solution[3] = rho*w;
-  val_solution[4] = p/(Gamma-1.0) + 0.5*rho*(u*u + v*v + w*w);
+  val_solution[1] = rho * u;
+  val_solution[2] = rho * v;
+  val_solution[3] = rho * w;
+  val_solution[4] = p / (Gamma - 1.0) + 0.5 * rho * (u * u + v * v + w * w);
 }
 
-void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
-                                                    const su2double val_t,
-                                                    su2double       *val_source) const {
-
+void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double* val_coords, const su2double val_t,
+                                                    su2double* val_source) const {
   /*--- Abbreviate Pi and the coordinates. ---*/
   const su2double Pi = PI_NUMBER;
   const su2double x = val_coords[0];
@@ -176,7 +158,7 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSTwoHalfSpheresSolution.mw in the directory
-       	CreateMMSSourceTerms for the details how to do this. ---*/
+        CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = rho_0 * u_0;
   const su2double t2 = x * x;
   const su2double t3 = y * y;
@@ -253,10 +235,11 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t134 = t111 * t129;
   const su2double t135 = t89 * Viscosity;
   const su2double t136 = z * t135;
-  const su2double t139 = 0.32e2 * t34 * t12 * t30 - 0.32e2 * t10 * t37 * t30 + t71 + 0.16e2 / 0.3e1 * t78 * x * t73
-                       + 0.16e2 / 0.3e1 * t85 * t84 - 0.8e1 / 0.3e1 * x * t90 * t84 + 0.32e2 * t17 * t95 * t94
-                       - 0.32e2 * t17 * t100 * t99 + 0.8e1 * t108 * t104 + 0.16e2 * t85 * t112 - 0.8e1 * y * t115 * t112
-                       + 0.32e2 * t120 * t94 - 0.32e2 * t124 * t99 + 0.8e1 * t131 * t130 - 0.8e1 * t136 * t134;
+  const su2double t139 = 0.32e2 * t34 * t12 * t30 - 0.32e2 * t10 * t37 * t30 + t71 + 0.16e2 / 0.3e1 * t78 * x * t73 +
+                         0.16e2 / 0.3e1 * t85 * t84 - 0.8e1 / 0.3e1 * x * t90 * t84 + 0.32e2 * t17 * t95 * t94 -
+                         0.32e2 * t17 * t100 * t99 + 0.8e1 * t108 * t104 + 0.16e2 * t85 * t112 -
+                         0.8e1 * y * t115 * t112 + 0.32e2 * t120 * t94 - 0.32e2 * t124 * t99 + 0.8e1 * t131 * t130 -
+                         0.8e1 * t136 * t134;
   const su2double t146 = x * t72;
   const su2double t155 = v_0 * v_0;
   const su2double t156 = t155 * rho_0;
@@ -271,11 +254,11 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t195 = v_0 * z + w_0 * y;
   const su2double t196 = t72 * t195;
   const su2double t199 = t111 * t195;
-  const su2double t202 = 0.32e2 * t8 * t95 * t94 - 0.32e2 * t8 * t100 * t99 + 0.8e1 * t108 * t146
-                       + 0.80e2 / 0.3e1 * t7 * v_0 * t112 - 0.8e1 * x * t115 * t112 + 0.32e2 * t158 * t12 * t156
-                       - 0.32e2 * t18 * t37 * t156 + t177 + 0.16e2 / 0.3e1 * y * t180 * t135
-                       - 0.16e2 / 0.3e1 * y * t179 * t73 + 0.32e2 * t120 * t187 - 0.32e2 * t124 * t190
-                       + 0.8e1 * t131 * t196 - 0.8e1 * t136 * t199;
+  const su2double t202 = 0.32e2 * t8 * t95 * t94 - 0.32e2 * t8 * t100 * t99 + 0.8e1 * t108 * t146 +
+                         0.80e2 / 0.3e1 * t7 * v_0 * t112 - 0.8e1 * x * t115 * t112 + 0.32e2 * t158 * t12 * t156 -
+                         0.32e2 * t18 * t37 * t156 + t177 + 0.16e2 / 0.3e1 * y * t180 * t135 -
+                         0.16e2 / 0.3e1 * y * t179 * t73 + 0.32e2 * t120 * t187 - 0.32e2 * t124 * t190 +
+                         0.8e1 * t131 * t196 - 0.8e1 * t136 * t199;
   const su2double t209 = t111 * w_0;
   const su2double t231 = w_0 * w_0;
   const su2double t232 = t231 * rho_0;
@@ -285,11 +268,11 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t253 = t252 * t41;
   const su2double t255 = t74 + t76 - 0.2e1 * t77;
   const su2double t256 = t111 * t255;
-  const su2double t263 = 0.32e2 * t8 * t119 * t94 - 0.32e2 * t8 * t123 * t99 + 0.80e2 / 0.3e1 * t7 * Viscosity * t209
-                       + 0.8e1 * x * Viscosity * t130 - 0.8e1 * x * t135 * t134 + 0.32e2 * t17 * t119 * t187
-                       - 0.32e2 * t17 * t123 * t190 + 0.8e1 * y * Viscosity * t196 - 0.8e1 * y * t135 * t199
-                       + 0.32e2 * t234 * t12 * t232 - 0.32e2 * t24 * t37 * t232 + t253
-                       + 0.16e2 / 0.3e1 * z * t256 * t135 - 0.16e2 / 0.3e1 * z * t255 * t73;
+  const su2double t263 = 0.32e2 * t8 * t119 * t94 - 0.32e2 * t8 * t123 * t99 + 0.80e2 / 0.3e1 * t7 * Viscosity * t209 +
+                         0.8e1 * x * Viscosity * t130 - 0.8e1 * x * t135 * t134 + 0.32e2 * t17 * t119 * t187 -
+                         0.32e2 * t17 * t123 * t190 + 0.8e1 * y * Viscosity * t196 - 0.8e1 * y * t135 * t199 +
+                         0.32e2 * t234 * t12 * t232 - 0.32e2 * t24 * t37 * t232 + t253 +
+                         0.16e2 / 0.3e1 * z * t256 * t135 - 0.16e2 / 0.3e1 * z * t255 * t73;
   const su2double t265 = t12 * u_0;
   const su2double t266 = x * t9;
   const su2double t270 = t115 * t112;
@@ -308,11 +291,12 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t316 = t305 * Viscosity * w_0;
   const su2double t319 = Viscosity * t134;
   const su2double t320 = w_0 * t72;
-  const su2double t329 = -0.32e2 / 0.3e1 * t266 * t265 * t90 * t84 - 0.32e2 * t266 * t271 * t270
-                       - 0.32e2 * t266 * t276 * t275 - 0.32e2 * t280 * t265 * t270 + 0.64e2 / 0.3e1 * t285 * t180 * t135
-                       - 0.32e2 * t280 * t276 * t288 - 0.32e2 * t292 * t265 * t275 - 0.32e2 * t292 * t271 * t288
-                       + 0.64e2 / 0.3e1 * t300 * t256 * t135 + 0.32e2 * t305 * v_0 * t107 * t303 + 0.32e2 * t266 * t310 * t309
-                       + 0.32e2 * t316 * x * t130 + 0.32e2 * t266 * t320 * t319 + 0.32e2 * t305 * u_0 * t107 * Viscosity * t104;
+  const su2double t329 =
+      -0.32e2 / 0.3e1 * t266 * t265 * t90 * t84 - 0.32e2 * t266 * t271 * t270 - 0.32e2 * t266 * t276 * t275 -
+      0.32e2 * t280 * t265 * t270 + 0.64e2 / 0.3e1 * t285 * t180 * t135 - 0.32e2 * t280 * t276 * t288 -
+      0.32e2 * t292 * t265 * t275 - 0.32e2 * t292 * t271 * t288 + 0.64e2 / 0.3e1 * t300 * t256 * t135 +
+      0.32e2 * t305 * v_0 * t107 * t303 + 0.32e2 * t266 * t310 * t309 + 0.32e2 * t316 * x * t130 +
+      0.32e2 * t266 * t320 * t319 + 0.32e2 * t305 * u_0 * t107 * Viscosity * t104;
   const su2double t330 = u_0 * t72;
   const su2double t334 = t179 * t73;
   const su2double t337 = v_0 * t111;
@@ -333,13 +317,14 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t412 = t12 * t89 * t410;
   const su2double t421 = t78 * t84;
   const su2double t422 = x * t12;
-  const su2double t426 = 0.32e2 * t280 * t330 * t309 - 0.64e2 / 0.3e1 * t285 * t334 - 0.64e2 / 0.3e1 * t280 * t337 * t334
-                       + 0.32e2 * t316 * y * t196 + 0.32e2 * t280 * t320 * t344 + 0.32e2 * t305 * Viscosity * u_0 * z * t130
-                       + 0.32e2 * t292 * t330 * t319 + 0.32e2 * t305 * Viscosity * v_0 * z * t196 + 0.32e2 * t292 * t310 * t344
-                       - 0.64e2 / 0.3e1 * t300 * t364 - 0.64e2 / 0.3e1 * t292 * t209 * t364
-                       + 0.4e1 * t400 * TWall * x * t12 * t7 * (t377 * x * t371 - t12 * a_T2 * x * t381 + Pi * t8 * t385
-                       + 0.2e1 * a_T2 * t58 * x * t389 + t60 / 0.2e1) - 0.4e1 * t400 * t2 * TWall
-                       * t412 + 0.64e2 / 0.3e1 * t305 * u_0 * t78 * t303 - 0.32e2 / 0.3e1 * t422 * t330 * t421;
+  const su2double t426 =
+      0.32e2 * t280 * t330 * t309 - 0.64e2 / 0.3e1 * t285 * t334 - 0.64e2 / 0.3e1 * t280 * t337 * t334 +
+      0.32e2 * t316 * y * t196 + 0.32e2 * t280 * t320 * t344 + 0.32e2 * t305 * Viscosity * u_0 * z * t130 +
+      0.32e2 * t292 * t330 * t319 + 0.32e2 * t305 * Viscosity * v_0 * z * t196 + 0.32e2 * t292 * t310 * t344 -
+      0.64e2 / 0.3e1 * t300 * t364 - 0.64e2 / 0.3e1 * t292 * t209 * t364 +
+      0.4e1 * t400 * TWall * x * t12 * t7 *
+          (t377 * x * t371 - t12 * a_T2 * x * t381 + Pi * t8 * t385 + 0.2e1 * a_T2 * t58 * x * t389 + t60 / 0.2e1) -
+      0.4e1 * t400 * t2 * TWall * t412 + 0.64e2 / 0.3e1 * t305 * u_0 * t78 * t303 - 0.32e2 / 0.3e1 * t422 * t330 * t421;
   const su2double t457 = y * t12;
   const su2double t483 = t400 * TWall * t12;
   const su2double t486 = t410 * t4;
@@ -351,14 +336,18 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t515 = t37 * t231;
   const su2double t521 = t508 * t506 * t41 + 0.8e1 * (t32 * t511 + t32 * t513 + t32 * t515) * rho_0 + t506 * t41;
   const su2double t522 = u_0 * t521;
-  const su2double t527 = -0.32e2 * t422 * t310 * t309 - 0.32e2 * t422 * t320 * t319
-                       + 0.4e1 * t400 * y * TWall * t12 * t7 * (t377 * y * t371 - t12 * a_T2 * y * t381 + Pi * t17 * t385
-                       + 0.2e1 * a_T2 * t58 * y * t389 + t168 / 0.2e1) - 0.4e1 * t400 * TWall * t3 * t412
-                       - 0.32e2 * t457 * t330 * t309 + 0.64e2 / 0.3e1 * t457 * t337 * t334 - 0.32e2 * t457 * t320 * t344
-                       + 0.4e1 * t483 * t7 * (t377 * z * t371 - t12 * a_T2 * z * t381 + Pi * t23 * t385
-                       + 0.2e1 * a_T2 * t58 * z * t389 + t244 / 0.2e1) * z - 0.4e1 * t483 * t89 * t486
-                       - 0.32e2 * t490 * t330 * t319 - 0.32e2 * t490 * t310 * t344 + 0.64e2 / 0.3e1 * t490 * t209 * t364
-                       + 0.32e2 / 0.3e1 * t266 * t330 * t421 + 0.4e1 * t10 * t522 - 0.4e1 * t14 * t522;
+  const su2double t527 =
+      -0.32e2 * t422 * t310 * t309 - 0.32e2 * t422 * t320 * t319 +
+      0.4e1 * t400 * y * TWall * t12 * t7 *
+          (t377 * y * t371 - t12 * a_T2 * y * t381 + Pi * t17 * t385 + 0.2e1 * a_T2 * t58 * y * t389 + t168 / 0.2e1) -
+      0.4e1 * t400 * TWall * t3 * t412 - 0.32e2 * t457 * t330 * t309 + 0.64e2 / 0.3e1 * t457 * t337 * t334 -
+      0.32e2 * t457 * t320 * t344 +
+      0.4e1 * t483 * t7 *
+          (t377 * z * t371 - t12 * a_T2 * z * t381 + Pi * t23 * t385 + 0.2e1 * a_T2 * t58 * z * t389 + t244 / 0.2e1) *
+          z -
+      0.4e1 * t483 * t89 * t486 - 0.32e2 * t490 * t330 * t319 - 0.32e2 * t490 * t310 * t344 +
+      0.64e2 / 0.3e1 * t490 * t209 * t364 + 0.32e2 / 0.3e1 * t266 * t330 * t421 + 0.4e1 * t10 * t522 -
+      0.4e1 * t14 * t522;
   const su2double t528 = v_0 * t521;
   const su2double t533 = w_0 * t521;
   const su2double t541 = Conductivity * t399 * TWall;
@@ -367,30 +356,35 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t570 = t12 * t29;
   const su2double t573 = t12 * t155;
   const su2double t576 = t12 * t231;
-  const su2double t616 = 0.4e1 * t18 * t528 - 0.4e1 * t20 * t528 + 0.4e1 * t24 * t533 - 0.4e1 * t26 * t533
-                       + 0.12e2 * t541 * t12 * t7 * t410 + 0.320e3 / 0.3e1 * t545 * t155 * t112
-                       + 0.320e3 / 0.3e1 * t545 * Viscosity * t111 * t231 + 0.64e2 * t545 * t29 * t112
-                       + 0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558
-                       + 0.4e1 * t541 * t72 * t486 + 0.4e1 * t305 * u_0 * (t508 * t70 * t41
-                       + 0.16e2 * (-t10 * t511 - t10 * t513 - t10 * t515 + t34 * t570 + t34 * t573 + t34 * t576) * rho_0 + t71)
-                       + 0.4e1 * t305 * v_0 * (t508 * t176 * t41 + 0.16e2 * (t158 * t570 + t158 * t573 + t158 * t576
-                       - t18 * t511 - t18 * t513 - t18 * t515) * rho_0 + t177) + 0.4e1 * t305 * w_0 * (t508 * t252 * t41
-                       + 0.16e2 * (t234 * t570 + t234 * t573 + t234 * t576 - t24 * t511 - t24 * t513 - t24 * t515) * rho_0 + t253);
+  const su2double t616 =
+      0.4e1 * t18 * t528 - 0.4e1 * t20 * t528 + 0.4e1 * t24 * t533 - 0.4e1 * t26 * t533 +
+      0.12e2 * t541 * t12 * t7 * t410 + 0.320e3 / 0.3e1 * t545 * t155 * t112 +
+      0.320e3 / 0.3e1 * t545 * Viscosity * t111 * t231 + 0.64e2 * t545 * t29 * t112 +
+      0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558 +
+      0.4e1 * t541 * t72 * t486 +
+      0.4e1 * t305 * u_0 *
+          (t508 * t70 * t41 +
+           0.16e2 * (-t10 * t511 - t10 * t513 - t10 * t515 + t34 * t570 + t34 * t573 + t34 * t576) * rho_0 + t71) +
+      0.4e1 * t305 * v_0 *
+          (t508 * t176 * t41 +
+           0.16e2 * (t158 * t570 + t158 * t573 + t158 * t576 - t18 * t511 - t18 * t513 - t18 * t515) * rho_0 + t177) +
+      0.4e1 * t305 * w_0 *
+          (t508 * t252 * t41 +
+           0.16e2 * (t234 * t570 + t234 * t573 + t234 * t576 - t24 * t511 - t24 * t513 - t24 * t515) * rho_0 + t253);
 
   /*--- Set the source term. Note the scaling for the correct non-dimensionalization. ---*/
-  val_source[0] = 0.4e1 * t10 * t1 - 0.4e1 * t14 * t1 + 0.4e1 * t18 * t16 - 0.4e1 * t20 * t16 + 0.4e1 * t24 * t22 - 0.4e1 * t26 * t22;
+  val_source[0] = 0.4e1 * t10 * t1 - 0.4e1 * t14 * t1 + 0.4e1 * t18 * t16 - 0.4e1 * t20 * t16 + 0.4e1 * t24 * t22 -
+                  0.4e1 * t26 * t22;
   val_source[1] = t139;
   val_source[2] = t202;
   val_source[3] = t263;
   val_source[4] = t329 + t426 + t527 + t616;
 
-  val_source[0] /= Density_Ref*Velocity_Ref;
+  val_source[0] /= Density_Ref * Velocity_Ref;
   val_source[1] /= Pressure_Ref;
   val_source[2] /= Pressure_Ref;
   val_source[3] /= Pressure_Ref;
-  val_source[4] /= Velocity_Ref*Pressure_Ref;
+  val_source[4] /= Velocity_Ref * Pressure_Ref;
 }
 
-bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution(void) const {
-  return true;
-}
+bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution(void) const { return true; }

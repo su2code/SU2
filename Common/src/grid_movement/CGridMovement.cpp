@@ -27,6 +27,6 @@
 
 #include "../../include/grid_movement/CGridMovement.hpp"
 
-CGridMovement::CGridMovement(void) { }
+CGridMovement::CGridMovement(void) {}
 
-CGridMovement::~CGridMovement(void) { }
+CGridMovement::~CGridMovement(void) {}

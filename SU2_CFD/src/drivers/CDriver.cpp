@@ -109,18 +109,6 @@
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
-    /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
-#ifdef HAVE_MPI
-  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-    SU2_MPI::Init_AMPI();
-  #endif
-#endif
-
-  SU2_MPI::SetComm(MPICommunicator);
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
   /*--- Start timer to track preprocessing for benchmarking. ---*/
 
   StartTime = SU2_MPI::Wtime();
@@ -358,7 +346,7 @@ void CDriver::SetContainers_Null(){
 }
 
 
-void CDriver::Postprocessing() {
+void CDriver::Finalize() {
 
   const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
@@ -375,7 +363,7 @@ void CDriver::Postprocessing() {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+    cout << endl <<"------------------------- Finalizing Solver -------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){

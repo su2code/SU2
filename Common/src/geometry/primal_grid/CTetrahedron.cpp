@@ -33,10 +33,9 @@ constexpr unsigned short CTetrahedronConnectivity::Faces[4][3];
 constexpr unsigned short CTetrahedronConnectivity::nNeighbor_Nodes[4];
 constexpr unsigned short CTetrahedronConnectivity::Neighbor_Nodes[4][3];
 
-CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
-               unsigned long val_point_2, unsigned long val_point_3):
-  CPrimalGridWithConnectivity<CTetrahedronConnectivity>(false)
-{
+CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
+                           unsigned long val_point_3)
+    : CPrimalGridWithConnectivity<CTetrahedronConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
@@ -44,6 +43,4 @@ CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[3] = val_point_3;
 }
 
-void CTetrahedron::Change_Orientation() {
-  std::swap(Nodes[0],Nodes[1]);
-}
+void CTetrahedron::Change_Orientation() { std::swap(Nodes[0], Nodes[1]); }

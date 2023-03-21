@@ -33,23 +33,23 @@
  * \ingroup Interfaces
  */
 class CIsoparametric final : public CInterpolator {
-private:
+ private:
   /*--- Statistics. ---*/
   su2double MaxDistance = 0.0, ErrorRate = 0.0;
   unsigned long ErrorCounter = 0;
 
   /*! \brief Helper struct to store information about candidate donor elements. */
   struct DonorInfo {
-    su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
-    su2double distance = 0.0;        /*!< \brief Distance from target to final mapped point on donor plane. */
-    unsigned iElem = 0;              /*!< \brief Identification of the element. */
-    int error = 0;                   /*!< \brief If the mapped point is "outside" of the donor. */
+    su2double isoparams[4] = {0.0}; /*!< \brief Interpolation coefficients. */
+    su2double distance = 0.0;       /*!< \brief Distance from target to final mapped point on donor plane. */
+    unsigned iElem = 0;             /*!< \brief Identification of the element. */
+    int error = 0;                  /*!< \brief If the mapped point is "outside" of the donor. */
 
     /*--- Best donor is one for which the mapped point is closest to target. ---*/
-    bool operator< (const DonorInfo& other) const { return distance < other.distance; }
+    bool operator<(const DonorInfo& other) const { return distance < other.distance; }
   };
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -57,8 +57,8 @@ public:
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
-  CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config,
-                 unsigned int iZone, unsigned int jZone);
+  CIsoparametric(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
+                 unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -71,7 +71,7 @@ public:
    */
   void PrintStatistics(void) const override;
 
-private:
+ private:
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 2D line element.
    * \param[in] X - Coordinate matrix defining the line.
@@ -79,7 +79,7 @@ private:
    * \param[out] isoparams - Isoparametric coefficients.
    * \return 0 on success, 1 if xj is too far outside element bounds.
    */
-  static int LineIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
+  static int LineIsoparameters(const su2double X[][3], const su2double* xj, su2double* isoparams);
 
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 3D triangle element.
@@ -88,7 +88,7 @@ private:
    * \param[out] isoparams - Isoparametric coefficients.
    * \return 0 on success, 1 if xj is too far outside element bounds.
    */
-  static int TriangleIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
+  static int TriangleIsoparameters(const su2double X[][3], const su2double* xj, su2double* isoparams);
 
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 3D quadrilateral element.
@@ -97,6 +97,5 @@ private:
    * \param[out] isoparams - Isoparametric coefficients.
    * \return 0 on success, 1 if xj is too far outside element bounds.
    */
-  static int QuadrilateralIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
-
+  static int QuadrilateralIsoparameters(const su2double X[][3], const su2double* xj, su2double* isoparams);
 };

@@ -29,6 +29,6 @@
 
 unsigned short CDualGrid::nDim = 0;
 
-CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
+CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim; }
 
 CDualGrid::~CDualGrid() {}
