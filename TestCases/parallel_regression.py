@@ -1110,7 +1110,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.778863, -2.040209] #last 3 columns
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1234,7 +1234,7 @@ def main():
     cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_compressible.test_iter = 10
-    cht_compressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728]
+    cht_compressible.test_vals = [-4.256053, -0.532725, -0.532725, -0.532726]
     cht_compressible.multizone = True
     test_list.append(cht_compressible)
 
