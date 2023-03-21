@@ -34,8 +34,7 @@
 #include <limits>
 #include <map>
 
-#include "../../CConfig.hpp"
-#include "../../linear_algebra/blas_structure.hpp"
+#include "../../containers/C2DContainer.hpp"
 #include "CLayer.hpp"
 
 namespace MLPToolbox {
@@ -104,7 +103,7 @@ class CNeuralNetwork {
 
   su2vector<ENUM_ACTIVATION_FUNCTION>
       activation_function_types;               /*!< Activation function type for each layer in the network. */
-  su2vector<string> activation_function_names; /*!< Activation function name for each layer in the network. */
+  su2vector<std::string> activation_function_names; /*!< Activation function name for each layer in the network. */
 
  public:
   ~CNeuralNetwork() {
@@ -213,7 +212,7 @@ class CNeuralNetwork {
    * \param[in] input_max - Maximum input value.
    */
   void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max) {
-    input_norm[iInput] = make_pair(input_min, input_max);
+    input_norm[iInput] = std::make_pair(input_min, input_max);
   }
 
   /*!
@@ -223,7 +222,7 @@ class CNeuralNetwork {
    * \param[in] input_max - Maximum output value.
    */
   void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max) {
-    output_norm[iOutput] = make_pair(output_min, output_max);
+    output_norm[iOutput] = std::make_pair(output_min, output_max);
   }
 
   std::pair<su2double, su2double> GetInputNorm(unsigned long iInput) const { return input_norm[iInput]; }

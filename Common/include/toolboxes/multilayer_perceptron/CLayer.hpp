@@ -30,9 +30,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <vector>
 
-#include "../../CConfig.hpp"
-#include "../../linear_algebra/blas_structure.hpp"
+#include "../../containers/C2DContainer.hpp"
 #include "CNeuron.hpp"
 
 namespace MLPToolbox {
@@ -146,7 +146,7 @@ class CLayer {
    * \brief Get the activation function name applied to this layer
    * \return name of the activation function
    */
-  string GetActivationType() const { return activation_type; }
+  std::string GetActivationType() const { return activation_type; }
 };
 
 }  // namespace MLPToolbox

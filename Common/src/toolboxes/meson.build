@@ -11,4 +11,3 @@ common_src += files(['multilayer_perceptron/CLookUp_ANN.cpp',
                      'multilayer_perceptron/CNeuralNetwork.cpp',
                      'multilayer_perceptron/CLayer.cpp',
                      'multilayer_perceptron/CReadNeuralNetwork.cpp'])
-

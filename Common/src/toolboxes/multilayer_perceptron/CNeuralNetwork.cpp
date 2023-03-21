@@ -197,7 +197,7 @@ void MLPToolbox::CNeuralNetwork::Predict(su2vector<su2double>& inputs, bool comp
           for (auto iNeuron = 0u; iNeuron < nNeurons_current; iNeuron++) {
             x = total_layers[iLayer]->GetInput(iNeuron);
 
-            y = 0.5 * x * (1 + tanh(sqrt(2 / PI_NUMBER) * (x + 0.044715 * pow(x, 3))));
+            y = 0.5 * x * (1 + tanh(0.7978845608028654 * (x + 0.044715 * pow(x, 3))));
             total_layers[iLayer]->SetOutput(iNeuron, y);
             if (compute_gradient) {
               dy_dx = 0.5 * (tanh(0.0356774 * pow(x, 3) + 0.797885 * x) + (0.107032 * pow(x, 3) + 0.797885 * x) *

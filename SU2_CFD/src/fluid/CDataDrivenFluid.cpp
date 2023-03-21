@@ -37,6 +37,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      if (rank == MASTER_NODE) lookup_mlp->DisplayNetworkInfo();
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
       lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
