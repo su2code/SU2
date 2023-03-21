@@ -367,16 +367,15 @@ void CDiscAdjDeformationDriver::Run() {
   OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
 }
 
-void CDiscAdjDeformationDriver::Postprocessing() {
+void CDiscAdjDeformationDriver::Finalize() {
   for (auto iDV = 0u; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
     delete[] Gradient[iDV];
   }
   delete[] Gradient;
 
-  if (rank == MASTER_NODE)
-    cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
+  if (rank == MASTER_NODE) cout << "\n------------------------- Finalize Solver  -------------------------" << endl;
 
-  CommonPostprocessing();
+  CommonFinalize();
 
   /*--- Exit the solver cleanly. ---*/
 

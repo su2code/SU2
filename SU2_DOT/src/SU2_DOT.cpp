@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver.Postprocessing();
+  driver.Finalize();
 
   /*--- Finalize AD. ---*/
 

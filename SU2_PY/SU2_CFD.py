@@ -160,8 +160,8 @@ def main():
     # Launch the solver for the entire computation
     SU2Driver.StartSolver()
 
-    # Postprocess the solver and exit cleanly
-    SU2Driver.Postprocessing()
+    # Finalize the solver and exit cleanly
+    SU2Driver.Finalize()
 
     if SU2Driver != None:
         del SU2Driver
