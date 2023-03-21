@@ -118,8 +118,8 @@ def main():
     print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
     print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 

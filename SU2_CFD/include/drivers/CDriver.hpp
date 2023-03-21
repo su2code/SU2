@@ -365,7 +365,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine
    */
-  void Postprocessing();
+  void Finalize();
 
   /*!
    * \brief A virtual member.

@@ -84,7 +84,7 @@ void CDriverBase::SetContainers_Null() {
   }
 }
 
-void CDriverBase::CommonPostprocessing() {
+void CDriverBase::CommonFinalize() {
 
   if (numerics_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {

@@ -1429,7 +1429,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl << "------------------------- Solver Postprocessing -------------------------" << endl;
+    cout << endl << "------------------------- Finalize Solver -------------------------" << endl;
 
   delete[] Xcoord_Airfoil;
   delete[] Ycoord_Airfoil;

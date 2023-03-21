@@ -120,7 +120,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Postprocessing(){}
+  virtual void Finalize(){}
 
 /// \addtogroup PySU2
 /// @{
@@ -651,7 +651,7 @@ class CDriverBase {
   /*!
    * \brief Delete containers.
    */
-  void CommonPostprocessing();
+  void CommonFinalize();
 
   /*!
    * \brief Read in the config and mesh files.

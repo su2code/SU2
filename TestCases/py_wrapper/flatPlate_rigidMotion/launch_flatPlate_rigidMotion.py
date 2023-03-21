@@ -134,8 +134,8 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 # -------------------------------------------------------------------

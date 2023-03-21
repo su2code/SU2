@@ -115,8 +115,8 @@ def main():
     if (iVertex == 30) and rank == 0:
       print(1000,1000,iVertex, sensX, sensY, sensZ)
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 
