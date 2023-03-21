@@ -3560,6 +3560,8 @@ void CFlowOutput::SetTimeAveragedFields(){
     AddVolumeOutput("UWPRIME", "w'u'", "TIME_AVERAGE", "Mean Reynolds-stress component w'u'");
     AddVolumeOutput("VWPRIME", "w'v'", "TIME_AVERAGE", "Mean Reynolds-stress component w'v'");
   }
+  AddVolumeOutput("MEAN_SKIN_FRICTION_COEFF_X", "Mean_Skin_Friction_Coeff_x", "TIME_AVERAGE", "Mean skin-friction x-component");
+  
 }
 
 void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *Node_Flow){
