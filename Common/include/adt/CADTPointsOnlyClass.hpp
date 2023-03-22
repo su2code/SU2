@@ -35,14 +35,14 @@
  * \author E. van der Weide
  */
 class CADTPointsOnlyClass : public CADTBaseClass {
-private:
-  vector<su2double>     coorPoints;    /*!< \brief Vector, which contains the coordinates
+ private:
+  vector<su2double> coorPoints;        /*!< \brief Vector, which contains the coordinates
                                                    of the points in the ADT. */
   vector<unsigned long> localPointIDs; /*!< \brief Vector, which contains the local point ID's
                                                    of the points in the ADT. */
-  vector<int>           ranksOfPoints; /*!< \brief Vector, which contains the ranks
+  vector<int> ranksOfPoints;           /*!< \brief Vector, which contains the ranks
                                                    of the points in the ADT. */
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] nDim       Number of spatial dimensions of the problem.
@@ -52,11 +52,8 @@ public:
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
-  CADTPointsOnlyClass(unsigned short nDim,
-                      unsigned long  nPoints,
-                      const su2double *coor,
-                      const unsigned long *pointID,
-                      const bool     globalTree);
+  CADTPointsOnlyClass(unsigned short nDim, unsigned long nPoints, const su2double* coor, const unsigned long* pointID,
+                      const bool globalTree);
 
   /*!
    * \brief Function, which determines the nearest node in the ADT for the given coordinate.
@@ -67,13 +64,9 @@ public:
    * \param[out] pointID Local point ID of the nearest node in the ADT.
    * \param[out] rankID  Rank on which the nearest node in the ADT is stored.
    */
-  inline void DetermineNearestNode(const su2double *coor,
-                                   su2double       &dist,
-                                   unsigned long   &pointID,
-                                   int             &rankID) {
+  inline void DetermineNearestNode(const su2double* coor, su2double& dist, unsigned long& pointID, int& rankID) {
     const auto iThread = omp_get_thread_num();
-    DetermineNearestNode_impl(FrontLeaves[iThread], FrontLeavesNew[iThread],
-                              coor, dist, pointID, rankID);
+    DetermineNearestNode_impl(FrontLeaves[iThread], FrontLeavesNew[iThread], coor, dist, pointID, rankID);
   }
 
   /*!
@@ -81,15 +74,11 @@ public:
    */
   CADTPointsOnlyClass() = delete;
 
-private:
+ private:
   /*!
    * \brief Implementation of DetermineNearestNode.
    * \note Working variables (first two) passed explicitly for thread safety.
    */
-  void DetermineNearestNode_impl(vector<unsigned long>& frontLeaves,
-                                 vector<unsigned long>& frontLeavesNew,
-                                 const su2double *coor,
-                                 su2double       &dist,
-                                 unsigned long   &pointID,
-                                 int             &rankID) const;
+  void DetermineNearestNode_impl(vector<unsigned long>& frontLeaves, vector<unsigned long>& frontLeavesNew,
+                                 const su2double* coor, su2double& dist, unsigned long& pointID, int& rankID) const;
 };

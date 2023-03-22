@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <cmath>
@@ -37,20 +36,17 @@
  * \brief Class to define the required data for the Taylor Green Vortex.
  * \author E. van der Weide, T. Economon
  */
-class CTGVSolution final: public CVerificationSolution {
-
-protected:
-
+class CTGVSolution final : public CVerificationSolution {
+ protected:
   /*--- TGV specific conditions. ---*/
 
-  su2double tgvLength;    /*!< \brief Taylor-Green length scale. */
-  su2double tgvVelocity;  /*!< \brief Taylor-Green velocity. */
-  su2double tgvDensity;   /*!< \brief Taylor-Green density. */
-  su2double tgvPressure;  /*!< \brief Taylor-Green pressure. */
-  su2double ovGm1;        /*!< \brief 1 over Gamma minus 1 */
+  su2double tgvLength;   /*!< \brief Taylor-Green length scale. */
+  su2double tgvVelocity; /*!< \brief Taylor-Green velocity. */
+  su2double tgvDensity;  /*!< \brief Taylor-Green density. */
+  su2double tgvPressure; /*!< \brief Taylor-Green pressure. */
+  su2double ovGm1;       /*!< \brief 1 over Gamma minus 1 */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -63,10 +59,7 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Configuration of the particular problem.
    */
-  CTGVSolution(unsigned short val_nDim,
-               unsigned short val_nvar,
-               unsigned short val_iMesh,
-               CConfig*       config);
+  CTGVSolution(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -79,9 +72,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const su2double *val_coords,
-                   const su2double val_t,
-                   su2double       *val_solution) const override;
+  void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Whether or not the exact solution is known for this verification solution.

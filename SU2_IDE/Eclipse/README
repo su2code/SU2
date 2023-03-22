@@ -2,10 +2,10 @@ This README file includes instructions on how to use Eclipse with the SU2
 github repository. It is assumed that Eclipse has already been installed.
 -------------------------------------------------------------------------------
 1. Initial Eclipse Set-up
-In order to view files with helpful text highlighting and code navigation 
+In order to view files with helpful text highlighting and code navigation
 tools, install the packages for C++, Python, and Git:
 	Help -> Install New Software
-	Install packages for Git, C++ and Python, for example: 
+	Install packages for Git, C++ and Python, for example:
 		C/C++ Development Tools SDK
 		Eclipse EGit
 		PyDev for Eclipse
@@ -13,8 +13,8 @@ tools, install the packages for C++, Python, and Git:
 -------------------------------------------------------------------------------
 2. Get the code
 
-2a.If you have already cloned the SU2 source code, or prefer to clone via the 
-command line, you will need to import this project into the Eclipse Workspace: 
+2a.If you have already cloned the SU2 source code, or prefer to clone via the
+command line, you will need to import this project into the Eclipse Workspace:
 	File -> New -> Makefile project with existing code
 	Name the project and navigate to the appropriate directory.
 	Make sure "C++" is checked and select "finish"
@@ -37,13 +37,13 @@ command line, you will need to import this project into the Eclipse Workspace:
 If you did not clone the repository using Egit:
 	Window -> open perspective -> Git Repository Exploring
 	Window -> Show View -> Git Repositories
-	Add the repository: 
+	Add the repository:
 	In the Git repositories window, select "add an existing local git
-	repository to this view". 
+	repository to this view".
 	Browse to the location where you cloned the repository, select "finish"
 
-	When in the Git perspective, you will be able to see your local github 
-	repositories and graphically explore the branch structure. 
+	When in the Git perspective, you will be able to see your local github
+	repositories and graphically explore the branch structure.
 
 
 -------------------------------------------------------------------------------
@@ -54,7 +54,3 @@ If you did not clone the repository using Egit:
 	Select Project-> Properties to edit Eclipse behavior
 
 -------------------------------------------------------------------------------
-
-
-
-
