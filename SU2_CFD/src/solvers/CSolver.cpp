@@ -4756,10 +4756,15 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   for (unsigned long iPoint : Mask) {
     for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
       unsigned long jPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
-      if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
+      //if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
+      MaskNeighbors.insert(jPoint);
       long iEdge = geometry->FindEdge(iPoint, jPoint);
       Edge_masked.insert(iEdge);
     }
+  }
+  
+  for (unsigned long iPoint : Mask) {
+    MaskNeighbors.erase(iPoint);
   }
   
   //for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
