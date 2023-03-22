@@ -66,7 +66,7 @@ class CDeformationDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
+  void Finalize();
 
   /*!
    * \brief Communicate boundary mesh displacements.

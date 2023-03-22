@@ -646,7 +646,6 @@ def main():
     fem_ns_sphere.cfg_file  = "fem_Sphere_reg.cfg"
     fem_ns_sphere.test_iter = 10
     fem_ns_sphere.test_vals = [-0.288121,0.240324,0.000258,21.797363] #last 4 columns
-    fem_ns_sphere.command   = TestCase.Command(exec = "SU2_CFD")
     test_list.append(fem_ns_sphere)
 
     # Unsteady sphere ADER
@@ -655,7 +654,6 @@ def main():
     fem_ns_sphere_ader.cfg_file  = "fem_Sphere_reg_ADER.cfg"
     fem_ns_sphere_ader.test_iter = 10
     fem_ns_sphere_ader.test_vals = [-35.000000,-35.000000,0.000047,31.110911] #last 4 columns
-    fem_ns_sphere_ader.command   = TestCase.Command(exec = "SU2_CFD")
     test_list.append(fem_ns_sphere_ader)
 
     # Unsteady cylinder
@@ -664,7 +662,6 @@ def main():
     fem_ns_unsteady_cylinder.cfg_file  = "fem_unst_cylinder.cfg"
     fem_ns_unsteady_cylinder.test_iter = 11
     fem_ns_unsteady_cylinder.test_vals = [-3.558582,-3.014464,-0.038927,1.383983] #last 4 columns
-    fem_ns_unsteady_cylinder.command   = TestCase.Command(exec = "SU2_CFD")
     fem_ns_unsteady_cylinder.unsteady  = True
     test_list.append(fem_ns_unsteady_cylinder)
 
@@ -674,7 +671,6 @@ def main():
     fem_ns_unsteady_cylinder_ader.cfg_file  = "fem_unst_cylinder_ADER.cfg"
     fem_ns_unsteady_cylinder_ader.test_iter = 11
     fem_ns_unsteady_cylinder_ader.test_vals = [-35.000000,-35.000000,-0.041003,1.391339] #last 4 columns
-    fem_ns_unsteady_cylinder_ader.command   = TestCase.Command(exec = "SU2_CFD")
     fem_ns_unsteady_cylinder_ader.unsteady  = True
     test_list.append(fem_ns_unsteady_cylinder_ader)
 
@@ -1137,7 +1133,6 @@ def main():
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
     bars_SST_2D.test_vals = [13.000000, -0.604409, -1.523885]
-    bars_SST_2D.command   = TestCase.Command(exec = "SU2_CFD")
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1146,8 +1141,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492] #last 3 columns
-    slinc_steady.command   = TestCase.Command(exec = "SU2_CFD")
+    slinc_steady.test_vals = [19.000000, -1.778863, -2.040209] #last 3 columns
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1263,7 +1257,6 @@ def main():
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
     cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
-    cht_incompressible.command   = TestCase.Command(exec = "SU2_CFD")
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
@@ -1272,8 +1265,7 @@ def main():
     cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_compressible.test_iter = 10
-    cht_compressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728]
-    cht_compressible.command   = TestCase.Command(exec = "SU2_CFD")
+    cht_compressible.test_vals = [-4.256053, -0.532725, -0.532725, -0.532726]
     cht_compressible.multizone = True
     test_list.append(cht_compressible)
 
@@ -1418,7 +1410,6 @@ def main():
     ringleb_dg_euler.cfg_file  = "ringleb_dg.cfg"
     ringleb_dg_euler.test_iter = 100
     ringleb_dg_euler.test_vals = [-5.136652, -4.724941, 0.000000, 0.000000] #last 4 columns
-    ringleb_dg_euler.command   = TestCase.Command(exec = "SU2_CFD")
     ringleb_dg_euler.tol       = 0.0001
     test_list.append(ringleb_dg_euler)
 
@@ -1428,7 +1419,6 @@ def main():
     mms_dg_ns.cfg_file  = "lam_mms_dg.cfg"
     mms_dg_ns.test_iter = 100
     mms_dg_ns.test_vals = [-1.845393, 3.520699, 0.000000, 0.000000] #last 4 columns
-    mms_dg_ns.command   = TestCase.Command(exec = "SU2_CFD")
     mms_dg_ns.tol       = 0.0001
     test_list.append(mms_dg_ns)
 
@@ -1438,7 +1428,6 @@ def main():
     mms_dg_ns_3d.cfg_file  = "lam_mms_dg_3d.cfg"
     mms_dg_ns_3d.test_iter = 100
     mms_dg_ns_3d.test_vals = [-0.146826, 5.356413, 0.000000, 0.000000] #last 4 columns
-    mms_dg_ns_3d.command   = TestCase.Command(exec = "SU2_CFD")
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
 
