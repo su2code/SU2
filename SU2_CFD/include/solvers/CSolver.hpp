@@ -202,9 +202,9 @@ public:
   vector<su2double> GenCoordsY_Old;            /*!< \brief vector to store generalized coordinate solution of previous iteration. (rom) */
   vector<su2double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
   vector<su2double> Weights;                   /*!< \brief vector to store weights for scaling the residual. (rom)  */
-  vector<su2double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
+  vector<unsigned long> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
   set<unsigned long> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
-  vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
+  set<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
   su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double Coord1_Old;                     /*!<\brief previous value of the reduced coordinate 1 (rom) */

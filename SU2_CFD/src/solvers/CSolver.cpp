@@ -4516,12 +4516,12 @@ void CSolver::MaskSelection_QDEIM(CGeometry *geometry, CConfig *config) {
   
   ofstream fs;
   fs.open(fname);
-  for(int i=0; i < (int)Mask.size(); i++){
-    fs << Mask[i] << "," ;
+  for (auto i : Mask) {
+    fs << i << "," ;
   }
   fs << "\n";
   fs.close();
-  
+
 }
 #endif
 
@@ -4715,16 +4715,18 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   
   // Save selected nodes to a file for reuse
   if (!read_mask_from_file) {
-  ofstream fs;
-  fs.open(hypernodes_filename);
-  for(unsigned long i=0; i < Mask.size(); i++){
-    fs << Mask[i] << "," ;
-  }
-  fs << "\n";
-  fs.close();
+    if (!use_all_nodes) {
+      ofstream fs;
+      fs.open(hypernodes_filename);
+      for (auto i : Mask) {
+        fs << i << "," ;
+      }
+      fs << "\n";
+      fs.close();
+    }
   }
   
-  sort(Mask.begin(),Mask.end());
+  //sort(Mask.begin(),Mask.end());
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -4733,7 +4735,12 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
 
 
 bool CSolver::MaskedNode(unsigned long iPoint) {
-
+  // checks if iPoint is a selected node (contained within set Mask)
+  
+  //set<unsigned long> Mask_copy(Mask);
+  //Mask_copy.insert(iPoint);
+  //if (Mask_copy.size() == Mask.size())
+  //if (Mask.count(iPoint))
   if (std::find(Mask.begin(), Mask.end(), iPoint) != Mask.end())
     return true;
   else
@@ -4746,19 +4753,28 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   
   /*--- Find edges corresponding to neighbor depth of 1 ---*/
   
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    unsigned long iPoint = geometry->edges->GetNode(iEdge, 0);
-    unsigned long jPoint = geometry->edges->GetNode(iEdge, 1);
-    
-    if (MaskedNode(iPoint)) {
-      Edge_masked.push_back(iEdge);
+  for (unsigned long iPoint : Mask) {
+    for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
+      unsigned long jPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
       if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
-    }
-    else if (MaskedNode(jPoint)) {
-      Edge_masked.push_back(iEdge);
-      if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
+      long iEdge = geometry->FindEdge(iPoint, jPoint);
+      Edge_masked.insert(iEdge);
     }
   }
+  
+  //for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  //  unsigned long iPoint = geometry->edges->GetNode(iEdge, 0);
+  //  unsigned long jPoint = geometry->edges->GetNode(iEdge, 1);
+  //
+  //  if (MaskedNode(iPoint)) {
+  //    Edge_masked.insert(iEdge);
+  //    if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
+  //  }
+  //  else if (MaskedNode(jPoint)) {
+  //    Edge_masked.insert(iEdge);
+  //    if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
+  //  }
+  //}
   
   /*--- Include neighbors of neighbors (depth 2) ---*/
   
@@ -4915,7 +4931,8 @@ void CSolver::writeROMfiles(CGeometry *geometry, unsigned long InnerIter,
     std::string file_name = "check_jacobian.csv";
     fs.open(file_name);
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-      unsigned long iPoint = Mask[iPoint_mask];
+      unsigned long iPoint = *next(Mask.begin(), iPoint_mask);
+      //unsigned long iPoint = Mask[iPoint_mask];
       for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint)+1; kNeigh++) {
         unsigned long kPoint = 0;
         if (kNeigh == geometry->nodes->GetnPoint(iPoint)) kPoint = iPoint;
@@ -4959,14 +4976,17 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
 
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
-      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
+      if (rank == MASTER_NODE) std::cout <<
+        "Creating static basis generator." << std::endl;
 
       if (unsteady) {
-        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+        if (rank == MASTER_NODE) std::cout <<
+          "Incremental basis generator recommended for unsteady simulations." << std::endl;
       }
     }
     else {
-      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
+      if (rank == MASTER_NODE) std::cout <<
+        "Creating incremental basis generator." << std::endl;
 
       svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTimeND(),
                                     1.0e-2, config->GetDelta_UnstTimeND()*nTimeIter, true).setDebugMode(false);

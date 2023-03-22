@@ -992,7 +992,7 @@ class CFVMFlowSolverBase : public CSolver {
     
     unsigned long m       = Mask.size() * nVar;
     unsigned short nsnaps = TrialBasis[0].size();
-    vector<su2double> r(m,0.0);
+    vector<su2double> r(m,0.0);     // residual that will be weighted
     vector<su2double> r_ns(m,0.0);  // not scaled residual
     
     // Toggle for preconditioner
@@ -1005,7 +1005,6 @@ class CFVMFlowSolverBase : public CSolver {
     
     if (InnerIter == 0) SetAlpha_ROM(0.1);
     
-    //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
       
@@ -1040,7 +1039,7 @@ class CFVMFlowSolverBase : public CSolver {
     }
     END_SU2_OMP_FOR
     
-
+    // used for debugging
     if (false) {
       ofstream fs1;
       std::string fname1 = "jacobian.csv";
@@ -1048,9 +1047,13 @@ class CFVMFlowSolverBase : public CSolver {
       for (unsigned long i = 0; i < m; i++){
         unsigned long iPoint_mask = (i+nVar) / nVar - 1; // (int logic)
         unsigned long iPoint = Mask[iPoint_mask];
+        //auto it = next(Mask.begin(), iPoint_mask);
+        //unsigned long iPoint = *it;
         unsigned short iVar = i % nVar; // modulo
         for (unsigned long j = 0; j < nPointDomain*nVar; j++) {
           unsigned long jPoint_mask = (j+nVar) / nVar - 1; // (int logic)
+          //auto it = next(Mask.begin(), jPoint_mask);
+          //unsigned long jPoint = *it;
           unsigned long jPoint = Mask[jPoint_mask];
           unsigned short jVar = j % nVar; // modulo
           fs1 << setprecision(10) << Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << "\n" ;
@@ -1065,14 +1068,10 @@ class CFVMFlowSolverBase : public CSolver {
     unsigned long index = 0;
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        //r[index] = r_ns[index] / sqrt(Weights[iVar]);
-        //r[index] = (1.0) * r_ns[index];
         r[index] = r_ns[index] * Weights[index] ;
         index++;
       }
     }
-
-    // DO ROM ITERATION:
     
     /*-- Compute Test Basis: W = J * Phi, where J and Phi may be hyper-reduced --*/
     
@@ -1110,50 +1109,11 @@ class CFVMFlowSolverBase : public CSolver {
       }
     }
     
-    
-    //for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-    //  unsigned long iPoint = Mask[iPoint_mask];
-    //
-    //  su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
-    //
-    //  for (unsigned short jPoint = 0; jPoint < nsnaps; jPoint++) {
-    //
-    //    for (unsigned short kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
-    //      unsigned short kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
-    //
-    //      su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
-    //
-    //      /*--- Compute this block of W_ij = J_ik * Phi_kj, i = 0:nVar, j = jPoint, k = 0:nVar ---*/
-    //      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    //        unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
-    //        for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-    //          unsigned long total_index_phik = kVar + kPoint*nVar;
-    //          unsigned long index_jik        = kVar*nVar + iVar;
-    //
-    //          TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
-    //          TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ik[index_jik];
-    //          /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
-    //          if (kNeigh == 0) {
-    //            unsigned long k = iPoint;
-    //            unsigned long total_index_phik = kVar + k*nVar;
-    //            unsigned long J_ii_cur = J_ii[index_jik];
-    //            if (precon) {
-    //              if (iVar == kVar) J_ii_cur = 1.0; }
-    //            TestBasis[total_index_wij] += TrialBasis[total_index_phik][jPoint] * J_ii_cur;
-    //          }
-    //        }
-    //      } // end compute of W_ij
-    //    }
-    //  }
-    //}
-    
     /*--- Calculate reduced residual ---*/
     
     vector<su2double> r_red(nsnaps, 0.0);
     for (unsigned long jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
-      
       for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-        
         for (unsigned short i = 0; i < nVar; i++){
           double prod2 = r_ns[iPoint_mask*nVar + i] * TestBasis[jPoint*m + iPoint_mask*nVar + i];
           r_red[jPoint] += prod2;
@@ -1215,9 +1175,8 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*--- Update SU2 solution ---*/
     
-    vector<double> allMaskedNodes(Mask);
+    vector<unsigned long> allMaskedNodes(Mask);
     allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
-    //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (unsigned long iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
       unsigned long iPoint = allMaskedNodes[iPoint_mask];
