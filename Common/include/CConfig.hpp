@@ -2168,22 +2168,12 @@ public:
   su2double GetFlameBurntThickness(void) const { return flame_burnt_thickness; }
 
   /*!
-   * \brief Set the number of scalars for flamelet model.
-   */
-  void SetNScalars(unsigned short val_nScalars) { n_scalars = val_nScalars; }
-
-  /*!
-   * \brief Set the number of controlling variables for flamelet model.
-   */
-  void SetNControlVars(unsigned short val_nControlVars) { n_control_vars = val_nControlVars; }
-
-  /*!
    * \brief Get the number of control variables for flamelet model.
    */
   unsigned short GetNControlVars(void) const { return n_control_vars; }
 
   /*!
-   * \brief Get the number of transported scalars for flamelet model.
+   * \brief Get the number of total transported scalars for flamelet model.
    */
   unsigned short GetNScalars(void) const { return n_scalars; }
 
