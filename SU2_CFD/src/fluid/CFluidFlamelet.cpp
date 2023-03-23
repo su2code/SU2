@@ -100,7 +100,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
-  if (look_up_table != NULL) delete look_up_table;
+  delete look_up_table;
 }
 
 /*--- do a lookup for the list of variables in table_lookup_names, for visualization purposes ---*/
