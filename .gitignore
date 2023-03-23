@@ -103,3 +103,7 @@ su2preconfig.timestamp
 
 # Clangd server files
 .cache
+
+# Ignore doxygen documentation
+Docs/html/
+./Docs/html/
