@@ -52,12 +52,12 @@ class CSurfaceMovement : public CGridMovement {
   /*!
    * \brief Constructor of the class.
    */
-  CSurfaceMovement(void);
+  CSurfaceMovement();
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSurfaceMovement(void) override;
+  ~CSurfaceMovement() override = default;
 
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.

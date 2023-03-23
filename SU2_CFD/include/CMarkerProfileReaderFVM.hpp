@@ -113,7 +113,7 @@ public:
   /*!
    * \brief Destructor of the CMeshReaderFVM class.
    */
-  ~CMarkerProfileReaderFVM(void);
+  ~CMarkerProfileReaderFVM() = default;
 
   /*!
    * \brief Get the number of profiles found within the input file.

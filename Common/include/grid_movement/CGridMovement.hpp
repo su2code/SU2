@@ -45,12 +45,12 @@ class CGridMovement {
   /*!
    * \brief Constructor of the class.
    */
-  CGridMovement(void);
+  CGridMovement() = default;
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CGridMovement(void);
+  virtual ~CGridMovement() = default;
 
   /*!
    * \brief Set the surface/boundary deformation.

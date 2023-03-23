@@ -79,7 +79,7 @@ class CBezierBlending : public CFreeFormBlending {
   /*!
    * \brief Destructor of the class.
    */
-  ~CBezierBlending() override;
+  ~CBezierBlending() override = default;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix

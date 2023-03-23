@@ -1,6 +1,4 @@
-common_src += files(['CGridMovement.cpp',
-                     'CFreeFormBlending.cpp',
-                     'CBSplineBlending.cpp',
+common_src += files(['CBSplineBlending.cpp',
                      'CBezierBlending.cpp',
                      'CFreeFormDefBox.cpp',
                      'CVolumetricMovement.cpp',

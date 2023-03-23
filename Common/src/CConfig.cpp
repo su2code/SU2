@@ -3139,9 +3139,8 @@ void CConfig::SetDefault(){
 
   /*--- Set the default values for all of the options that weren't set ---*/
 
-  for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
-    if (option_map[iter->first]->GetValue().size() == 0)
-      option_map[iter->first]->SetDefault();
+  for (auto& all_option : all_options) {
+    if (option_map[all_option.first]->GetValue().size() == 0) option_map[all_option.first]->SetDefault();
   }
 }
 
@@ -3218,8 +3217,8 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- Set the default values for all of the options that weren't set ---*/
 
-  for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
-    option_map[iter->first]->SetDefault();
+  for (auto& all_option : all_options) {
+    option_map[all_option.first]->SetDefault();
   }
 
   /*--- See if there were any errors parsing the runtime file ---*/
@@ -4779,7 +4778,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       geo_loc[1] /= 12.0;
     }
 
-    for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
+    for (double& i : eng_cyl) i /= 12.0;
   }
 
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
@@ -7639,7 +7638,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
         *it = before_semi;
         it++;
         vector<string> to_insert;
-        to_insert.push_back(";");
+        to_insert.emplace_back(";");
         if (!after_semi.empty())
           to_insert.push_back(after_semi);
         option_value.insert(it, to_insert.begin(), to_insert.end());
@@ -7892,8 +7891,8 @@ CConfig::~CConfig() {
 
   /*--- Delete all of the option objects in the global option map ---*/
 
-  for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
-    delete itr->second;
+  for (auto& itr : option_map) {
+    delete itr.second;
   }
 
   delete [] TimeDOFsADER_DG;

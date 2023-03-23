@@ -29,7 +29,7 @@
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {}
+CVolumetricMovement::CVolumetricMovement() : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {}
 
 CVolumetricMovement::CVolumetricMovement(CGeometry* geometry, CConfig* config)
     : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {
@@ -53,8 +53,6 @@ CVolumetricMovement::CVolumetricMovement(CGeometry* geometry, CConfig* config)
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   }
 }
-
-CVolumetricMovement::~CVolumetricMovement(void) {}
 
 void CVolumetricMovement::UpdateGridCoord(CGeometry* geometry, CConfig* config) {
   unsigned short iDim;

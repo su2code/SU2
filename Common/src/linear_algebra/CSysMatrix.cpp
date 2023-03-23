@@ -885,7 +885,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   /*--- Solve the tridiagonal systems for the linelets. ---*/
 
   SU2_OMP_FOR_DYN(1)
-  for (auto iLinelet = 0ul; iLinelet < li.linelets.size(); iLinelet++) {
+  for (const auto& linelet : li.linelets) {
     /*--- Get references to the working vectors allocated for this thread. ---*/
 
     const int thread = omp_get_thread_num();
@@ -895,10 +895,10 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    const auto nElem = li.linelets[iLinelet].size();
+    const auto nElem = linelet.size();
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = li.linelets[iLinelet][iElem];
+      const auto iPoint = linelet[iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++) lineletVector[iElem * nVar + iVar] = vec[iPoint * nVar + iVar];
     }
 
@@ -908,12 +908,12 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     ScalarType aux_block[MAXNVAR * MAXNVAR], aux_vector[MAXNVAR];
 
     /*--- Copy diagonal block for first point in this linelet. ---*/
-    MatrixCopy(&matrix[dia_ptr[li.linelets[iLinelet][0]] * nVar * nVar], lineletInvDiag.data());
+    MatrixCopy(&matrix[dia_ptr[linelet[0]] * nVar * nVar], lineletInvDiag.data());
 
     for (auto iElem = 1ul; iElem < nElem; iElem++) {
       /*--- Setup pointers to required matrices and vectors ---*/
-      const auto im1Point = li.linelets[iLinelet][iElem - 1];
-      const auto iPoint = li.linelets[iLinelet][iElem];
+      const auto im1Point = linelet[iElem - 1];
+      const auto iPoint = linelet[iElem];
 
       const auto* d = &matrix[dia_ptr[iPoint] * nVar * nVar];
       const auto* l = GetBlock(iPoint, im1Point);
@@ -958,7 +958,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     /*--- Copy results to product vector ---*/
 
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
-      const auto iPoint = li.linelets[iLinelet][iElem];
+      const auto iPoint = linelet[iElem];
       for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iPoint * nVar + iVar] = lineletVector[iElem * nVar + iVar];
     }
   }

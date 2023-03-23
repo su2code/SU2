@@ -28,7 +28,7 @@
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 
-CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
+CSurfaceMovement::CSurfaceMovement() : CGridMovement() {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
@@ -36,8 +36,6 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
   nLevel = 0;
   FFDBoxDefinition = false;
 }
-
-CSurfaceMovement::~CSurfaceMovement(void) {}
 
 vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;

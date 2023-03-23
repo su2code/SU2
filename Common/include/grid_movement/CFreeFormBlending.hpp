@@ -46,12 +46,12 @@ class CFreeFormBlending {
   /*!
    * \brief Constructor of the class.
    */
-  CFreeFormBlending();
+  CFreeFormBlending() = default;
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFreeFormBlending();
+  virtual ~CFreeFormBlending() = default;
 
   /*!
    * \brief A pure virtual member.

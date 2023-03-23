@@ -68,7 +68,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
 
 }
 
-CMarkerProfileReaderFVM::~CMarkerProfileReaderFVM(void) { }
+
 
 void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
@@ -104,7 +104,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
           position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
           position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
         }
-        profileTags.push_back(text_line.c_str());
+        profileTags.emplace_back(text_line.c_str());
 
         /*--- read NROW ---*/
         getline (profile_file, text_line);
@@ -354,8 +354,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         for (iChar = 0; iChar < MAX_STRING_SIZE; iChar++) {
           str_buf[iChar] = Buffer_Recv_Str[index + iChar];
         }
-        Marker_Tags.push_back(str_buf);
-        profileTags.push_back(str_buf);
+        Marker_Tags.emplace_back(str_buf);
+        profileTags.emplace_back(str_buf);
       }
     }
 

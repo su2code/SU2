@@ -61,7 +61,7 @@ class CVolumetricMovement : public CGridMovement {
   /*!
    * \brief Constructor of the class.
    */
-  CVolumetricMovement(void);
+  CVolumetricMovement();
 
   /*!
    * \brief Constructor of the class.
@@ -71,7 +71,7 @@ class CVolumetricMovement : public CGridMovement {
   /*!
    * \brief Destructor of the class.
    */
-  ~CVolumetricMovement(void) override;
+  ~CVolumetricMovement() override = default;
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
