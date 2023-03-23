@@ -104,7 +104,7 @@
 #ifdef VTUNEPROF
 #include <ittnotify.h>
 #endif
-#include <fenv.h>
+#include <cfenv>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
