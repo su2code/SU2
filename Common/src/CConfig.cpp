@@ -4001,7 +4001,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error("The use of FLUID_FLAMELET requires the DIFFUSIVITY_MODEL option to be FLAMELET",
                        CURRENT_FUNCTION);
       }
-     if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
         SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
                        CURRENT_FUNCTION);
       }
