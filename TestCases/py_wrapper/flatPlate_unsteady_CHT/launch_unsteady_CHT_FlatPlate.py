@@ -110,7 +110,7 @@ def main():
     WallTemp = 293.0 + 57.0*sin(2*pi*time)
     # Set this temperature to all the vertices on the specified CHT marker
     for iVertex in range(nVertex_CHTMarker):
-      SU2Driver.SetVertexTemperature(CHTMarkerID, iVertex, WallTemp)
+      SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
     SU2Driver.BoundaryConditionsUpdate()
@@ -129,8 +129,6 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program
