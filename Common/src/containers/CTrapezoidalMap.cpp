@@ -42,7 +42,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
                                  vector<std::array<unsigned long, 2> > const& edges,
                                  su2vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
-  su2double startTime = SU2_MPI::Wtime(); 
+  su2double startTime = SU2_MPI::Wtime();
 
   edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 
@@ -134,25 +134,22 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
   su2double stopTime = SU2_MPI::Wtime();
 
   /* calculate size of trapezoidal map components */
-  double size_unique_bands  = sizeof(su2double) * unique_bands_x.size() / 1e6;
+  double size_unique_bands = sizeof(su2double) * unique_bands_x.size() / 1e6;
   double size_edge_limits_x = sizeof(su2double) * edge_limits_x.size() * 2 / 1e6;
   double size_edge_limits_y = sizeof(su2double) * edge_limits_y.size() * 2 / 1e6;
 
   double size_edge_to_triangle = 0;
-  for (i_edge=0; i_edge < edge_to_triangle.size(); i_edge++)
-    for (j_edge=0; j_edge < edge_to_triangle[i_edge].size(); j_edge++)
+  for (i_edge = 0; i_edge < edge_to_triangle.size(); i_edge++)
+    for (j_edge = 0; j_edge < edge_to_triangle[i_edge].size(); j_edge++)
       size_edge_to_triangle += sizeof(unsigned long) / 1e6;
 
   double size_y_edge_at_band_mid = 0;
-  for (unsigned long i_y=0; i_y < y_edge_at_band_mid.size(); i_y++)
-    for (unsigned long j_y=0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
-      size_y_edge_at_band_mid += sizeof(su2double)  / 1e6 + sizeof(unsigned long)  / 1e6;
+  for (unsigned long i_y = 0; i_y < y_edge_at_band_mid.size(); i_y++)
+    for (unsigned long j_y = 0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
+      size_y_edge_at_band_mid += sizeof(su2double) / 1e6 + sizeof(unsigned long) / 1e6;
 
-  double size_total = size_unique_bands +
-                      size_edge_limits_x +
-                      size_edge_limits_y +
-                      size_edge_to_triangle +
-                      size_y_edge_at_band_mid;
+  double size_total =
+      size_unique_bands + size_edge_limits_x + size_edge_limits_y + size_edge_to_triangle + size_y_edge_at_band_mid;
 
   /* print size of trapezoidal map components to screen */
   if (rank == MASTER_NODE) {
@@ -162,17 +159,23 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
     cout << "|                       Trapezoidal map info                       |\n";
     cout << "+------------------------------------------------------------------+" << endl;
 
-    cout << "| Time to construct trapezoidal map:    " << setw(22) << right << stopTime-startTime << " sec" << " |" << endl;
-    cout << "| Size of unique_bands in memory:       " << setw(22) << size_unique_bands           << " MB " << " |" << endl;
-    cout << "| Size of edge_limits_x in memory:      " << setw(22) << size_edge_limits_x          << " MB " << " |" << endl;
-    cout << "| Size of edge_limits_y in memory:      " << setw(22) << size_edge_limits_y          << " MB " << " |" << endl;
-    cout << "| Size of edge_to_triangle in memory:   " << setw(22) << size_edge_to_triangle       << " MB " << " |" << endl;
-    cout << "| Size of y_edge_at_band_mid in memory: " << setw(22) << size_y_edge_at_band_mid     << " MB " << " |" << endl;
-    cout << "| Total:                                " << setw(22) << size_total                  << " MB " << " |" << endl;
+    cout << "| Time to construct trapezoidal map:    " << setw(22) << right << stopTime - startTime << " sec"
+         << " |" << endl;
+    cout << "| Size of unique_bands in memory:       " << setw(22) << size_unique_bands << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_limits_x in memory:      " << setw(22) << size_edge_limits_x << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_limits_y in memory:      " << setw(22) << size_edge_limits_y << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_to_triangle in memory:   " << setw(22) << size_edge_to_triangle << " MB "
+         << " |" << endl;
+    cout << "| Size of y_edge_at_band_mid in memory: " << setw(22) << size_y_edge_at_band_mid << " MB "
+         << " |" << endl;
+    cout << "| Total:                                " << setw(22) << size_total << " MB "
+         << " |" << endl;
     cout << "+------------------------------------------------------------------+" << endl;
     cout << "\n" << endl;
   }
-
 }
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
@@ -184,10 +187,12 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
 
   /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
-  for (unsigned long i = 0; i < edge_to_triangle[edges.first].size(); i++) triangles_edge_low[i] = edge_to_triangle[edges.first][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.first].size(); i++)
+    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
 
   std::array<unsigned long, 2> triangles_edge_up;
-  for (unsigned long i = 0; i < edge_to_triangle[edges.second].size(); i++) triangles_edge_up[i] = edge_to_triangle[edges.second][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.second].size(); i++)
+    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());

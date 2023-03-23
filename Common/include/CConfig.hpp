@@ -2197,50 +2197,40 @@ public:
   }
 
   /*!
-   * \brief Get the number of transported scalars for combustion
+   * \brief Get the number of transported scalars for combustion.
    */
   unsigned short GetNLookups(void) const { return n_lookups; }
 
   /*!
-   * \brief Set the total number of LUT sources
-   */
-  void SetNLUTSources(unsigned short val_nTableSources) { n_table_sources = val_nTableSources; }
-
-  /*!
-   * \brief Get the number of transported scalars source terms for combustion
-   */
-  unsigned short GetNLUTSources(void) const { return n_table_sources; }
-
-  /*!
-   * \brief Store the names of scalar variables that are being solved
-   * \param[out] stores the names in vector table_scalar_names
+   * \brief Store the names of scalar variables that are being solved.
+   * \param[out] stores the names in vector table_scalar_names.
    */
   inline void SetLUTScalarNames(vector<string> &val_tableScalarNames) { table_scalar_names = val_tableScalarNames; }
 
   /*!
-   * \brief Get the name of the independent variable from the lookup table
+   * \brief Get the name of the independent variable from the lookup table.
    */
   string GetLUTScalarName(unsigned short i_scalar) const { return table_scalar_names[i_scalar]; }
 
   /*!
-   * \brief Get the name of the variable that we want to retrieve from the lookup table
+   * \brief Get the name of the variable that we want to retrieve from the lookup table.
    */
   string GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
 
   /*!
-   * \brief Store the names of scalar source term variables
-   * \param[out] stores the names in vector table_source_names
+   * \brief Store the names of scalar source term variables.
+   * \param[out] stores the names in vector table_source_names.
    */
   inline void SetLUTSourceNames(vector<string> &val_tableSourceNames) { table_source_names = val_tableSourceNames; }
 
   /*!
-   * \brief Get the scalar source term name i_source
+   * \brief Get the scalar source term name i_source.
    */
   string GetLUTSourceName(unsigned short i_source) const { return table_source_names[i_source]; }
 
   /*!
-   * \brief Get the file name of the look up table
-   * \return File name of the look up table
+   * \brief Get the file name of the look up table.
+   * \return File name of the look up table.
    */
   string GetFileNameLUT(void) const { return file_name_lut; };
 

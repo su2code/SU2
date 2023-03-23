@@ -33,11 +33,29 @@
  * \class CSpeciesFlameletSolver
  * \brief Main class for defining the flamelet model solver.
  * \author N. Beishuizen
+ * \ingroup Scalar_Transport
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   unsigned long n_table_misses;          /*!< \brief number of times we failed to do a lookup from the table */
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
+
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
+
+  /*!
+   * \brief Compute the primitive variables (diffusivities).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - Boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
 
  public:
   /*!
@@ -60,7 +78,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] Output - Boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Post-processing routine for the passive scalar model.
@@ -69,15 +87,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh);
-  /*!
-   * \brief Compute the primitive variables (diffusivities)
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - Boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
+  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Set the initial condition for the scalar transport problem.
@@ -88,14 +98,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                            unsigned long ExtIter) override;
-
-  /*!
-   * \brief Compute the preconditioner for low-Mach flows.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
 
   /*!
    * \brief Source term computation.

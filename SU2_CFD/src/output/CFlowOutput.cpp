@@ -1422,7 +1422,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
         AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "SOLUTION", "Limiter of progress variable");
         AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "SOLUTION", "Limiter of total enthalpy");
         /*--- limiter for auxiliary species transport ---*/
-        for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
+        for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
           string species_name = config->GetUserScalarName(iReactant);
           AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
         }

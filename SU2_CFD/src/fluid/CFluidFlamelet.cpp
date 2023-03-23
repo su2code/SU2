@@ -31,13 +31,13 @@
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(SU2_MPI::GetComm(),&rank);
 #endif
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
   n_control_vars = config->GetNControlVars();
-  n_scalars      = config->GetNScalars();
+  n_scalars = config->GetNScalars();
 
   if (rank == MASTER_NODE) {
     cout << "Number of scalars:           " << n_scalars << endl;
@@ -63,8 +63,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   /*--- we currently only need 1 source term from the LUT for the progress variable
         and each auxiliary equations needs 2 source terms ---*/
-  n_table_sources = 1 + 2*n_user_scalars;
-  config->SetNLUTSources(n_table_sources);
+  n_table_sources = 1 + 2 * n_user_scalars;
 
   table_source_names.resize(n_table_sources);
   table_sources.resize(n_table_sources);
@@ -76,14 +75,13 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    table_source_names[1 + 2*i_aux]     = config->GetUserSourceName(2*i_aux);
-    table_source_names[1 + 2*i_aux + 1] = config->GetUserSourceName(2*i_aux + 1);
+    table_source_names[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
+    table_source_names[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
   }
 
   config->SetLUTSourceNames(table_source_names);
 
-  look_up_table =
-      new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+  look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
   n_lookups = config->GetNLookups();
   table_lookup_names.resize(n_lookups);
@@ -105,7 +103,6 @@ CFluidFlamelet::~CFluidFlamelet() {
 
 /*--- do a lookup for the list of variables in table_lookup_names, for visualization purposes ---*/
 unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
-
   su2double enth = val_scalars[I_ENTH];
   su2double prog = val_scalars[I_PROGVAR];
 
@@ -113,15 +110,13 @@ unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
   string name_prog = table_scalar_names[I_PROGVAR];
 
   /*--- perform table lookup ---*/
-  unsigned long exit_code =
-      look_up_table->LookUp_XY(table_lookup_names, lookup_scalar, prog, enth);
+  unsigned long exit_code = look_up_table->LookUp_XY(table_lookup_names, lookup_scalar, prog, enth);
 
   return exit_code;
 }
 
 /*--- set the source terms for the transport equations ---*/
 unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
-
   table_sources[0] = 0.0;
 
   string name_enth = table_scalar_names[I_ENTH];
@@ -132,8 +127,7 @@ unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
   su2double prog = val_scalars[I_PROGVAR];
 
   /*--- perform table lookup ---*/
-  unsigned long exit_code =
-      look_up_table->LookUp_XY(varnames_Sources, val_vars_Sources, prog, enth);
+  unsigned long exit_code = look_up_table->LookUp_XY(varnames_Sources, val_vars_Sources, prog, enth);
 
   /*--- the source term for the progress variable is always positive by construction, but we clip from below  --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -144,8 +138,8 @@ unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
     su2double y_aux = val_scalars[n_control_vars + i_aux];
-    su2double source_prod = table_sources[1 + 2*i_aux];
-    su2double source_cons = table_sources[1 + 2*i_aux + 1];
+    su2double source_prod = table_sources[1 + 2 * i_aux];
+    su2double source_cons = table_sources[1 + 2 * i_aux + 1];
     source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
   }
 
@@ -168,8 +162,8 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
 /* --- Total enthalpy is the transported variable, but we usually have temperature as a boundary condition,
        so we do a reverse lookup */
-unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2double val_prog, const su2double val_temp, su2double initial_value) {
-
+unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2double val_prog, const su2double val_temp,
+                                              su2double initial_value) {
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
 
@@ -196,7 +190,6 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
 
     /*--- update enthalpy ---*/
     enth_iter += delta_enth;
-
   }
 
   /*--- set enthalpy value ---*/
