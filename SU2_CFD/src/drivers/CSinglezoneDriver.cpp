@@ -187,7 +187,6 @@ void CSinglezoneDriver::Postprocess() {
 }
 
 void CSinglezoneDriver::Update() {
-  cout << "hellow" << endl;
   iteration_container[ZONE_0][INST_0]->Update(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);

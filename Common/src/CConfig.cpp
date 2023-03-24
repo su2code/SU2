@@ -3015,7 +3015,7 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
   /*--- Parse the configuration file and set the options ---*/
 
   while (getline (config_buffer, text_line)) {
-
+    cout << text_line << endl;
     if (err_count >= max_err_count) {
       errorString.append("Too many errors, stopping parse.");
       break;
