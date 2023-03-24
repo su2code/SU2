@@ -4778,7 +4778,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       geo_loc[1] /= 12.0;
     }
 
-    for (double& i : eng_cyl) i /= 12.0;
+    for (auto& i : eng_cyl) i /= 12.0;
   }
 
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
