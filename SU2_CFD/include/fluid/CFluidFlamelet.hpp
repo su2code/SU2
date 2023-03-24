@@ -95,7 +95,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_temp - temperature
    * \param[out] exit_code = error code
    */
-  unsigned long GetEnthFromTemp(su2double* enthalpy, const su2double val_prog, const su2double val_temp,
+  unsigned long GetEnthFromTemp(su2double& enthalpy, const su2double val_prog, const su2double val_temp,
                                 su2double initial_value = 0);
 
   /*!

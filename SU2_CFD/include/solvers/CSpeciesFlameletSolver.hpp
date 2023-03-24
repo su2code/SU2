@@ -158,17 +158,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) override;
 
-  /*!
-   * \brief Set the number of unsuccessful table lookups.
-   */
-  inline void SetNTableMisses(unsigned short val_n_table_misses) override { n_table_misses = val_n_table_misses; }
-
-  /*!
-   * \brief Get the number of unsuccessful table lookups.
-   */
-  inline unsigned long GetNTableMisses() override { return n_table_misses; }
-
-  /*!
+   /*!
    * \brief Impose the (received) conjugate heat variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

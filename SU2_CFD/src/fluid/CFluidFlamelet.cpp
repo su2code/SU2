@@ -193,7 +193,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2doub
   }
 
   /*--- set enthalpy value ---*/
-  *val_enth = enth_iter;
+  val_enth = enth_iter;
 
   if (counter >= counter_limit) {
     exit_code = 1;
