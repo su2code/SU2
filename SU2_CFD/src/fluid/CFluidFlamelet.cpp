@@ -175,7 +175,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
   unsigned long exit_code = 0;
   vector<string> look_up_tags;
   vector<su2double*> look_up_data;
-  int counter_limit = 1000;
+  const int counter_limit = 1000;
 
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
