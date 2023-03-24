@@ -332,7 +332,7 @@ class CDriverBase {
    */
   inline vector<passivedouble> GetMarkerDisplacement(unsigned short iMarker, unsigned long iVertex) const {
     vector<passivedouble> disp(GetNumberDimensions(), 0.0);
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
@@ -349,7 +349,7 @@ class CDriverBase {
    * \param[in] values - Node displacements (nDim).
    */
   inline void SetMarkerCustomDisplacement(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
@@ -365,7 +365,7 @@ class CDriverBase {
    */
   inline vector<passivedouble> GetMarkerMeshVelocity(unsigned short iMarker, unsigned long iVertex) const {
     vector<passivedouble> vel(GetNumberDimensions(), 0.0);
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
@@ -382,7 +382,7 @@ class CDriverBase {
    * \param[in] values - Node velocities (nDim).
    */
   inline void SetMarkerCustomMeshVelocity(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
@@ -517,7 +517,7 @@ class CDriverBase {
     auto* solver = GetSolverAndCheckMarker(FEA_SOL, iMarker);
     std::array<su2double, 3> load{};
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) load[iDim] = force[iDim];
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     solver->GetNodes()->Set_FlowTraction(iPoint, load.data());
   }
 
@@ -564,7 +564,7 @@ class CDriverBase {
    */
   inline vector<passivedouble> GetMarkerDisplacementSensitivity(unsigned short iMarker, unsigned long iVertex) const {
     const auto nDim = GetNumberDimensions();
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(ADJMESH_SOL)->GetNodes();
 
     vector<passivedouble> sens(nDim, 0.0);
@@ -583,7 +583,7 @@ class CDriverBase {
    */
   inline vector<passivedouble> GetMarkerFEALoadSensitivity(unsigned short iMarker, unsigned long iVertex) const {
     const auto nDim = GetNumberDimensions();
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
 
     vector<passivedouble> sens(nDim, 0.0);
@@ -602,7 +602,7 @@ class CDriverBase {
    */
   inline void SetMarkerCustomFEADisplacementAdjoint(unsigned short iMarker, unsigned long iVertex,
                                                     vector<passivedouble> adjointDisplacement) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
@@ -619,7 +619,7 @@ class CDriverBase {
    */
   inline void SetMarkerCustomFEAVelocityAdjoint(unsigned short iMarker, unsigned long iVertex,
                                                 vector<passivedouble> adjointVelocity) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    const auto iPoint = GetMarkerNodeIndex(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
