@@ -162,7 +162,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
 
 /* --- Total enthalpy is the transported variable, but we usually have temperature as a boundary condition,
        so we do a reverse lookup */
-unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2double val_prog, const su2double val_temp,
+unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2double val_prog, const su2double val_temp,
                                               const su2double initial_value) {
   string name_prog = table_scalar_names[I_PROGVAR];
   string name_enth = table_scalar_names[I_ENTH];
