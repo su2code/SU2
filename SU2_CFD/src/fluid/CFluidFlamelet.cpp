@@ -31,7 +31,7 @@
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
 #ifdef HAVE_MPI
-    SU2_MPI::Comm_rank(SU2_MPI::GetComm(),&rank);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(),&rank);
 #endif
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
@@ -106,9 +106,6 @@ unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
   su2double enth = val_scalars[I_ENTH];
   su2double prog = val_scalars[I_PROGVAR];
 
-  string name_enth = table_scalar_names[I_ENTH];
-  string name_prog = table_scalar_names[I_PROGVAR];
-
   /*--- perform table lookup ---*/
   unsigned long exit_code = look_up_table->LookUp_XY(table_lookup_names, lookup_scalar, prog, enth);
 
@@ -119,9 +116,6 @@ unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
 unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
   table_sources[0] = 0.0;
 
-  string name_enth = table_scalar_names[I_ENTH];
-  string name_prog = table_scalar_names[I_PROGVAR];
-
   /*--- value for the progress variable and enthalpy ---*/
   su2double enth = val_scalars[I_ENTH];
   su2double prog = val_scalars[I_PROGVAR];
@@ -129,11 +123,11 @@ unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
   /*--- perform table lookup ---*/
   unsigned long exit_code = look_up_table->LookUp_XY(varnames_Sources, val_vars_Sources, prog, enth);
 
-  /*--- the source term for the progress variable is always positive by construction, but we clip from below  --- */
+  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
   source_scalar[I_ENTH] = 0.0;
 
-  /*--- source term for the auxiliary species transport equations---*/
+  /*--- Source term for the auxiliary species transport equations ---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
@@ -150,13 +144,10 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   su2double val_enth = val_scalars[I_ENTH];
   su2double val_prog = val_scalars[I_PROGVAR];
 
-  string name_enth = table_scalar_names[I_ENTH];
-  string name_prog = table_scalar_names[I_PROGVAR];
-
-  /*--- add all quantities and their address to the look up vectors ---*/
+  /*--- Add all quantities and their names to the look up vectors. ---*/
   look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
 
-  /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
+  /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 
@@ -164,35 +155,27 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
        so we do a reverse lookup */
 unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2double val_prog, const su2double val_temp,
                                               const su2double initial_value) {
-  string name_prog = table_scalar_names[I_PROGVAR];
-  string name_enth = table_scalar_names[I_ENTH];
 
-  /* convergence criterion for temperature in [K], high accuracy needed for restarts. */
+  /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double delta_temp_final = 0.001;
   su2double enth_iter = initial_value;
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
-  vector<string> look_up_tags;
-  vector<su2double*> look_up_data;
   const int counter_limit = 1000;
 
   int counter = 0;
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
-    /* look up temperature and heat capacity */
+    /*--- Add all quantities and their names to the look up vectors. ---*/
     look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, enth_iter);
 
-    /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
 
-    /* calculate delta_enthalpy following dh = cp * dT */
     delta_enth = Cp * delta_temp_iter;
 
-    /*--- update enthalpy ---*/
     enth_iter += delta_enth;
   }
 
-  /*--- set enthalpy value ---*/
   val_enth = enth_iter;
 
   if (counter >= counter_limit) {
@@ -203,13 +186,13 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2doub
 }
 
 void CFluidFlamelet::PreprocessLookUp() {
-  /*--- Set lookup names and variables for all relevant lookup processes in the fluid model ---*/
+  /*--- Set lookup names and variables for all relevant lookup processes in the fluid model. ---*/
 
-  /*--- Thermodynamic state variables ---*/
+  /*--- Thermodynamic state variables and names. ---*/
   varnames_TD.resize(7);
   val_vars_TD.resize(7);
 
-  /*--- The string in varnames_TD as it appears in the LUT file ---*/
+  /*--- The string in varnames_TD as it appears in the LUT file. ---*/
   varnames_TD[0] = "Temperature";
   val_vars_TD[0] = &Temperature;
   varnames_TD[1] = "Density";

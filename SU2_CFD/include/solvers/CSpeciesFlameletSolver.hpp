@@ -81,15 +81,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                      unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
-   * \brief Post-processing routine for the passive scalar model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh) override;
-
-  /*!
    * \brief Set the initial condition for the scalar transport problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.
@@ -109,18 +100,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
-
-  /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.

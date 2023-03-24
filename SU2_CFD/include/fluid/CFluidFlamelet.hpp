@@ -80,13 +80,13 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    * \param[out] exit_code = error code
    */
-  unsigned long SetScalarSources(const su2double* val_scalars);
+  unsigned long SetScalarSources(const su2double* val_scalars) override;
 
   /*!
    * \brief Retrieve and set the lookup values for the species
    * \param[in] val_scalars - pointer to species mass fractions
    */
-  unsigned long SetScalarLookups(const su2double* val_scalars);
+  unsigned long SetScalarLookups(const su2double* val_scalars) override;
 
   /*!
    * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
@@ -136,11 +136,13 @@ class CFluidFlamelet final : public CFluidModel {
    */
   inline const su2double* GetScalarSources() const { return &source_scalar[0]; }
 
+ private:
   /*!
    * \brief Get the value of the looked up variable
    * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
    */
-  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
+  inline const su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
+
 };

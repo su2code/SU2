@@ -2175,12 +2175,12 @@ public:
   /*!
    * \brief Get the number of total transported scalars for flamelet model.
    */
-  unsigned short GetNScalars(void) const { return n_scalars; }
+  const unsigned short GetNScalars(void) const { return n_scalars; }
 
   /*!
    * \brief Get the number of user scalars for flamelet model.
    */
-  unsigned short GetNUserScalars(void) const { return n_user_scalars; }
+  const unsigned short GetNUserScalars(void) const { return n_user_scalars; }
 
   /*!
    * \brief Get the name of the user scalar.

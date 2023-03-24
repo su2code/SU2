@@ -49,15 +49,15 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  /*--- Initialize nVarGrad for deallocation ---*/
+  /*--- Initialize nVarGrad for deallocation. ---*/
 
   nVarGrad = nVar;
 
-  /*--- Define geometry constants in the solver structure ---*/
+  /*--- Define geometry constants in the solver structure. ---*/
 
   nDim = geometry->GetnDim();
 
-  /*--- Define some auxiliary vector related with the solution ---*/
+  /*--- Define some auxiliary vector related with the solution. ---*/
   Solution = new su2double[nVar];
   Solution_i = new su2double[nVar];
   Solution_j = new su2double[nVar];
@@ -70,7 +70,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   };
 
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell ---*/
+   used for coupling with a solid donor cell. ---*/
   constexpr auto n_conjugate_var = 4u;
 
   Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
@@ -79,7 +79,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
-    /*--- Define some auxiliary vector related with the residual ---*/
+    /*--- Define some auxiliary vector related with the residual. ---*/
 
     Residual_RMS.resize(nVar, 0.0);
     Residual_Max.resize(nVar, 0.0);
@@ -94,7 +94,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
       Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
     }
 
-    /*--- Initialization of the structure of the whole Jacobian ---*/
+    /*--- Initialization of the structure of the whole Jacobian. ---*/
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (flamelet model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
@@ -105,7 +105,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
   }
 
-  /*--- Initialize lower and upper limits---*/
+  /*--- Initialize clipping, lower and upper limits. ---*/
 
   if (config->GetSpecies_Clipping()) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -114,7 +114,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     }
   } else {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      /*--- we fix the lower limit to 0 ---*/
       lowerlimit[iVar] = -1.0e15;
       upperlimit[iVar] = 1.0e15;
     }
@@ -130,11 +129,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Set the column number for species in inlet-files.
    * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
@@ -173,7 +167,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain = 0;
-  //unsigned long global_table_misses = 0;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -208,15 +201,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
 
-// nijso: not used, remove?
-//  if (config->GetComm_Level() == COMM_FULL) {
-//    SU2_MPI::Reduce(&n_not_in_domain, &global_table_misses, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
-//                    SU2_MPI::GetComm());
-//    if (rank == MASTER_NODE) {
-//      SetNTableMisses(global_table_misses);
-//    }
-//  }
-
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy && !Output) {
@@ -228,7 +212,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
   }
 
-  /*--- Upwind second order reconstruction and gradients ---*/
+  /*--- Upwind second order reconstruction and gradients. ---*/
 
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
@@ -240,11 +224,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-}
-
-void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                            unsigned short iMesh) {
-  /*--- your postprocessing goes here ---*/
 }
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
@@ -281,8 +260,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     vector<string> look_up_tags;
     vector<su2double*> look_up_data;
-    string name_enth = config->GetLUTScalarName(I_ENTH);
-    string name_prog = config->GetLUTScalarName(I_PROGVAR);
 
     unsigned long n_not_iterated_local = 0;
     unsigned long n_not_in_domain_local = 0;
@@ -304,32 +281,32 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
-        /* determine if our location is above or below the plane, assuming the normal
-           is pointing towards the burned region*/
+        /*--- Determine if point is above or below the plane, assuming the normal
+           is pointing towards the burned region. ---*/
         point_loc = 0.0;
         for (unsigned short i_dim = 0; i_dim < geometry[i_mesh]->GetnDim(); i_dim++) {
           point_loc += flame_normal[i_dim] * (coords[i_dim] - flame_offset[i_dim]);
         }
 
-        /* compute the exact distance from point to plane */
+        /*--- Compute the exact distance from point to plane. ---*/
         point_loc = point_loc / flamenorm;
 
-        /* --- unburnt region upstream of the flame --- */
+        /* --- Unburnt region upstream of the flame. --- */
         if (point_loc <= 0) {
           scalar_init[I_PROGVAR] = prog_unburnt;
           n_points_unburnt_local++;
 
-          /* --- flame zone --- */
+          /* --- Flame zone where we lineary increase from unburnt to burnt conditions. --- */
         } else if ((point_loc > 0) && (point_loc <= flame_thickness)) {
           scalar_init[I_PROGVAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
           n_points_flame_local++;
 
-          /* --- burnt region --- */
+          /* --- Burnt region behind the flame zone. --- */
         } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)) {
           scalar_init[I_PROGVAR] = prog_burnt;
           n_points_burnt_local++;
 
-          /* --- unburnt region downstream of the flame --- */
+          /* --- Unburnt region downstream of the flame and burnt region. --- */
         } else {
           scalar_init[I_PROGVAR] = prog_unburnt;
           n_points_unburnt_local++;
@@ -341,7 +318,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_XY(
             look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH]);
 
-        /* --- initialize the auxiliary transported scalars  (not controlling variables) --- */
+        /* --- Initialize the auxiliary transported scalars  (not controlling variables). --- */
         for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
@@ -359,7 +336,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
 
-    /* --- sum up some counters over processes --- */
+    /* --- Sum up some global counters over processes. --- */
     SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
                     SU2_MPI::GetComm());
     SU2_MPI::Reduce(&n_not_iterated_local, &n_not_iterated_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
@@ -467,11 +444,11 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    /*--- Set primitive variables w/o reconstruction ---*/
+    /*--- Set primitive variables w/o reconstruction. ---*/
 
     first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
 
-    /*--- Set scalar variables w/o reconstruction ---*/
+    /*--- Set scalar variables w/o reconstruction. ---*/
 
     first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
 
@@ -486,11 +463,11 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     auto residual = first_numerics->ComputeResidual(config);
 
-    /*--- Add Residual ---*/
+    /*--- Add Residual. ---*/
 
     LinSysRes.SubtractBlock(i_point, residual);
 
-    /*--- Implicit part ---*/
+    /*--- Implicit part. ---*/
 
     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
   }
@@ -502,11 +479,11 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
-      /*--- Set primitive variables w/o reconstruction ---*/
+      /*--- Set primitive variables w/o reconstruction. ---*/
 
       numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
-      /*--- Set scalar variables w/o reconstruction ---*/
+      /*--- Set scalar variables w/o reconstruction. ---*/
 
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
@@ -516,21 +493,21 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Set y coordinate ---*/
+      /*--- Set y coordinate. ---*/
 
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
-      /*--- Set gradients ---*/
+      /*--- Set gradients. ---*/
 
       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
       auto residual = numerics->ComputeResidual(config);
 
-      /*--- Add Residual ---*/
+      /*--- Add Residual. ---*/
 
       LinSysRes.SubtractBlock(iPoint, residual);
 
-      /*--- Implicit part ---*/
+      /*--- Implicit part. ---*/
 
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     }
@@ -548,18 +525,18 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
-  /*--- We compute inlet enthalpy from the temperature and progress variable ---*/
+  /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet = inlet_scalar_original[I_ENTH];
   fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet, inlet_scalar_original[I_ENTH]);
   inlet_scalar[I_ENTH] = enth_inlet;
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -568,27 +545,27 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
       LinSysRes.SetBlock_Zero(iPoint);
 
-      /*--- Includes 1 in the diagonal ---*/
+      /*--- Includes 1 in the diagonal. ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         auto total_index = iPoint * nVar + iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
     } else {
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      /*--- Normal vector for this vertex (negate for outward convention). ---*/
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
 
-      /*--- Allocate the value at the inlet ---*/
+      /*--- Allocate the value at the inlet. ---*/
 
       auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      /*--- Retrieve solution at the farfield boundary node. ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
-      /*--- Set various quantities in the solver class ---*/
+      /*--- Set various quantities in the solver class. ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
@@ -596,17 +573,17 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
 
-      /*--- Set various other quantities in the solver class ---*/
+      /*--- Set various other quantities in the solver class. ---*/
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Compute the residual using an upwind scheme ---*/
+      /*--- Compute the residual using an upwind scheme. ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
-      /*--- Jacobian contribution for implicit integration ---*/
+      /*--- Jacobian contribution for implicit integration. ---*/
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
@@ -616,17 +593,18 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
 void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    /* strong zero flux Neumann boundary condition at the outlet */
+    /*--- Strong zero flux Neumann boundary condition at the outlet. ---*/
+
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      /*--- Allocate the value at the outlet ---*/
+      /*--- Allocate the value at the outlet. ---*/
 
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
@@ -639,7 +617,7 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
         nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
       }
 
-      /*--- Includes 1 in the diagonal ---*/
+      /*--- Includes 1 in the diagonal. ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         auto total_index = iPoint * nVar + iVar;
         Jacobian.DeleteValsRowi(total_index);
@@ -648,9 +626,6 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
   }
   END_SU2_OMP_FOR
 }
-
-void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                              CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {}
 
 void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
@@ -665,19 +640,19 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
   su2double enth_init, enth_wall, prog_wall;
   unsigned long n_not_iterated = 0;
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Loop over all the vertices on this boundary marker. ---*/
 
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      /*--- Set enthalpy on the wall ---*/
+      /*--- Set enthalpy on the wall. ---*/
 
       prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
       if (config->GetSpecies_StrongBC()) {
-        /*--- Initial guess for enthalpy value ---*/
+        /*--- Initial guess for enthalpy value. ---*/
 
         enth_init = nodes->GetSolution(iPoint, I_ENTH);
         enth_wall = enth_init;
@@ -700,14 +675,14 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
           Jacobian.DeleteValsRowi(total_index);
         }
       } else {
-        /*--- Weak BC formulation ---*/
+        /*--- Weak BC formulation. ---*/
         const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
         const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        /*--- Get coordinates of i & nearest normal and compute distance. ---*/
 
         const auto Coord_i = geometry->nodes->GetCoord(iPoint);
         const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
@@ -716,11 +691,11 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
         su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall ---*/
+        /*--- Compute the normal gradient in temperature using Twall. ---*/
 
         su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
 
-        /*--- Get thermal conductivity ---*/
+        /*--- Get thermal conductivity. ---*/
 
         su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
 
@@ -749,23 +724,23 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
   unsigned long n_not_iterated = 0;
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Loop over all the vertices on this boundary marker. ---*/
 
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
       if (config->GetSpecies_StrongBC()) {
-        /*--- Initial guess for enthalpy ---*/
+        /*--- Initial guess for enthalpy. ---*/
 
         su2double enth_init = nodes->GetSolution(iPoint, I_ENTH);
         su2double enth_wall = enth_init;
 
-        /*--- Set enthalpy on the wall ---*/
+        /*--- Set enthalpy on the wall. ---*/
 
         su2double prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
         n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
@@ -786,14 +761,14 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
           Jacobian.DeleteValsRowi(total_index);
         }
       } else {
-        /*--- Weak BC formulation ---*/
+        /*--- Weak BC formulation. ---*/
         const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
         const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        /*--- Get coordinates of i & nearest normal and compute distance. ---*/
 
         const auto Coord_i = geometry->nodes->GetCoord(iPoint);
         const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
@@ -802,7 +777,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
         su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
         su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall ---*/
+        /*--- Compute the normal gradient in temperature using Twall. ---*/
 
         su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
 

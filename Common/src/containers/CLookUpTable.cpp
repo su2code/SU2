@@ -643,9 +643,7 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
 
   /* loop over variable names and interpolate / get values */
   for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
-    if (val_names_var[i_var].compare("NULL") == 0 || val_names_var[i_var].compare("Null") == 0 ||
-        val_names_var[i_var].compare("null") == 0 || val_names_var[i_var].compare("ZERO") == 0 ||
-        val_names_var[i_var].compare("Zero") == 0 || val_names_var[i_var].compare("zero") == 0) {
+    if (noSource(val_names_var[i_var])) {
       *val_vars[i_var] = 0.0;
       exit_code = 0;
     } else {
