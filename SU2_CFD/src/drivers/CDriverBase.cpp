@@ -367,7 +367,7 @@ unsigned long CDriverBase::GetNumberMarkerNodes(unsigned short iMarker) const {
   return main_geometry->GetnVertex(iMarker);
 }
 
-unsigned long CDriverBase::GetMarkerNode(unsigned short iMarker, unsigned long iVertex) const {
+unsigned long CDriverBase::GetMarkerNodeIndex(unsigned short iMarker, unsigned long iVertex) const {
   if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }

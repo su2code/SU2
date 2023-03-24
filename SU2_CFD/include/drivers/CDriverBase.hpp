@@ -312,7 +312,7 @@ class CDriverBase {
    * \param[in] iVertex - Marker vertex index.
    * \return Marker vertex.
    */
-  unsigned long GetMarkerNode(unsigned short iMarker, unsigned long iVertex) const;
+  unsigned long GetMarkerNodeIndex(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the normal vector of a marker vertex.

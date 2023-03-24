@@ -402,7 +402,9 @@ class Interface:
         # Calculate the number of halo nodes on each partition
         self.nLocalFluidInterfaceHaloNode = 0
         for iVertex in range(self.nLocalFluidInterfaceNodes):
-            iPoint = FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
+            iPoint = FluidSolver.GetMarkerNodeIndex(
+                self.fluidInterfaceIdentifier, iVertex
+            )
             if not FluidSolver.GetNodeDomain(iPoint):
                 GlobalIndex = FluidSolver.GetNodeGlobalIndex(iPoint)
                 self.FluidHaloNodeList[GlobalIndex] = iVertex
@@ -737,7 +739,9 @@ class Interface:
             # Note that the fluid solver is separated in more processors outside the python script
             # thus when, from a core, we request for the vertices on the interface, we only obtain
             # those in that core
-            iPoint = FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
+            iPoint = FluidSolver.GetMarkerNodeIndex(
+                self.fluidInterfaceIdentifier, iVertex
+            )
             GlobalIndex = FluidSolver.GetNodeGlobalIndex(iPoint)
             if self.nDim == 2:
                 posx, posy = FluidSolver.InitialCoordinates().Get(iPoint)
@@ -2045,7 +2049,7 @@ class Interface:
         # --- Get the fluid interface loads from the fluid solver and directly fill the corresponding PETSc vector ---
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             GlobalIndex = FluidSolver.GetNodeGlobalIndex(
-                FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
+                FluidSolver.GetMarkerNodeIndex(self.fluidInterfaceIdentifier, iVertex)
             )
             if GlobalIndex not in self.FluidHaloNodeList[myid].keys():
                 load = FluidSolver.GetMarkerFlowLoad(
@@ -2080,7 +2084,7 @@ class Interface:
         localIndex = 0
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             GlobalIndex = FluidSolver.GetNodeGlobalIndex(
-                FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
+                FluidSolver.GetMarkerNodeIndex(self.fluidInterfaceIdentifier, iVertex)
             )
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 DispX, DispY, DispZ = self.haloNodesDisplacements[GlobalIndex]
@@ -2856,7 +2860,7 @@ class Interface:
                     self.fluidInterfaceIdentifier, iVertex, False
                 )
             GlobalIndex = FluidSolver.GetNodeGlobalIndex(
-                FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
+                FluidSolver.GetMarkerNodeIndex(self.fluidInterfaceIdentifier, iVertex)
             )
             nodeNormals[GlobalIndex] = [nx, ny, nz]
 
