@@ -86,7 +86,9 @@ def main():
     comm.Barrier()
 
   # Define the load at the target vertex
-  SU2Driver.SetMarkerCustomFEALoad(MarkerID, 5, (0, -0.005, 0))
+  if MarkerID != None:
+    SU2Driver.SetMarkerCustomFEALoad(MarkerID, 5, (0, -0.005, 0))
+
 
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
