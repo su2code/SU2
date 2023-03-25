@@ -158,7 +158,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_ScalarLinsol(config);
+  AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -256,7 +256,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
-  LoadHistoryData_Scalar(config, solver);
+  LoadHistoryDataScalar(config, solver);
 
   if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
@@ -298,7 +298,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
-  SetVolumeOutputFields_ScalarSolution(config);
+  SetVolumeOutputFieldsScalarSolution(config);
 
   // Radiation variables
   if (config->AddRadiation())
@@ -344,7 +344,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetEnergy_Equation())
     AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
-  SetVolumeOutputFields_ScalarResidual(config);
+  SetVolumeOutputFieldsScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
@@ -356,7 +356,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
 
-  SetVolumeOutputFields_ScalarLimiter(config);
+  SetVolumeOutputFieldsScalarLimiter(config);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
@@ -432,7 +432,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   // All turbulence and species outputs.
-  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
+  LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
@@ -444,7 +444,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   LoadCommonFVMOutputs(config, geometry, iPoint);
 }
 
-bool CFlowIncOutput::SetInit_Residuals(const CConfig *config){
+bool CFlowIncOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));

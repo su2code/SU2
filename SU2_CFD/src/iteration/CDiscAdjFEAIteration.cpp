@@ -309,7 +309,7 @@ bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration
                                    CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
   /*--- Write the convergence history (only screen output) ---*/
 
-  output->SetHistory_Output(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
+  output->SetHistoryOutput(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
                             config[iZone]->GetTimeIter(), config[iZone]->GetOuterIter(),
                             config[iZone]->GetInnerIter());
 

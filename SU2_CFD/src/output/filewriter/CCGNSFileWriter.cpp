@@ -32,7 +32,7 @@ const string CCGNSFileWriter::fileExt = ".cgns";
 CCGNSFileWriter::CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf)
     : CFileWriter(valDataSorter, fileExt), isSurface(isSurf) {}
 
-void CCGNSFileWriter::Write_Data(string val_filename) {
+void CCGNSFileWriter::WriteData(string val_filename) {
 
 #ifdef HAVE_CGNS
 
@@ -199,7 +199,7 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   for (unsigned long iElem = 0; iElem < nLocalElem; iElem++) {
     for (unsigned long iPoint = 0; iPoint < nPointsElem; iPoint++) {
       sendBufferConnectivity[iPoint + nPointsElem * iElem] =
-          static_cast<cgsize_t>(dataSorter->GetElem_Connectivity(type, iElem, iPoint));
+          static_cast<cgsize_t>(dataSorter->GetElemConnectivity(type, iElem, iPoint));
     }
   }
 
