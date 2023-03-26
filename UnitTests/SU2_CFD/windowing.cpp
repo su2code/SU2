@@ -63,7 +63,7 @@ struct CWindowingTest {
         weightCurrent = innerIteration;
         // Simulate gradual change of sample during inner iterations.
         input = (weightPrevious * previousSample + weightCurrent * currentSample) / (weightCurrent + weightPrevious);
-        avg.addValue(input, outerIteration, startIteration);
+        avg.AddValue(input, outerIteration, startIteration);
       }
     }
     return avg.GetVal();
