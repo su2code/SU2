@@ -1909,7 +1909,7 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  /*!\brief MUSCL_ADJFLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
@@ -1920,7 +1920,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the adjoint Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("ADJ_LAX_SENSOR_COEFF", Kappa_1st_AdjFlow, 0.15);
 
-  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  /*!\brief MUSCL_TURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
@@ -1929,7 +1929,7 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 
-  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  /*!\brief MUSCL_ADJTURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
    *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
@@ -1944,7 +1944,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method for species transport \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_SPECIES", Kind_ConvNumScheme_Species, Kind_Centered_Species, Kind_Upwind_Species);
 
-  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  /*!\brief MUSCL_HEAT \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
   /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
@@ -3559,6 +3559,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   SetScalarDefaults(MUSCL_Turb, Kind_ConvNumScheme_Turb, Kind_Upwind_Turb, Kind_SlopeLimit_Turb);
   SetScalarDefaults(MUSCL_Heat, Kind_ConvNumScheme_Heat, Kind_Upwind_Heat, Kind_SlopeLimit_Heat);
   SetScalarDefaults(MUSCL_Species, Kind_ConvNumScheme_Species, Kind_Upwind_Species, Kind_SlopeLimit_Species);
+
+  if (MUSCL_Flow && (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) {
+    if (OptionIsSet("MUSCL_FLOW")) {
+      SU2_MPI::Error("Centered schemes do not use MUSCL reconstruction (use MUSCL_FLOW= NO).", CURRENT_FUNCTION);
+    } else {
+      MUSCL_Flow = false;
+    }
+  }
 
   if (!MUSCL_Flow || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = LIMITER::NONE;
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
@@ -6642,7 +6650,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == UPWIND::HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::SW)     cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == UPWIND::CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::L2ROE)  cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::LMROE)  cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::SLAU)   cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
