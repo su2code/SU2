@@ -356,7 +356,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
 
-  SetVolumeOutputFieldsScalarLimiter(config);
+  SetVolumeOutputFieldsScalarMisc(config);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {

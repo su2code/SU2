@@ -128,7 +128,7 @@ protected:
    * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFieldsScalarLimiter(const CConfig* config);
+  void SetVolumeOutputFieldsScalarMisc(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) volume field values for a point.

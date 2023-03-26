@@ -283,7 +283,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   }
 
-  SetVolumeOutputFieldsScalarLimiter(config);
+  SetVolumeOutputFieldsScalarMisc(config);
 
   AddCommonFVMOutputs(config);
 
