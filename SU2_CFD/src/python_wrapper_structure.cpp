@@ -62,7 +62,7 @@ void CDriver::PythonInterfacePreprocessing(CConfig** config, CGeometry**** geome
 /* Functions related to the global performance indices (Lift, Drag, etc.)  */
 /////////////////////////////////////////////////////////////////////////////
 
-passivedouble CDriver::Get_Drag() const {
+passivedouble CDriver::GetDrag() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CDrag, factor, val_Drag;
@@ -76,7 +76,7 @@ passivedouble CDriver::Get_Drag() const {
   return SU2_TYPE::GetValue(val_Drag);
 }
 
-passivedouble CDriver::Get_Lift() const {
+passivedouble CDriver::GetLift() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CLift, factor, val_Lift;
@@ -90,7 +90,7 @@ passivedouble CDriver::Get_Lift() const {
   return SU2_TYPE::GetValue(val_Lift);
 }
 
-passivedouble CDriver::Get_Mx() const {
+passivedouble CDriver::GetMx() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CMx, RefLengthCoeff, factor, val_Mx;
@@ -106,7 +106,7 @@ passivedouble CDriver::Get_Mx() const {
   return SU2_TYPE::GetValue(val_Mx);
 }
 
-passivedouble CDriver::Get_My() const {
+passivedouble CDriver::GetMy() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CMy, RefLengthCoeff, factor, val_My;
@@ -122,7 +122,7 @@ passivedouble CDriver::Get_My() const {
   return SU2_TYPE::GetValue(val_My);
 }
 
-passivedouble CDriver::Get_Mz() const {
+passivedouble CDriver::GetMz() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CMz, RefLengthCoeff, factor, val_Mz;
@@ -138,7 +138,7 @@ passivedouble CDriver::Get_Mz() const {
   return SU2_TYPE::GetValue(val_Mz);
 }
 
-passivedouble CDriver::Get_DragCoeff() const {
+passivedouble CDriver::GetDragCoeff() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CDrag;
@@ -148,7 +148,7 @@ passivedouble CDriver::Get_DragCoeff() const {
   return SU2_TYPE::GetValue(CDrag);
 }
 
-passivedouble CDriver::Get_LiftCoeff() const {
+passivedouble CDriver::GetLiftCoeff() const {
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
   su2double CLift;
@@ -176,7 +176,7 @@ string CDriver::GetSurfaceFileName() const { return config_container[ZONE_0]->Ge
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
+void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
   CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
 
@@ -186,7 +186,7 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
 
-void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
+void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
   unsigned long iVertex;

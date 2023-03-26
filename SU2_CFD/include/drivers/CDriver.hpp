@@ -97,25 +97,25 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDriver(void);
+  ~CDriver(void) override;
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Run(){};
+  void Run() override{};
 
  protected:
   /*!
-   * \brief Init_Containers
+   * \brief Initialize containers. 
    */
-  void SetContainers_Null();
+  void SetContainersNull();
 
   /*!
    * \brief Read in the config and mesh files.
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void InputPreprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -123,7 +123,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void GeometricalPreprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
@@ -144,7 +144,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iteration - Pointer to the iteration container to be instantiated.
    */
-  void Iteration_Preprocessing(CConfig* config, CIteration*& iteration) const;
+  void IterationPreprocessing(CConfig* config, CIteration*& iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -152,7 +152,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void SolverPreprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -161,7 +161,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] update_geo - Boolean to indicate if geometry should be updated.
    */
-  void Solver_Restart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
+  void SolverRestart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -170,7 +170,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Solver_Postprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
+  void SolverPostprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -178,7 +178,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
+  void IntegrationPreprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -187,7 +187,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Integration_Postprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
+  void IntegrationPostprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
                                   unsigned short val_iInst);
 
   /*!
@@ -199,7 +199,7 @@ class CDriver : public CDriverBase {
    * \param[in] interface - Class defining the physical transfer of information.
    * \param[in] interpolation -  Object defining the interpolation.
    */
-  void Interface_Preprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
+  void InterfacePreprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
                                unsigned short** interface_types, CInterface*** interface,
                                vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
@@ -210,7 +210,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void NumericsPreprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
@@ -240,7 +240,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Numerics_Postprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
+  void NumericsPostprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
                                unsigned short val_iInst);
 
   /*!
@@ -252,7 +252,7 @@ class CDriver : public CDriverBase {
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] surface_movement - Surface movement classes of the problem.
    */
-  void DynamicMesh_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
+  void DynamicMeshPreprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
@@ -271,7 +271,7 @@ class CDriver : public CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void OutputPreprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 
   /*!
@@ -279,7 +279,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void StaticMesh_Preprocessing(const CConfig* config, CGeometry** geometry);
+  void StaticMeshPreprocessing(const CConfig* config, CGeometry** geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -288,7 +288,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+  void TurbomachineryPreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
 
   /*!
@@ -296,28 +296,28 @@ class CDriver : public CDriverBase {
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -325,7 +325,7 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationDisplacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -333,28 +333,28 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationTractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
    */
-  virtual void Run_GaussSeidel() {}
+  virtual void RunGaussSeidel() {}
 
   /*!
    * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
    */
-  virtual void Run_Jacobi() {}
+  virtual void RunJacobi() {}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Update() {}
+  void Update() override {}
 
   /*!
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void Print_DirectResidual(RECORDING kind_recording);
+  void PrintDirectResidual(RECORDING kind_recording);
 
  public:
   /*!
@@ -365,7 +365,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine
    */
-  void Finalize();
+  void Finalize() override;
 
   /*!
    * \brief A virtual member.
@@ -416,43 +416,43 @@ class CDriver : public CDriverBase {
    * \brief Get the total drag.
    * \return Total drag.
    */
-  passivedouble Get_Drag() const;
+  passivedouble GetDrag() const;
 
   /*!
    * \brief Get the total lift.
    * \return Total lift.
    */
-  passivedouble Get_Lift() const;
+  passivedouble GetLift() const;
 
   /*!
    * \brief Get the total x moment.
    * \return Total x moment.
    */
-  passivedouble Get_Mx() const;
+  passivedouble GetMx() const;
 
   /*!
    * \brief Get the total y moment.
    * \return Total y moment.
    */
-  passivedouble Get_My() const;
+  passivedouble GetMy() const;
 
   /*!
    * \brief Get the total z moment.
    * \return Total z moment.
    */
-  passivedouble Get_Mz() const;
+  passivedouble GetMz() const;
 
   /*!
    * \brief Get the total drag coefficient.
    * \return Total drag coefficient.
    */
-  passivedouble Get_DragCoeff() const;
+  passivedouble GetDragCoeff() const;
 
   /*!
    * \brief Get the total lift coefficient.
    * \return Total lift coefficient.
    */
-  passivedouble Get_LiftCoeff() const;
+  passivedouble GetLiftCoeff() const;
 
   /*!
    * \brief Get the number of external iterations.
@@ -484,7 +484,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
+  void InletPreprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Set the position of the heat source.
@@ -493,14 +493,14 @@ class CDriver : public CDriverBase {
    * \param[in] pos_y - Position Y.
    * \param[in] pos_z - Position Z.
    */
-  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+  void SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
 
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
    * \param[in] alpha - Angle (Zpos).
    */
-  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+  void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
 /// \}
 
@@ -636,7 +636,7 @@ class CFluidDriver : public CDriver {
   /*!
    * \brief Transfer data among different zones (multiple zone).
    */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+  void TransferData(unsigned short donorZone, unsigned short targetZone);
 };
 
 /*!

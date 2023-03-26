@@ -173,7 +173,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdj_ObjFunction();
+    SetAdjObjFunction();
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -320,7 +320,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
 }
 
-void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
+void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
 
   const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
@@ -429,7 +429,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Print the direct residual to screen ---*/
 
-  Print_DirectResidual(kind_recording);
+  PrintDirectResidual(kind_recording);
 
 }
 
@@ -462,7 +462,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  SetAdj_ObjFunction();
+  SetAdjObjFunction();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 

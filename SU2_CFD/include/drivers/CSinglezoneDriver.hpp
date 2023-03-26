@@ -113,6 +113,6 @@ public:
   /*!
    * \brief Runtime_Parsing
    */
-  virtual void Runtime_Options();
+  virtual void RuntimeOptions();
 
 };

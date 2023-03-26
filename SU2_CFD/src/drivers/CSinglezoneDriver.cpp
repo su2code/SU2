@@ -114,7 +114,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set runtime option ---*/
 
-  Runtime_Options();
+  RuntimeOptions();
 
   /*--- Set the current time iteration in the config ---*/
 
@@ -308,7 +308,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   return StopCalc;
 }
 
-void CSinglezoneDriver::Runtime_Options(){
+void CSinglezoneDriver::RuntimeOptions(){
 
   ifstream runtime_configfile;
 
