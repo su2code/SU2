@@ -1130,7 +1130,9 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
+void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
+  /*--- Only place outputs of the "SOLUTION" group here. ---*/
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
@@ -1149,9 +1151,6 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
       AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
-      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1165,7 +1164,9 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
+  /*--- Only place outputs of the "RESIDUAL" group here. ---*/
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
@@ -1193,12 +1194,13 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
       AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
     }
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
+  /*--- Place "PRIMITIVE", "LIMITER", and other groups here. ---*/
+
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
       case TURB_FAMILY::SA:
@@ -1220,6 +1222,20 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
         AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
     }
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+    }
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
