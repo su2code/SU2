@@ -169,7 +169,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_ScalarLinsol(config);
+  AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
@@ -202,7 +202,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddRotatingFrameCoefficients();
 
-  Add_CpInverseDesignOutput();
+  AddCpInverseDesignOutput();
 
 }
 
@@ -364,7 +364,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
   }
 
-  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
+  LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
@@ -434,7 +434,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", NEMO_solver->GetAoA_inc());
   }
 
-  LoadHistoryData_Scalar(config, solver);
+  LoadHistoryDataScalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
 
@@ -450,7 +450,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set Cp diff fields ---*/
 
-  Set_CpInverseDesign(NEMO_solver, geometry, config);
+  SetCpInverseDesign(NEMO_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
@@ -460,7 +460,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 }
 
-bool CNEMOCompOutput::SetInit_Residuals(const CConfig *config){
+bool CNEMOCompOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
@@ -474,6 +474,6 @@ void CNEMOCompOutput::SetAdditionalScreenOutput(const CConfig *config){
   }
 }
 
-bool CNEMOCompOutput::WriteHistoryFile_Output(const CConfig *config) {
-  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
+bool CNEMOCompOutput::WriteHistoryFileOutput(const CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFileOutput(config);
 }

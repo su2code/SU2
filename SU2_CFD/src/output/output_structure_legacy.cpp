@@ -340,7 +340,7 @@ COutputLegacy::~COutputLegacy(void) {
   }
 }
 
-void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
+void COutputLegacy::SetConvHistoryHeader(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
   char cstr[200], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
@@ -590,7 +590,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
 }
 
 
-void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
+void COutputLegacy::SetConvHistoryBody(ofstream *ConvHist_file,
                                   CGeometry ****geometry,
                                   CSolver *****solver_container,
                                   CConfig **config,
@@ -650,21 +650,21 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_AnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+            SpecialOutputAnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
                                          geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
-            SpecialOutput_Distortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+            SpecialOutputDistortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
                                      geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the cp coefficent at different stations. ---*/
 
           if (config[val_iZone]->GetPlot_Section_Forces()) {
-            SpecialOutput_SpanLoad(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+            SpecialOutputSpanLoad(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
@@ -677,18 +677,18 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
 
       if (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
-        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
+        SpecialOutputHarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
 
       /*--- Compute span-wise values file for turbomachinery. ---*/
 
       if (config[val_iZone]->GetBoolTurbomachinery()) {
-        SpecialOutput_Turbo(solver_container, geometry, config, val_iZone, output_files);
+        SpecialOutputTurbo(solver_container, geometry, config, val_iZone, output_files);
       }
 
       /*--- Output a file with the forces breakdown. ---*/
 
-      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
+      SpecialOutputForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
 
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
 
@@ -2424,7 +2424,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
-void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const {
+void COutputLegacy::SpecialOutputForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const {
 
   char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
@@ -4278,7 +4278,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
 }
 
-void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
+void COutputLegacy::SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
@@ -4694,7 +4694,7 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
 }
 
 
-void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+void COutputLegacy::SetCpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
@@ -4845,7 +4845,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 
 }
 
-void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+void COutputLegacy::SetHeatFluxInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
@@ -4998,7 +4998,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
 
 
-void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
+void COutputLegacy::SpecialOutputDistortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iMarker, iDim, iMarker_Analyze;
   unsigned long iPoint, iVertex;
@@ -6349,7 +6349,7 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
 
 }
 
-void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geometry, CConfig **config,
+void COutputLegacy::SpecialOutputTurbo(CSolver *****solver, CGeometry ****geometry, CConfig **config,
                                        unsigned short val_iZone, bool output) {
 
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
@@ -6602,7 +6602,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
   }
 }
 
-void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) const {
+void COutputLegacy::SpecialOutputHarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) const {
 
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
@@ -6693,7 +6693,7 @@ void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry
   delete [] averages;
 }
 
-void COutputLegacy::SetSpecial_Output(CSolver *****solver_container,
+void COutputLegacy::SetSpecialOutput(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
@@ -6708,13 +6708,13 @@ void COutputLegacy::SetSpecial_Output(CSolver *****solver_container,
 
     /*--- Output a file with the forces breakdown. ---*/
     if (config[iZone]->GetWrt_ForcesBreakdown())
-      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, iZone, special_output);
+      SpecialOutputForcesBreakdown(solver_container, geometry, config, iZone, special_output);
 
   }
 
 }
 
-void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
+void COutputLegacy::SpecialOutputAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;

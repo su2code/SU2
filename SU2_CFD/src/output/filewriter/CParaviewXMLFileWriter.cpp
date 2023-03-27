@@ -49,7 +49,7 @@ CParaviewXMLFileWriter::~CParaviewXMLFileWriter(){
 
 }
 
-void CParaviewXMLFileWriter::Write_Data(string val_filename){
+void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -216,7 +216,7 @@ void CParaviewXMLFileWriter::Write_Data(string val_filename){
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
     for (iElem = 0; iElem < nElem; iElem++) {
       for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
+        connBuf[iStorage+iNode] = int(dataSorter->GetElemConnectivity(type, iElem, iNode)-1);
       }
       iStorage += nPoints;
       offsetBuf[iElemID++] = int(iStorage + dataSorter->GetnElemConnCumulative(rank));
