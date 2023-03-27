@@ -4558,15 +4558,14 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   //TODO: make this a function
-  ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
-  
+  ifstream in_phi(phi_filename);
   if (!read_mask_from_file && !use_all_nodes) {
     std::cout << "Using greedy algorithm to compute " << desired_nodes << " nodes." << std::endl;
   if (in_phi) {
     std::string line;
-    
+  
     while (getline(in_phi, line)) {
       stringstream sep(line);
       string field;
@@ -4581,9 +4580,9 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   }
   
   // TODO: Use all modes (since this is "offline") or only use truncated # modes?
-  //unsigned long nsnaps = Phi.size();
-  unsigned long nsnaps = 20;
-  unsigned long j, k, ii, imask, inode, nodewithMax;
+    unsigned long nsnaps = config->GetnPOD_Modes();
+  //unsigned long nsnaps = 20;
+  unsigned long j, k, ii, inode, nodewithMax;
   
   /*--- compute PhiNodes, the norm of Phi at each node ---*/
   std::vector<double> PhiNodes;
@@ -4626,14 +4625,11 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
     }
     
     /*--- loop through nodes to add masked Phi entries in correct order ---*/
-    //TODO: simplify this loop
-    for (imask = 0; imask < nPointDomain; imask++) {
-      if (MaskedNode(imask)) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
-
-        for (j = 0; j < ivec; j++) {
-          for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
-        }
+    for (unsigned long imask : Mask) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
+      
+      for (j = 0; j < ivec; j++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
       }
     }
       

@@ -1112,7 +1112,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Calculate reduced residual ---*/
     
     vector<su2double> r_red(nsnaps, 0.0);
-    for (unsigned long jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
+    for (unsigned long jPoint = 0; jPoint < nsnaps; jPoint++) {
       for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
         for (unsigned short i = 0; i < nVar; i++){
           double prod2 = r_ns[iPoint_mask*nVar + i] * TestBasis[jPoint*m + iPoint_mask*nVar + i];
@@ -1168,7 +1168,6 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Update ROM solution ---*/
     
     su2double a = GetAlpha_ROM();
-    
     for (int i = 0; i < nsnaps; i++) {
       GenCoordsY[i] += a * r[i] ;
     }
@@ -1184,7 +1183,7 @@ class CFVMFlowSolverBase : public CSolver {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double sum = 0.0;
         
-        for (unsigned long i = 0; i < TrialBasis[0].size(); i++) {
+        for (unsigned long i = 0; i < nsnaps; i++) {
           sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
         }
         nodes->AddROMSolution(iPoint, iVar, sum);
@@ -1198,14 +1197,6 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*--- "Add" residuals from all threads to global residual variables. ---*/
     ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
-    
-    ofstream fs;
-    std::string fname4 = "check_red_coords_y.csv";
-    fs.open(fname4);
-    for(int i=0; i < nsnaps; i++){
-      fs << setprecision(10) << GenCoordsY[i] << "\n" ;
-    }
-    fs.close();
     
     /*--- MPI solution ---*/
 
