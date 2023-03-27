@@ -120,7 +120,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Postprocessing(){}
+  virtual void Finalize(){}
 
 /// \addtogroup PySU2
 /// @{
@@ -265,6 +265,18 @@ class CDriverBase {
   vector<string> GetDeformableMarkerTags() const;
 
   /*!
+   * \brief Get all the CHT boundary marker tags.
+   * \return List of CHT boundary markers tags.
+   */
+  vector<string> GetCHTMarkerTags() const;
+
+  /*!
+   * \brief Get all the inlet boundary marker tags.
+   * \return List of inlet boundary markers tags.
+   */
+  vector<string> GetInletMarkerTags() const;
+
+  /*!
    * \brief Get the number of elements in the marker.
    * \param[in] iMarker - Marker index.
    * \return Number of elements.
@@ -313,36 +325,70 @@ class CDriverBase {
                                                bool normalize = false) const;
 
   /*!
-   * \brief Get the displacements of a marker vertex.
+   * \brief Get the displacements currently imposed of a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Node displacements (nDim).
    */
-  vector<passivedouble> GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const;
+  inline vector<passivedouble> GetMarkerDisplacement(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> disp(GetNumberDimensions(), 0.0);
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      disp[iDim] = SU2_TYPE::GetValue(nodes->GetBound_Disp(iPoint, iDim));
+    }
+    return disp;
+  }
 
   /*!
-   * \brief Set the displacements of a marker vertex.
+   * \brief Set the mesh displacements of a marker vertex.
+   * \note This can be the input of the flow solver in an FSI setting.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Node displacements (nDim).
    */
-  void SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+  inline void SetMarkerCustomDisplacement(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
+      nodes->SetBound_Disp(iPoint, iDim, values[iDim]);
+    }
+  }
 
   /*!
-   * \brief Get the velocities of a marker vertex.
+   * \brief Get the mesh velocities currently imposed on a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Node velocities (nDim).
    */
-  vector<passivedouble> GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const;
+  inline vector<passivedouble> GetMarkerMeshVelocity(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> vel(GetNumberDimensions(), 0.0);
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      vel[iDim] = SU2_TYPE::GetValue(nodes->GetBound_Vel(iPoint, iDim));
+    }
+    return vel;
+  }
 
   /*!
    * \brief Set the velocities of a marker vertex.
+   * \note This can be the input of the flow solver in an unsteady FSI setting.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Node velocities (nDim).
    */
-  void SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+  inline void SetMarkerCustomMeshVelocity(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
+      nodes->SetBound_Vel(iPoint, iDim, values[iDim]);
+    }
+  }
 
   /*!
    * \brief Communicate the boundary mesh displacements.
@@ -422,6 +468,165 @@ class CDriverBase {
         const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), main_geometry->vertex[iMarker],
         main_geometry->GetnVertex(iMarker), "MarkerPrimitives", false);
   }
+
+  /*!
+   * \brief Set the temperature of a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a heat or flow solver in a CHT setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallTemp - Value of the temperature.
+   */
+  inline void SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble WallTemp)  {
+    main_geometry->SetCustomBoundaryTemperature(iMarker, iVertex, WallTemp);
+  }
+
+  /*!
+   * \brief Set the wall normal heat flux at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a heat or flow solver in a CHT setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallHeatFlux - Value of the normal heat flux.
+   */
+  inline void SetMarkerCustomNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble WallHeatFlux) {
+    main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
+  }
+
+  /*!
+   * \brief Get the wall normal heat flux at a vertex on a specified marker of the flow or heat solver.
+   * \note This can be the output of a heat or flow solver in a CHT setting.
+   * \param[in] iSolver - Solver identifier, should be either a flow solver or the heat solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Wall normal component of the heat flux at the vertex.
+   */
+  inline passivedouble GetMarkerNormalHeatFlux(unsigned short iSolver, unsigned short iMarker, unsigned long iVertex) const {
+    if (iSolver != HEAT_SOL && iSolver != FLOW_SOL) {
+      SU2_MPI::Error("Normal heat flux is only available for flow or heat solvers.", CURRENT_FUNCTION);
+    }
+    return SU2_TYPE::GetValue(GetSolverAndCheckMarker(iSolver, iMarker)->GetHeatFlux(iMarker, iVertex));
+  }
+
+  /*!
+   * \brief Sets the nodal force for the structural solver at a vertex of a marker.
+   * \note This can be the input of the FEA solver in an FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] force - Force vector.
+   */
+  inline void SetMarkerCustomFEALoad(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> force) {
+    auto* solver = GetSolverAndCheckMarker(FEA_SOL, iMarker);
+    std::array<su2double, 3> load{};
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) load[iDim] = force[iDim];
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    solver->GetNodes()->Set_FlowTraction(iPoint, load.data());
+  }
+
+  /*!
+   * \brief Get the fluid force at a vertex of a solid wall marker of the flow solver.
+   * \note This can be the output of the flow solver in an FSI setting to then apply it to a structural solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vector of loads.
+   */
+  inline vector<passivedouble> GetMarkerFlowLoad(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> FlowLoad(GetNumberDimensions(), 0.0);
+    const auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+
+    if (main_config->GetSolid_Wall(iMarker)) {
+      for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+        FlowLoad[iDim] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker, iVertex, iDim));
+      }
+    }
+    return FlowLoad;
+  }
+
+  /*!
+   * \brief Set the adjoint of the flow tractions of the flow solver.
+   * \note This can be the input of the flow solver in an adjoint FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] adjointLoad - Vector of adjoint loads.
+   */
+  inline void SetMarkerCustomFlowLoadAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                             vector<passivedouble> adjointLoad) {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      solver->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, adjointLoad[iDim]);
+    }
+  }
+
+  /*!
+   * \brief Get the sensitivities of the displacements of the mesh boundary vertices.
+   * \note This can be the output of the flow solver in an adjoint FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vector of sensitivities.
+   */
+  inline vector<passivedouble> GetMarkerDisplacementSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    const auto nDim = GetNumberDimensions();
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(ADJMESH_SOL)->GetNodes();
+
+    vector<passivedouble> sens(nDim, 0.0);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) {
+      sens[iDim] = SU2_TYPE::GetValue(nodes->GetBoundDisp_Sens(iPoint, iDim));
+    }
+    return sens;
+  }
+
+  /*!
+   * \brief Get the sensitivity of the FEA loads of the structural solver (via the adjoint structural solver).
+   * \note This can be the output of the FEA solver in an adjoint FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \returns Vector of sensitivities.
+   */
+  inline vector<passivedouble> GetMarkerFEALoadSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    const auto nDim = GetNumberDimensions();
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
+
+    vector<passivedouble> sens(nDim, 0.0);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) {
+      sens[iDim] = SU2_TYPE::GetValue(nodes->GetFlowTractionSensitivity(iPoint, iDim));
+    }
+    return sens;
+  }
+
+  /*!
+   * \brief Set the adjoint of the structural displacements.
+   * \note This can be the input of the FEA solver in an adjoint FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] adjointDisplacement - Vector of adjoint displacements.
+   */
+  inline void SetMarkerCustomFEADisplacementAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                                    vector<passivedouble> adjointDisplacement) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      nodes->SetSourceTerm_DispAdjoint(iPoint, iDim, adjointDisplacement[iDim]);
+    }
+  }
+
+  /*!
+   * \brief Set the adjoint of the structural velocities.
+   * \note This can be the input of the FEA solver in an unsteady adjoint FSI setting.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] adjointVelocity - Vector of adjoint velocities.
+   */
+  inline void SetMarkerCustomFEAVelocityAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                                vector<passivedouble> adjointVelocity) {
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(ADJFEA_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
+      nodes->SetSourceTerm_VelAdjoint(iPoint, iDim, adjointVelocity[iDim]);
+    }
+  }
+
 /// \}
 
  protected:
@@ -429,7 +634,7 @@ class CDriverBase {
    * \brief Automates some boilerplate of accessing solution fields for the python wrapper.
    */
   inline CSolver* GetSolverAndCheckMarker(unsigned short iSolver,
-                                          unsigned short iMarker = std::numeric_limits<unsigned short>::max()) {
+                                          unsigned short iMarker = std::numeric_limits<unsigned short>::max()) const {
     if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
       SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
     }
@@ -446,7 +651,7 @@ class CDriverBase {
   /*!
    * \brief Delete containers.
    */
-  void CommonPostprocessing();
+  void CommonFinalize();
 
   /*!
    * \brief Read in the config and mesh files.

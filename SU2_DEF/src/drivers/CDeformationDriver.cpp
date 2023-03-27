@@ -535,9 +535,8 @@ void CDeformationDriver::Output() {
   }
 }
 
-void CDeformationDriver::Postprocessing() {
-  if (rank == MASTER_NODE)
-    cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
+void CDeformationDriver::Finalize() {
+  if (rank == MASTER_NODE) cout << "\n------------------------- Finalize Solver -------------------------" << endl;
 
   if (driver_config->GetDeform_Mesh()) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -550,7 +549,7 @@ void CDeformationDriver::Postprocessing() {
         delete[] numerics_container[iZone][INST_0][MESH_0];
         delete[] numerics_container[iZone][INST_0];
       }
-      /*--- The remaining levels in the container are deleted in CommonPostprocessing ---*/
+      /*--- The remaining levels in the container are deleted in CommonFinalize ---*/
     }
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -559,11 +558,11 @@ void CDeformationDriver::Postprocessing() {
         delete[] solver_container[iZone][INST_0][MESH_0];
         delete[] solver_container[iZone][INST_0];
       }
-      /*--- The remaining levels in the container are deleted in CommonPostprocessing ---*/
+      /*--- The remaining levels in the container are deleted in CommonFinalize ---*/
     }
   }
 
-  CommonPostprocessing();
+  CommonFinalize();
 
   /*--- Exit the solver cleanly. ---*/
 

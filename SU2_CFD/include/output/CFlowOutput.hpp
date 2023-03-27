@@ -115,20 +115,20 @@ protected:
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarSolution(const CConfig* config);
+  void SetVolumeOutputFieldsScalarSolution(const CConfig* config);
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarResidual(const CConfig* config);
+  void SetVolumeOutputFieldsScalarResidual(const CConfig* config);
 
   /*!
    * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarLimiter(const CConfig* config);
+  void SetVolumeOutputFieldsScalarMisc(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) volume field values for a point.

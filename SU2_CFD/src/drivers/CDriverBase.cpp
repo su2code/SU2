@@ -84,7 +84,7 @@ void CDriverBase::SetContainers_Null() {
   }
 }
 
-void CDriverBase::CommonPostprocessing() {
+void CDriverBase::CommonFinalize() {
 
   if (numerics_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -303,6 +303,36 @@ vector<string> CDriverBase::GetDeformableMarkerTags() const {
   return tags;
 }
 
+vector<string> CDriverBase::GetCHTMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  // The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    if ((main_config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
+         main_config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) &&
+        main_config->GetMarker_All_PyCustom(iMarker)) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
+vector<string> CDriverBase::GetInletMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = main_config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (main_config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+
+    if (isCustomizable && isInlet) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
 unsigned long CDriverBase::GetNumberMarkerElements(unsigned short iMarker) const {
   if (iMarker >= GetNumberMarkers()) {
     SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
@@ -358,60 +388,6 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
     values[iDim] = SU2_TYPE::GetValue(normal[iDim] / area);
   }
   return values;
-}
-
-vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Disp(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint, iDim, values[iDim]);
-  }
-}
-
-vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Vel(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Vel(iPoint, iDim, values[iDim]);
-  }
 }
 
 void CDriverBase::CommunicateMeshDisplacements(void) {

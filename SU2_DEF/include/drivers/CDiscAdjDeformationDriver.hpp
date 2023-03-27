@@ -57,7 +57,7 @@ class CDiscAdjDeformationDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
+  void Finalize();
 
  protected:
   /*!

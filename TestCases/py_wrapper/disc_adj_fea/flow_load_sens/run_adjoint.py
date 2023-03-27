@@ -87,7 +87,7 @@ def main():
 
   # Define the load at the target vertex
   if MarkerID != None:
-    SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
+    SU2Driver.SetMarkerCustomFEALoad(MarkerID, 5, (0, -0.005, 0))
 
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
@@ -109,7 +109,7 @@ def main():
     disp=[]
 
     # Recover the sensitivity
-    sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
+    sens.append(SU2Driver.GetMarkerFEALoadSensitivity(MarkerID, 5))
 
     fea_sol = SU2Driver.GetSolverIndices()["FEA"]
     marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
@@ -118,11 +118,8 @@ def main():
     print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
     print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
-
-  if SU2Driver != None:
-    del SU2Driver
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 

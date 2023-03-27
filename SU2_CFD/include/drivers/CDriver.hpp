@@ -257,12 +257,13 @@ class CDriver : public CDriverBase {
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
-   * \brief Initialize Python interface functionalities
+   * \brief Initialize Python interface functionalities. When using multigrid,
+   * it is important to call this after modifying custom boundary values.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -365,7 +366,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine
    */
-  void Postprocessing();
+  void Finalize();
 
   /*!
    * \brief A virtual member.
@@ -479,134 +480,12 @@ class CDriver : public CDriverBase {
   string GetSurfaceFileName() const;
 
   /*!
-   * \brief Get the temperature at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Temperature of the vertex.
-   */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the temperature of a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallTemp - Value of the temperature.
-   */
-  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
-
-  /*!
-   * \brief Get the heat flux at a vertex on a specified marker (3 components).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return True if the vertex is a halo node.
-   */
-  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Wall normal component of the heat flux at the vertex.
-   */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
-   */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
-
-  /*!
-   * \brief Get the thermal conductivity at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Thermal conductivity at the vertex.
-   */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
    * \brief Preprocess the inlets via file input for all solvers.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
-
-  /*!
-   * \brief Get all the CHT boundary marker tags.
-   * \return List of CHT boundary markers tags.
-   */
-  vector<string> GetCHTMarkerTags() const;
-
-  /*!
-   * \brief Get all the inlet boundary marker tags.
-   * \return List of inlet boundary markers tags.
-   */
-  vector<string> GetInletMarkerTags() const;
-
-  /*!
-   * \brief Return the sensitivities of the mesh boundary vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of sensitivities.
-   */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the load in X direction for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX, passivedouble LoadY,
-                    passivedouble LoadZ);
-
-  /*!
-   * \brief Get the sensitivity of the flow loads for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
-   * strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint of the flow tractions (from the extra step -
-   * the repeated methods should be unified once the postprocessing strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                           passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the adjoint of the structural displacements (from an outside source)
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
-  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
    * \brief Set the position of the heat source.

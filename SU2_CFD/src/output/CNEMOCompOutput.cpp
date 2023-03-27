@@ -224,7 +224,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ENERGY",       "Energy",     "SOLUTION", "Energy");
   AddVolumeOutput("ENERGY_VE",    "Energy_ve",  "SOLUTION", "Energy_ve");
 
-  SetVolumeOutputFields_ScalarSolution(config);
+  SetVolumeOutputFieldsScalarSolution(config);
 
   //Auxiliary variables for post-processment
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -271,7 +271,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ENERGY",    "Residual_Energy",    "RESIDUAL", "Residual of the energy");
   AddVolumeOutput("RES_ENERGY_VE", "Residual_Energy_ve", "RESIDUAL", "Residual of the energy_ve");
 
-  SetVolumeOutputFields_ScalarResidual(config);
+  SetVolumeOutputFieldsScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     // Limiter values
@@ -283,7 +283,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   }
 
-  SetVolumeOutputFields_ScalarLimiter(config);
+  SetVolumeOutputFieldsScalarMisc(config);
 
   AddCommonFVMOutputs(config);
 

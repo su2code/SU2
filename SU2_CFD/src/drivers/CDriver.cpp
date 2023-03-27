@@ -254,7 +254,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
   }
 
 
-  PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
+  PythonInterfacePreprocessing(config_container, geometry_container, solver_container);
 
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
@@ -346,7 +346,7 @@ void CDriver::SetContainers_Null(){
 }
 
 
-void CDriver::Postprocessing() {
+void CDriver::Finalize() {
 
   const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
@@ -363,7 +363,7 @@ void CDriver::Postprocessing() {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+    cout << endl <<"------------------------- Finalizing Solver -------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
