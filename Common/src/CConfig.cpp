@@ -5157,8 +5157,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Mesh_Box_Size[1] = 33;
     Mesh_Box_Size[2] = 33;
   } else if (nMesh_Box_Size != 3) {
-    SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error("MESH_BOX_SIZE specified without 3 values.\n", CURRENT_FUNCTION);
   }
 
   /* Force the lowest memory preconditioner when direct solvers are used. */
@@ -5175,8 +5174,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
-      SU2_MPI::Error(string("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n") +
-                     string("Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)."),
+      SU2_MPI::Error("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n"
+                     "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script).",
                      CURRENT_FUNCTION);
     }
 #endif
@@ -5190,8 +5189,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Restart_Flow = false;
 
       if (Unst_AdjointIter- long(nTimeIter) < 0){
-        SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
+        SU2_MPI::Error("Invalid iteration number requested for unsteady adjoint.\n"
+                       "Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER.",
                        CURRENT_FUNCTION);
       }
 
@@ -5250,8 +5249,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    turbulence model. */
 
   if (MUSCL_AdjTurb) {
-    SU2_MPI::Error(string("MUSCL_ADJTURB= YES not currently supported.\n") +
-                   string("Please select MUSCL_ADJTURB= NO (first-order)."),
+    SU2_MPI::Error("MUSCL_ADJTURB= YES not currently supported.\nPlease select MUSCL_ADJTURB= NO (first-order).",
                    CURRENT_FUNCTION);
   }
 
@@ -5272,9 +5270,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        we also want to avoid recomputation. */
 
       ReconstructionGradientRequired = false;
-      Kind_Gradient_Method_Recon     = Kind_Gradient_Method;
+      Kind_Gradient_Method_Recon = Kind_Gradient_Method;
     }
 
+  } else {
+    ReconstructionGradientRequired = false;
   }
 
   if (ReconstructionGradientRequired && GetFluidProblem() && Kind_ConvNumScheme_Flow == SPACE_CENTERED)
