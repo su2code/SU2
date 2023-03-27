@@ -3213,7 +3213,7 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 
     for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
       config_container[iZone]->SetiInst(iInst);
-      output_container[iZone]->SetResult_Files(geometry_container[iZone][iInst][MESH_0],
+      output_container[iZone]->SetResultFiles(geometry_container[iZone][iInst][MESH_0],
                                                config_container[iZone],
                                                solver_container[iZone][iInst][MESH_0],
                                                InnerIter, StopCalc);
@@ -3240,7 +3240,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        output_legacy->SetConvHistoryHeader(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
       }
     }
   }
@@ -3362,7 +3362,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output_legacy->SetConvHistoryBody(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
@@ -3489,7 +3489,7 @@ CHBDriver::CHBDriver(char* confFile,
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        output_legacy->SetConvHistoryHeader(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
       }
     }
   }
@@ -3537,7 +3537,7 @@ void CHBDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output_legacy->SetConvHistoryBody(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 

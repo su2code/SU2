@@ -219,7 +219,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   UsedTime = StopTime - StartTime;
 
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()) {
-    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
+    output->SetHistoryOutput(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter());
   }
@@ -542,7 +542,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
     /* --- Print convergence history and volume files since fixed CL mode has converged--- */
     if (rank == MASTER_NODE) output->PrintConvergenceSummary();
 
-    output->SetResult_Files(geometry, config, solver,
+    output->SetResultFiles(geometry, config, solver,
                             config->GetInnerIter(), true);
 
     /* --- Set finite difference mode in config (disables output) --- */

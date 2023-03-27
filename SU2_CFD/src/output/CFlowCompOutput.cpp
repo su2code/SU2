@@ -162,7 +162,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_ScalarLinsol(config);
+  AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -203,9 +203,9 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddRotatingFrameCoefficients();
 
-  Add_CpInverseDesignOutput();
+  AddCpInverseDesignOutput();
 
-  Add_NearfieldInverseDesignOutput();
+  AddNearfieldInverseDesignOutput();
 
 }
 
@@ -345,7 +345,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
 
-  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
+  LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
@@ -413,7 +413,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", flow_solver->GetAoA_inc());
   }
 
-  LoadHistoryData_Scalar(config, solver);
+  LoadHistoryDataScalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
 
@@ -435,11 +435,11 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set Cp diff fields ---*/
 
-  Set_CpInverseDesign(flow_solver, geometry, config);
+  SetCpInverseDesign(flow_solver, geometry, config);
 
   /*--- Set nearfield diff fields ---*/
 
-  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
+  if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
@@ -449,7 +449,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 }
 
-bool CFlowCompOutput::SetInit_Residuals(const CConfig *config){
+bool CFlowCompOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
@@ -463,6 +463,6 @@ void CFlowCompOutput::SetAdditionalScreenOutput(const CConfig *config){
   }
 }
 
-bool CFlowCompOutput::WriteHistoryFile_Output(const CConfig *config) {
-  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
+bool CFlowCompOutput::WriteHistoryFileOutput(const CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFileOutput(config);
 }
