@@ -71,7 +71,7 @@ def init_submodules(
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_mlpcpp = "2c6e14e867657490c29de102b3d30b92d02544a1"
+    sha_version_mlpcpp = "78e8c7d8aa2759d891f27ed94d1b1506f328e254"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
@@ -158,7 +158,10 @@ def init_submodules(
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
         if own_mlpcpp:
-            download_module(mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp)
+            download_module(
+                mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp
+            )
+
 
 def is_git_directory(path="."):
     try:

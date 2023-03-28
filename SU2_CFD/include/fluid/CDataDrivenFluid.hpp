@@ -31,7 +31,7 @@
 #include <vector>
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #include "CLookUp_ANN.hpp"
-#if defined(HAVE_MLPCPP)
+#if defined(HAVE_MLPCPP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_MLPCPP
 #endif
 #include "CFluidModel.hpp"
@@ -67,7 +67,7 @@ class CDataDrivenFluid : public CFluidModel {
       input_names_rhoe,   // Data-driven method input variable names of the independent variables (density, energy).
       output_names_rhoe;  // Output variable names listed in the data-driven method input file name.
 
-  vector<double*> outputs_rhoe;  // Pointers to output variables.
+  vector<su2double*> outputs_rhoe;  // Pointers to output variables.
 
   /*--- Class variables for the multi-layer perceptron method ---*/
   MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.

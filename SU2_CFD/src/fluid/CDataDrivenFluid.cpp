@@ -36,7 +36,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
-#ifdef HAVE_MLPCPP
+#ifdef USE_MLPCPP
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
       if (rank == MASTER_NODE) lookup_mlp->DisplayNetworkInfo();
 #else
@@ -107,7 +107,7 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
   /*--- Further preprocessing of input and output variables ---*/
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
 /*--- Map MLP inputs to outputs ---*/
-#ifdef HAVE_MLPCPP
+#ifdef USE_MLPCPP
     iomap_rhoe = new MLPToolbox::CIOMap(lookup_mlp, input_names_rhoe, output_names_rhoe);
     MLP_inputs.resize(2);
 #endif
@@ -366,11 +366,12 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 }
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
-  MLP_inputs[idx_rho] = rho;
-  MLP_inputs[idx_e] = e;
+
   unsigned long exit_code = 0;
 /* Evaluate MLP collection for the given values for density and energy */
-#ifdef HAVE_MLPCPP
+#ifdef USE_MLPCPP
+  MLP_inputs[idx_rho] = rho;
+  MLP_inputs[idx_e] = e;
   exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
 #endif
   /* Apply exponential transformation to the MLP outputs for the first and second
