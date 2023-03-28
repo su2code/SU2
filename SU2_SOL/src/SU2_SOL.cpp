@@ -764,17 +764,17 @@ void WriteFiles(CConfig* config, CGeometry* geometry, CSolver** solver_container
                 unsigned long TimeIter) {
   /*--- Load history data (volume output might require some values) --- */
 
-  output->SetHistory_Output(geometry, solver_container, config, TimeIter, 0, 0);
+  output->SetHistoryOutput(geometry, solver_container, config, TimeIter, 0, 0);
 
   /*--- Load the data --- */
 
-  output->Load_Data(geometry, config, solver_container);
+  output->LoadData(geometry, config, solver_container);
 
   /*--- Set the filenames ---*/
 
-  output->SetVolume_Filename(config->GetVolume_FileName());
+  output->SetVolumeFilename(config->GetVolume_FileName());
 
-  output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+  output->SetSurfaceFilename(config->GetSurfCoeff_FileName());
 
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++) {
     auto FileFormat = config->GetVolumeOutputFiles();

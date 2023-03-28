@@ -115,7 +115,7 @@ def main():
     value = 0.0, 0.0175*sin(2*pi*time)
 
     for iVertex in range(nVertex_MovingMarker):
-      SU2Driver.SetMarkerDisplacements(MovingMarkerID, int(iVertex), value)
+      SU2Driver.SetMarkerCustomDisplacement(MovingMarkerID, int(iVertex), value)
 
     # Time iteration preprocessing
     SU2Driver.Preprocess(TimeIter)
@@ -137,8 +137,6 @@ def main():
   # Finalize the solver and exit cleanly
   SU2Driver.Finalize()
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program

@@ -436,7 +436,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Set the multizone output. ---*/
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
+    driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config, TimeIter, iOuterIter);
 
     /*--- Check for convergence. ---*/
 
@@ -729,19 +729,19 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 

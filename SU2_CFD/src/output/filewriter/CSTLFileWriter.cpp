@@ -41,7 +41,7 @@ CSTLFileWriter::CSTLFileWriter(CParallelDataSorter *valDataSorter) :
 CSTLFileWriter::~CSTLFileWriter(){}
 
 
-void CSTLFileWriter::Write_Data(string val_filename){
+void CSTLFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -133,12 +133,12 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   /* Gather a list of nodes we refer to but are not outputting, because they are not present on this rank. */
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
-      halo_nodes.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElemConnectivity(TRIANGLE, 0, i)-1) != rank)
+      halo_nodes.push_back(dataSorter->GetElemConnectivity(TRIANGLE, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1) != rank)
-      halo_nodes.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i)-1) != rank)
+      halo_nodes.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i)-1);
 
   /* Sorted list of halo nodes for this MPI rank. */
   sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
@@ -294,7 +294,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
   /*--- Write Triangle-Point-Coordinates subsequently in a local send buffer. ---*/
   for (iElem = 0; iElem < nLocalElements; iElem++) {
     for (auto node : nodeList) {
-      globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, node) - 1;
+      globalNodeNumber = dataSorter->GetElemConnectivity(elemType, iElem, node) - 1;
       localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
 
       for (auto iVar = 0; iVar < 3; iVar++){

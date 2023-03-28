@@ -401,5 +401,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat flux.
    */
-  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override {
+    return HeatFlux[val_marker][val_vertex];
+  }
 };

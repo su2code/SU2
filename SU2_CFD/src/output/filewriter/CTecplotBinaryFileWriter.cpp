@@ -39,7 +39,7 @@ CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(CParallelDataSorter *valDataS
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
-void CTecplotBinaryFileWriter::Write_Data(string val_filename){
+void CTecplotBinaryFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -160,34 +160,34 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
     /* Gather a list of nodes we refer to but are not outputting. */
 
     for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(TRIANGLE, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(TRIANGLE, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(TRIANGLE, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(TRIANGLE, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(TRIANGLE, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Tetr * N_POINTS_TETRAHEDRON; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(TETRAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(TETRAHEDRON, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(TETRAHEDRON, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Hexa * N_POINTS_HEXAHEDRON; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(HEXAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(HEXAHEDRON, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(HEXAHEDRON, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Pris * N_POINTS_PRISM; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(PRISM, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(PRISM, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(PRISM, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(PRISM, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Pyra * N_POINTS_PYRAMID; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i) <= dataSorter->GetNodeBegin(rank) ||
-          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i))
-        halo_nodes.insert(dataSorter->GetElem_Connectivity(PYRAMID, 0, i));
+      if ((unsigned long)dataSorter->GetElemConnectivity(PYRAMID, 0, i) <= dataSorter->GetNodeBegin(rank) ||
+          dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElemConnectivity(PYRAMID, 0, i))
+        halo_nodes.insert(dataSorter->GetElemConnectivity(PYRAMID, 0, i));
 
     /* Sorted list of halo nodes for this MPI rank. */
     sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
@@ -376,11 +376,11 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
   : GetHaloNodeNumber(n, dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank), sorted_halo_nodes)
 
     for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
-      nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0));
-      nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1));
-      nodes[2] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2));
+      nodes[0] = MAKE_LOCAL(dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0));
+      nodes[1] = MAKE_LOCAL(dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1));
+      nodes[2] = MAKE_LOCAL(dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2));
       nodes[3] = nodes[2];
-      nodes[4] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3));
+      nodes[4] = MAKE_LOCAL(dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3));
       nodes[5] = nodes[4];
       nodes[6] = nodes[4];
       nodes[7] = nodes[4];
@@ -389,37 +389,37 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
     }
 
     for (iElem = 0; err == 0 && iElem < nParallel_Hexa; iElem++) {
-      nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0));
-      nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1));
-      nodes[2] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2));
-      nodes[3] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3));
-      nodes[4] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4));
-      nodes[5] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5));
-      nodes[6] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6));
-      nodes[7] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7));
+      nodes[0] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0));
+      nodes[1] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1));
+      nodes[2] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2));
+      nodes[3] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3));
+      nodes[4] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4));
+      nodes[5] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5));
+      nodes[6] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6));
+      nodes[7] = MAKE_LOCAL(dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7));
       err = tecZoneNodeMapWrite64(file_handle, zone, rank + 1, 1, 8, nodes);
       if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
     }
 
     for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
-      nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 0));
-      nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 1));
+      nodes[0] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 0));
+      nodes[1] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 1));
       nodes[2] = nodes[1];
-      nodes[3] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 2));
-      nodes[4] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 3));
-      nodes[5] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 4));
+      nodes[3] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 2));
+      nodes[4] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 3));
+      nodes[5] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 4));
       nodes[6] = nodes[5];
-      nodes[7] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 5));
+      nodes[7] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PRISM, iElem, 5));
       err = tecZoneNodeMapWrite64(file_handle, zone, rank + 1, 1, 8, nodes);
       if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
     }
 
     for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
-      nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0));
-      nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1));
-      nodes[2] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2));
-      nodes[3] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3));
-      nodes[4] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4));
+      nodes[0] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PYRAMID, iElem, 0));
+      nodes[1] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PYRAMID, iElem, 1));
+      nodes[2] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PYRAMID, iElem, 2));
+      nodes[3] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PYRAMID, iElem, 3));
+      nodes[4] = MAKE_LOCAL(dataSorter->GetElemConnectivity(PYRAMID, iElem, 4));
       nodes[5] = nodes[4];
       nodes[6] = nodes[4];
       nodes[7] = nodes[4];
@@ -440,26 +440,26 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
       for(int iRank = 0; iRank < size; ++iRank) {
         if (iRank == rank) {
           for (iElem = 0; err == 0 && iElem < nParallel_Line; iElem++) {
-            nodes[0] = dataSorter->GetElem_Connectivity(LINE, iElem, 0);
-            nodes[1] = dataSorter->GetElem_Connectivity(LINE, iElem, 1);
+            nodes[0] = dataSorter->GetElemConnectivity(LINE, iElem, 0);
+            nodes[1] = dataSorter->GetElemConnectivity(LINE, iElem, 1);
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 2, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
 
           for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
-            nodes[0] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0);
-            nodes[1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1);
-            nodes[2] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
-            nodes[3] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
+            nodes[0] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0);
+            nodes[1] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1);
+            nodes[2] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2);
+            nodes[3] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2);
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 4, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
 
           for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
-            nodes[0] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0);
-            nodes[1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1);
-            nodes[2] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2);
-            nodes[3] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3);
+            nodes[0] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0);
+            nodes[1] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1);
+            nodes[2] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2);
+            nodes[3] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3);
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 4, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
@@ -481,22 +481,22 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
       vector<int64_t> connectivity;
       connectivity.reserve(connectivity_size);
       for (iElem = 0; err == 0 && iElem < nParallel_Line; iElem++) {
-        connectivity.push_back(dataSorter->GetElem_Connectivity(LINE, iElem, 0));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(LINE, iElem, 0));
+        connectivity.push_back(dataSorter->GetElemConnectivity(LINE, iElem, 0));
+        connectivity.push_back(dataSorter->GetElemConnectivity(LINE, iElem, 0));
       }
 
       for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
-        connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2));
+        connectivity.push_back(dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0));
+        connectivity.push_back(dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1));
+        connectivity.push_back(dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2));
+        connectivity.push_back(dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2));
       }
 
       for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
-        connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2));
-        connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3));
+        connectivity.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0));
+        connectivity.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1));
+        connectivity.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2));
+        connectivity.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3));
       }
 
       if (connectivity.empty()) connectivity.resize(1); /* Avoid crash */
@@ -508,71 +508,71 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
   int64_t nodes[8];
 
   for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
-    nodes[3] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
+    nodes[0] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2);
+    nodes[3] = dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
 
   for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2);
-    nodes[3] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3);
+    nodes[0] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2);
+    nodes[3] = dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
 
   for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2);
-    nodes[3] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2);
-    nodes[4] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
-    nodes[5] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
-    nodes[6] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
-    nodes[7] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
+    nodes[0] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2);
+    nodes[3] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2);
+    nodes[4] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3);
+    nodes[5] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3);
+    nodes[6] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3);
+    nodes[7] = dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
 
   for (iElem = 0; err == 0 && iElem < nParallel_Hexa; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2);
-    nodes[3] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3);
-    nodes[4] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4);
-    nodes[5] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5);
-    nodes[6] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6);
-    nodes[7] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7);
+    nodes[0] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2);
+    nodes[3] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3);
+    nodes[4] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4);
+    nodes[5] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5);
+    nodes[6] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6);
+    nodes[7] = dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
 
   for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(PRISM, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1);
-    nodes[3] = dataSorter->GetElem_Connectivity(PRISM, iElem, 2);
-    nodes[4] = dataSorter->GetElem_Connectivity(PRISM, iElem, 3);
-    nodes[5] = dataSorter->GetElem_Connectivity(PRISM, iElem, 4);
-    nodes[6] = dataSorter->GetElem_Connectivity(PRISM, iElem, 4);
-    nodes[7] = dataSorter->GetElem_Connectivity(PRISM, iElem, 5);
+    nodes[0] = dataSorter->GetElemConnectivity(PRISM, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(PRISM, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(PRISM, iElem, 1);
+    nodes[3] = dataSorter->GetElemConnectivity(PRISM, iElem, 2);
+    nodes[4] = dataSorter->GetElemConnectivity(PRISM, iElem, 3);
+    nodes[5] = dataSorter->GetElemConnectivity(PRISM, iElem, 4);
+    nodes[6] = dataSorter->GetElemConnectivity(PRISM, iElem, 4);
+    nodes[7] = dataSorter->GetElemConnectivity(PRISM, iElem, 5);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
 
   for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
-    nodes[0] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0);
-    nodes[1] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1);
-    nodes[2] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2);
-    nodes[3] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3);
-    nodes[4] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4);
-    nodes[5] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4);
-    nodes[6] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4);
-    nodes[7] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4);
+    nodes[0] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 0);
+    nodes[1] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 1);
+    nodes[2] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 2);
+    nodes[3] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 3);
+    nodes[4] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 4);
+    nodes[5] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 4);
+    nodes[6] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 4);
+    nodes[7] = dataSorter->GetElemConnectivity(PYRAMID, iElem, 4);
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
@@ -592,7 +592,7 @@ void CTecplotBinaryFileWriter::Write_Data(string val_filename){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = DetermineFilesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

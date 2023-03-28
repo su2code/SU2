@@ -37,7 +37,7 @@ CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
 
 }
 
-void CSU2BinaryFileWriter::Write_Data(string val_filename){
+void CSU2BinaryFileWriter::WriteData(string val_filename){
 
   /*--- Local variables ---*/
 
