@@ -1,7 +1,7 @@
 /*!
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
- * \author E.Bunschoten M.Mayer A.Capiello
+ * \author E.C.Bunschoten M.Mayer A.Capiello
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -36,8 +36,12 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef HAVE_MLPCPP
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
       if (rank == MASTER_NODE) lookup_mlp->DisplayNetworkInfo();
+#else
+      SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
+#endif
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
       lookup_table = new CLookUpTable(config->GetDataDriven_Filename(), "Density", "Energy");
@@ -102,9 +106,11 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
   /*--- Further preprocessing of input and output variables ---*/
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
-    /*--- Map MLP inputs to outputs ---*/
+/*--- Map MLP inputs to outputs ---*/
+#ifdef HAVE_MLPCPP
     iomap_rhoe = new MLPToolbox::CIOMap(lookup_mlp, input_names_rhoe, output_names_rhoe);
     MLP_inputs.resize(2);
+#endif
   }
 }
 
@@ -362,10 +368,11 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   MLP_inputs[idx_rho] = rho;
   MLP_inputs[idx_e] = e;
-
-  /* Evaluate MLP collection for the given values for density and energy */
-  unsigned long exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
-
+  unsigned long exit_code = 0;
+/* Evaluate MLP collection for the given values for density and energy */
+#ifdef HAVE_MLPCPP
+  exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+#endif
   /* Apply exponential transformation to the MLP outputs for the first and second
      derivative of the entropy w.r.t density */
   // Optional:

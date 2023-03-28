@@ -135,6 +135,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no-mel", help="do not download own copy of MEL", action="store_false"
     )
+    parser.add_argument(
+        "--no-mlpcpp",
+        help="do not download copy of MLpCpp",
+        action="store_false",
+    )
     args = parser.parse_args()
 
     run(
@@ -145,4 +150,5 @@ if __name__ == "__main__":
         own_mpp=args.no_mpp,
         own_cool=args.no_coolprop,
         own_mel=args.no_mel,
+        own_mlp=args.no_mlpcpp,
     )

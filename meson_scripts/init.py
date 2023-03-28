@@ -48,6 +48,7 @@ def init_submodules(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
+    own_mlpcpp=True,
 ):
 
     cur_dir = sys.path[0]
@@ -70,6 +71,8 @@ def init_submodules(
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
+    sha_version_mlpcpp = "2c6e14e867657490c29de102b3d30b92d02544a1"
+    github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
     codi_name = "CoDiPack"
@@ -79,6 +82,8 @@ def init_submodules(
     mpp_name = "Mutationpp"
     coolprop_name = "CoolProp"
     mel_name = "MEL"
+    mlpcpp_name = "MLPCpp"
+
     base_path = cur_dir + os.path.sep + "externals" + os.path.sep
     alt_name_medi = base_path + "medi"
     alt_name_codi = base_path + "codi"
@@ -88,6 +93,7 @@ def init_submodules(
     alt_name_mel = base_path + "mel"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
+    alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
 
     if method == "auto":
         is_git = is_git_directory(cur_dir)
@@ -117,6 +123,8 @@ def init_submodules(
             submodule_status(alt_name_coolprop, sha_version_coolprop)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
+        if own_mlpcpp:
+            submodule_status(alt_name_mlpcpp, sha_version_mlpcpp)
     # Otherwise download the zip file from git
     else:
         if own_codi:
@@ -149,7 +157,8 @@ def init_submodules(
             )
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
-
+        if own_mlpcpp:
+            download_module(mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp)
 
 def is_git_directory(path="."):
     try:

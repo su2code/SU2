@@ -1,7 +1,7 @@
 /*!
  * \file CLookUp_ANN_tests.cpp
- * \brief Unit tests for NdFlattener template classes.
- * \author M. Aehle
+ * \brief Unit tests for CLookUp_ANN and CIOMap classes.
+ * \author E.C.Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,18 +27,24 @@
 
 #include "catch.hpp"
 #include "../../../../Common/include/CConfig.hpp"
-#include "../../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
-#include "../../../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
+#include "CLookUp_ANN.hpp"
+#if defined(HAVE_MLPCPP)
+#define USE_MLPCPP
+#endif
+#include <vector>
 
-TEST_CASE("LookUp ANN test", "[LookUpANN]"){
+TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   std::string MLP_input_files[] = {"src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp"};
   unsigned short n_MLPs = 1;
+#ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN ANN(n_MLPs, MLP_input_files);
-  su2vector<std::string> MLP_input_names,
-                           MLP_output_names;
-  su2vector<su2double> MLP_inputs;
-  su2vector<su2double*> MLP_outputs;
-  su2double x,y,z;
+#else
+  SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
+#endif
+  std::vector<std::string> MLP_input_names, MLP_output_names;
+  std::vector<double> MLP_inputs;
+  std::vector<double*> MLP_outputs;
+  su2double x, y, z;
 
   /*--- Define MLP inputs and outputs ---*/
   MLP_input_names.resize(2);
@@ -51,16 +57,19 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   MLP_output_names[0] = "z";
   MLP_outputs[0] = &z;
 
-  /*--- Generate input-output map ---*/
+/*--- Generate input-output map ---*/
+#ifdef USE_MLPCPP
   MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);
-
+#endif
   /*--- MLP evaluation on point in the middle of the training data range ---*/
   x = 1.0;
   y = -0.5;
 
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
+#ifdef USE_MLPCPP
   ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
+#endif
   CHECK(z == Approx(0.344829));
 
   /*--- MLP evaluation on point outside the training data range ---*/
@@ -68,6 +77,8 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   y = -10;
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
+#ifdef USE_MLPCPP
   ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
+#endif
   CHECK(z == Approx(0.012737));
 }

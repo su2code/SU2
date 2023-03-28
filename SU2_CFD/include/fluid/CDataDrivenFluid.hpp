@@ -2,7 +2,7 @@
  * \file CDataDrivenFluid.hpp
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
- * \author E.Bunschoten
+ * \author E.C.Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,15 +28,19 @@
 
 #pragma once
 
+#include <vector>
 #include "../../../Common/include/containers/CLookUpTable.hpp"
-#include "../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "CLookUp_ANN.hpp"
+#if defined(HAVE_MLPCPP)
+#define USE_MLPCPP
+#endif
 #include "CFluidModel.hpp"
 
 /*!
  * \class CDataDrivenFluid
  * \brief Template class for fluid model definition using multi-layer perceptrons for
  * fluid dynamic state definition.
- * \author: E.Bunschoten.
+ * \author: E.C.Bunschoten.
  */
 class CDataDrivenFluid : public CFluidModel {
  protected:
@@ -59,16 +63,16 @@ class CDataDrivenFluid : public CFluidModel {
       d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy */
       d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density */
 
-  su2vector<string>
+  vector<string>
       input_names_rhoe,   // Data-driven method input variable names of the independent variables (density, energy).
       output_names_rhoe;  // Output variable names listed in the data-driven method input file name.
 
-  su2vector<su2double*> outputs_rhoe;  // Pointers to output variables.
+  vector<double*> outputs_rhoe;  // Pointers to output variables.
 
   /*--- Class variables for the multi-layer perceptron method ---*/
   MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.
   MLPToolbox::CIOMap* iomap_rhoe;       // input-output map.
-  su2vector<su2double> MLP_inputs;      // inputs for the multi-layer perceptron look-up operation.
+  vector<double> MLP_inputs;            // inputs for the multi-layer perceptron look-up operation.
 
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable* lookup_table;
