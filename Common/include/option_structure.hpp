@@ -820,7 +820,6 @@ enum class UPWIND {
   MSW,                    /*!< \brief Modified Steger-Warming method. */
   TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
   SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP,                   /*!< \brief Convective upwind and split pressure numerical method. */
   CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
   L2ROE,                  /*!< \brief L2ROE numerical method . */
   LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
@@ -844,7 +843,6 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)
   MakePair("MSW", UPWIND::MSW)
-  MakePair("CUSP", UPWIND::CUSP)
   MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
   MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
   MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
