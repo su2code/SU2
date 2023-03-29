@@ -100,7 +100,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \brief Get the value of the looked up table based on the transported scalar.
    * \return Pointer to the transported scalars source term.
    */
-  inline const su2double* GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
+  inline const su2double* GetScalarLookups(unsigned long iPoint) const override { return lookup_scalar[iPoint]; }
 
   inline void SetInsideTable(unsigned long iPoint, unsigned short inside) override { inside_table[iPoint] = inside; }
 
