@@ -179,7 +179,7 @@ protected:
     std::vector<const su2double*> symbolValues;
     bool ready = false;
 
-    su2double eval() const {
+    su2double Eval() const {
       return mel::Eval<su2double>(expression, [&](int i) {return *symbolValues[i];});
     }
   };
@@ -227,7 +227,7 @@ protected:
      point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
      with primitive indices. ---*/
     template <class Variables>
-    su2double eval(const Variables& vars) const {
+    su2double Eval(const Variables& vars) const {
       return mel::Eval<su2double>(expression, [&](int iSymbol) {return vars(varIndices[iSymbol]);});
     }
   };
@@ -342,7 +342,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - The container holding all solution data.
    */
-  void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
+  void LoadData(CGeometry *geometry, CConfig *config, CSolver **solver_container);
 
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
@@ -369,7 +369,7 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
 
   /*!
@@ -378,7 +378,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    *  Collects history data from the individual output per zone,
@@ -390,44 +390,44 @@ public:
    * \param[in] TimeIter - Value of the time iteration index
    * \param[in] OuterIter - Value of outer iteration index
    */
-  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config,
+  void SetMultizoneHistoryOutput(COutput** output, CConfig **config, CConfig *driver_config,
                                   unsigned long TimeIter, unsigned long OuterIter);
 
   /*!
    * \brief Sets the volume output filename
    * \param[in] filename - the new filename
    */
-  inline void SetVolume_Filename(string filename) {volumeFilename = filename;}
+  inline void SetVolumeFilename(string filename) {volumeFilename = filename;}
 
   /*!
    * \brief Sets the surface output filename
    * \param[in] filename - the new filename
    */
-  inline void SetSurface_Filename(string filename) {surfaceFilename = filename;}
+  inline void SetSurfaceFilename(string filename) {surfaceFilename = filename;}
 
   /*!
    * \brief Returns the current volume filename
    * \return - The current volume filename
    */
-  inline string GetVolume_Filename() {return volumeFilename;}
+  inline string GetVolumeFilename() {return volumeFilename;}
 
   /*!
    * \brief Returns the current surface filename
    * \return - The current surface filename
    */
-  inline string GetSurface_Filename() {return surfaceFilename;}
+  inline string GetSurfaceFilename() {return surfaceFilename;}
 
   /*!
    * \brief Sets the restart filename
    * \param[in] filename - the new filename
    */
-  inline void SetRestart_Filename(string filename) {restartFilename = filename;}
+  inline void SetRestartFilename(string filename) {restartFilename = filename;}
 
   /*!
    * \brief Returns the current restart filename
    * \return - The current restart filename
    */
-  inline string GetRestart_Filename() {return restartFilename;}
+  inline string GetRestartFilename() {return restartFilename;}
 
   /*!
    * \brief Set the current iteration indices
@@ -485,7 +485,7 @@ public:
    * \brief Get the list of all output fields
    * \return Vector container all output fields
    */
-  const vector<string>& GetHistoryOutput_List() const {
+  const vector<string>& GetHistoryOutputList() const {
     return historyOutput_List;
   }
 
@@ -493,7 +493,7 @@ public:
    * \brief Get the list of all per-surface fields
    * \return Vector container all output per-surface fields
    */
-  const vector<string>& GetHistoryOutputPerSurface_List() const {
+  const vector<string>& GetHistoryOutputPerSurfaceList() const {
     return historyOutputPerSurface_List;
   }
 
@@ -519,7 +519,7 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    * \return Boolean indicating whether the problem is converged.
    */
-  bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
+  bool ConvergenceMonitoring(CConfig *config, unsigned long Iteration);
 
   /*!
    * \brief Print a summary of the convergence to screen.
@@ -565,7 +565,7 @@ public:
    * \param[in] force_writing - If <TRUE>, writing of output files is forced without checking the output frequency.
    * \return <TRUE> if output files have been written to disk.
    */
-  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
+  bool SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                        unsigned long iter, bool force_writing = false);
 
   /*!
@@ -594,25 +594,25 @@ protected:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Header(const CConfig *config);
+  void SetHistoryFileHeader(const CConfig *config);
 
   /*!
    * \brief Write the history file output
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Output(const CConfig *config);
+  void SetHistoryFileOutput(const CConfig *config);
 
   /*!
    * \brief Write the screen header.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Header(const CConfig *config);
+  void SetScreenHeader(const CConfig *config);
 
   /*!
    * \brief Write the screen output.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Output(const CConfig *config);
+  void SetScreenOutput(const CConfig *config);
 
   /*!
    * \brief Add a new field to the history output.
@@ -770,13 +770,13 @@ protected:
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.
    */
-  void Postprocess_HistoryData(CConfig *config);
+  void PostprocessHistoryData(CConfig *config);
 
   /*!
    * \brief Postprocess_HistoryFields
    * \param[in] config - Definition of the particular problem.
    */
-  void Postprocess_HistoryFields(CConfig *config);
+  void PostprocessHistoryFields(CConfig *config);
 
   /*!
    * \brief Check whether we should print output.
@@ -843,19 +843,19 @@ protected:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteHistoryFile_Output(const CConfig *config);
+  virtual bool WriteHistoryFileOutput(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Header(const CConfig *config);
+  virtual bool WriteScreenHeader(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Output(const CConfig *config);
+  virtual bool WriteScreenOutput(const CConfig *config);
 
   /*!
    * \brief Determines if the the volume output should be written.
@@ -864,7 +864,7 @@ protected:
    * \param[in] force_writing - boolean that forces writing of volume output
    * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
+  virtual bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
 
   /*!
    * \brief Set the values of the volume output fields for a point.
@@ -892,7 +892,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  inline virtual bool SetInit_Residuals(const CConfig *config) {return false;}
+  inline virtual bool SetInitResiduals(const CConfig *config) {return false;}
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.
