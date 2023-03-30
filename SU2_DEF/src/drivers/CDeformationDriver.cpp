@@ -268,11 +268,7 @@ void CDeformationDriver::Run() {
 
   /*--- Surface grid deformation using design variables. ---*/
 
-  if (driver_config->GetDeform_Mesh()) {
-    Update();
-  } else {
-    Update_Legacy();
-  }
+  Update();
 
   /*--- Synchronization point after a single solver iteration. Compute the wall clock time required. ---*/
 
@@ -294,6 +290,8 @@ void CDeformationDriver::Run() {
 }
 
 void CDeformationDriver::Update() {
+  if (!driver_config->GetDeform_Mesh()) return Update_Legacy();
+
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Set the stiffness of each element mesh into the mesh numerics. ---*/
 
