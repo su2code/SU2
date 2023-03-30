@@ -33,14 +33,11 @@
 #endif
 #include <vector>
 
+#ifdef USE_MLPCPP
 TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   std::string MLP_input_files[] = {"src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp"};
   unsigned short n_MLPs = 1;
-#ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN ANN(n_MLPs, MLP_input_files);
-#else
-  SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
-#endif
   std::vector<std::string> MLP_input_names, MLP_output_names;
   std::vector<double> MLP_inputs;
   std::vector<double*> MLP_outputs;
@@ -57,19 +54,15 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   MLP_output_names[0] = "z";
   MLP_outputs[0] = &z;
 
-/*--- Generate input-output map ---*/
-#ifdef USE_MLPCPP
+  /*--- Generate input-output map ---*/
   MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);
-#endif
   /*--- MLP evaluation on point in the middle of the training data range ---*/
   x = 1.0;
   y = -0.5;
 
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-#ifdef USE_MLPCPP
   ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
-#endif
   CHECK(z == Approx(0.344829));
 
   /*--- MLP evaluation on point outside the training data range ---*/
@@ -77,8 +70,7 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   y = -10;
   MLP_inputs[0] = x;
   MLP_inputs[1] = y;
-#ifdef USE_MLPCPP
   ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
-#endif
   CHECK(z == Approx(0.012737));
 }
+#endif

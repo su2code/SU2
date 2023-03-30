@@ -74,7 +74,7 @@ class CDataDrivenFluid : public CFluidModel {
   MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.
   MLPToolbox::CIOMap* iomap_rhoe;       // input-output map.
 #endif
-  vector<su2double> MLP_inputs;            // inputs for the multi-layer perceptron look-up operation.
+  vector<su2double> MLP_inputs;  // inputs for the multi-layer perceptron look-up operation.
 
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable* lookup_table;

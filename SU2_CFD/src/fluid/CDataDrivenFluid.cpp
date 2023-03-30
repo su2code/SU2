@@ -368,7 +368,6 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 }
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
-
   unsigned long exit_code = 0;
 /* Evaluate MLP collection for the given values for density and energy */
 #ifdef USE_MLPCPP
