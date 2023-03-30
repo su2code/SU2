@@ -145,14 +145,26 @@ class CFluidModel {
   virtual inline const su2double* GetScalarSources() const { return nullptr; }
 
   /*!
+   * \brief Set the source terms for the flamelet model (obtained from LUT).
+   * \param[in] val_scalar - Pointer to the transported scalars.
+   */
+  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
+
+  /*!
    * \brief Flamelet LUT - Get the number of transported scalars.
    */
   virtual inline const unsigned short GetNScalars() { return 0; }
 
   /*!
-   * \brief Flamelet LUT - Get the looked up scalar field for combustion.
+   * \brief Flamelet LUT - Get the looked up values for visualization.
    */
   virtual inline su2double GetScalarLookups(int) const { return 0; }
+
+  /*!
+   * \brief Flamelet LUT - Set the looked up values for visualization.
+   * \param[in] val_scalar - Pointer to the transported scalars.
+   */
+  virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Flamelet LUT - Get the lookup table.
@@ -350,18 +362,6 @@ class CFluidModel {
    * \param[in] T - Temperature value at the point.
    */
   virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
-
-  /*!
-   * \brief Virtual member.
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
-
-  /*!
-   * \brief Virtual member.
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
