@@ -183,7 +183,7 @@ COutput::~COutput(void) {
 
 }
 
-void COutput::SetHistory_Output(CGeometry *geometry,
+void COutput::SetHistoryOutput(CGeometry *geometry,
                                   CSolver **solver_container,
                                   CConfig *config,
                                   unsigned long TimeIter,
@@ -201,9 +201,9 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   LoadHistoryData(config, geometry, solver_container);
 
-  Convergence_Monitoring(config, curInnerIter);
+  ConvergenceMonitoring(config, curInnerIter);
 
-  Postprocess_HistoryData(config);
+  PostprocessHistoryData(config);
 
   MonitorTimeConvergence(config, curTimeIter);
 
@@ -211,7 +211,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
 }
 
-void COutput::SetHistory_Output(CGeometry *geometry,
+void COutput::SetHistoryOutput(CGeometry *geometry,
                                 CSolver **solver_container,
                                 CConfig *config) {
 
@@ -221,13 +221,13 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   LoadHistoryData(config, geometry, solver_container);
 
-  Convergence_Monitoring(config, curInnerIter);
+  ConvergenceMonitoring(config, curInnerIter);
 
-  Postprocess_HistoryData(config);
+  PostprocessHistoryData(config);
 
 }
 
-void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
+void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
   curTimeIter  = TimeIter;
   curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();
@@ -239,9 +239,9 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   LoadMultizoneHistoryData(output, config);
 
-  Convergence_Monitoring(driver_config, curOuterIter);
+  ConvergenceMonitoring(driver_config, curOuterIter);
 
-  Postprocess_HistoryData(driver_config);
+  PostprocessHistoryData(driver_config);
 
   MonitorTimeConvergence(driver_config, curTimeIter);
 
@@ -253,11 +253,11 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 
   if (rank == MASTER_NODE && !noWriting) {
 
-    if (WriteHistoryFile_Output(config)) SetHistoryFile_Output(config);
+    if (WriteHistoryFileOutput(config)) SetHistoryFileOutput(config);
 
-    if (WriteScreen_Header(config)) SetScreen_Header(config);
+    if (WriteScreenHeader(config)) SetScreenHeader(config);
 
-    if (WriteScreen_Output(config)) SetScreen_Output(config);
+    if (WriteScreenOutput(config)) SetScreenOutput(config);
 
   }
 }
@@ -285,7 +285,7 @@ void COutput::SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSo
     if (!customObjFunc.ready) {
       SetupCustomHistoryOutput(config->GetCustomObjFunc(), customObjFunc);
     }
-    solver[idxSol]->SetTotal_Custom_ObjFunc(customObjFunc.eval());
+    solver[idxSol]->SetTotal_Custom_ObjFunc(customObjFunc.Eval());
   }
   solver[idxSol]->Evaluate_ObjFunc(config, solver);
   SetHistoryOutputValue("COMBO", solver[idxSol]->GetTotal_ComboObj());
@@ -318,7 +318,7 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
 
 }
 
-void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
+void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_container){
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
 
@@ -857,17 +857,17 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
     /*--- Write data to file ---*/
 
-    fileWriter->Write_Data(fileName);
+    fileWriter->WriteData(fileName);
 
-    su2double BandWidth = fileWriter->Get_Bandwidth();
+    su2double BandWidth = fileWriter->GetBandwidth();
 
     /*--- Write data with iteration number to file ---*/
 
     if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
-      fileWriter->Write_Data(filename_iter);
+      fileWriter->WriteData(filename_iter);
 
       /*--- overwrite bandwidth ---*/
-      BandWidth = fileWriter->Get_Bandwidth();
+      BandWidth = fileWriter->GetBandwidth();
 
     }
 
@@ -902,7 +902,7 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
   return TimeConvergence;
 }
 
-bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
+bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing) {
 
   bool isFileWrite = false, dataIsLoaded = false;
@@ -917,7 +917,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,
      *  since we might want to do time-averaging. ---*/
-    const bool write_file = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile);
+    const bool write_file = WriteVolumeOutput(config, iter, force_writing || cauchyTimeConverged, iFile);
 
     if ((write_file || config->GetTime_Domain()) && !dataIsLoaded) {
       LoadDataIntoSorter(config, geometry, solver_container);
@@ -986,7 +986,7 @@ void COutput::PrintConvergenceSummary(){
   ConvSummary.PrintFooter();
 }
 
-bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
+bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   convergence = true;
 
@@ -1145,7 +1145,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   return TimeConvergence;
 }
 
-void COutput::SetHistoryFile_Header(const CConfig *config) {
+void COutput::SetHistoryFileHeader(const CConfig *config) {
 
   unsigned short iField_Output = 0,
       iReqField = 0,
@@ -1189,7 +1189,7 @@ void COutput::SetHistoryFile_Header(const CConfig *config) {
 }
 
 
-void COutput::SetHistoryFile_Output(const CConfig *config) {
+void COutput::SetHistoryFileOutput(const CConfig *config) {
 
   if (requestedHistoryFieldCache.empty()) {
     for (const auto& fieldIdentifier : historyOutput_List){
@@ -1221,14 +1221,14 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
   histFile.flush();
 }
 
-void COutput::SetScreen_Header(const CConfig *config) {
+void COutput::SetScreenHeader(const CConfig *config) {
   if (config->GetMultizone_Problem())
     multiZoneHeaderTable->PrintHeader();
   convergenceTable->PrintHeader();
 }
 
 
-void COutput::SetScreen_Output(const CConfig *config) {
+void COutput::SetScreenOutput(const CConfig *config) {
 
   if (requestedScreenFieldCache.empty()) {
     for (const auto& RequestedField : requestedScreenFields) {
@@ -1286,7 +1286,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
-  Postprocess_HistoryFields(config);
+  PostprocessHistoryFields(config);
 
   /*--- We use a fixed size of the file output summary table ---*/
 
@@ -1333,7 +1333,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
-  Postprocess_HistoryFields(driver_config);
+  PostprocessHistoryFields(driver_config);
 
   /*--- We use a fixed size of the file output summary table ---*/
 
@@ -1382,7 +1382,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
   /*--- Add the header to the history file. ---*/
 
-  SetHistoryFile_Header(config);
+  SetHistoryFileHeader(config);
 
 }
 
@@ -1773,7 +1773,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
       const short Offset = volumeOutput_Map.at(name).offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
-        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
+        volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
       }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
@@ -1784,7 +1784,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
 
     const short Offset = fieldIndexCache[cachePosition++];
     if (Offset != -1){
-      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
+      volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
     }
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
@@ -1805,7 +1805,7 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
       const short Offset = volumeOutput_Map.at(name).offset;
       fieldGetIndexCache.push_back(Offset);
       if (Offset != -1){
-        return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+        return volumeDataSorter->GetUnsortedData(iPoint, Offset);
       }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
@@ -1820,7 +1820,7 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
       curGetFieldIndex = 0;
     }
     if (Offset != -1){
-      return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      return volumeDataSorter->GetUnsortedData(iPoint, Offset);
     }
   }
 
@@ -1842,10 +1842,10 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
 
-        const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+        const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
         const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
 
-        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+        volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
       }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
@@ -1857,10 +1857,10 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
     const short Offset = fieldIndexCache[cachePosition++];
     if (Offset != -1){
 
-      const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
+      const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
       const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
 
-      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
+      volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
     }
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
@@ -1869,7 +1869,7 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
 
 }
 
-void COutput::Postprocess_HistoryData(CConfig *config){
+void COutput::PostprocessHistoryData(CConfig *config){
 
   map<string, pair<su2double, int> > Average;
   map<string, int> Count;
@@ -1878,7 +1878,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     const string &fieldIdentifier = historyOutput_List[iField];
     const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
     if (currentField.fieldType == HistoryFieldType::RESIDUAL){
-      if ( SetInit_Residuals(config) || (currentField.value > initialResiduals[fieldIdentifier]) ) {
+      if ( SetInitResiduals(config) || (currentField.value > initialResiduals[fieldIdentifier]) ) {
         initialResiduals[fieldIdentifier] = currentField.value;
       }
       SetHistoryOutputValue("REL_" + fieldIdentifier,
@@ -1896,7 +1896,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
           it = windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())}).first;
         }
         auto& timeAverage = it->second;
-        timeAverage.addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
+        timeAverage.AddValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
         SetHistoryOutputValue("TAVG_" + fieldIdentifier, timeAverage.GetVal());
         if (config->GetDirectDiff() != NO_DERIVATIVE) {
           SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(timeAverage.GetVal()));
@@ -1918,7 +1918,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   }
 }
 
-void COutput::Postprocess_HistoryFields(CConfig *config){
+void COutput::PostprocessHistoryFields(CConfig *config){
 
   map<string, bool> Average;
   map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
@@ -1995,7 +1995,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 }
 
-bool COutput::WriteScreen_Header(const CConfig *config) {
+bool COutput::WriteScreenHeader(const CConfig *config) {
 
   unsigned long RestartIter = 0;
 
@@ -2047,7 +2047,7 @@ bool COutput::WriteScreen_Header(const CConfig *config) {
   return false;
 }
 
-bool COutput::WriteScreen_Output(const CConfig *config) {
+bool COutput::WriteScreenOutput(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
@@ -2088,7 +2088,7 @@ bool COutput::WriteScreen_Output(const CConfig *config) {
 
 }
 
-bool COutput::WriteHistoryFile_Output(const CConfig *config) {
+bool COutput::WriteHistoryFileOutput(const CConfig *config) {
 
   unsigned long HistoryWrt_Freq_Inner = config->GetHistory_Wrt_Freq(2);
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
@@ -2129,7 +2129,7 @@ bool COutput::WriteHistoryFile_Output(const CConfig *config) {
 
 }
 
-bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+bool COutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
 
   if (config->GetTime_Domain()){
 

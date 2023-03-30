@@ -268,11 +268,7 @@ void CDeformationDriver::Run() {
 
   /*--- Surface grid deformation using design variables. ---*/
 
-  if (driver_config->GetDeform_Mesh()) {
-    Update();
-  } else {
-    Update_Legacy();
-  }
+  Update();
 
   /*--- Synchronization point after a single solver iteration. Compute the wall clock time required. ---*/
 
@@ -294,6 +290,8 @@ void CDeformationDriver::Run() {
 }
 
 void CDeformationDriver::Update() {
+  if (!driver_config->GetDeform_Mesh()) return Update_Legacy();
+
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Set the stiffness of each element mesh into the mesh numerics. ---*/
 
@@ -499,15 +497,15 @@ void CDeformationDriver::Output() {
 
     /*--- Load the data. --- */
 
-    output_container[iZone]->Load_Data(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
+    output_container[iZone]->LoadData(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
 
     output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0],
                                          OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
 
     /*--- Set the file names for the visualization files. ---*/
 
-    output_container[iZone]->SetVolume_Filename("volume_deformed");
-    output_container[iZone]->SetSurface_Filename("surface_deformed");
+    output_container[iZone]->SetVolumeFilename("volume_deformed");
+    output_container[iZone]->SetSurfaceFilename("surface_deformed");
 
     for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++) {
       auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();

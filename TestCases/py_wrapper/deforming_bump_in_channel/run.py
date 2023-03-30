@@ -88,6 +88,11 @@ def main():
     TimeIter += 1
     time += deltaT
 
+  # Check the value of an output to cover the functionality in a regression test.
+  assert 'DRAG' in SU2Driver.GetOutputNames()
+  assert abs(SU2Driver.GetOutputValue('DRAG') -
+             SU2Driver.GetMarkerMonitoringOutputValue('DRAG_ON_SURFACE', MarkerName)) < np.finfo(float).eps
+
   # Finalize the solver and exit cleanly
   SU2Driver.Finalize()
 
