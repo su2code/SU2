@@ -39,11 +39,11 @@
 class CSquareMatrixCM {
   static_assert(ColMajorMatrix<passivedouble>::Storage == StorageType::ColumnMajor,
                 "Column major storage is assumed for LAPACK.");
-private:
-  ColMajorMatrix<passivedouble> mat;  /*!< \brief Storage of the actual matrix. */
 
-public:
+ private:
+  ColMajorMatrix<passivedouble> mat; /*!< \brief Storage of the actual matrix. */
 
+ public:
   /*!
    * \brief Default constructor. Nothing to be done.
    */
@@ -55,7 +55,7 @@ public:
    *        the matrix.
    * \param[in] N - Number of rows and colums of the matrix.
    */
-  CSquareMatrixCM(int N) {Initialize(N);}
+  CSquareMatrixCM(int N) { Initialize(N); }
 
   /*!
    * \brief Operator, which makes available the given matrix element as a reference.
@@ -63,7 +63,7 @@ public:
    * \param[in] j   - Column index of the matrix element.
    * \return          Reference to element (i,j).
    */
-  inline passivedouble& operator() (int i, int j) {return mat(i,j);}
+  inline passivedouble& operator()(int i, int j) { return mat(i, j); }
 
   /*!
    * \brief Operator, which makes available the given matrix element as a const reference.
@@ -71,31 +71,31 @@ public:
    * \param[in] j   - Column index of the matrix element.
    * \return          Constant reference to element (i,j).
    */
-  inline const passivedouble& operator() (int i, int j) const {return mat(i,j);}
+  inline const passivedouble& operator()(int i, int j) const { return mat(i, j); }
 
   /*!
    * \brief Function, which makes available a reference to the actual matrix.
    * \return A reference to mat.
    */
-  inline ColMajorMatrix<passivedouble>& GetMat() {return mat;}
+  inline ColMajorMatrix<passivedouble>& GetMat() { return mat; }
 
   /*!
    * \brief Function, which makes available a const reference to the actual matrix.
    * \return A const reference to mat.
    */
-  inline const ColMajorMatrix<passivedouble>& GetMat() const {return mat;}
+  inline const ColMajorMatrix<passivedouble>& GetMat() const { return mat; }
 
   /*!
    * \brief Function, which allocates the memory for the matrix.
    * \param[in] N - Number of rows and colums of the matrix.
    */
-  inline void Initialize(int N) {mat.resize(N,N);}
+  inline void Initialize(int N) { mat.resize(N, N); }
 
   /*!
    * \brief Function, which makes available the size of the matrix.
    * \return The number of rows, columns of the matrix.
    */
-  inline int Size() const {return mat.rows();}
+  inline int Size() const { return mat.rows(); }
 
   /*!
    * \brief Function, which carries out the matrix produc of the current matrix
@@ -104,21 +104,18 @@ public:
    * \param[in]  mat_in  - Matrix to be multiplied by the current matrix.
    * \param[out] mat_out - Matrix to store the result of the multiplication.
    */
-  void MatMatMult(const char                          side,
-                  const ColMajorMatrix<passivedouble> &mat_in,
-                  ColMajorMatrix<passivedouble>       &mat_out) const;
+  void MatMatMult(const char side, const ColMajorMatrix<passivedouble>& mat_in,
+                  ColMajorMatrix<passivedouble>& mat_out) const;
 
   /*!
    * \brief Naive matrix-vector multiplication with general type.
    */
-  template<class ForwardIt>
-  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
-  {
+  template <class ForwardIt>
+  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const {
     for (int i = 0; i < Size(); ++i) {
       *vec_out = 0.0;
       auto vec = vec_in;
-      for (int k = 0; k < Size(); ++k)
-        *vec_out += *(vec++) * mat(i,k);
+      for (int k = 0; k < Size(); ++k) *vec_out += *(vec++) * mat(i, k);
       ++vec_out;
     }
   }
@@ -132,5 +129,4 @@ public:
    * \brief Function, which transposes the matrix in-place.
    */
   void Transpose();
-
 };

@@ -203,7 +203,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   StartTime = SU2_MPI::Wtime();
 
-  bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
+  bool wrote_files = output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],
                                                                TimeIter, StopCalc);

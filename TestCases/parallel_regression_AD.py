@@ -242,7 +242,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849774, -3.238669, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals         = [-2.849453, -3.238429, -0.000364, -8.708700] #last 4 columns
     discadj_fea.test_vals_aarch64 = [-2.849726, -3.238594, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
@@ -276,7 +276,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.349355, 0.127482, -1.303589, 0.000000, 2.324400]
+    discadj_fsi2.test_vals         = [-4.349377, 0.128475, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -457,6 +457,36 @@ def main():
     unsteady_naca0012.unsteady  = True
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
+
+    ####################################################################
+    ###  Python Wrapper                                              ###
+    ####################################################################
+
+    # FEA AD Flow Load Sensitivity
+    pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_FEA_AD_FlowLoad')
+    pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
+    pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
+    pywrapper_FEA_AD_FlowLoad.test_iter     = 100
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401785386, -0.5859858866132448, -0.00036377840086080694, -0.0031005670174756366] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py --parallel -f")
+    pywrapper_FEA_AD_FlowLoad.timeout       = 1600
+    pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
+    test_list.append(pywrapper_FEA_AD_FlowLoad)
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+    # Flow AD Mesh Displacement Sensitivity
+    pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
+    pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
+    pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.520972485907894, 1.3848377455328362, 0.000000] #last 4 columns
+    pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py --parallel -f")
+    pywrapper_CFD_AD_MeshDisp.timeout       = 1600
+    pywrapper_CFD_AD_MeshDisp.tol           = 0.000001
+    pywrapper_CFD_AD_MeshDisp.new_output    = False
+    test_list.append(pywrapper_CFD_AD_MeshDisp)
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
 
     ####################################################################
     ###  Unsteady Disc. adj. compressible RANS restart optimization  ###

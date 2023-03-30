@@ -61,7 +61,6 @@
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
 #include "../../include/numerics/flow/convection/fvs.hpp"
-#include "../../include/numerics/flow/convection/cusp.hpp"
 #include "../../include/numerics/flow/convection/hllc.hpp"
 #include "../../include/numerics/flow/convection/ausm_slau.hpp"
 #include "../../include/numerics/flow/convection/centered.hpp"
@@ -108,18 +107,6 @@
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
-
-    /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
-#ifdef HAVE_MPI
-  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-    SU2_MPI::Init_AMPI();
-  #endif
-#endif
-
-  SU2_MPI::SetComm(MPICommunicator);
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
 
   /*--- Start timer to track preprocessing for benchmarking. ---*/
 
@@ -266,7 +253,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
   }
 
 
-  PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
+  PythonInterfacePreprocessing(config_container, geometry_container, solver_container);
 
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
@@ -358,7 +345,7 @@ void CDriver::SetContainers_Null(){
 }
 
 
-void CDriver::Postprocessing() {
+void CDriver::Finalize() {
 
   const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
@@ -375,7 +362,7 @@ void CDriver::Postprocessing() {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+    cout << endl <<"------------------------- Finalizing Solver -------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -1802,13 +1789,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
-            case UPWIND::CUSP:
-              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-              }
-              break;
-
             default:
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
               break;
@@ -2064,13 +2044,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
           numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
-        }
-        break;
-
-      case UPWIND::CUSP:
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-          numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
         }
         break;
 
@@ -3212,7 +3185,7 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 
     for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
       config_container[iZone]->SetiInst(iInst);
-      output_container[iZone]->SetResult_Files(geometry_container[iZone][iInst][MESH_0],
+      output_container[iZone]->SetResultFiles(geometry_container[iZone][iInst][MESH_0],
                                                config_container[iZone],
                                                solver_container[iZone][iInst][MESH_0],
                                                InnerIter, StopCalc);
@@ -3239,7 +3212,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        output_legacy->SetConvHistoryHeader(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
       }
     }
   }
@@ -3361,7 +3334,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output_legacy->SetConvHistoryBody(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
@@ -3488,7 +3461,7 @@ CHBDriver::CHBDriver(char* confFile,
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        output_legacy->SetConvHistoryHeader(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
       }
     }
   }
@@ -3536,7 +3509,7 @@ void CHBDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output_legacy->SetConvHistoryBody(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 

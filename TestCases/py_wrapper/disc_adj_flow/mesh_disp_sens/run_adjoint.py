@@ -110,16 +110,13 @@ def main():
   # Sensitivities of the marker
   print("\n------------------------------ Sensitivities -----------------------------\n")
   for iVertex in range(nVertex_Marker):
-    sensX, sensY, sensZ = SU2Driver.GetMeshDisp_Sensitivity(MarkerID, iVertex)
+    sensX, sensY = SU2Driver.GetMarkerDisplacementSensitivity(MarkerID, iVertex)
 
-    if (iVertex == 30):
-      print(1000,1000,iVertex, sensX, sensY, sensZ)
+    if (iVertex == 30) and rank == 0:
+      print(1000, 1000, iVertex, sensX, sensY, 0.0)
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
-
-  if SU2Driver != None:
-    del SU2Driver
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 

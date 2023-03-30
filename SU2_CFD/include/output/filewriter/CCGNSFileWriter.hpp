@@ -81,7 +81,7 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Write sorted data to file in CGNS file format.
    * \param[in] val_filename - The name of the file.
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
  private:
 #ifdef HAVE_CGNS

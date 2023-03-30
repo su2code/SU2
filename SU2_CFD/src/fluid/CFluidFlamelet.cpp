@@ -246,12 +246,15 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, su2double val
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
 
-    /* calculate delta_enthalpy following dh = cp * dT */
-    delta_enth = Cp * delta_temp_iter;
+    if (abs(delta_temp_iter) < delta_temp_final){
+      converged = true;
+    }else{
+      /* calculate delta_enthalpy following dh = cp * dT */
+      delta_enth = Cp * delta_temp_iter;
 
-    /*--- update enthalpy ---*/
-    enth_iter += delta_enth;
-
+      /*--- update enthalpy ---*/
+      enth_iter += delta_enth;
+    }
   }
 
   /*--- set enthalpy value ---*/
@@ -352,7 +355,7 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
   case ENUM_DATADRIVEN_METHOD::LUT:
     LUT_varnames.resize(varnames.size());
     LUT_val_vars.resize(val_vars.size());
-    for(auto iVar=0; iVar<varnames.size(); iVar++){
+    for(auto iVar=0u; iVar<varnames.size(); iVar++){
       LUT_varnames[iVar] = varnames[iVar];
       LUT_val_vars[iVar] = val_vars[iVar];
     }

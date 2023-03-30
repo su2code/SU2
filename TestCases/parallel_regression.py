@@ -196,10 +196,7 @@ def main():
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.232590, -5.757884, -20.641547, -20.640244, -20.539243, 1.246889, -3.205235, -0.028406, 0.250857, 32459.000000]
-    super_cat.su2_exec = "mpirun -n 2 SU2_CFD"
-    super_cat.timeout = 1600
     super_cat.new_output = True
-    super_cat.tol = 0.00001
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -208,10 +205,7 @@ def main():
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
-    partial_cat.su2_exec = "mpirun -n 2 SU2_CFD"
-    partial_cat.timeout = 1600
     partial_cat.new_output = True
-    partial_cat.tol = 0.00001
     test_list.append(partial_cat)
 
     # Viscous cylinder, ionization, Gupta-Yos
@@ -220,10 +214,7 @@ def main():
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 10
     ion_gy.test_vals = [-11.629873, -4.165563, -4.702662, -4.950351, -5.146155, -4.993878, -6.893332, 5.990109, 5.990004, -0.014849, 0.000000, 90090.000000]
-    ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
-    ion_gy.timeout = 1600
     ion_gy.new_output = True
-    ion_gy.tol = 0.00001
     test_list.append(ion_gy)
 
     ##########################
@@ -655,7 +646,6 @@ def main():
     fem_ns_sphere.cfg_file  = "fem_Sphere_reg.cfg"
     fem_ns_sphere.test_iter = 10
     fem_ns_sphere.test_vals = [-0.288121,0.240324,0.000258,21.797363] #last 4 columns
-    fem_ns_sphere.command   = TestCase.Command(exec = "SU2_CFD")
     test_list.append(fem_ns_sphere)
 
     # Unsteady sphere ADER
@@ -664,7 +654,6 @@ def main():
     fem_ns_sphere_ader.cfg_file  = "fem_Sphere_reg_ADER.cfg"
     fem_ns_sphere_ader.test_iter = 10
     fem_ns_sphere_ader.test_vals = [-35.000000,-35.000000,0.000047,31.110911] #last 4 columns
-    fem_ns_sphere_ader.command   = TestCase.Command(exec = "SU2_CFD")
     test_list.append(fem_ns_sphere_ader)
 
     # Unsteady cylinder
@@ -673,7 +662,6 @@ def main():
     fem_ns_unsteady_cylinder.cfg_file  = "fem_unst_cylinder.cfg"
     fem_ns_unsteady_cylinder.test_iter = 11
     fem_ns_unsteady_cylinder.test_vals = [-3.558582,-3.014464,-0.038927,1.383983] #last 4 columns
-    fem_ns_unsteady_cylinder.command   = TestCase.Command(exec = "SU2_CFD")
     fem_ns_unsteady_cylinder.unsteady  = True
     test_list.append(fem_ns_unsteady_cylinder)
 
@@ -683,7 +671,6 @@ def main():
     fem_ns_unsteady_cylinder_ader.cfg_file  = "fem_unst_cylinder_ADER.cfg"
     fem_ns_unsteady_cylinder_ader.test_iter = 11
     fem_ns_unsteady_cylinder_ader.test_vals = [-35.000000,-35.000000,-0.041003,1.391339] #last 4 columns
-    fem_ns_unsteady_cylinder_ader.command   = TestCase.Command(exec = "SU2_CFD")
     fem_ns_unsteady_cylinder_ader.unsteady  = True
     test_list.append(fem_ns_unsteady_cylinder_ader)
 
@@ -1154,7 +1141,6 @@ def main():
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
     bars_SST_2D.test_vals = [13.000000, -0.604409, -1.523885]
-    bars_SST_2D.command   = TestCase.Command(exec = "SU2_CFD")
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1163,8 +1149,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492] #last 3 columns
-    slinc_steady.command   = TestCase.Command(exec = "SU2_CFD")
+    slinc_steady.test_vals = [19.000000, -1.778863, -2.040209] #last 3 columns
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1280,7 +1265,6 @@ def main():
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
     cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
-    cht_incompressible.command   = TestCase.Command(exec = "SU2_CFD")
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
@@ -1289,8 +1273,7 @@ def main():
     cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_compressible.test_iter = 10
-    cht_compressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728]
-    cht_compressible.command   = TestCase.Command(exec = "SU2_CFD")
+    cht_compressible.test_vals = [-4.256053, -0.532725, -0.532725, -0.532726]
     cht_compressible.multizone = True
     test_list.append(cht_compressible)
 
@@ -1435,7 +1418,6 @@ def main():
     ringleb_dg_euler.cfg_file  = "ringleb_dg.cfg"
     ringleb_dg_euler.test_iter = 100
     ringleb_dg_euler.test_vals = [-5.136652, -4.724941, 0.000000, 0.000000] #last 4 columns
-    ringleb_dg_euler.command   = TestCase.Command(exec = "SU2_CFD")
     ringleb_dg_euler.tol       = 0.0001
     test_list.append(ringleb_dg_euler)
 
@@ -1445,7 +1427,6 @@ def main():
     mms_dg_ns.cfg_file  = "lam_mms_dg.cfg"
     mms_dg_ns.test_iter = 100
     mms_dg_ns.test_vals = [-1.845393, 3.520699, 0.000000, 0.000000] #last 4 columns
-    mms_dg_ns.command   = TestCase.Command(exec = "SU2_CFD")
     mms_dg_ns.tol       = 0.0001
     test_list.append(mms_dg_ns)
 
@@ -1455,7 +1436,6 @@ def main():
     mms_dg_ns_3d.cfg_file  = "lam_mms_dg_3d.cfg"
     mms_dg_ns_3d.test_iter = 100
     mms_dg_ns_3d.test_vals = [-0.146826, 5.356413, 0.000000, 0.000000] #last 4 columns
-    mms_dg_ns_3d.command   = TestCase.Command(exec = "SU2_CFD")
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
 
@@ -1496,10 +1476,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.113626, -4.989076, -4.880565, -7.351737, 2.452701, -5.627391, 30.000000, -5.721303, 11.000000, -8.001991, 10.000000, -8.813670, 2.084143, 1.000000, 0.600000, 0.484143]
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1508,10 +1485,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.719472, -5.293846, -5.185419, -8.355307, 2.147874, -5.233215, 30.000000, -5.721396, 11.000000, -8.000062, 10.000000, -8.814100, 2.084145, 1.000000, 0.600000, 0.484145]
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing
@@ -1538,10 +1512,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.012157, -1.650191, -1.405134, -0.990205, 1.619918, -3.764227, 23.000000, -5.039466, 12.000000, -5.346201, 4.000000, -6.084514, 2.000000, 1.000000, 0.000000, 1.000000]
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.new_output = True
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.

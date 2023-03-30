@@ -436,7 +436,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Set the multizone output. ---*/
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
+    driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config, TimeIter, iOuterIter);
 
     /*--- Check for convergence. ---*/
 
@@ -673,7 +673,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -729,19 +729,19 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 

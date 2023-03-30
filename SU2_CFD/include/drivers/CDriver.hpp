@@ -256,12 +256,13 @@ class CDriver : public CDriverBase {
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
-   * \brief Initialize Python interface functionalities
+   * \brief Initialize Python interface functionalities. When using multigrid,
+   * it is important to call this after modifying custom boundary values.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -355,291 +356,6 @@ class CDriver : public CDriverBase {
    */
   void Print_DirectResidual(RECORDING kind_recording);
 
- public:
-  /*!
-   * \brief Launch the computation for all zones and all physics.
-   */
-  virtual void StartSolver() {}
-
-  /*!
-   * \brief Deallocation routine
-   */
-  void Postprocessing();
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ResetConvergence();
-
-  /*!
-   * \brief Perform some pre-processing before an iteration of the physics.
-   */
-  virtual void Preprocess(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  virtual bool Monitor(unsigned long TimeIter) { return false; }
-
-  /*!
-   * \brief Output the solution in solution file.
-   */
-  virtual void Output(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
-   */
-  virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
-   */
-  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a mesh deformation as initial condition.
-   */
-  virtual void SetInitialMesh() {}
-
-/// \addtogroup PySU2
-/// \{
-
-  /*!
-   * \brief Process the boundary conditions and update the multi-grid structure.
-   */
-  void BoundaryConditionsUpdate();
-
-  /*!
-   * \brief Get the total drag.
-   * \return Total drag.
-   */
-  passivedouble Get_Drag() const;
-
-  /*!
-   * \brief Get the total lift.
-   * \return Total lift.
-   */
-  passivedouble Get_Lift() const;
-
-  /*!
-   * \brief Get the total x moment.
-   * \return Total x moment.
-   */
-  passivedouble Get_Mx() const;
-
-  /*!
-   * \brief Get the total y moment.
-   * \return Total y moment.
-   */
-  passivedouble Get_My() const;
-
-  /*!
-   * \brief Get the total z moment.
-   * \return Total z moment.
-   */
-  passivedouble Get_Mz() const;
-
-  /*!
-   * \brief Get the total drag coefficient.
-   * \return Total drag coefficient.
-   */
-  passivedouble Get_DragCoeff() const;
-
-  /*!
-   * \brief Get the total lift coefficient.
-   * \return Total lift coefficient.
-   */
-  passivedouble Get_LiftCoeff() const;
-
-  /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
-   */
-  unsigned long GetNumberTimeIter() const;
-
-  /*!
-   * \brief Get the current external iteration.
-   * \return Current external iteration.
-   */
-  unsigned long GetTimeIter() const;
-
-  /*!
-   * \brief Get the unsteady time step.
-   * \return Unsteady time step.
-   */
-  passivedouble GetUnsteadyTimeStep() const;
-
-  /*!
-   * \brief Get the name of the output file for the surface.
-   * \return File name for the surface output.
-   */
-  string GetSurfaceFileName() const;
-
-  /*!
-   * \brief Get the temperature at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Temperature of the vertex.
-   */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the temperature of a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallTemp - Value of the temperature.
-   */
-  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
-
-  /*!
-   * \brief Get the heat flux at a vertex on a specified marker (3 components).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return True if the vertex is a halo node.
-   */
-  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Wall normal component of the heat flux at the vertex.
-   */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
-   */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
-
-  /*!
-   * \brief Get the thermal conductivity at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Thermal conductivity at the vertex.
-   */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Preprocess the inlets via file input for all solvers.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
-
-  /*!
-   * \brief Get all the CHT boundary marker tags.
-   * \return List of CHT boundary markers tags.
-   */
-  vector<string> GetCHTMarkerTags() const;
-
-  /*!
-   * \brief Get all the inlet boundary marker tags.
-   * \return List of inlet boundary markers tags.
-   */
-  vector<string> GetInletMarkerTags() const;
-
-  /*!
-   * \brief Return the sensitivities of the mesh boundary vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of sensitivities.
-   */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the load in X direction for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX, passivedouble LoadY,
-                    passivedouble LoadZ);
-
-  /*!
-   * \brief Get the sensitivity of the flow loads for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
-   * strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint of the flow tractions (from the extra step -
-   * the repeated methods should be unified once the postprocessing strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                           passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the adjoint of the structural displacements (from an outside source)
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
-  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the position of the heat source.
-   * \param[in] alpha - Angle of rotation respect to Z axis.
-   * \param[in] pos_x - Position X.
-   * \param[in] pos_y - Position Y.
-   * \param[in] pos_z - Position Z.
-   */
-  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
-
-  /*!
-   * \brief Set the direction of the inlet.
-   * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
-   */
-  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
-
-/// \}
-
-  /*!
-   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \return Total number of solution variables.
-   */
-  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
-    unsigned short nVar = 0;
-    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
-    }
-    return nVar;
-  }
-
   /*!
    * \brief Set the solution of all solvers (adjoint or primal) in a zone.
    * \param[in] iZone - Index of the zone.
@@ -690,6 +406,127 @@ class CDriver : public CDriverBase {
           solution(iPoint, offset + iVar) = SU2_TYPE::GetValue(sol(iPoint, iVar));
       offset += solver->GetnVar();
     }
+  }
+
+ public:
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  virtual void StartSolver() {}
+
+  /*!
+   * \brief Deallocation routine
+   */
+  void Finalize();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void ResetConvergence();
+
+  /*!
+   * \brief Perform some pre-processing before an iteration of the physics.
+   */
+  virtual void Preprocess(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  virtual bool Monitor(unsigned long TimeIter) { return false; }
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  virtual void Output(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
+   * structure.
+   */
+  virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
+   * structure.
+   */
+  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
+
+  /*!
+   * \brief Perform a mesh deformation as initial condition.
+   */
+  virtual void SetInitialMesh() {}
+
+/// \addtogroup PySU2
+/// \{
+
+  /*!
+   * \brief Process the boundary conditions and update the multi-grid structure.
+   */
+  void BoundaryConditionsUpdate();
+
+  /*!
+   * \brief Get the number of time iterations.
+   * \return Number of time iterations.
+   */
+  unsigned long GetNumberTimeIter() const;
+
+  /*!
+   * \brief Get the current time iteration.
+   * \return Current time iteration.
+   */
+  unsigned long GetTimeIter() const;
+
+  /*!
+   * \brief Get the unsteady time step.
+   * \return Unsteady time step.
+   */
+  passivedouble GetUnsteadyTimeStep() const;
+
+  /*!
+   * \brief Get the name of the output file for the surface.
+   * \return File name for the surface output.
+   */
+  string GetSurfaceFileName() const;
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
+
+  /*!
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
+   */
+  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
+   */
+  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
+/// \}
+
+  /*!
+   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
+    unsigned short nVar = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
+    }
+    return nVar;
   }
 };
 

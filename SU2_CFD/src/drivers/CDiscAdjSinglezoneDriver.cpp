@@ -304,7 +304,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -357,7 +357,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     /*--- Surface based obj. function ---*/
 
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
 
@@ -386,7 +386,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
     break;
@@ -394,7 +394,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_FEM:
     solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
 
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                    config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;

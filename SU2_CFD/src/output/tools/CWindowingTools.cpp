@@ -66,7 +66,7 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
    * and it acts as a normalization constant */
 }
 
-void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
+void CWindowedAverage::AddValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
   if (curTimeIter < startIter) return;  // Averaging not yet started.
   const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep

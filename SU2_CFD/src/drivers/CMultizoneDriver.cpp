@@ -415,13 +415,13 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
     /*--- Make sure that everything is loaded into the output container. ---*/
 
-    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
+    output_container[iZone]->SetHistoryOutput(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
 
   }
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
-  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+  driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config,
                                             driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   return driver_output->GetConvergence();
@@ -473,7 +473,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   bool wrote_files = false;
 
   for (iZone = 0; iZone < nZone; iZone++){
-    wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+    wrote_files = output_container[iZone]->SetResultFiles(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
                                                             solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc );
   }
