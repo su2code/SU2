@@ -93,6 +93,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in/out] enthalpy - total enthalpy
    * \param[in] val_prog - progress variable
    * \param[in] val_temp - temperature
+   * \param[in] initial_value - initial value for the iterative lookup procedure.
    * \param[out] exit_code = error code
    */
   unsigned long GetEnthFromTemp(su2double& enthalpy, const su2double val_prog, const su2double val_temp,
@@ -126,22 +127,16 @@ class CFluidFlamelet final : public CFluidModel {
   inline su2double GetLaminarViscosity() { return Mu; }
 
   /*!
-   * \brief Get the reaction source term of a species equation
-   * \param[in] iVar - index to the species
-   */
-  //inline su2double GetScalarSources(int iVar) { return source_scalar[iVar]; }
-
-  /*!
    * \brief Get the reaction source term of all species equations
    */
-  inline const su2double* GetScalarSources() const { return &source_scalar[0]; }
+  inline const su2double* GetScalarSources() const { return source_scalar.data(); }
 
  private:
   /*!
    * \brief Get the value of the looked up variable
    * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
    */
-  inline const su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
+  inline su2double GetScalarLookups(int i_scalar) const { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
 

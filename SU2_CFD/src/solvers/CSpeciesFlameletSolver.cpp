@@ -168,10 +168,14 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain = 0;
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  //const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+
+  /*--- Set the laminar mass Diffusivity for the species solver. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
@@ -189,7 +193,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
 
     for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-      //nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
       nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources()[i_scalar]);
 
     su2double T = flowNodes->GetTemperature(i_point);
@@ -201,30 +204,36 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
+  END_SU2_OMP_FOR
 
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy && !Output) {
-    LinSysRes.SetValZero();
-    if (implicit)
-      Jacobian.SetValZero();
-    else {
-      SU2_OMP_BARRIER
-    }
-  }
 
-  /*--- Upwind second order reconstruction and gradients. ---*/
 
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
+  // /*--- Clear residual and system matrix, not needed for
+  //  * reducer strategy as we write over the entire matrix. ---*/
+  // if (!ReducerStrategy && !Output) {
+  //   LinSysRes.SetValZero();
+  //   if (implicit)
+  //     Jacobian.SetValZero();
+  //   else {
+  //     SU2_OMP_BARRIER
+  //   }
+  // }
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+  // /*--- Upwind second order reconstruction and gradients. ---*/
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  // if (config->GetReconstructionGradientRequired()) {
+  //   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
+  //   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
+  //   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+  //     SetSolution_Gradient_LS(geometry, config, true);
+  // }
+
+  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+
+  // if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
+  CommonPreprocessing(geometry, config, Output);
 }
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
@@ -386,8 +395,8 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
     unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
 
-    su2double SolP = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + 0];
-    su2double SolT = solver_container[FLOW_SOL]->LinSysSol[iPoint * nVar_Flow + nDim + 1];
+    su2double SolP = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Pressure());
+    su2double SolT = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Temperature());
 
     /*--- We need the derivative of the equation of state to build the
      preconditioning matrix. For now, the only option is the ideal gas
@@ -523,15 +532,16 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
-  const su2double* inlet_scalar_original = config->GetInlet_SpeciesVal(Marker_Tag);
-  su2double* inlet_scalar = const_cast<su2double*>(inlet_scalar_original);
+  const su2double* inlet_scalar = config->GetInlet_SpeciesVal(Marker_Tag);
+
+  vector<su2double> inlet_scalar_local(inlet_scalar,inlet_scalar+nVar);
 
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
-  su2double enth_inlet = inlet_scalar_original[I_ENTH];
-  fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet, inlet_scalar_original[I_ENTH]);
-  inlet_scalar[I_ENTH] = enth_inlet;
+  su2double enth_inlet_local = inlet_scalar[I_ENTH];
+  fluid_model_local->GetEnthFromTemp(&enth_inlet_local, inlet_scalar_local[I_PROGVAR], temp_inlet, inlet_scalar[I_ENTH]);
+  inlet_scalar_local[I_ENTH] = enth_inlet_local;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -544,7 +554,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     if (config->GetSpecies_StrongBC()) {
-      nodes->SetSolution_Old(iPoint, inlet_scalar);
+      nodes->SetSolution_Old(iPoint, inlet_scalar_local.data());
 
       LinSysRes.SetBlock_Zero(iPoint);
 
@@ -638,8 +648,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   su2double enth_init, enth_wall, prog_wall;
   unsigned long n_not_iterated = 0;
 
@@ -723,8 +732,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/

@@ -2313,16 +2313,13 @@ public:
   /*!
    * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
    */
-  inline virtual const void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) { }
 
   inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
 
   inline virtual void SetInsideTable(unsigned long iPoint, unsigned short inside) { }
 
   inline virtual unsigned short GetInsideTable(unsigned long iPoint) const { return 0; }
-
-  //inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
-  inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }

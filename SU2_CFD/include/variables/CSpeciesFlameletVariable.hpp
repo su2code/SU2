@@ -57,7 +57,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] val_lookup_scalar - the value of the scalar to set.
    * \param[in] val_ivar - Eqn. index to the transport equation.
    */
-  inline const void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
+  inline void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
     lookup_scalar(iPoint, val_ivar) = val_lookup_scalar;
   }
 
@@ -70,24 +70,6 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   */
   inline void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) override {
     source_scalar(iPoint, val_ivar) = val_source;
-  }
-
-  /*!
-   * \brief Get the value of the transported scalar source term.
-   * \param[in] val_ivar - Eqn. index to the transported scalar source term.
-   * \return Value of the progress variable source term.
-   */
-  //inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override {
-  //  return source_scalar(iPoint, val_ivar);
-  //}
-
-  /*!
-   * \brief Get the value of the looked up scalar field.
-   * \param[in] val_ivar - Eqn. index to the looked up scalar field.
-   * \return Value of the looked up scalar field.
-   */
-  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const override {
-    return lookup_scalar(iPoint, val_ivar);
   }
 
   /*!

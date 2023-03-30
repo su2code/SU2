@@ -145,12 +145,6 @@ class CFluidModel {
   virtual inline const su2double* GetScalarSources() const { return nullptr; }
 
   /*!
-   * \brief Flamelet LUT - Get the source term of the transported scalar.
-   * \param[in] val_ix - Index of the scalar.
-   */
-  //virtual inline su2double GetScalarSources(int val_ix) { return 0; }
-
-  /*!
    * \brief Flamelet LUT - Get the number of transported scalars.
    */
   virtual inline const unsigned short GetNScalars() { return 0; }
@@ -158,7 +152,7 @@ class CFluidModel {
   /*!
    * \brief Flamelet LUT - Get the looked up scalar field for combustion.
    */
-  virtual inline const su2double GetScalarLookups(int) { return 0; }
+  virtual inline su2double GetScalarLookups(int) const { return 0; }
 
   /*!
    * \brief Flamelet LUT - Get the lookup table.
