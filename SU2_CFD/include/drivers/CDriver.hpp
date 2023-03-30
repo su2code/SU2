@@ -356,6 +356,58 @@ class CDriver : public CDriverBase {
    */
   void Print_DirectResidual(RECORDING kind_recording);
 
+  /*!
+   * \brief Set the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[in] solution - Solution object with interface (iPoint,iVar).
+   * \tparam Old - If true set "old solutions" instead.
+   */
+  template <class Container, bool Old = false>
+  void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          if (!Old) {
+            solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint, offset + iVar));
+          } else {
+            solver->GetNodes()->SetSolution_Old(iPoint, iVar, solution(iPoint, offset + iVar));
+          }
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Set the "old solution" of all solvers (adjoint or primal) in a zone.
+   */
+  template <class Container>
+  void SetAllSolutionsOld(unsigned short iZone, bool adjoint, const Container& solution) {
+    SetAllSolutions<Container, true>(iZone, adjoint, solution);
+  }
+
+  /*!
+   * \brief Get the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[out] solution - Solution object with interface (iPoint,iVar).
+   */
+  template <class Container>
+  void GetAllSolutions(unsigned short iZone, bool adjoint, Container& solution) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      const auto& sol = solver->GetNodes()->GetSolution();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solution(iPoint, offset + iVar) = SU2_TYPE::GetValue(sol(iPoint, iVar));
+      offset += solver->GetnVar();
+    }
+  }
+
  public:
   /*!
    * \brief Launch the computation for all zones and all physics.
@@ -413,56 +465,14 @@ class CDriver : public CDriverBase {
   void BoundaryConditionsUpdate();
 
   /*!
-   * \brief Get the total drag.
-   * \return Total drag.
-   */
-  passivedouble Get_Drag() const;
-
-  /*!
-   * \brief Get the total lift.
-   * \return Total lift.
-   */
-  passivedouble Get_Lift() const;
-
-  /*!
-   * \brief Get the total x moment.
-   * \return Total x moment.
-   */
-  passivedouble Get_Mx() const;
-
-  /*!
-   * \brief Get the total y moment.
-   * \return Total y moment.
-   */
-  passivedouble Get_My() const;
-
-  /*!
-   * \brief Get the total z moment.
-   * \return Total z moment.
-   */
-  passivedouble Get_Mz() const;
-
-  /*!
-   * \brief Get the total drag coefficient.
-   * \return Total drag coefficient.
-   */
-  passivedouble Get_DragCoeff() const;
-
-  /*!
-   * \brief Get the total lift coefficient.
-   * \return Total lift coefficient.
-   */
-  passivedouble Get_LiftCoeff() const;
-
-  /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
+   * \brief Get the number of time iterations.
+   * \return Number of time iterations.
    */
   unsigned long GetNumberTimeIter() const;
 
   /*!
-   * \brief Get the current external iteration.
-   * \return Current external iteration.
+   * \brief Get the current time iteration.
+   * \return Current time iteration.
    */
   unsigned long GetTimeIter() const;
 
@@ -517,58 +527,6 @@ class CDriver : public CDriverBase {
       if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
     }
     return nVar;
-  }
-
-  /*!
-   * \brief Set the solution of all solvers (adjoint or primal) in a zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \param[in] solution - Solution object with interface (iPoint,iVar).
-   * \tparam Old - If true set "old solutions" instead.
-   */
-  template <class Container, bool Old = false>
-  void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          if (!Old) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint, offset + iVar));
-          } else {
-            solver->GetNodes()->SetSolution_Old(iPoint, iVar, solution(iPoint, offset + iVar));
-          }
-      offset += solver->GetnVar();
-    }
-  }
-
-  /*!
-   * \brief Set the "old solution" of all solvers (adjoint or primal) in a zone.
-   */
-  template <class Container>
-  void SetAllSolutionsOld(unsigned short iZone, bool adjoint, const Container& solution) {
-    SetAllSolutions<Container, true>(iZone, adjoint, solution);
-  }
-
-  /*!
-   * \brief Get the solution of all solvers (adjoint or primal) in a zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \param[out] solution - Solution object with interface (iPoint,iVar).
-   */
-  template <class Container>
-  void GetAllSolutions(unsigned short iZone, bool adjoint, Container& solution) const {
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
-      const auto& sol = solver->GetNodes()->GetSolution();
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solution(iPoint, offset + iVar) = SU2_TYPE::GetValue(sol(iPoint, iVar));
-      offset += solver->GetnVar();
-    }
   }
 };
 
