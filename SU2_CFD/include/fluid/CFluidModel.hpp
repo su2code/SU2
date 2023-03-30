@@ -69,7 +69,7 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
+  //CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
   su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
@@ -148,7 +148,7 @@ class CFluidModel {
    * \brief flamelet LUT - Get the source term of the transported scalar
    * \param[in] val_ix - Index of the scalar.
    */
-  virtual inline su2double GetScalarSources(int val_ix) { return 0; }
+  //virtual inline su2double GetScalarSources(int val_ix) { return 0; }
 
   /*!
   * \brief flamelet LUT - Get the number of transported scalars
@@ -163,7 +163,7 @@ class CFluidModel {
   /*!
    * \brief flamelet LUT - Get the actual lookup table
    */
-  virtual CLookUpTable* GetLookUpTable() { return look_up_table; }
+  virtual CLookUpTable* GetLookUpTable() { return nullptr; }
 
   /*!
    * \brief flamelet LUT - Get the total enthalpy from the temperature (reverse lookup)

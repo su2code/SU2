@@ -196,7 +196,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
 
     for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-      nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
+      //nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources(i_scalar));
+      nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources()[i_scalar]);
 
     su2double T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T,scalars);
@@ -256,7 +257,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
-    su2double* scalar_init = new su2double[nVar];
+    vector <su2double> scalar_init(nVar, 0.0);
     su2double* flame_offset = config->GetFlameOffset();
     su2double* flame_normal = config->GetFlameNormal();
 
@@ -346,7 +347,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
 
-        solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
+        solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init.data());
       }
 
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, SOLUTION);
@@ -384,7 +385,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
            << " !!!" << endl;
 
     if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
-    delete [] scalar_init;
   }
 }
 
@@ -397,6 +397,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
   const bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     /*--- Access the primitive variables at this node. ---*/
 
@@ -455,6 +456,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,

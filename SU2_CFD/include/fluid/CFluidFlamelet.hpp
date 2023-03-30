@@ -128,7 +128,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Get the reaction source term of a species equation
    * \param[in] iVar - index to the species
    */
-  inline su2double GetScalarSources(int iVar) { return source_scalar[iVar]; }
+  //inline su2double GetScalarSources(int iVar) { return source_scalar[iVar]; }
 
   /*!
    * \brief Get the reaction source term of all species equations

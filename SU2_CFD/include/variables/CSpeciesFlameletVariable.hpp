@@ -77,9 +77,9 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] val_ivar - Eqn. index to the transported scalar source term.
    * \return Value of the progress variable source term.
    */
-  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override {
-    return source_scalar(iPoint, val_ivar);
-  }
+  //inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override {
+  //  return source_scalar(iPoint, val_ivar);
+  //}
 
   /*!
    * \brief Get the value of the looked up scalar field.
