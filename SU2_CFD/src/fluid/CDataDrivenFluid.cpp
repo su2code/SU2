@@ -375,12 +375,6 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   MLP_inputs[idx_e] = e;
   exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
 #endif
-  /* Apply exponential transformation to the MLP outputs for the first and second
-     derivative of the entropy w.r.t density */
-  // Optional:
-  // dsdrho_e = -exp(dsdrho_e);
-  // d2sdrho2 = exp(d2sdrho2);
-
   return exit_code;
 }
 
