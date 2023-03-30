@@ -47,20 +47,20 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> table_sources;
 
   su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
-  su2double molar_weight; /*!< \brief local molar weight of the mixture */
+  su2double molar_weight;     /*!< \brief local molar weight of the mixture */
 
   vector<su2double> source_scalar;
   vector<su2double> lookup_scalar;
 
   CLookUpTable* look_up_table;
 
-  vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
+  vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
-  vector<string> varnames_Sources; /*!< \brief Lookup names for scalar source terms. */
+  vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
   vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
 
-  vector<string> varnames_LookUp; /*!< \brief Lookup names for passive lookup variables. */
+  vector<string> varnames_LookUp;     /*!< \brief Lookup names for passive lookup variables. */
   vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
 
  public:
@@ -80,13 +80,13 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    * \param[out] exit_code = error code
    */
-  unsigned long SetScalarSources(const su2double* val_scalars);
+  unsigned long SetScalarSources(const su2double* val_scalars) override;
 
   /*!
    * \brief Retrieve and set the lookup values for the species
    * \param[in] val_scalars - pointer to species mass fractions
    */
-  unsigned long SetScalarLookups(const su2double* val_scalars);
+  unsigned long SetScalarLookups(const su2double* val_scalars) override;
 
   /*!
    * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
@@ -95,7 +95,8 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_temp - temperature
    * \param[out] exit_code = error code
    */
-  unsigned long GetEnthFromTemp(su2double* enthalpy, const su2double val_prog, const su2double val_temp, su2double initial_value=0);
+  unsigned long GetEnthFromTemp(su2double& enthalpy, const su2double val_prog, const su2double val_temp,
+                                su2double initial_value = 0);
 
   /*!
    * \brief return a pointer to the lookup table
@@ -135,11 +136,12 @@ class CFluidFlamelet final : public CFluidModel {
    */
   inline const su2double* GetScalarSources() const { return &source_scalar[0]; }
 
+ private:
   /*!
    * \brief Get the value of the looked up variable
    * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
    */
-  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
+  inline const su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
 

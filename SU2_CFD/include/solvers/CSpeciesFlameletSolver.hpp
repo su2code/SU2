@@ -33,11 +33,29 @@
  * \class CSpeciesFlameletSolver
  * \brief Main class for defining the flamelet model solver.
  * \author N. Beishuizen
+ * \ingroup Scalar_Transport
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   unsigned long n_table_misses;          /*!< \brief number of times we failed to do a lookup from the table */
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
+
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
+
+  /*!
+   * \brief Compute the primitive variables (diffusivities).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - Boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
 
  public:
   /*!
@@ -60,24 +78,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] Output - Boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-
-  /*!
-   * \brief Post-processing routine for the passive scalar model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh);
-  /*!
-   * \brief Compute the primitive variables (diffusivities)
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - Boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Set the initial condition for the scalar transport problem.
@@ -90,14 +91,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                            unsigned long ExtIter) override;
 
   /*!
-   * \brief Compute the preconditioner for low-Mach flows.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
-
-  /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -107,18 +100,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
-
-  /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -156,17 +137,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) override;
 
-  /*!
-   * \brief Set the number of unsuccessful table lookups.
-   */
-  inline void SetNTableMisses(unsigned short val_n_table_misses) override { n_table_misses = val_n_table_misses; }
-
-  /*!
-   * \brief Get the number of unsuccessful table lookups.
-   */
-  inline unsigned long GetNTableMisses() override { return n_table_misses; }
-
-  /*!
+   /*!
    * \brief Impose the (received) conjugate heat variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

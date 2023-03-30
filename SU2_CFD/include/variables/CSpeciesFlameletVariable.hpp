@@ -57,7 +57,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] val_lookup_scalar - the value of the scalar to set.
    * \param[in] val_ivar - Eqn. index to the transport equation.
    */
-  inline void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
+  inline const void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
     lookup_scalar(iPoint, val_ivar) = val_lookup_scalar;
   }
 
@@ -100,7 +100,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \brief Get the value of the looked up table based on the transported scalar.
    * \return Pointer to the transported scalars source term.
    */
-  inline su2double* GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
+  inline const su2double* GetScalarLookups(unsigned long iPoint) const override { return lookup_scalar[iPoint]; }
 
   inline void SetInsideTable(unsigned long iPoint, unsigned short inside) override { inside_table[iPoint] = inside; }
 

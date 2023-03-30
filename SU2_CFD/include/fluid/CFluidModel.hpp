@@ -140,33 +140,33 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
-   * \brief flamelet LUT - Get the source term of the transported scalar
+   * \brief Flamelet LUT - Get the source term of the transported scalar.
    */
   virtual inline const su2double* GetScalarSources() const { return nullptr; }
 
-    /*!
-   * \brief flamelet LUT - Get the source term of the transported scalar
+  /*!
+   * \brief Flamelet LUT - Get the source term of the transported scalar.
    * \param[in] val_ix - Index of the scalar.
    */
   //virtual inline su2double GetScalarSources(int val_ix) { return 0; }
 
   /*!
-  * \brief flamelet LUT - Get the number of transported scalars
-  */
-  virtual inline unsigned short GetNScalars() {return 0; }
-
-  /*!
-   * \brief flamelet LUT - Get the looked up scalar field for combustion
+   * \brief Flamelet LUT - Get the number of transported scalars.
    */
-  virtual inline su2double GetScalarLookups(int){ return 0; }
+  virtual inline const unsigned short GetNScalars() { return 0; }
 
   /*!
-   * \brief flamelet LUT - Get the actual lookup table
+   * \brief Flamelet LUT - Get the looked up scalar field for combustion.
+   */
+  virtual inline const su2double GetScalarLookups(int) { return 0; }
+
+  /*!
+   * \brief Flamelet LUT - Get the lookup table.
    */
   virtual CLookUpTable* GetLookUpTable() { return nullptr; }
 
   /*!
-   * \brief flamelet LUT - Get the total enthalpy from the temperature (reverse lookup)
+   * \brief Flamelet LUT - Get the total enthalpy from the temperature (reverse lookup).
    */
   virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
                                                const su2double  val_prog,
