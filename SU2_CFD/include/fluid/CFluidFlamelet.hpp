@@ -40,7 +40,7 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_lookups;
   unsigned short n_table_sources;
   unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
-  unsigned short n_CV; /*!< \brief number of controlling variables. */
+  unsigned short n_control_vars; /*!< \brief number of controlling variables. */
 
   unsigned short manifold_format = ENUM_DATADRIVEN_METHOD::LUT;
 
@@ -48,45 +48,40 @@ class CFluidFlamelet final : public CFluidModel {
   su2vector<string> controlling_variables;
   su2vector<su2double> val_controlling_vars;
 
-  vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names; /*!< \brief vector to store names of scalar source variables.   */
-  vector<string> table_lookup_names; /*!< \brief vector to store names of look up variables.   */
+  vector<string> table_scalar_names, /*!< \brief vector to store names of scalar variables.   */
+      table_source_names,            /*!< \brief vector to store names of scalar source variables.   */
+      table_lookup_names;            /*!< \brief vector to store names of look up variables.   */
 
   vector<su2double> table_sources;
 
   su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
-  su2double molar_weight; /*!< \brief local molar weight of the mixture */
-  su2double beta_progvar, 
-            beta_enth_thermal, 
-            beta_enth, 
-            beta_mixfrac;
+  su2double molar_weight;     /*!< \brief local molar weight of the mixture */
+  su2double beta_progvar, beta_enth_thermal, beta_enth, beta_mixfrac;
 
-  vector<su2double> source_scalar;
-  vector<su2double> lookup_scalar;
-  vector<su2double> lookup_CV;
-  
+  vector<su2double> source_scalar, lookup_scalar, lookup_CV;
+
   CLookUpTable* look_up_table;
   MLPToolbox::CLookUp_ANN* look_up_ANN;
 
   su2vector<string> varnames_CV;
   su2vector<su2double*> val_vars_CV;
-  MLPToolbox::CIOMap * iomap_CV = nullptr;
+  MLPToolbox::CIOMap* iomap_CV = nullptr;
 
-  su2vector<string> varnames_TD; /*!< \brief Lookup names for thermodynamic state variables. */
+  su2vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
   su2vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
-  MLPToolbox::CIOMap * iomap_TD = nullptr;
+  MLPToolbox::CIOMap* iomap_TD = nullptr;
 
-  su2vector<string> varnames_PD; /*!< \brief Lookup names for preferential diffusion scalars */
+  su2vector<string> varnames_PD;     /*!< \brief Lookup names for preferential diffusion scalars */
   su2vector<su2double*> val_vars_PD; /*!< \brief References to preferential diffusion scalars*/
-  MLPToolbox::CIOMap * iomap_PD = nullptr;
+  MLPToolbox::CIOMap* iomap_PD = nullptr;
 
-  su2vector<string> varnames_Sources; /*!< \brief Lookup names for scalar source terms. */
+  su2vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
   su2vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
-  MLPToolbox::CIOMap * iomap_Sources = nullptr;
+  MLPToolbox::CIOMap* iomap_Sources = nullptr;
 
-  su2vector<string> varnames_LookUp; /*!< \brief Lookup names for passive lookup variables. */
+  su2vector<string> varnames_LookUp;     /*!< \brief Lookup names for passive lookup variables. */
   su2vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
-  MLPToolbox::CIOMap * iomap_LookUp = nullptr;
+  MLPToolbox::CIOMap* iomap_LookUp = nullptr;
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -105,13 +100,13 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    * \param[out] exit_code = error code
    */
-  unsigned long SetScalarSources(su2double* val_scalars);
+  unsigned long SetScalarSources(const su2double* val_scalars) override;
 
   /*!
    * \brief Retrieve and set the lookup values for the species
    * \param[in] val_scalars - pointer to species mass fractions
    */
-  unsigned long SetScalarLookups(su2double* val_scalars);
+  unsigned long SetScalarLookups(const su2double* val_scalars) override;
 
   /*!
    * \brief Set the preferential diffusion terms for the transported scalar equations.
@@ -127,7 +122,8 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_temp - temperature
    * \param[out] exit_code = error code
    */
-  unsigned long GetEnthFromTemp(su2double* enthalpy, su2double val_prog, su2double val_mixfrac, su2double val_temp, su2double initial_value=0);
+  unsigned long GetEnthFromTemp(su2double* enthalpy, const su2double val_prog, const su2double val_mixfrac,
+                                const su2double val_temp, su2double initial_value = 0);
 
   /*!
    * \brief return a pointer to the lookup table
@@ -165,8 +161,9 @@ class CFluidFlamelet final : public CFluidModel {
   /*!
    * \brief Get the reaction source term of all species equations
    */
-  inline su2double* GetScalarSources() { return &source_scalar[0]; }
+  inline const su2double* GetScalarSources() const { return &source_scalar[0]; }
 
+ private:
   /*!
    * \brief Get the preferential diffusion scalar
    * \param[in] iVar - index to the species
@@ -177,13 +174,12 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Get the value of the looked up variable
    * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
    */
-  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
+  inline const su2double GetScalarLookups(int i_scalar) { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
 
-  inline unsigned short GetNControllingVariables() { return n_CV; }
+  inline unsigned short GetNControllingVariables() { return n_control_vars; }
 
-  unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars, MLPToolbox::CIOMap* iomap=nullptr);
-
-
+  unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars,
+                                 MLPToolbox::CIOMap* iomap = nullptr);
 };

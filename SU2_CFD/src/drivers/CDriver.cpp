@@ -1435,7 +1435,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     }
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET){
-      numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Species, config);
+      numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWiseTransportedScalarGeneral(nDim, nVar_Species, config);
     }
     else {
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
@@ -3017,7 +3017,8 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
-          if (config_container[iZone]->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+          // nijso asks: do we really need this? 
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
             solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
         }
       }

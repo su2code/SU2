@@ -159,8 +159,8 @@ void CAdjFlowOutput::AddHistoryOutputFieldsAdjScalarLinsol(const CConfig* config
   }
   
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    AddHistoryOutput("LINSOL_ITER_SCALAR", "LinSolIterScalar", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for scalar solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_SCALAR", "LinSolResScalar", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for scalar solver.");
+    AddHistoryOutput("LINSOL_ITER_FLAMELET", "LinSolIterScalar", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for scalar solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_FLAMELET", "LinSolResScalar", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for scalar solver.");
   }
 }
 // clang-format on
@@ -231,8 +231,8 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
       }
     }
 
-    SetHistoryOutputValue("LINSOL_ITER_SCALAR", adjspecies_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_SCALAR", log10(adjspecies_solver->GetResLinSolver()));
+    SetHistoryOutputValue("LINSOL_ITER_FLAMELET", adjspecies_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(adjspecies_solver->GetResLinSolver()));
   }
 
 }

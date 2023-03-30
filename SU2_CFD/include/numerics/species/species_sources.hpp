@@ -93,12 +93,12 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
 };
 
 /*!
- * \class CSourcePieceWise_transportedScalar_general
+ * \class CSourcePieceWiseTransportedScalarGeneral
  * \brief Class for integrating the source terms of the transported scalar turbulence model equations.
  * \ingroup SourceDiscr
  * \author N. Beishuizen
  */
-class CSourcePieceWise_transportedScalar_general final : public CNumerics {
+class CSourcePieceWiseTransportedScalarGeneral final : public CNumerics {
 
 private:
   su2double *Residual = nullptr;
@@ -113,7 +113,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_transportedScalar_general(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CSourcePieceWiseTransportedScalarGeneral(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -123,18 +123,17 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
-   * \brief Set the value of the progress variable source term for the flamelet model.
-   * \param[in] val_sourcepv_i - Value of the source term at point i.
-   * \param[in] val_sourcepv_j - Value of the source term at point j.
+   * \brief Set the source terms for the transported species equations
+   * \param[in] val_scalar_sources - Pointer to source terms
    */
-  inline void SetScalarSources(su2double *val_scalar_sources) override {
-    for (auto i_var=0u; i_var < nVar; i_var++)
+  inline void SetScalarSources(const su2double *val_scalar_sources) override {
+    for (auto i_var = 0u; i_var < nVar; i_var++)
       scalar_sources[i_var] = val_scalar_sources[i_var];
   }
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourcePieceWise_transportedScalar_general(void) override;
+  ~CSourcePieceWiseTransportedScalarGeneral(void) override;
 
 };

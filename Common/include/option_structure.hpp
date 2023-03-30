@@ -1317,10 +1317,10 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("FLAMELET", SPECIES_MODEL::FLAMELET)
 };
 
-/* the order matters: */
 /*!
-* \brief progress variable and enthalpy are the first and second entry in the lookup table
-*/
+ * \brief Progress variable and enthalpy are the first and second entries in the lookup table.
+ * \note The order matters.
+ */
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,

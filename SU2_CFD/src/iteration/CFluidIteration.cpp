@@ -121,7 +121,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
   }
 
-  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
+  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
     
     if ((config[val_iZone]->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) && (config[val_iZone]->GetKind_Flame_Init() == FLAME_INIT_TYPE::SPARK)){
