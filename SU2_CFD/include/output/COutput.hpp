@@ -446,8 +446,11 @@ public:
    * \param[in] field - Name of the field
    * \return Value of the field
    */
-  su2double GetHistoryFieldValue(const string& field) const {
-    return historyOutput_Map.at(field).value;
+  su2double GetHistoryFieldValue(const string& name) const {
+    auto it = historyOutput_Map.find(name);
+    if (it != historyOutput_Map.end()) return it->second.value;
+    SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return 0;
   }
 
  /*!
@@ -456,8 +459,11 @@ public:
   * \param[in] iMarker - Index of the surface marker
   * \return Value of the field
   */
-  su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
-    return historyOutputPerSurface_Map.at(field)[iMarker].value;
+  su2double GetHistoryFieldValuePerSurface(const string& name, unsigned short iMarker) const {
+    auto it = historyOutputPerSurface_Map.find(name);
+    if (it != historyOutputPerSurface_Map.end()) return it->second[iMarker].value;
+    SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return 0;
   }
 
   /*!
@@ -634,7 +640,7 @@ protected:
     if (it != historyOutput_Map.end()){
       it->second.value = value;
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   }
 
@@ -717,7 +723,6 @@ protected:
     volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
     volumeOutput_List.push_back(name);
   }
-
 
   /*!
    * \brief Set the value of a volume output field

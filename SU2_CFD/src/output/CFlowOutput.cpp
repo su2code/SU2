@@ -1405,6 +1405,8 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
+  /// DESCRIPTION: Reference force for aerodynamic coefficients
+  AddHistoryOutput("REFERENCE_FORCE", "RefForce", ScreenOutputFormat::FIXED, "AERO_COEFF", "Reference force used to compute aerodynamic coefficients", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Drag coefficient
   AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
@@ -1462,6 +1464,7 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
+  SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
