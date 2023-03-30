@@ -66,8 +66,10 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 CDataDrivenFluid::~CDataDrivenFluid() {
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef USE_MLPCPP
       delete iomap_rhoe;
       delete lookup_mlp;
+#endif
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
       delete lookup_table;

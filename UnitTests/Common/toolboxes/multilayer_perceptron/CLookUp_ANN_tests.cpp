@@ -27,8 +27,8 @@
 
 #include "catch.hpp"
 #include "../../../../Common/include/CConfig.hpp"
-#include "CLookUp_ANN.hpp"
 #if defined(HAVE_MLPCPP)
+#include "CLookUp_ANN.hpp"
 #define USE_MLPCPP
 #endif
 #include <vector>

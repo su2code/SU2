@@ -30,8 +30,8 @@
 
 #include <vector>
 #include "../../../Common/include/containers/CLookUpTable.hpp"
+#if defined(HAVE_MLPCPP)
 #include "CLookUp_ANN.hpp"
-#if defined(HAVE_MLPCPP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_MLPCPP
 #endif
 #include "CFluidModel.hpp"
@@ -70,9 +70,11 @@ class CDataDrivenFluid : public CFluidModel {
   vector<su2double*> outputs_rhoe;  // Pointers to output variables.
 
   /*--- Class variables for the multi-layer perceptron method ---*/
+#ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.
   MLPToolbox::CIOMap* iomap_rhoe;       // input-output map.
-  vector<double> MLP_inputs;            // inputs for the multi-layer perceptron look-up operation.
+#endif
+  vector<su2double> MLP_inputs;            // inputs for the multi-layer perceptron look-up operation.
 
   /*--- Class variables for the look-up table method ---*/
   CLookUpTable* lookup_table;
