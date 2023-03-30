@@ -691,7 +691,7 @@ class CDriverBase {
   /*!
    * \brief Initialize containers.
    */
-  void SetContainersNull();
+  void InitializeContainers();
 
   /*!
    * \brief Delete containers.

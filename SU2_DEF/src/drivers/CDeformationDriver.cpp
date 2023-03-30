@@ -86,7 +86,7 @@ void CDeformationDriver::Input_Preprocessing() {
 
   /*--- Initialize containers. --- */
 
-  SetContainersNull();
+  InitializeContainers();
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
