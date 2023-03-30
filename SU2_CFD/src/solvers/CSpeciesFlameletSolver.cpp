@@ -168,8 +168,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain = 0;
 
-  //const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -205,32 +203,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
   END_SU2_OMP_FOR
-
-
-
-  // /*--- Clear residual and system matrix, not needed for
-  //  * reducer strategy as we write over the entire matrix. ---*/
-  // if (!ReducerStrategy && !Output) {
-  //   LinSysRes.SetValZero();
-  //   if (implicit)
-  //     Jacobian.SetValZero();
-  //   else {
-  //     SU2_OMP_BARRIER
-  //   }
-  // }
-
-  // /*--- Upwind second order reconstruction and gradients. ---*/
-
-  // if (config->GetReconstructionGradientRequired()) {
-  //   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
-  //   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
-  //   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-  //     SetSolution_Gradient_LS(geometry, config, true);
-  // }
-
-  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-
-  // if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
