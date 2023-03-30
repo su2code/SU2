@@ -365,8 +365,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
     su2double BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
     su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
-    unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
-
     su2double SolP = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Pressure());
     su2double SolT = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Temperature());
 
