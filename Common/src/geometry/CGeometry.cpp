@@ -1128,7 +1128,7 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
-                                  unsigned short countPerPeriodicPoint) const {
+                                  unsigned short countPerPeriodicPoint) {
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
 #ifdef HAVE_MPI
@@ -2600,7 +2600,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
   }        // if print_on_scren
 }
 
-void CGeometry::ComputeSurf_Curvature(CConfig* config) const {
+void CGeometry::ComputeSurf_Curvature(CConfig* config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex,
       *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
@@ -3352,7 +3352,7 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global, const p
   return finished;
 }
 
-void CGeometry::SetElemVolume() const {
+void CGeometry::SetElemVolume() {
   SU2_OMP_PARALLEL {
     /*--- Create a bank of elements to avoid instantiating inside loop. ---*/
     CElement* elements[4] = {nullptr, nullptr, nullptr, nullptr};
@@ -3420,7 +3420,7 @@ void CGeometry::SetElemVolume() const {
   END_SU2_OMP_PARALLEL
 }
 
-void CGeometry::SetRotationalVelocity(const CConfig* config, bool print) const {
+void CGeometry::SetRotationalVelocity(const CConfig* config, bool print) {
   unsigned long iPoint;
   unsigned short iDim;
 
@@ -3471,7 +3471,7 @@ void CGeometry::SetRotationalVelocity(const CConfig* config, bool print) const {
   }
 }
 
-void CGeometry::SetShroudVelocity(const CConfig* config) const {
+void CGeometry::SetShroudVelocity(const CConfig* config) {
   unsigned long iPoint, iVertex;
   unsigned short iMarker, iMarkerShroud;
   su2double RotVel[3] = {0.0, 0.0, 0.0};
@@ -3489,7 +3489,7 @@ void CGeometry::SetShroudVelocity(const CConfig* config) const {
   }
 }
 
-void CGeometry::SetTranslationalVelocity(const CConfig* config, bool print) const {
+void CGeometry::SetTranslationalVelocity(const CConfig* config, bool print) {
   su2double xDot[3] = {0.0, 0.0, 0.0};
 
   /*--- Get the translational velocity vector from config ---*/
@@ -3508,7 +3508,7 @@ void CGeometry::SetTranslationalVelocity(const CConfig* config, bool print) cons
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetGridVel(iPoint, xDot);
 }
 
-void CGeometry::SetWallVelocity(const CConfig* config, bool print) const {
+void CGeometry::SetWallVelocity(const CConfig* config, bool print) {
   const su2double L_Ref = config->GetLength_Ref();
   const su2double Omega_Ref = config->GetOmega_Ref();
   const su2double Vel_Ref = config->GetVelocity_Ref();
@@ -3567,7 +3567,7 @@ void CGeometry::SetWallVelocity(const CConfig* config, bool print) const {
   }
 }
 
-void CGeometry::SetGridVelocity(const CConfig* config) const {
+void CGeometry::SetGridVelocity(const CConfig* config) {
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
   bool FirstOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);

@@ -292,7 +292,7 @@ class CFreeFormDefBox : public CGridMovement {
    *        and find the position of the control points for the FFDBox
    * \param[in] FFDBox - Original FFDBox where we want to compute the control points.
    */
-  void SetSupportCPChange(CFreeFormDefBox* FFDBox) const;
+  void SetSupportCPChange(CFreeFormDefBox* FFDBox);
 
   /*!
    * \brief Set the number of corner points.
@@ -439,7 +439,7 @@ class CFreeFormDefBox : public CGridMovement {
   /*!
    * \brief Set the control points in a parallelepiped (hexahedron).
    */
-  void SetControlPoints_Parallelepiped(void) const;
+  void SetControlPoints_Parallelepiped(void);
 
   /*!
    * \brief Set the control points of the final chuck in a unitary hexahedron free form.
@@ -502,49 +502,49 @@ class CFreeFormDefBox : public CGridMovement {
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCyl2Cart_ControlPoints(CConfig* config) const;
+  void SetCyl2Cart_ControlPoints(CConfig* config);
 
   /*!
    * \brief Set Cartesians to Cylindrical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Cyl_ControlPoints(CConfig* config) const;
+  void SetCart2Cyl_ControlPoints(CConfig* config);
 
   /*!
    * \brief Set Cylindrical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCyl2Cart_CornerPoints(CConfig* config) const;
+  void SetCyl2Cart_CornerPoints(CConfig* config);
 
   /*!
    * \brief Set Cartesians to Cylindrical CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Cyl_CornerPoints(CConfig* config) const;
+  void SetCart2Cyl_CornerPoints(CConfig* config);
 
   /*!
    * \brief Set Spherical to Cartesians ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSphe2Cart_ControlPoints(CConfig* config) const;
+  void SetSphe2Cart_ControlPoints(CConfig* config);
 
   /*!
    * \brief SetCartesians to Spherical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Sphe_ControlPoints(CConfig* config) const;
+  void SetCart2Sphe_ControlPoints(CConfig* config);
 
   /*!
    * \brief Set Spherical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSphe2Cart_CornerPoints(CConfig* config) const;
+  void SetSphe2Cart_CornerPoints(CConfig* config);
 
   /*!
    * \brief Set Cartesians to Spherical Corner Points.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Sphe_CornerPoints(CConfig* config) const;
+  void SetCart2Sphe_CornerPoints(CConfig* config);
 
   /*!
    * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of

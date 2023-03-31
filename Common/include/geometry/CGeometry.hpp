@@ -405,7 +405,7 @@ class CGeometry {
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
   void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
-                         unsigned short countPerPeriodicPoint) const;
+                         unsigned short countPerPeriodicPoint);
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a periodic commucation.
@@ -959,33 +959,33 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetRotationalVelocity(const CConfig* config, bool print = false) const;
+  void SetRotationalVelocity(const CConfig* config, bool print = false);
 
   /*!
    * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetShroudVelocity(const CConfig* config) const;
+  void SetShroudVelocity(const CConfig* config);
 
   /*!
    * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetTranslationalVelocity(const CConfig* config, bool print = false) const;
+  void SetTranslationalVelocity(const CConfig* config, bool print = false);
 
   /*!
    * \brief Set the translational/rotational velocity for all moving walls.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetWallVelocity(const CConfig* config, bool print = false) const;
+  void SetWallVelocity(const CConfig* config, bool print = false);
 
   /*!
    * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVelocity(const CConfig* config) const;
+  void SetGridVelocity(const CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -1020,7 +1020,7 @@ class CGeometry {
    * \brief Find and store all vertices on a sharp corner in the geometry.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeSurf_Curvature(CConfig* config) const;
+  void ComputeSurf_Curvature(CConfig* config);
 
   /*!
    * \brief A virtual member.
