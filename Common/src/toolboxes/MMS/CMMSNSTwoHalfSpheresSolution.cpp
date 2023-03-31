@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
 
-CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(void) : CVerificationSolution() {}
+CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution() : CVerificationSolution() {}
 
 CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nDim, unsigned short val_nVar,
                                                            unsigned short val_iMesh, CConfig* config)
@@ -102,7 +102,7 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Spheres case", CURRENT_FUNCTION);
 }
 
-CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution(void) {}
+CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution() = default;
 
 void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                               su2double* val_solution) const {
@@ -387,4 +387,4 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double* val_coords,
   val_source[4] /= Velocity_Ref * Pressure_Ref;
 }
 
-bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution(void) const { return true; }
+bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution() const { return true; }

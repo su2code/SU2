@@ -30,7 +30,7 @@
 
 CBezierBlending::CBezierBlending(short val_order, short n_controlpoints) { SetOrder(val_order, n_controlpoints); }
 
-CBezierBlending::~CBezierBlending() {}
+CBezierBlending::~CBezierBlending() = default;
 
 void CBezierBlending::SetOrder(short val_order, short n_controlpoints) {
   Order = val_order;

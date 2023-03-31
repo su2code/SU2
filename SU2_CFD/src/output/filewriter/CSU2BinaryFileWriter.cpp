@@ -33,9 +33,7 @@ CSU2BinaryFileWriter::CSU2BinaryFileWriter(CParallelDataSorter *valDataSorter)  
   CFileWriter(valDataSorter, fileExt){}
 
 
-CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
-
-}
+CSU2BinaryFileWriter::~CSU2BinaryFileWriter()= default;
 
 void CSU2BinaryFileWriter::WriteData(string val_filename){
 

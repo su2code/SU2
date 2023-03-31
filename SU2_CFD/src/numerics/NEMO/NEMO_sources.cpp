@@ -49,7 +49,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
     jacobian[iVar] = new su2double [nVar]();
 }
 
-CSource_NEMO::~CSource_NEMO(void) {
+CSource_NEMO::~CSource_NEMO() {
 
   /*--- Deallocate arrays ---*/
 

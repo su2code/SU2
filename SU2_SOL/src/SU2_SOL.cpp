@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
       if (fem_solver) {
         /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
          define all virtual functions in the base class CGeometry. ---*/
-        CMeshFEM_DG* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst]);
+        auto* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst]);
 
         /*--- Determine the standard elements for the volume elements. ---*/
         if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
@@ -341,8 +341,8 @@ int main(int argc, char* argv[]) {
 
       if (((TimeIter + 1 == config_container[ZONE_0]->GetnTime_Iter()) ||
            ((TimeIter % config_container[ZONE_0]->GetVolumeOutputFrequency(0) == 0) && (TimeIter != 0) &&
-            !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
+            (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_1ST) &&
+            (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_2ND)) ||
            (StopCalc) ||
            (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
@@ -363,7 +363,7 @@ int main(int argc, char* argv[]) {
 
         /*--- For the fluid zone (ZONE_0) ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
-        if (SolutionInstantiatedFlow == false &&
+        if (!SolutionInstantiatedFlow &&
             (TimeIter == 0 ||
              ((config_container[ZONE_0]->GetRestart() &&
                (SU2_TYPE::Int(TimeIter) == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()))) ||
@@ -384,7 +384,7 @@ int main(int argc, char* argv[]) {
         /*--- For the structural zone (ZONE_1) ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
-        if (SolutionInstantiatedFEM == false &&
+        if (!SolutionInstantiatedFEM &&
             (TimeIter == 0 ||
              ((config_container[ZONE_1]->GetRestart() &&
                (SU2_TYPE::Int(TimeIter) == SU2_TYPE::Int(config_container[ZONE_1]->GetRestart_Iter()))) ||
@@ -445,7 +445,7 @@ int main(int argc, char* argv[]) {
             config_container[iZone]->SetTimeIter(TimeIter);
 
             /*--- Either instantiate the solution class or load a restart file. ---*/
-            if (SolutionInstantiated[iZone] == false &&
+            if (!SolutionInstantiated[iZone] &&
                 (TimeIter == 0 || (config_container[ZONE_0]->GetRestart() &&
                                    ((long)TimeIter == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()) ||
                                     TimeIter % config_container[ZONE_0]->GetVolumeOutputFrequency(0) == 0 ||
@@ -521,8 +521,8 @@ int main(int argc, char* argv[]) {
 
         if ((TimeIter + 1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetVolumeOutputFrequency(0) == 0) && (TimeIter != 0) &&
-             !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-               (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
+             (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_1ST) &&
+             (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_2ND)) ||
             (StopCalc) ||
             (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
               (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
@@ -533,7 +533,7 @@ int main(int argc, char* argv[]) {
             config_container[iZone]->SetTimeIter(TimeIter);
 
             /*--- Either instantiate the solution class or load a restart file. ---*/
-            if (SolutionInstantiated[iZone] == false &&
+            if (!SolutionInstantiated[iZone] &&
                 (TimeIter == 0 || (config_container[ZONE_0]->GetRestart() &&
                                    ((long)TimeIter == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()) ||
                                     TimeIter % config_container[ZONE_0]->GetVolumeOutputFrequency(0) == 0 ||
@@ -626,7 +626,7 @@ int main(int argc, char* argv[]) {
           /*--- Read in the restart file for this time step ---*/
           for (iZone = 0; iZone < nZone; iZone++) {
             /*--- Either instantiate the solution class or load a restart file. ---*/
-            if (SolutionInstantiated == false &&
+            if (!SolutionInstantiated &&
                 (TimeIter == 0 ||
                  ((config_container[ZONE_0]->GetRestart() &&
                    (SU2_TYPE::Int(TimeIter) == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()))) ||

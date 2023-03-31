@@ -38,7 +38,7 @@ CEdge::CEdge(unsigned long nEdge_, unsigned long nDim)
   Normal.resize(nEdgeSIMD, nDim) = su2double(0.0);
 }
 
-void CEdge::SetZeroValues(void) { Normal = su2double(0.0); }
+void CEdge::SetZeroValues() { Normal = su2double(0.0); }
 
 su2double CEdge::GetVolume(const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
                            const su2double* coord_Elem_CG, const su2double* coord_Point) {

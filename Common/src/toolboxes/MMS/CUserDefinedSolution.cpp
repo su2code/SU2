@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CUserDefinedSolution.hpp"
 
-CUserDefinedSolution::CUserDefinedSolution(void) : CVerificationSolution() {}
+CUserDefinedSolution::CUserDefinedSolution() : CVerificationSolution() {}
 
 CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                            CConfig* config)
@@ -45,7 +45,7 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim, unsigned sho
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
-CUserDefinedSolution::~CUserDefinedSolution(void) {}
+CUserDefinedSolution::~CUserDefinedSolution() = default;
 
 void CUserDefinedSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                       su2double* val_solution) const {
@@ -62,7 +62,7 @@ void CUserDefinedSolution::GetMMSSourceTerm(const su2double* val_coords, const s
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
-bool CUserDefinedSolution::IsManufacturedSolution(void) const {
+bool CUserDefinedSolution::IsManufacturedSolution() const {
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
   return false; /* True if manufactured. */
 }

@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CRinglebSolution.hpp"
 
-CRinglebSolution::CRinglebSolution(void) : CVerificationSolution() {}
+CRinglebSolution::CRinglebSolution() : CVerificationSolution() {}
 
 CRinglebSolution::CRinglebSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                    CConfig* config)
@@ -64,7 +64,7 @@ CRinglebSolution::CRinglebSolution(unsigned short val_nDim, unsigned short val_n
     SU2_MPI::Error("Standard air or ideal gas must be selected for the Ringleb case", CURRENT_FUNCTION);
 }
 
-CRinglebSolution::~CRinglebSolution(void) {}
+CRinglebSolution::~CRinglebSolution() = default;
 
 void CRinglebSolution::GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries for the

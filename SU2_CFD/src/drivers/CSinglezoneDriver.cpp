@@ -41,9 +41,7 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
   TimeIter = 0;
 }
 
-CSinglezoneDriver::~CSinglezoneDriver(void) {
-
-}
+CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
 
@@ -319,7 +317,7 @@ void CSinglezoneDriver::RuntimeOptions(){
   /*--- If succeeded create a temporary config object ---*/
 
   if (runtime_configfile.good()){
-    CConfig *runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    auto *runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     delete runtime;
   }
 

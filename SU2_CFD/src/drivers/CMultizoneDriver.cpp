@@ -117,7 +117,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
 
 }
 
-CMultizoneDriver::~CMultizoneDriver(void) {
+CMultizoneDriver::~CMultizoneDriver() {
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete [] init_res[iZone];

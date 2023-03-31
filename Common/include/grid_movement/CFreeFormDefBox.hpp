@@ -292,7 +292,7 @@ class CFreeFormDefBox : public CGridMovement {
    *        and find the position of the control points for the FFDBox
    * \param[in] FFDBox - Original FFDBox where we want to compute the control points.
    */
-  void SetSupportCPChange(CFreeFormDefBox* FFDBox);
+  void SetSupportCPChange(CFreeFormDefBox* FFDBox) const;
 
   /*!
    * \brief Set the number of corner points.
@@ -439,7 +439,7 @@ class CFreeFormDefBox : public CGridMovement {
   /*!
    * \brief Set the control points in a parallelepiped (hexahedron).
    */
-  void SetControlPoints_Parallelepiped(void);
+  void SetControlPoints_Parallelepiped(void) const;
 
   /*!
    * \brief Set the control points of the final chuck in a unitary hexahedron free form.
@@ -502,49 +502,49 @@ class CFreeFormDefBox : public CGridMovement {
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCyl2Cart_ControlPoints(CConfig* config);
+  void SetCyl2Cart_ControlPoints(CConfig* config) const;
 
   /*!
    * \brief Set Cartesians to Cylindrical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Cyl_ControlPoints(CConfig* config);
+  void SetCart2Cyl_ControlPoints(CConfig* config) const;
 
   /*!
    * \brief Set Cylindrical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCyl2Cart_CornerPoints(CConfig* config);
+  void SetCyl2Cart_CornerPoints(CConfig* config) const;
 
   /*!
    * \brief Set Cartesians to Cylindrical CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Cyl_CornerPoints(CConfig* config);
+  void SetCart2Cyl_CornerPoints(CConfig* config) const;
 
   /*!
    * \brief Set Spherical to Cartesians ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSphe2Cart_ControlPoints(CConfig* config);
+  void SetSphe2Cart_ControlPoints(CConfig* config) const;
 
   /*!
    * \brief SetCartesians to Spherical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Sphe_ControlPoints(CConfig* config);
+  void SetCart2Sphe_ControlPoints(CConfig* config) const;
 
   /*!
    * \brief Set Spherical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSphe2Cart_CornerPoints(CConfig* config);
+  void SetSphe2Cart_CornerPoints(CConfig* config) const;
 
   /*!
    * \brief Set Cartesians to Spherical Corner Points.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Sphe_CornerPoints(CConfig* config);
+  void SetCart2Sphe_CornerPoints(CConfig* config) const;
 
   /*!
    * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
@@ -710,7 +710,7 @@ class CFreeFormDefBox : public CGridMovement {
    *        which? diff_thiss will tell us ; E.G.: dim=2, diff_this=1 => we use the third coordinate of the control
    *        points, and derivate de v-Bersntein polynomial (use m-1 when summing!!).
    */
-  su2double GetDerivative3(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short* lmn);
+  su2double GetDerivative3(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short* lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -742,7 +742,7 @@ class CFreeFormDefBox : public CGridMovement {
    * \return __________.
    */
   su2double GetDerivative5(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
-                           unsigned short* lmn);
+                           unsigned short* lmn) const;
 
   /*!
    * \brief Euclidean norm of a vector.

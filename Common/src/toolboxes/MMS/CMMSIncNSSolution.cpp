@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSIncNSSolution.hpp"
 
-CMMSIncNSSolution::CMMSIncNSSolution(void) : CVerificationSolution() {}
+CMMSIncNSSolution::CMMSIncNSSolution() : CVerificationSolution() {}
 
 CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                      CConfig* config)
@@ -82,7 +82,7 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim, unsigned short val
                    CURRENT_FUNCTION);
 }
 
-CMMSIncNSSolution::~CMMSIncNSSolution(void) {}
+CMMSIncNSSolution::~CMMSIncNSSolution() = default;
 
 void CMMSIncNSSolution::GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries. ---*/
@@ -142,4 +142,4 @@ void CMMSIncNSSolution::GetMMSSourceTerm(const su2double* val_coords, const su2d
   val_source[nVar - 1] = 0.0;
 }
 
-bool CMMSIncNSSolution::IsManufacturedSolution(void) const { return true; }
+bool CMMSIncNSSolution::IsManufacturedSolution() const { return true; }

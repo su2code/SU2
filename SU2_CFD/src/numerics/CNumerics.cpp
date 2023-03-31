@@ -31,7 +31,7 @@
 #include "../../include/numerics/CNumerics.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CNumerics::CNumerics(void) {
+CNumerics::CNumerics() {
 
   Proj_Flux_Tensor  = nullptr;
 
@@ -75,7 +75,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 }
 
-CNumerics::~CNumerics(void) {
+CNumerics::~CNumerics() {
 
   // visc
   delete [] Proj_Flux_Tensor;
@@ -1603,7 +1603,7 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
   }
 }
 
-void CNumerics::CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) {
+void CNumerics::CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) const {
 
   unsigned short iDim;
   su2double modm, modl;

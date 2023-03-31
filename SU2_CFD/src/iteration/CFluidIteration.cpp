@@ -512,7 +512,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vecto
   while (file.good()) {
     getline(file, line);
     std::stringstream ss(line);
-    if (line.size() != 0) {  // ignore blank lines if they exist.
+    if (!line.empty()) {  // ignore blank lines if they exist.
       ss >> x_temp;
       ss >> y_temp;
       ss >> vort_strength_temp;

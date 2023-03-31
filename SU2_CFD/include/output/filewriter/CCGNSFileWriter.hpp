@@ -88,7 +88,7 @@ class CCGNSFileWriter final : public CFileWriter {
   /*!
    * \brief Initialize CGNS mesh file.
    */
-  void InitializeMeshFile(string val_filename);
+  void InitializeMeshFile(const string& val_filename);
 
   /*!
    * \brief Write i-th coordinate to file in CGNS file format.

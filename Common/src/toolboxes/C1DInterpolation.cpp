@@ -202,8 +202,8 @@ vector<su2double> CorrectedInletValues(const vector<su2double>& Inlet_Interpolat
   return Inlet_Values;
 }
 
-void PrintInletInterpolatedData(const vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex,
-                                unsigned short nDim, unsigned short nColumns) {
+void PrintInletInterpolatedData(const vector<su2double>& Inlet_Data_Interpolated, const string& Marker,
+                                unsigned long nVertex, unsigned short nDim, unsigned short nColumns) {
   ofstream myfile;
   myfile.precision(16);
   myfile.open("Interpolated_Data_" + Marker + ".dat", ios_base::out);

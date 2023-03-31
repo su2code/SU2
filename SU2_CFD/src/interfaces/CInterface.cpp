@@ -31,7 +31,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CInterface::CInterface(void) :
+CInterface::CInterface() :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()) {
 }
@@ -49,7 +49,7 @@ CInterface::CInterface(unsigned short val_nVar, unsigned short val_nConst) :
   valAggregated      = true;
 }
 
-CInterface::~CInterface(void) {
+CInterface::~CInterface() {
 
   delete [] Physical_Constants;
   delete [] Donor_Variable;
@@ -343,9 +343,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
 
 #ifdef HAVE_MPI
   int iSize;
-  su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL,
-      *BuffAvg3DVelDonor = NULL, *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL,
-      *BuffAvgKineDonor = NULL, *BuffAvgOmegaDonor = NULL;
+  su2double *BuffAvgPressureDonor = nullptr, *BuffAvgDensityDonor = nullptr, *BuffAvgNormalVelDonor = nullptr,
+      *BuffAvg3DVelDonor = nullptr, *BuffAvgTangVelDonor = nullptr, *BuffAvgNuDonor = nullptr,
+      *BuffAvgKineDonor = nullptr, *BuffAvgOmegaDonor = nullptr;
   int nSpanSize, *BuffMarkerDonor;
 #endif
 

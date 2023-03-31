@@ -29,7 +29,7 @@
 #include "../../include/grid_movement/CBezierBlending.hpp"
 #include "../../include/grid_movement/CBSplineBlending.hpp"
 
-CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() {}
+CFreeFormDefBox::CFreeFormDefBox() : CGridMovement() {}
 
 CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short BSplineOrder[],
                                  unsigned short kind_blending)
@@ -107,7 +107,7 @@ CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short B
   }
 }
 
-CFreeFormDefBox::~CFreeFormDefBox(void) {
+CFreeFormDefBox::~CFreeFormDefBox() {
   unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
 
   for (iOrder = 0; iOrder < lOrder; iOrder++) {
@@ -149,9 +149,9 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
   delete[] BlendingFunction;
 }
 
-void CFreeFormDefBox::SetUnitCornerPoints(void) {
+void CFreeFormDefBox::SetUnitCornerPoints() {
   unsigned short iDim;
-  su2double* coord = new su2double[nDim];
+  auto* coord = new su2double[nDim];
 
   for (iDim = 0; iDim < nDim; iDim++) coord[iDim] = 0.0;
 
@@ -191,7 +191,7 @@ void CFreeFormDefBox::SetUnitCornerPoints(void) {
   delete[] coord;
 }
 
-void CFreeFormDefBox::SetControlPoints_Parallelepiped(void) {
+void CFreeFormDefBox::SetControlPoints_Parallelepiped() const {
   unsigned short iDim, iDegree, jDegree, kDegree;
 
   /*--- Set base control points according to the notation of Vtk for hexahedrons ---*/
@@ -265,14 +265,14 @@ void CFreeFormDefBox::SetSupportCP(CFreeFormDefBox* FFDBox) {
       }
 }
 
-void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox* FFDBox) {
+void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox* FFDBox) const {
   unsigned short iDim, iOrder, jOrder, kOrder;
   su2double *CartCoordNew, *ParamCoord;
   unsigned short lOrder = FFDBox->GetlOrder();
   unsigned short mOrder = FFDBox->GetmOrder();
   unsigned short nOrder = FFDBox->GetnOrder();
 
-  su2double**** ParamCoord_SupportCP = new su2double***[lOrder];
+  auto**** ParamCoord_SupportCP = new su2double***[lOrder];
   for (iOrder = 0; iOrder < lOrder; iOrder++) {
     ParamCoord_SupportCP[iOrder] = new su2double**[mOrder];
     for (jOrder = 0; jOrder < mOrder; jOrder++) {
@@ -310,7 +310,7 @@ void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox* FFDBox) {
   }
 }
 
-void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig* config) {
+void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig* config) const {
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -354,7 +354,7 @@ void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetCyl2Cart_ControlPoints(CConfig* config) {
+void CFreeFormDefBox::SetCyl2Cart_ControlPoints(CConfig* config) const {
   unsigned short iDegree, jDegree, kDegree;
   su2double PolarCoord[3];
 
@@ -386,7 +386,7 @@ void CFreeFormDefBox::SetCyl2Cart_ControlPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig* config) {
+void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig* config) const {
   unsigned short iCornerPoint;
   su2double* CartCoord;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -408,7 +408,7 @@ void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetCyl2Cart_CornerPoints(CConfig* config) {
+void CFreeFormDefBox::SetCyl2Cart_CornerPoints(CConfig* config) const {
   unsigned short iCornerPoint;
   su2double* PolarCoord;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -430,7 +430,7 @@ void CFreeFormDefBox::SetCyl2Cart_CornerPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig* config) {
+void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig* config) const {
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -476,7 +476,7 @@ void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig* config) {
+void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig* config) const {
   unsigned short iDegree, jDegree, kDegree;
   su2double PolarCoord[3];
 
@@ -508,7 +508,7 @@ void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig* config) {
+void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig* config) const {
   unsigned short iCornerPoint;
   su2double* CartCoord;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -530,7 +530,7 @@ void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig* config) {
   }
 }
 
-void CFreeFormDefBox::SetSphe2Cart_CornerPoints(CConfig* config) {
+void CFreeFormDefBox::SetSphe2Cart_CornerPoints(CConfig* config) const {
   unsigned short iCornerPoint;
   su2double* PolarCoord;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -573,10 +573,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry* geometry, unsigned short iFFDBox, bool 
 
   SPRINTF(FFDBox_filename, "ffd_boxes.cgns");
 
-  if ((original) && (iFFDBox == 0))
-    new_file = true;
-  else
-    new_file = false;
+  new_file = (original) && (iFFDBox == 0);
 
   if (new_file) {
     cgns_err = cg_open(FFDBox_filename, CG_MODE_WRITE, &FFDBox_cgns_file);
@@ -614,7 +611,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry* geometry, unsigned short iFFDBox, bool 
     pointlen *= dims[ii];
   }
 
-  passivedouble* buffer = new passivedouble[pointlen];
+  auto* buffer = new passivedouble[pointlen];
   SPRINTF(zonename, "SU2_Zone_%d", SU2_TYPE::Int(iFFDBox));
 
   cgns_err = cg_zone_write(FFDBox_cgns_file, cgns_base, zonename, dims, CGNS_ENUMV(Structured), &cgns_zone);
@@ -668,18 +665,15 @@ void CFreeFormDefBox::SetTecplot(CGeometry* geometry, unsigned short iFFDBox, bo
 
   SPRINTF(FFDBox_filename, "ffd_boxes.dat");
 
-  if ((original) && (iFFDBox == 0))
-    new_file = true;
-  else
-    new_file = false;
+  new_file = (original) && (iFFDBox == 0);
 
   if (new_file) {
     FFDBox_file.open(FFDBox_filename, ios::out);
     FFDBox_file << "TITLE = \"Visualization of the FFD boxes generated by SU2_DEF.\"" << endl;
     if (nDim == 2)
-      FFDBox_file << "VARIABLES = \"x\", \"y\"" << endl;
+      FFDBox_file << R"(VARIABLES = "x", "y")" << endl;
     else
-      FFDBox_file << "VARIABLES = \"x\", \"y\", \"z\"" << endl;
+      FFDBox_file << R"(VARIABLES = "x", "y", "z")" << endl;
   } else
     FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
 
@@ -727,10 +721,7 @@ void CFreeFormDefBox::SetParaview(CGeometry* geometry, unsigned short iFFDBox, b
 
   nDim = geometry->GetnDim();
 
-  if (original)
-    new_file = true;
-  else
-    new_file = false;
+  new_file = original;
 
   if (new_file)
     SPRINTF(FFDBox_filename, "ffd_boxes_%d.vtk", SU2_TYPE::Int(iFFDBox));
@@ -1138,11 +1129,11 @@ su2double CFreeFormDefBox::GetDerivative2(su2double* uvw, unsigned short dim, co
 }
 
 su2double CFreeFormDefBox::GetDerivative3(su2double* uvw, unsigned short dim, unsigned short diff_this,
-                                          unsigned short* lmn) {
+                                          unsigned short* lmn) const {
   unsigned short iDegree, jDegree, kDegree, iDim;
   su2double value = 0;
 
-  unsigned short* ijk = new unsigned short[nDim];
+  auto* ijk = new unsigned short[nDim];
 
   for (iDim = 0; iDim < nDim; iDim++) ijk[iDim] = 0;
 
@@ -1180,11 +1171,11 @@ su2double CFreeFormDefBox::GetDerivative4(su2double* uvw, unsigned short val_dif
 }
 
 su2double CFreeFormDefBox::GetDerivative5(su2double* uvw, unsigned short dim, unsigned short diff_this,
-                                          unsigned short diff_this_also, unsigned short* lmn) {
+                                          unsigned short diff_this_also, unsigned short* lmn) const {
   unsigned short iDegree, jDegree, kDegree, iDim;
   su2double value = 0.0;
 
-  unsigned short* ijk = new unsigned short[nDim];
+  auto* ijk = new unsigned short[nDim];
 
   for (iDim = 0; iDim < nDim; iDim++) ijk[iDim] = 0;
 

@@ -44,7 +44,7 @@ int CBaseMPIWrapper::MinRankError;
 bool CBaseMPIWrapper::winMinRankErrorInUse = false;
 CBaseMPIWrapper::Win CBaseMPIWrapper::winMinRankError;
 
-void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName) {
+void CBaseMPIWrapper::Error(const std::string& ErrorMsg, const std::string& FunctionName) {
   /* Set MinRankError to Rank, as the error message is called on this rank. */
   MinRankError = Rank;
   int flag = 0;

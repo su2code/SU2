@@ -451,7 +451,7 @@ void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
     nDV = values.size();
     DV.resize(nDV);
     unsigned short iDV = 0;
-    for (auto x : values) DV[iDV++] = x;
+    for (const auto& x : values) DV[iDV++] = x;
 
   }
 

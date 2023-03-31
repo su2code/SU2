@@ -63,7 +63,7 @@ class CCGNSMeshReaderFVM : public CMeshReaderFVM {
    * \brief Open the CGNS file and checks for errors.
    * \param[in] val_filename - string name of the CGNS file to be read.
    */
-  void OpenCGNSFile(string val_filename);
+  void OpenCGNSFile(const string& val_filename);
 
   /*!
    * \brief Reads all CGNS database metadata and checks for errors.

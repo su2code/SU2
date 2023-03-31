@@ -1160,7 +1160,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   else            { nHeavy = nSpecies;   nEl = 0; }
 }
 
-CSU2TCLib::~CSU2TCLib(){}
+CSU2TCLib::~CSU2TCLib()= default;
 
 void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
@@ -1327,7 +1327,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-    if (vibe_only == true) {eves[iSpecies] = Ev;}
+    if (vibe_only) {eves[iSpecies] = Ev;}
     else {eves[iSpecies] = Ev + Eel;}
   }
 
@@ -2062,13 +2062,13 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     if (denom_re <= 0.0) denom_re = EPS;
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (!(ionization && iSpecies == 0)) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
+    if (!ionization || iSpecies != 0) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
 
     /*--- Rotational contribution to thermal conductivity ---*/
     if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (kb*gam_i/denom_r);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    if (!(ionization && iSpecies == 0) && RotationModes[iSpecies] != 0.0) ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
+    if ((!ionization || iSpecies != 0) && RotationModes[iSpecies] != 0.0) ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
     
     if (ionization && iSpecies == 0) ThermalCond_ve += ((15.0/4.0)*kb*gam_i/(1.45*denom_re));
   }

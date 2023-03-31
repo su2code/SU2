@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <utility>
+
 #include "../../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
@@ -43,9 +45,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(su2double valTime,
 }
 
 
-CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
-
-}
+CParaviewVTMFileWriter::~CParaviewVTMFileWriter()= default;
 
 void CParaviewVTMFileWriter::WriteData(string val_filename){
 
@@ -63,7 +63,7 @@ void CParaviewVTMFileWriter::WriteData(string val_filename){
       multiBlockFile.open(val_filename.c_str(), ios::app);
 
     if (iZone == 0){
-      multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
+      multiBlockFile << R"(<VTKFile type="vtkMultiBlockDataSet" version="1.0">)" << endl;
       multiBlockFile << "<vtkMultiBlockDataSet>" << endl;
     }
 
@@ -87,7 +87,7 @@ void CParaviewVTMFileWriter::WriteData(string val_filename){
 
 }
 
-void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string file, CParallelDataSorter* dataSorter){
+void CParaviewVTMFileWriter::AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter){
 
   /*--- Construct the full file name incl. folder ---*/
   /*--- Note that the folder name is simply the filename ---*/
@@ -101,7 +101,7 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
 
   /*--- Add the dataset to the vtm file ---*/
 
-  AddDataset(name, fullFilename + CParaviewXMLFileWriter::fileExt);
+  AddDataset(std::move(name), fullFilename + CParaviewXMLFileWriter::fileExt);
 
   /*--- Update the bandwidth ---*/
 
@@ -114,7 +114,7 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
 
 
 
-void CParaviewVTMFileWriter::WriteFolderData(string foldername, CConfig *config,
+void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *config,
                                              string multiZoneHeaderString,
                                              CParallelDataSorter* volumeDataSorter,
                                              CParallelDataSorter* surfaceDataSorter,
@@ -133,7 +133,7 @@ void CParaviewVTMFileWriter::WriteFolderData(string foldername, CConfig *config,
 
    /*--- Open a block for the zone ---*/
 
-  StartBlock(multiZoneHeaderString);
+  StartBlock(std::move(multiZoneHeaderString));
 
   StartBlock("Internal");
   AddDataset(foldername,"Internal", "Internal", volumeDataSorter);

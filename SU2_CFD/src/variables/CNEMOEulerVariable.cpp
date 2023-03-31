@@ -26,7 +26,7 @@
  */
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
-#include <math.h>
+#include <cmath>
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,

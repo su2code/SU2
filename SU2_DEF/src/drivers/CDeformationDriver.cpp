@@ -568,7 +568,7 @@ void CDeformationDriver::Finalize() {
     cout << "\n------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
 }
 
-void CDeformationDriver::CommunicateMeshDisplacements(void) {
+void CDeformationDriver::CommunicateMeshDisplacements() {
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                     config_container[ZONE_0], MESH_DISPLACEMENTS);
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0],
