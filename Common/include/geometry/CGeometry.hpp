@@ -45,9 +45,9 @@ extern "C" {
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <climits>
 #include <memory>
 #include <unordered_map>
@@ -1678,7 +1678,7 @@ class CGeometry {
   /*!
    * \brief Compute and store the volume of the primal elements.
    */
-  void SetElemVolume() const;
+  void SetElemVolume();
 
   /*!
    * \brief Set the multigrid index for the current geometry object.

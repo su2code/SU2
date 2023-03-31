@@ -1603,7 +1603,7 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
   }
 }
 
-void CNumerics::CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) const {
+void CNumerics::CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) {
 
   unsigned short iDim;
   su2double modm, modl;
