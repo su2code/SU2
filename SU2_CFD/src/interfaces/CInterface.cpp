@@ -227,11 +227,10 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+          /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
       Donor_Flag   = -1;
-    }
+   
   }
 
 #ifdef HAVE_MPI
@@ -273,10 +272,9 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+          /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-    }
+   
   }
 
   if (Marker_Target != -1 && Marker_Donor != -1){
@@ -418,10 +416,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
       /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+          /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
-    }
+   
   }
   /*--- Here we want to make available the quantities for all the processors and collect them in a buffer
    * for each span of the donor the span-wise height vector also so
@@ -534,10 +531,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+          /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-    }
+   
   }
 
 

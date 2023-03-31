@@ -302,17 +302,16 @@ void CDiscAdjDeformationDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
     if (!config_container[iZone]->GetDiscrete_Adjoint()) {
       continue;
+    }
+    if (rank == MASTER_NODE)
+      cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
+    if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
+        config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
+      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
+                                          grid_movement[iZone][INST_0]);
     } else {
-      if (rank == MASTER_NODE)
-        cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
-      if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
-          config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
-        DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
-                                            grid_movement[iZone][INST_0]);
-      } else {
-        grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
-                                                            config_container[iZone], false, true);
-      }
+      grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
+                                                          config_container[iZone], false, true);
     }
   }
 

@@ -620,7 +620,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
     return (MaxIterationsReached || InnerConvergence);
   }
-  else { // i.e. unsteady simulation
+  // i.e. unsteady simulation
 
     /*--- Check whether the outer time integration has reached the final time ---*/
     const auto TimeConvergence = GetTimeConvergence();
@@ -641,7 +641,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     }
 
     return (FinalTimeReached || MaxIterationsReached);
-  }
+ 
 
 }
 

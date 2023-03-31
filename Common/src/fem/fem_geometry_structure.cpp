@@ -134,11 +134,10 @@ bool CSortFaces::operator()(const CFaceOfElement& f0, const CFaceOfElement& f1) 
            to their element ID's in order to increase cache performance. */
         if (elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
         return elemIDMax0 < elemIDMax1;
-      } else {
-        /* One face is a local face and the other is not. Make sure that
-           the local faces are numbered first. */
-        return face0IsLocal;
-      }
+      } /* One face is a local face and the other is not. Make sure that
+   the local faces are numbered first. */
+      return face0IsLocal;
+
     } else if (elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
       /* Both faces are non-matching internal faces. Sort them according to
          their relevant element ID. The time level is not taken into account

@@ -754,8 +754,8 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq != nullptr) delete[] connSendReq;
-  if (connRecvReq != nullptr) delete[] connRecvReq;
+  delete[] connSendReq;
+  delete[] connRecvReq;
 
   delete[] connSend;
   delete[] connRecv;

@@ -2821,8 +2821,7 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
   auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
     if (multizone)
       return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
-    else
-      return "[" + std::to_string(ivar) + "]";
+          return "[" + std::to_string(ivar) + "]";
   };
 
   /*--- Print residuals in the first iteration ---*/

@@ -88,15 +88,14 @@ su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2d
   if (val_i == 0) {
     value = val_n * (-GetBernsteinDerivative(val_n - 1, val_i, val_t, val_order_der - 1));
     return value;
+  }
+  if (val_n == 0) {
+    value = val_t;
+    return value;
   } else {
-    if (val_n == 0) {
-      value = val_t;
-      return value;
-    } else {
-      value = val_n * (GetBernsteinDerivative(val_n - 1, val_i - 1, val_t, val_order_der - 1) -
-                       GetBernsteinDerivative(val_n - 1, val_i, val_t, val_order_der - 1));
-      return value;
-    }
+    value = val_n * (GetBernsteinDerivative(val_n - 1, val_i - 1, val_t, val_order_der - 1) -
+                     GetBernsteinDerivative(val_n - 1, val_i, val_t, val_order_der - 1));
+    return value;
   }
 
   return value;

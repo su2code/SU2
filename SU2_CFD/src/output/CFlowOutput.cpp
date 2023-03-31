@@ -873,9 +873,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
           if (solIdx == FLOW_SOL) {
             return flowNodes->GetPrimitive(iPoint, varIdx);
-          } else {
-            return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-          }
+          }             return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+         
         } else {
           return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
         }

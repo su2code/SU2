@@ -2134,9 +2134,8 @@ bool COutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_
 
     return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
-  else {
-    return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
-  }
+      return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
+ 
 }
 
 void COutput::SetCommonHistoryFields() {

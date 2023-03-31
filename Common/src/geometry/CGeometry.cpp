@@ -1515,7 +1515,7 @@ bool CGeometry::SegmentIntersectsLine(const su2double point0[2], const su2double
 
   length = diff0_A * diff0_A + diff1_A * diff1_A;
 
-  return !((dist0 > length) || (dist1 > length));
+  return (dist0 <= length) && (dist1 <= length);
 }
 
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3], su2double vert0[3],

@@ -588,9 +588,8 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-        } else {
-          owner = 0;
-        }
+        }           owner = 0;
+       
 
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
