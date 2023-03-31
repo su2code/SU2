@@ -1520,7 +1520,7 @@ public:
    * \brief Computes a basis of orthogonal vectors from a supplied vector
    * \param[in] config - Normal vector
    */
-  void CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) const;
+  void CreateBasis(const su2double *val_Normal, su2double* l, su2double* m);
 
   /*!
    * \brief Set the value of the Tauwall
