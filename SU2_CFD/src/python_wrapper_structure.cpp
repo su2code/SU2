@@ -29,7 +29,7 @@
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
 
-void CDriver::PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
+void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
   int rank = MASTER_NODE;
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
@@ -76,7 +76,7 @@ string CDriver::GetSurfaceFileName() const { return config_container[ZONE_0]->Ge
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
+void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
   CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
 
@@ -86,7 +86,7 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
 
-void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
+void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
   unsigned long iVertex;

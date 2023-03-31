@@ -77,27 +77,27 @@ class CDeformationDriver : public CDriverBase {
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing();
+  void PreprocessInput();
 
   /*!
    * \brief Construction of the edge-based data structure.
    */
-  void Geometrical_Preprocessing();
+  void InitializeGeometry();
 
   /*!
    * \brief Preprocess the output container.
    */
-  void Output_Preprocessing();
+  void PreprocessOutput();
 
   /*!
    * \brief Preprocess the mesh solver container.
    */
-  void Solver_Preprocessing();
+  void InitializeSolver();
 
   /*!
    * \brief Preprocess the numerics container.
    */
-  void Numerics_Preprocessing();
+  void InitializeNumerics();
 
   /*!
    * \brief Mesh deformation based on linear elasticity solver (CMeshSolver).
