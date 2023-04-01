@@ -97,25 +97,25 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDriver(void);
+  ~CDriver(void) override;
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Run(){};
+  void Run() override{};
 
  protected:
   /*!
-   * \brief Init_Containers
+   * \brief Initialize containers. 
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Read in the config and mesh files.
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void PreprocessInput(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -123,28 +123,28 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryDGFEM(CConfig* config, CGeometry**& geometry);
 
   /*!
-   * \brief Geometrical_Preprocessing_FVM
+   * \brief InitializeGeometryFVM
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_FVM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryFVM(CConfig* config, CGeometry**& geometry);
 
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iteration - Pointer to the iteration container to be instantiated.
    */
-  void Iteration_Preprocessing(CConfig* config, CIteration*& iteration) const;
+  void PreprocessIteration(CConfig* config, CIteration*& iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -152,7 +152,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -161,7 +161,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] update_geo - Boolean to indicate if geometry should be updated.
    */
-  void Solver_Restart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
+  void RestartSolver(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -170,7 +170,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Solver_Postprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
+  void FinalizeSolver(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -178,7 +178,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
+  void InitializeIntegration(CConfig* config, CSolver** solver, CIntegration**& integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -187,7 +187,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Integration_Postprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
+  void FinalizeIntegration(CIntegration*** integration, CGeometry** geometry, CConfig* config,
                                   unsigned short val_iInst);
 
   /*!
@@ -199,7 +199,7 @@ class CDriver : public CDriverBase {
    * \param[in] interface - Class defining the physical transfer of information.
    * \param[in] interpolation -  Object defining the interpolation.
    */
-  void Interface_Preprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
+  void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
                                unsigned short** interface_types, CInterface*** interface,
                                vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
@@ -210,7 +210,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
@@ -241,7 +241,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Numerics_Postprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
+  void FinalizeNumerics(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
                                unsigned short val_iInst);
 
   /*!
@@ -253,7 +253,7 @@ class CDriver : public CDriverBase {
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] surface_movement - Surface movement classes of the problem.
    */
-  void DynamicMesh_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
+  void PreprocessDynamicMesh(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
@@ -263,7 +263,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -272,7 +272,7 @@ class CDriver : public CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void PreprocessOutput(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 
   /*!
@@ -280,7 +280,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void StaticMesh_Preprocessing(const CConfig* config, CGeometry** geometry);
+  void PreprocessStaticMesh(const CConfig* config, CGeometry** geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -289,7 +289,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+  void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
 
   /*!
@@ -297,28 +297,28 @@ class CDriver : public CDriverBase {
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -326,7 +326,7 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationDisplacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -334,28 +334,28 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationTractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
    */
-  virtual void Run_GaussSeidel() {}
+  virtual void RunGaussSeidel() {}
 
   /*!
    * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
    */
-  virtual void Run_Jacobi() {}
+  virtual void RunJacobi() {}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Update() {}
+  void Update() override {}
 
   /*!
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void Print_DirectResidual(RECORDING kind_recording);
+  void PrintDirectResidual(RECORDING kind_recording);
 
   /*!
    * \brief Set the solution of all solvers (adjoint or primal) in a zone.
@@ -418,7 +418,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine
    */
-  void Finalize();
+  void Finalize() override;
 
   /*!
    * \brief A virtual member.
@@ -495,7 +495,7 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
+  void PreprocessInlet(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Set the position of the heat source.
@@ -504,14 +504,14 @@ class CDriver : public CDriverBase {
    * \param[in] pos_y - Position Y.
    * \param[in] pos_z - Position Z.
    */
-  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+  void SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
 
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
    * \param[in] alpha - Angle (Zpos).
    */
-  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+  void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
 /// \}
 
@@ -595,7 +595,7 @@ class CFluidDriver : public CDriver {
   /*!
    * \brief Transfer data among different zones (multiple zone).
    */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+  void TransferData(unsigned short donorZone, unsigned short targetZone);
 };
 
 /*!
@@ -692,7 +692,7 @@ class CHBDriver : public CFluidDriver {
    * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
    * \author A. Rubino, S. Nimmagadda
    */
-  void ComputeHB_Operator();
+  void ComputeHBOperator();
 
   /*!
    * \brief Update the solution for the Harmonic Balance.

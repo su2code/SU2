@@ -111,7 +111,7 @@ public:
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction(void);
+  void SetAdjObjFunction(void);
 
   /*!
    * \brief Record the main computational path.

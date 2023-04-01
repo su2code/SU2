@@ -183,8 +183,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
     }
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -273,7 +273,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run_GaussSeidel() {
+void CMultizoneDriver::RunGaussSeidel() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -300,7 +300,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -323,7 +323,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
 }
 
-void CMultizoneDriver::Run_Jacobi() {
+void CMultizoneDriver::RunJacobi() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -349,7 +349,7 @@ void CMultizoneDriver::Run_Jacobi() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone && interface_container[iZone][jZone] != nullptr){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -434,7 +434,7 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        UpdateMesh += Transfer_Data(jZone, iZone);
+        UpdateMesh += TransferData(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
@@ -532,7 +532,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   }
 }
 
-bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
   bool UpdateMesh = false;
 
