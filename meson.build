@@ -260,16 +260,6 @@ if get_option('enable-coolprop')
 endif
 
 if get_option('enable-mlpcpp')
-  cmake = import('cmake')
-  cmake_opts = cmake.subproject_options()
-  cmake_opts.set_override_option('warning_level', '0')
-  cmake_opts.add_cmake_defines({
-    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
-    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-  })
-  mlpcpp_subproj = cmake.subproject('MLPCpp', options: cmake_opts)
-  mlpcpp_dep = mlpcpp_subproj.dependency('MLPCpp')
-  su2_deps += mlpcpp_dep
   su2_cpp_args += '-DHAVE_MLPCPP'
 endif
 

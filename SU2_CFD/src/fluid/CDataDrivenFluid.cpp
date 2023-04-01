@@ -26,6 +26,10 @@
  */
 
 #include "../../include/fluid/CDataDrivenFluid.hpp"
+#if defined(HAVE_MLPCPP)
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
 
 CDataDrivenFluid::CDataDrivenFluid(const CConfig* config) : CFluidModel() {
 #ifdef HAVE_MPI
@@ -110,7 +114,8 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
 /*--- Map MLP inputs to outputs ---*/
 #ifdef USE_MLPCPP
-    iomap_rhoe = new MLPToolbox::CIOMap(lookup_mlp, input_names_rhoe, output_names_rhoe);
+    iomap_rhoe = new MLPToolbox::CIOMap(input_names_rhoe, output_names_rhoe);
+    lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
     MLP_inputs.resize(2);
 #endif
   }

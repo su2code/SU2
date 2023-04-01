@@ -31,7 +31,7 @@
 #include <vector>
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
-#include "CLookUp_ANN.hpp"
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
 #define USE_MLPCPP
 #endif
 #include "CFluidModel.hpp"
