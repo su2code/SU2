@@ -165,11 +165,11 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   bool converged = false;  // Convergence flag
   unsigned long Iter = 0;
 
-  su2double delta_P,  // Pressure residual
-      delta_T,        // Temperature residual
-      delta_rho,      // Density step size
-      delta_e,        // Energy step size
-      determinant;    // Jacobian determinant
+  su2double delta_P,
+      delta_T,    
+      delta_rho,
+      delta_e,
+      determinant;
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy*/
@@ -213,11 +213,11 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   /*--- Setting initial values for energy ---*/
   su2double e = e_start;
 
-  bool converged = false;  // Convergence flag
+  bool converged = false;
   unsigned long Iter = 0;
 
-  su2double delta_P,  // Pressure residual
-      delta_e;        // Energy step size
+  su2double delta_P,
+      delta_e;
 
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy*/
@@ -249,11 +249,11 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   /*--- Setting initial values for density and energy ---*/
   su2double e = e_start;
 
-  bool converged = false;  // Convergence flag
+  bool converged = false;
   unsigned long Iter = 0;
 
-  su2double delta_T,  // Temperature residual
-      delta_e;        // Energy increment
+  su2double delta_T,
+      delta_e;
 
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
@@ -285,14 +285,14 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, e = e_start;
 
-  bool converged = false;  // Convergence flag
+  bool converged = false;
   unsigned long Iter = 0;
 
-  su2double delta_h,  // Enthalpy
-      delta_s,        // Entropy residual
-      delta_rho,      // Density step size
-      delta_e,        // Energy step size
-      determinant;    // Jacobian determinant
+  su2double delta_h,
+      delta_s,
+      delta_rho,
+      delta_e,
+      determinant;
 
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
@@ -331,14 +331,14 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   /*--- Setting initial values for density and energy ---*/
   su2double rho = rho_start, e = e_start;
 
-  bool converged = false;  // Convergence flag
+  bool converged = false;
   unsigned long Iter = 0;
 
-  su2double delta_P,  // Enthalpy
-      delta_s,        // Entropy residual
-      delta_rho,      // Density step size
-      delta_e,        // Energy step size
-      determinant;    // Jacobian determinant
+  su2double delta_P,
+      delta_s,
+      delta_rho,
+      delta_e,
+      determinant;
 
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {

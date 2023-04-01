@@ -28,7 +28,7 @@
 #include "catch.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #if defined(HAVE_MLPCPP)
-#include "CLookUp_ANN.hpp"
+#include "../../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
 #define USE_MLPCPP
 #endif
 #include <vector>
@@ -55,7 +55,8 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   MLP_outputs[0] = &z;
 
   /*--- Generate input-output map ---*/
-  MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);
+  MLPToolbox::CIOMap iomap(MLP_input_names, MLP_output_names);
+  ANN.PairVariableswithMLPs(iomap);
   /*--- MLP evaluation on point in the middle of the training data range ---*/
   x = 1.0;
   y = -0.5;
