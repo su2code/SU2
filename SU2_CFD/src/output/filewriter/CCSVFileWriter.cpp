@@ -36,7 +36,7 @@ CCSVFileWriter::~CCSVFileWriter(){
 
 }
 
-void CCSVFileWriter::Write_Data(string val_filename){
+void CCSVFileWriter::WriteData(string val_filename){
 
   /*--- Routine to write the surface CSV files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the

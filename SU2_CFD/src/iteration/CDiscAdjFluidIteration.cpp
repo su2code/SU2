@@ -609,20 +609,6 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   END_SU2_OMP_PARALLEL
 }
 
-void CDiscAdjFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                    CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                    CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                    CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  /*--- Dual time stepping strategy ---*/
-
-  if ((config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-      (config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
-    for (unsigned short iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
-      integration[iZone][iInst][ADJFLOW_SOL]->SetConvergence(false);
-    }
-  }
-}
-
 bool CDiscAdjFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                      CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                      CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
@@ -633,7 +619,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput* output, CIntegration**** integrati
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-  output->SetHistory_Output(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
+  output->SetHistoryOutput(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
                             config[iZone]->GetTimeIter(), config[iZone]->GetOuterIter(),
                             config[iZone]->GetInnerIter());
 

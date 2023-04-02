@@ -134,7 +134,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+  void SetCpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                          unsigned long iExtIter);
 
   /*!
@@ -144,7 +144,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+  void SetHeatFluxInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                         unsigned long iExtIter);
 
   /*!
@@ -154,7 +154,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
+  void SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes one dimensional output.
@@ -164,7 +164,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
+  void SpecialOutputAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -175,14 +175,14 @@ public:
    * \param[in] val_iZone - Current zone number in the grid file.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
+  void SpecialOutputDistortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Write the header of the history file.
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistoryHeader(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -195,7 +195,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistoryBody(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                               CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
@@ -205,7 +205,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const;
+  void SpecialOutputForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const;
 
   /*!
    * \brief Compute .
@@ -230,7 +230,7 @@ public:
    * \param[in] val_nZone - iZone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Turbo(CSolver *****solver_container, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutputTurbo(CSolver *****solver_container, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -261,7 +261,7 @@ public:
    * \param[in] val_iZone - Zone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) const;
+  void SpecialOutputHarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) const;
 
   /*!
    * \brief Writes the special output files.
@@ -272,7 +272,7 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetSpecial_Output(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
+  void SetSpecialOutput(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                          unsigned long iExtIter, unsigned short val_nZone);
 
 };

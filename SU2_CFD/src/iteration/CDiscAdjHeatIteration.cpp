@@ -232,27 +232,12 @@ void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** ge
   solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
-void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-
-  /*--- Dual time stepping strategy ---*/
-
-  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
-    for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      integration[val_iZone][val_iInst][ADJHEAT_SOL]->SetConvergence(false);
-    }
-  }
-}
-
 bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
 
-  output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
+  output->SetHistoryOutput(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
                             config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                             config[val_iZone]->GetInnerIter());
 

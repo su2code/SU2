@@ -94,7 +94,7 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
   /*--- Initialize containers. --- */
 
-  SetContainers_Null();
+  InitializeContainers();
 
   /*--- Loop over all zones to initialize the various classes. In most
    * cases, nZone is equal to one. This represents the solution of a partial
@@ -881,15 +881,15 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
 
     /*--- Load the data. --- */
 
-    output->Load_Data(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
+    output->LoadData(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
 
     /*--- Set the surface filename. ---*/
 
-    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+    output->SetSurfaceFilename(config[iZone]->GetSurfSens_FileName());
 
     /*--- Set the volume filename. ---*/
 
-    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
+    output->SetVolumeFilename(config[iZone]->GetVolSens_FileName());
 
     /*--- Write to file. ---*/
 
