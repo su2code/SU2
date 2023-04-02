@@ -83,6 +83,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
+  /// TODO: This was always false.
+  const bool Convergence_FullMG = false;
+
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
     SetProlongated_Solution(RunTime_EqSystem,
