@@ -238,7 +238,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&numberOfProfiles, &maxProfiles, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&numberOfProfiles, &maxProfiles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
+                  SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
