@@ -95,22 +95,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Preprocessing(){}
-
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Run(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Output(){}
 
   /*!
    * \brief A virtual member.

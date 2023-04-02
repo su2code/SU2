@@ -443,13 +443,6 @@ void CMultizoneDriver::Update() {
     iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (integration_container[iZone][INST_0][iSol] != nullptr){
-        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
-      }
-    }
   }
 
 }
@@ -611,9 +604,9 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const bool MaxIterationsReached = (OuterIter+1 >= nOuterIter);
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
+      else cout << "\nMaximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
       driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
@@ -633,10 +626,10 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
 
     if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)  cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
-      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------";
+      if (TimeConvergence)  cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
+      if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
@@ -646,5 +639,5 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-    return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
