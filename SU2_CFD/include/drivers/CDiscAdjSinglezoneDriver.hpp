@@ -57,40 +57,6 @@ protected:
 
   COutputLegacy* output_legacy;
 
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Total number of dimensions.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CDiscAdjSinglezoneDriver(char* confFile,
-             unsigned short val_nZone,
-             SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjSinglezoneDriver(void) override;
-
-  /*!
-   * \brief Preprocess the single-zone iteration
-   * \param[in] TimeIter - index of the current time-step.
-   */
-  void Preprocess(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Run a single iteration of the discrete adjoint solver with a single zone.
-   */
-  void Run(void) override;
-
-  /*!
-   * \brief Postprocess the adjoint iteration for ZONE_0.
-   */
-  void Postprocess(void) override;
-
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
@@ -127,6 +93,39 @@ public:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */
-  inline bool GetTimeConvergence() const override {return false;};
+  inline bool GetTimeConvergence() const override { return false; }
 
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Total number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CDiscAdjSinglezoneDriver(char* confFile,
+             unsigned short val_nZone,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSinglezoneDriver(void) override;
+
+  /*!
+   * \brief Preprocess the single-zone iteration
+   * \param[in] TimeIter - index of the current time-step.
+   */
+  void Preprocess(unsigned long TimeIter) override;
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver with a single zone.
+   */
+  void Run(void) override;
+
+  /*!
+   * \brief Postprocess the adjoint iteration for ZONE_0.
+   */
+  void Postprocess(void) override;
 };
