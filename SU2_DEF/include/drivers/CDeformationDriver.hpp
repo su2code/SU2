@@ -49,29 +49,14 @@ class CDeformationDriver : public CDriverBase {
   CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
-   * \brief Preprocess the driver data.
-   */
-  void Preprocess();
-
-  /*!
    * \brief Launch the driver computation.
    */
-  void Run();
-
-  /*!
-   * \brief Output the mesh.
-   */
-  void Output();
+  void Run() override;
 
   /*!
    * \brief Deallocation routine.
    */
-  void Finalize();
-
-  /*!
-   * \brief Communicate boundary mesh displacements.
-   */
-  void CommunicateMeshDisplacements(void);
+  void Finalize() override;
 
  protected:
   /*!
@@ -100,12 +85,17 @@ class CDeformationDriver : public CDriverBase {
   void InitializeNumerics();
 
   /*!
+   * \brief Output the mesh.
+   */
+  void OutputFiles();
+
+  /*!
    * \brief Mesh deformation based on linear elasticity solver (CMeshSolver).
    */
-  void Update();
+  void DeformMesh();
 
   /*!
    * \brief Mesh deformation based on legacy implementation.
    */
-  void Update_Legacy();
+  void DeformLegacy();
 };

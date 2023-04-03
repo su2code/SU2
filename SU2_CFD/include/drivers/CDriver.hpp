@@ -106,7 +106,7 @@ class CDriver : public CDriverBase {
 
  protected:
   /*!
-   * \brief Initialize containers. 
+   * \brief Initialize containers.
    */
   void InitializeContainers();
 
@@ -153,6 +153,14 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    */
   void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessInlet(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -337,21 +345,6 @@ class CDriver : public CDriverBase {
   virtual void RelaxationTractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
-   * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
-   */
-  virtual void RunGaussSeidel() {}
-
-  /*!
-   * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
-   */
-  virtual void RunJacobi() {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  void Update() override {}
-
-  /*!
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
@@ -409,6 +402,21 @@ class CDriver : public CDriverBase {
     }
   }
 
+  /*!
+   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
+    unsigned short nVar = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
+    }
+    return nVar;
+  }
+
  public:
   /*!
    * \brief Launch the computation for all zones and all physics.
@@ -419,11 +427,6 @@ class CDriver : public CDriverBase {
    * \brief Deallocation routine
    */
   void Finalize() override;
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ResetConvergence();
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
@@ -447,10 +450,9 @@ class CDriver : public CDriverBase {
   virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
 
   /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
+   * \brief Update the dual-time solution.
    */
-  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
+  virtual void Update() {}
 
   /*!
    * \brief Perform a mesh deformation as initial condition.
@@ -490,14 +492,6 @@ class CDriver : public CDriverBase {
   string GetSurfaceFileName() const;
 
   /*!
-   * \brief Preprocess the inlets via file input for all solvers.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void PreprocessInlet(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
-
-  /*!
    * \brief Set the position of the heat source.
    * \param[in] alpha - Angle of rotation respect to Z axis.
    * \param[in] pos_x - Position X.
@@ -514,21 +508,6 @@ class CDriver : public CDriverBase {
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
 /// \}
-
-  /*!
-   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \return Total number of solution variables.
-   */
-  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
-    unsigned short nVar = 0;
-    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
-    }
-    return nVar;
-  }
 };
 
 /*!
@@ -541,7 +520,6 @@ class CFluidDriver : public CDriver {
  protected:
   unsigned long Max_Iter;
 
- protected:
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -549,6 +527,11 @@ class CFluidDriver : public CDriver {
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Transfer data among different zones (multiple zone).
+   */
+  void TransferData(unsigned short donorZone, unsigned short targetZone);
 
  public:
   /*!
@@ -591,11 +574,6 @@ class CFluidDriver : public CDriver {
    * structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Transfer data among different zones (multiple zone).
-   */
-  void TransferData(unsigned short donorZone, unsigned short targetZone);
 };
 
 /*!
@@ -607,6 +585,16 @@ class CFluidDriver : public CDriver {
 class CTurbomachineryDriver : public CFluidDriver {
  private:
   COutputLegacy* output_legacy;
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
 
  public:
   /*!
@@ -629,16 +617,6 @@ class CTurbomachineryDriver : public CFluidDriver {
   void Run() override;
 
   /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
-  /*!
    * \brief Monitor the computation.
    */
   bool Monitor(unsigned long TimeIter) override;
@@ -655,6 +633,25 @@ class CHBDriver : public CFluidDriver {
   COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
+
+  /*!
+   * \brief Computation and storage of the Harmonic Balance method source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] iZone - Current zone number.
+   */
+  void SetHarmonicBalance(unsigned short iZone);
+
+  /*!
+   * \brief Precondition Harmonic Balance source term for stability
+   * \author J. Howison
+   */
+  void StabilizeHarmonicBalance();
+
+  /*!
+   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+   * \author A. Rubino, S. Nimmagadda
+   */
+  void ComputeHBOperator();
 
  public:
   /*!
@@ -676,31 +673,7 @@ class CHBDriver : public CFluidDriver {
   void Run() override;
 
   /*!
-   * \brief Computation and storage of the Harmonic Balance method source terms.
-   * \author T. Economon, K. Naik
-   * \param[in] iZone - Current zone number.
-   */
-  void SetHarmonicBalance(unsigned short iZone);
-
-  /*!
-   * \brief Precondition Harmonic Balance source term for stability
-   * \author J. Howison
-   */
-  void StabilizeHarmonicBalance();
-
-  /*!
-   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
-   * \author A. Rubino, S. Nimmagadda
-   */
-  void ComputeHBOperator();
-
-  /*!
    * \brief Update the solution for the Harmonic Balance.
    */
   void Update() override;
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
-   */
-  void ResetConvergence() override;
 };
