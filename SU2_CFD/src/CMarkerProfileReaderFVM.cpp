@@ -207,11 +207,9 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   unsigned long index, iChar;
 
   char str_buf[MAX_STRING_SIZE];
+  char name_buf[MAX_STRING_SIZE];
+  char value_buf[MAX_STRING_SIZE];
 
-  /*--- contains the names of the columns ---*/
-  char vec_buf[MAX_STRING_SIZE];
-  /*--- contains the values of the columns ---*/
-  char val_buf[MAX_STRING_SIZE];
   vector<string> Marker_Tags;
 
   vector<unsigned long> nRowCum_Counter;
@@ -261,10 +259,11 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   char *Buffer_Send_Str = new char[MaxLocalPoint*MAX_STRING_SIZE];
   char *Buffer_Recv_Str = nullptr;
 
-  char *Buffer_Send_Vec = new char[MaxLocalPoint*MAX_STRING_SIZE];
-  char *Buffer_Recv_Vec = nullptr;
-  char *Buffer_Send_Val = new char[MaxLocalPoint*MAX_STRING_SIZE];
-  char *Buffer_Recv_Val = nullptr;
+  char *Buffer_Send_Name = new char[MaxLocalPoint*MAX_STRING_SIZE];
+  char *Buffer_Recv_Name = nullptr;
+
+  char *Buffer_Send_Value = new char[MaxLocalPoint*MAX_STRING_SIZE];
+  char *Buffer_Recv_Value = nullptr;
 
   /*--- Prepare the receive buffers in the master node only. ---*/
 
@@ -275,8 +274,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     if (dimension == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
 
     Buffer_Recv_Str = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
-    Buffer_Recv_Vec = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
-    Buffer_Recv_Val = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
+    Buffer_Recv_Name = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
+    Buffer_Recv_Value = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
 
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
 
@@ -336,12 +335,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
           /*--- Store the column names ---*/
 
-          SPRINTF(&Buffer_Send_Vec[jPoint*MAX_STRING_SIZE], "%s",
+          SPRINTF(&Buffer_Send_Name[jPoint*MAX_STRING_SIZE], "%s",
                   columnNames[iMarker].c_str());
 
            /*--- Store the column values ---*/
 
-         SPRINTF(&Buffer_Send_Val[jPoint*MAX_STRING_SIZE], "%s",
+         SPRINTF(&Buffer_Send_Value[jPoint*MAX_STRING_SIZE], "%s",
                   columnValues[iMarker].c_str());
 
           /*--- Increment jPoint as the counter. We need this because iPoint
@@ -367,10 +366,10 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(Buffer_Send_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
                   Buffer_Recv_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
-  SU2_MPI::Gather(Buffer_Send_Vec, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
-                  Buffer_Recv_Vec, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Val, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
-                  Buffer_Recv_Val, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Name, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
+                  Buffer_Recv_Name, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Value, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
+                  Buffer_Recv_Value, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master node unpacks and sorts this variable by marker tag. ---*/
 
@@ -388,8 +387,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         index = (iProcessor*MaxLocalPoint + iPoint)*MAX_STRING_SIZE;
         for (iChar = 0; iChar < MAX_STRING_SIZE; iChar++) {
           str_buf[iChar] = Buffer_Recv_Str[index + iChar];
-          vec_buf[iChar] = Buffer_Recv_Vec[index + iChar];
-          val_buf[iChar] = Buffer_Recv_Val[index + iChar];
+          name_buf[iChar] = Buffer_Recv_Name[index + iChar];
+          value_buf[iChar] = Buffer_Recv_Value[index + iChar];
         }
 
         Marker_Tags.push_back(str_buf);
@@ -397,8 +396,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         /*--- only add if not already in the list ---*/
         if (std::find(profileTags.begin(), profileTags.end(), str_buf) == profileTags.end()) {
           profileTags.push_back(str_buf);
-          totalColumnNames.push_back(vec_buf);
-          totalColumnValues.push_back(val_buf);
+          totalColumnNames.push_back(name_buf);
+          totalColumnValues.push_back(value_buf);
         }
 
       }
@@ -462,8 +461,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   delete [] Buffer_Send_Y;
   delete [] Buffer_Send_Z;
   delete [] Buffer_Send_Str;
-  delete [] Buffer_Send_Vec;
-  delete [] Buffer_Send_Val;
+  delete [] Buffer_Send_Name;
+  delete [] Buffer_Send_Value;
 
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
@@ -471,8 +470,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
      delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_nPoin;
     delete [] Buffer_Recv_Str;
-    delete [] Buffer_Recv_Vec;
-    delete [] Buffer_Recv_Val;
+    delete [] Buffer_Recv_Name;
+    delete [] Buffer_Recv_Value;
   }
 }
 
