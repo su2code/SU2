@@ -71,6 +71,8 @@ protected:
 
   vector<unsigned long> numberOfRowsInProfile;  /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in a profile file. */
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
+  vector<string> totalColumnNames; /*!< \brief string containing all the names of the columns, one for each marker */
+  vector<string> totalColumnValues; /*!< \brief initial values for the profile, in string format */
 
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
