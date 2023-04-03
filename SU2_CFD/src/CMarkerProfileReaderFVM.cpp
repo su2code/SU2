@@ -492,7 +492,7 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
     ofstream node_file("example_"+filename);
     node_file << "NMARK= " << numberOfProfiles << endl;
 
-    for (unsigned short iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
 
         /*--- Access the default data for this marker. ---*/
         string Marker_Tag = profileTags[iMarker];
