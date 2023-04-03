@@ -57,6 +57,43 @@ protected:
 
   bool *prefixed_motion;     /*!< \brief Determines if a fixed motion is imposed in the config file. */
 
+  /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
+   */
+  void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter);
+
+  /*!
+   * \brief Use a corrector step to prevent convergence issues.
+   */
+  void Corrector(unsigned short val_iZone);
+
+  /*!
+   * \brief Run a Block Gauss-Seidel iteration in all physical zones.
+   */
+  void RunGaussSeidel();
+
+  /*!
+   * \brief Run a Block-Jacobi iteration in all physical zones.
+   */
+  void RunJacobi();
+
+  /*!
+   * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
+   * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
+   */
+  bool TransferData(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Check the convergence at the outer level.
+   */
+  bool OuterConvergence(unsigned long OuterIter);
+
+  /*!
+   * \brief  Returns whether all specified windowed-time-averaged ouputs have been converged
+   * \return Boolean indicating whether the problem is converged.
+   */
+  virtual bool GetTimeConvergence() const;
+
 public:
 
   /*!
@@ -85,21 +122,6 @@ public:
   void Preprocess(unsigned long TimeIter) override;
 
   /*!
-   * \brief Use a corrector step to prevent convergence issues.
-   */
-  void Corrector(unsigned short val_iZone);
-
-  /*!
-   * \brief Run a Block Gauss-Seidel iteration in all physical zones.
-   */
-  void Run_GaussSeidel() override;
-
-  /*!
-   * \brief Run a Block-Jacobi iteration in all physical zones.
-   */
-  void Run_Jacobi() override;
-
-  /*!
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update() override;
@@ -110,25 +132,9 @@ public:
   void Output(unsigned long TimeIter) override;
 
   /*!
-   * \brief Check the convergence at the outer level.
-   */
-  bool OuterConvergence(unsigned long OuterIter);
-
-  /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
-   */
-  void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) override;
-
-  /*!
-   * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
-   * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
-   */
-  bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
   /*!
    * \brief Check if simulation converged and return appropriate boolean.
@@ -136,10 +142,4 @@ public:
    * \return Boolean that indicates to stop the iteration loop.
    */
   bool Monitor(unsigned long TimeIter) override;
-
-  /*!
-   * \brief  Returns whether all specified windowed-time-averaged ouputs have been converged
-   * \return Boolean indicating whether the problem is converged.
-   */
-  virtual bool GetTimeConvergence() const;
 };

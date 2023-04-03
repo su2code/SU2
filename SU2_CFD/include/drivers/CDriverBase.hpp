@@ -95,27 +95,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Preprocessing(){}
-
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Run(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update_Legacy(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Output(){}
 
   /*!
    * \brief A virtual member.
@@ -124,6 +104,56 @@ class CDriverBase {
 
 /// \addtogroup PySU2
 /// @{
+
+  /*!
+   * \brief Get the list of available outputs.
+   * \return List of output names.
+   */
+  inline vector<string> GetOutputNames() const { return output_container[MESH_0]->GetHistoryOutputList(); }
+
+  /*!
+   * \brief Get the value of one of the available history outputs.
+   * \return Value of the output.
+   */
+  inline passivedouble GetOutputValue(const std::string& output_name) const {
+    return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValue(output_name));
+  }
+
+  /*!
+   * \brief Get the list of available surface outputs on **both** MARKER_MONITORING and MARKER_ANALYZE.
+   * \return List of surface output names.
+   */
+  inline vector<string> GetMarkerOutputNames() const {
+    return output_container[MESH_0]->GetHistoryOutputPerSurfaceList();
+  }
+
+  /*!
+   * \brief Get the value of one of the available surface outputs at a given MARKER_MONITORING.
+   * \return Value of the output.
+   */
+  inline passivedouble GetMarkerMonitoringOutputValue(const std::string& output_name,
+                                                      const std::string& marker_monitoring) const {
+    for (auto iMarker = 0u; iMarker < main_config->GetnMarker_Monitoring(); ++iMarker) {
+      if (marker_monitoring == main_config->GetMarker_Monitoring_TagBound(iMarker))
+        return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValuePerSurface(output_name, iMarker));
+    }
+    SU2_MPI::Error(marker_monitoring + " is not in MARKER_MONITORING.", CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Get the value of one of the available surface outputs at a given MARKER_ANALYZE.
+   * \return Value of the output.
+   */
+  inline passivedouble GetMarkerAnalyzeOutputValue(const std::string& output_name,
+                                                   const std::string& marker_analyze) const {
+    for (auto iMarker = 0u; iMarker < main_config->GetnMarker_Analyze(); ++iMarker) {
+      if (marker_analyze == main_config->GetMarker_Analyze_TagBound(iMarker))
+        return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValuePerSurface(output_name, iMarker));
+    }
+    SU2_MPI::Error(marker_analyze + " is not in MARKER_ANALYZE.", CURRENT_FUNCTION);
+    return 0;
+  }
 
   /*!
    * \brief Get the number of design variables.
@@ -646,7 +676,7 @@ class CDriverBase {
   /*!
    * \brief Initialize containers.
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Delete containers.
@@ -658,7 +688,7 @@ class CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void InputPreprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -666,7 +696,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -674,7 +704,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -683,7 +713,7 @@ class CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Preprocess the output container.
@@ -692,6 +722,6 @@ class CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void OutputPreprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 };

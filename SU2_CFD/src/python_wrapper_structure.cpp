@@ -29,7 +29,7 @@
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
 
-void CDriver::PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
+void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
   int rank = MASTER_NODE;
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
@@ -58,106 +58,6 @@ void CDriver::PythonInterfacePreprocessing(CConfig** config, CGeometry**** geome
   }
 }
 
-/////////////////////////////////////////////////////////////////////////////
-/* Functions related to the global performance indices (Lift, Drag, etc.)  */
-/////////////////////////////////////////////////////////////////////////////
-
-passivedouble CDriver::Get_Drag() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag, factor, val_Drag;
-
-  /*--- Calculate drag force based on drag coefficient ---*/
-  factor = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAeroCoeffsReferenceForce();
-  CDrag = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CD();
-
-  val_Drag = CDrag * factor;
-
-  return SU2_TYPE::GetValue(val_Drag);
-}
-
-passivedouble CDriver::Get_Lift() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift, factor, val_Lift;
-
-  /*--- Calculate drag force based on drag coefficient ---*/
-  factor = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAeroCoeffsReferenceForce();
-  CLift = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CL();
-
-  val_Lift = CLift * factor;
-
-  return SU2_TYPE::GetValue(val_Lift);
-}
-
-passivedouble CDriver::Get_Mx() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMx, RefLengthCoeff, factor, val_Mx;
-
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAeroCoeffsReferenceForce();
-  CMx = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-
-  val_Mx = CMx * factor * RefLengthCoeff;
-
-  return SU2_TYPE::GetValue(val_Mx);
-}
-
-passivedouble CDriver::Get_My() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMy, RefLengthCoeff, factor, val_My;
-
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAeroCoeffsReferenceForce();
-  CMy = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-
-  val_My = CMy * factor * RefLengthCoeff;
-
-  return SU2_TYPE::GetValue(val_My);
-}
-
-passivedouble CDriver::Get_Mz() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMz, RefLengthCoeff, factor, val_Mz;
-
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate moment around z-axis based on coefficients ---*/
-  factor = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAeroCoeffsReferenceForce();
-  CMz = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-
-  val_Mz = CMz * factor * RefLengthCoeff;
-
-  return SU2_TYPE::GetValue(val_Mz);
-}
-
-passivedouble CDriver::Get_DragCoeff() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag;
-
-  CDrag = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CD();
-
-  return SU2_TYPE::GetValue(CDrag);
-}
-
-passivedouble CDriver::Get_LiftCoeff() const {
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift;
-
-  CLift = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CL();
-
-  return SU2_TYPE::GetValue(CLift);
-}
-
 //////////////////////////////////////////////////////////////////////////////////
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +76,7 @@ string CDriver::GetSurfaceFileName() const { return config_container[ZONE_0]->Ge
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
+void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
   CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
 
@@ -186,7 +86,7 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
 
-void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
+void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
   unsigned long iVertex;
@@ -200,49 +100,6 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CDriver::ResetConvergence() {
-  for (auto iZone = 0u; iZone < nZone; iZone++) {
-    switch (main_config->GetKind_Solver()) {
-      case MAIN_SOLVER::EULER:
-      case MAIN_SOLVER::NAVIER_STOKES:
-      case MAIN_SOLVER::RANS:
-      case MAIN_SOLVER::INC_EULER:
-      case MAIN_SOLVER::INC_NAVIER_STOKES:
-      case MAIN_SOLVER::INC_RANS:
-      case MAIN_SOLVER::NEMO_EULER:
-      case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-        integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-        if (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS)
-          integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
-        if (config_container[iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM)
-          integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
-        break;
-
-      case MAIN_SOLVER::FEM_ELASTICITY:
-        integration_container[iZone][INST_0][FEA_SOL]->SetConvergence(false);
-        break;
-
-      case MAIN_SOLVER::ADJ_EULER:
-      case MAIN_SOLVER::ADJ_NAVIER_STOKES:
-      case MAIN_SOLVER::ADJ_RANS:
-      case MAIN_SOLVER::DISC_ADJ_EULER:
-      case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-      case MAIN_SOLVER::DISC_ADJ_RANS:
-      case MAIN_SOLVER::DISC_ADJ_INC_EULER:
-      case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
-      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-        integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
-        if ((config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
-            (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS))
-          integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
-        break;
-
-      default:
-        break;
-    }
-  }
-}
 
 void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
