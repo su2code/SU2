@@ -873,6 +873,7 @@ public:
 class CTurbomachineryDriver : public CFluidDriver {
 private:
   COutputLegacy* output_legacy;
+  CTurbomachineryOutput* turbo_output;
 
 public:
 

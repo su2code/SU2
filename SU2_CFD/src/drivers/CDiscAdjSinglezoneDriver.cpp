@@ -364,7 +364,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     /*--- These calls to be moved to a generic framework at a next stage        ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
     if (config->GetBoolTurbomachinery()) {
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
+      turbo_output->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
       unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
       unsigned short nSpanSections = config->GetnSpanWiseSections();

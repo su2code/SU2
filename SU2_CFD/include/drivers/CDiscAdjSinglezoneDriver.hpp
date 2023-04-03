@@ -56,6 +56,7 @@ protected:
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
   COutputLegacy* output_legacy;
+  CTurbomachineryOutput* turbo_output;
 
 public:
 

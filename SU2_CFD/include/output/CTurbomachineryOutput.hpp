@@ -27,6 +27,8 @@
 
 #include "../../../Common/include/option_structure.hpp"
 
+#include "CFlowOutput.hpp"
+
 class CGeometry;
 class CConfig;
 class CSolver;
@@ -104,5 +106,20 @@ class CTurbomachineryOutput{
    * \brief Destructor of the class.
    */
   ~CTurbomachineryOutput(void);
+
+   /*!
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTurbomachineryHistoryOutputFields(CConfig *config) override;
+
+  /*!
+   * \brief Compute turboperformance parameters .
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   */
+  void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
 };
