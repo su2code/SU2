@@ -32,9 +32,6 @@
 CIntegration::CIntegration() {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-  Convergence = false;
-  Convergence_FSI = false;
-  Convergence_FullMG = false;
 }
 
 void CIntegration::Space_Integration(CGeometry *geometry,

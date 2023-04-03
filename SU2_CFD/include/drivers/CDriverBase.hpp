@@ -95,22 +95,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Preprocessing(){}
-
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Run(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Output(){}
 
   /*!
    * \brief A virtual member.
@@ -691,7 +676,7 @@ class CDriverBase {
   /*!
    * \brief Initialize containers.
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Delete containers.
@@ -703,7 +688,7 @@ class CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void InputPreprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -711,7 +696,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -719,7 +704,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -728,7 +713,7 @@ class CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Preprocess the output container.
@@ -737,6 +722,6 @@ class CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void OutputPreprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 };

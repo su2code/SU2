@@ -183,8 +183,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
     }
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -281,7 +281,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run_GaussSeidel() {
+void CMultizoneDriver::RunGaussSeidel() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -308,7 +308,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -331,7 +331,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
 }
 
-void CMultizoneDriver::Run_Jacobi() {
+void CMultizoneDriver::RunJacobi() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -357,7 +357,7 @@ void CMultizoneDriver::Run_Jacobi() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone && interface_container[iZone][jZone] != nullptr){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -442,7 +442,7 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        UpdateMesh += Transfer_Data(jZone, iZone);
+        UpdateMesh += TransferData(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
@@ -451,13 +451,6 @@ void CMultizoneDriver::Update() {
     iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (integration_container[iZone][INST_0][iSol] != nullptr){
-        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
-      }
-    }
   }
 
 }
@@ -540,7 +533,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   }
 }
 
-bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
   bool UpdateMesh = false;
 
@@ -619,9 +612,9 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const bool MaxIterationsReached = (OuterIter+1 >= nOuterIter);
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
+      else cout << "\nMaximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
       driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
@@ -641,10 +634,10 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
 
     if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)  cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
-      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------";
+      if (TimeConvergence)  cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
+      if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
@@ -654,5 +647,5 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-    return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
