@@ -27,6 +27,7 @@
 
 
 #include "../../include/output/COutputLegacy.hpp"
+#include "../../include/output/CTurbomachineryOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"

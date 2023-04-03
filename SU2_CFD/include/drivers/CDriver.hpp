@@ -39,6 +39,7 @@
 using namespace std;
 
 class COutputLegacy;
+class CTurbomachineryOutput;
 class CInterpolator;
 class CIteration;
 class COutput;
