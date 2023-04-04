@@ -3324,6 +3324,11 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
 
   output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
   
+  for (iZone = 0; iZone < nZone; iZone++){
+    MAIN_SOLVER kindSolver = config[iZone]->GetKind_Solver();
+
+    output[iZone] = COutputFactory::CreateOutput(kindSolver, config[iZone], nDim);
+  }
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
   /*--- Open the convergence history file ---*/
@@ -3421,7 +3426,7 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
- turbo_output->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
+ output_legacy->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
 
 }
 
