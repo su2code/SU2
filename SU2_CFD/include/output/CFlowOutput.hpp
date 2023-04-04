@@ -443,6 +443,14 @@ protected:
    */
   void SetInitTurboperformance(CConfig *config);
 
+  /*!
+   * \brief Compute turboperformance parameters .
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   */
+  void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
   
 
 };
