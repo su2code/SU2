@@ -31,7 +31,7 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CMeshOutput.cpp',
                       'output/CNEMOCompOutput.cpp',
                       'output/COutput.cpp',
-                      'output/CTurbomachineryOutput'
+                      'output/CTurbomachineryOutput',
                       'output/output_structure_legacy.cpp',
                       'output/filewriter/CParallelDataSorter.cpp',
                       'output/filewriter/CFVMDataSorter.cpp',
