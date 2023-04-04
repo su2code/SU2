@@ -3323,7 +3323,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
                                              CFluidDriver(confFile, val_nZone, MPICommunicator) {
 
   output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
-
+  
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
   /*--- Open the convergence history file ---*/

@@ -383,4 +383,26 @@ protected:
    */
   void SetFixedCLScreenOutput(const CConfig *config);
 
+    /*!
+   * \brief Initialises turboperfomance variables
+   * \param[in] config - Definition of the particular problem or zone
+   */
+  void SetInitTurboperformance(CConfig *config);
+
+  /*!
+   * \brief Compute turboperformance parameters .
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   */
+  void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Sets history output fields for turbomachinery simulations
+   * \param[in] config - Definition of the particular problem or zone
+   */
+  void SetTurboHistoryOutputFields(CConfig *config);
+  
+
 };
