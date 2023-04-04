@@ -1147,7 +1147,7 @@ private:
   unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
-  bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool SinglezoneDriver = true;   /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;              /*!< \brief Write the convergence history of each individual zone to screen. */
   bool Wrt_ZoneHist;              /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,             /*!< \brief Determines if the special output is written. */
