@@ -3673,6 +3673,7 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     WriteMetaData(config);
     curInnerIter = config->GetInnerIter();
   }
+}
 void CFlowOutput::SetInitTurboperformance(CConfig *config) {
 
   unsigned short iDim, iSpan, iMarker;
@@ -3846,7 +3847,7 @@ void CFlowOutput::SetInitTurboperformance(CConfig *config) {
         }
       }
     }  
-};
+}
 
 void CFlowOutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
