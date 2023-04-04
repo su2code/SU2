@@ -582,9 +582,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
     case FLOW_TRACTION:
       BroadcastData(FLOW_SOL, FEA_SOL);
       break;
-    }
     case MIXING_PLANE:
-    {
       donorSolver  = FLOW_SOL;
       targetSolver = FLOW_SOL;
 
@@ -606,7 +604,6 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       
     return UpdateMesh;
     break;
-    }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
