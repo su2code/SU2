@@ -3324,6 +3324,8 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
 
   output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
   
+  output = new COutput*[nZone] ();
+
   for (iZone = 0; iZone < nZone; iZone++){
     MAIN_SOLVER kindSolver = config[iZone]->GetKind_Solver();
 
