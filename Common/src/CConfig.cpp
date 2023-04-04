@@ -2434,12 +2434,6 @@ void CConfig::SetConfig_Options() {
   /*  DESCRIPTION: Temporary: pseudo static analysis (no density in dynamic analysis)
   *  Options: NO, YES \ingroup Config */
   addBoolOption("PSEUDO_STATIC", PseudoStatic, false);
-  /* DESCRIPTION: Dynamic or static structural analysis */
-  addEnumOption("DYNAMIC_ANALYSIS", Dynamic_Analysis, Dynamic_Map, STATIC);
-  /* DESCRIPTION: Time Step for dynamic analysis (s) */
-  addDoubleOption("DYN_TIMESTEP", Delta_DynTime, 0.0);
-  /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
-  addDoubleOption("DYN_TIME", Total_DynTime, 1.0);
   /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
   addDoubleOption("NEWMARK_BETA", Newmark_beta, 0.25);
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
@@ -3032,6 +3026,12 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           else if (!option_name.compare("SA_QCR"))
             newString.append("SA_QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
+          else if (!option_name.compare("DYN_TIMESTEP"))
+            newString.append("DYN_TIMESTEP is deprecated. Use TIME_STEP instead.\n\n");
+          else if (!option_name.compare("DYN_TIME"))
+            newString.append("DYN_TIME is deprecated. Use MAX_TIME instead.\n\n");
+          else if (!option_name.compare("DYNAMIC_ANALYSIS"))
+            newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3707,7 +3707,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
-    Delta_DynTime  = Time_Step;
 
     if (TimeMarching == TIME_MARCHING::TIME_STEPPING){ InnerIter = 1; }
 
@@ -6840,7 +6839,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   else {
     if (Time_Domain) {
       cout << "Dynamic structural analysis."<< endl;
-      cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+      cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
     } else {
       cout << "Static structural analysis." << endl;
     }
@@ -6915,7 +6914,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Generalized-alpha method." << endl;
           break;
         case STRUCT_TIME_INT::NEWMARK_IMPLICIT:
-          if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
+          if (Time_Domain) cout << "Newmark implicit method for the structural time integration." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
@@ -8461,9 +8460,6 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
-
-      Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
-
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(NONE);
@@ -10040,7 +10036,6 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
   /*--- Fix the Time Step for all subdomains, for the case of time-dependent problems ---*/
   if (driver_config->GetTime_Domain()){
     Delta_UnstTime = driver_config->GetTime_Step();
-    Delta_DynTime  = driver_config->GetTime_Step();
 
     Time_Domain = true;
   }

@@ -2369,18 +2369,6 @@ enum class RECORDING {
 };
 
 /*!
- * \brief Types of schemes for dynamic structural computations
- */
-enum ENUM_DYNAMIC {
-  STATIC = 0,     /*!< \brief A static structural computation. */
-  DYNAMIC = 1     /*!< \brief Use a time stepping strategy for dynamic computations. */
-};
-static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
-  MakePair("NO", STATIC)
-  MakePair("YES", DYNAMIC)
-};
-
-/*!
  * \brief Types of input file formats
  */
 enum ENUM_INPUT_REF {

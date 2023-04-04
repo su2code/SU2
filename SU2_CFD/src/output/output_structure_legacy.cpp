@@ -1670,7 +1670,7 @@ void COutputLegacy::SetConvHistoryBody(ofstream *ConvHist_file,
           }
           else if (fem && !fsi) {
             if (dynamic) {
-              cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
+              //cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
             }
           }
 

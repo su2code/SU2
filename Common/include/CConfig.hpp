@@ -150,7 +150,6 @@ private:
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
   su2double Confinement_Param; /*!< \brief Confinement paramenter for Vorticity Confinement method. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
-  unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;              /*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;     /*!< \brief Limiter coefficient */
@@ -168,9 +167,6 @@ private:
   su2double HarmonicBalance_Period;  /*!< \brief Period of oscillation to be used with harmonic balance computations. */
   su2double Delta_UnstTime,          /*!< \brief Time step for unsteady computations. */
   Delta_UnstTimeND;                  /*!< \brief Time step for unsteady computations (non dimensional). */
-  su2double Delta_DynTime,        /*!< \brief Time step for dynamic structural computations. */
-  Total_DynTime,                  /*!< \brief Total time for dynamic structural computations. */
-  Current_DynTime;                /*!< \brief Global time of the dynamic structural computations. */
   su2double Total_UnstTime,       /*!< \brief Total time for unsteady computations. */
   Total_UnstTimeND;               /*!< \brief Total time for unsteady computations (non dimensional). */
   su2double Current_UnstTime,     /*!< \brief Global time of the unsteady simulation. */
@@ -8722,34 +8718,6 @@ public:
    * \return <code>TRUE</code> if we restart from steady state solution, <code>FALSE</code> otherwise.
    */
   bool GetSteadyRestart(void) const { return SteadyRestart; }
-
-  /*!
-   * \brief Provides information about the time integration of the structural analysis, and change the write in the output
-   *        files information about the iteration.
-   * \return The kind of time integration: Static or dynamic analysis
-   */
-  unsigned short GetDynamic_Analysis(void) const { return Dynamic_Analysis; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetDelta_DynTime(void) const { return Delta_DynTime; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetTotal_DynTime(void) const { return Total_DynTime; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetCurrent_DynTime(void) const { return Current_DynTime; }
 
   /*!
    * \brief Get the current instance.

@@ -50,6 +50,7 @@ CFEASolver::CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode) : CFEASolverBase(mes
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(geometry, config) {
 
   bool dynamic = (config->GetTime_Domain());
+  config->SetDelta_UnstTimeND(config->GetDelta_UnstTime());
 
   /*--- Test whether we consider dielectric elastomers ---*/
   bool de_effects = config->GetDE_Effects();
@@ -1282,7 +1283,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   if (outputReactions) {
 
-    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+    const bool dynamic = config->GetTime_Domain();
 
     ofstream myfile;
     myfile.open ("Reactions.txt");
@@ -1481,7 +1482,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
 
 void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 
-  su2double Delta_t= config->GetDelta_DynTime();
+  su2double Delta_t= config->GetDelta_UnstTime();
 
   su2double gamma = config->GetNewmark_gamma(), beta = config->GetNewmark_beta();
 
@@ -1652,7 +1653,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, const CConfig *config, unsigned
   const su2double *DispDirLocal = config->GetDisp_Dir(TagBound);
   su2double DispDirMod = Norm(nDim, DispDirLocal);
 
-  su2double CurrentTime = config->GetCurrent_DynTime();
+  su2double CurrentTime = config->GetCurrent_UnstTime();
   su2double RampTime = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, RampTime, config);
 
@@ -1818,7 +1819,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, const CConfig *config, unsi
 
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary. ---*/
 
-  su2double CurrentTime = config->GetCurrent_DynTime();
+  su2double CurrentTime = config->GetCurrent_UnstTime();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -1914,7 +1915,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, const CConfig *config, unsigne
   /*--- Compute the norm of the vector that was passed in the config file. ---*/
   su2double LoadNorm = Norm(nDim, Load_Dir_Local);
 
-  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double CurrentTime=config->GetCurrent_UnstTime();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -2036,7 +2037,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
   bool offset = (restart && fsi && (!stat_fsi));
-  su2double DeltaT = config->GetDelta_DynTime();
+  su2double DeltaT = config->GetDelta_UnstTime();
   su2double OffsetTime = offset? DeltaT * (config->GetRestart_Iter()-1) : su2double(0.0);
 
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
@@ -2507,7 +2508,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
-  const su2double Delta_t = config->GetDelta_DynTime();
+  const su2double Delta_t = config->GetDelta_UnstTime();
   const bool dynamic = config->GetTime_Domain();
 
   if(predOrder > 2 && rank == MASTER_NODE)
