@@ -583,9 +583,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       BroadcastData(FLOW_SOL, FEA_SOL);
       break;
     case MIXING_PLANE:
-      donorSolver  = FLOW_SOL;
-      targetSolver = FLOW_SOL;
-
+    {
       auto nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
 
       /* --- transfer the average value from the donorZone to the targetZone*/
@@ -602,8 +600,9 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
         }
       }
       
-    return UpdateMesh;
-    break;
+      return UpdateMesh;
+      break;
+    }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
