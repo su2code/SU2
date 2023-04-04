@@ -141,8 +141,6 @@ public:
    */
   void StartSolver() override;
 
-protected:
-
   /*!
    * \brief Preprocess the multizone iteration
    */
@@ -152,6 +150,8 @@ protected:
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
+
+protected:
 
   /*!
    * \brief Run one inner iteration for a given zone.
@@ -272,7 +272,7 @@ protected:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */
-  inline bool GetTimeConvergence() const override {return false;}
+  inline bool GetTimeConvergence() const override { return false; }
 
   /*!
    * \brief Get the external of all adjoint solvers in a zone.

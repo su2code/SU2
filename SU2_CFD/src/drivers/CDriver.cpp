@@ -1044,8 +1044,7 @@ void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver **
 
 }
 
-void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry,
-                                  CConfig *config) const {
+void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *config) const {
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -3018,7 +3017,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
 void CFluidDriver::Run() {
 
-  unsigned short iZone, jZone, checkConvergence;
+  unsigned short iZone, jZone;
   unsigned long IntIter, nIntIter;
   bool unsteady;
 
@@ -3070,15 +3069,7 @@ void CFluidDriver::Run() {
                                                   config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 
-    /*--- Check convergence in each zone --*/
-
-    checkConvergence = 0;
-    for (iZone = 0; iZone < nZone; iZone++)
-    checkConvergence += (int) integration_container[iZone][INST_0][FLOW_SOL]->GetConvergence();
-
-    /*--- If convergence was reached in every zone --*/
-
-  if (checkConvergence == nZone) break;
+    /// TODO: Check convergence in each zone.
   }
 
 }
@@ -3143,22 +3134,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
 
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::HEAT_EQUATION:
-      StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::FEM_ELASTICITY:
-      StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
-    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-    case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-    case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-      StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
-    default:
-      break;
-  }
+  /// TODO: Get convergence from the output class
 
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
 
@@ -3401,25 +3377,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     }
   }
 
-
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
 
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-  case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-  case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
-  case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence();
-    break;
-  case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-  case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-  case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-    StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence();
-    break;
-  default:
-    break;
-
-  }
+  /// TODO: Get convergence from the output class
 
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
 
@@ -3527,34 +3488,6 @@ void CHBDriver::Update() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
-  }
-
-}
-
-void CHBDriver::ResetConvergence() {
-
-  for(iInst = 0; iInst < nZone; iInst++) {
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-
-    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-      integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
-      break;
-
-    case MAIN_SOLVER::FEM_ELASTICITY:
-      integration_container[ZONE_0][iInst][FEA_SOL]->SetConvergence(false);
-      break;
-
-    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-      integration_container[ZONE_0][iInst][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) )
-        integration_container[ZONE_0][iInst][ADJTURB_SOL]->SetConvergence(false);
-      break;
-
-    default:
-      SU2_MPI::Error("Harmonic Balance has not been set up for this solver.", CURRENT_FUNCTION);
-    }
   }
 
 }

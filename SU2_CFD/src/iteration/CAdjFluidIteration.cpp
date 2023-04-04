@@ -162,17 +162,13 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
                                 CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                 CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  su2double Physical_dt, Physical_t;
-  unsigned short iMesh;
-  unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
-
   /*--- Dual time stepping strategy ---*/
 
   if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
       (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver ---*/
 
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Solver(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL], config[val_iZone],
           iMesh);
@@ -180,13 +176,6 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Geometry(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][MESH_SOL], config[val_iZone],
           iMesh);
-
-      integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
     }
-
-    Physical_dt = config[val_iZone]->GetDelta_UnstTime();
-    Physical_t = (TimeIter + 1) * Physical_dt;
-    if (Physical_t >= config[val_iZone]->GetTotal_UnstTime())
-      integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(true);
   }
 }
