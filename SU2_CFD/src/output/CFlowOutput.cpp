@@ -3851,7 +3851,6 @@ void CFlowOutput::SetInitTurboperformance(CConfig *config) {
 };
 
 void CFlowOutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
-  /* I'm not sure this belongs here but it condenses turbo perf calculations into one file for now'*/
 
   CFluidModel *FluidModel;
   unsigned short nDim = geometry->GetnDim();
@@ -4113,4 +4112,30 @@ void CFlowOutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *
   }
 
   delete [] relVel;
+};
+
+void CFlowOutput::SetTurboHistoryOutputFields(CConfig* config){
+  unsigned short iMarker_Monitoring;
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
+
+      stringstream tag;
+      tag << iMarker_Monitoring + 1;
+      AddHistoryOutput("TotalPressureLoss_" + std::to_string(iMarker_Monitoring),       "TotPressureLoss_" + std::to_string(iMarker_Monitoring),         ScreenOutputFormat::FIXED, "TURBO", "Total pressure loss " + std::to_string(iMarker_Monitoring),        HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("KineticEnergyLoss_" + std::to_string(iMarker_Monitoring),       "KineticEnergyLoss_" + std::to_string(iMarker_Monitoring),       ScreenOutputFormat::FIXED, "TURBO", "Kinetic energy loss " + std::to_string(iMarker_Monitoring),        HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("EntropyGeneration_" + std::to_string(iMarker_Monitoring),       "EntropyGen_" + std::to_string(iMarker_Monitoring),              ScreenOutputFormat::FIXED, "TURBO", "Entropy generation " + std::to_string(iMarker_Monitoring),         HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("EulerianWork_" + std::to_string(iMarker_Monitoring),            "EulerianWork_" + std::to_string(iMarker_Monitoring),            ScreenOutputFormat::FIXED, "TURBO", "Eulerian work " + std::to_string(iMarker_Monitoring),              HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("PressureRatio_" + std::to_string(iMarker_Monitoring),           "PressureRatio_" + std::to_string(iMarker_Monitoring),           ScreenOutputFormat::FIXED, "TURBO", "Pressure ratio " + std::to_string(iMarker_Monitoring),             HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("FlowAngleIn_" + std::to_string(iMarker_Monitoring),             "FlowAngleIn_" + std::to_string(iMarker_Monitoring),             ScreenOutputFormat::FIXED, "TURBO", "Flow angle in " + std::to_string(iMarker_Monitoring),              HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("FlowAngleOut_" + std::to_string(iMarker_Monitoring),            "FlowAngleOut_" + std::to_string(iMarker_Monitoring),            ScreenOutputFormat::FIXED, "TURBO", "Flow angle out " + std::to_string(iMarker_Monitoring),             HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("AbsFlowAngleIn_" + std::to_string(iMarker_Monitoring),          "AbsFlowAngleIn_" + std::to_string(iMarker_Monitoring),          ScreenOutputFormat::FIXED, "TURBO", "Absolute flow angle in " + std::to_string(iMarker_Monitoring),     HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("AbsFlowAngleOut_" + std::to_string(iMarker_Monitoring),         "AbsFlowAngleOut_" + std::to_string(iMarker_Monitoring),         ScreenOutputFormat::FIXED, "TURBO", "Absolute flow angle out " + std::to_string(iMarker_Monitoring),    HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("MassFlowIn_" + std::to_string(iMarker_Monitoring),              "MassFlowIn_" + std::to_string(iMarker_Monitoring),              ScreenOutputFormat::FIXED, "TURBO", "Mass flow in " + std::to_string(iMarker_Monitoring),               HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("MassFlowOut_" + std::to_string(iMarker_Monitoring),             "MassFlowOut_" + std::to_string(iMarker_Monitoring),             ScreenOutputFormat::FIXED, "TURBO", "Mass flow out " + std::to_string(iMarker_Monitoring),              HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("MachIn_" + std::to_string(iMarker_Monitoring),                  "MachIn_" + std::to_string(iMarker_Monitoring),                  ScreenOutputFormat::FIXED, "TURBO", "Mach in " + std::to_string(iMarker_Monitoring),                    HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("MachOut_" + std::to_string(iMarker_Monitoring),                 "MachOut_" + std::to_string(iMarker_Monitoring),                 ScreenOutputFormat::FIXED, "TURBO", "Mach out " + std::to_string(iMarker_Monitoring),                   HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("TotalEfficiency_" + std::to_string(iMarker_Monitoring),         "TotalEfficiency_" + std::to_string(iMarker_Monitoring),         ScreenOutputFormat::FIXED, "TURBO", "Total efficiency " + std::to_string(iMarker_Monitoring),           HistoryFieldType::COEFFICIENT);
+      AddHistoryOutput("TotalStaticEfficiency_" + std::to_string(iMarker_Monitoring),   "TotalStaticEfficiency_" + std::to_string(iMarker_Monitoring),   ScreenOutputFormat::FIXED, "TURBO", "Total-to-Static efficiency " + std::to_string(iMarker_Monitoring), HistoryFieldType::COEFFICIENT);
+
+    }
+
 };

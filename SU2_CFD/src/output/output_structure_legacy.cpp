@@ -143,31 +143,31 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
 
-  if (turbo){
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
-
-      stringstream tag;
-      tag << iMarker_Monitoring + 1;
-
-      turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
-      turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
-      turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
-      turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
-      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
-      turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
-      // different from zero only in multi-zone computation
-      turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
-      turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
-
-    }
-  }
+//  if (turbo){
+//    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
+//
+//      stringstream tag;
+//      tag << iMarker_Monitoring + 1;
+//
+//      turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
+//      turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
+//      turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
+//      turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
+//      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
+//      turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
+//      turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
+//      turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
+//      turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
+//      turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
+//      turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
+//      turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
+//      turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
+//      // different from zero only in multi-zone computation
+//      turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
+//      turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+//
+//    }
+//  }
 
   char combo_obj[] = ",\"ComboObj\"";
 

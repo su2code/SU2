@@ -452,5 +452,11 @@ protected:
    */
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Sets history output fields for turbomachinery simulations
+   * \param[in] config - Definition of the particular problem or zone
+   */
+  void SetTurboHistoryOutputFields(CConfig *config);
+  
 
 };
