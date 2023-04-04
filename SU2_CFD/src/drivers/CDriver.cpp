@@ -301,7 +301,6 @@ void CDriver::InitializeContainers(){
    hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
-  ConvHist_file                  = nullptr;
   iteration_container            = nullptr;
   output_container               = nullptr;
   integration_container          = nullptr;
@@ -360,7 +359,7 @@ void CDriver::Finalize() {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Finalizing Solver -------------------------" << endl;
+    cout <<"\n--------------------------- Finalizing Solver ---------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -3237,26 +3236,9 @@ CHBDriver::CHBDriver(char* confFile,
 
   nInstHB = nInst[ZONE_0];
 
-  D = nullptr;
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
-  D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
-
-  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
-
-  /*--- Open the convergence history file ---*/
-  ConvHist_file = nullptr;
-  ConvHist_file = new ofstream*[nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = nullptr;
-    if (rank == MASTER_NODE){
-      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistoryHeader(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-      }
-    }
-  }
-
-
+  D = new su2double*[nInstHB];
+  for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 }
 
 CHBDriver::~CHBDriver(void) {
@@ -3266,17 +3248,6 @@ CHBDriver::~CHBDriver(void) {
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
   for (kInst = 0; kInst < nInstHB; kInst++) delete [] D[kInst];
   delete [] D;
-
-  if (rank == MASTER_NODE){
-  /*--- Close the convergence history file. ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInstHB; iInst++) {
-      ConvHist_file[iZone][iInst].close();
-    }
-    delete [] ConvHist_file[iZone];
-  }
-  delete [] ConvHist_file;
-  }
 }
 
 
@@ -3295,13 +3266,10 @@ void CHBDriver::Run() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistoryBody(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-          config_container, integration_container, false, UsedTime, iZone, iInst);
-  }
+  for (iInst = 0; iInst < nInstHB; iInst++)
+    iteration_container[ZONE_0][iInst]->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
 }
 

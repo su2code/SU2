@@ -65,9 +65,6 @@ class CDriver : public CDriverBase {
   su2double MDOFs;   /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain; /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
 
-  ofstream** ConvHist_file; /*!< \brief Convergence history file.*/
-  ofstream FSIHist_file;    /*!< \brief FSI convergence history file.*/
-
   bool StopCalc,   /*!< \brief Stop computation flag.*/
       mixingplane, /*!< \brief mixing-plane simulation flag.*/
       fsi,         /*!< \brief FSI simulation flag.*/
@@ -589,7 +586,6 @@ class CFluidDriver : public CDriver {
  */
 class CHBDriver : public CFluidDriver {
  private:
-  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
 
