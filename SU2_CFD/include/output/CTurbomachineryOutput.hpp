@@ -111,7 +111,7 @@ class CTurbomachineryOutput{
    * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTurbomachineryHistoryOutputFields(CConfig *config) override;
+  void SetTurbomachineryHistoryOutputFields(CConfig *config);
 
   /*!
    * \brief Compute turboperformance parameters .
