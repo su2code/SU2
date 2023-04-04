@@ -31,6 +31,60 @@
 #include "../variables/CVariable.hpp"
 
 class CFlowOutput : public CFVMOutput{
+  
+
+unsigned short nSpanWiseSections, nMarkerTurboPerf;
+
+/* Turbomachinery performance quantities*/
+  su2double **TotalStaticEfficiency,
+      **TotalTotalEfficiency,
+      **KineticEnergyLoss,
+      **TRadius,
+      **TotalPressureLoss,
+      **MassFlowIn,
+      **MassFlowOut,
+      **FlowAngleIn,
+      **FlowAngleIn_BC,
+      **FlowAngleOut,
+      **EulerianWork,
+      **TotalEnthalpyIn,
+      **TotalEnthalpyIn_BC,
+      **EntropyIn,
+      **EntropyOut,
+      **EntropyIn_BC,
+      **PressureRatio,
+      **TotalTemperatureIn,
+      **EnthalpyOut,
+      ***MachIn,
+      ***MachOut,
+      **VelocityOutIs,
+      **DensityIn,
+      **PressureIn,
+      ***TurboVelocityIn,
+      **DensityOut,
+      **PressureOut,
+      ***TurboVelocityOut,
+      **EnthalpyOutIs,
+      **EntropyGen,
+      **AbsFlowAngleIn,
+      **TotalEnthalpyOut,
+      **RothalpyIn,
+      **RothalpyOut,
+      **TotalEnthalpyOutIs,
+      **AbsFlowAngleOut,
+      **PressureOut_BC,
+      **TemperatureIn,
+      **TemperatureOut,
+      **TotalPressureIn,
+      **TotalPressureOut,
+      **TotalTemperatureOut,
+      **EnthalpyIn,
+      **TurbIntensityIn,
+      **Turb2LamViscRatioIn,
+      **TurbIntensityOut,
+      **Turb2LamViscRatioOut,
+      **NuFactorIn,
+      **NuFactorOut;
 protected:
   unsigned long lastInnerIter;
 
@@ -382,5 +436,13 @@ protected:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(const CConfig *config);
+
+  /*!
+   * \brief Initialises turboperfomance variables
+   * \param[in] config - Definition of the particular problem or zone
+   */
+  void SetInitTurboperformance(CConfig *config);
+
+  
 
 };
