@@ -71,7 +71,6 @@ private:
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_MixingPlaneInterface;      /*!< \brief Kind of mixing process.*/
   unsigned short Kind_SpanWise;                  /*!< \brief Kind of span-wise section computation.*/
-  unsigned short *Kind_TurboMachinery;           /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone;    /*!< \brief Number of zones in the mesh. */
   unsigned short nZoneSpecified;  /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area;        /*!< \brief Highlite area. */
@@ -433,6 +432,9 @@ private:
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
+  
+  TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
+  TURBOMACHINERY_TYPE *Kind_TurboMachinery;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -5037,7 +5039,7 @@ public:
    * \brief Get the kind of turbomachinery architecture.
    * \return Kind of turbomachinery architecture.
    */
-  unsigned short GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
+  TURBOMACHINERY_TYPE GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
 
   /*!
    * \brief Get the kind of turbomachinery architecture.
@@ -5174,10 +5176,10 @@ public:
   string GetMarker_TurboPerf_BoundOut(unsigned short index) const { return Marker_TurboBoundOut[index];}
 
   /*!
-   * \brief get marker kind for Turbomachinery performance calculation.
+   * \brief get marker kind for Turbomachinery performance calculation kind.
    * \return kind index.
    */
-  unsigned short GetKind_TurboPerf(unsigned short index);
+  TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
