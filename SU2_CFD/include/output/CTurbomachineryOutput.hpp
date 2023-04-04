@@ -107,12 +107,6 @@ class CTurbomachineryOutput{
    */
   ~CTurbomachineryOutput(void);
 
-   /*!
-   * \brief Set the available history output fields
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTurbomachineryHistoryOutputFields(CConfig *config);
-
   /*!
    * \brief Compute turboperformance parameters .
    * \param[in] solver_container - Container vector with all the solutions.
@@ -121,5 +115,11 @@ class CTurbomachineryOutput{
    * \param[in] iExtIter - Current external (time) iteration.
    */
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the available history output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTurbomachineryHistoryOutputFields(CConfig *config);
 
 };
