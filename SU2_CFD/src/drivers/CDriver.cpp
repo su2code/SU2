@@ -39,7 +39,7 @@
 #include "../../include/output/COutput.hpp"
 
 #include "../../include/output/COutputLegacy.hpp"
-#include "../../include/output/CTurbomachineryOutput"
+#include "../../include/output/CTurbomachineryOutput.hpp"
 
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolatorFactory.hpp"
