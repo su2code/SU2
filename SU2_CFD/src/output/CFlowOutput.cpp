@@ -3868,7 +3868,6 @@ void CFlowOutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *
   nBladesRow = config->GetnMarker_Turbomachinery();
   nStages    = SU2_TYPE::Int(nBladesRow/2);
 
-  /* Initialises turboperformance variables if necessary */
   if (config[ZONE_0]->GetBoolTurbomachinery()){
   unsigned short iDim, iSpan, iMarker;
 
