@@ -76,8 +76,7 @@ struct UnitQuadTestCase {
    */
   void InitSolver() {
     cout.rdbuf(nullptr);
-    solver = CSolverFactory::CreateSolverContainer(config.get()->GetKind_Solver(),
-                                                   config.get(), geometry.get(), 0);
+    solver = CSolverFactory::CreateSolverContainer(config.get()->GetKind_Solver(), config.get(), geometry.get(), 0);
     cout.rdbuf(orig_buf);
   }
 
@@ -112,8 +111,7 @@ struct UnitQuadTestCase {
    * \brief Desctructor
    */
   ~UnitQuadTestCase() {
-    if (solver != nullptr)
-      delete solver[FLOW_SOL];
+    if (solver != nullptr) delete solver[FLOW_SOL];
     delete[] solver;
   }
 };

@@ -183,8 +183,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
     }
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -273,7 +273,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run_GaussSeidel() {
+void CMultizoneDriver::RunGaussSeidel() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -300,7 +300,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -323,7 +323,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
 }
 
-void CMultizoneDriver::Run_Jacobi() {
+void CMultizoneDriver::RunJacobi() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -349,7 +349,7 @@ void CMultizoneDriver::Run_Jacobi() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone && interface_container[iZone][jZone] != nullptr){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
@@ -409,11 +409,13 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
     /*--- Make sure that everything is loaded into the output container. ---*/
 
-    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
+    output_container[iZone]->SetHistoryOutput(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
 
   }
 
-  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+  /*--- Print out the convergence data to screen and history file. ---*/
+
+  driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config,
                                             driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   return driver_output->GetConvergence();
@@ -432,7 +434,7 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        UpdateMesh += Transfer_Data(jZone, iZone);
+        UpdateMesh += TransferData(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
@@ -465,7 +467,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   bool wrote_files = false;
 
   for (iZone = 0; iZone < nZone; iZone++){
-    wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+    wrote_files = output_container[iZone]->SetResultFiles(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
                                                             solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc );
   }
@@ -530,7 +532,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   }
 }
 
-bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
   bool UpdateMesh = false;
 

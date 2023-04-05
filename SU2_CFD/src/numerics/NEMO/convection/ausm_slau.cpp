@@ -53,7 +53,7 @@ CUpwAUSM_SLAU_Base_NEMO::CUpwAUSM_SLAU_Base_NEMO(unsigned short val_nDim, unsign
   Flux = new su2double[nVar];
   Jacobian_i = new su2double*[nVar];
   Jacobian_j = new su2double*[nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double[nVar];
     Jacobian_j[iVar] = new su2double[nVar];
   }
@@ -73,7 +73,7 @@ CUpwAUSM_SLAU_Base_NEMO::~CUpwAUSM_SLAU_Base_NEMO(void) {
   delete[] da_R;
 
   delete[] Flux;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     delete[] Jacobian_i[iVar];
     delete[] Jacobian_j[iVar];
   }
@@ -98,8 +98,8 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
 
   /*--- Initialize the Jacobians ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }
@@ -120,7 +120,7 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   /*--- Sound speed derivatives: Species density ---*/
 
   // Electrons only
-  for (unsigned short iSpecies = 0; iSpecies < nEl; iSpecies++) {
+  for (auto iSpecies = 0ul; iSpecies < nEl; iSpecies++) {
     da_L[iSpecies] = 1.0 / (2.0 * SoundSpeed_i * Density_i) * (1 + dPdU_i[nSpecies + nDim]) *
                      (dPdU_i[iSpecies] - Pressure_i / Density_i);
     da_R[iSpecies] = 1.0 / (2.0 * SoundSpeed_j * Density_j) * (1 + dPdU_j[nSpecies + nDim]) *
@@ -128,7 +128,7 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   }
 
   // Heavy species
-  for (unsigned short iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
+  for (auto iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
     da_L[iSpecies] =
         1.0 / (2.0 * SoundSpeed_i) *
         (1 / rhoCvtr_i * (Ru / Ms[iSpecies] - Cvtr[iSpecies] * dPdU_i[nSpecies + nDim]) * Pressure_i / Density_i +
@@ -140,7 +140,7 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   }
 
   /*--- Sound speed derivatives: Momentum ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     da_L[nSpecies + iDim] = -1.0 / (2.0 * Density_i * SoundSpeed_i) *
                             ((1.0 + dPdU_i[nSpecies + nDim]) * dPdU_i[nSpecies + nDim]) * Velocity_i[iDim];
     da_R[nSpecies + iDim] = -1.0 / (2.0 * Density_j * SoundSpeed_j) *
@@ -162,17 +162,17 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   /*--- Left state Jacobian ---*/
   if (M_F >= 0) {
     /*--- Jacobian contribution: dFc terms ---*/
-    for (auto iVar = 0u; iVar < nSpecies + nDim; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto iVar = 0ul; iVar < nSpecies + nDim; iVar++) {
+      for (auto jVar = 0ul; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] += M_F * Fc_L[iVar] * da_L[jVar];
       }
       Jacobian_i[iVar][iVar] += M_F * SoundSpeed_i;
     }
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
       Jacobian_i[nSpecies + nDim][iSpecies] +=
           M_F * (dPdU_i[iSpecies] * SoundSpeed_i + Density_i * Enthalpy_i * da_L[iSpecies]);
     }
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       Jacobian_i[nSpecies + nDim][nSpecies + iDim] +=
           M_F *
           (-dPdU_i[nSpecies + nDim] * Velocity_i[iDim] * SoundSpeed_i + Density_i * Enthalpy_i * da_L[nSpecies + iDim]);
@@ -181,7 +181,7 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
         M_F * ((1.0 + dPdU_i[nSpecies + nDim]) * SoundSpeed_i + Density_i * Enthalpy_i * da_L[nSpecies + nDim]);
     Jacobian_i[nSpecies + nDim][nSpecies + nDim + 1] +=
         M_F * (dPdU_i[nSpecies + nDim + 1] * SoundSpeed_i + Density_i * Enthalpy_i * da_L[nSpecies + nDim + 1]);
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Jacobian_i[nSpecies + nDim + 1][jVar] += M_F * Fc_L[nSpecies + nDim + 1] * da_L[jVar];
     }
     Jacobian_i[nSpecies + nDim + 1][nSpecies + nDim + 1] += M_F * SoundSpeed_i;
@@ -191,11 +191,11 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   if ((M_F >= 0) || ((M_F < 0) && (fabs(M_F) <= 1.0))) {
     if (fabs(M_L) <= 1.0) {
       /*--- Mach number ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dM_LP[iSpecies] =
             0.5 * (M_L + 1.0) *
             (-ProjVelocity_i / (Density_i * SoundSpeed_i) - ProjVelocity_i * da_L[iSpecies] / (pow(SoundSpeed_i, 2)));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dM_LP[nSpecies + iDim] = 0.5 * (M_L + 1.0) *
                                  (-ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + iDim] +
                                   UnitNormal[iDim] / (Density_i * SoundSpeed_i));
@@ -204,14 +204,14 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
           0.5 * (M_L + 1.0) * (-ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + nDim + 1]);
 
       /*--- Pressure ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dP_LP[iSpecies] = 0.25 * (M_L + 1.0) *
                           (dPdU_i[iSpecies] * (M_L + 1.0) * (2.0 - M_L) +
                            Pressure_i *
                                (-ProjVelocity_i / (Density_i * SoundSpeed_i) -
                                 ProjVelocity_i * da_L[iSpecies] / (pow(SoundSpeed_i, 2))) *
                                (3.0 - 3.0 * M_L));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dP_LP[nSpecies + iDim] = 0.25 * (M_L + 1.0) *
                                  (-Velocity_i[iDim] * dPdU_i[nSpecies + nDim] * (M_L + 1.0) * (2.0 - M_L) +
                                   Pressure_i *
@@ -228,33 +228,33 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
            Pressure_i * (-ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + nDim + 1]) * (3.0 - 3.0 * M_L));
     } else {
       /*--- Mach number ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dM_LP[iSpecies] =
             -ProjVelocity_i / (Density_i * SoundSpeed_i) - ProjVelocity_i * da_L[iSpecies] / (pow(SoundSpeed_i, 2));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dM_LP[nSpecies + iDim] = -ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + iDim] +
                                  UnitNormal[iDim] / (Density_i * SoundSpeed_i);
       dM_LP[nSpecies + nDim] = -ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + nDim];
       dM_LP[nSpecies + nDim + 1] = -ProjVelocity_i / (pow(SoundSpeed_i, 2)) * da_L[nSpecies + nDim + 1];
 
       /*--- Pressure ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) dP_LP[iSpecies] = dPdU_i[iSpecies];
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) dP_LP[iSpecies] = dPdU_i[iSpecies];
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dP_LP[nSpecies + iDim] = (-Velocity_i[iDim] * dPdU_i[nSpecies + nDim]);
       dP_LP[nSpecies + nDim] = dPdU_i[nSpecies + nDim];
       dP_LP[nSpecies + nDim + 1] = dPdU_i[nSpecies + nDim + 1];
     }
 
     /*--- dM contribution ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      for (auto jVar = 0ul; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] += dM_LP[jVar] * Fc_LR[iVar] * A_LR;
       }
     }
 
     /*--- Jacobian contribution: dP terms ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         Jacobian_i[nSpecies + iDim][iVar] += dP_LP[iVar] * UnitNormal[iDim];
       }
     }
@@ -263,17 +263,17 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   /*--- Right state Jacobian ---*/
   if (M_F < 0) {
     /*--- Jacobian contribution: dFc terms ---*/
-    for (auto iVar = 0u; iVar < nSpecies + nDim; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto iVar = 0ul; iVar < nSpecies + nDim; iVar++) {
+      for (auto jVar = 0ul; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] += M_F * Fc_R[iVar] * da_R[jVar];
       }
       Jacobian_j[iVar][iVar] += M_F * SoundSpeed_j;
     }
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
       Jacobian_j[nSpecies + nDim][iSpecies] +=
           M_F * (dPdU_j[iSpecies] * SoundSpeed_j + Density_j * Enthalpy_j * da_R[iSpecies]);
     }
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
       Jacobian_j[nSpecies + nDim][nSpecies + iDim] +=
           M_F *
           (-dPdU_j[nSpecies + nDim] * Velocity_j[iDim] * SoundSpeed_j + Density_j * Enthalpy_j * da_R[nSpecies + iDim]);
@@ -282,7 +282,7 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
         M_F * ((1.0 + dPdU_j[nSpecies + nDim]) * SoundSpeed_j + Density_j * Enthalpy_j * da_R[nSpecies + nDim]);
     Jacobian_j[nSpecies + nDim][nSpecies + nDim + 1] +=
         M_F * (dPdU_j[nSpecies + nDim + 1] * SoundSpeed_j + Density_j * Enthalpy_j * da_R[nSpecies + nDim + 1]);
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Jacobian_j[nSpecies + nDim + 1][jVar] += M_F * Fc_R[nSpecies + nDim + 1] * da_R[jVar];
     }
     Jacobian_j[nSpecies + nDim + 1][nSpecies + nDim + 1] += M_F * SoundSpeed_j;
@@ -292,11 +292,11 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   if ((M_F < 0) || ((M_F >= 0) && (fabs(M_F) <= 1.0))) {
     if (fabs(M_R) <= 1.0) {
       /*--- Mach ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dM_RM[iSpecies] =
             -0.5 * (M_R - 1.0) *
             (-ProjVelocity_j / (Density_j * SoundSpeed_j) - ProjVelocity_j * da_R[iSpecies] / (pow(SoundSpeed_j, 2)));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dM_RM[nSpecies + iDim] = -0.5 * (M_R - 1.0) *
                                  (-ProjVelocity_j / (pow(SoundSpeed_j, 2)) * da_R[nSpecies + iDim] +
                                   UnitNormal[iDim] / (Density_j * SoundSpeed_j));
@@ -305,14 +305,14 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
           -0.5 * (M_R - 1.0) * (-ProjVelocity_j / (pow(SoundSpeed_j, 2)) * da_R[nSpecies + nDim + 1]);
 
       /*--- Pressure ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dP_RM[iSpecies] = 0.25 * (M_R - 1.0) *
                           (dPdU_j[iSpecies] * (M_R - 1.0) * (2.0 + M_R) +
                            Pressure_j *
                                (-ProjVelocity_j / (Density_j * SoundSpeed_j) -
                                 ProjVelocity_j * da_R[iSpecies] / (pow(SoundSpeed_j, 2))) *
                                (3.0 + 3.0 * M_R));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dP_RM[nSpecies + iDim] = 0.25 * (M_R - 1.0) *
                                  ((-Velocity_j[iDim] * dPdU_j[nSpecies + nDim]) * (M_R - 1.0) * (2.0 + M_R) +
                                   Pressure_j *
@@ -330,41 +330,41 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
 
     } else {
       /*--- Mach ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
         dM_RM[iSpecies] =
             -ProjVelocity_j / (Density_j * SoundSpeed_j) - ProjVelocity_j * da_R[iSpecies] / (pow(SoundSpeed_j, 2));
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dM_RM[nSpecies + iDim] = -ProjVelocity_j / (pow(SoundSpeed_j, 2)) * da_R[nSpecies + iDim] +
                                  UnitNormal[iDim] / (Density_j * SoundSpeed_j);
       dM_RM[nSpecies + nDim] = -ProjVelocity_j / (pow(SoundSpeed_j, 2)) * da_R[nSpecies + nDim];
       dM_RM[nSpecies + nDim + 1] = -ProjVelocity_j / (pow(SoundSpeed_j, 2)) * da_R[nSpecies + nDim + 1];
 
       /*--- Pressure ---*/
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) dP_RM[iSpecies] = dPdU_j[iSpecies];
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) dP_RM[iSpecies] = dPdU_j[iSpecies];
+      for (auto iDim = 0ul; iDim < nDim; iDim++)
         dP_RM[nSpecies + iDim] = -Velocity_j[iDim] * dPdU_j[nSpecies + nDim];
       dP_RM[nSpecies + nDim] = dPdU_j[nSpecies + nDim];
       dP_RM[nSpecies + nDim + 1] = dPdU_j[nSpecies + nDim + 1];
     }
 
     /*--- Jacobian contribution: dM terms ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      for (auto jVar = 0ul; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] += dM_RM[jVar] * Fc_LR[iVar] * A_LR;
       }
     }
 
     /*--- Jacobian contribution: dP terms ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         Jacobian_j[nSpecies + iDim][iVar] += dP_RM[iVar] * UnitNormal[iDim];
       }
     }
   }
 
   /*--- Integrate over dual-face area ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] *= Area;
       Jacobian_j[iVar][jVar] *= Area;
     }
@@ -375,15 +375,15 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
   /*--- Compute geometric quantities ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+  for (auto iDim = 0ul; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX + iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX + iSpecies];
   }
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[VEL_INDEX + iDim];
     Velocity_j[iDim] = V_j[VEL_INDEX + iDim];
   }
@@ -398,9 +398,8 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
   Density_j = V_j[RHO_INDEX];
   SoundSpeed_j = V_j[A_INDEX];
 
-  e_ve_i = 0;
-  e_ve_j = 0;
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  e_ve_i = e_ve_j = 0;
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
     e_ve_i += (V_i[RHOS_INDEX + iSpecies] * eve_i[iSpecies]) / Density_i;
     e_ve_j += (V_j[RHOS_INDEX + iSpecies] * eve_j[iSpecies]) / Density_j;
   }
@@ -412,18 +411,18 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
   /*--- Compute mass and pressure fluxes of specific scheme ---*/
   ComputeInterfaceQuantities(config, PressureFlux, M_F, A_F);
 
-  su2double MassFlux_i = M_F * A_F[0];
-  su2double MassFlux_j = M_F * A_F[1];
+  const su2double MassFlux_i = M_F * A_F[0];
+  const su2double MassFlux_j = M_F * A_F[1];
 
-  su2double DissFlux_i = fabs(MassFlux_i);
-  su2double DissFlux_j = fabs(MassFlux_j);
+  const su2double DissFlux_i = fabs(MassFlux_i);
+  const su2double DissFlux_j = fabs(MassFlux_j);
 
   /*--- Assign left & right convective flux vectors ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
     Fc_L[iSpecies] = rhos_i[iSpecies];
     Fc_R[iSpecies] = rhos_j[iSpecies];
   }
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     Fc_L[nSpecies + iDim] = Density_i * Velocity_i[iDim];
     Fc_R[nSpecies + iDim] = Density_j * Velocity_j[iDim];
   }
@@ -433,10 +432,10 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
   Fc_R[nSpecies + nDim + 1] = Density_j * e_ve_j;
 
   /*--- Compute numerical flux ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
     Flux[iVar] = 0.5 * ((MassFlux_i + DissFlux_i) * Fc_L[iVar] + (MassFlux_j - DissFlux_j) * Fc_R[iVar]) * Area;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) Flux[nSpecies + iDim] += PressureFlux[iDim] * Area;
+  for (auto iDim = 0ul; iDim < nDim; iDim++) Flux[nSpecies + iDim] += PressureFlux[iDim] * Area;
 
   /*--- If required, compute Jacobians (approximated using AUSM) ---*/
   if (implicit) ComputeJacobian(Jacobian_i, Jacobian_j);

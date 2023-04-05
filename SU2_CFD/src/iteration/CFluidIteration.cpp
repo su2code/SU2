@@ -671,7 +671,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
     /* --- Print convergence history and volume files since fixed CL mode has converged--- */
     if (rank == MASTER_NODE) output->PrintConvergenceSummary();
 
-    output->SetResult_Files(geometry, config, solver,
+    output->SetResultFiles(geometry, config, solver,
                             config->GetInnerIter(), true);
 
     /* --- Set finite difference mode in config (disables output) --- */

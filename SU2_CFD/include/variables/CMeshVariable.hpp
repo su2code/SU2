@@ -64,6 +64,11 @@ public:
   inline const su2double *GetMesh_Coord(unsigned long iPoint) const final { return Mesh_Coord[iPoint]; }
 
   /*!
+   * \brief Get the undeformed coordinates for the entire domain.
+   */
+  inline const MatrixType* GetMesh_Coord() const final { return &Mesh_Coord; }
+
+  /*!
    * \brief Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]

@@ -38,26 +38,19 @@ using namespace std;
 #endif
 #elif defined(HAVE_LAPACK)
 /*--- Lapack / Blas routines used in CSquareMatrixCM. ---*/
-extern "C" void dgetrf_(const int*, const int*, passivedouble*, const int*,
-                        int*, int*);
-extern "C" void dgetri_(const int*, passivedouble*, const int*, int*,
-                        passivedouble*, const int*, int*);
-extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
-                       const passivedouble*, const passivedouble*,
-                       const int *, const passivedouble*, const int*,
-                       const passivedouble*, passivedouble*, const int*);
+extern "C" void dgetrf_(const int*, const int*, passivedouble*, const int*, int*, int*);
+extern "C" void dgetri_(const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
+extern "C" void dgemm_(char*, char*, const int*, const int*, const int*, const passivedouble*, const passivedouble*,
+                       const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
 #define DGEMM dgemm_
 #endif
 
 void CSquareMatrixCM::Transpose() {
-
-  for(int j=1; j<Size(); ++j)
-    for(int i=0; i<j; ++i)
-      swap(mat(i,j), mat(j,i));
+  for (int j = 1; j < Size(); ++j)
+    for (int i = 0; i < j; ++i) swap(mat(i, j), mat(j, i));
 }
 
 void CSquareMatrixCM::Invert() {
-
 #ifdef HAVE_LAPACK
 
   /*--- Computation of the inverse using the Lapack routines. ---*/
@@ -67,29 +60,26 @@ void CSquareMatrixCM::Invert() {
   vector<passivedouble> work(sz);
 
   dgetrf_(&sz, &sz, mat.data(), &sz, ipiv.data(), &info);
-  if(info != 0) SU2_MPI::Error(string("Matrix is singular"), CURRENT_FUNCTION);
+  if (info != 0) SU2_MPI::Error(string("Matrix is singular"), CURRENT_FUNCTION);
 
   dgetri_(&sz, mat.data(), &sz, ipiv.data(), work.data(), &sz, &info);
-  if(info != 0) SU2_MPI::Error(string("Matrix inversion failed"), CURRENT_FUNCTION);
+  if (info != 0) SU2_MPI::Error(string("Matrix inversion failed"), CURRENT_FUNCTION);
 
 #else
   CBlasStructure::inverse(Size(), mat);
 #endif
 }
 
-void CSquareMatrixCM::MatMatMult(const char                          side,
-                                        const ColMajorMatrix<passivedouble> &mat_in,
-                                        ColMajorMatrix<passivedouble>       &mat_out) const {
-
+void CSquareMatrixCM::MatMatMult(const char side, const ColMajorMatrix<passivedouble>& mat_in,
+                                 ColMajorMatrix<passivedouble>& mat_out) const {
   /*--- Check the type of multiplication to be carried out. ---*/
   if (side == 'L' || side == 'l') {
-
     /*--- Left side: mat_out = this * mat_in. Set some sizes
           and allocate the memory for mat_out. ---*/
     const int M = Size(), N = mat_in.cols();
     assert(M == static_cast<int>(mat_in.rows()));
 
-    mat_out.resize(M,N);
+    mat_out.resize(M, N);
 
 #ifdef HAVE_LAPACK
 
@@ -98,28 +88,24 @@ void CSquareMatrixCM::MatMatMult(const char                          side,
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    DGEMM(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M,
-          mat_in.data(), &M, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M, mat_in.data(), &M, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
       for (int j = 0; j < N; ++j) {
-        mat_out(i,j) = 0.0;
-        for (int k = 0; k < M; ++k)
-          mat_out(i,j) += mat(i,k) * mat_in(k,j);
+        mat_out(i, j) = 0.0;
+        for (int k = 0; k < M; ++k) mat_out(i, j) += mat(i, k) * mat_in(k, j);
       }
     }
 #endif
 
-  }
-  else {
-
+  } else {
     /*--- Right_side: mat_out = mat_in * this. Set some sizes
           and allocate the memory for mat_out. ---*/
     const int M = mat_in.rows(), N = Size();
     assert(N == static_cast<int>(mat_in.cols()));
 
-    mat_out.resize(M,N);
+    mat_out.resize(M, N);
 
 #ifdef HAVE_LAPACK
 
@@ -128,15 +114,13 @@ void CSquareMatrixCM::MatMatMult(const char                          side,
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    DGEMM(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M,
-          mat.data(), &N, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M, mat.data(), &N, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
       for (int j = 0; j < N; ++j) {
-        mat_out(i,j) = 0.0;
-        for (int k = 0; k < N; ++k)
-          mat_out(i,j) += mat_in(i,k) * mat(k,j);
+        mat_out(i, j) = 0.0;
+        for (int k = 0; k < N; ++k) mat_out(i, j) += mat_in(i, k) * mat(k, j);
       }
     }
 #endif

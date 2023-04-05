@@ -114,7 +114,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set runtime option ---*/
 
-  Runtime_Options();
+  RuntimeOptions();
 
   /*--- Set the current time iteration in the config ---*/
 
@@ -198,7 +198,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   StartTime = SU2_MPI::Wtime();
 
-  bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
+  bool wrote_files = output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],
                                                                TimeIter, StopCalc);
@@ -307,7 +307,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   return StopCalc;
 }
 
-void CSinglezoneDriver::Runtime_Options(){
+void CSinglezoneDriver::RuntimeOptions(){
 
   ifstream runtime_configfile;
 

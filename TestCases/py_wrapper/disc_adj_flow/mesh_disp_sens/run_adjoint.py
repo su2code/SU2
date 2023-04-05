@@ -67,12 +67,12 @@ def main():
   MarkerName = 'wallF'       # Specified by the user
 
   # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
+  MarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
-  #Check if the specified marker exists and if it belongs to this rank.
+  # Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
@@ -80,7 +80,7 @@ def main():
   nVertex_Marker = 0         #total number of vertices (physical + halo)
 
   if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
+    nVertex_Marker = SU2Driver.GetNumberMarkerNodes(MarkerID)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -110,16 +110,13 @@ def main():
   # Sensitivities of the marker
   print("\n------------------------------ Sensitivities -----------------------------\n")
   for iVertex in range(nVertex_Marker):
-    sensX, sensY, sensZ = SU2Driver.GetMeshDisp_Sensitivity(MarkerID, iVertex)
+    sensX, sensY = SU2Driver.GetMarkerDisplacementSensitivity(MarkerID, iVertex)
 
-    if (iVertex == 30):
-      print(1000,1000,iVertex, sensX, sensY, sensZ)
+    if (iVertex == 30) and rank == 0:
+      print(1000, 1000, iVertex, sensX, sensY, 0.0)
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
-
-  if SU2Driver != None:
-    del SU2Driver
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 
