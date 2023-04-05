@@ -285,6 +285,9 @@ void CMultizoneDriver::RunGaussSeidel() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetOuterIter(0ul);
+    /*--- This is required for correct restarts with mixing plane interfaces and GS iterations,
+    * for Jacobi we always do all the transfers before iterating all zones. ---*/
+    if (mixingplane) SetMixingPlane(iZone);
   }
 
   /*--- Loop over the number of outer iterations ---*/
@@ -314,6 +317,7 @@ void CMultizoneDriver::RunGaussSeidel() {
           if (DeformMesh) UpdateMesh+=1;
         }
       }
+
       /*--- If a mesh update is required due to the transfer of data ---*/
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 

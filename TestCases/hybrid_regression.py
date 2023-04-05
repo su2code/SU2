@@ -329,7 +329,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.589740, 3.922578, 0.006703, 0.099632]
+    harmonic_balance.test_vals = [-1.589739, 0.790169, 0.937053, 3.922579]
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
@@ -337,7 +337,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.902111, -5.949288, 0.007768, 0.128060]
+    hb_rans_preconditioning.test_vals = [-1.902097, 0.484069, 0.601483, 3.609005, -5.949274]
     test_list.append(hb_rans_preconditioning)
 
     #############################
@@ -539,7 +539,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-10.691521, -7.643723, 85.827890, 2.277151]
+    Jones_tc_restart.test_vals = [-6.986563, -3.096834, -14.849532, -9.102914, -11.787851, -6.266208, 7.3266e+04, 7.3266e+04]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -547,8 +547,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [-1.937003, 5.338805, 73.357170, 0.915734]
-    axial_stage2D.test_vals_aarch64 = [-1.933115, 5.365583, 73.354510, 0.925902]
+    axial_stage2D.test_vals         = [1.047323, 1.661341, -2.913940, 2.588179, -2.486770, 3.050954, 1.0638e+05, 1.0638e+05]
+    axial_stage2D.test_vals_aarch64 = [1.047323, 1.661341, -2.913940, 2.588179, -2.486770, 3.050954, 1.0638e+05, 1.0638e+05]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -556,8 +556,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-6.796363, -0.743837, 5.003453, 0.002946]
-    transonic_stator_restart.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
+    transonic_stator_restart.test_vals         = [-7.534574, -6.838075, -6.618228, -1.567726, -6.767343, -0.738638, -4.7165e+05]
+    transonic_stator_restart.test_vals_aarch64 = [-7.534574, -6.838075, -6.618228, -1.567726, -6.767343, -0.738638, -4.7165e+05]
     test_list.append(transonic_stator_restart)
 
     ######################################
