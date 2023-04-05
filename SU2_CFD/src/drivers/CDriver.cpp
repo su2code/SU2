@@ -3211,6 +3211,7 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 
 }
 
+#pragma region
 // void CFluidDriver::TurboMonitor(unsigned long ExtIter) {
 
 //   su2double rot_z_ini, rot_z_final ,rot_z;
@@ -3317,7 +3318,7 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 //     }
 //   }
 // }
-
+#pragma endregion
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
                                              SU2_Comm MPICommunicator):
@@ -3421,11 +3422,10 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
   }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
-
- output_legacy->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
+  cout << "*******ComputeTurboPerformance*******" << endl;
+ //output_legacy->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
 
 }
-
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
@@ -3560,6 +3560,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   return StopCalc;
 
 }
+
 
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
