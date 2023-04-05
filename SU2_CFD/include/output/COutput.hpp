@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
 namespace mel {
@@ -371,6 +372,22 @@ public:
    */
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
+
+  /*!
+   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   */
+  void SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerformance> TurboPerf, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
+
+  void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurbomachineryPerformance> TurboPerf,
+                                  CConfig *config);
 
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.

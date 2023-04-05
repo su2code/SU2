@@ -56,6 +56,7 @@ protected:
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
   COutputLegacy* output_legacy;
+  CTurbomachineryOutput* turbo_output;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

@@ -4768,28 +4768,25 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
     for (iSpan = 0; iSpan < 1; iSpan++) {
       SpanWiseValue[marker_flag - 1][iSpan] = 0;
     }
-  } else {
-    if (SpanWise_Kind == AUTOMATIC) {
-      /*--- loop to find inflow of outflow marker---*/
-      for (iMarker = 0; iMarker < nMarker; iMarker++) {
-        for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
+  }
+  else{
+    if(SpanWise_Kind == AUTOMATIC){
+      /*--- loop to find inflow or outflow marker---*/
+      for (iMarker = 0; iMarker < nMarker; iMarker++){
+        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue; 
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
 
-          /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-           * in order to caount the number of Span ---*/
-          for (jMarker = 0; jMarker < nMarker; jMarker++) {
+            /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+              * in order to count the number of Span ---*/
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
             if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
               PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
               jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))) {
-                nSpan++;
+              if ((jVertex != -1) && (PeriodicBoundary == ((val_iZone) + 1)) && nodes->GetDomain(iPoint)) {
+                  nSpan++;
               }
             }
           }
@@ -4798,9 +4795,13 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
+      
+      /*--- if parallel computing the global number of span---*/
+#ifdef HAVE_MPI
+      nSpan_max = nSpan;
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
-
+#endif
       /*--- initialize the vector that will contain the disordered values span-wise ---*/
       nSpanWiseSections[marker_flag - 1] = nSpan;
       valueSpan = new su2double[nSpan];
@@ -4814,45 +4815,42 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
         for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
-
-          for (jMarker = 0; jMarker < nMarker; jMarker++) {
-            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
-              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-              jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))) {
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
+              if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+                PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+                jVertex = nodes->GetVertex(iPoint, jMarker);
+              if ((jVertex != -1) && (PeriodicBoundary == (( val_iZone) + 1) && nodes->GetDomain(iPoint))){
                 coord = nodes->GetCoord(iPoint);
-                radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
-                    valueSpan[nSpan_loc] = coord[2];
-                    break;
-                  case CENTRIPETAL:
-                    valueSpan[nSpan_loc] = coord[2];
-                    break;
-                  case AXIAL:
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case TURBOMACHINERY_TYPE::AXIAL:
+                  valueSpan[nSpan_loc] = radius;
+                  break;
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
                     valueSpan[nSpan_loc] = radius;
-                    break;
-                  case CENTRIPETAL_AXIAL:
-                    if (marker_flag == OUTFLOW) {
-                      valueSpan[nSpan_loc] = radius;
-                    } else {
-                      valueSpan[nSpan_loc] = coord[2];
-                    }
-                    break;
-                  case AXIAL_CENTRIFUGAL:
-                    if (marker_flag == INFLOW) {
-                      valueSpan[nSpan_loc] = radius;
-                    } else {
-                      valueSpan[nSpan_loc] = coord[2];
-                    }
-                    break;
+                  }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    valueSpan[nSpan_loc] = radius;
+                  }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
                 }
                 nSpan_loc++;
               }
@@ -4907,50 +4905,47 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
         for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
-
-          for (jMarker = 0; jMarker < nMarker; jMarker++) {
-            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
+              if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
               PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
               jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))) {
+              if ((jVertex != -1) && (PeriodicBoundary == ((val_iZone) + 1)) && nodes->GetDomain(iPoint)){
                 coord = nodes->GetCoord(iPoint);
-                radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
-                  case CENTRIPETAL:
-                    if (coord[2] < min) min = coord[2];
-                    if (coord[2] > max) max = coord[2];
-                    break;
-                  case AXIAL:
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL: case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                  if (coord[2] < min) min = coord[2];
+                  if (coord[2] > max) max = coord[2];
+                  break;
+                case TURBOMACHINERY_TYPE::AXIAL:
+                  if (radius < min) min = radius;
+                  if (radius > max) max = radius;
+                  break;
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
                     if (radius < min) min = radius;
                     if (radius > max) max = radius;
-                    break;
-                  case CENTRIPETAL_AXIAL:
-                    if (marker_flag == OUTFLOW) {
-                      if (radius < min) min = radius;
-                      if (radius > max) max = radius;
-                    } else {
-                      if (coord[2] < min) min = coord[2];
-                      if (coord[2] > max) max = coord[2];
-                    }
-                    break;
-                  case AXIAL_CENTRIFUGAL:
-                    if (marker_flag == INFLOW) {
-                      if (radius < min) min = radius;
-                      if (radius > max) max = radius;
-                    } else {
-                      if (coord[2] < min) min = coord[2];
-                      if (coord[2] > max) max = coord[2];
-                    }
-                    break;
+                  }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
+
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    if (radius < min) min = radius;
+                    if (radius > max) max = radius;
+                  }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
                 }
-              }
+              }   
             }
           }
         }
@@ -5093,32 +5088,31 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               jSpan = std::numeric_limits<unsigned short>::max();
               coord = nodes->GetCoord(iPoint);
 
-              switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
-                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                    if (dist > (abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                      dist = abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]);
-                      jSpan = iSpan;
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL: case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
                     }
                   }
                   break;
-                case AXIAL:
-                  radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                    if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                      dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                      jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::AXIAL:
+                  radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
                     }
                   }
                   break;
-                case CENTRIPETAL_AXIAL:
-                  if (marker_flag == OUTFLOW) {
-                    radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                        dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                        jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
                       }
                     }
                   } else {
@@ -5131,13 +5125,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                   }
                   break;
 
-                case AXIAL_CENTRIFUGAL:
-                  if (marker_flag == INFLOW) {
-                    radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                        dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                        jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
                       }
                     }
                   } else {
@@ -5192,33 +5186,32 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               dist = 10E+06;
               jSpan = std::numeric_limits<unsigned short>::max();
 
-              coord = nodes->GetCoord(iPoint);
-              switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
-                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                    if (dist > (abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                      dist = abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]);
-                      jSpan = iSpan;
+                coord = nodes->GetCoord(iPoint);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL: case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
                     }
                   }
                   break;
-                case AXIAL:
-                  radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                    if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                      dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                      jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::AXIAL:
+                  radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
                     }
                   }
                   break;
-                case CENTRIPETAL_AXIAL:
-                  if (marker_flag == OUTFLOW) {
-                    radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                        dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                        jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                  if(marker_flag == OUTFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
                       }
                     }
                   } else {
@@ -5231,13 +5224,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                   }
                   break;
 
-                case AXIAL_CENTRIFUGAL:
-                  if (marker_flag == INFLOW) {
-                    radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
-                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
-                        dist = abs(radius - SpanWiseValue[marker_flag - 1][iSpan]);
-                        jSpan = iSpan;
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                  if(marker_flag == INFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
                       }
                     }
                   } else {
@@ -5272,85 +5265,91 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
             nVertexSpanHalo[jSpan]++;
           }
 
-          /*--- using the auxiliary container reordered the vertexes pitch-wise direction at each span ---*/
-          // the reordering algorithm can be based on the Y-coordinate.
-          for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-            /*--- find the local minimum and maximum pitch-wise for each processor---*/
-            min = 10E+06;
-            minInt = 10E+06;
-            max = -10E+06;
-            for (iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++) {
-              iPoint = disordered[iSpan][iSpanVertex];
-              coord = nodes->GetCoord(iPoint);
-              /*--- find nodes at minimum pitch among all nodes---*/
-              if (coord[1] < min) {
-                min = coord[1];
-                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
-                  MinAngularCoord[iMarker][iSpan] = coord[1];
-                } else {
-                  MinAngularCoord[iMarker][iSpan] = atan(coord[1] / coord[0]);
-                }
-                minAngPitch[iSpan] = MinAngularCoord[iMarker][iSpan];
-                kSpanVertex = iSpanVertex;
-              }
+            /*--- using the auxiliary container reordered the vertexes pitch-wise direction at each span ---*/
+            // the reordering algorithm can be based on the Y-coordinate.
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
 
-              /*--- find nodes at minimum pitch among the internal nodes---*/
-              if (coord[1] < minInt) {
-                if (nodes->GetDomain(iPoint)) {
-                  minInt = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
-                    minIntAngPitch[iSpan] = coord[1];
-                  } else {
-                    minIntAngPitch[iSpan] = atan(coord[1] / coord[0]);
+              /*--- find the local minimum and maximum pitch-wise for each processor---*/
+              min    = 10E+06;
+              minInt = 10E+06;
+              max    = -10E+06;
+              for(iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++){
+                iPoint = disordered[iSpan][iSpanVertex];
+                coord = nodes->GetCoord(iPoint);
+                /*--- find nodes at minimum pitch among all nodes---*/
+                if (coord[1]<min){
+                  min = coord[1];
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL){
+                    MinAngularCoord[iMarker][iSpan] = coord[1];
+                  }
+                  else{
+                  MinAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                  }
+                  minAngPitch[iSpan]= MinAngularCoord[iMarker][iSpan];
+                  kSpanVertex =iSpanVertex;
+                }
+
+                /*--- find nodes at minimum pitch among the internal nodes---*/
+                if (coord[1]<minInt){
+                  if(nodes->GetDomain(iPoint)){
+                    minInt = coord[1];
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL){
+                      minIntAngPitch[iSpan] = coord[1];
+                    }
+                    else{
+                      minIntAngPitch[iSpan] = atan(coord[1]/coord[0]);
+                    }
+                  }
+                }
+
+                /*--- find nodes at maximum pitch among the internal nodes---*/
+                if (coord[1]>max){
+                  if(nodes->GetDomain(iPoint)){
+                    max =coord[1];
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL){
+                      MaxAngularCoord[iMarker][iSpan] = coord[1];
+                    }
+                    else{
+                      MaxAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                    }
+                    maxAngPitch[iSpan]= MaxAngularCoord[iMarker][iSpan];
                   }
                 }
               }
-
-              /*--- find nodes at maximum pitch among the internal nodes---*/
-              if (coord[1] > max) {
-                if (nodes->GetDomain(iPoint)) {
-                  max = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
-                    MaxAngularCoord[iMarker][iSpan] = coord[1];
-                  } else {
-                    MaxAngularCoord[iMarker][iSpan] = atan(coord[1] / coord[0]);
-                  }
-                  maxAngPitch[iSpan] = MaxAngularCoord[iMarker][iSpan];
-                }
-              }
-            }
 
             iInternalVertex = 0;
 
-            /*--- reordering the vertex pitch-wise, store the ordered vertexes span-wise and pitch-wise---*/
-            for (iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++) {
-              dist = 10E+06;
-              ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
-              checkAssign[iSpan][kSpanVertex] = true;
-              coord = nodes->GetCoord(ordered[iSpan][iSpanVertex]);
-              target = coord[1];
-              if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
-                angPitch[iSpan][iSpanVertex] = coord[1];
-              } else {
-                angPitch[iSpan][iSpanVertex] = atan(coord[1] / coord[0]);
-              }
-              if (iSpanVertex == 0) {
-                deltaAngPitch[iSpan][iSpanVertex] = 0.0;
-              } else {
-                deltaAngPitch[iSpan][iSpanVertex] = angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
-              }
-              /*---create turbovertex structure only for the internal nodes---*/
-              if (nodes->GetDomain(ordered[iSpan][iSpanVertex])) {
-                if (allocate) {
-                  turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+              /*--- reordering the vertex pitch-wise, store the ordered vertexes span-wise and pitch-wise---*/
+              for(iSpanVertex = 0; iSpanVertex<nVertexSpanHalo[iSpan]; iSpanVertex++){
+                dist = 10E+06;
+                ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
+                checkAssign[iSpan][kSpanVertex] = true;
+                coord = nodes->GetCoord(ordered[iSpan][iSpanVertex]);
+                target = coord[1];
+                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL){
+                   angPitch[iSpan][iSpanVertex]=coord[1];
                 }
-                turbovertex[iMarker][iSpan][iInternalVertex]->SetArea(area[iSpan][kSpanVertex]);
-                turbovertex[iMarker][iSpan][iInternalVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
-                turbovertex[iMarker][iSpan][iInternalVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
-                turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
-                turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
-                switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
+                else{
+                  angPitch[iSpan][iSpanVertex]=atan(coord[1]/coord[0]);
+                }
+                if(iSpanVertex == 0){
+                  deltaAngPitch[iSpan][iSpanVertex]=0.0;
+                }
+                else{
+                  deltaAngPitch[iSpan][iSpanVertex]= angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
+                }
+                /*---create turbovertex structure only for the internal nodes---*/
+                if(nodes->GetDomain(ordered[iSpan][iSpanVertex])){
+                  if (allocate){
+                    turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+                  }
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetArea(area[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
+                  switch (config->GetKind_TurboMachinery(val_iZone)){
+                  case TURBOMACHINERY_TYPE::CENTRIFUGAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5363,7 +5362,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                       TurboNormal[2] = 0.0;
                     }
                     break;
-                  case CENTRIPETAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == OUTFLOW) {
@@ -5376,7 +5375,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                       TurboNormal[2] = 0.0;
                     }
                     break;
-                  case AXIAL:
+                  case TURBOMACHINERY_TYPE::AXIAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (nDim == 3) {
@@ -5402,7 +5401,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
 
                     break;
-                  case CENTRIPETAL_AXIAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5416,7 +5415,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                     break;
 
-                  case AXIAL_CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5690,46 +5689,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
 
     myfile << "TITLE = \"Global index visualization file\"" << endl;
     myfile << "VARIABLES =" << endl;
-    myfile.width(10);
-    myfile << "\"iSpan\"";
-    myfile.width(20);
-    myfile << "\"x_coord\"";
-    myfile.width(20);
-    myfile << "\"y_coord\"";
-    myfile.width(20);
-    myfile << "\"z_coord\"";
-    myfile.width(20);
-    myfile << "\"radius\"";
-    myfile.width(20);
-    myfile << "\"Relative Angular Coord \"";
-    myfile.width(20);
-    myfile << "\"Delta Angular Coord \"";
-    myfile.width(20);
-    myfile << "\"processor\"" << endl;
-    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
-      for (iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++) {
-        radius = sqrt(x_loc[iSpan][iSpanVertex] * x_loc[iSpan][iSpanVertex] +
-                      y_loc[iSpan][iSpanVertex] * y_loc[iSpan][iSpanVertex]);
-        myfile.width(10);
-        myfile << iSpan;
-        myfile.width(20);
-        myfile << x_loc[iSpan][iSpanVertex];
-        myfile.width(20);
-        myfile << y_loc[iSpan][iSpanVertex];
-        myfile.width(20);
-        myfile << z_loc[iSpan][iSpanVertex];
-        myfile.width(20);
-        myfile << radius;
-        if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone)) {
-          myfile.width(20);
-          myfile << angCoord_loc[iSpan][iSpanVertex];
-          myfile.width(20);
-          myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
-        } else {
-          myfile.width(20);
-          myfile << angCoord_loc[iSpan][iSpanVertex] * 180.0 / PI_NUMBER;
-          myfile.width(20);
-          myfile << deltaAngCoord_loc[iSpan][iSpanVertex] * 180.0 / PI_NUMBER;
+    myfile.width(10); myfile << "\"iSpan\"";
+    myfile.width(20); myfile << "\"x_coord\"" ;
+    myfile.width(20); myfile << "\"y_coord\"" ;
+    myfile.width(20); myfile << "\"z_coord\"" ;
+    myfile.width(20); myfile << "\"radius\"" ;
+    myfile.width(20); myfile << "\"Relative Angular Coord \"" ;
+    myfile.width(20); myfile << "\"Delta Angular Coord \"" ;
+    myfile.width(20); myfile << "\"processor\"" <<endl;
+    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+        radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
+        myfile.width(10); myfile << iSpan;
+        myfile.width(20); myfile << x_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << radius;
+        if (nDim ==2 && config->GetBoolTurbomachinery()){
+          myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex];
+          myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
         }
         myfile.width(20);
         myfile << rank_loc[iSpan][iSpanVertex] << endl;
@@ -5787,86 +5765,87 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord = nodes->GetCoord(iPoint);
               /*--- compute appropriate turbo normal ---*/
-              switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                  Normal2 = 0.0;
-                  for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
-                  if (marker_flag == INFLOW) {
-                    TurboNormal[0] = -coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = -coord[1] / sqrt(Normal2);
+              switch (config->GetKind_TurboMachinery(val_iZone)){
+              case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == OUTFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case TURBOMACHINERY_TYPE::AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if(nDim == 3){
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
                     TurboNormal[2] = 0.0;
-                  } else {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
+                  }else{
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
                     TurboNormal[2] = 0.0;
                   }
-                  break;
-                case CENTRIPETAL:
-                  Normal2 = 0.0;
-                  for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
-                  if (marker_flag == OUTFLOW) {
-                    TurboNormal[0] = -coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = -coord[1] / sqrt(Normal2);
+                }
+                else{
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = -1.0;
+                    TurboNormal[1] = 0.0;
                     TurboNormal[2] = 0.0;
-                  } else {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
+                  }else{
+                    TurboNormal[0] = 1.0;
+                    TurboNormal[1] = 0.0;
                     TurboNormal[2] = 0.0;
                   }
-                  break;
-                case AXIAL:
-                  Normal2 = 0.0;
-                  for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
-                  if (nDim == 3) {
-                    if (marker_flag == INFLOW) {
-                      TurboNormal[0] = coord[0] / sqrt(Normal2);
-                      TurboNormal[1] = coord[1] / sqrt(Normal2);
-                      TurboNormal[2] = 0.0;
-                    } else {
-                      TurboNormal[0] = coord[0] / sqrt(Normal2);
-                      TurboNormal[1] = coord[1] / sqrt(Normal2);
-                      TurboNormal[2] = 0.0;
-                    }
-                  } else {
-                    if (marker_flag == INFLOW) {
-                      TurboNormal[0] = -1.0;
-                      TurboNormal[1] = 0.0;
-                      TurboNormal[2] = 0.0;
-                    } else {
-                      TurboNormal[0] = 1.0;
-                      TurboNormal[1] = 0.0;
-                      TurboNormal[2] = 0.0;
-                    }
-                  }
+                }
 
-                  break;
-                case CENTRIPETAL_AXIAL:
-                  Normal2 = 0.0;
-                  for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
-                  if (marker_flag == INFLOW) {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
-                    TurboNormal[2] = 0.0;
-                  } else {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
-                    TurboNormal[2] = 0.0;
-                  }
-                  break;
+                break;
+              case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
 
-                case AXIAL_CENTRIFUGAL:
-                  Normal2 = 0.0;
-                  for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
-                  if (marker_flag == INFLOW) {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
-                    TurboNormal[2] = 0.0;
-                  } else {
-                    TurboNormal[0] = coord[0] / sqrt(Normal2);
-                    TurboNormal[1] = coord[1] / sqrt(Normal2);
-                    TurboNormal[2] = 0.0;
-                  }
-                  break;
+              case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
               }
 
               /*--- store the new turbo normal ---*/
@@ -6028,52 +6007,40 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig* config, unsigned short val_iZo
               for (iDim = 0; iDim < nDim; iDim++) {
                 AverageGridVel[iMarker][iSpan][iDim] = TotalGridVel[iDim] / nTotVertexSpan[iMarker][iSpan];
               }
-              switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
-                  if (marker_flag == INFLOW) {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        -(AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                          AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0]);
-                  } else {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                        AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
-                  }
+              switch (config->GetKind_TurboMachinery(val_iZone)){
+              case TURBOMACHINERY_TYPE::CENTRIFUGAL:case TURBOMACHINERY_TYPE::CENTRIPETAL:
+                if (marker_flag == INFLOW ){
+                  AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                break;
+              case TURBOMACHINERY_TYPE::AXIAL:
+                if (marker_flag == INFLOW && nDim == 2){
+                  AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1] + AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
                   break;
-                case AXIAL:
-                  if (marker_flag == INFLOW && nDim == 2) {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        -AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] +
-                        AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
-                  } else {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                        AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
-                  }
-                  break;
-                case CENTRIPETAL_AXIAL:
-                  if (marker_flag == OUTFLOW) {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        (AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                         AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0]);
-                  } else {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        -(AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                          AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0]);
-                  }
-                  break;
-                case AXIAL_CENTRIFUGAL:
-                  if (marker_flag == INFLOW) {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                        AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
-                  } else {
-                    AverageTangGridVel[iMarker][iSpan] =
-                        AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
-                        AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
-                  }
-                  break;
+              case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
+                if (marker_flag == OUTFLOW){
+                  AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                break;
+              case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
+                if (marker_flag == INFLOW)
+                {
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }else
+                {
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                break;
 
                 default:
                   SU2_MPI::Error("Tang grid velocity NOT IMPLEMENTED YET for this configuration", CURRENT_FUNCTION);
@@ -6288,10 +6255,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
 
     if (iSpan == nSpanWiseSections) {
       config->SetFreeStreamTurboNormal(turboNormal);
-      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2) {
-        nBlades = 1 / Pitch;
-      } else {
-        nBlades = 2 * PI_NUMBER / Pitch;
+      if (config->GetKind_TurboMachinery(config->GetiZone()) == TURBOMACHINERY_TYPE::AXIAL && nDim == 2){
+        nBlades = 1/Pitch;
       }
       config->SetnBlades(config->GetiZone(), nBlades);
     }

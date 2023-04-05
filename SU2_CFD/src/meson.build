@@ -30,8 +30,8 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CHeatOutput.cpp',
                       'output/CMeshOutput.cpp',
                       'output/CNEMOCompOutput.cpp',
-                      'output/output_physics.cpp',
                       'output/COutput.cpp',
+                      'output/CTurbomachineryOutput.cpp',
                       'output/output_structure_legacy.cpp',
                       'output/filewriter/CParallelDataSorter.cpp',
                       'output/filewriter/CFVMDataSorter.cpp',
@@ -185,6 +185,8 @@ su2_cfd_src += files(['iteration/CIteration.cpp',
                       'iteration/CTurboIteration.cpp'])
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
+
+su2_cfd_src += files(['objectives/turbomachinery/CTurbomachineryPerformance.cpp'])
 
 if get_option('enable-normal')
   su2_cfd_lib = static_library('SU2core',

@@ -207,6 +207,20 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddNearfieldInverseDesignOutput();
 
+  if (config->GetBoolTurbomachinery()){
+    AddHistoryOutput("TURBO_MASS", "res[Mass]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass Flow Convergence", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("TURBO_EGLC", "T.Perf[EG]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy Generation Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_KELC", "T.Perf[KE]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic Energy Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_TPLC", "T.Perf[TP]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total Pressure Loss Coefficient", HistoryFieldType::COEFFICIENT);
+  }
+
+  if (config->GetBoolTurbomachinery()){
+    AddHistoryOutput("TURBO_MASS", "res[Mass]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass Flow Convergence", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("TURBO_EGLC", "T.Perf[EG]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy Generation Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_KELC", "T.Perf[KE]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic Energy Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_TPLC", "T.Perf[TP]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total Pressure Loss Coefficient", HistoryFieldType::COEFFICIENT);
+  }
+
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -233,9 +247,12 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Primitive variables
-  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
-  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
-  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE",       "Pressure",             "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE",    "Temperature",          "PRIMITIVE", "Temperature");
+  AddVolumeOutput("ENTHALPY",       "Enthalpy",             "PRIMITIVE", "Enthalpy");
+  AddVolumeOutput("TOT_ENTHALPY",   "Total_Enthalpy",       "PRIMITIVE", "Total Enthalpy");
+  AddVolumeOutput("SOUND_SPEED",    "Sound_Speed",          "PRIMITIVE", "Speed of Sound");
+  AddVolumeOutput("MACH",           "Mach",                 "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
   if (config->GetViscous()) {
@@ -311,6 +328,9 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+  SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetEnthalpy(iPoint));
+  SetVolumeOutputValue("TOT_ENTHALPY", iPoint, Node_Flow->GetEnthalpy(iPoint)+0.5*Node_Flow->GetVelocity2(iPoint));
+  SetVolumeOutputValue("SOUND_SPEED", iPoint, Node_Flow->GetSoundSpeed(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
@@ -447,6 +467,15 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
+  // if (config->GetBoolTurbomachinery()){
+  //   auto m_in = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow();
+  //   auto m_out = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
+  //   SetHistoryOutputValue("TURBO_MASS", (m_in - m_out)/m_in);
+
+  //   SetHistoryOutputValue("TURBO_EGLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetEntropyGen());
+  //   SetHistoryOutputValue("TURBO_KELC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetKineticEnergyLoss());
+  //   SetHistoryOutputValue("TURBO_TPLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetTotalPressureLoss());
+  // }
 }
 
 bool CFlowCompOutput::SetInitResiduals(const CConfig *config){

@@ -146,9 +146,11 @@ int main(int argc, char *argv[]) {
   else if (turbo) {
 
     /*--- Turbomachinery problem. ---*/
-    driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-
-  } /*--- These are all the possible cases ---*/
+    if (multizone)
+      driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    else
+      driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+  }
 
   /*--- Launch the main external loop of the solver. ---*/
 

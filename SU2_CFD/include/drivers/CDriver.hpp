@@ -38,6 +38,7 @@
 using namespace std;
 
 class COutputLegacy;
+class CTurbomachineryOutput;
 class CInterpolator;
 class CIteration;
 class COutput;
@@ -584,6 +585,7 @@ class CFluidDriver : public CDriver {
 class CTurbomachineryDriver : public CFluidDriver {
  private:
   COutputLegacy* output_legacy;
+  CTurbomachineryOutput* turbo_output;
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.
