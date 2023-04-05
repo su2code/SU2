@@ -173,7 +173,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdj_ObjFunction();
+    SetAdjObjFunction();
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -304,7 +304,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -320,7 +320,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
 }
 
-void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
+void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
 
   const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
@@ -357,7 +357,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     /*--- Surface based obj. function ---*/
 
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
 
@@ -387,7 +387,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
     break;
@@ -395,7 +395,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_FEM:
     solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
 
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+    direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                    config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
@@ -430,7 +430,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Print the direct residual to screen ---*/
 
-  Print_DirectResidual(kind_recording);
+  PrintDirectResidual(kind_recording);
 
 }
 
@@ -463,7 +463,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  SetAdj_ObjFunction();
+  SetAdjObjFunction();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 

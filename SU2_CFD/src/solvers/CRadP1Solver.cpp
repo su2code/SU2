@@ -127,6 +127,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
    SetVolumetricHeatSource(geometry, config);
   }
 
+  SolverName = "RAD";
 }
 
 CRadP1Solver::~CRadP1Solver(void) {

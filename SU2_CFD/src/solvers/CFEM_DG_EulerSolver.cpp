@@ -723,8 +723,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
      the tasks to be done for one space time step. */
   SetUpTaskList(config);
 
-  /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "DG FLOW";
+  /*--- Add the solver name. ---*/
+  SolverName = "DG.FLOW";
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {

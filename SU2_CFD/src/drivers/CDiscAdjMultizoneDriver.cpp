@@ -153,7 +153,7 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
           mat = 0.0;
 
     /*--- Initialize external with dynamic contributions. ---*/
-    Set_External_To_DualTimeDer();
+    SetExternalToDualTimeDer();
   }
 
 }
@@ -245,7 +245,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
   /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
    *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
 
-  if (!KrylovMode) Set_SolutionOld_To_Solution(iZone);
+  if (!KrylovMode) SetSolutionOldToSolution(iZone);
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
@@ -262,7 +262,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
 
   GetAdjointRHS(iZone, AdjRHS[iZone]);
 
-  Add_External_To_Solution(iZone);
+  AddExternalToSolution(iZone);
 
   GetAllSolutions(iZone, true, AdjSol[iZone]);
 
@@ -388,7 +388,7 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
 
           if (no_restart || (iInnerIter > 0)) {
-            Add_External_To_Solution(iZone);
+            AddExternalToSolution(iZone);
           }
           else {
             /*--- If we restarted, Solution already has all contributions,
@@ -424,7 +424,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
-          Update_Cross_Term(iZone, jZone);
+          UpdateCrossTerm(iZone, jZone);
         }
       }
 
@@ -436,7 +436,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Set the multizone output. ---*/
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
+    driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config, TimeIter, iOuterIter);
 
     /*--- Check for convergence. ---*/
 
@@ -470,7 +470,7 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
   RecordingState = RECORDING::CLEAR_INDICES;
 
   AD::ClearAdjoints();
-  SetAdj_ObjFunction();
+  SetAdjObjFunction();
   AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
 
   /*--- Initialize External with the objective function gradient. ---*/
@@ -481,7 +481,7 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
 
     iteration_container[iZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
                                                        config_container, iZone, INST_0, false);
-    Add_Solution_To_External(iZone);
+    AddSolutionToExternal(iZone);
 
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -512,7 +512,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
 
     Set_Solution_To_BGSSolution_k(iZone);
 
-    Add_External_To_Solution(iZone);
+    AddExternalToSolution(iZone);
 
     iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
                                                           config_container, iZone, INST_0);
@@ -520,7 +520,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  SetAdj_ObjFunction();
+  SetAdjObjFunction();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -666,14 +666,14 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
                                                          config_container, iZone, INST_0);
       AD::Push_TapePosition(); /// leave_zone
     }
-    Print_DirectResidual(kind_recording);
+    PrintDirectResidual(kind_recording);
   }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -729,19 +729,19 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
-        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 
@@ -763,7 +763,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
   }
 }
 
-void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
+void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
 
   const auto IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
@@ -861,7 +861,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
-        DeformMesh |= Transfer_Data(jZone, iZone);
+        DeformMesh |= TransferData(jZone, iZone);
       }
     }
 
@@ -873,7 +873,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
   }
 }
 
-void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::AddSolutionToExternal(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -882,7 +882,7 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
   }
 }
 
-void CDiscAdjMultizoneDriver::Set_External_To_DualTimeDer() {
+void CDiscAdjMultizoneDriver::SetExternalToDualTimeDer() {
 
   for (unsigned short iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
@@ -893,7 +893,7 @@ void CDiscAdjMultizoneDriver::Set_External_To_DualTimeDer() {
   }
 }
 
-void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::AddExternalToSolution(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -902,7 +902,7 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
   }
 }
 
-void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) {
+void CDiscAdjMultizoneDriver::SetSolutionOldToSolution(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -911,7 +911,7 @@ void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) 
   }
 }
 
-void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned short jZone) {
+void CDiscAdjMultizoneDriver::UpdateCrossTerm(unsigned short iZone, unsigned short jZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[jZone][INST_0][MESH_0][iSol];

@@ -26,79 +26,82 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 import os, pprint
 
-su2_home = os.environ['SU2_HOME']
+su2_home = os.environ["SU2_HOME"]
 
-fileList = ['CFlowOutput.cpp',
-'CFlowIncOutput.cpp',
-'CFlowCompOutput.cpp',
-'CHeatOutput.cpp',
-'CFlowCompFEMOutput.cpp',
-'CElasticityOutput.cpp',
-'CAdjFlowOutput.cpp',
-'CAdjHeatOutput.cpp',
-'CAdjFlowIncOutput.cpp',
-'CAdjFlowCompOutput.cpp',
-'CAdjElasticityOutput.cpp']
+fileList = [
+    "CFlowOutput.cpp",
+    "CFlowIncOutput.cpp",
+    "CFlowCompOutput.cpp",
+    "CHeatOutput.cpp",
+    "CFlowCompFEMOutput.cpp",
+    "CElasticityOutput.cpp",
+    "CAdjFlowOutput.cpp",
+    "CAdjHeatOutput.cpp",
+    "CAdjFlowIncOutput.cpp",
+    "CAdjFlowCompOutput.cpp",
+    "CAdjElasticityOutput.cpp",
+]
 
-fileList = [os.path.join(su2_home, 'SU2_CFD/src/output/' + i) for i in fileList]
+fileList = [os.path.join(su2_home, "SU2_CFD/src/output/" + i) for i in fileList]
+
 
 def parse_output(files):
     outputFields = dict()
 
     for file in files:
-        print('Parsing ' + file)
-        f = open(file,'r')
-        while(1):
-            s = f.readline().strip(' ')
+        print("Parsing " + file)
+        f = open(file, "r")
+        while 1:
+            s = f.readline().strip(" ")
             if not s:
                 break
-            if s.startswith('AddHistoryOutput('):
-                s = s.replace('AddHistoryOutput', '').strip('()').split(',')
+            if s.startswith("AddHistoryOutput("):
+                s = s.replace("AddHistoryOutput", "").strip("()").split(",")
                 curOutputField = dict()
                 name = s[0].strip(' ()"\n;')
-                curOutputField['HEADER']  = s[1].strip(' ()"\n;')
-                curOutputField['GROUP']   = s[3].strip(' ()"\n;')
-                curOutputField['DESCRIPTION'] = s[4].strip(' ()"\n;')
+                curOutputField["HEADER"] = s[1].strip(' ()"\n;')
+                curOutputField["GROUP"] = s[3].strip(' ()"\n;')
+                curOutputField["DESCRIPTION"] = s[4].strip(' ()"\n;')
                 if len(s) == 6:
-                    curOutputField['TYPE'] = s[5].strip(' ()"\n;').split('::')[1]
+                    curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
                 else:
-                    curOutputField['TYPE'] = 'DEFAULT'
+                    curOutputField["TYPE"] = "DEFAULT"
                 outputFields[name] = curOutputField
         f.close()
 
     addedOutputFields = dict()
 
     for field in outputFields:
-        if outputFields[field]['TYPE'] == 'COEFFICIENT':
+        if outputFields[field]["TYPE"] == "COEFFICIENT":
             curOutputField = dict()
-            name = 'D_' + field
-            curOutputField['HEADER'] = 'd[' + outputFields[field]['HEADER'] + ']'
-            curOutputField['GROUP'] = 'D_' + outputFields[field]['GROUP']
-            curOutputField['TYPE'] = 'D_COEFFICIENT'
-            curOutputField['DESCRIPTION'] = 'Derivative value'
+            name = "D_" + field
+            curOutputField["HEADER"] = "d[" + outputFields[field]["HEADER"] + "]"
+            curOutputField["GROUP"] = "D_" + outputFields[field]["GROUP"]
+            curOutputField["TYPE"] = "D_COEFFICIENT"
+            curOutputField["DESCRIPTION"] = "Derivative value"
             addedOutputFields[name] = curOutputField
 
-            name = 'TAVG_' + field
+            name = "TAVG_" + field
             curOutputField = dict()
-            curOutputField['HEADER'] = 'tavg[' + outputFields[field]['HEADER'] + ']'
-            curOutputField['GROUP'] = 'TAVG_' + outputFields[field]['GROUP']
-            curOutputField['TYPE'] = 'TAVG_COEFFICIENT'
-            curOutputField['DESCRIPTION'] = 'weighted time average value'
+            curOutputField["HEADER"] = "tavg[" + outputFields[field]["HEADER"] + "]"
+            curOutputField["GROUP"] = "TAVG_" + outputFields[field]["GROUP"]
+            curOutputField["TYPE"] = "TAVG_COEFFICIENT"
+            curOutputField["DESCRIPTION"] = "weighted time average value"
             addedOutputFields[name] = curOutputField
 
-            name = 'TAVG_D_' + field
+            name = "TAVG_D_" + field
             curOutputField = dict()
-            curOutputField['HEADER'] = 'dtavg[' + outputFields[field]['HEADER'] + ']'
-            curOutputField['GROUP'] = 'TAVG_D_' + outputFields[field]['GROUP']
-            curOutputField['TYPE'] = 'TAVG_D_COEFFICIENT'
-            curOutputField['DESCRIPTION'] = 'weighted time average derivative value'
+            curOutputField["HEADER"] = "dtavg[" + outputFields[field]["HEADER"] + "]"
+            curOutputField["GROUP"] = "TAVG_D_" + outputFields[field]["GROUP"]
+            curOutputField["TYPE"] = "TAVG_D_COEFFICIENT"
+            curOutputField["DESCRIPTION"] = "weighted time average derivative value"
             addedOutputFields[name] = curOutputField
-
 
     outputFields.update(addedOutputFields)
-    f = open(os.path.join(su2_home, 'SU2_PY/SU2/io/historyMap.py'), 'w')
-    f.write('history_header_map = ')
+    f = open(os.path.join(su2_home, "SU2_PY/SU2/io/historyMap.py"), "w")
+    f.write("history_header_map = ")
     pprint.pprint(outputFields, f)
     f.close()
+
 
 parse_output(fileList)

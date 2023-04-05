@@ -47,7 +47,7 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 
 }
 
-void CParaviewVTMFileWriter::Write_Data(string val_filename){
+void CParaviewVTMFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -97,7 +97,7 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
   /*--- Create an XML writer and dump data into file ---*/
 
   CParaviewXMLFileWriter XMLWriter(dataSorter);
-  XMLWriter.Write_Data(fullFilename);
+  XMLWriter.WriteData(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
 
@@ -107,7 +107,7 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
 
   nWrittenDatasets++;
 
-  accumulatedBandwidth += XMLWriter.Get_Bandwidth();
+  accumulatedBandwidth += XMLWriter.GetBandwidth();
 
   bandwidth = accumulatedBandwidth/nWrittenDatasets;
 }

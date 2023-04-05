@@ -48,7 +48,7 @@ CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
 
 }
 
-void CParaviewBinaryFileWriter::Write_Data(string val_filename){
+void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -146,7 +146,7 @@ void CParaviewBinaryFileWriter::Write_Data(string val_filename){
     for (iElem = 0; iElem < nElem; iElem++) {
       connBuf[iStorage+0] = nPoints;
       for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode+1] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
+        connBuf[iStorage+iNode+1] = int(dataSorter->GetElemConnectivity(type, iElem, iNode)-1);
       }
       iStorage += nPoints + 1;
     }

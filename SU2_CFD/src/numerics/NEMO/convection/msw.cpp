@@ -55,7 +55,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     P_Tensor[iVar]    = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
   }
@@ -64,7 +64,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   Flux   = new su2double[nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
@@ -91,14 +91,14 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
   delete [] dPdUst_i;
   delete [] dPdUst_j;
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
   delete [] Flux;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
   }
@@ -115,17 +115,17 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   /*--- Calculate supporting geometry parameters ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0ul; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Initialize flux & Jacobian vectors ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Fc_i[iVar] = 0.0;
     Fc_j[iVar] = 0.0;
   }
   if (implicit) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      for (auto jVar = 0ul; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
       }
@@ -133,11 +133,11 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Load variables from nodes i & j ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0ul; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[VEL_INDEX+iDim];
     Velocity_j[iDim] = V_j[VEL_INDEX+iDim];
   }
@@ -149,21 +149,21 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
 
   /*--- Calculate the state weighting function ---*/
-  su2double dp = fabs(Pressure_j-Pressure_i) / min(Pressure_j, Pressure_i);
-  su2double w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
-  su2double onemw = 1.0 - w;
+  const su2double dp = fabs(Pressure_j-Pressure_i) / min(Pressure_j, Pressure_i);
+  const su2double w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
+  const su2double onemw = 1.0 - w;
 
   /*--- Calculate weighted state vector (*) for i & j ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Ust_i[iVar] = onemw*U_i[iVar] + w*U_j[iVar];
     Ust_j[iVar] = onemw*U_j[iVar] + w*U_i[iVar];
   }
-  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nPrimVar; iVar++) {
     Vst_i[iVar] = onemw*V_i[iVar] + w*V_j[iVar];
     Vst_j[iVar] = onemw*V_j[iVar] + w*V_i[iVar];
   }
-  su2double ProjVelst_i = onemw*ProjVelocity_i + w*ProjVelocity_j;
-  su2double ProjVelst_j = onemw*ProjVelocity_j + w*ProjVelocity_i;
+  const su2double ProjVelst_i = onemw*ProjVelocity_i + w*ProjVelocity_j;
+  const su2double ProjVelst_j = onemw*ProjVelocity_j + w*ProjVelocity_i;
 
   const auto& eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
   const auto& eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
@@ -172,7 +172,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
-  for (unsigned short iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+  for (auto iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda_i[iVar]          = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
                                                       epsilon*epsilon));
   Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
@@ -194,12 +194,12 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Projected flux (f+) at i ---*/
   su2double Proj_ModJac_Tensor_i;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_i = 0.0;
 
       /*--- Compute Proj_ModJac_Tensor = P x Lambda+ x inverse P ---*/
-      for (unsigned short kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0ul; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
       if (implicit)
@@ -208,7 +208,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Flow eigenvalues at j (Lambda-) ---*/
-  for (unsigned short iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+  for (auto iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
                                                       epsilon*epsilon));
   Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
@@ -229,12 +229,12 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Projected flux (f-) ---*/
   su2double Proj_ModJac_Tensor_j;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_j = 0.0;
 
       /*--- Compute Proj_ModJac_Tensor = P x Lambda- x inverse P ---*/
-      for (unsigned short kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0ul; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
       Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
       if (implicit)
@@ -243,7 +243,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Flux splitting ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) {
     Flux[iVar] = Fc_i[iVar]+Fc_j[iVar];
   }
 

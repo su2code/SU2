@@ -211,7 +211,7 @@ protected:
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction();
+  void SetAdjObjFunction();
 
   /*!
    * \brief Summary of all routines to evaluate the adjoints in iZone.
@@ -236,31 +236,31 @@ protected:
    * \brief Add Solution vector to External.
    * \param[in] iZone - Zone index.
    */
-  void Add_Solution_To_External(unsigned short iZone);
+  void AddSolutionToExternal(unsigned short iZone);
 
   /*!
    * \brief Puts dual time derivative vector to External.
    */
-  void Set_External_To_DualTimeDer();
+  void SetExternalToDualTimeDer();
 
   /*!
    * \brief Add External_Old vector to Solution.
    * \param[in] iZone - Zone index.
    */
-  void Add_External_To_Solution(unsigned short iZone);
+  void AddExternalToSolution(unsigned short iZone);
 
   /*!
    * \brief Puts Solution into SolutionOld.
    * \param[in] iZone - Zone index.
    */
-  void Set_SolutionOld_To_Solution(unsigned short iZone);
+  void SetSolutionOldToSolution(unsigned short iZone);
 
   /*!
    * \brief Extract contribution of iZone to jZone with BGS relaxation.
    * \param[in] iZone - Source zone (the one that was initialized).
    * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
    */
-  void Update_Cross_Term(unsigned short iZone, unsigned short jZone);
+  void UpdateCrossTerm(unsigned short iZone, unsigned short jZone);
 
   /*!
    * \brief Compute BGS residuals.

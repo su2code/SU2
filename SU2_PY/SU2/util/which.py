@@ -28,14 +28,15 @@
 
 import os
 
-def which(program):
-    """ which(program_name)
-        finds the location of the program_name if it is on PATH
-        returns None if program cannot be found
-        does not test for .exe extension on windows
 
-        original source:
-        http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    """which(program_name)
+    finds the location of the program_name if it is on PATH
+    returns None if program cannot be found
+    does not test for .exe extension on windows
+
+    original source:
+    http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
     """
 
     fpath, fname = os.path.split(program)
@@ -45,15 +46,13 @@ def which(program):
     else:
         for path in os.environ["PATH"].split(os.pathsep):
             path = path.strip('"')
-            for ext in ['','.exe','.bat']:
-                exe_file = os.path.join(path, (program+ext))
+            for ext in ["", ".exe", ".bat"]:
+                exe_file = os.path.join(path, (program + ext))
                 if is_exe(exe_file):
                     return exe_file
 
     return None
 
+
 def is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-
-

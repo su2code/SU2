@@ -92,13 +92,11 @@ public:
   /*!
    * \brief Run a Block Gauss-Seidel iteration in all physical zones.
    */
-  void Run_GaussSeidel() override;
-
+  void RunGaussSeidel() override;
   /*!
    * \brief Run a Block-Jacobi iteration in all physical zones.
    */
-  void Run_Jacobi() override;
-
+  void RunJacobi() override;
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
@@ -128,7 +126,7 @@ public:
    * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
    * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
    */
-  bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+  bool TransferData(unsigned short donorZone, unsigned short targetZone);
 
   /*!
    * \brief Check if simulation converged and return appropriate boolean.

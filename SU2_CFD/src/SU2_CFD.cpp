@@ -56,9 +56,7 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv)
 
-  /*--- OpenMP initialization ---*/
-
-  omp_initialize();
+  /*--- OpenMP setup ---*/
 
   omp_set_num_threads(num_threads);
 
@@ -72,6 +70,9 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
+
+  /*--- Further initializations are placed in the constructor of CDriverBase, to ensure that they are also seen by the
+   python wrapper. */
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
@@ -155,9 +156,9 @@ int main(int argc, char *argv[]) {
 
   driver->StartSolver();
 
-  /*--- Postprocess all the containers, close history file, exit SU2. ---*/
+  /*--- Finalize solver, delete all the containers, close history file, exit SU2. ---*/
 
-  driver->Postprocessing();
+  driver->Finalize();
 
   delete driver;
 
@@ -166,10 +167,8 @@ int main(int argc, char *argv[]) {
   libxsmm_finalize();
 #endif
 
-  /*--- Finalize AD, if necessary. ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().finalize();
-#endif
+  /*--- Finalize AD. ---*/
+  AD::Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
