@@ -437,7 +437,7 @@ protected:
    */
   void SetFixedCLScreenOutput(const CConfig *config);
 
-  /*!
+    /*!
    * \brief Initialises turboperfomance variables
    * \param[in] config - Definition of the particular problem or zone
    */

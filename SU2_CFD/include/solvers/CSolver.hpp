@@ -35,6 +35,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 #include <iostream>
 #include <set>
 #include <stdlib.h>
@@ -56,6 +57,7 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
+#include "../objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 #ifdef HAVE_LIBROM
 #include "librom.h"
@@ -132,6 +134,8 @@ protected:
 
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+
+  vector<su2double> TurboPrimitive;
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -3804,6 +3808,14 @@ public:
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
 
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+   inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
+
   /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3836,11 +3848,25 @@ public:
   inline virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
 
   /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  // inline virtual void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Density on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Mass Flow Rate on the surface <i>val_marker</i>.
+   */
+  inline virtual su2double GetAverageMassFlowRate(unsigned short valMarker) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -3952,6 +3978,12 @@ public:
   inline virtual void SetExtAverageOmega(unsigned short valMarker,
                                          unsigned short valSpan,
                                          su2double valOmega) { }
+
+  /*!
+   * \brief Getter for TurbomachineryPerformance
+   * \return TurbomachineryPerformance container
+   */
+  inline virtual shared_ptr<CTurbomachineryPerformance> GetTurbomachineryPerformance() const {return 0;}
 
   /*!
    * \brief A virtual member.
@@ -4318,6 +4350,13 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {return TurboPrimitive;}
 
   /*!
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.

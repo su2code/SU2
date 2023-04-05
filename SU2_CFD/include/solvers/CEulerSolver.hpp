@@ -108,6 +108,8 @@ protected:
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
 
+  std::shared_ptr<CTurbomachineryPerformance> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*--- Turbomachinery Solver Variables ---*/
@@ -131,6 +133,7 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
+  vector<su2double> AverageMassFlowRate;       /*!< \brief Integral value of mass flow rate computed over each boundary */
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
@@ -1027,6 +1030,35 @@ public:
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
 
   /*!
+   * \brief Initilize turbomachinery performance shared_ptr.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitTurboPerformance(CGeometry *geometry, CConfig *config) final;
+
+    /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {
+    TurboPrimitive.clear();
+    if (INLET) {
+      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]); TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
+      if (nDim==3)
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
+    }
+    else {
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
+    }
+    return TurboPrimitive;
+  }
+
+  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1079,6 +1111,13 @@ public:
   void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) final;
 
   /*!
+   * \brief It computes the turbomachinery performance
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  // void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) final;
+
+  /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
    * \param[in] cartesianVelocity - cartesian components of velocity vector.
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
@@ -1088,9 +1127,9 @@ public:
                                    const su2double *turboNormal,
                                    su2double *turboVelocity,
                                    unsigned short marker_flag,
-                                   unsigned short kind_turb){
+                                   TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
       turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
       turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
       turboVelocity[0] = cartesianVelocity[2];
@@ -1117,9 +1156,9 @@ public:
                                   const su2double *turboNormal,
                                   su2double *cartesianVelocity,
                                   unsigned short marker_flag,
-                                  unsigned short kind_turb){
+                                  TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
       cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
       cartesianVelocity[2] = turboVelocity[0];
@@ -1145,6 +1184,15 @@ public:
    */
   inline su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const final {
     return AverageDensity[valMarker][valSpan];
+  }
+
+  /*!
+   * \brief Provide the integral mass flow rate at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the mass flow rate on the surface <i>val_marker</i>.
+   */
+  inline su2double GetAverageMassFlowRate(unsigned short valMarker) const final {
+    return AverageMassFlowRate[valMarker];
   }
 
   /*!
@@ -1290,6 +1338,12 @@ public:
                                  su2double valOmega) final {
     ExtAverageOmega[valMarker][valSpan] = valOmega;
   }
+
+  /*!
+   * \brief Getter for TurbomachineryPerformance
+   * \return TurbomachineryPerformance container
+   */
+  inline shared_ptr<CTurbomachineryPerformance> GetTurbomachineryPerformance() const {return TurbomachineryPerformance;}
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.
