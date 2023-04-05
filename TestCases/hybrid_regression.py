@@ -330,7 +330,6 @@ def main():
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
     harmonic_balance.test_vals = [-1.589740, 3.922578, 0.006703, 0.099632]
-    harmonic_balance.new_output = False
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
@@ -339,7 +338,6 @@ def main():
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
     hb_rans_preconditioning.test_vals = [-1.902111, -5.949288, 0.007768, 0.128060]
-    hb_rans_preconditioning.new_output = False
     test_list.append(hb_rans_preconditioning)
 
     #############################
@@ -352,7 +350,6 @@ def main():
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
     inc_euler_naca0012.test_vals = [-4.858287, -3.810487, 0.491850, 0.007002]
-    inc_euler_naca0012.new_output = True
     test_list.append(inc_euler_naca0012)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -362,7 +359,6 @@ def main():
     inc_nozzle.test_iter = 20
     inc_nozzle.test_vals         = [-5.971249, -4.910844, -0.000196, 0.121635]
     inc_nozzle.test_vals_aarch64 = [-5.971248, -4.910844, -0.000196, 0.121635]
-    inc_nozzle.new_output = True
     test_list.append(inc_nozzle)
 
     #############################
@@ -375,7 +371,6 @@ def main():
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
     inc_lam_cylinder.test_vals = [-4.004277, -3.227956, 0.003851, 7.626583]
-    inc_lam_cylinder.new_output  = True
     test_list.append(inc_lam_cylinder)
 
     # Buoyancy-driven cavity
@@ -384,7 +379,6 @@ def main():
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
     inc_buoyancy.test_vals = [-4.432484, 0.507522, 0.000000, 0.000000]
-    inc_buoyancy.new_output  = True
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -394,7 +388,6 @@ def main():
     inc_poly_cylinder.test_iter = 20
     inc_poly_cylinder.test_vals         = [-7.851512, -2.093420, 0.029974, 1.921595, -175.300000]
     inc_poly_cylinder.test_vals_aarch64 = [-7.851510, -2.093419, 0.029974, 1.921595, -175.300000]
-    inc_poly_cylinder.new_output  = True
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -416,7 +409,6 @@ def main():
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
     inc_turb_naca0012.test_vals = [-4.788405, -11.040493, 0.000008, 0.309506]
-    inc_turb_naca0012.new_output  = True
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -548,7 +540,6 @@ def main():
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
     Jones_tc_restart.test_vals = [-10.691521, -7.643723, 85.827890, 2.277151]
-    Jones_tc_restart.new_output = False
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -558,7 +549,6 @@ def main():
     axial_stage2D.test_iter = 20
     axial_stage2D.test_vals         = [-1.937003, 5.338805, 73.357170, 0.915734]
     axial_stage2D.test_vals_aarch64 = [-1.933115, 5.365583, 73.354510, 0.925902]
-    axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -568,7 +558,6 @@ def main():
     transonic_stator_restart.test_iter = 20
     transonic_stator_restart.test_vals         = [-6.796363, -0.743837, 5.003453, 0.002946]
     transonic_stator_restart.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
-    transonic_stator_restart.new_output = False
     test_list.append(transonic_stator_restart)
 
     ######################################
