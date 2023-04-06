@@ -6603,6 +6603,18 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff << ".\n";
           cout << "The reference element size is: " << RefElemLength << ". " << endl;
           break;
+        case LIMITER::NISHIKAWAR3:
+          cout << "NISHIKAWAR3 slope-limiting method, with constant: " << Venkat_LimiterCoeff << ".\n";
+          cout << "The reference element size is: " << RefElemLength << ". " << endl;
+          break;
+        case LIMITER::NISHIKAWAR4:
+          cout << "NISHIKAWAR4 slope-limiting method, with constant: " << Venkat_LimiterCoeff << ".\n";
+          cout << "The reference element size is: " << RefElemLength << ". " << endl;
+          break;
+        case LIMITER::NISHIKAWAR5:
+          cout << "NISHIKAWAR5 slope-limiting method, with constant: " << Venkat_LimiterCoeff << ".\n";
+          cout << "The reference element size is: " << RefElemLength << ". " << endl;
+          break;
         case LIMITER::VENKATAKRISHNAN_WANG:
           cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff << "." << endl;
           break;
