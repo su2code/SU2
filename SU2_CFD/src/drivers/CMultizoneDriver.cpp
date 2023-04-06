@@ -636,6 +636,7 @@ void CMultizoneDriver::SetTurboPerformance() {
                                                                 solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
                                                                 donorZone);
   }
+  output_container[ZONE_0]->ComputeTurboPerformance(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]);
 }
 
 bool CMultizoneDriver::Monitor(unsigned long TimeIter){

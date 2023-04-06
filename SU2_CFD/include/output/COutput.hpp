@@ -320,6 +320,62 @@ protected:
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
+  /*--- Turbomachinery Performance Variable ---*/
+  su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
+  bool turbo;
+  unsigned short nSpanWiseSections, nMarkerTurboPerf;
+
+  su2double **TotalStaticEfficiency,
+        **TotalTotalEfficiency,
+        **KineticEnergyLoss,
+        **TRadius,
+        **TotalPressureLoss,
+        **MassFlowIn,
+        **MassFlowOut,
+        **FlowAngleIn,
+        **FlowAngleIn_BC,
+        **FlowAngleOut,
+        **EulerianWork,
+        **TotalEnthalpyIn,
+        **TotalEnthalpyIn_BC,
+        **EntropyIn,
+        **EntropyOut,
+        **EntropyIn_BC,
+        **PressureRatio,
+        **TotalTemperatureIn,
+        **EnthalpyOut,
+        ***MachIn,
+        ***MachOut,
+        **VelocityOutIs,
+        **DensityIn,
+        **PressureIn,
+        ***TurboVelocityIn,
+        **DensityOut,
+        **PressureOut,
+        ***TurboVelocityOut,
+        **EnthalpyOutIs,
+        **EntropyGen,
+        **AbsFlowAngleIn,
+        **TotalEnthalpyOut,
+        **RothalpyIn,
+        **RothalpyOut,
+        **TotalEnthalpyOutIs,
+        **AbsFlowAngleOut,
+        **PressureOut_BC,
+        **TemperatureIn,
+        **TemperatureOut,
+        **TotalPressureIn,
+        **TotalPressureOut,
+        **TotalTemperatureOut,
+        **EnthalpyIn,
+        **TurbIntensityIn,
+        **Turb2LamViscRatioIn,
+        **TurbIntensityOut,
+        **Turb2LamViscRatioOut,
+        **NuFactorIn,
+        **NuFactorOut;
+    
+  /*--- End of turbomachinery performance ---*/
 public:
 
   /*----------------------------- Public member functions ----------------------------*/
@@ -585,6 +641,35 @@ public:
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
   void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
+
+  /*
+   * \brief Initialize turboperformance variables
+   * \param[in] config - Definition of the particular problem
+  */
+  void InitTurboPerformance(const CConfig *config);
+
+  /*!
+   * \brief Compute turboperformance variables
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem
+   * \param[in] solver - The container holding all solution data
+   */
+  void ComputeTurboPerformance(CConfig *config, CGeometry *geometry, CSolver *solver);
+
+  /*!
+   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   */
+  void SetTurboPerformance_Output(CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
+
+  void SetTurboMultiZonePerformance_Output(CConfig *config);
+
+  void WriteTurboPerfConvHistory(CConfig *config);
 
 protected:
 
