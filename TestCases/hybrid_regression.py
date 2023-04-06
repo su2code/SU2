@@ -539,7 +539,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.986563, -3.096834, -14.849532, -9.102914, -11.787851, -6.266208, 7.3266e+04, 7.3266e+04]
+    Jones_tc_restart.test_vals = [-6.986581, -3.096834, -14.849548, -9.102930, -11.787851, -6.266207, 73266, 73266]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -547,8 +547,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [1.047323, 1.661341, -2.913940, 2.588179, -2.486770, 3.050954, 1.0638e+05, 1.0638e+05]
-    axial_stage2D.test_vals_aarch64 = [1.047323, 1.661341, -2.913940, 2.588179, -2.486770, 3.050954, 1.0638e+05, 1.0638e+05]
+    axial_stage2D.test_vals         = [1.047244, 1.661126, -2.914064, 2.588061, -2.486924, 3.050785, 106380, 106380]
+    axial_stage2D.test_vals_aarch64 = [1.047244, 1.661126, -2.914064, 2.588061, -2.486924, 3.050785, 106380, 106380]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -556,8 +556,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-7.534574, -6.838075, -6.618228, -1.567726, -6.767343, -0.738638, -4.7165e+05]
-    transonic_stator_restart.test_vals_aarch64 = [-7.534574, -6.838075, -6.618228, -1.567726, -6.767343, -0.738638, -4.7165e+05]
+    transonic_stator_restart.test_vals         = [-7.542642, -6.840866, -6.669194, -1.578593, -6.793009, -0.742574, -471650]
+    transonic_stator_restart.test_vals_aarch64 = [-7.542642, -6.840866, -6.669194, -1.578593, -6.793009, -0.742574, -471650]
     test_list.append(transonic_stator_restart)
 
     ######################################

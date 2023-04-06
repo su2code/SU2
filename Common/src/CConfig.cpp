@@ -2984,52 +2984,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
-          if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
-            newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
-                             "and it also applies to discrete adjoint problems.\n\n");
-          else if (!option_name.compare("WRT_MESH_QUALITY"))
-            newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
-          else if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
-            newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
-          else if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
-            newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
-          else if (!option_name.compare("WRT_BINARY_RESTART"))
-            newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
-          else if (!option_name.compare("WRT_RESIDUALS"))
-            newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
-          else if (!option_name.compare("WRT_LIMITERS"))
-            newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
-          else if (!option_name.compare("WRT_CON_FREQ"))
-            newString.append("WRT_CON_FREQ is deprecated. Use SCREEN_WRT_FREQ_INNER or SCREEN_WRT_FREQ_OUTER for multizone cases instead.\n\n");
-          else if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
-            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
-          else if (!option_name.compare("WRT_SRF_SOL"))
-            newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
-          else if (!option_name.compare("WRT_CSV_SOL"))
-            newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
-          else if (!option_name.compare("WRT_SOL_FREQ"))
-            newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
-          else if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
-            newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
-          else if (!option_name.compare("UNST_RESTART_ITER"))
-            newString.append("UNST_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
-          else if (!option_name.compare("DYN_RESTART_ITER"))
-            newString.append("DYN_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
-          else if (!option_name.compare("CONV_CRITERIA"))
-            newString.append("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
-                             "RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
-          else if (!option_name.compare("THERMAL_DIFFUSIVITY"))
-            newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
-          else if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
-            newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set THERMAL_CONDUCTIVITY_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
-          else if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
-            newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use THERMAL_CONDUCTIVITY_CONSTANT instead.\n\n");
-          else if (!option_name.compare("SOLID_DENSITY"))
-            newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
-          else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
-            newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
-          else if (!option_name.compare("SA_QCR"))
-            newString.append("SA_QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
+          if (!option_name.compare("SINGLEZONE_DRIVER"))
+            newString.append("Option SINGLEZONE_DRIVER is deprecated, it does not have a replacement.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3295,8 +3251,6 @@ void CConfig::SetnZone(){
     if (nMarker_ZoneInterface % 2 != 0){
       SU2_MPI::Error("Number of markers in MARKER_ZONE_INTERFACE must be a multiple of 2", CURRENT_FUNCTION);
     }
-
-    SinglezoneDriver  = NO;
 
     if (Multizone_Mesh){
 
