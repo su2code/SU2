@@ -82,6 +82,21 @@ if (geometry.GetnDim() == 2) {\
       INSTANTIATE(LIMITER::VENKATAKRISHNAN);
       break;
     }
+    case LIMITER::NISHIKAWAR3:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWAR3);
+      break;
+    }
+    case LIMITER::NISHIKAWAR4:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWAR4);
+      break;
+    }
+    case LIMITER::NISHIKAWAR5:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWAR5);
+      break;
+    }
     case LIMITER::VENKATAKRISHNAN_WANG:
     {
       INSTANTIATE(LIMITER::VENKATAKRISHNAN_WANG);
