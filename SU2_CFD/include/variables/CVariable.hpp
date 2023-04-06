@@ -101,11 +101,6 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
-  bool DataDrivenFluid = false; /*!< \brief Usage of data-driven fluid model. DatasetExtrapolation and FluidEntropy will not be sized if disabled. */
-  su2vector<unsigned short> DatasetExtrapolation; /*!< \brief Stores instances of dataset bounds violation when using datadriven fluid models. */
-  su2vector<unsigned long> NIterNewtonsolver;    /*!< \brief Stores number of Newton solver iterations when using datadriven fluid models. */
-  VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the datadriven fluid model. */
-
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -2320,43 +2315,41 @@ public:
    * \param[in] iPoint - Node index
    * \param[in] entropy - fluid entropy value.
    */
-  void SetEntropy(unsigned long iPoint, su2double entropy) { FluidEntropy[iPoint] = entropy; };
+  inline virtual void SetEntropy(unsigned long iPoint, su2double entropy) { };
 
   /*!
    * \brief Get fluid entropy
    * \param[in] iPoint - Node index
    * \return Entropy - Fluid entropy value
    */
-  su2double GetEntropy(unsigned long iPoint) const { return FluidEntropy[iPoint]; }
+  inline virtual su2double GetEntropy(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief Set dataset extrapolation instance
    * \param[in] iPoint - Node index
    * \param[in] extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
    */
-  void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) {
-    DatasetExtrapolation[iPoint] = extrapolation;
-  };
+  inline virtual void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) { };
 
   /*!
    * \brief Get dataset extrapolation instance
    * \param[in] iPoint - Node index
    * \return extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
    */
-  unsigned short GetDataExtrapolation(unsigned long iPoint) const { return DatasetExtrapolation[iPoint]; }
+  inline virtual unsigned short GetDataExtrapolation(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief Set the number of iterations required by a Newton solver used by the fluid model.
    * \param[in] iPoint - Node index
    * \param[in] nIter - Number of iterations evaluated by the Newton solver
    */
-  void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) { NIterNewtonsolver[iPoint] = nIter; }
+  inline virtual void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) { }
 
   /*!
    * \brief Get the number of iterations required by a Newton solver used by the fluid model.
    * \param[in] iPoint - Node index
    * \return Number of iterations evaluated by the Newton solver
    */
-  unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return NIterNewtonsolver[iPoint]; }
+  inline virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return 0; }
 
 };

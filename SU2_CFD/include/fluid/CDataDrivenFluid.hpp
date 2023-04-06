@@ -42,48 +42,47 @@
  * fluid dynamic state definition.
  * \author: E.C.Bunschoten.
  */
-class CDataDrivenFluid : public CFluidModel {
+class CDataDrivenFluid final : public CFluidModel {
  protected:
-  int rank;
-  unsigned short Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;  // Interpolation method for data set evaluation
+  int rank{MASTER_NODE}; /*!< \brief MPI Rank. */
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;  /*!< \brief Interpolation method for data set evaluation. */
 
-  size_t idx_rho,  // Interpolator index for density input
-      idx_e;       // Interpolator index for energy input
+  size_t idx_rho,  /*!< \brief Interpolator index for density input. */
+      idx_e;       /*!< \brief Interpolator index for energy input. */
 
-  su2double Newton_Relaxation,  // Relaxation factor for Newton solvers.
-      rho_start,                // Initial value for the density in Newton solver processes.
-      e_start,                  // Initial value for the energy in Newton solver processes.
-      Newton_Tolerance;         // Normalized tolerance for Newton solvers.
+  su2double Newton_Relaxation,  /*!< \brief Relaxation factor for Newton solvers. */
+      rho_start,                /*!< \brief Initial value for the density in Newton solver processes. */
+      e_start,                  /*!< \brief Initial value for the energy in Newton solver processes. */
+      Newton_Tolerance;         /*!< \brief Normalized tolerance for Newton solvers. */
 
-  unsigned long MaxIter_Newton;  // Maximum number of iterations for Newton solvers
+  unsigned long MaxIter_Newton;  /*!< \brief Maximum number of iterations for Newton solvers. */
 
-  su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density */
-      dsdrho_e,       /*!< \brief Entropy derivative w.r.t. static energy */
-      d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy */
-      d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy */
-      d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density */
+  su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
+      dsdrho_e,       /*!< \brief Entropy derivative w.r.t. static energy. */
+      d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy. */
+      d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy. */
+      d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density. */
 
   vector<string>
-      input_names_rhoe,   // Data-driven method input variable names of the independent variables (density, energy).
-      output_names_rhoe;  // Output variable names listed in the data-driven method input file name.
+      input_names_rhoe,   /*!< \brief Data-driven method input variable names of the independent variables (density, energy). */
+      output_names_rhoe;  /*!< \brief Output variable names listed in the data-driven method input file name. */
 
-  vector<su2double*> outputs_rhoe;  // Pointers to output variables.
+  vector<su2double*> outputs_rhoe;  /*!< \brief Pointers to output variables. */
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
-  MLPToolbox::CLookUp_ANN* lookup_mlp;  // multi-layer perceptron collection.
-  MLPToolbox::CIOMap* iomap_rhoe;       // input-output map.
+  MLPToolbox::CLookUp_ANN* lookup_mlp;  /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap* iomap_rhoe;       /*!< \brief Input-output map. */
 #endif
-  vector<su2double> MLP_inputs;  // inputs for the multi-layer perceptron look-up operation.
+  vector<su2double> MLP_inputs;  /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
-  /*--- Class variables for the look-up table method ---*/
-  CLookUpTable* lookup_table;
+  CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
 
-  unsigned long outside_dataset,  // Density-energy combination lies outside data set.
-      nIter_Newton;               // Number of Newton solver iterations.
+  unsigned long outside_dataset,  /*!< \brief Density-energy combination lies outside data set. */
+      nIter_Newton;               /*!< \brief Number of Newton solver iterations. */
 
   /*!
-   * \brief Map dataset variables to specific look-up operations
+   * \brief Map dataset variables to specific look-up operations.
    */
   void MapInputs_to_Outputs();
 
@@ -114,71 +113,71 @@ class CDataDrivenFluid : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CDataDrivenFluid(const CConfig* config);
+  CDataDrivenFluid(const CConfig* config, bool display=true);
 
   ~CDataDrivenFluid();
   /*!
-   * \brief Set the Dimensionless State using Density and Internal Energy
+   * \brief Set the Dimensionless State using Density and Internal Energy.
    * \param[in] rho - first thermodynamic variable (density).
    * \param[in] e - second thermodynamic variable (static energy).
    */
   void SetTDState_rhoe(su2double rho, su2double e) override;
 
   /*!
-   * \brief Set the Dimensionless State using Pressure  and Temperature
+   * \brief Set the Dimensionless State using Pressure  and Temperature.
    * \param[in] P - first thermodynamic variable (pressure).
    * \param[in] T - second thermodynamic variable (temperature).
    */
   void SetTDState_PT(su2double P, su2double T) override;
 
   /*!
-   * \brief Set the Dimensionless State using Pressure and Density
+   * \brief Set the Dimensionless State using Pressure and Density.
    * \param[in] P - first thermodynamic variable (pressure).
    * \param[in] rho - second thermodynamic variable (density).
    */
   void SetTDState_Prho(su2double P, su2double rho) override;
 
   /*!
-   * \brief Set the Dimensionless Internal Energy using Pressure and Density
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density.
    * \param[in] P - first thermodynamic variable (pressure).
    * \param[in] rho - second thermodynamic variable (density).
    */
   void SetEnergy_Prho(su2double P, su2double rho) override;
 
   /*!
-   * \brief Set the Dimensionless Internal Energy using Pressure and Density
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density.
    * \param[in] rho - second thermodynamic variable (density).
    */
   void SetTDState_rhoT(su2double rho, su2double T) override;
 
   /*!
-   * \brief Set the Dimensionless State using Enthalpy and Entropy
+   * \brief Set the Dimensionless State using Enthalpy and Entropy.
    * \param[in] h - first thermodynamic variable (h).
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_hs(su2double h, su2double s) override;
 
   /*!
-   * \brief Set the Dimensionless State using Pressure and Entropy
+   * \brief Set the Dimensionless State using Pressure and Entropy.
    * \param[in] P - first thermodynamic variable (P).
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_Ps(su2double P, su2double s) override;
 
   /*!
-   * \brief Set the initial guess for the density in Newton solvers
+   * \brief Set the initial guess for the density in Newton solvers.
    * \param[in] rho - Initial value for density.
    */
   void SetInitialDensity(su2double rho) override { rho_start = rho; }
 
   /*!
-   * \brief Set the initial guess for the static energy in Newton solvers
+   * \brief Set the initial guess for the static energy in Newton solvers.
    * \param[in] e - Initial value for static energy.
    */
   void SetInitialEnergy(su2double e) override { e_start = e; }
 
   /*!
-   * \brief Get fluid model extrapolation instance
+   * \brief Get fluid model extrapolation instance.
    * \return Query point lies outside fluid model data range.
    */
   unsigned long GetExtrapolation() override { return outside_dataset; }

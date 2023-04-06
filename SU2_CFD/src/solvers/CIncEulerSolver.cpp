@@ -500,7 +500,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case DATADRIVEN_FLUID:
-        fluidModel = new CDataDrivenFluid(config);
+        fluidModel = new CDataDrivenFluid(config, false);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 

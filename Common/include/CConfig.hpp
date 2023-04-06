@@ -524,8 +524,8 @@ private:
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_DataDriven_Method,       /*!< \brief Method used for datset regression in datadriven fluid models. */
   n_Datadriven_files;
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
 
   su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
             DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in datadriven fluid models. */
@@ -3790,14 +3790,12 @@ public:
   /*!
    * \brief Datadriven method for EoS evaluation.
    */
-  unsigned short GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
 
   /*!
    * \brief Get name of the input file for the data-driven fluid model interpolation method.
    * \return Name of the input file for the interpolation method.
    */
-  string GetDataDriven_Filename(unsigned short i_file=0) const { return DataDriven_Method_FileNames[i_file]; }
-
   string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
 
   /*!

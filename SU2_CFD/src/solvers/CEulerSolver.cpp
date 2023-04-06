@@ -791,7 +791,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
-  bool redefine_fluidmodel = true;
 
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -858,7 +857,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case DATADRIVEN_FLUID:
 
       auxFluidModel = new CDataDrivenFluid(config);
-      redefine_fluidmodel = false;
 
       break;
     case COOLPROP:
@@ -1058,7 +1056,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
-  if(redefine_fluidmodel) delete auxFluidModel;
+  delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1094,7 +1092,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
 
       case DATADRIVEN_FLUID:
-        FluidModel[thread] = auxFluidModel;
+        FluidModel[thread] = new CDataDrivenFluid(config, false);
         break;
 
       case COOLPROP:
@@ -6150,10 +6148,12 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
-      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-      su2double relax_Newton = config->GetRelaxation_DataDriven();
-      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
+        su2double relax_Newton = config->GetRelaxation_DataDriven();
+        GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+        GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      }
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 

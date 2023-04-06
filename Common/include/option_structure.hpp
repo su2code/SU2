@@ -595,16 +595,16 @@ MakePair("ONESPECIES", ONESPECIES)
 };
 
 /*!
-* \brief types of interpolation methods for data-driven fluid models.
+* \brief Types of interpolation methods for data-driven fluid models.
 */
-enum ENUM_DATADRIVEN_METHOD {
+enum class ENUM_DATADRIVEN_METHOD {
   LUT = 0,
   MLP = 1
 };
 
 static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
-  MakePair("LUT", LUT)
-  MakePair("MLP", MLP)
+  MakePair("LUT", ENUM_DATADRIVEN_METHOD::LUT)
+  MakePair("MLP", ENUM_DATADRIVEN_METHOD::MLP)
 };
 
 /*!
