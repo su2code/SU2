@@ -94,7 +94,7 @@ struct LimiterHelpers
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
         Type y = Dp*Dp*Dp + epsp;
-        Type S3 = 4.0*Dm*Dm;	    
+        Type S3 = 4.0*Dm*Dm;
         return ((y + Dp*S3) / (y + Dm*(delta*delta+S3)));}
   }
 
@@ -104,7 +104,7 @@ struct LimiterHelpers
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
         Type y = Dp*Dp*Dp*Dp + epsp;
-        Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));	    
+        Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));
         return ((y + Dp*S4) / (y + Dm*(delta*delta*delta+S4)));}
   }
 
