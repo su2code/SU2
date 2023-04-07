@@ -200,7 +200,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR3>
   su2double epsp;
 
   /*!
-   * \brief Store the reference lenght based eps^2 parameter,
+   * \brief Store the reference lenght based eps^3 parameter,
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
@@ -239,7 +239,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR4>
   su2double epsp;
 
   /*!
-   * \brief Store the reference lenght based eps^2 parameter,
+   * \brief Store the reference lenght based eps^4 parameter,
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
@@ -278,7 +278,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR5>
   su2double epsp;
 
   /*!
-   * \brief Store the reference lenght based eps^2 parameter,
+   * \brief Store the reference lenght based eps^5 parameter,
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
