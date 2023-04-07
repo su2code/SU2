@@ -93,8 +93,8 @@ struct LimiterHelpers
     Type Dp = fabs(delta); Type Dm = fabs(proj);
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
-    Type y = Dp*Dp*Dp + epsp;
-    Type S3 = 4.0*Dm*Dm;	    
+        Type y = Dp*Dp*Dp + epsp;
+        Type S3 = 4.0*Dm*Dm;	    
         return ((y + Dp*S3) / (y + Dm*(delta*delta+S3)));}
   }
 
