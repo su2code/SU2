@@ -88,34 +88,34 @@ struct LimiterHelpers
     return max(0.0, min(factor, 1.0));
   }
 
-  FORCEINLINE static Type R3Function(const Type& proj, const Type& delta, const Type& epsp)
+  FORCEINLINE static Type r3Function(const Type& proj, const Type& delta, const Type& epsp)
   {
-    Type Dp = fabs(delta); Type Dm = fabs(proj);
-    if(Dp>(2.0*Dm)) {return 1.0;}
-    else {
-      Type y = Dp*Dp*Dp + epsp;
-      Type S3 = 4.0*Dm*Dm;
-      return ((y + Dp*S3) / (y + Dm*(delta*delta+S3)));}
+    Type Dp = fabs(delta);
+    Type Dm = fabs(proj);
+    if(Dp>(2.0*Dm)) return 1.0;
+    Type y = pow(Dp, 3) + epsp;
+    Type S3 = 4.0*Dm*Dm;
+    return (y + Dp*S3) / (y + Dm*(delta*delta+S3));
   }
 
-  FORCEINLINE static Type R4Function(const Type& proj, const Type& delta, const Type& epsp)
+  FORCEINLINE static Type r4Function(const Type& proj, const Type& delta, const Type& epsp)
   {
-    Type Dp = fabs(delta); Type Dm = fabs(proj);
-    if(Dp>(2.0*Dm)) {return 1.0;}
-    else {
-      Type y = Dp*Dp*Dp*Dp + epsp;
-      Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));
-      return ((y + Dp*S4) / (y + Dm*(delta*delta*delta+S4)));}
+    Type Dp = fabs(delta);
+    Type Dm = fabs(proj);
+    if(Dp>(2.0*Dm)) return 1.0;
+    Type y = pow(Dp, 4) + epsp;
+    Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));
+    return (y + Dp*S4) / (y + Dm*(pow(delta,3)+S4));
   }
 
-  FORCEINLINE static Type R5Function(const Type& proj, const Type& delta, const Type& epsp)
+  FORCEINLINE static Type r5Function(const Type& proj, const Type& delta, const Type& epsp)
   {
-    Type Dp = fabs(delta); Type Dm = fabs(proj);
-    if(Dp>(2.0*Dm)) {return 1.0;}
-    else {
-      Type y = Dp*Dp*Dp*Dp*Dp + epsp;
-      Type S5 = 8.0*Dm*Dm*(Dp*Dp-2.0*Dm*(Dp-Dm));    
-      return ((y + Dp*S5) / (y + Dm*(delta*delta*delta*delta+S5)));}
+    Type Dp = fabs(delta);
+    Type Dm = fabs(proj);
+    if(Dp>(2.0*Dm)) return 1.0;
+    Type y = pow(Dp, 5) + epsp;
+    Type S5 = 8.0*Dm*Dm*(Dp*Dp-2.0*Dm*(Dp-Dm));
+    return (y + Dp*S5) / (y + Dm*(pow(delta,4)+S5));
   }
 };
 
@@ -190,11 +190,11 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
 
 
 /*!
- * \brief Nishikawa R3 limiter specialization.
+ * \brief Nishikawa's R3 limiter specialization.
  * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<LIMITER::NISHIKAWAR3>
+struct CLimiterDetails<LIMITER::NISHIKAWA_R3>
 {
   su2double epsp;
 
@@ -208,7 +208,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR3>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(eps1*eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1, 4), LimiterHelpers<>::epsilon());
 
   }
 
@@ -223,17 +223,17 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR3>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers<>::R3Function(proj, delta, epsp);
+    return LimiterHelpers<>::r3Function(proj, delta, epsp);
   }
 };
 
 
 /*!
- * \brief Nishikawa R4 limiter specialization.
+ * \brief Nishikawa's R4 limiter specialization.
  * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<LIMITER::NISHIKAWAR4>
+struct CLimiterDetails<LIMITER::NISHIKAWA_R4>
 {
   su2double epsp;
 
@@ -247,7 +247,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR4>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(eps1*eps1*eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1, 5), LimiterHelpers<>::epsilon());
 
   }
 
@@ -262,17 +262,17 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR4>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers<>::R4Function(proj, delta, epsp);
+    return LimiterHelpers<>::r4Function(proj, delta, epsp);
   }
 };
 
 
 /*!
- * \brief Nishikawa R5 limiter specialization.
+ * \brief Nishikawa's R5 limiter specialization.
  * \ingroup FvmAlgos
  */
 template<>
-struct CLimiterDetails<LIMITER::NISHIKAWAR5>
+struct CLimiterDetails<LIMITER::NISHIKAWA_R5>
 {
   su2double epsp;
 
@@ -286,7 +286,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR5>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(eps1*eps1*eps1*eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1, 6), LimiterHelpers<>::epsilon());
 
   }
 
@@ -301,7 +301,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWAR5>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers<>::R5Function(proj, delta, epsp);
+    return LimiterHelpers<>::r5Function(proj, delta, epsp);
   }
 };
 
