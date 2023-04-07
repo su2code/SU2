@@ -93,9 +93,9 @@ struct LimiterHelpers
     Type Dp = fabs(delta); Type Dm = fabs(proj);
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
-	Type y = Dp*Dp*Dp + epsp;
-	Type S3 = 4.0*Dm*Dm;	    
- 	return ((y + Dp*S3) / (y + Dm*(delta*delta+S3)));}
+    Type y = Dp*Dp*Dp + epsp;
+    Type S3 = 4.0*Dm*Dm;	    
+        return ((y + Dp*S3) / (y + Dm*(delta*delta+S3)));}
   }
 
   FORCEINLINE static Type R4Function(const Type& proj, const Type& delta, const Type& epsp)
@@ -103,7 +103,7 @@ struct LimiterHelpers
     Type Dp = fabs(delta); Type Dm = fabs(proj);
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
-	Type y = Dp*Dp*Dp*Dp + epsp;
+        Type y = Dp*Dp*Dp*Dp + epsp;
         Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));	    
         return ((y + Dp*S4) / (y + Dm*(delta*delta*delta+S4)));}
   }
@@ -113,7 +113,7 @@ struct LimiterHelpers
     Type Dp = fabs(delta); Type Dm = fabs(proj);
     if(Dp>(2.0*Dm)) {return 1.0;}
     else {
-	Type y = Dp*Dp*Dp*Dp*Dp + epsp;
+        Type y = Dp*Dp*Dp*Dp*Dp + epsp;
         Type S5 = 8.0*Dm*Dm*(Dp*Dp-2.0*Dm*(Dp-Dm));    
         return ((y + Dp*S5) / (y + Dm*(delta*delta*delta*delta+S5)));}
   }
