@@ -895,9 +895,9 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 enum class LIMITER {
   NONE                 , /*!< \brief No limiter. */
   VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
-  NISHIKAWAR3          , /*!< \brief Slope limiter using Nishikawa's R3 method (stencil formulation). */
-  NISHIKAWAR4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
-  NISHIKAWAR5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
+  NISHIKAWA_R3          , /*!< \brief Slope limiter using Nishikawa's R3 method (stencil formulation). */
+  NISHIKAWA_R4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
+  NISHIKAWA_R5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
   VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
   BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
   VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
@@ -907,9 +907,9 @@ enum class LIMITER {
 static const MapType<std::string, LIMITER> Limiter_Map = {
   MakePair("NONE", LIMITER::NONE)
   MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
-  MakePair("NISHIKAWAR3", LIMITER::NISHIKAWAR3)
-  MakePair("NISHIKAWAR4", LIMITER::NISHIKAWAR4)
-  MakePair("NISHIKAWAR5", LIMITER::NISHIKAWAR5)
+  MakePair("NISHIKAWA_R3", LIMITER::NISHIKAWA_R3)
+  MakePair("NISHIKAWA_R4", LIMITER::NISHIKAWA_R4)
+  MakePair("NISHIKAWA_R5", LIMITER::NISHIKAWA_R5)
   MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
   MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
   MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
