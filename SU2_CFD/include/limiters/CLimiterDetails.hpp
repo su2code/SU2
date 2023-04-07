@@ -209,7 +209,6 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R3>
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
     epsp = max(pow(eps1, 4), LimiterHelpers<>::epsilon());
-
   }
 
   /*!
@@ -248,7 +247,6 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R4>
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
     epsp = max(pow(eps1, 5), LimiterHelpers<>::epsilon());
-
   }
 
   /*!
@@ -287,7 +285,6 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R5>
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
     epsp = max(pow(eps1, 6), LimiterHelpers<>::epsilon());
-
   }
 
   /*!
