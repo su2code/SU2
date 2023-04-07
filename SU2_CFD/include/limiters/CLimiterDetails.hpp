@@ -170,7 +170,6 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-
     eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
