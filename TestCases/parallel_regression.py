@@ -257,6 +257,14 @@ def main():
     ea_naca64206.test_iter = 10
     ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.0]
     test_list.append(ea_naca64206)
+    
+    # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
+    ramp           = TestCase('ramp')
+    ramp.cfg_dir   = "euler/ramp"
+    ramp.cfg_file  = "inv_ramp.cfg"
+    ramp.test_iter = 10
+    ramp.test_vals = [-0.777734, 4.952001, -0.188418, 0.049145] #last 4 columns
+    ramp.append(ramp)
 
     ##########################
     ###  Compressible N-S  ###
