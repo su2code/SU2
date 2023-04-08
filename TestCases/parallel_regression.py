@@ -263,7 +263,7 @@ def main():
     ramp.cfg_dir = "euler/ramp"
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
-    ramp.test_vals = [-0.777734, 4.952001, -0.188418, 0.049145] #last 4 columns
+    ramp.test_vals = [-13.399623, -7.788893, -0.081064, 0.056474] #last 4 columns
     ramp.append(ramp)
 
     ##########################
