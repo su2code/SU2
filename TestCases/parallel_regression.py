@@ -259,9 +259,9 @@ def main():
     test_list.append(ea_naca64206)
     
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
-    ramp           = TestCase('ramp')
-    ramp.cfg_dir   = "euler/ramp"
-    ramp.cfg_file  = "inv_ramp.cfg"
+    ramp = TestCase('ramp')
+    ramp.cfg_dir = "euler/ramp"
+    ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
     ramp.test_vals = [-0.777734, 4.952001, -0.188418, 0.049145] #last 4 columns
     ramp.append(ramp)
