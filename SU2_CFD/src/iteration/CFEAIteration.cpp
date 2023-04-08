@@ -184,21 +184,16 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                            unsigned short val_iInst) {
-  const bool dynamic = (config[val_iZone]->GetTime_Domain());
-  const bool fsi = config[val_iZone]->GetFSI_Simulation();
-
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*----------------- Update structural solver ----------------------*/
 
-  if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
-        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
-        MESH_0);
-
-  } else if (fsi) {
-    /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
-     * purposes) ---*/
+  if (config[val_iZone]->GetTime_Domain()) {
+    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0], feaSolver,
+                                                                   config[val_iZone], MESH_0);
+  } else if (config[val_iZone]->GetFSI_Simulation() && config[val_iZone]->GetRelaxation()) {
+    /*--- For FSI problems with relaxation, output the relaxed result, which is the one transferred into the fluid
+     * domain (for consistent restart purposes). ---*/
     if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::NEWMARK_IMPLICIT) {
       feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
