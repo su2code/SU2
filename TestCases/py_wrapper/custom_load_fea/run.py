@@ -62,6 +62,29 @@ def main():
   # Solve.
   SU2Driver.StartSolver()
 
+  # Find the tip displacement.
+  MarkerName = 'x_plus'
+  MarkerID = AllMarkerIDs[MarkerName] if MarkerName in AllMarkerIDs else -1
+  nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0
+  MarkerCoords = SU2Driver.MarkerCoordinates(MarkerID)
+
+  SolverID = SU2Driver.GetSolverIndices()["FEA"]
+  Solution = SU2Driver.MarkerSolution(SolverID, MarkerID)
+  DispID = SU2Driver.GetFEASolutionIndices()["DISPLACEMENT_Y"]
+
+  Disp = 0
+  NodeFound = False
+  for iVertex in range(nVertex):
+    y = MarkerCoords(iVertex, 1)
+    if abs(y - 0.025) < 1e-6:
+      Disp = Solution(iVertex, DispID)
+      NodeFound = True
+
+  if NodeFound:
+    print(f"Vertical displacement of tip: {Disp}")
+    # Test the value against expected.
+    assert abs(Disp / 0.095439 - 1) < 1e-5, "Test FAILED"
+
   # Finalize the solver and exit cleanly.
   SU2Driver.Finalize()
 
