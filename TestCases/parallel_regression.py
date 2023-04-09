@@ -264,7 +264,7 @@ def main():
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
     ramp.test_vals = [-13.399623, -7.788893, -0.081064, 0.056474] #last 4 columns
-    ramp.append(ramp)
+    test_list.append(ramp)
 
     ##########################
     ###  Compressible N-S  ###
