@@ -33,9 +33,9 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/toolboxes/ndflattener.hpp"
 
-CGeometry::CGeometry(void) : size(SU2_MPI::GetSize()), rank(SU2_MPI::GetRank()) {}
+CGeometry::CGeometry() : size(SU2_MPI::GetSize()), rank(SU2_MPI::GetRank()) {}
 
-CGeometry::~CGeometry(void) {
+CGeometry::~CGeometry() {
   unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
@@ -940,7 +940,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
    the recv rank can quickly loop through the buffers to unpack the data. ---*/
 
   unsigned short nPackets = 2;
-  unsigned long* idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend] * nPackets];
+  auto* idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend] * nPackets];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend] * nPackets; iSend++) idSend[iSend] = 0;
 
   /*--- Build the lists of local index and periodic marker index values. ---*/
@@ -987,7 +987,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   /*--- Allocate arrays for receiving the periodic point index and marker
    index to the recv rank so that it can store the local values. ---*/
 
-  unsigned long* idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv] * nPackets];
+  auto* idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv] * nPackets];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv] * nPackets; iRecv++) idRecv[iRecv] = 0;
 
 #ifdef HAVE_MPI
@@ -1270,7 +1270,7 @@ su2double CGeometry::Point2Plane_Distance(const su2double* Coord, const su2doubl
   return distance;
 }
 
-void CGeometry::SetEdges(void) {
+void CGeometry::SetEdges() {
   nEdge = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
@@ -1302,7 +1302,7 @@ void CGeometry::SetEdges(void) {
   edges->SetPaddingNodes();
 }
 
-void CGeometry::SetFaces(void) {
+void CGeometry::SetFaces() {
   //  unsigned long iPoint, jPoint, iFace;
   //  unsigned short jNode, iNode;
   //  long TestFace = 0;
@@ -1333,12 +1333,12 @@ void CGeometry::SetFaces(void) {
   //    }
 }
 
-void CGeometry::TestGeometry(void) const {
+void CGeometry::TestGeometry() const {
   ofstream para_file;
 
   para_file.open("test_geometry.dat", ios::out);
 
-  su2double* Normal = new su2double[nDim];
+  auto* Normal = new su2double[nDim];
 
   for (unsigned long iEdge = 0; iEdge < nEdge; iEdge++) {
     para_file << "Edge index: " << iEdge << endl;
@@ -1515,11 +1515,7 @@ bool CGeometry::SegmentIntersectsLine(const su2double point0[2], const su2double
 
   length = diff0_A * diff0_A + diff1_A * diff1_A;
 
-  if ((dist0 > length) || (dist1 > length)) {
-    return false;
-  }
-
-  return true;
+  return (dist0 <= length) && (dist1 <= length);
 }
 
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3], su2double vert0[3],
@@ -1618,7 +1614,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
   /*--- Grid movement is stored using a vertices information,
    we should go from vertex to points ---*/
 
-  if (original_surface == false) {
+  if (!original_surface) {
     Coord_Variation = new su2double*[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++) Coord_Variation[iPoint] = new su2double[nDim];
 
@@ -1722,7 +1718,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
             Variable_P1 = 0.0;
 
             for (iDim = 0; iDim < nDim; iDim++) {
-              if (original_surface == true) {
+              if (original_surface) {
                 Segment_P0[iDim] = nodes->GetCoord(iPoint, iDim);
                 Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim);
               } else {
@@ -1759,7 +1755,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
             else if (nDim == 3) {
               intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0,
                                                  Plane_Normal, Intersection, Variable_Interp);
-              if (intersect == true) {
+              if (intersect) {
                 if (PointIndex == 0) {
                   Xcoord_Index0.push_back(Intersection[0]);
                   Ycoord_Index0.push_back(Intersection[1]);
@@ -1785,7 +1781,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
     }
   }
 
-  if (original_surface == false) {
+  if (!original_surface) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) delete[] Coord_Variation[iPoint];
     delete[] Coord_Variation;
   }
@@ -1894,7 +1890,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
 
 #endif
 
-  if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
+  if ((rank == MASTER_NODE) && (!Xcoord_Index0.empty())) {
     /*--- Remove singular edges ---*/
 
     bool Remove;
@@ -1925,7 +1921,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
         }
         if (Remove) break;
       }
-    } while (Remove == true);
+    } while (Remove);
 
     /*--- Remove repeated edges computing distance, this could happend because the MPI ---*/
 
@@ -1993,7 +1989,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
         if (Remove) break;
       }
 
-    } while (Remove == true);
+    } while (Remove);
 
     if (Xcoord_Index0.size() != 1) {
       /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
@@ -2322,7 +2318,7 @@ void CGeometry::ComputeAirfoil_Section(su2double* Plane_P0, su2double* Plane_Nor
           break;
         }
 
-      } while (Xcoord_Index0.size() != 0);
+      } while (!Xcoord_Index0.empty());
 
       /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
 
@@ -2525,7 +2521,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
           RefUnitNormal_defined = false;
           iVertex = 0;
 
-          while (bound_is_straight[iMarker] == true && iVertex < nVertex[iMarker]) {
+          while (bound_is_straight[iMarker] && iVertex < nVertex[iMarker]) {
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
             UnitNormal = Normal;
 
@@ -2595,7 +2591,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
         if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
             config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
           cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
-          if (Buff_Recv_isStraight[iMarker_Global] == false) cout << " NOT";
+          if (!static_cast<bool>(Buff_Recv_isStraight[iMarker_Global])) cout << " NOT";
           if (nDim == 2) cout << " a single straight." << endl;
           if (nDim == 3) cout << " a single plane." << endl;
         }  // if sym or euler
@@ -3004,14 +3000,14 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double>& filter_radius,
   GetGlobalElementAdjacencyMatrix(neighbour_start, neighbour_idx);
 
   /*--- Element centroids and volumes. ---*/
-  su2double *cg_elem = new su2double[Global_nElemDomain * nDim], *vol_elem = new su2double[Global_nElemDomain];
+  auto *cg_elem = new su2double[Global_nElemDomain * nDim], *vol_elem = new su2double[Global_nElemDomain];
 #ifdef HAVE_MPI
   /*--- Number of subdomain each point is part of. ---*/
   vector<char> halo_detect(Global_nElemDomain);
 #endif
 
   /*--- Inputs of a filter stage, like with CG and volumes, each processor needs to see everything. ---*/
-  su2double* work_values = new su2double[Global_nElemDomain];
+  auto* work_values = new su2double[Global_nElemDomain];
 
   /*--- When gathering the neighborhood of each element we use a vector of booleans to indicate
   whether an element is already added to the list of neighbors (one vector per thread). ---*/
@@ -3052,7 +3048,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double>& filter_radius,
 
     /*--- Share with all processors ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      su2double* dbl_buffer = new su2double[Global_nElemDomain * nDim];
+      auto* dbl_buffer = new su2double[Global_nElemDomain * nDim];
       SU2_MPI::Allreduce(cg_elem, dbl_buffer, Global_nElemDomain * nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       swap(dbl_buffer, cg_elem);
       delete[] dbl_buffer;
@@ -3102,7 +3098,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double>& filter_radius,
 #ifdef HAVE_MPI
       /*--- Share with all processors ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        su2double* buffer = new su2double[Global_nElemDomain];
+        auto* buffer = new su2double[Global_nElemDomain];
         SU2_MPI::Allreduce(work_values, buffer, Global_nElemDomain, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         swap(buffer, work_values);
         delete[] buffer;
@@ -3217,7 +3213,7 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long>& neighbour
 
   /*--- Determine how much space we need for the adjacency matrix by counting the
   neighbours of each element, i.e. its number of faces---*/
-  unsigned short* nFaces_elem = new unsigned short[Global_nElemDomain];
+  auto* nFaces_elem = new unsigned short[Global_nElemDomain];
 
   SU2_OMP_PARALLEL {
     SU2_OMP_FOR_STAT(256)
@@ -3235,7 +3231,7 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long>& neighbour
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
-    unsigned short* buffer = new unsigned short[Global_nElemDomain];
+    auto* buffer = new unsigned short[Global_nElemDomain];
     MPI_Allreduce(nFaces_elem, buffer, Global_nElemDomain, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
     /*--- swap pointers and delete old data to keep the same variable name after reduction ---*/
     swap(buffer, nFaces_elem);
@@ -3620,7 +3616,7 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
   return *pattern;
 }
 
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void) {
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap() {
   if (edgeToCSRMap.empty()) {
     if (finiteVolumeCSRFill0.empty()) {
       finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);

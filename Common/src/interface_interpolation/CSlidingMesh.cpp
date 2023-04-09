@@ -548,11 +548,11 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
               /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
 
-              check = 0;
+              check = false;
 
               for (jj = 0; jj < nAlreadyVisited; jj++) {
                 if (donor_iPoint == alreadyVisitedDonor[jj]) {
-                  check = 1;
+                  check = true;
                   break;
                 }
               }
@@ -560,7 +560,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
               if (check == 0 && ToVisit != nullptr) {
                 for (jj = 0; jj < nToVisit; jj++)
                   if (donor_iPoint == ToVisit[jj]) {
-                    check = 1;
+                    check = true;
                     break;
                   }
               }

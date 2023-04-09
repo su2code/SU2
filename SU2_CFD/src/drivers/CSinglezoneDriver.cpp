@@ -41,9 +41,7 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
   TimeIter = 0;
 }
 
-CSinglezoneDriver::~CSinglezoneDriver(void) {
-
-}
+CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
 

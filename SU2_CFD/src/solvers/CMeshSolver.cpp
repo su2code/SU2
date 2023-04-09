@@ -755,7 +755,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config,
 
 }
 
-void CMeshSolver::SetDualTime_Mesh(void){
+void CMeshSolver::SetDualTime_Mesh(){
 
   nodes->Set_Solution_time_n1();
   nodes->Set_Solution_time_n();

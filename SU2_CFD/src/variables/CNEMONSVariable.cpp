@@ -26,7 +26,7 @@
  */
 
 #include "../../include/variables/CNEMONSVariable.hpp"
-#include <math.h>
+#include <cmath>
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  const su2double *val_massfrac,

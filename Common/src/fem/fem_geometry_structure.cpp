@@ -134,14 +134,10 @@ bool CSortFaces::operator()(const CFaceOfElement& f0, const CFaceOfElement& f1) 
            to their element ID's in order to increase cache performance. */
         if (elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
         return elemIDMax0 < elemIDMax1;
-      } else {
-        /* One face is a local face and the other is not. Make sure that
-           the local faces are numbered first. */
-        if (face0IsLocal)
-          return true;
-        else
-          return false;
-      }
+      } /* One face is a local face and the other is not. Make sure that
+   the local faces are numbered first. */
+      return face0IsLocal;
+
     } else if (elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
       /* Both faces are non-matching internal faces. Sort them according to
          their relevant element ID. The time level is not taken into account
@@ -345,7 +341,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
     /*--- Sort nodeIDs in increasing order and remove the double entities. ---*/
     sort(nodeIDs.begin(), nodeIDs.end());
-    vector<long>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
+    auto lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
     nodeIDs.erase(lastNodeID, nodeIDs.end());
 
     /*--- Add the number of node IDs and the node IDs itself to longSendBuf[i]. ---*/
@@ -564,9 +560,8 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
          the elements with constant and non-constant Jacobians are
          considered the same. */
       if (JacConstant) {
-        const unsigned short orderExactStraight =
-            (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Straight());
-        const unsigned short orderExactCurved = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Curved());
+        const auto orderExactStraight = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Straight());
+        const auto orderExactCurved = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Curved());
         if (orderExactStraight == orderExactCurved) JacConstant = false;
       }
 
@@ -594,9 +589,9 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
             if (shortRecvBuf[i][indS + 2]) {
               /* The face is owned by this element. As the neighboring element
                  is not owned, this implies that a halo element must be created. */
-              haloElements.push_back(
-                  CUnsignedLong2T(longRecvBuf[i][indL], shortRecvBuf[i][indS] + 1)); /* The +1, because haloElements */
-            }                                                                        /* are unsigned longs.          */
+              haloElements.emplace_back(longRecvBuf[i][indL],
+                                        shortRecvBuf[i][indS] + 1); /* The +1, because haloElements */
+            }                                                       /* are unsigned longs.          */
             else {
               /* The face is not owned by this element and therefore it is owned
                  by the neighboring element on a different rank. Consequently the
@@ -608,7 +603,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
       }
 
       /* Store the required data for this element in ownedElements. */
-      ownedElements.push_back(CReorderElements(globalID, timeLevel, commSol, VTK_Type, nPolySol, JacConstant));
+      ownedElements.emplace_back(globalID, timeLevel, commSol, VTK_Type, nPolySol, JacConstant);
     }
 
     /* Skip the part with the node numbers. */
@@ -632,7 +627,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
           /* Check for an external donor. If external, store it in
              haloElements with no periodic transformation. */
           if (!binary_search(globalElemID.begin(), globalElemID.end(), longRecvBuf[i][indL]))
-            haloElements.push_back(CUnsignedLong2T(longRecvBuf[i][indL], 0));
+            haloElements.emplace_back(longRecvBuf[i][indL], 0);
         }
       }
     }
@@ -640,7 +635,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
   /* Sort the halo elements in increasing order and remove the double entities. */
   sort(haloElements.begin(), haloElements.end());
-  vector<CUnsignedLong2T>::iterator lastHalo = unique(haloElements.begin(), haloElements.end());
+  auto lastHalo = unique(haloElements.begin(), haloElements.end());
   haloElements.erase(lastHalo, haloElements.end());
 
   /* Determine the maximum global time level and possibly reset the number
@@ -885,7 +880,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
     for (long j = 0; j < nElemBuf; ++j) {
       const long j3 = 3 * j;
-      haloData.push_back(CLong3T(longSecondRecvBuf[i][j3 + 2], longSecondRecvBuf[i][j3], longSecondRecvBuf[i][j3 + 1]));
+      haloData.emplace_back(longSecondRecvBuf[i][j3 + 2], longSecondRecvBuf[i][j3], longSecondRecvBuf[i][j3 + 1]);
     }
 
     /* Release the memory of this receive buffer. */
@@ -1006,7 +1001,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     for (unsigned long j = 0; j < nElemBuf; ++j) {
       const unsigned long elemID = longSecondRecvBuf[i][2 * j];
 
-      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
+      auto MMI = mapGlobalElemIDToInd.find(elemID);
       if (MMI == mapGlobalElemIDToInd.end())
         SU2_MPI::Error("Entry not found in mapGlobalElemIDToInd", CURRENT_FUNCTION);
 
@@ -1048,7 +1043,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
   /* Determine the number of different element types present. */
   map<unsigned short, unsigned short> mapElemTypeToInd;
-  for (vector<CReorderElements>::iterator OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
+  for (auto OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
     const unsigned short elType = OEI->GetElemType();
 
     if (mapElemTypeToInd.find(elType) == mapElemTypeToInd.end()) {
@@ -1071,7 +1066,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     }
   }
 
-  for (vector<CReorderElements>::iterator OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
+  for (auto OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
     const unsigned short elType = OEI->GetElemType();
     map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
     unsigned short ind = MI->second + 1;
@@ -1085,7 +1080,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /* Loop again over the owned elements and check if elements, which do not
      have to send their solution, should be flagged as such in order to improve
      the gemm performance. */
-  for (vector<CReorderElements>::iterator OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
+  for (auto OEI = ownedElements.begin(); OEI != ownedElements.end(); ++OEI) {
     /* Check for an internal element, i.e. an element for which the solution
        does not need to be communicated. */
     if (!OEI->GetCommSolution()) {
@@ -1189,7 +1184,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
       unsigned short nDOFsGrid = shortRecvBuf[i][indS + 3];
       unsigned short nFaces = shortRecvBuf[i][indS + 5];
 
-      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(globalID);
+      auto MMI = mapGlobalElemIDToInd.find(globalID);
       unsigned long ind = MMI->second;
 
       indS += 8;
@@ -1246,7 +1241,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
     /* Start of the Reverse Cuthil McKee renumbering. */
     vector<unsigned long> frontElements(1, indBeg);
-    while (frontElements.size()) {
+    while (!frontElements.empty()) {
       /* Vector, which stores the front for the next round. */
       vector<unsigned long> frontElementsNew;
 
@@ -1337,7 +1332,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     for (long j = 0; j < longRecvBuf[i][0]; ++j) {
       /* Determine the location in volElem where this data must be stored. */
       unsigned long elemID = longRecvBuf[i][indL++];
-      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
+      auto MMI = mapGlobalElemIDToInd.find(elemID);
       unsigned long ind = MMI->second;
 
       /* Store the data. */
@@ -1424,7 +1419,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
   /* Sort meshPoints in increasing order and remove the double entities. */
   sort(meshPoints.begin(), meshPoints.end());
-  vector<CPointFEM>::iterator lastPoint = unique(meshPoints.begin(), meshPoints.end());
+  auto lastPoint = unique(meshPoints.begin(), meshPoints.end());
   meshPoints.erase(lastPoint, meshPoints.end());
 
   /* Clear the contents of the map globalPointIDToLocalInd and fill
@@ -1478,7 +1473,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
       const unsigned long j2 = 2 * j;
 
       const unsigned long elemID = longSecondRecvBuf[i][j2];
-      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
+      auto MMI = mapGlobalElemIDToInd.find(elemID);
       if (MMI == mapGlobalElemIDToInd.end())
         SU2_MPI::Error("Entry not found in mapGlobalElemIDToInd", CURRENT_FUNCTION);
 
@@ -1526,7 +1521,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
       for (unsigned short k = 0; k < volElem[indV].nDOFsGrid; ++k) {
         longSendBuf[i].push_back(volElem[indV].nodeIDsGrid[k]);
-        nodeIDs.push_back(CUnsignedLong2T(volElem[indV].nodeIDsGrid[k], elemBuf[j].long1));
+        nodeIDs.emplace_back(volElem[indV].nodeIDsGrid[k], elemBuf[j].long1);
       }
 
       for (unsigned short k = 0; k < volElem[indV].nFaces; ++k)
@@ -1535,7 +1530,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
     /* Sort nodeIDs in increasing order and remove the double entities. */
     sort(nodeIDs.begin(), nodeIDs.end());
-    vector<CUnsignedLong2T>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
+    auto lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
     nodeIDs.erase(lastNodeID, nodeIDs.end());
 
     /* Add the number of node IDs and the node IDs itself to longSendBuf[i]
@@ -1662,7 +1657,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
     for (long j = 0; j < longRecvBuf[i][0]; ++j) {
       const unsigned short nFaces = shortRecvBuf[i][indS + 6];
-      haloElemInfo.push_back(CLong3T(shortRecvBuf[i][indS + 7], sourceRank[i], j));
+      haloElemInfo.emplace_back(shortRecvBuf[i][indS + 7], sourceRank[i], j);
       indS += nFaces + 8;
     }
   }
@@ -2272,7 +2267,7 @@ void CMeshFEM::SetPositive_ZArea(CConfig* config) {
 
 CMeshFEM_DG::CMeshFEM_DG(CGeometry* geometry, CConfig* config) : CMeshFEM(geometry, config) {}
 
-void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
+void CMeshFEM_DG::SetGlobal_to_Local_Point() {
   Global_to_Local_Point.clear();
   unsigned long ii = 0;
   for (unsigned long i = 0; i < nVolElemOwned; ++i) {
@@ -2282,7 +2277,7 @@ void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   }
 }
 
-void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
+void CMeshFEM_DG::CoordinatesIntegrationPoints() {
   /*--------------------------------------------------------------------*/
   /*--- Step 1: The integration points of the owned volume elements. ---*/
   /*--------------------------------------------------------------------*/
@@ -2386,7 +2381,7 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
   }
 }
 
-void CMeshFEM_DG::CoordinatesSolDOFs(void) {
+void CMeshFEM_DG::CoordinatesSolDOFs() {
   /*--- Loop over the owned elements to compute the coordinates
         of the solution DOFs. ---*/
   for (unsigned long l = 0; l < nVolElemOwned; ++l) {
@@ -2457,10 +2452,8 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          is set to false. Hence it is only needed to carry out this check for faces
          with a constant Jacobian. This is done to reduce the number of standard elements. */
       if (thisFace.JacFaceIsConsideredConstant) {
-        unsigned short orderExactStraight =
-            (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight());
-        unsigned short orderExactCurved =
-            (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved());
+        auto orderExactStraight = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight());
+        auto orderExactCurved = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved());
 
         if (orderExactStraight == orderExactCurved) {
           orderExactStraight = (unsigned short)ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight());
@@ -2894,15 +2887,15 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
 
       /* Create the new standard elements if no match was found. */
       if (j == standardMatchingFacesSol.size()) {
-        standardMatchingFacesSol.push_back(CFEMStandardInternalFace(
-            VTK_Type, localFaces[i].elemType0, localFaces[i].nPolySol0, localFaces[i].elemType1,
-            localFaces[i].nPolySol1, localFaces[i].JacFaceIsConsideredConstant, swapFaceInElementSide0,
-            swapFaceInElementSide1, config));
+        standardMatchingFacesSol.emplace_back(VTK_Type, localFaces[i].elemType0, localFaces[i].nPolySol0,
+                                              localFaces[i].elemType1, localFaces[i].nPolySol1,
+                                              localFaces[i].JacFaceIsConsideredConstant, swapFaceInElementSide0,
+                                              swapFaceInElementSide1, config);
 
-        standardMatchingFacesGrid.push_back(CFEMStandardInternalFace(
+        standardMatchingFacesGrid.emplace_back(
             VTK_Type, localFaces[i].elemType0, localFaces[i].nPolyGrid0, localFaces[i].elemType1,
             localFaces[i].nPolyGrid1, localFaces[i].JacFaceIsConsideredConstant, swapFaceInElementSide0,
-            swapFaceInElementSide1, config, standardMatchingFacesSol[j].GetOrderExact()));
+            swapFaceInElementSide1, config, standardMatchingFacesSol[j].GetOrderExact());
         matchingFaces[ii].indStandardElement = j;
       }
 
@@ -3078,13 +3071,12 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
 
         /* Create the new standard elements if no match was found. */
         if (j == standardBoundaryFacesSol.size()) {
-          standardBoundaryFacesSol.push_back(
-              CFEMStandardBoundaryFace(VTK_Type, localFaces[i].elemType0, localFaces[i].nPolySol0,
-                                       localFaces[i].JacFaceIsConsideredConstant, swapFaceInElement, config));
+          standardBoundaryFacesSol.emplace_back(VTK_Type, localFaces[i].elemType0, localFaces[i].nPolySol0,
+                                                localFaces[i].JacFaceIsConsideredConstant, swapFaceInElement, config);
 
-          standardBoundaryFacesGrid.push_back(CFEMStandardBoundaryFace(
-              VTK_Type, localFaces[i].elemType0, localFaces[i].nPolyGrid0, localFaces[i].JacFaceIsConsideredConstant,
-              swapFaceInElement, config, standardBoundaryFacesSol[j].GetOrderExact()));
+          standardBoundaryFacesGrid.emplace_back(VTK_Type, localFaces[i].elemType0, localFaces[i].nPolyGrid0,
+                                                 localFaces[i].JacFaceIsConsideredConstant, swapFaceInElement, config,
+                                                 standardBoundaryFacesSol[j].GetOrderExact());
           surfElem[ii].indStandardElement = j;
         }
       }
@@ -3131,13 +3123,13 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig* config) {
 
     /* Create the new standard elements if no match was found. */
     if (j == standardElementsSol.size()) {
-      standardElementsSol.push_back(
-          CFEMStandardElement(volElem[i].VTK_Type, volElem[i].nPolySol, volElem[i].JacIsConsideredConstant, config));
+      standardElementsSol.emplace_back(volElem[i].VTK_Type, volElem[i].nPolySol, volElem[i].JacIsConsideredConstant,
+                                       config);
 
-      standardElementsGrid.push_back(
-          CFEMStandardElement(volElem[i].VTK_Type, volElem[i].nPolyGrid, volElem[i].JacIsConsideredConstant, config,
-                              standardElementsSol[j].GetOrderExact(), standardElementsSol[j].GetRDOFs(),
-                              standardElementsSol[j].GetSDOFs(), standardElementsSol[j].GetTDOFs()));
+      standardElementsGrid.emplace_back(volElem[i].VTK_Type, volElem[i].nPolyGrid, volElem[i].JacIsConsideredConstant,
+                                        config, standardElementsSol[j].GetOrderExact(),
+                                        standardElementsSol[j].GetRDOFs(), standardElementsSol[j].GetSDOFs(),
+                                        standardElementsSol[j].GetTDOFs());
       volElem[i].indStandardElement = j;
     }
   }
@@ -3293,8 +3285,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig* config) {
 
   /* Store the rotationally periodic indices in rotPerMarkers. */
   rotPerMarkers.reserve(mapRotationalPeriodicToInd.size());
-  for (map<short, unsigned short>::iterator SMI = mapRotationalPeriodicToInd.begin();
-       SMI != mapRotationalPeriodicToInd.end(); ++SMI)
+  for (auto SMI = mapRotationalPeriodicToInd.begin(); SMI != mapRotationalPeriodicToInd.end(); ++SMI)
     rotPerMarkers.push_back(SMI->first);
 
   /* Resize the first index of rotPerHalos to the correct size. */
@@ -4846,7 +4837,7 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig* config) {
   }
 }
 
-void CMeshFEM_DG::LengthScaleVolumeElements(void) {
+void CMeshFEM_DG::LengthScaleVolumeElements() {
   /* Initialize the length scale of the elements to zero. */
   for (unsigned long i = 0; i < nVolElemTot; ++i) volElem[i].lenScale = 0.0;
 

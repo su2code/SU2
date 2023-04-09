@@ -496,7 +496,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vecto
   while (file.good()) {
     getline(file, line);
     std::stringstream ss(line);
-    if (line.size() != 0) {  // ignore blank lines if they exist.
+    if (!line.empty()) {  // ignore blank lines if they exist.
       ss >> x_temp;
       ss >> y_temp;
       ss >> vort_strength_temp;
@@ -572,9 +572,8 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-        } else {
-          owner = 0;
-        }
+        }           owner = 0;
+       
 
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);

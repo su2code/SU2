@@ -62,7 +62,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(c
   }
 }
 
-CDiscAdjFEAIteration::~CDiscAdjFEAIteration(void) {}
+CDiscAdjFEAIteration::~CDiscAdjFEAIteration() = default;
 
 void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                       CSolver***** solver, CNumerics****** numerics, CConfig** config,
