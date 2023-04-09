@@ -8841,8 +8841,8 @@ const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {
   }
   if (Kind_Turb_Model == TURB_MODEL::SST) {
     return TurbIntensityAndViscRatioFreeStream;
-  }     return &NuFactor_FreeStream;
-
+  }
+  return &NuFactor_FreeStream;
 }
 
 su2double CConfig::GetOutlet_Pressure(const string& val_marker) const {
