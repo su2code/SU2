@@ -122,7 +122,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 }
 
-CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
+CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 
   delete direct_iteration;
   delete direct_output;

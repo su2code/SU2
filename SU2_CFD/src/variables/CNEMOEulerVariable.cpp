@@ -26,7 +26,7 @@
  */
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
-#include <math.h>
+#include <cmath>
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
@@ -228,12 +228,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
-  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
   else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
 
   if (!monoatomic){
     if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
     else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
   }
   else {V[TVE_INDEX] = Tve_Freestream;}

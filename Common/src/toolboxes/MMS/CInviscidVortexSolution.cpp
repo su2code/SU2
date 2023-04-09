@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 
-CInviscidVortexSolution::CInviscidVortexSolution(void) : CVerificationSolution() {}
+CInviscidVortexSolution::CInviscidVortexSolution() : CVerificationSolution() {}
 
 CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim, unsigned short val_nVar,
                                                  unsigned short val_iMesh, CConfig* config)
@@ -82,7 +82,7 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim, unsign
     SU2_MPI::Error("Free-stream density must be 1.0 for the inviscid vortex", CURRENT_FUNCTION);
 }
 
-CInviscidVortexSolution::~CInviscidVortexSolution(void) {}
+CInviscidVortexSolution::~CInviscidVortexSolution() = default;
 
 void CInviscidVortexSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                          su2double* val_solution) const {

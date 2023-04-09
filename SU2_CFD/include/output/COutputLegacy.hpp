@@ -273,7 +273,7 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetSpecialOutput(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                         unsigned long iExtIter, unsigned short val_nZone);
+                         unsigned long iExtIter, unsigned short val_nZone) const;
 
 };
 

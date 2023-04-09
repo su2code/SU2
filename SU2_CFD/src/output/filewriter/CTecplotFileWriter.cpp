@@ -33,7 +33,7 @@ CTecplotFileWriter::CTecplotFileWriter(CParallelDataSorter *valDataSorter,
                                        unsigned long valTimeIter, su2double valTimeStep) :
   CFileWriter(valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
-CTecplotFileWriter::~CTecplotFileWriter(){}
+CTecplotFileWriter::~CTecplotFileWriter()= default;
 
 void CTecplotFileWriter::WriteData(string val_filename){
 

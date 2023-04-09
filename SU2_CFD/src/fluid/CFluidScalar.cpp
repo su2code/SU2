@@ -27,9 +27,8 @@
 
 #include "../../include/fluid/CFluidScalar.hpp"
 
-#include <math.h>
-
 #include <cmath>
+
 #include <numeric>
 
 #include "../../include/fluid/CConstantConductivity.hpp"

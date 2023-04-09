@@ -93,7 +93,7 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
 
 }
 
-CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
+CAdjElasticityOutput::~CAdjElasticityOutput() = default;
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
