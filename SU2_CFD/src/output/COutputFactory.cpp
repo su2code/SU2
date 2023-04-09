@@ -93,7 +93,7 @@ COutput* COutputFactory::CreateMultizoneOutput(CConfig *driverConfig, CConfig** 
 
 COutputLegacy* COutputFactory::CreateLegacyOutput(CConfig *config){
 
-  COutputLegacy* output = new COutputLegacy(config);
+  auto* output = new COutputLegacy(config);
 
   return output;
 

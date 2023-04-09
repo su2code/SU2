@@ -97,7 +97,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
 
 }
 
-CAdjFlowIncOutput::~CAdjFlowIncOutput(void) {}
+CAdjFlowIncOutput::~CAdjFlowIncOutput() = default;
 
 void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
 

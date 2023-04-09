@@ -161,7 +161,7 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::WriteHeader(string solver, ScalarType restol, ScalarType resinit) const {
+void CSysSolve<ScalarType>::WriteHeader(const string& solver, ScalarType restol, ScalarType resinit) const {
   cout << "\n# " << solver << " residual history\n";
   cout << "# Residual tolerance target = " << restol << "\n";
   cout << "# Initial residual norm     = " << resinit << endl;
@@ -173,7 +173,7 @@ void CSysSolve<ScalarType>::WriteHistory(unsigned long iter, ScalarType res) con
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::WriteFinalResidual(string solver, unsigned long iter, ScalarType res) const {
+void CSysSolve<ScalarType>::WriteFinalResidual(const string& solver, unsigned long iter, ScalarType res) const {
   cout << "# " << solver << " final (true) residual:\n";
   cout << "# Iteration = " << iter << ": |res|/|res0| = " << res << ".\n" << endl;
 }

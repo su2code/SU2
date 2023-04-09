@@ -29,7 +29,7 @@
 #include "../../include/variables/CRadP1Variable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
+CRadP1Solver::CRadP1Solver() : CRadSolver() {
 
 }
 
@@ -130,7 +130,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   SolverName = "RAD";
 }
 
-CRadP1Solver::~CRadP1Solver(void) {
+CRadP1Solver::~CRadP1Solver() {
 
   delete nodes;
 

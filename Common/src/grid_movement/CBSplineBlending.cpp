@@ -32,7 +32,7 @@ CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints) : CFr
   SetOrder(val_order, n_controlpoints);
 }
 
-CBSplineBlending::~CBSplineBlending() {}
+CBSplineBlending::~CBSplineBlending() = default;
 
 void CBSplineBlending::SetOrder(short val_order, short n_controlpoints) {
   unsigned short iKnot;

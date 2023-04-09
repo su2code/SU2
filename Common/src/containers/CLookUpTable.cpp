@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <utility>
+
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
@@ -32,8 +34,8 @@
 
 using namespace std;
 
-CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_CV1_in, const string& name_CV2_in)
-    : file_name_lut{var_file_name_lut}, name_CV1{name_CV1_in}, name_CV2{name_CV2_in} {
+CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, string name_CV2_in)
+    : file_name_lut{var_file_name_lut}, name_CV1{std::move(name_CV1_in)}, name_CV2{std::move(name_CV2_in)} {
   rank = SU2_MPI::GetRank();
 
   LoadTableRaw(var_file_name_lut);
@@ -163,7 +165,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   }
 
   if (table_dim == 3) {
-    limits_table_z = minmax_element(&z_values_levels[0], &z_values_levels[0] + z_values_levels.cols());
+    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.cols());
   }
 }
 

@@ -310,14 +310,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
         text_line.erase(0, 11);
         string::size_type position;
         for (unsigned short iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find(" ", 0);
+          position = text_line.find(' ', 0);
           if (position != string::npos) text_line.erase(position, 1);
-          position = text_line.find("\r", 0);
+          position = text_line.find('\r', 0);
           if (position != string::npos) text_line.erase(position, 1);
-          position = text_line.find("\n", 0);
+          position = text_line.find('\n', 0);
           if (position != string::npos) text_line.erase(position, 1);
         }
-        string Marker_Tag = text_line.c_str();
+        string Marker_Tag = text_line;
 
         getline(mesh_file, text_line);
         text_line.erase(0, 13);
@@ -414,14 +414,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
           if (dimension == 3) {
             /*--- Check the begning of the list ---*/
 
-            if (!((EdgeBegin[0] == EdgeBegin[1]) && (EdgeEnd[0] == EdgeEnd[1]))) {
+            if ((EdgeBegin[0] != EdgeBegin[1]) || (EdgeEnd[0] != EdgeEnd[1])) {
               PerimeterPoint.push_back(EdgeBegin[0]);
               PerimeterPoint.push_back(EdgeEnd[0]);
             }
 
             for (iEdge = 1; iEdge < nEdges - 1; iEdge++) {
-              bool Check_1 = !((EdgeBegin[iEdge] == EdgeBegin[iEdge - 1]) && (EdgeEnd[iEdge] == EdgeEnd[iEdge - 1]));
-              bool Check_2 = !((EdgeBegin[iEdge] == EdgeBegin[iEdge + 1]) && (EdgeEnd[iEdge] == EdgeEnd[iEdge + 1]));
+              bool Check_1 = (EdgeBegin[iEdge] != EdgeBegin[iEdge - 1]) || (EdgeEnd[iEdge] != EdgeEnd[iEdge - 1]);
+              bool Check_2 = (EdgeBegin[iEdge] != EdgeBegin[iEdge + 1]) || (EdgeEnd[iEdge] != EdgeEnd[iEdge + 1]);
               if ((Check_1 && Check_2)) {
                 PerimeterPoint.push_back(EdgeBegin[iEdge]);
                 PerimeterPoint.push_back(EdgeEnd[iEdge]);
@@ -430,7 +430,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
             /*--- Check the  end of the list ---*/
 
-            if (!((EdgeBegin[nEdges - 1] == EdgeBegin[nEdges - 2]) && (EdgeEnd[nEdges - 1] == EdgeEnd[nEdges - 2]))) {
+            if ((EdgeBegin[nEdges - 1] != EdgeBegin[nEdges - 2]) || (EdgeEnd[nEdges - 1] != EdgeEnd[nEdges - 2])) {
               PerimeterPoint.push_back(EdgeBegin[nEdges - 1]);
               PerimeterPoint.push_back(EdgeEnd[nEdges - 1]);
             }
@@ -444,7 +444,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             }
 
             sort(ActDiskPoint_Front.begin(), ActDiskPoint_Front.end());
-            vector<unsigned long>::iterator it = unique(ActDiskPoint_Front.begin(), ActDiskPoint_Front.end());
+            auto it = unique(ActDiskPoint_Front.begin(), ActDiskPoint_Front.end());
             ActDiskPoint_Front.resize(it - ActDiskPoint_Front.begin());
 
             /*--- Check the begning of the list ---*/
@@ -959,11 +959,11 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity(const bool single_pa
       string::size_type position;
 
       for (unsigned short iChar = 0; iChar < 20; iChar++) {
-        position = text_line.find(" ", 0);
+        position = text_line.find(' ', 0);
         if (position != string::npos) text_line.erase(position, 1);
-        position = text_line.find("\r", 0);
+        position = text_line.find('\r', 0);
         if (position != string::npos) text_line.erase(position, 1);
-        position = text_line.find("\n", 0);
+        position = text_line.find('\n', 0);
         if (position != string::npos) text_line.erase(position, 1);
       }
       markerNames[iMarker] = text_line;
