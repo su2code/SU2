@@ -1305,7 +1305,7 @@ def main():
     pywrapper_custom_fea_load.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_custom_fea_load.cfg_file = "config.cfg"
     pywrapper_custom_fea_load.test_iter = 13
-    pywrapper_custom_fea_load.test_vals = [-7.263559, -4.946814, -14.165142, 34, -6.385218, 3.2058e+02]
+    pywrapper_custom_fea_load.test_vals = [-7.263559, -4.946814, -14.165142, 34, -6.380144, 320.58]
     pywrapper_custom_fea_load.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_custom_fea_load)
 

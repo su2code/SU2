@@ -26,11 +26,9 @@
 
 import pysu2
 from mpi4py import MPI
-import numpy as np
 
 def main():
   comm = MPI.COMM_WORLD
-  rank = comm.Get_rank()
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing.
   try:
@@ -48,16 +46,17 @@ def main():
   nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0
 
   # Apply a load based on the coordinates.
-  MarkerCoords = SU2Driver.MarkerCoordinates(MarkerID)
-  L = 0.5
-  dx = L / 16 # known from mesh settings in this case.
-  for iVertex in range(nVertex):
-    x = MarkerCoords(iVertex, 0)
-    nodalForce = (2 * x / L) * dx
-    # Half load due to half dx on first and last node.
-    if abs(x) < 1e-6 or abs(x - L) < 1e-6:
-      nodalForce = nodalForce / 2
-    SU2Driver.SetMarkerCustomFEALoad(MarkerID, iVertex, (0, nodalForce))
+  if nVertex > 0:
+    MarkerCoords = SU2Driver.MarkerCoordinates(MarkerID)
+    L = 0.5
+    dx = L / 16 # known from mesh settings in this case.
+    for iVertex in range(nVertex):
+      x = MarkerCoords(iVertex, 0)
+      nodalForce = (2 * x / L) * dx
+      # Half load due to half dx on first and last node.
+      if abs(x) < 1e-6 or abs(x - L) < 1e-6:
+        nodalForce = nodalForce / 2
+      SU2Driver.SetMarkerCustomFEALoad(MarkerID, iVertex, (0, nodalForce))
 
   # Solve.
   SU2Driver.StartSolver()
@@ -66,19 +65,20 @@ def main():
   MarkerName = 'x_plus'
   MarkerID = AllMarkerIDs[MarkerName] if MarkerName in AllMarkerIDs else -1
   nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0
-  MarkerCoords = SU2Driver.MarkerCoordinates(MarkerID)
-
-  SolverID = SU2Driver.GetSolverIndices()["FEA"]
-  Solution = SU2Driver.MarkerSolution(SolverID, MarkerID)
-  DispID = SU2Driver.GetFEASolutionIndices()["DISPLACEMENT_Y"]
-
   Disp = 0
   NodeFound = False
-  for iVertex in range(nVertex):
-    y = MarkerCoords(iVertex, 1)
-    if abs(y - 0.025) < 1e-6:
-      Disp = Solution(iVertex, DispID)
-      NodeFound = True
+
+  if nVertex > 0:
+    MarkerCoords = SU2Driver.MarkerCoordinates(MarkerID)
+    SolverID = SU2Driver.GetSolverIndices()["FEA"]
+    Solution = SU2Driver.MarkerSolution(SolverID, MarkerID)
+    DispID = SU2Driver.GetFEASolutionIndices()["DISPLACEMENT_Y"]
+
+    for iVertex in range(nVertex):
+      y = MarkerCoords(iVertex, 1)
+      if abs(y - 0.025) < 1e-6:
+        Disp = Solution(iVertex, DispID)
+        NodeFound = True
 
   if NodeFound:
     print(f"Vertical displacement of tip: {Disp}")
