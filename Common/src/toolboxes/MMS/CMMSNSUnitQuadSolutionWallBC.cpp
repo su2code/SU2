@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
 
-CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(void) : CVerificationSolution() {}
+CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC() : CVerificationSolution() {}
 
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim, unsigned short val_nVar,
                                                            unsigned short val_iMesh, CConfig* config)
@@ -105,7 +105,7 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
                    CURRENT_FUNCTION);
 }
 
-CMMSNSUnitQuadSolutionWallBC::~CMMSNSUnitQuadSolutionWallBC(void) {}
+CMMSNSUnitQuadSolutionWallBC::~CMMSNSUnitQuadSolutionWallBC() = default;
 
 void CMMSNSUnitQuadSolutionWallBC::GetBCState(const su2double* val_coords, const su2double val_t,
                                               su2double* val_solution) const {
@@ -226,4 +226,4 @@ void CMMSNSUnitQuadSolutionWallBC::GetMMSSourceTerm(const su2double* val_coords,
   val_source[nDim + 1] /= Velocity_Ref * Pressure_Ref;
 }
 
-bool CMMSNSUnitQuadSolutionWallBC::IsManufacturedSolution(void) const { return true; }
+bool CMMSNSUnitQuadSolutionWallBC::IsManufacturedSolution() const { return true; }

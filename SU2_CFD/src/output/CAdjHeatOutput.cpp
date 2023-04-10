@@ -88,7 +88,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
 
 }
 
-CAdjHeatOutput::~CAdjHeatOutput(void) {}
+CAdjHeatOutput::~CAdjHeatOutput() = default;
 
 void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 

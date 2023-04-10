@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
 
-CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(void) : CVerificationSolution() {}
+CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution() : CVerificationSolution() {}
 
 CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nDim, unsigned short val_nVar,
                                                            unsigned short val_iMesh, CConfig* config)
@@ -99,7 +99,7 @@ CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nD
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Circles case", CURRENT_FUNCTION);
 }
 
-CMMSNSTwoHalfCirclesSolution::~CMMSNSTwoHalfCirclesSolution(void) {}
+CMMSNSTwoHalfCirclesSolution::~CMMSNSTwoHalfCirclesSolution() = default;
 
 void CMMSNSTwoHalfCirclesSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                               su2double* val_solution) const {
@@ -307,4 +307,4 @@ void CMMSNSTwoHalfCirclesSolution::GetMMSSourceTerm(const su2double* val_coords,
   val_source[nDim + 1] /= Velocity_Ref * Pressure_Ref;
 }
 
-bool CMMSNSTwoHalfCirclesSolution::IsManufacturedSolution(void) const { return true; }
+bool CMMSNSTwoHalfCirclesSolution::IsManufacturedSolution() const { return true; }

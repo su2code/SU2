@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CTGVSolution.hpp"
 
-CTGVSolution::CTGVSolution(void) : CVerificationSolution() {}
+CTGVSolution::CTGVSolution() : CVerificationSolution() {}
 
 CTGVSolution::CTGVSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh, CConfig* config)
     : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
@@ -78,7 +78,7 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim, unsigned short val_nVar, uns
     SU2_MPI::Error("Constant Prandtl number must be selected for the Taylor Green Vortex", CURRENT_FUNCTION);
 }
 
-CTGVSolution::~CTGVSolution(void) {}
+CTGVSolution::~CTGVSolution() = default;
 
 void CTGVSolution::GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /* The initial conditions are set for the Taylor-Green vortex case, which
@@ -113,4 +113,4 @@ void CTGVSolution::GetSolution(const su2double* val_coords, const su2double val_
   val_solution[nVar - 1] = p * ovGm1 + 0.5 * rho * (u * u + v * v);
 }
 
-bool CTGVSolution::ExactSolutionKnown(void) const { return false; }
+bool CTGVSolution::ExactSolutionKnown() const { return false; }

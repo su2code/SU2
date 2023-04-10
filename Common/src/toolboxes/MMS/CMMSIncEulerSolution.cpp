@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
 
-CMMSIncEulerSolution::CMMSIncEulerSolution(void) : CVerificationSolution() {}
+CMMSIncEulerSolution::CMMSIncEulerSolution() : CVerificationSolution() {}
 
 CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                            CConfig* config)
@@ -78,7 +78,7 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim, unsigned sho
                    CURRENT_FUNCTION);
 }
 
-CMMSIncEulerSolution::~CMMSIncEulerSolution(void) {}
+CMMSIncEulerSolution::~CMMSIncEulerSolution() = default;
 
 void CMMSIncEulerSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                       su2double* val_solution) const {
@@ -128,4 +128,4 @@ void CMMSIncEulerSolution::GetMMSSourceTerm(const su2double* val_coords, const s
   val_source[nVar - 1] = 0.0;
 }
 
-bool CMMSIncEulerSolution::IsManufacturedSolution(void) const { return true; }
+bool CMMSIncEulerSolution::IsManufacturedSolution() const { return true; }

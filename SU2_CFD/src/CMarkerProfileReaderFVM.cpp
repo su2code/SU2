@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <utility>
+
 #include "../include/CMarkerProfileReaderFVM.hpp"
 
 CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
@@ -44,11 +46,11 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   this->geometry  = val_geometry;
   dimension       = geometry->GetnDim();
 
-  filename     = val_filename;
+  filename     = std::move(val_filename);
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
-  columnNames  = val_columnNames;
-  columnValues = val_columnValues;
+  columnNames  = std::move(val_columnNames);
+  columnValues = std::move(val_columnValues);
 
   /* Attempt to open the specified file. */
   ifstream profile_file;
@@ -68,7 +70,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
 
 }
 
-CMarkerProfileReaderFVM::~CMarkerProfileReaderFVM(void) { }
+CMarkerProfileReaderFVM::~CMarkerProfileReaderFVM() = default;
 
 void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
@@ -100,11 +102,11 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         text_line.erase (0,11);
         for (unsigned short iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( ' ', 0 );  if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( '\r', 0 ); if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( '\n', 0 ); if (position != string::npos) text_line.erase (position,1);
         }
-        profileTags.push_back(text_line.c_str());
+        profileTags.emplace_back(text_line.c_str());
 
         /*--- read NROW ---*/
         getline (profile_file, text_line);
@@ -134,7 +136,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
   profile_file.close();
 
-  if (nmarkFound==false) {
+  if (!nmarkFound) {
     SU2_MPI::Error("While opening profile file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
   }
 
@@ -247,10 +249,10 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
   /*--- Send and Recv buffers. ---*/
 
-  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
+  auto *Buffer_Send_X = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_X = nullptr;
 
-  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
+  auto *Buffer_Send_Y = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_Y = nullptr;
 
   su2double *Buffer_Send_Z = nullptr, *Buffer_Recv_Z = nullptr;

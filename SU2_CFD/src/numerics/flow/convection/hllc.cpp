@@ -59,7 +59,7 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, c
   }
 }
 
-CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
+CUpwHLLC_Flow::~CUpwHLLC_Flow() {
 
   delete [] IntermediateState;
   delete [] dSm_dU;
@@ -583,7 +583,7 @@ CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned sho
   }
 }
 
-CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow(void) {
+CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow() {
 
   delete [] IntermediateState;
   delete [] dSm_dU;

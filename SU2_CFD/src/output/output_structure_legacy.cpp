@@ -219,7 +219,7 @@ COutputLegacy::COutputLegacy(CConfig *config) {
   }
 }
 
-COutputLegacy::~COutputLegacy(void) {
+COutputLegacy::~COutputLegacy() {
   /* delete pointers initialized at construction*/
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
@@ -405,25 +405,25 @@ void COutputLegacy::SetConvHistoryHeader(ofstream *ConvHist_file, CConfig *confi
 
   /*--- Header for the coefficients ---*/
 
-  char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
-  char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
-  char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
+  char flow_coeff[]= R"(,"CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","AoA","Custom_ObjFunc")";
+  char heat_coeff[]= R"(,"HeatFlux_Total","HeatFlux_Maximum","Temperature_Total")";
+  char equivalent_area_coeff[]= R"(,"CEquivArea","CNearFieldOF")";
   char buffet_coeff[]= ",\"Buffet_Metric\"";
-  char engine_coeff[]= ",\"NetThrust\",\"Power\",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
-  char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
-  char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
+  char engine_coeff[]= R"(,"NetThrust","Power","AeroCDrag","SolidCDrag","Radial_Distortion","Circumferential_Distortion")";
+  char rotating_frame_coeff[]= R"(,"CMerit","CT","CQ")";
+  char fem_coeff[]= R"(,"VM_Stress","Force_Coeff")";
   char fem_incload[]= ",\"IncLoad\"";
-  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-  char adj_inc_coeff[]=",\"Sens_Geo\",\"Sens_Vin\",\"Sens_Pout\",\"Sens_Temp\"";
-  char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
-  char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Uniformity\",\"Secondary_Strength\",\"Momentum_Distortion\",\"Secondary_Over_Uniformity\",\"Avg_TotalTemp\",\"Avg_TotalPress\",\"Pressure_Drop\"";
+  char adj_coeff[]= R"(,"Sens_Geo","Sens_Mach","Sens_AoA","Sens_Press","Sens_Temp","Sens_AoS")";
+  char adj_inc_coeff[]=R"(,"Sens_Geo","Sens_Vin","Sens_Pout","Sens_Temp")";
+  char adj_turbo_coeff[]=R"(,"Sens_Geo","Sens_PressOut","Sens_TotTempIn")";
+  char surface_outputs[]= R"(,"Avg_MassFlow","Avg_Mach","Avg_Temp","Avg_Press","Avg_Density","Avg_Enthalpy","Avg_NormalVel","Uniformity","Secondary_Strength","Momentum_Distortion","Secondary_Over_Uniformity","Avg_TotalTemp","Avg_TotalPress","Pressure_Drop")";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
-  char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
+  char d_flow_coeff[] = R"lit(,"D(CL)","D(CD)","D(CSF)","D(CMx)","D(CMy)","D(CMz)","D(CFx)","D(CFy)","D(CFz)","D(CL/CD)","D(Custom_ObjFunc)")lit";
   char d_thermal_coeff[] = ",\"D(HeatFlux_Total)\",\"D(HeatFlux_Maximum)\"";
-  char d_engine[] = ",\"D(NetThrust)\",\"D(Power)\",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
-  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
-  char d_surface_outputs[]= ",\"D(Uniformity)\",\"D(Secondary_Strength)\",\"D(Momentum_Distortion)\",\"D(Secondary_Over_Uniformity)\",\"D(Pressure_Drop)\"";
+  char d_engine[] = R"lit(,"D(NetThrust)","D(Power)","D(AeroCDrag)","D(SolidCDrag)","D(Radial_Distortion)","D(Circumferential_Distortion)")lit";
+  char d_turbo_coeff[] = R"lit(,"D(TotalPressureLoss_0)","D(FlowAngleOut_0)","D(TotalEfficency)","D(TotalStaticEfficiency)", "D(EntropyGen)")lit";
+  char d_surface_outputs[]= R"lit(,"D(Uniformity)","D(Secondary_Strength)","D(Momentum_Distortion)","D(Secondary_Over_Uniformity)","D(Pressure_Drop)")lit";
 
   /*--- Find the markers being monitored and create a header for them ---*/
 
@@ -474,14 +474,14 @@ void COutputLegacy::SetConvHistoryHeader(ofstream *ConvHist_file, CConfig *confi
 
   /*--- Header for the residuals ---*/
 
-  char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
-  char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
+  char flow_resid[]= R"(,"Res_Flow[0]","Res_Flow[1]","Res_Flow[2]","Res_Flow[3]","Res_Flow[4]")";
+  char adj_flow_resid[]= R"(,"Res_AdjFlow[0]","Res_AdjFlow[1]","Res_AdjFlow[2]","Res_AdjFlow[3]","Res_AdjFlow[4]")";
   switch (config->GetKind_Turb_Model()) {
     case TURB_MODEL::SA:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
     case TURB_MODEL::SST:
-      SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
+      SPRINTF (turb_resid, R"(,"Res_Turb[0]","Res_Turb[1]")");
       break;
     default: break;
   }
@@ -490,11 +490,11 @@ void COutputLegacy::SetConvHistoryHeader(ofstream *ConvHist_file, CConfig *confi
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
     case TURB_MODEL::SST:
-      SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
+      SPRINTF (adj_turb_resid, R"(,"Res_AdjTurb[0]","Res_AdjTurb[1]")");
       break;
     default: break;
   }
-  char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
+  char fem_resid[]= R"(,"Res_FEM[0]","Res_FEM[1]","Res_FEM[2]")";
   char heat_resid[]= ",\"Res_Heat\"";
   char rad_resid[]= ",\"Res_P1-rad\"";
 
@@ -1569,8 +1569,8 @@ void COutputLegacy::SetConvHistoryBody(ofstream *ConvHist_file,
       }
       if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
         /*--- Write the screen header---*/
-        if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
-            (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
+        if (  (!fem && ((write_heads) && (DualTime_Iteration || !Unsteady))) ||
+            (fem && ((write_heads_FEM) && (DualTime_Iteration || !nonlinear_analysis)))
         ) {
 
           if (!fem) {
@@ -4411,7 +4411,7 @@ void COutputLegacy::SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, 
                                        CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        CPressure_Airfoil, true, config);
 
-      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.empty())) {
         if ((config->GetGeo_Description() == FUSELAGE) || (config->GetGeo_Description() == WING))
           cout << endl << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
         if (config->GetGeo_Description() == NACELLE)
@@ -4496,7 +4496,7 @@ void COutputLegacy::SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, 
 
       /*--- Output the pressure on each section (tecplot format) ---*/
 
-      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
+      if ((rank == MASTER_NODE) && (!Xcoord_Airfoil.empty())) {
 
         /*--- Find leading and trailing edge ---*/
 
@@ -4546,7 +4546,7 @@ void COutputLegacy::SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, 
           if (iSection == 0) {
             Cp_File.open("cp_sections.dat", ios::out);
             Cp_File << "TITLE = \"Airfoil sections\"" << endl;
-            Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\"" << endl;
+            Cp_File << R"(VARIABLES = "x/c","C<sub>p</sub>","x","y","z","y/c","z/c")" << endl;
           } else
             Cp_File.open("cp_sections.dat", ios::app);
 
@@ -4663,12 +4663,12 @@ void COutputLegacy::SpecialOutputSpanLoad(CSolver *solver, CGeometry *geometry, 
 
             if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) {
               Load_File.open("load_distribution.csv", ios::out);
-              Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
+              Load_File << R"("Percent Semispan","Sectional C_L","Spanload (c C_L / c_ref) ","Elliptic Spanload")" << endl;
             }
             else {
               Load_File.open("load_distribution.dat", ios::out);
               Load_File << "TITLE = \"Load distribution\"" << endl;
-              Load_File << "VARIABLES = \"Percent Semispan\",\"Sectional C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
+              Load_File << R"(VARIABLES = "Percent Semispan","Sectional C<sub>L</sub>","Spanload (c C<sub>L</sub> / c<sub>ref</sub>) ","Elliptic Spanload")" << endl;
               Load_File << "ZONE T=\"Wing load distribution\"" << endl;
             }
           } else {
@@ -4789,7 +4789,7 @@ void COutputLegacy::SetCpInverseDesign(CSolver *solver_container, CGeometry *geo
 
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
-        position = text_line.find( ",", 0 );
+        position = text_line.find( ',', 0 );
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
@@ -4940,7 +4940,7 @@ void COutputLegacy::SetHeatFluxInverseDesign(CSolver *solver_container, CGeometr
 
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
-        position = text_line.find( ",", 0 );
+        position = text_line.find( ',', 0 );
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
@@ -5064,7 +5064,7 @@ void COutputLegacy::SpecialOutputDistortion(CSolver *solver, CGeometry *geometry
     }
     else {
       SurfFlow_file <<"TITLE = \"Surface Analysis\"" <<endl;
-      SurfFlow_file <<"VARIABLES = \"y(in)\", \"z(in)\", \"PT/PT<sub>inf</sub>\", \"TT/TT<sub>inf</sub>\", \"P/P<sub>inf</sub>\", \"T/T<sub>inf</sub>\", \"v<sub>x</sub>/v<sub>inf</sub>\", \"v<sub>y</sub>/v<sub>inf</sub>\", \"v<sub>z</sub>/v<sub>inf</sub>\", \"<greek>a</greek> (deg)\", \"<greek>b</greek> (deg)\", \"Mach\", \"Filtered <greek>a</greek> (deg)\", \"Filtered <greek>b</greek> (deg)\", \"Filtered Mach\"" << endl;
+      SurfFlow_file <<R"lit(VARIABLES = "y(in)", "z(in)", "PT/PT<sub>inf</sub>", "TT/TT<sub>inf</sub>", "P/P<sub>inf</sub>", "T/T<sub>inf</sub>", "v<sub>x</sub>/v<sub>inf</sub>", "v<sub>y</sub>/v<sub>inf</sub>", "v<sub>z</sub>/v<sub>inf</sub>", "<greek>a</greek> (deg)", "<greek>b</greek> (deg)", "Mach", "Filtered <greek>a</greek> (deg)", "Filtered <greek>b</greek> (deg)", "Filtered Mach")lit" << endl;
     }
 
   }
@@ -6385,7 +6385,7 @@ void COutputLegacy::SpecialOutputTurbo(CSolver *****solver, CGeometry ****geomet
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
     char buffer[50];
     if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of('.');
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       spanwise_performance_filename.append(string(buffer));
@@ -6441,7 +6441,7 @@ void COutputLegacy::SpecialOutputTurbo(CSolver *****solver, CGeometry ****geomet
     /*--- Writing Span wise outflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
     if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of('.');
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       spanwise_performance_filename.append(string(buffer));
@@ -6497,7 +6497,7 @@ void COutputLegacy::SpecialOutputTurbo(CSolver *****solver, CGeometry ****geomet
     /*--- Writing Span wise inflow kinematic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
     if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of('.');
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       spanwise_performance_filename.append(string(buffer));
@@ -6555,7 +6555,7 @@ void COutputLegacy::SpecialOutputTurbo(CSolver *****solver, CGeometry ****geomet
     /*--- Writing Span wise outflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
     if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of('.');
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       spanwise_performance_filename.append(string(buffer));
@@ -6630,7 +6630,7 @@ void COutputLegacy::SpecialOutputHarmonicBalance(CSolver *****solver, CGeometry 
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
 
-  su2double *averages = new su2double[nVar_output];
+  auto *averages = new su2double[nVar_output];
   for (iVar = 0; iVar < nVar_output; iVar++)
     averages[iVar] = 0;
 
@@ -6640,13 +6640,13 @@ void COutputLegacy::SpecialOutputHarmonicBalance(CSolver *****solver, CGeometry 
 
     HB_output_file.precision(15);
     HB_output_file.open("HB_output.csv", ios::out);
-    HB_output_file <<  "\"time_instance\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\"" << endl;
+    HB_output_file <<  R"("time_instance","CL","CD","CMx","CMy","CMz")" << endl;
 
     mean_HB_file.precision(15);
     if (current_iter == 0 && iInst == 1) {
       mean_HB_file.open("history_HB.plt", ios::trunc);
       mean_HB_file << "TITLE = \"SU2 HARMONIC BALANCE SIMULATION\"" << endl;
-      mean_HB_file <<  "VARIABLES = \"Iteration\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
+      mean_HB_file <<  R"(VARIABLES = "Iteration","CL","CD","CMx","CMy","CMz","CT","CQ","CMerit")" << endl;
       mean_HB_file << "ZONE T= \"Average Convergence History\"" << endl;
     }
     else
@@ -6708,7 +6708,7 @@ void COutputLegacy::SetSpecialOutput(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
-                                       unsigned short val_nZone) {
+                                       unsigned short val_nZone) const {
 
   bool special_output = false;
   unsigned short iZone;
@@ -6747,21 +6747,21 @@ void COutputLegacy::SpecialOutputAnalyzeSurface(CSolver *solver, CGeometry *geom
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
-  su2double  *Vector                    = new su2double[nDim];
-  su2double  *Surface_MassFlow          = new su2double[nMarker];
-  su2double  *Surface_Mach              = new su2double[nMarker];
-  su2double  *Surface_Temperature       = new su2double[nMarker];
-  su2double  *Surface_Density           = new su2double[nMarker];
-  su2double  *Surface_Enthalpy          = new su2double[nMarker];
-  su2double  *Surface_NormalVelocity    = new su2double[nMarker];
-  su2double  *Surface_StreamVelocity2   = new su2double[nMarker];
-  su2double  *Surface_TransvVelocity2   = new su2double[nMarker];
-  su2double  *Surface_Pressure          = new su2double[nMarker];
-  su2double  *Surface_TotalTemperature  = new su2double[nMarker];
-  su2double  *Surface_TotalPressure     = new su2double[nMarker];
-  su2double  *Surface_VelocityIdeal     = new su2double[nMarker];
-  su2double  *Surface_Area              = new su2double[nMarker];
-  su2double  *Surface_MassFlow_Abs      = new su2double[nMarker];
+  auto  *Vector                    = new su2double[nDim];
+  auto  *Surface_MassFlow          = new su2double[nMarker];
+  auto  *Surface_Mach              = new su2double[nMarker];
+  auto  *Surface_Temperature       = new su2double[nMarker];
+  auto  *Surface_Density           = new su2double[nMarker];
+  auto  *Surface_Enthalpy          = new su2double[nMarker];
+  auto  *Surface_NormalVelocity    = new su2double[nMarker];
+  auto  *Surface_StreamVelocity2   = new su2double[nMarker];
+  auto  *Surface_TransvVelocity2   = new su2double[nMarker];
+  auto  *Surface_Pressure          = new su2double[nMarker];
+  auto  *Surface_TotalTemperature  = new su2double[nMarker];
+  auto  *Surface_TotalPressure     = new su2double[nMarker];
+  auto  *Surface_VelocityIdeal     = new su2double[nMarker];
+  auto  *Surface_Area              = new su2double[nMarker];
+  auto  *Surface_MassFlow_Abs      = new su2double[nMarker];
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
 
@@ -6878,35 +6878,35 @@ void COutputLegacy::SpecialOutputAnalyzeSurface(CSolver *solver, CGeometry *geom
 
   /*--- Copy to the appropriate structure ---*/
 
-  su2double *Surface_MassFlow_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Local              = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Local       = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Local           = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Local    = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity2_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity2_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Local  = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Local     = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Local              = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Local      = new su2double [nMarker_Analyze];
+  auto *Surface_MassFlow_Local          = new su2double [nMarker_Analyze];
+  auto *Surface_Mach_Local              = new su2double [nMarker_Analyze];
+  auto *Surface_Temperature_Local       = new su2double [nMarker_Analyze];
+  auto *Surface_Density_Local           = new su2double [nMarker_Analyze];
+  auto *Surface_Enthalpy_Local          = new su2double [nMarker_Analyze];
+  auto *Surface_NormalVelocity_Local    = new su2double [nMarker_Analyze];
+  auto *Surface_StreamVelocity2_Local   = new su2double [nMarker_Analyze];
+  auto *Surface_TransvVelocity2_Local   = new su2double [nMarker_Analyze];
+  auto *Surface_Pressure_Local          = new su2double [nMarker_Analyze];
+  auto *Surface_TotalTemperature_Local  = new su2double [nMarker_Analyze];
+  auto *Surface_TotalPressure_Local     = new su2double [nMarker_Analyze];
+  auto *Surface_Area_Local              = new su2double [nMarker_Analyze];
+  auto *Surface_MassFlow_Abs_Local      = new su2double [nMarker_Analyze];
 
-  su2double *Surface_MassFlow_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Total              = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Total       = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Total           = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Total    = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity2_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity2_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Total  = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Total     = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Total              = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Total      = new su2double [nMarker_Analyze];
+  auto *Surface_MassFlow_Total          = new su2double [nMarker_Analyze];
+  auto *Surface_Mach_Total              = new su2double [nMarker_Analyze];
+  auto *Surface_Temperature_Total       = new su2double [nMarker_Analyze];
+  auto *Surface_Density_Total           = new su2double [nMarker_Analyze];
+  auto *Surface_Enthalpy_Total          = new su2double [nMarker_Analyze];
+  auto *Surface_NormalVelocity_Total    = new su2double [nMarker_Analyze];
+  auto *Surface_StreamVelocity2_Total   = new su2double [nMarker_Analyze];
+  auto *Surface_TransvVelocity2_Total   = new su2double [nMarker_Analyze];
+  auto *Surface_Pressure_Total          = new su2double [nMarker_Analyze];
+  auto *Surface_TotalTemperature_Total  = new su2double [nMarker_Analyze];
+  auto *Surface_TotalPressure_Total     = new su2double [nMarker_Analyze];
+  auto *Surface_Area_Total              = new su2double [nMarker_Analyze];
+  auto *Surface_MassFlow_Abs_Total      = new su2double [nMarker_Analyze];
 
-  su2double *Surface_MomentumDistortion_Total = new su2double [nMarker_Analyze];
+  auto *Surface_MomentumDistortion_Total = new su2double [nMarker_Analyze];
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     Surface_MassFlow_Local[iMarker_Analyze]          = 0.0;

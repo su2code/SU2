@@ -84,12 +84,11 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
       if (disc_adj_fem) {
         config[val_iZone]->SetInnerIter(CurIter);
         break;
-      } else {
-        StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
+      }         StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
                            FFDBox, val_iZone, INST_0);
 
         if (StopCalc && (IntIter > 0)) break;
-      }
+     
     }
 
   } else {
