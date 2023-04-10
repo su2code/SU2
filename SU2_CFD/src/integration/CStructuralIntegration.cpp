@@ -193,7 +193,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
 void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
 
-  bool fsi = config->GetFSI_Simulation();
+  const bool fsi = config->GetFSI_Simulation();
 
   /*--- Update the solution according to the integration scheme used ---*/
 
@@ -201,7 +201,7 @@ void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolv
     case (STRUCT_TIME_INT::CD_EXPLICIT):
       break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
-      if (fsi) solver->ImplicitNewmark_Relaxation(geometry, config);
+      if (fsi && config->GetRelaxation()) solver->ImplicitNewmark_Relaxation(geometry, config);
       break;
     case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
       solver->GeneralizedAlpha_UpdateSolution(geometry, config);
@@ -215,12 +215,5 @@ void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolv
 
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
 
-  if (fsi) {
-
-    su2double WAitk=0.0;
-
-    WAitk = solver->GetWAitken_Dyn();
-    solver->SetWAitken_Dyn_tn1(WAitk);
-
-  }
+  if (fsi) solver->SetWAitken_Dyn_tn1();
 }

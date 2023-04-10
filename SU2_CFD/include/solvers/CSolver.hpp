@@ -3698,27 +3698,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the dynamic Aitken relaxation factor
    */
-  inline virtual su2double GetWAitken_Dyn(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual su2double GetWAitken_Dyn_tn1(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the dynamic Aitken relaxation factor
-   */
-  inline virtual void SetWAitken_Dyn(su2double waitk) {  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
+  inline virtual void SetWAitken_Dyn_tn1() {  }
 
   /*!
    * \brief A virtual member.

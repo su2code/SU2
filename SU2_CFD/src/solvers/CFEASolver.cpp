@@ -2576,26 +2576,26 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
 
   if (RelaxMethod_FSI == BGS_RELAXATION::NONE) {
 
-    SetWAitken_Dyn(1.0);
+    WAitken_Dyn = 1.0;
 
   }
   else if (RelaxMethod_FSI == BGS_RELAXATION::FIXED) {
 
-    SetWAitken_Dyn(config->GetAitkenStatRelax());
+    WAitken_Dyn = config->GetAitkenStatRelax();
 
   }
   else if (RelaxMethod_FSI == BGS_RELAXATION::AITKEN) {
 
     if (iOuterIter == 0) {
 
-      WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+      WAitkDyn_tn1 = WAitken_Dyn_tn1;
       WAitkDyn_Max = config->GetAitkenDynMaxInit();
       WAitkDyn_Min = config->GetAitkenDynMinInit();
 
       WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
       WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
 
-      SetWAitken_Dyn(WAitkDyn);
+      WAitken_Dyn = WAitkDyn;
 
     }
     else {
@@ -2626,7 +2626,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
       SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      WAitkDyn = GetWAitken_Dyn();
+      WAitkDyn = WAitken_Dyn;
 
       if (rbuf_denAitk > EPS) {
         WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
@@ -2635,7 +2635,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
       WAitkDyn = max(WAitkDyn, 0.1);
       WAitkDyn = min(WAitkDyn, 1.0);
 
-      SetWAitken_Dyn(WAitkDyn);
+      WAitken_Dyn = WAitkDyn;
 
     }
 
@@ -2648,7 +2648,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
 
 void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) {
 
-  const su2double WAitken = GetWAitken_Dyn();
+  const su2double WAitken = WAitken_Dyn;
   const bool dynamic = config->GetTime_Domain();
 
   /*--- To nPoint to avoid communication. ---*/
