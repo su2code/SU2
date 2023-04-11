@@ -403,12 +403,14 @@ class CSourcePieceWise_TransEN final : public CNumerics {
   		const su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
 
   		/*--- Abs value taken to account of negative difference between pInf and local p ---*/
-  		u_e = sqrt(2*(G_over_G*( abs((pInf/rhoInf) -(p/rho_e)) )) + velInf2 );
+  		//u_e = sqrt(2*(G_over_G*( (pInf/rhoInf) -(p/rho_e) )) + velInf2 );
+  		u_e = sqrt(2*(G_over_G*(pInf/rhoInf) + (velInf2/2) - G_over_G*(p/rho_e)));
 
       } else {
 
     	/*--- Inviscid edge velocity based on incompressible Bernoulli's equation---*/
-    	  u_e = sqrt((rhoInf*velInf2 + 2*(abs(pInf-p)))/rho);
+    	//u_e = sqrt((rhoInf*velInf2 + 2*(pInf-p))/rho);
+    	u_e = sqrt((rhoInf*velInf2 + 2*(p-pInf))/rho);
 
       }
 
