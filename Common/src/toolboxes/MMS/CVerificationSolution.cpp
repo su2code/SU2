@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CVerificationSolution.hpp"
 
-CVerificationSolution::CVerificationSolution(void) {
+CVerificationSolution::CVerificationSolution() {
   /*--- Initialize the pointers to NULL. ---*/
   Error_RMS = nullptr;
   Error_Max = nullptr;
@@ -65,7 +65,7 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim, unsigned s
   }
 }
 
-CVerificationSolution::~CVerificationSolution(void) {
+CVerificationSolution::~CVerificationSolution() {
   /*--- Release the memory of the pointers, if allocated. ---*/
   delete[] Error_RMS;
   delete[] Error_Max;
@@ -102,9 +102,9 @@ void CVerificationSolution::GetMMSSourceTerm(const su2double* val_coords, const 
   for (unsigned short iVar = 0; iVar < nVar; ++iVar) val_source[iVar] = 0.0;
 }
 
-bool CVerificationSolution::IsManufacturedSolution(void) const { return false; }
+bool CVerificationSolution::IsManufacturedSolution() const { return false; }
 
-bool CVerificationSolution::ExactSolutionKnown(void) const { return true; }
+bool CVerificationSolution::ExactSolutionKnown() const { return true; }
 
 void CVerificationSolution::GetLocalError(const su2double* val_coords, const su2double val_t,
                                           const su2double* val_solution, su2double* val_error) const {

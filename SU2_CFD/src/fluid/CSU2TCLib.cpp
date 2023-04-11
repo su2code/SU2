@@ -1160,7 +1160,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   else            { nHeavy = nSpecies;   nEl = 0; }
 }
 
-CSU2TCLib::~CSU2TCLib(){}
+CSU2TCLib::~CSU2TCLib()= default;
 
 void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
@@ -1327,7 +1327,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-    if (vibe_only == true) {eves[iSpecies] = Ev;}
+    if (vibe_only) {eves[iSpecies] = Ev;}
     else {eves[iSpecies] = Ev + Eel;}
   }
 
@@ -1581,7 +1581,7 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
     for (ii = 0; ii < 5; ii++)
       A[ii] = RxnConstantTable(0,ii);
     return;
-  } else if (iIndex >= 5) {
+  } if (iIndex >= 5) {
     for (ii = 0; ii < 5; ii++)
       A[ii] = RxnConstantTable(5,ii);
     return;
@@ -1902,7 +1902,7 @@ su2double CSU2TCLib::ComputeCollisionCrossSection(unsigned iSpecies, unsigned jS
 
     if (Omega11(iSpecies, jSpecies, 0) == 1.0 && d1) {
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_a*T_star*(1 - C1_a * exp(-c1_a * T_star))+1);
-    } else if (Omega11(iSpecies, jSpecies, 0) == -1.0 && d1) {
+    } if (Omega11(iSpecies, jSpecies, 0) == -1.0 && d1) {
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D1_r*T_star*(1 - C1_r * exp(-c1_r * T_star))+1);
     } else if (Omega22(iSpecies, jSpecies, 0) == 1.0 && !d1) {
       return 1E-20 * 5E15 * pi * pow((debyeLength / T), 2) * log(D2_a*T_star*(1 - C2_a * exp(-c2_a * T_star))+1);
@@ -1913,9 +1913,8 @@ su2double CSU2TCLib::ComputeCollisionCrossSection(unsigned iSpecies, unsigned jS
   } else {
     if (d1) {
       return 1E-20 * Omega11(iSpecies,jSpecies,3) * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T) + Omega11(iSpecies,jSpecies,1)*log(T) + Omega11(iSpecies,jSpecies,2));
-    } else {
-      return 1E-20 * Omega22(iSpecies,jSpecies,3) * pow(T, Omega22(iSpecies,jSpecies,0)*log(T)*log(T) + Omega22(iSpecies,jSpecies,1)*log(T) + Omega22(iSpecies,jSpecies,2));
-    }
+    }       return 1E-20 * Omega22(iSpecies,jSpecies,3) * pow(T, Omega22(iSpecies,jSpecies,0)*log(T)*log(T) + Omega22(iSpecies,jSpecies,1)*log(T) + Omega22(iSpecies,jSpecies,2));
+   
   }
 }
 
@@ -2062,13 +2061,13 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     if (denom_re <= 0.0) denom_re = EPS;
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (!(ionization && iSpecies == 0)) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
+    if (!ionization || iSpecies != 0) ThermalCond_tr += ((15.0/4.0)*kb*gam_i/denom_t);
 
     /*--- Rotational contribution to thermal conductivity ---*/
     if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (kb*gam_i/denom_r);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    if (!(ionization && iSpecies == 0) && RotationModes[iSpecies] != 0.0) ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
+    if ((!ionization || iSpecies != 0) && RotationModes[iSpecies] != 0.0) ThermalCond_ve += (kb*Cvve/R*gam_i / denom_r);
     
     if (ionization && iSpecies == 0) ThermalCond_ve += ((15.0/4.0)*kb*gam_i/(1.45*denom_re));
   }
@@ -2169,9 +2168,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
       NRconvg = true;
       Tve = Tve2;
       break;
-    } else {
-      Tve = Tve2;
-    }
+    }       Tve = Tve2;
+   
   }
 
   // If the Newton-Raphson method has converged, assign the value of Tve.
@@ -2186,10 +2184,9 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
       if (fabs(rhoEve_t - rhoEve) < Btol) {
         Bconvg = true;
         break;
-      } else {
-        if (rhoEve_t > rhoEve) Tve2 = Tve;
+      }         if (rhoEve_t > rhoEve) Tve2 = Tve;
         else                  Tve_o = Tve;
-      }
+     
     }
   }
 

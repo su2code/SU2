@@ -282,7 +282,8 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_Mesh_FVM(CConfig* config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+  void Read_Mesh_FVM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
+                     unsigned short val_nZone);
 
   /*!
    * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
@@ -292,7 +293,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_SU2_Format_Parallel_FEM(CConfig* config, string val_mesh_filename, unsigned short val_iZone,
+  void Read_SU2_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
                                     unsigned short val_nZone);
 
   /*!
@@ -303,7 +304,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_CGNS_Format_Parallel_FEM(CConfig* config, string val_mesh_filename, unsigned short val_iZone,
+  void Read_CGNS_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
                                      unsigned short val_nZone);
 
   /*!

@@ -139,7 +139,7 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CFEAElasticity::~CFEAElasticity(void) {
+CFEAElasticity::~CFEAElasticity() {
 
   unsigned short iVar;
   unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;

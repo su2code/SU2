@@ -191,7 +191,7 @@ class CSysSolve {
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(std::string solver, ScalarType restol, ScalarType resinit) const;
+  void WriteHeader(const std::string& solver, ScalarType restol, ScalarType resinit) const;
 
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -208,7 +208,7 @@ class CSysSolve {
    * \param[in] iter - current iteration
    * \param[in] res - the residual norm
    */
-  void WriteFinalResidual(std::string solver, unsigned long iter, ScalarType res) const;
+  void WriteFinalResidual(const std::string& solver, unsigned long iter, ScalarType res) const;
 
   /*!
    * \brief writes the convergence warning
