@@ -6856,7 +6856,7 @@ public:
    * \param[in] iMarker - marker index
    * \param[in] iVar - index to the variable
    */
-  void SetInlet_SpeciesVal(su2double val, string val_marker, unsigned long iVar) const;
+  void SetInlet_SpeciesVal(su2double val, const string& val_marker, unsigned long iVar) const;
 
 
   /*!
