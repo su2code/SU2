@@ -57,11 +57,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   nDim = geometry->GetnDim();
 
-  /*--- Define some auxiliary vector related with the solution. ---*/
-  Solution = new su2double[nVar];
-  Solution_i = new su2double[nVar];
-  Solution_j = new su2double[nVar];
-
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
   auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
@@ -180,8 +175,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     /*--- Compute scalar source terms ---*/
     unsigned long exit_code = fluid_model_local->SetScalarSources(scalars);
-    unsigned short inside = exit_code;
-    nodes->SetInsideTable(i_point, inside);
+    unsigned short misses = exit_code;
+    nodes->SetTableMisses(i_point, misses);
     n_not_in_domain += exit_code;
 
     /*--- Get lookup scalars ---*/
@@ -259,7 +254,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       prog_burnt = *fluid_model_local->GetLookUpTable()->GetTableLimitsX().second;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
-        for (unsigned long i_var = 0; i_var < nVar; i_var++) Solution[i_var] = 0.0;
 
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
@@ -590,9 +584,8 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
       /*--- Allocate the value at the outlet. ---*/
 
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
 
-      nodes->SetSolution_Old(iPoint, Solution);
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
 
       LinSysRes.SetBlock_Zero(iPoint);
 
@@ -699,18 +692,16 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
                                                         unsigned short val_marker) {
 
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
-
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+    su2double temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
@@ -773,8 +764,10 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
       }
     }
   }
+  END_SU2_OMP_FOR
+
   if (rank == MASTER_NODE && n_not_iterated > 0) {
-    cout << " !!! CHT interface (" << Marker_Tag
+    cout << " !!! CHT interface (" << config->GetMarker_All_TagBound(val_marker)
          << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
   }
 }

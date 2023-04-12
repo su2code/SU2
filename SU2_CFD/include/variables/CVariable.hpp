@@ -2317,9 +2317,9 @@ public:
 
   inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
 
-  inline virtual void SetInsideTable(unsigned long iPoint, unsigned short inside) { }
+  inline virtual void SetTableMisses(unsigned long iPoint, unsigned short misses) { }
 
-  inline virtual unsigned short GetInsideTable(unsigned long iPoint) const { return 0; }
+  inline virtual unsigned short GetTableMisses(unsigned long iPoint) const { return 0; }
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }

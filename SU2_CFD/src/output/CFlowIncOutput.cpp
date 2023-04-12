@@ -332,6 +332,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
@@ -356,6 +358,12 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     if (heat || weakly_coupled_heat || flamelet)
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
+
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
 
   SetVolumeOutputFieldsScalarMisc(config);
 

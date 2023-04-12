@@ -1326,22 +1326,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
         AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
       }
 
-      AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
-      /*--- no source term for enthalpy ---*/
-      /*--- auxiliary species source terms ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-        string species_name = config->GetUserScalarName(iReactant);
-        AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
-      }
-
-      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
-        if (config->GetLUTLookupName(i_lookup) != "NULL") {
-          string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
-          AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
-        }
-      }
-
-      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       break;
     case SPECIES_MODEL::NONE:
       break;
@@ -1369,12 +1353,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
         AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-        AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
       }
       break;
     case SPECIES_MODEL::FLAMELET:
-      AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "SOLUTION", "Residual of progress variable");
-      AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "SOLUTION", "Residual of total enthalpy");
+      AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "RESIDUAL", "Residual of progress variable");
+      AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "RESIDUAL", "Residual of total enthalpy");
       /*--- residuals for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         string species_name = config->GetUserScalarName(iReactant);
@@ -1396,8 +1379,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   }
 }
 
-void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
-  /*--- Place "PRIMITIVE", "LIMITER", and other groups here. ---*/
+
+void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
+  /*--- Only place outputs of the "SOLUTION" group for species transport here. ---*/
 
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
@@ -1422,8 +1406,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
           AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
       break;
       case SPECIES_MODEL::FLAMELET:
-        AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "SOLUTION", "Limiter of progress variable");
-        AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "SOLUTION", "Limiter of total enthalpy");
+        AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "LIMITER", "Limiter of progress variable");
+        AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "LIMITER", "Limiter of total enthalpy");
         /*--- limiter for auxiliary species transport ---*/
         for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
           string species_name = config->GetUserScalarName(iReactant);
@@ -1433,25 +1417,73 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       case SPECIES_MODEL::NONE:
         break;
     }
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
-    }
   }
+}
 
-  switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::LM:
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
-      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
+
+
+void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
+  /*--- Only place outputs of the "PRIMITIVE" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+        AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+      }
       break;
-
-    case TURB_TRANS_MODEL::NONE:
+    case SPECIES_MODEL::FLAMELET:
+      break;
+    case SPECIES_MODEL::NONE:
       break;
   }
 
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+}
+
+
+void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
+  /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      /*--- no source term for enthalpy ---*/
+      /*--- auxiliary species source terms ---*/
+      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
+        string species_name = config->GetUserScalarName(iReactant);
+        AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
+      }
+      break;
+    case SPECIES_MODEL::NONE:
+      break;
   }
+}
+
+
+void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
+  /*--- Only place outputs of the "LOOKUP" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
+        if (config->GetLUTLookupName(i_lookup) != "NULL") {
+          string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
+          AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
+        }
+      }
+
+      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
+      break;
+    case SPECIES_MODEL::NONE:
+      break;
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
+  /*--- Only place outputs of the group for scalar transport here that do not fit in other categories. ---*/
 
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
@@ -1474,6 +1506,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 }
+
+
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
@@ -1570,7 +1604,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint)[I_PROGVAR]);
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
-      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetInsideTable(iPoint));
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetTableMisses(iPoint));
 
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {

@@ -37,7 +37,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
  protected:
   MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  su2vector<unsigned short> inside_table; /*!< \brief Vector of solutions inside the lookup table. */
+  su2vector<unsigned short> table_misses; /*!< \brief Vector of lookup table misses. */
 
  public:
   /*!
@@ -84,7 +84,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    */
   inline const su2double* GetScalarLookups(unsigned long iPoint) const override { return lookup_scalar[iPoint]; }
 
-  inline void SetInsideTable(unsigned long iPoint, unsigned short inside) override { inside_table[iPoint] = inside; }
+  inline void SetTableMisses(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 
-  inline unsigned short GetInsideTable(unsigned long iPoint) const override { return inside_table[iPoint]; }
+  inline unsigned short GetTableMisses(unsigned long iPoint) const override { return table_misses[iPoint]; }
 };
