@@ -66,7 +66,7 @@ class CCoolProp final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CCoolProp(string fluidname);
+  CCoolProp(const string& fluidname);
 
 #ifdef USE_COOLPROP
   /*!

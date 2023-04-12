@@ -952,9 +952,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
           if (solIdx == FLOW_SOL) {
             return flowNodes->GetPrimitive(iPoint, varIdx);
-          } else {
-            return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-          }
+          }             return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+         
         } else {
           return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
         }
@@ -1765,7 +1764,8 @@ void CFlowOutput::AddHeatCoefficients(const CConfig* config) {
   AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux across all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
 
   vector<string> Marker_Monitoring;
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+  Marker_Monitoring.reserve(config->GetnMarker_Monitoring());
+for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker));
   }
   /// DESCRIPTION:  Total heatflux
@@ -2431,7 +2431,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   auto fileName = config->GetBreakdown_FileName();
   if (unsteady) {
-    const auto lastindex = fileName.find_last_of(".");
+    const auto lastindex = fileName.find_last_of('.');
     const auto ext = fileName.substr(lastindex, fileName.size());
     fileName = fileName.substr(0, lastindex);
     fileName = config->GetFilename(fileName, ext, curTimeIter);
@@ -3935,8 +3935,8 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
     /* only write 'double' files for the restart files */
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
       ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0) ||
-      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart==true) || // Restarts need 2 old solutions.
-      (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
+      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart) || // Restarts need 2 old solutions.
+      (((Iter+2) == config->GetnTime_Iter()) && writeRestart))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
@@ -3944,7 +3944,7 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
     return ((Iter > 0) && Iter % config->GetVolumeOutputFrequency(iFile) == 0) || force_writing;
   }
 
-  return false || force_writing;
+  return force_writing;
 }
 
 void CFlowOutput::SetTimeAveragedFields(){

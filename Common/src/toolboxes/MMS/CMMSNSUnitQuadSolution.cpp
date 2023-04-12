@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
 
-CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(void) : CVerificationSolution() {}
+CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution() : CVerificationSolution() {}
 
 CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim, unsigned short val_nVar,
                                                unsigned short val_iMesh, CConfig* config)
@@ -107,7 +107,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim, unsigned
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Unit Quad case", CURRENT_FUNCTION);
 }
 
-CMMSNSUnitQuadSolution::~CMMSNSUnitQuadSolution(void) {}
+CMMSNSUnitQuadSolution::~CMMSNSUnitQuadSolution() = default;
 
 void CMMSNSUnitQuadSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                         su2double* val_solution) const {
@@ -383,4 +383,4 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double* val_coords, const
   val_source[nDim + 1] = t564 + t565 + t566 + t567;
 }
 
-bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) const { return true; }
+bool CMMSNSUnitQuadSolution::IsManufacturedSolution() const { return true; }

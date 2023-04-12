@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
 
-CNSUnitQuadSolution::CNSUnitQuadSolution(void) : CVerificationSolution() {}
+CNSUnitQuadSolution::CNSUnitQuadSolution() : CVerificationSolution() {}
 
 CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                          CConfig* config)
@@ -78,7 +78,7 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim, unsigned short
     SU2_MPI::Error("Laminar Prandtl number must be larger than 1.e+20 for the NS Unit Quad case", CURRENT_FUNCTION);
 }
 
-CNSUnitQuadSolution::~CNSUnitQuadSolution(void) {}
+CNSUnitQuadSolution::~CNSUnitQuadSolution() = default;
 
 void CNSUnitQuadSolution::GetBCState(const su2double* val_coords, const su2double val_t,
                                      su2double* val_solution) const {

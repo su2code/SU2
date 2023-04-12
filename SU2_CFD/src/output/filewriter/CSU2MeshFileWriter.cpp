@@ -193,11 +193,11 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
         getline(input_file, text_line);
         text_line.erase(0,11);
         for (int iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find(" ", 0);
+          position = text_line.find(' ', 0);
           if (position != string::npos) text_line.erase(position,1);
-          position = text_line.find("\r", 0);
+          position = text_line.find('\r', 0);
           if (position != string::npos) text_line.erase(position,1);
-          position = text_line.find("\n", 0);
+          position = text_line.find('\n', 0);
           if (position != string::npos) text_line.erase(position,1);
         }
         string Marker_Tag = text_line;

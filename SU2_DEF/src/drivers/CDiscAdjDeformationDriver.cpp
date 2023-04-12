@@ -213,7 +213,7 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
          * define all virtual functions in the base class CGeometry. ---*/
 
-        CMeshFEM_DG* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
+        auto* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
 
         /*--- Determine the standard elements for the volume elements. ---*/
 
@@ -302,17 +302,16 @@ void CDiscAdjDeformationDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
     if (!config_container[iZone]->GetDiscrete_Adjoint()) {
       continue;
+    }
+    if (rank == MASTER_NODE)
+      cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
+    if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
+        config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
+      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
+                                          grid_movement[iZone][INST_0]);
     } else {
-      if (rank == MASTER_NODE)
-        cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
-      if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
-          config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
-        DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
-                                            grid_movement[iZone][INST_0]);
-      } else {
-        grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
-                                                            config_container[iZone], false, true);
-      }
+      grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
+                                                          config_container[iZone], false, true);
     }
   }
 
@@ -767,7 +766,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
       /*--- Print the kind of design variable on screen. ---*/
 
       cout << endl << "Design variable (";
-      for (std::map<string, ENUM_PARAM>::const_iterator it = Param_Map.begin(); it != Param_Map.end(); ++it) {
+      for (auto it = Param_Map.begin(); it != Param_Map.end(); ++it) {
         if (it->second == config->GetDesign_Variable(iDV)) {
           cout << it->first << ") number " << iDV << "." << endl;
         }
@@ -775,8 +774,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
 
       /*--- Print the kind of objective function to screen. ---*/
 
-      for (std::map<string, ENUM_OBJECTIVE>::const_iterator it = Objective_Map.begin(); it != Objective_Map.end();
-           ++it) {
+      for (auto it = Objective_Map.begin(); it != Objective_Map.end(); ++it) {
         if (it->second == config->GetKind_ObjFunc()) {
           cout << it->first << " gradient : ";
           if (iDV == 0) Gradient_file << it->first << " gradient " << endl;
@@ -818,18 +816,18 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
     /*--- We create a baseline solver to easily merge the sensitivity information. ---*/
 
     vector<string> fieldnames;
-    fieldnames.push_back("\"Point\"");
-    fieldnames.push_back("\"x\"");
-    fieldnames.push_back("\"y\"");
+    fieldnames.emplace_back("\"Point\"");
+    fieldnames.emplace_back("\"x\"");
+    fieldnames.emplace_back("\"y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"z\"");
+      fieldnames.emplace_back("\"z\"");
     }
-    fieldnames.push_back("\"Sensitivity_x\"");
-    fieldnames.push_back("\"Sensitivity_y\"");
+    fieldnames.emplace_back("\"Sensitivity_x\"");
+    fieldnames.emplace_back("\"Sensitivity_y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\"");
+      fieldnames.emplace_back("\"Sensitivity_z\"");
     }
-    fieldnames.push_back("\"Surface_Sensitivity\"");
+    fieldnames.emplace_back("\"Surface_Sensitivity\"");
 
     solver = new CBaselineSolver(geometry[iZone][INST_0][MESH_0], config[iZone], nVar + nDim, fieldnames);
 
