@@ -63,6 +63,17 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       /*--- Already initialized in the static mesh movement routine at driver level. ---*/
     case STEADY_TRANSLATION:
     case ROTATING_FRAME:
+      if (rank == MASTER_NODE) cout << endl << " Setting rotating frame grid velocities" << endl;
+
+      /*--- Set the grid velocities on finest multigrid level for a rotating reference frame. ---*/
+
+      geometry[MESH_0]->SetRotationalVelocity(config, true);
+
+      /*--- Update the multigrid structure after moving the finest grid,
+            including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement->UpdateMultiGrid(geometry, config);
+
       break;
   }
 
