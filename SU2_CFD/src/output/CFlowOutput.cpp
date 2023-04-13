@@ -953,7 +953,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           if (solIdx == FLOW_SOL) {
             return flowNodes->GetPrimitive(iPoint, varIdx);
           }             return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-         
+
         } else {
           return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
         }
@@ -1436,6 +1436,21 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
       break;
   }
 
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
+  }
+
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+  }
+
 }
 
 
@@ -1505,8 +1520,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 }
-
-
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
