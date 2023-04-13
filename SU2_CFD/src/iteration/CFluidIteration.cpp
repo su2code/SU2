@@ -358,7 +358,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   }
 
   // Print some information to check that we are doing the right thing. Not sure how to convert the index back to a string...
-  if (rank == MASTER_NODE) cout << endl << " Setting up a wind gust type " << Gust_Type << " with amplitude of " << gust_amp << " in direction " << GustDir << endl;
+  if (rank == MASTER_NODE) cout << endl << "Setting up a wind gust type " << Gust_Type << " with amplitude of " << gust_amp << " in direction " << GustDir << endl;
   if (rank == MASTER_NODE) cout << " U_inf      = " << Uinf << endl;
   if (rank == MASTER_NODE) cout << " Physical_t = " << Physical_t << endl;
   su2double loc_x = (xbegin + L + Uinf * (Physical_t - tbegin));
@@ -388,7 +388,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
     for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
       /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation())) {
+      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation()) && !(config->GetDynamic_Grid())) {
         for (iDim = 0; iDim < nDim; iDim++) geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
       }
 
