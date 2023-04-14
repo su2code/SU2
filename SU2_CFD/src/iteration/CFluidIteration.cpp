@@ -364,8 +364,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   su2double loc_x = (xbegin + L + Uinf * (Physical_t - tbegin));
   if (rank == MASTER_NODE) cout << " Location_x = " << loc_x << endl;
 
-  GustDer = new su2double[4];
-  for (unsigned short i = 0; i < 4; i++) {
+  GustDer = new su2double[nDim+1];
+  for (unsigned short i = 0; i < nDim+1; i++) {
     GustDer[i] = 0.0;
   }
 
@@ -477,11 +477,17 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       }
 
       /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-
-      GustDer[0] = dgust_dx;
-      GustDer[1] = dgust_dy;
-      GustDer[2] = dgust_dz;
-      GustDer[3] = dgust_dt;
+      if (nDim = 2) {
+    	  GustDer[0] = dgust_dx;
+    	  GustDer[1] = dgust_dy;
+    	  GustDer[2] = dgust_dt;
+      }
+      else {
+    	  GustDer[0] = dgust_dx;
+    	  GustDer[1] = dgust_dy;
+    	  GustDer[2] = dgust_dz;
+    	  GustDer[3] = dgust_dt;
+      }
       // I think we don't need to set any source terms because they depend on the derivatives, which are zero in all cases from above.
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGustDer(iPoint, GustDer);
