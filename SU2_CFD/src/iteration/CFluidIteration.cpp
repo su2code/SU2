@@ -318,12 +318,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   // derivatives needed for the source term are calculated when applicable. If the gust derivatives are zero the source
   // term is also zero. The source term itself is implemented in the class CSourceWindGust
 
-  unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();  // We assume nDim = 2
-//  if (nDim != 2) {
-//    if (rank == MASTER_NODE) {
-//      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
-//    }
-//  }
+  unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();
 
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config->GetGust_Type();
@@ -477,16 +472,16 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       }
 
       /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-      if (nDim = 2) {
-    	  GustDer[0] = dgust_dx;
-    	  GustDer[1] = dgust_dy;
-    	  GustDer[2] = dgust_dt;
+      if (nDim == 2) {
+        GustDer[0] = dgust_dx;
+        GustDer[1] = dgust_dy;
+        GustDer[2] = dgust_dt;
       }
       else {
-    	  GustDer[0] = dgust_dx;
-    	  GustDer[1] = dgust_dy;
-    	  GustDer[2] = dgust_dz;
-    	  GustDer[3] = dgust_dt;
+        GustDer[0] = dgust_dx;
+        GustDer[1] = dgust_dy;
+        GustDer[2] = dgust_dz;
+        GustDer[3] = dgust_dt;
       }
       // I think we don't need to set any source terms because they depend on the derivatives, which are zero in all cases from above.
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
