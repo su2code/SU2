@@ -70,7 +70,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
+CUpwMSW_NEMO::~CUpwMSW_NEMO() {
 
   delete [] Diff_U;
   delete [] Fc_i;

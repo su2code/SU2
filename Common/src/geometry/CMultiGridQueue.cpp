@@ -122,7 +122,7 @@ void CMultiGridQueue::RedPriorityCV(unsigned long redPoint) {
   AddCV(redPoint, numberNeighbors - 1);
 }
 
-void CMultiGridQueue::VisualizeQueue(void) const {
+void CMultiGridQueue::VisualizeQueue() const {
   cout << endl;
   unsigned short iQ = 0;
   for (const auto& Q : QueueCV) {
@@ -134,13 +134,13 @@ void CMultiGridQueue::VisualizeQueue(void) const {
   }
 }
 
-void CMultiGridQueue::VisualizePriority(void) const {
+void CMultiGridQueue::VisualizePriority() const {
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
     cout << "Control Volume: " << iPoint << " Priority: " << Priority[iPoint] << endl;
   }
 }
 
-bool CMultiGridQueue::EmptyQueue(void) const {
+bool CMultiGridQueue::EmptyQueue() const {
   /*--- In case there is only the no agglomerated elements (size 1), check
    *    if they can be agglomerated or if we have already finished. ---*/
 
@@ -154,7 +154,7 @@ bool CMultiGridQueue::EmptyQueue(void) const {
   return true;
 }
 
-unsigned long CMultiGridQueue::TotalCV(void) const {
+unsigned long CMultiGridQueue::TotalCV() const {
   unsigned long TotalCV = 0;
   for (const auto& Q : QueueCV) TotalCV += Q.size();
   return TotalCV;

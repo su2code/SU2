@@ -173,7 +173,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   
 }
 
-COutput::~COutput(void) {
+COutput::~COutput() {
 
   delete convergenceTable;
   delete multiZoneHeaderTable;
@@ -340,7 +340,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
   CFileWriter *fileWriter = nullptr;
 
   /*--- if it is still present, strip the extension (suffix) from the filename ---*/
-  unsigned short lastindex = fileName.find_last_of(".");
+  unsigned short lastindex = fileName.find_last_of('.');
   fileName = fileName.substr(0, lastindex);
 
   string filename_iter, extension;
@@ -582,7 +582,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
 
-        CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
+        auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
 
         /*--- then we write the data into the folder---*/
         vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
@@ -1124,8 +1124,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
             }
             WndCauchy_Value /= nWndCauchy_Elems;
           }
-          if (WndCauchy_Value >= wndCauchyEps){fieldConverged = false;}
-          else{fieldConverged = true;}
+          fieldConverged = WndCauchy_Value < wndCauchyEps;
 
           /*--- Start monitoring only if the current iteration is larger than the
            *  number of cauchy elements and the number of start-up iterations ---*/
@@ -1596,13 +1595,13 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   /*---Coordinates and solution groups must be always in the output.
    * If they are not requested, add them here. ---*/
 
-  vector<string>::iterator itCoord = std::find(requestedVolumeFields.begin(),
+  auto itCoord = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "COORDINATES");
   if (itCoord == requestedVolumeFields.end()){
     requestedVolumeFields.emplace_back("COORDINATES");
     nRequestedVolumeFields++;
   }
-  vector<string>::iterator itSol = std::find(requestedVolumeFields.begin(),
+  auto itSol = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "SOLUTION");
   if (itSol == requestedVolumeFields.end()){
     requestedVolumeFields.emplace_back("SOLUTION");
@@ -1699,7 +1698,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
      geometrical information for the FEM DG solver. ---*/
 
-    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+    auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
     unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
 
@@ -1762,7 +1761,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   }
 }
 
-void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value){
 
   if (buildFieldIndexCache){
 
@@ -1794,7 +1793,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
 
 }
 
-su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
+su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint){
 
   if (buildFieldIndexCache){
 
@@ -1828,7 +1827,7 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
   return 0.0;
 }
 
-void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+void COutput::SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, su2double value){
 
   const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
 
@@ -1909,7 +1908,7 @@ void COutput::PostprocessHistoryData(CConfig *config){
     }
   }
 
-  map<string, pair<su2double, int> >::iterator it = Average.begin();
+  auto it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
     const su2double& value = it->second.first;
     const int& count = it->second.second;
@@ -1934,7 +1933,7 @@ void COutput::PostprocessHistoryFields(CConfig *config){
     }
   }
 
-  map<string, bool>::iterator it = Average.begin();
+  auto it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
     if (AverageGroupName.count(it->first) > 0) {
       AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
@@ -2136,9 +2135,8 @@ bool COutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_
 
     return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
-  else {
-    return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
-  }
+      return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
+ 
 }
 
 void COutput::SetCommonHistoryFields() {
@@ -2255,7 +2253,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
         break;
       }
 
-      customOutputs.push_back(CustomOutput());
+      customOutputs.emplace_back();
       auto& output = customOutputs.back();
 
       output.name = std::move(name);
@@ -2332,7 +2330,7 @@ void COutput::PrintHistoryFields() const {
       if (!perSurf) {
         Field = &historyOutput_Map.at(outputName);
       } else {
-        Field = &historyOutputPerSurface_Map.at(outputName)[0];
+        Field = historyOutputPerSurface_Map.at(outputName).data();
       }
       if (perSurf || !Field->description.empty()) {
         NameSize = std::max(NameSize, outputName.size());
@@ -2361,7 +2359,7 @@ void COutput::PrintHistoryFields() const {
       if (!perSurf) {
         Field = &historyOutput_Map.at(outputName);
       } else {
-        Field = &historyOutputPerSurface_Map.at(outputName)[0];
+        Field = historyOutputPerSurface_Map.at(outputName).data();
       }
 
       if (!perSurf && Field->description.empty()) continue;
@@ -2420,7 +2418,7 @@ void COutput::PrintHistoryFields() const {
           break;
       }
 
-      if (Field.description != "")
+      if (!Field.description.empty())
         ModifierTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
 
       GroupVisited[Field.outputGroup] = true;
@@ -2443,7 +2441,7 @@ void COutput::PrintVolumeFields(){
 
       VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
 
-      if (Field.description != ""){
+      if (!Field.description.empty()){
         if (volumeOutput_List[iField].size() > NameSize){
           NameSize = volumeOutput_List[iField].size();
         }
@@ -2469,7 +2467,7 @@ void COutput::PrintVolumeFields(){
 
       VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
 
-      if (Field.description != "")
+      if (!Field.description.empty())
         VolumeFieldTable << volumeOutput_List[iField] << Field.outputGroup << Field.description;
 
     }

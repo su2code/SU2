@@ -101,7 +101,7 @@
 #ifdef VTUNEPROF
 #include <ittnotify.h>
 #endif
-#include <fenv.h>
+#include <cfenv>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
@@ -956,7 +956,7 @@ void CDriver::InitializeGeometryDGFEM(CConfig* config, CGeometry **&geometry) {
 
   /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
        define all virtual functions in the base class CGeometry. ---*/
-  CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
+  auto *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
 
   /*--- Determine the standard elements for the volume elements. ---*/
   if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
@@ -2620,7 +2620,7 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
     /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
          define all virtual functions in the base class CGeometry. ---*/
-    CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
+    auto *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
 
     /*--- Initialize the static mesh movement, if necessary. ---*/
     const unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
@@ -2807,11 +2807,11 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
 }
 
-CDriver::~CDriver(void) {}
+CDriver::~CDriver() = default;
 
 void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
-  if (!(rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES)) return;
+  if (rank != MASTER_NODE || kind_recording != RECORDING::SOLUTION_VARIABLES) return;
 
   const bool multizone = config_container[ZONE_0]->GetMultizone_Problem();
 
@@ -2819,8 +2819,7 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
   auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
     if (multizone)
       return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
-    else
-      return "[" + std::to_string(ivar) + "]";
+          return "[" + std::to_string(ivar) + "]";
   };
 
   /*--- Print residuals in the first iteration ---*/
@@ -3004,7 +3003,7 @@ CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MP
   Max_Iter = config_container[ZONE_0]->GetnInner_Iter();
 }
 
-CFluidDriver::~CFluidDriver(void) { }
+CFluidDriver::~CFluidDriver() = default;
 
 void CFluidDriver::StartSolver(){
 
@@ -3243,7 +3242,7 @@ CHBDriver::CHBDriver(char* confFile,
   for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 }
 
-CHBDriver::~CHBDriver(void) {
+CHBDriver::~CHBDriver() {
 
   unsigned short kInst;
 
@@ -3314,11 +3313,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
   /*--- Retrieve values from the config file ---*/
-  su2double *U = new su2double[nVar];
-  su2double *U_old = new su2double[nVar];
-  su2double *Psi = new su2double[nVar];
-  su2double *Psi_old = new su2double[nVar];
-  su2double *Source = new su2double[nVar];
+  auto *U = new su2double[nVar];
+  auto *U_old = new su2double[nVar];
+  auto *Psi = new su2double[nVar];
+  auto *Psi_old = new su2double[nVar];
+  auto *Source = new su2double[nVar];
   su2double deltaU, deltaPsi;
 
   /*--- Compute period of oscillation ---*/
@@ -3390,8 +3389,8 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->GetnVar();
-    su2double *U_Turb = new su2double[nVar_Turb];
-    su2double *Source_Turb = new su2double[nVar_Turb];
+    auto *U_Turb = new su2double[nVar_Turb];
+    auto *Source_Turb = new su2double[nVar_Turb];
 
     /*--- Loop over only the finest mesh level (turbulence is always solved
      on the original grid only). ---*/
@@ -3431,12 +3430,12 @@ void CHBDriver::StabilizeHarmonicBalance() {
   bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
-  su2double *Source     = new su2double[nInstHB];
-  su2double *Source_old = new su2double[nInstHB];
+  auto *Source     = new su2double[nInstHB];
+  auto *Source_old = new su2double[nInstHB];
   su2double Delta;
 
-  su2double **Pinv     = new su2double*[nInstHB];
-  su2double **P        = new su2double*[nInstHB];
+  auto **Pinv     = new su2double*[nInstHB];
+  auto **P        = new su2double*[nInstHB];
   for (iInst = 0; iInst < nInstHB; iInst++) {
     Pinv[iInst]       = new su2double[nInstHB];
     P[iInst]          = new su2double[nInstHB];
@@ -3466,7 +3465,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
       /*--- Invert stabilization matrix Pinv with Gauss elimination---*/
 
       /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
-      su2double **temp = new su2double*[nInstHB];
+      auto **temp = new su2double*[nInstHB];
       for (i = 0; i < nInstHB; i++) {
         temp[i] = new su2double[2 * nInstHB];
       }
@@ -3588,10 +3587,10 @@ void CHBDriver::ComputeHBOperator() {
   const   complex<su2double> J(0.0,1.0);
   unsigned short i, j, k, iInst;
 
-  su2double *Omega_HB       = new su2double[nInstHB];
-  complex<su2double> **E    = new complex<su2double>*[nInstHB];
-  complex<su2double> **Einv = new complex<su2double>*[nInstHB];
-  complex<su2double> **DD   = new complex<su2double>*[nInstHB];
+  auto *Omega_HB       = new su2double[nInstHB];
+  auto **E    = new complex<su2double>*[nInstHB];
+  auto **Einv = new complex<su2double>*[nInstHB];
+  auto **DD   = new complex<su2double>*[nInstHB];
   for (iInst = 0; iInst < nInstHB; iInst++) {
     E[iInst]    = new complex<su2double>[nInstHB];
     Einv[iInst] = new complex<su2double>[nInstHB];
@@ -3630,7 +3629,7 @@ void CHBDriver::ComputeHBOperator() {
   /*---  Invert inverse harmonic balance Einv with Gauss elimination ---*/
 
   /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
-  complex<su2double> **temp = new complex<su2double>*[nInstHB];
+  auto **temp = new complex<su2double>*[nInstHB];
   for (i = 0; i < nInstHB; i++) {
     temp[i] = new complex<su2double>[2 * nInstHB];
   }
@@ -3704,10 +3703,10 @@ void CHBDriver::ComputeHBOperator() {
 
 
   /*---  Temporary matrix for performing product  ---*/
-  complex<su2double> **Temp    = new complex<su2double>*[nInstHB];
+  auto **Temp    = new complex<su2double>*[nInstHB];
 
   /*---  Temporary complex HB operator  ---*/
-  complex<su2double> **Dcpx    = new complex<su2double>*[nInstHB];
+  auto **Dcpx    = new complex<su2double>*[nInstHB];
 
   for (iInst = 0; iInst < nInstHB; iInst++){
     Temp[iInst]    = new complex<su2double>[nInstHB];

@@ -31,7 +31,7 @@
 #include "AbstractState.h"
 #include "CoolProp.h"
 
-CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
+CCoolProp::CCoolProp(const string &fluidname) : CFluidModel() {
   fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
   Gas_Constant = fluid_entity->gas_constant() / fluid_entity->molar_mass();
   Pressure_Critical = fluid_entity->p_critical();
@@ -124,7 +124,7 @@ void CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
 }
 
 #else
-CCoolProp::CCoolProp(string fluidname) {
+CCoolProp::CCoolProp(const string& fluidname) {
   SU2_MPI::Error(
       "SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff "
       "or autodiff",

@@ -563,7 +563,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Compute slope limiter.
@@ -595,7 +595,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief A virtual member.
@@ -3437,7 +3437,7 @@ public:
   void Read_SU2_Restart_Metadata(CGeometry *geometry,
                                  CConfig *config,
                                  bool adjoint_run,
-                                 string val_filename) const;
+                                 const string& val_filename) const;
 
   /*!
    * \brief Load a inlet profile data from file into a particular solver.

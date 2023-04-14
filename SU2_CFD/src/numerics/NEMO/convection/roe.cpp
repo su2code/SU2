@@ -62,7 +62,7 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
+CUpwRoe_NEMO::~CUpwRoe_NEMO() {
 
   delete [] Diff_U;
   delete [] RoeU;

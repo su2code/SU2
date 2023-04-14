@@ -65,7 +65,7 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   ClearElement();
 }
 
-void CElement::ClearElement(void) {
+void CElement::ClearElement() {
   Mab.setConstant(0.0);
   Kt_a.setConstant(0.0);
   FDL_a.setConstant(0.0);

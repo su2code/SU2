@@ -63,7 +63,7 @@ CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig* val_config, unsigned short val_iZo
   ComputeBoxSurfaceConnectivity();
 }
 
-CBoxMeshReaderFVM::~CBoxMeshReaderFVM(void) {}
+CBoxMeshReaderFVM::~CBoxMeshReaderFVM() = default;
 
 void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
   /* Set the global count of points based on the grid dimensions. */

@@ -27,7 +27,7 @@
 
 #include "../../../include/toolboxes/MMS/CIncTGVSolution.hpp"
 
-CIncTGVSolution::CIncTGVSolution(void) : CVerificationSolution() {}
+CIncTGVSolution::CIncTGVSolution() : CVerificationSolution() {}
 
 CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_iMesh,
                                  CConfig* config)
@@ -88,7 +88,7 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim, unsigned short val_nVa
   if (nDim != 2) SU2_MPI::Error("2D calculation required for the incompressible Taylor Green Vortex", CURRENT_FUNCTION);
 }
 
-CIncTGVSolution::~CIncTGVSolution(void) {}
+CIncTGVSolution::~CIncTGVSolution() = default;
 
 void CIncTGVSolution::GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const {
   /*--- The exact solution is prescribed on the boundaries. ---*/
