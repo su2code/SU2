@@ -96,7 +96,6 @@ int main(int argc, char *argv[]) {
 
   const CConfig config(config_file_name, SU2_COMPONENT::SU2_CFD);
   const unsigned short nZone = config.GetnZone();
-  const bool turbo = config.GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -112,7 +111,7 @@ int main(int argc, char *argv[]) {
     driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
 
   }
-  else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
+  else if (!multizone && !harmonic_balance) {
 
     /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
     if (nZone != 1)
@@ -126,7 +125,7 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (multizone && !turbo) {
+  else if (multizone) {
 
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {
@@ -137,18 +136,13 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (harmonic_balance) {
+  else {
+    assert(harmonic_balance);
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   }
-  else if (turbo) {
-
-    /*--- Turbomachinery problem. ---*/
-    driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-
-  } /*--- These are all the possible cases ---*/
 
   /*--- Launch the main external loop of the solver. ---*/
 

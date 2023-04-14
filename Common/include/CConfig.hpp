@@ -1147,7 +1147,6 @@ private:
   unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
-  bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;              /*!< \brief Write the convergence history of each individual zone to screen. */
   bool Wrt_ZoneHist;              /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,             /*!< \brief Determines if the special output is written. */
@@ -9324,12 +9323,6 @@ public:
    * \return YES if multiple zones can be contained in the mesh file.
    */
   bool GetMultizone_Residual(void) const { return Multizone_Residual; }
-
-  /*!
-   * \brief Check if the (new) single-zone driver is to be used (temporary)
-   * \return YES if the (new) single-zone driver is to be used.
-   */
-  bool GetSinglezone_Driver(void) const { return SinglezoneDriver; }
 
   /*!
    * \brief Get the Kind of Radiation model applied.
