@@ -35,6 +35,7 @@
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
+#include "../output/CTurboOutput.hpp"
 
 using namespace std;
 
@@ -58,6 +59,9 @@ class CIteration {
 
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+  CTurbomachineryStagePerformance* TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
 
  public:
   /*!
@@ -247,6 +251,21 @@ class CIteration {
                        unsigned short val_iInst) {
     return false;
   }
+  
+  /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {};
+
+  /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {};
+
+    /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid) {}
 
   /*!
    * \brief A virtual member.

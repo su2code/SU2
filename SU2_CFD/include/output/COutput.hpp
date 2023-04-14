@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "CTurboOutput.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
 namespace mel {
@@ -47,7 +48,7 @@ inline su2double hypot(const su2double& a, const su2double& b) {
 }
 }
 }
-#include "mel.hpp"
+#include "../../../externals/mel/mel.hpp"
 
 class CGeometry;
 class CSolver;
@@ -320,64 +321,7 @@ protected:
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
-  /*--- Turbomachinery Performance Variable ---*/
-  su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
-  bool turbo;
-  unsigned short nSpanWiseSections, nMarkerTurboPerf;
-
-  su2double **TotalStaticEfficiency,
-        **TotalTotalEfficiency,
-        **KineticEnergyLoss,
-        **TRadius,
-        **TotalPressureLoss,
-        **MassFlowIn,
-        **MassFlowOut,
-        **FlowAngleIn,
-        **FlowAngleIn_BC,
-        **FlowAngleOut,
-        **EulerianWork,
-        **TotalEnthalpyIn,
-        **TotalEnthalpyIn_BC,
-        **EntropyIn,
-        **EntropyOut,
-        **EntropyIn_BC,
-        **PressureRatio,
-        **TotalTemperatureIn,
-        **EnthalpyOut,
-        ***MachIn,
-        ***MachOut,
-        **VelocityOutIs,
-        **DensityIn,
-        **PressureIn,
-        ***TurboVelocityIn,
-        **DensityOut,
-        **PressureOut,
-        ***TurboVelocityOut,
-        **EnthalpyOutIs,
-        **EntropyGen,
-        **AbsFlowAngleIn,
-        **TotalEnthalpyOut,
-        **RothalpyIn,
-        **RothalpyOut,
-        **TotalEnthalpyOutIs,
-        **AbsFlowAngleOut,
-        **PressureOut_BC,
-        **TemperatureIn,
-        **TemperatureOut,
-        **TotalPressureIn,
-        **TotalPressureOut,
-        **TotalTemperatureOut,
-        **EnthalpyIn,
-        **TurbIntensityIn,
-        **Turb2LamViscRatioIn,
-        **TurbIntensityOut,
-        **Turb2LamViscRatioOut,
-        **NuFactorIn,
-        **NuFactorOut;
-    
-  /*--- End of turbomachinery performance ---*/
 public:
-
   /*----------------------------- Public member functions ----------------------------*/
 
   /*!
@@ -427,7 +371,26 @@ public:
    */
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
+  /*!
+   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   */
+  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
 
+  void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config);
+
+  void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config,
+                                  unsigned short iZone);
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
    * \param[in] geometry - Geometrical definition of the problem.

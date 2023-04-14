@@ -35,6 +35,7 @@
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -359,6 +360,10 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
 
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
+}
+
+void CEulerSolver::InitTurboPerformance(CGeometry *geometry, CConfig *config){
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(*config, *geometry, *GetFluidModel());
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){

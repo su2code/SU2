@@ -97,10 +97,6 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
     }
   }
 
-  if (config->GetBoolTurbomachinery()) {
-    /*--- Initialise turboperformance variables ---*/
-    InitTurboPerformance(config);
-  }
 }
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
@@ -214,41 +210,38 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: TURBO_PERF, DESCRIPTION: Turboperformance variables
   if (config->GetBoolTurbomachinery()) {
-    unsigned short iMarker_Monitoring;
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
+    //Adds zone turboperformance history variables
+    for (unsigned short iZone = 0; iZone <= config->GetnZone() - 1; iZone++) {
       stringstream tag;
-      tag << iMarker_Monitoring + 1;
-      /// DESCRIPTION: Total pressure loss
-      AddHistoryOutput("TotalPressureLoss_" + tag.str(),       "TotPressureLoss_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total pressure loss " + tag.str(),        HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Kinetic energy loss
-      AddHistoryOutput("KineticEnergyLoss_" + tag.str(),       "KineticEnergyLoss_" + tag.str(),       ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic energy loss " + tag.str(),        HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Entropy generation
-      AddHistoryOutput("EntropyGeneration_" + tag.str(),       "EntropyGen_" + tag.str(),              ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag.str(),         HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Eulerian work
-      AddHistoryOutput("EulerianWork_" + tag.str(),            "EulerianWork_" + tag.str(),            ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Eulerian work " + tag.str(),              HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Pressure ratio
-      AddHistoryOutput("PressureRatio_" + tag.str(),           "PressureRatio_" + tag.str(),           ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag.str(),             HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: FLow angle in
-      AddHistoryOutput("FlowAngleIn_" + tag.str(),             "FlowAngleIn_" + tag.str(),             ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag.str(),              HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Flow angle out
-      AddHistoryOutput("FlowAngleOut_" + tag.str(),            "FlowAngleOut_" + tag.str(),            ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle out " + tag.str(),             HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Absolute flow angle in
-      AddHistoryOutput("AbsFlowAngleIn_" + tag.str(),          "AbsFlowAngleIn_" + tag.str(),          ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag.str(),     HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Absolute flow angle out
-      AddHistoryOutput("AbsFlowAngleOut_" + tag.str(),         "AbsFlowAngleOut_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag.str(),    HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Mass flow in
-      AddHistoryOutput("MassFlowIn_" + tag.str(),              "MassFlowIn_" + tag.str(),              ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow in " + tag.str(),               HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Mass flow out
-      AddHistoryOutput("MassFlowOut_" + tag.str(),             "MassFlowOut_" + tag.str(),             ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow out " + tag.str(),              HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Mach in
-      AddHistoryOutput("MachIn_" + tag.str(),                  "MachIn_" + tag.str(),                  ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach in " + tag.str(),                    HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Mach out
-      AddHistoryOutput("MachOut_" + tag.str(),                 "MachOut_" + tag.str(),                 ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach out " + tag.str(),                   HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Total efficiency
-      AddHistoryOutput("TotalEfficiency_" + tag.str(),         "TotalEfficiency_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total efficiency " + tag.str(),           HistoryFieldType::DEFAULT);
-      /// DESCRIPTION: Total-to-static efficiency
-      AddHistoryOutput("TotalStaticEfficiency_" + tag.str(),   "TotalStaticEfficiency_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
+      tag << iZone + 1;
+      AddHistoryOutput("EntropyIn_" + tag.str(),       "EntropyIn_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total pressure loss " + tag.str(),        HistoryFieldType::DEFAULT);
+      AddHistoryOutput("EntropyOut_" + tag.str(),       "EntropyOut_" + tag.str(),       ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic energy loss " + tag.str(),        HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TotalEntahalpyIn_" + tag.str(),       "TotalEntahalpyIn_" + tag.str(),              ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag.str(),         HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TotalEnthalpyOut_" + tag.str(),            "TotalEnthalpyOut_" + tag.str(),            ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Eulerian work " + tag.str(),              HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TotalPressureIn_" + tag.str(),           "TotPressureIn_" + tag.str(),           ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag.str(),             HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TotalPressureOut_" + tag.str(),             "TotPressureOut_" + tag.str(),             ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag.str(),              HistoryFieldType::DEFAULT);
+      AddHistoryOutput("PressureIn_" + tag.str(),           "PressureIn_" + tag.str(),           ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag.str(),             HistoryFieldType::DEFAULT);
+      AddHistoryOutput("PressureOut_" + tag.str(),             "PressureOut_" + tag.str(),             ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag.str(),              HistoryFieldType::DEFAULT);
+      AddHistoryOutput("DensityIn_" + tag.str(),            "DensityIn_" + tag.str(),            ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle out " + tag.str(),             HistoryFieldType::DEFAULT);
+      AddHistoryOutput("DensityOut_" + tag.str(),          "DensityOut_" + tag.str(),          ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag.str(),     HistoryFieldType::DEFAULT);
+      AddHistoryOutput("NormalVelocityIn_" + tag.str(),         "NormalVelocityIn_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag.str(),    HistoryFieldType::DEFAULT);
+      AddHistoryOutput("NormalVelocityOut_" + tag.str(),              "NormalVelocityOut_" + tag.str(),              ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow in " + tag.str(),               HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TangentialVelocityIn_" + tag.str(),             "TangentialVelocityIn_" + tag.str(),             ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow out " + tag.str(),              HistoryFieldType::DEFAULT);
+      AddHistoryOutput("TangentialVelocityOut_" + tag.str(),                  "TangentialVelocityOut_" + tag.str(),                  ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach in " + tag.str(),                    HistoryFieldType::DEFAULT);
+      AddHistoryOutput("MassFlowIn_" + tag.str(),                 "MassFlowIn_" + tag.str(),                 ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach out " + tag.str(),                   HistoryFieldType::DEFAULT);
+      AddHistoryOutput("MassFlowOut_" + tag.str(),         "MassFlowOut_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total efficiency " + tag.str(),           HistoryFieldType::DEFAULT);
+      AddHistoryOutput("MachIn_" + tag.str(),   "MachIn_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
+      AddHistoryOutput("MachOut_" + tag.str(),   "MachOut_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
+      AddHistoryOutput("FlowAngleIn_" + tag.str(),   "FlowAngleIn_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
+      AddHistoryOutput("FlowAngleOut_" + tag.str(),   "FlowAngleOut_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
     }
+    //Adds turbomachinery machine performance variables
+    AddHistoryOutput("EntropyGeneration",   "EntropyGen",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+    AddHistoryOutput("EulerianWork",   "EulerianWork",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalStaticEfficiency",   "TotStaticEff",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalTotalEfficiency",   "TotTotEff",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+    AddHistoryOutput("PressureRatioTS",   "PRTS",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+    AddHistoryOutput("PressureRatioTT",   "PRTT",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
   }
 
 }
@@ -485,29 +478,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
 
-  if (config->GetBoolTurbomachinery()){
-
-    unsigned short iMarker_Monitoring;
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
-      stringstream tag;
-      tag << iMarker_Monitoring + 1;
-      SetHistoryOutputValue("TotalPressureLoss_" + tag.str(), TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("KineticEnergyLoss_" + tag.str(), KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("EntropyGeneration_" + tag.str(), EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("EulerianWork_" + tag.str(), EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("PressureRatio_" + tag.str(), PressureRatio[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("FlowAngleIn_" + tag.str(), 180/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("FlowAngleOut_" + tag.str(), 180/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), 180/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), 180/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("MassFlowIn_" + tag.str(), MassFlowIn[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("MassFlowOut_" + tag.str(), MassFlowOut[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("MachIn_" + tag.str(), sqrt(MachIn[iMarker_Monitoring][nSpanWiseSections][1]*MachIn[iMarker_Monitoring][nSpanWiseSections][1] + MachIn[iMarker_Monitoring][nSpanWiseSections][0]*MachIn[iMarker_Monitoring][nSpanWiseSections][0]));
-      SetHistoryOutputValue("MachOut_" + tag.str(), sqrt(MachOut[iMarker_Monitoring][nSpanWiseSections][1]*MachOut[iMarker_Monitoring][nSpanWiseSections][1] + MachOut[iMarker_Monitoring][nSpanWiseSections][0]*MachOut[iMarker_Monitoring][nSpanWiseSections][0]));
-      SetHistoryOutputValue("TotalEfficiency_" + tag.str(), TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-      SetHistoryOutputValue("TotalStaticEfficiency_" + tag.str(), TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-    }
-  }
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 

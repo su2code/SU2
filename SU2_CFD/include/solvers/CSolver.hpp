@@ -56,6 +56,7 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
+#include "../output/CTurboOutput.hpp"
 
 #ifdef HAVE_LIBROM
 #include "librom.h"
@@ -132,6 +133,8 @@ protected:
 
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+
+  vector<su2double> TurboPrimitive;
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -3804,6 +3807,14 @@ public:
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
 
+/*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+   inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
+
+
   /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4326,6 +4337,13 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {return TurboPrimitive;}
 
   /*!
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
