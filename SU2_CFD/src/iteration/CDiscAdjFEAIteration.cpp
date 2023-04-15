@@ -34,7 +34,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(c
   fem_iteration = new CFEAIteration(config);
 
   // TEMPORARY output only for standalone structural problems
-  if ((!config->GetFSI_Simulation()) && (rank == MASTER_NODE)) {
+  if (config->GetAdvanced_FEAElementBased() && (rank == MASTER_NODE)) {
     bool de_effects = config->GetDE_Effects();
     unsigned short iVar;
 
@@ -56,9 +56,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(c
       for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++) myfile_res << "Sens_EField_" << iVar << "\t";
     }
 
-    myfile_res << endl;
-
-    myfile_res.close();
+    myfile_res << '\n';
   }
 }
 
@@ -365,25 +363,21 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
   if (config[iZone]->GetAdvanced_FEAElementBased() && (rank == MASTER_NODE)) {
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
-    bool outputDVFEA = false;
+    bool outputDVFEA = true;
 
     switch (config[iZone]->GetDV_FEA()) {
       case YOUNG_MODULUS:
         myfile_res.open("grad_young.opt");
-        outputDVFEA = true;
         break;
       case POISSON_RATIO:
         myfile_res.open("grad_poisson.opt");
-        outputDVFEA = true;
         break;
       case DENSITY_VAL:
       case DEAD_WEIGHT:
         myfile_res.open("grad_density.opt");
-        outputDVFEA = true;
         break;
       case ELECTRIC_FIELD:
         myfile_res.open("grad_efield.opt");
-        outputDVFEA = true;
         break;
       default:
         outputDVFEA = false;

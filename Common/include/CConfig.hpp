@@ -9252,12 +9252,6 @@ public:
   void SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
 
   /*!
-   * \brief Get the number of pseudo-time iterations
-   * \return Number of pseudo-time steps run for the single-zone problem
-   */
-  unsigned long GetnIter(void) const { return nIter; }
-
-  /*!
    * \brief Get the restart iteration
    * \return Iteration for the restart of multizone problems
    */
