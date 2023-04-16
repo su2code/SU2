@@ -780,8 +780,6 @@ void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
   }
   if (rank == MASTER_NODE) {
     AD::SetDerivative(ObjFunc_Index, SU2_TYPE::GetValue(seeding));
-  } else {
-    AD::SetDerivative(ObjFunc_Index, 0.0);
   }
 }
 
