@@ -615,8 +615,8 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
 
   SU2_OMP_PARALLEL
   {
+  su2double zeros[MAXNVAR] = {0.0};
   if (!config->GetPrestretch()) {
-    su2double zeros[MAXNVAR] = {0.0};
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
       nodes->SetSolution(iPoint, zeros);
@@ -626,6 +626,14 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
       nodes->SetSolution(iPoint, nodes->GetPrestretch(iPoint));
+    END_SU2_OMP_FOR
+  }
+  if (config->GetTime_Domain()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      nodes->SetSolution_Vel(iPoint, zeros);
+      nodes->SetSolution_Accel(iPoint, zeros);
+    }
     END_SU2_OMP_FOR
   }
   }
@@ -3108,8 +3116,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   /*--- Detect a wrong solution file. ---*/
 
   if (counter != nPointDomain) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+    SU2_MPI::Error("The solution file " + filename + " doesn't match with the mesh file!\n"
+                   "It could be empty lines at the end of the file.", CURRENT_FUNCTION);
   }
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
@@ -3117,7 +3125,9 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
-  if (dynamic) nodes->Set_Solution_time_n();
+  /*--- It's important to not push back the solution when this function is used to load solutions for
+   * unsteady discrete adjoints, otherwise we overwrite one of the two solutions needed. ---*/
+  if (dynamic && val_update_geo) nodes->Set_Solution_time_n();
 
   if (fluid_structure) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {

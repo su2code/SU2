@@ -135,8 +135,6 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (STRUCT_TIME_INT::CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
-      break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
@@ -161,7 +159,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
     }
   }
 
-  /*--- Solver linear system ---*/
+  /*--- Solve linear system ---*/
 
   solver_container[MainSolver]->Solve_System(geometry, config);
 
@@ -169,8 +167,6 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (STRUCT_TIME_INT::CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
-      break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;

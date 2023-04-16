@@ -56,7 +56,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(c
       for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++) myfile_res << "Sens_EField_" << iVar << "\t";
     }
 
-    myfile_res << '\n';
+    myfile_res << "\n";
   }
 }
 
@@ -66,7 +66,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
                                       CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                       CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                       CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  unsigned long iPoint;
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
   auto dirNodes = solvers0[FEA_SOL]->GetNodes();
@@ -91,19 +90,12 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
     /*--- Load solution timestep n ---*/
 
     LoadDynamic_Solution(geometry, solver, config, iZone, iInst, Direct_Iter);
+  }
 
-    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
+  /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later. ---*/
 
-    for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
-    }
-
-  } else {
-    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
-
-    for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
-    }
+  for (auto iPoint = 0ul; iPoint < geometry0->GetnPoint(); iPoint++) {
+    adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
   }
 
   solvers0[ADJFEA_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
@@ -113,27 +105,19 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                 unsigned short iZone, unsigned short iInst,
                                                 int val_DirectIter) {
-  unsigned short iVar;
-  unsigned long iPoint;
-  bool update_geo = false;  // TODO: check
+  /*--- Set to false to prevent updating Solution_time_n when loading primal solutions of unsteady cases. ---*/
+  const bool update_geo = false;
+  auto*** solvers = solver[iZone][iInst];
 
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && iZone == ZONE_0)
-      cout << " Loading FEA solution from direct iteration " << val_DirectIter << "." << endl;
-    solver[iZone][iInst][MESH_0][FEA_SOL]->LoadRestart(
-        geometry[iZone][iInst], solver[iZone][iInst], config[iZone], val_DirectIter, update_geo);
+      cout << " Loading FEA solution from direct iteration " << val_DirectIter << ".\n";
+    solvers[MESH_0][FEA_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], val_DirectIter, update_geo);
   } else {
-    /*--- If there is no solution file we set the freestream condition ---*/
+    /*--- If there is no solution file we set the initial conditions. ---*/
     if (rank == MASTER_NODE && iZone == ZONE_0)
-      cout << " Setting static conditions at direct iteration " << val_DirectIter << "." << endl;
-    /*--- Push solution back to correct array ---*/
-    for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < solver[iZone][iInst][MESH_0][FEA_SOL]->GetnVar(); iVar++) {
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution(iPoint, iVar, 0.0);
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Accel(iPoint, iVar, 0.0);
-        solver[iZone][iInst][MESH_0][FEA_SOL]->GetNodes()->SetSolution_Vel(iPoint, iVar, 0.0);
-      }
-    }
+      cout << " Setting static conditions at direct iteration " << val_DirectIter << ".\n";
+    solvers[MESH_0][FEA_SOL]->SetInitialCondition(geometry[iZone][iInst], solvers, config[iZone], val_DirectIter);
   }
 }
 
@@ -354,9 +338,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
       myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
     }
 
-    myfile_res << endl;
-
-    myfile_res.close();
+    myfile_res << "\n";
   }
 
   // TEST: for implementation of python framework in standalone structural problems
@@ -385,23 +367,14 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
     }
 
     if (outputDVFEA) {
-      unsigned short iDV;
-      unsigned short nDV = solvers0[ADJFEA_SOL]->GetnDVFEA();
-
-      myfile_res << "INDEX"
-                 << "\t"
-                 << "GRAD" << endl;
-
+      const auto nDV = solvers0[ADJFEA_SOL]->GetnDVFEA();
+      myfile_res << "INDEX\tGRAD\n";
       myfile_res.precision(15);
 
-      for (iDV = 0; iDV < nDV; iDV++) {
-        myfile_res << iDV;
-        myfile_res << "\t";
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
-        myfile_res << endl;
+      for (auto iDV = 0u; iDV < nDV; iDV++) {
+        myfile_res << iDV << "\t";
+        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV) << "\n";
       }
-
-      myfile_res.close();
     }
   }
 }
