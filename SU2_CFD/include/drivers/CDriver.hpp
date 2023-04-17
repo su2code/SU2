@@ -37,7 +37,6 @@
 
 using namespace std;
 
-class COutputLegacy;
 class CInterpolator;
 class CIteration;
 class COutput;
@@ -51,7 +50,6 @@ class COutput;
 
 class CDriver : public CDriverBase {
  protected:
-  char runtime_file_name[MAX_STRING_SIZE];
   su2double
       UsedTimeOutput; /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
 
@@ -65,9 +63,6 @@ class CDriver : public CDriverBase {
       MpointsDomain; /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;   /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain; /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-
-  ofstream** ConvHist_file; /*!< \brief Convergence history file.*/
-  ofstream FSIHist_file;    /*!< \brief FSI convergence history file.*/
 
   bool StopCalc,   /*!< \brief Stop computation flag.*/
       mixingplane, /*!< \brief mixing-plane simulation flag.*/
@@ -299,6 +294,13 @@ class CDriver : public CDriverBase {
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
+
+  /*!
+   * \brief Ramp some simulation settings for turbomachinery problems.
+   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
+   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
+   */
+  void RampTurbomachineryValues(unsigned long iter);
 
   /*!
    * \brief A virtual member.
@@ -577,52 +579,6 @@ class CFluidDriver : public CDriver {
 };
 
 /*!
- * \class CTurbomachineryDriver
- * \ingroup Drivers
- * \brief Class for driving an iteration for turbomachinery flow analysis.
- * \author S. Vitale
- */
-class CTurbomachineryDriver : public CFluidDriver {
- private:
-  COutputLegacy* output_legacy;
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
- public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CTurbomachineryDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbomachineryDriver(void) override;
-
-  /*!
-   * \brief Run a single iteration of the physics within multiple zones.
-   */
-
-  void Run() override;
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  bool Monitor(unsigned long TimeIter) override;
-};
-
-/*!
  * \class CHBDriver
  * \ingroup Drivers
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
@@ -630,7 +586,6 @@ class CTurbomachineryDriver : public CFluidDriver {
  */
 class CHBDriver : public CFluidDriver {
  private:
-  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
 

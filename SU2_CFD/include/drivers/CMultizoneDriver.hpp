@@ -84,6 +84,19 @@ protected:
   bool TransferData(unsigned short donorZone, unsigned short targetZone);
 
   /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short donorZone);
+
+  /*!
+   * \brief Transfer the local turboperfomance quantities (for each blade row) from all the donorZones to the
+   * targetZone (ZONE_0).
+   * \note IMPORTANT: This approach of multi-zone performances rely upon the fact that turbomachinery markers follow
+   * the natural (stator-rotor) development of the real machine.
+   */
+  void SetTurboPerformance();
+
+  /*!
    * \brief Check the convergence at the outer level.
    */
   bool OuterConvergence(unsigned long OuterIter);
