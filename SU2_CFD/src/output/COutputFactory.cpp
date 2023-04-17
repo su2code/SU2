@@ -26,7 +26,6 @@
  */
 
 #include "../../include/output/COutputFactory.hpp"
-#include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CMultizoneOutput.hpp"
 #include "../../include/output/CElasticityOutput.hpp"
@@ -90,12 +89,3 @@ COutput* COutputFactory::CreateMultizoneOutput(CConfig *driverConfig, CConfig** 
 
   return output;
 }
-
-COutputLegacy* COutputFactory::CreateLegacyOutput(CConfig *config){
-
-  auto* output = new COutputLegacy(config);
-
-  return output;
-
-}
-

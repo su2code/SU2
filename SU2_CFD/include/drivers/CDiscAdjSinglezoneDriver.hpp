@@ -55,8 +55,6 @@ protected:
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
-  COutputLegacy* output_legacy;
-
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
