@@ -93,7 +93,7 @@ def ApplyLoad(driver, marker_id, peak_load):
   of the nodal forces with respect to the peak load.
   """
   derivatives = []
-  if marker_id < 0: return
+  if marker_id < 0: return derivatives
 
   marker_coords = driver.MarkerCoordinates(marker_id)
   l = 0.5
