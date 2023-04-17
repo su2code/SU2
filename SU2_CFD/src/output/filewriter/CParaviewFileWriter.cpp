@@ -33,7 +33,7 @@ CParaviewFileWriter::CParaviewFileWriter(CParallelDataSorter *valDataSorter) :
   CFileWriter(valDataSorter, fileExt){}
 
 
-CParaviewFileWriter::~CParaviewFileWriter(){}
+CParaviewFileWriter::~CParaviewFileWriter()= default;
 
 void CParaviewFileWriter::WriteData(string val_filename){
 

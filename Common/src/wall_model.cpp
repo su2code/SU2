@@ -135,7 +135,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
   su2double qWall_prev = 0.0;
   su2double mut, nu, mu_lam, rho, utau, y_plus, D;
 
-  while (converged == false) {
+  while (!converged) {
     iter += 1;
     if (iter == max_iter) converged = true;
 
@@ -262,7 +262,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
       rhs[i] = -tmp[i + 1] + tmp[i];
     }
 
-    if (HeatFlux_Prescribed == true) {
+    if (HeatFlux_Prescribed) {
       /* dT/dy = 0 -> Twall = T[1] */
       h_wall = c_p * T[1];
     }
@@ -350,7 +350,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
   unsigned short iter = 0, max_iter = 50;
   const su2double tol = 1e-3;
 
-  while (converged == false) {
+  while (!converged) {
     iter += 1;
     if (iter == max_iter) converged = true;
 

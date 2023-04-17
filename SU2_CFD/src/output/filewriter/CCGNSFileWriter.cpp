@@ -77,7 +77,7 @@ void CCGNSFileWriter::WriteData(string val_filename) {
 }
 
 #ifdef HAVE_CGNS
-void CCGNSFileWriter::InitializeMeshFile(string val_filename) {
+void CCGNSFileWriter::InitializeMeshFile(const string& val_filename) {
   if (!dataSorter->GetConnectivitySorted()) {
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
@@ -131,7 +131,7 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
 
   /*--- Coordinate vector is written in blocks, one for each process. ---*/
   cgsize_t nodeBegin = 1;
-  cgsize_t nodeEnd = static_cast<cgsize_t>(nLocalPoints);
+  auto nodeEnd = static_cast<cgsize_t>(nLocalPoints);
 
   if (isCoord) {
     int CoordinateNumber;

@@ -29,9 +29,11 @@
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
-#define SIZE_ARR_NORM 8
+enum {
+SIZE_ARR_NORM = 8
+};
 
-CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
+CFEM_DG_NSSolver::CFEM_DG_NSSolver() : CFEM_DG_EulerSolver() {
 
   /*--- Basic array initialization ---*/
   CD_Visc  = nullptr; CL_Visc  = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
@@ -150,7 +152,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   }
 }
 
-CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
+CFEM_DG_NSSolver::~CFEM_DG_NSSolver() {
 
         delete [] CD_Visc;
         delete [] CL_Visc;

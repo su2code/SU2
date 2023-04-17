@@ -39,14 +39,11 @@ CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(CParallelDataSorter *valDat
   bigEndian = false;
   unsigned int i = 1;
   char *c = (char*)&i;
-  if (*c) bigEndian = false;
-  else bigEndian = true;
+  bigEndian = *c == 0;
 }
 
 
-CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
-
-}
+CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter()= default;
 
 void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
@@ -97,7 +94,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
       if (nDim == 2 && iDim == 2) {
         dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)dataSorter->GetData(iDim, iPoint);
+        auto val = (float)dataSorter->GetData(iDim, iPoint);
         dataBufferFloat[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -178,7 +175,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
   /*--- Load/write the cell type for all elements in the file. ---*/
 
   vector<int> typeBuf(myElem);
-  vector<int>::iterator typeIter = typeBuf.begin();
+  auto typeIter = typeBuf.begin();
 
   std::fill(typeIter, typeIter+nParallel_Line, LINE);          typeIter += nParallel_Line;
   std::fill(typeIter, typeIter+nParallel_Tria, TRIANGLE);      typeIter += nParallel_Tria;
@@ -285,7 +282,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
        This will be replaced with a derived data type most likely. ---*/
 
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        float val = (float)dataSorter->GetData(VarCounter,iPoint);
+        auto val = (float)dataSorter->GetData(VarCounter,iPoint);
         dataBufferFloat[iPoint] = val;
       }
 

@@ -119,7 +119,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
   if (dynamic) nSolVar = 3 * nVar;
   else nSolVar = nVar;
 
-  su2double* SolInit = new su2double[nSolVar]();
+  auto* SolInit = new su2double[nSolVar]();
 
   /*--- Initialize from zero everywhere ---*/
 
@@ -215,7 +215,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
   SolverName = "FEA";
 }
 
-CFEASolver::~CFEASolver(void) {
+CFEASolver::~CFEASolver() {
 
   if (element_properties != nullptr) {
     for (unsigned long iElem = 0; iElem < nElement; iElem++)
@@ -3213,13 +3213,13 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
   {
     ENUM_FILTER_KERNEL type;
     config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
-    kernels.push_back(make_pair(type,param));
+    kernels.emplace_back(type,param);
     filter_radius.push_back(radius);
   }
   search_lim = config->GetTopology_Search_Limit();
   config->GetTopology_Optim_Projection(type,param);
 
-  su2double *physical_rho = new su2double [nElement];
+  auto *physical_rho = new su2double [nElement];
 
   /*--- "Rectify" the input, initialize the physical density with
   the design density (the filter function works in-place). ---*/

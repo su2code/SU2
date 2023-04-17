@@ -84,10 +84,10 @@ void CCGNSElementType::ReadBoundaryConnectivityRange(const int fn, const int iBa
   if (elemType == MIXED) {
     vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
     if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(),
-                                      connCGNSOffsetVec.data(), NULL) != CG_OK)
+                                      connCGNSOffsetVec.data(), nullptr) != CG_OK)
       cg_error_exit();
   } else {
-    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), NULL) != CG_OK)
+    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), nullptr) != CG_OK)
       cg_error_exit();
   }
 
@@ -167,11 +167,11 @@ void CCGNSElementType::ReadConnectivityRange(const int fn, const int iBase, cons
   if (elemType == MIXED) {
     vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
     if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(),
-                                      connCGNSOffsetVec.data(), NULL) != CG_OK)
+                                      connCGNSOffsetVec.data(), nullptr) != CG_OK)
       cg_error_exit();
 
   } else {
-    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), NULL) != CG_OK)
+    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), nullptr) != CG_OK)
       cg_error_exit();
   }
 
@@ -320,7 +320,7 @@ unsigned short CCGNSElementType::DetermineElementDimensionMixed(const int fn, co
   /* Read the data of the first element in this section. */
   vector<cgsize_t> buf(sizeNeeded);
   vector<cgsize_t> buf_offset(2, 0);
-  if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, indBeg, indBeg, buf.data(), buf_offset.data(), NULL) !=
+  if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, indBeg, indBeg, buf.data(), buf_offset.data(), nullptr) !=
       CG_OK)
     cg_error_exit();
 

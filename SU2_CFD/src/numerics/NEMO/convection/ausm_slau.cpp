@@ -59,7 +59,7 @@ CUpwAUSM_SLAU_Base_NEMO::CUpwAUSM_SLAU_Base_NEMO(unsigned short val_nDim, unsign
   }
 }
 
-CUpwAUSM_SLAU_Base_NEMO::~CUpwAUSM_SLAU_Base_NEMO(void) {
+CUpwAUSM_SLAU_Base_NEMO::~CUpwAUSM_SLAU_Base_NEMO() {
   delete[] rhos_i;
   delete[] rhos_j;
 

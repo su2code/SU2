@@ -117,7 +117,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
 
 }
 
-CMultizoneDriver::~CMultizoneDriver(void) {
+CMultizoneDriver::~CMultizoneDriver() {
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete [] init_res[iZone];
@@ -648,7 +648,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
     return (MaxIterationsReached || InnerConvergence);
   }
-  else { // i.e. unsteady simulation
+  // i.e. unsteady simulation
 
     /*--- Check whether the outer time integration has reached the final time ---*/
     const auto TimeConvergence = GetTimeConvergence();
@@ -669,7 +669,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     }
 
     return (FinalTimeReached || MaxIterationsReached);
-  }
+ 
 
 
 }

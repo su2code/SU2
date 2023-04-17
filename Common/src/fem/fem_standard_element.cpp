@@ -1795,9 +1795,9 @@ CFEMStandardElement::CFEMStandardElement(unsigned short val_VTK_Type, unsigned s
      residual can be computed with one matrix multiplication when the fluxes
      are known. */
   unsigned short nDim;
-  if (dtLagBasisIntegration.size())
+  if (!dtLagBasisIntegration.empty())
     nDim = 3;
-  else if (dsLagBasisIntegration.size())
+  else if (!dsLagBasisIntegration.empty())
     nDim = 2;
   else
     nDim = 1;
@@ -2141,7 +2141,7 @@ void CFEMStandardElement::CreateBasisFunctionsAndMatrixDerivatives(
   for (unsigned long i = 0; i < dtLagBasisLoc.size(); ++i, ++ii) matDerBasis[ii] = dtLagBasisLoc[i];
 }
 
-void CFEMStandardElement::DataStandardLine(void) {
+void CFEMStandardElement::DataStandardLine() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2163,7 +2163,7 @@ void CFEMStandardElement::DataStandardLine(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::DataStandardTriangle(void) {
+void CFEMStandardElement::DataStandardTriangle() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2191,7 +2191,7 @@ void CFEMStandardElement::DataStandardTriangle(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::DataStandardQuadrilateral(void) {
+void CFEMStandardElement::DataStandardQuadrilateral() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2223,7 +2223,7 @@ void CFEMStandardElement::DataStandardQuadrilateral(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::DataStandardTetrahedron(void) {
+void CFEMStandardElement::DataStandardTetrahedron() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2274,7 +2274,7 @@ void CFEMStandardElement::DataStandardTetrahedron(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::DataStandardPyramid(void) {
+void CFEMStandardElement::DataStandardPyramid() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2330,7 +2330,7 @@ void CFEMStandardElement::DataStandardPyramid(void) {
   VTK_Type2 = TETRAHEDRON;
 }
 
-void CFEMStandardElement::DataStandardPrism(void) {
+void CFEMStandardElement::DataStandardPrism() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2387,7 +2387,7 @@ void CFEMStandardElement::DataStandardPrism(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::DataStandardHexahedron(void) {
+void CFEMStandardElement::DataStandardHexahedron() {
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
   vector<su2double> matVandermondeInvDummy;
@@ -2447,7 +2447,7 @@ void CFEMStandardElement::DataStandardHexahedron(void) {
   VTK_Type2 = NONE;
 }
 
-void CFEMStandardElement::SubConnTetrahedron(void) {
+void CFEMStandardElement::SubConnTetrahedron() {
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges present in the tetrahedron. Also initialize the
         current k offset to zero.    ---*/
@@ -2639,7 +2639,7 @@ void CFEMStandardElement::SubConnTetrahedron(void) {
   }
 }
 
-void CFEMStandardElement::SubConnPyramid(void) {
+void CFEMStandardElement::SubConnPyramid() {
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges on the base of the pyramid. Also initialize the
         current k offset to zero.     ---*/
@@ -2785,7 +2785,7 @@ void CFEMStandardElement::SubConnPyramid(void) {
   }
 }
 
-void CFEMStandardElement::SubConnPrism(void) {
+void CFEMStandardElement::SubConnPrism() {
   /*--- Determine the number of DOFs for a triangle. This is the offset in
         k-direction, the structured direction of a prisms.    ---*/
   unsigned short nDOFTria = (nPoly + 1) * (nPoly + 2) / 2;
@@ -2853,7 +2853,7 @@ void CFEMStandardElement::SubConnPrism(void) {
   }
 }
 
-void CFEMStandardElement::SubConnHexahedron(void) {
+void CFEMStandardElement::SubConnHexahedron() {
   /*--- Determine the nodal offset in j- and k-direction. ---*/
   unsigned short jOff = nPoly + 1;
   unsigned short kOff = jOff * jOff;
@@ -3371,7 +3371,7 @@ CFEMStandardInternalFace::CFEMStandardInternalFace(unsigned short val_VTK_TypeFa
   /*--- Also create the transpose of the matDerBasisElemIntegrationSide0 and
         matDerBasisElemIntegrationSide1, such that the residual of the
         symmetrizing terms can be computed efficiently. ---*/
-  const unsigned short nDim = dtLagBasisElemIntegrationSide0.size() ? 3 : 2;
+  const unsigned short nDim = !dtLagBasisElemIntegrationSide0.empty() ? 3 : 2;
 
   ii = 0;
   for (unsigned short j = 0; j < nDOFsElemSide0; ++j) {
@@ -3567,7 +3567,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
 
   /*--- Also create the transpose of the matDerBasisElemIntegration, such that
         the residual of the symmetrizing terms can be computed efficiently. ---*/
-  const unsigned short nDim = dtLagBasisElemIntegration.size() ? 3 : 2;
+  const unsigned short nDim = !dtLagBasisElemIntegration.empty() ? 3 : 2;
 
   ii = 0;
   for (unsigned short j = 0; j < nDOFsElem; ++j) {
@@ -3580,7 +3580,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
   }
 }
 
-unsigned short CFEMStandardBoundaryFace::GetNDOFsPerSubFace(void) const {
+unsigned short CFEMStandardBoundaryFace::GetNDOFsPerSubFace() const {
   /*--- Distinguish between the possible element types for a boundary surface
         and set the number nDOFs for a subface accordingly. ---*/
   unsigned short nDOFsSubface = 0;

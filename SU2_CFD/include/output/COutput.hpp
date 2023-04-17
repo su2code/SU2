@@ -742,7 +742,7 @@ protected:
    * \param[in] name - Name of the field.
    * \param[in] iPoint - The point location in the field.
    */
-  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
+  su2double GetVolumeOutputValue(const string& name, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field
@@ -750,7 +750,7 @@ protected:
    * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
-  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  void SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
 
   /*!
    * \brief Set the value of a volume output field
@@ -758,7 +758,7 @@ protected:
    * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
-  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  void SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
 
   /*!
    * \brief CheckHistoryOutput

@@ -28,7 +28,7 @@
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 
-CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
+CSurfaceMovement::CSurfaceMovement() : CGridMovement() {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
@@ -37,7 +37,7 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
   FFDBoxDefinition = false;
 }
 
-CSurfaceMovement::~CSurfaceMovement(void) {}
+CSurfaceMovement::~CSurfaceMovement() = default;
 
 vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
@@ -1314,30 +1314,12 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry* geometry, CConfig* confi
 
 #endif
 
-    if (Code[0] != 0)
-      IPlane_Intersect_A = true;
-    else
-      IPlane_Intersect_A = false;
-    if (Code[1] != 0)
-      IPlane_Intersect_B = true;
-    else
-      IPlane_Intersect_B = false;
-    if (Code[2] != 0)
-      JPlane_Intersect_A = true;
-    else
-      JPlane_Intersect_A = false;
-    if (Code[3] != 0)
-      JPlane_Intersect_B = true;
-    else
-      JPlane_Intersect_B = false;
-    if (Code[4] != 0)
-      KPlane_Intersect_A = true;
-    else
-      KPlane_Intersect_A = false;
-    if (Code[5] != 0)
-      KPlane_Intersect_B = true;
-    else
-      KPlane_Intersect_B = false;
+    IPlane_Intersect_A = Code[0] != 0;
+    IPlane_Intersect_B = Code[1] != 0;
+    JPlane_Intersect_A = Code[2] != 0;
+    JPlane_Intersect_B = Code[3] != 0;
+    KPlane_Intersect_A = Code[4] != 0;
+    KPlane_Intersect_B = Code[5] != 0;
 
     /*--- Screen output ---*/
 
@@ -1730,7 +1712,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry* geometry, CConfig* config, C
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -1869,7 +1851,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry* geometry, CConfig* config, CFre
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     FFDBox->SetOriginalControlPoints();
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
@@ -2010,7 +1992,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry* geometry, CConfig* config, CFreeFor
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     FFDBox->SetOriginalControlPoints();
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
@@ -2062,7 +2044,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry* geometry, CConfig* config, CFree
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     FFDBox->SetOriginalControlPoints();
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
@@ -2183,7 +2165,7 @@ bool CSurfaceMovement::SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFr
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2226,7 +2208,7 @@ bool CSurfaceMovement::SetFFDThickness_2D(CGeometry* geometry, CConfig* config, 
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2274,7 +2256,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry* geometry, CConfig* config, CFreeF
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2344,7 +2326,7 @@ bool CSurfaceMovement::SetFFDThickness(CGeometry* geometry, CConfig* config, CFr
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2407,7 +2389,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry* geometry, CConfig* config, CFreeFo
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2552,7 +2534,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry* geometry, CConfig* config, CFre
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2632,7 +2614,7 @@ bool CSurfaceMovement::SetFFDControl_Surface(CGeometry* geometry, CConfig* confi
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
 
-  if (ResetDef == true) {
+  if (ResetDef) {
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
   }
 
@@ -2719,7 +2701,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsig
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -2897,7 +2879,7 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry* boundary, CConfig* config, uns
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -2957,7 +2939,7 @@ void CSurfaceMovement::SetCST(CGeometry* boundary, CConfig* config, unsigned sho
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -3158,7 +3140,7 @@ void CSurfaceMovement::SetRotation(CGeometry* boundary, CConfig* config, unsigne
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -3242,7 +3224,7 @@ void CSurfaceMovement::SetTranslation(CGeometry* boundary, CConfig* config, unsi
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -3280,7 +3262,7 @@ void CSurfaceMovement::SetScale(CGeometry* boundary, CConfig* config, unsigned s
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
-  if ((iDV == 0) || (ResetDef == true)) {
+  if ((iDV == 0) || (ResetDef)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         VarCoord[0] = 0.0;
@@ -3436,7 +3418,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry* geometry, CConfig* confi
   short iFFDBox;
   su2double movement[3] = {0.0, 0.0, 0.0};
   bool* move = new bool[nFFDBox];
-  unsigned short* index = new unsigned short[3];
+  auto* index = new unsigned short[3];
 
   move[0] = true;
   move[1] = true;
@@ -3499,7 +3481,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnTime_Iter() - 1;
       flowIter = nFlowIter - iter;
-      unsigned short lastindex = DV_Filename.find_last_of(".");
+      unsigned short lastindex = DV_Filename.find_last_of('.');
       DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
@@ -3515,7 +3497,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      unsigned short lastindex = DV_Filename.find_last_of(".");
+      unsigned short lastindex = DV_Filename.find_last_of('.');
       DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
@@ -3846,7 +3828,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry* boundary, CConfig* config) {
       /*--- Store the coordinates in vectors ---*/
 
       Xcoord.push_back(Airfoil_Coord[0]);
-      Ycoord.push_back(Airfoil_Coord[1] * factor * AirfoilScale);
+      Ycoord.emplace_back(Airfoil_Coord[1] * factor * AirfoilScale);
     }
   }
   if (strcmp(AirfoilFormat, "Lednicer") == 0) {
@@ -3907,8 +3889,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry* boundary, CConfig* config) {
     Ycoord.insert(Ycoord.begin(), 0.0);
   }
   if (AddEnd) {
-    Xcoord.push_back(1.0);
-    Ycoord.push_back(0.0);
+    Xcoord.emplace_back(1.0);
+    Ycoord.emplace_back(0.0);
   }
 
   /*--- Change the orientation (depend on the input file, and the mesh file) ---*/
@@ -4032,7 +4014,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry* boundary, CConfig* config) {
 }
 
 void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox,
-                                   string val_mesh_filename) {
+                                   const string& val_mesh_filename) {
   string text_line, iTag;
   ifstream mesh_file;
   su2double CPcoord[3], coord[] = {0, 0, 0};
@@ -4121,15 +4103,15 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
 
         string::size_type position;
         for (iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find(" ", 0);
+          position = text_line.find(' ', 0);
           if (position != string::npos) text_line.erase(position, 1);
-          position = text_line.find("\r", 0);
+          position = text_line.find('\r', 0);
           if (position != string::npos) text_line.erase(position, 1);
-          position = text_line.find("\n", 0);
+          position = text_line.find('\n', 0);
           if (position != string::npos) text_line.erase(position, 1);
         }
 
-        string TagFFDBox = text_line.c_str();
+        string TagFFDBox = text_line;
 
         if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox << ". ";
 
@@ -4244,15 +4226,15 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
 
           string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
-            position = text_line.find(" ", 0);
+            position = text_line.find(' ', 0);
             if (position != string::npos) text_line.erase(position, 1);
-            position = text_line.find("\r", 0);
+            position = text_line.find('\r', 0);
             if (position != string::npos) text_line.erase(position, 1);
-            position = text_line.find("\n", 0);
+            position = text_line.find('\n', 0);
             if (position != string::npos) text_line.erase(position, 1);
           }
 
-          string ParentFFDBox = text_line.c_str();
+          string ParentFFDBox = text_line;
           FFDBox[iFFDBox]->SetParentFFDBox(ParentFFDBox);
         }
 
@@ -4270,15 +4252,15 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
 
           string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
-            position = text_line.find(" ", 0);
+            position = text_line.find(' ', 0);
             if (position != string::npos) text_line.erase(position, 1);
-            position = text_line.find("\r", 0);
+            position = text_line.find('\r', 0);
             if (position != string::npos) text_line.erase(position, 1);
-            position = text_line.find("\n", 0);
+            position = text_line.find('\n', 0);
             if (position != string::npos) text_line.erase(position, 1);
           }
 
-          string ChildFFDBox = text_line.c_str();
+          string ChildFFDBox = text_line;
           FFDBox[iFFDBox]->SetChildFFDBox(ChildFFDBox);
         }
 
@@ -4738,19 +4720,19 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry* geometry, CConfig* config) {
 
     /*--- Send and Recv buffers. ---*/
 
-    su2double* Buffer_Send_X = new su2double[MaxLocalPoint];
+    auto* Buffer_Send_X = new su2double[MaxLocalPoint];
     su2double* Buffer_Recv_X = nullptr;
 
-    su2double* Buffer_Send_Y = new su2double[MaxLocalPoint];
+    auto* Buffer_Send_Y = new su2double[MaxLocalPoint];
     su2double* Buffer_Recv_Y = nullptr;
 
-    su2double* Buffer_Send_Z = new su2double[MaxLocalPoint];
+    auto* Buffer_Send_Z = new su2double[MaxLocalPoint];
     su2double* Buffer_Recv_Z = nullptr;
 
-    unsigned long* Buffer_Send_Point = new unsigned long[MaxLocalPoint];
+    auto* Buffer_Send_Point = new unsigned long[MaxLocalPoint];
     unsigned long* Buffer_Recv_Point = nullptr;
 
-    unsigned short* Buffer_Send_MarkerIndex_CfgFile = new unsigned short[MaxLocalPoint];
+    auto* Buffer_Send_MarkerIndex_CfgFile = new unsigned short[MaxLocalPoint];
     unsigned short* Buffer_Recv_MarkerIndex_CfgFile = nullptr;
 
     /*--- Prepare the receive buffers in the master node only. ---*/
@@ -4907,7 +4889,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     /*--- Read the name of the output file ---*/
 
     auto str = config[ZONE_0]->GetMesh_Out_FileName();
-    unsigned short lastindex = str.find_last_of(".");
+    unsigned short lastindex = str.find_last_of('.');
     str = str.substr(0, lastindex) + ".su2";
 
     output_file.precision(15);
