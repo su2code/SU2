@@ -343,6 +343,19 @@ def main():
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
 
+    # FEA unsteady AD Load Sensitivity
+    pywrapper_Unst_FEA_AD = TestCase('pywrapper_Unst_FEA_AD')
+    pywrapper_Unst_FEA_AD.cfg_dir = "py_wrapper/custom_load_fea"
+    pywrapper_Unst_FEA_AD.cfg_file = "config.cfg"
+    pywrapper_Unst_FEA_AD.test_iter = 100
+    pywrapper_Unst_FEA_AD.test_vals = [0.2569256889872473, 0.256926360722213, 0.03166391031539373, 0.0316910814265723]
+    pywrapper_Unst_FEA_AD.command = TestCase.Command(exec = "python", param = "run_ad.py")
+    pywrapper_Unst_FEA_AD.timeout = 1600
+    pywrapper_Unst_FEA_AD.tol = 0.00001
+    pywrapper_Unst_FEA_AD.new_output = False
+    test_list.append(pywrapper_Unst_FEA_AD)
+    pass_list.append(pywrapper_Unst_FEA_AD.run_test())
+
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
     pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
