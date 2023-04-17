@@ -134,7 +134,6 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   /*--- Set the Jacobian according to the different time integration methods ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (STRUCT_TIME_INT::CD_EXPLICIT):
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
@@ -166,7 +165,6 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   /*--- Update solution ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (STRUCT_TIME_INT::CD_EXPLICIT):
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
@@ -194,8 +192,6 @@ void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolv
   /*--- Update the solution according to the integration scheme used ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (STRUCT_TIME_INT::CD_EXPLICIT):
-      break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       if (fsi && config->GetRelaxation()) solver->ImplicitNewmark_Relaxation(geometry, config);
       break;

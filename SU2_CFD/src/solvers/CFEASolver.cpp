@@ -1340,9 +1340,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     else if (dynamic) {
 
       switch (config->GetKind_TimeIntScheme_FEA()) {
-        case (STRUCT_TIME_INT::CD_EXPLICIT):
-          cout << "NOT IMPLEMENTED YET" << endl;
-          break;
         case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
@@ -1495,9 +1492,6 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
   su2double gamma = config->GetNewmark_gamma(), beta = config->GetNewmark_beta();
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (STRUCT_TIME_INT::CD_EXPLICIT):
-      cout << "NOT IMPLEMENTED YET" << endl;
-      break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
       /*--- Integration constants for Newmark scheme ---*/
