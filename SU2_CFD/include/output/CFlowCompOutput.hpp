@@ -92,4 +92,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFileOutput(const CConfig *config) override ;
+
+  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
+
+  void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config) override;
+
+  void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config) override;
 };

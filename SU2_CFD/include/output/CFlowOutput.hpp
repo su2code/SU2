@@ -30,6 +30,7 @@
 #include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
+
 /*--- Forward declare to avoid including here. ---*/
 template <class>
 struct CPrimitiveIndices;
@@ -43,6 +44,12 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
+
+    /*
+   * \brief Add turboperformance outputs as history field
+   * \param[in] nZone - Number of zones in problem
+  */
+  void AddTurboOutput(unsigned short nZone);
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.
@@ -321,5 +328,4 @@ protected:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(const CConfig *config);
-
 };

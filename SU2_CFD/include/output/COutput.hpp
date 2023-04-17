@@ -48,7 +48,7 @@ inline su2double hypot(const su2double& a, const su2double& b) {
 }
 }
 }
-#include "../../../externals/mel/mel.hpp"
+#include "mel.hpp"
 
 class CGeometry;
 class CSolver;
@@ -372,7 +372,14 @@ public:
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
   /*!
-   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
+   * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  /*!
+   * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -380,24 +387,10 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config,
-                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
-
-  void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config);
-
-  void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config,
-                                  unsigned short iZone);
-  /*!
-   * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                         CTurbomachineryStagePerformance* TurboStagePerf,
+                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
 
   /*!
    *  Collects history data from the individual output per zone,
@@ -605,34 +598,6 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
 
-  /*
-   * \brief Initialize turboperformance variables
-   * \param[in] config - Definition of the particular problem
-  */
-  void InitTurboPerformance(const CConfig *config);
-
-  /*!
-   * \brief Compute turboperformance variables
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem
-   * \param[in] solver - The container holding all solution data
-   */
-  void ComputeTurboPerformance(CConfig *config, CGeometry *geometry, CSolver *solver);
-
-  /*!
-   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] TimeIter - Value of the time iteration index
-   * \param[in] OuterIter - Value of outer iteration index
-   * \param[in] InnerIter - Value of the inner iteration index
-   */
-  void SetTurboPerformance_Output(CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
-
-  void SetTurboMultiZonePerformance_Output(CConfig *config);
-
-  void WriteTurboPerfConvHistory(CConfig *config);
 
 protected:
 
@@ -975,6 +940,38 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
+
+  /*!
+   * \brief Writes turboperformance to screen
+   * \param[in] TurboPerf - Turboperformance definition
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   */
+  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {};
+  
+  /*!
+   * \brief Writes turboperformance to history file
+   * \param[in] TurboStagePerf - Stage turboperformance definition
+   * \param[in] TurboPerf - Turboperformance definition
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config) {};
+
+  /*!
+   * \brief Writes turboperformance to screen
+   * \param[in] TurboStagePerf - Stage turboperformance definition
+   * \param[in] TurboPerf - Turboperformance definition
+   * \param[in] config - Definition of the particular problem
+   * \param[in] iZone - Current zone 
+   */
+  inline virtual void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurboOutput> TurboPerf,
+                                  CConfig *config) {};
 
   /*!
    * \brief Set the available history output fields

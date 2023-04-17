@@ -29,8 +29,7 @@
 
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
-#include "../../../Common/include/option_structure.hpp"
-
+#include "../output/CTurboOutput.hpp"
 /*!
  * \class CEulerSolver
  * \ingroup Euler_Equations
@@ -1062,7 +1061,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_TurboSolution(CConfig *config) final;
-  
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
    * \param[in] geometry - Geometrical definition of the problem.

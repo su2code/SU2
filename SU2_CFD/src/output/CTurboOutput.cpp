@@ -1,6 +1,6 @@
 /*!
  * \file CTurboOutput.cpp
- * \brief Source of the Turbomachinery Performance class.
+ * \brief Source of the Turbomachinery Performance class
  * \author S. Vitale, N. Anand
  * \version 7.1.1 "Blackbird"
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../include/output/CTurboOutput.hpp"
+
 
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() {
   Density = Pressure = TangVelocity = 0.0;

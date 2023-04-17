@@ -56,7 +56,6 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
-#include "../output/CTurboOutput.hpp"
 
 #ifdef HAVE_LIBROM
 #include "librom.h"
@@ -3806,13 +3805,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
-
-/*!
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-   inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
+  inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
 
 
   /*!
@@ -4343,7 +4341,7 @@ public:
    *        iteration can be executed by multiple threads.
    * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
    */
-  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {return TurboPrimitive;}
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) {return TurboPrimitive;}
 
   /*!
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
