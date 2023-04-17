@@ -190,10 +190,13 @@ def RunAdjoint(density, peak_load):
   # Finalize the solver and exit cleanly.
   driver.Finalize()
 
-  return load_sens
+  return comm.allreduce(load_sens)
 
 
 def main():
+  comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
+
   # Run the primal with 2 loads to compute the sensitivity via finite differences.
   obj_pert_load = RunPrimal(1, 2.002)
   obj_pert_rho = RunPrimal(1.0001, 2)
@@ -206,15 +209,18 @@ def main():
   with open('Results_Reverse_Adjoint.txt') as f:
     sens_rho = float(f.readlines()[-1].strip().split('\t')[-1])
 
-  print("      Finite Differences\tDiscrete Adjoint")
-  print(f"Load  {sens_load_fd}\t{sens_load}")
-  print(f"Rho   {sens_rho_fd}\t{sens_rho}")
+  if rank == 0:
+    print("      Finite Differences\tDiscrete Adjoint")
+    print(f"Load  {sens_load_fd}\t{sens_load}")
+    print(f"Rho   {sens_rho_fd}\t{sens_rho}")
 
   assert abs(sens_load / sens_load_fd - 1) < 1e-4, "Error in load derivative."
   assert abs(sens_rho / sens_rho_fd - 1) < 1e-3, "Error in density derivative."
 
   # Print results for the regression script to check.
-  print(100, 100, sens_load_fd, sens_load, sens_rho_fd, sens_rho)
+  if rank == 0:
+    print("\n")
+    print(100, 100, sens_load_fd, sens_load, sens_rho_fd, sens_rho)
 
 
 if __name__ == '__main__':
