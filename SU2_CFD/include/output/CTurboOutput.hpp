@@ -226,4 +226,4 @@ class CTurboOutput {
   // vector<shared_ptr<CTurbomachineryStagePerformance>> GetStagePerformances() const { return StagePerformances; }
   // shared_ptr<CTurbomachineryStagePerformance> GetMachinePerformances() const { return MachinePerformances; }
   void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
-};s
+};
