@@ -123,8 +123,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
-  /*--- Ramp turbo BCs for this time step. ---*/
-  RampTurbomachineryValues(TimeIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {

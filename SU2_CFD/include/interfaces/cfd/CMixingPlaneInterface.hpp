@@ -81,14 +81,6 @@ public:
    */
   void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) override;
 
-  /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
-   * \param[in] donor_geometry  - Solution from the donor mesh.
-   * \param[in] target_geometry - Solution from the target mesh.
-   * \param[in] donorZone       - counter of the donor solution
-   */
-  void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) override;
-
 
 
 };

@@ -246,11 +246,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     }
   }
 
-  /*--- Ramp turbo values for unsteady problems here, otherwise do it over outer iterations. ---*/
-  if (config_container[ZONE_0]->GetTime_Domain()) {
-    RampTurbomachineryValues(TimeIter);
-  }
-
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
@@ -596,7 +591,7 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       for (donorZone = 0; donorZone < nZone; donorZone++) {
         if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
           interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-          interface_container[donorZone][targetZone]->GatherAverageTurboGeoValues(geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0], donorZone);
+          geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
         }
       }
       

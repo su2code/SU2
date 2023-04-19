@@ -6311,6 +6311,22 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
   delete[] turboNormal;
 }
 
+void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig *donor_config, CGeometry *donor_geometry,
+                                                     unsigned short donorZone) {
+
+  unsigned short iSpan;
+  unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+  for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
+    SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
+    SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
+    SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
+    SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
+    SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
+    SetTangGridVelOut(donor_geometry->GetTangGridVelOut(donorZone, iSpan), donorZone, iSpan);
+  }
+}
+
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
   SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_max_threads()))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
