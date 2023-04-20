@@ -6311,13 +6311,12 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
   delete[] turboNormal;
 }
 
-void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig *donor_config, CGeometry *donor_geometry,
-                                                     unsigned short donorZone) {
-
+void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                             unsigned short donorZone) {
   unsigned short iSpan;
   unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
 
-  for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
+  for (iSpan = 0; iSpan < nSpanMaxAllZones + 1; iSpan++) {
     SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
     SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
     SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);

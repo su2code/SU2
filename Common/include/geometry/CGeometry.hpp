@@ -789,7 +789,8 @@ class CGeometry {
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
    */
-  inline virtual void SetAvgTurboGeoValues(const CConfig *donor_config, CGeometry *donor_geometry, unsigned short donorZone) {};
+  inline virtual void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                           unsigned short donorZone){};
 
   /*!
    * \brief Set max length.

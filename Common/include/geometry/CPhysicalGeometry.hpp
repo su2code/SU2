@@ -414,7 +414,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
    */
-  void SetAvgTurboGeoValues(const CConfig *donor_config, CGeometry *donor_geometry, unsigned short donorZone) override;
+  void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry, unsigned short donorZone) override;
 
   /*!
    * \brief Set the edge structure of the control volume.
