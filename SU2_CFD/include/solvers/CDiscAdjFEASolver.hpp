@@ -92,7 +92,7 @@ private:
       }
     }
 
-    void UpdateTotal() {
+    void Store() {
       /*--- Clears the old values such that on the next time step the total is
        * incremented instead of updated. ---*/
       for (auto i = 0u; i < size; ++i) OldSens[i] = 0.0;

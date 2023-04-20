@@ -346,20 +346,23 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){
 
-  E.UpdateTotal();
-  Nu.UpdateTotal();
-  Rho.UpdateTotal();
-  Rho_DL.UpdateTotal();
-  if (de_effects) EField.UpdateTotal();
-  if (fea_dv) DV.UpdateTotal();
+  const bool time_domain = config->GetTime_Domain();
+
+  /*--- Store the final material sensitivities for the time step to increment them on the next time step. ---*/
+  if (time_domain) {
+    E.Store();
+    Nu.Store();
+    Rho.Store();
+    Rho_DL.Store();
+    if (de_effects) EField.Store();
+    if (fea_dv) DV.Store();
+  }
 
   /*--- Extract the topology optimization density sensitivities. ---*/
 
   direct_solver->ExtractAdjoint_Variables(geometry, config);
 
   /*--- Extract the geometric sensitivities ---*/
-
-  const bool time_domain = config->GetTime_Domain();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
