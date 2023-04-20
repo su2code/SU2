@@ -26,7 +26,6 @@
  */
 
 #include "../../include/output/CTurboOutput.hpp"
-#include "Common/include/parallelization/omp_structure.hpp"
 
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() { Density = Pressure = TangVelocity = 0.0; }
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitive, unsigned short nDim,
