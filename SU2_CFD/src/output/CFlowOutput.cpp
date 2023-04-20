@@ -1371,6 +1371,8 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutput("REFERENCE_FORCE", "RefForce", ScreenOutputFormat::FIXED, "AERO_COEFF", "Reference force used to compute aerodynamic coefficients", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Drag coefficient
   AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: viscous Drag coefficient
+  AddHistoryOutput("DRAG_VISC",       "CD_visc",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Viscous drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
   AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
@@ -1428,6 +1430,7 @@ void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolve
 
   SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
+  SetHistoryOutputValue("DRAG_VISC", flow_solver->GetAllBound_CD_Visc());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
     SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
