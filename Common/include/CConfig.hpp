@@ -2108,16 +2108,10 @@ public:
   su2double GetElasticyMod(unsigned short id_val) const { return ElasticityMod[id_val]; }
 
   /*!
-    * \brief Decide whether to apply DE effects to the model.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to apply DE effects to the model.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
   bool GetDE_Effects(void) const { return DE_Effects; }
-
-  /*!
-    * \brief Decide whether to predict the DE effects for the next time step.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
-   bool GetDE_Predicted(void);
 
   /*!
    * \brief Get the number of different electric constants.
@@ -8749,22 +8743,10 @@ public:
   unsigned short GetnIntCoeffs(void) const { return nIntCoeffs; }
 
   /*!
-   * \brief Get the number of different values for the elasticity modulus.
-   * \return Number of different values for the elasticity modulus.
+   * \brief Get the number of different materials for the elasticity solver.
+   * \return Number of different materials.
    */
-  unsigned short GetnElasticityMod(void) const { return nElasticityMod; }
-
-  /*!
-   * \brief Get the number of different values for the Poisson ratio.
-   * \return Number of different values for the Poisson ratio.
-   */
-  unsigned short GetnPoissonRatio(void) const { return nPoissonRatio; }
-
-  /*!
-   * \brief Get the number of different values for the Material density.
-   * \return Number of different values for the Material density.
-   */
-  unsigned short GetnMaterialDensity(void) const { return nMaterialDensity; }
+  unsigned short GetnElasticityMat(void) const { return nElasticityMod; }
 
   /*!
    * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.

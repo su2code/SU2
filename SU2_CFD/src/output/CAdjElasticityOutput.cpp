@@ -27,6 +27,7 @@
 
 
 #include "../../include/output/CAdjElasticityOutput.hpp"
+#include <string>
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
@@ -50,8 +51,8 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("ADJOINT_DISP_X");
     requestedScreenFields.emplace_back("ADJOINT_DISP_Y");
-    requestedScreenFields.emplace_back("SENS_E");
-    requestedScreenFields.emplace_back("SENS_NU");
+    requestedScreenFields.emplace_back("SENS_E_0");
+    requestedScreenFields.emplace_back("SENS_NU_0");
     nRequestedScreenFields = requestedScreenFields.size();
   }
 
@@ -62,9 +63,9 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
-  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "SENSITIVITY") == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("SENSITIVITY");
-    nRequestedVolumeFields ++;
+    nRequestedVolumeFields++;
   }
 
   stringstream ss;
@@ -97,47 +98,69 @@ CAdjElasticityOutput::~CAdjElasticityOutput() = default;
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
-  // Residuals
+  /*--- Residuals ---*/
   AddHistoryOutput("ADJOINT_DISP_X", "rms[Ux_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the X displacements.", HistoryFieldType::RESIDUAL);
   AddHistoryOutput("ADJOINT_DISP_Y", "rms[Uy_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Y displacements.", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", HistoryFieldType::RESIDUAL);
+  if (nVar_FEM == 3) {
+    AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", HistoryFieldType::RESIDUAL);
+  }
 
-  //Sensitivities
-  AddHistoryOutput("SENS_E", "Sens[E]", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Elasticity modulus");
-  AddHistoryOutput("SENS_NU", "Sens[Nu]", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Poisson ratio");
+  /*--- Sensitivities ---*/
+  for (auto iVar = 0u; iVar < config->GetnElasticityMat(); iVar++) {
+    const auto iVarS = std::to_string(iVar);
+    AddHistoryOutput("SENS_E_" + iVarS, "Sens[E" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Elasticity modulus");
+    AddHistoryOutput("SENS_NU_" + iVarS, "Sens[Nu" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Poisson ratio");
+    if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
+      AddHistoryOutput("SENS_RHO_" + iVarS, "Sens[Rho" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Material density");
+    }
+    if (config->GetDeadLoad()) {
+      AddHistoryOutput("SENS_RHO_DL_" + iVarS, "Sens[RhoDL" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Dead load density");
+    }
+  }
+  if (config->GetDE_Effects()) {
+    for (auto iVar = 0u; iVar < config->GetnElectric_Field(); iVar++) {
+      const auto iVarS = std::to_string(iVar);
+      AddHistoryOutput("SENS_EFIELD_" + iVarS, "Sens[EField" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Electric field");
+    }
+  }
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  AddHistoryOutput("BGS_ADJ_DISP_X", "bgs[A_Ux]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint X displacement.", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_ADJ_DISP_Y", "bgs[A_Uy]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Y displacement.", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_ADJ_DISP_Z", "bgs[A_Uz]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Z displacement.", HistoryFieldType::RESIDUAL);
-
+  if (multiZone) {
+    AddHistoryOutput("BGS_ADJ_DISP_X", "bgs[A_Ux]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint X displacement.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_ADJ_DISP_Y", "bgs[A_Uy]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Y displacement.", HistoryFieldType::RESIDUAL);
+    if (nVar_FEM == 3) {
+      AddHistoryOutput("BGS_ADJ_DISP_Z", "bgs[A_Uz]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Z displacement.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_RMS(0)));
   SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_RMS(1)));
-  if (nVar_FEM == 3){
+  if (nVar_FEM == 3) {
     SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));
   }
 
-  su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;
-  if (config->GetnElasticityMod() == 1) {
-    Total_SensE = solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
-    Total_SensNu = solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
-  }
-  else {
-    for (unsigned short iVar = 0; iVar < config->GetnElasticityMod(); iVar++){
-      Total_SensE += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_E(iVar),2);
-      Total_SensNu += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar),2);
+  for (unsigned short iVar = 0; iVar < config->GetnElasticityMat(); iVar++) {
+    const auto iVarS = std::to_string(iVar);
+    SetHistoryOutputValue("SENS_E_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_E(iVar));
+    SetHistoryOutputValue("SENS_NU_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Nu(iVar));
+    if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
+      SetHistoryOutputValue("SENS_RHO_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho(iVar));
     }
-    Total_SensE = sqrt(Total_SensE);
-    Total_SensNu = sqrt(Total_SensNu);
+    if (config->GetDeadLoad()) {
+      SetHistoryOutputValue("SENS_RHO_DL_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho_DL(iVar));
+    }
   }
-  SetHistoryOutputValue("SENS_E", Total_SensE);
-  SetHistoryOutputValue("SENS_NU", Total_SensNu);
+  if (config->GetDE_Effects()) {
+    for (auto iVar = 0u; iVar < config->GetnElectric_Field(); iVar++) {
+      const auto iVarS = std::to_string(iVar);
+      SetHistoryOutputValue("SENS_EFIELD_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_EField(iVar));
+    }
+  }
 
   SetHistoryOutputValue("LINSOL_ITER", solver[ADJFEA_SOL]->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[ADJFEA_SOL]->GetResLinSolver()));

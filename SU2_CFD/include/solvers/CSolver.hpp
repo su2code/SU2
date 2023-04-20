@@ -3203,42 +3203,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Young Modulus E
-   */
-  inline virtual su2double GetGlobal_Sens_E(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Poisson's ratio Nu
-   */
-  inline virtual su2double GetGlobal_Sens_Nu(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural density sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural weight sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
-   */
-  inline virtual su2double GetGlobal_Sens_EField(unsigned short iEField) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
-   */
-  inline virtual su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
    */
   inline virtual su2double GetVal_Young(unsigned short iVal) const { return 0.0; }

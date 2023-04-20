@@ -1186,10 +1186,10 @@ history_header_map = {
         "HEADER": "Sens_AoA",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_E": {
+    "SENS_E_0": {
         "DESCRIPTION": "d Objective / d Elasticity modulus",
         "GROUP": "SENSITIVITY",
-        "HEADER": "Sens[E]",
+        "HEADER": "Sens[E_0]",
         "TYPE": "DEFAULT",
     },
     "SENS_GEO": {
@@ -1207,10 +1207,10 @@ history_header_map = {
         "HEADER": "Sens_Mach",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_NU": {
+    "SENS_NU_0": {
         "DESCRIPTION": "d Objective / d Poisson ratio",
         "GROUP": "SENSITIVITY",
-        "HEADER": "Sens[Nu]",
+        "HEADER": "Sens[Nu_0]",
         "TYPE": "DEFAULT",
     },
     "SENS_PRESS": {

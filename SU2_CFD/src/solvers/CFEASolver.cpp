@@ -383,8 +383,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
     /*--- Detect a wrong solution file ---*/
 
     if (iElem_Global_Local != nElement) {
-      SU2_MPI::Error(string("The properties file ") + filename + string(" doesn't match with the mesh file!\n")  +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+      SU2_MPI::Error("The properties file " + filename + " doesn't match with the mesh file!\n"
+                     "It could be empty lines at the end of the file.", CURRENT_FUNCTION);
     }
 
   }

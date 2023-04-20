@@ -145,7 +145,10 @@ def RunPrimal(density, peak_load):
 
 
 def RunAdjoint(density, peak_load):
-  """Runs the adjoint solver and returns the sensitivity of the objective function to the peak load."""
+  """
+  Runs the adjoint solver and returns the sensitivity of the objective function to the peak
+  load and to the material density.
+  """
   comm = MPI.COMM_WORLD
 
   with open('config_unsteady_ad.cfg', 'w') as f:
@@ -187,10 +190,12 @@ def RunAdjoint(density, peak_load):
     driver.Monitor(time_iter)
     driver.Output(time_iter)
 
+  rho_sens = driver.GetOutputValue('SENS_RHO_0')
+
   # Finalize the solver and exit cleanly.
   driver.Finalize()
 
-  return comm.allreduce(load_sens)
+  return comm.allreduce(load_sens), rho_sens
 
 
 def main():
@@ -204,10 +209,7 @@ def main():
   sens_load_fd = (obj_pert_load - obj) / 0.002
   sens_rho_fd = (obj_pert_rho - obj) / 0.0001
 
-  sens_load = RunAdjoint(1, 2)
-  # Read the density sensitivity from the special output file.
-  with open('Results_Reverse_Adjoint.txt') as f:
-    sens_rho = float(f.readlines()[-1].strip().split('\t')[-1])
+  sens_load, sens_rho = RunAdjoint(1, 2)
 
   if rank == 0:
     print("      Finite Differences\tDiscrete Adjoint")

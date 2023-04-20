@@ -4648,6 +4648,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
   }
 
+  if (nElasticityMod != nPoissonRatio || nElasticityMod != nMaterialDensity) {
+    SU2_MPI::Error("ELASTICITY_MODULUS, POISSON_RATIO, and MATERIAL_DENSITY need to have the same number "
+                   "of entries (the number of materials).", CURRENT_FUNCTION);
+  }
+
   if (nElectric_Constant == 0) {
     nElectric_Constant = 1;
     Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;

@@ -32,32 +32,6 @@
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {
   fem_iteration = new CFEAIteration(config);
-
-  // TEMPORARY output only for standalone structural problems
-  if (config->GetAdvanced_FEAElementBased() && (rank == MASTER_NODE)) {
-    bool de_effects = config->GetDE_Effects();
-    unsigned short iVar;
-
-    /*--- Header of the temporary output file ---*/
-    ofstream myfile_res;
-    myfile_res.open("Results_Reverse_Adjoint.txt");
-
-    myfile_res << "Obj_Func"
-               << " ";
-    for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++) myfile_res << "Sens_E_" << iVar << "\t";
-
-    for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++) myfile_res << "Sens_Nu_" << iVar << "\t";
-
-    if (config->GetTime_Domain()) {
-      for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++) myfile_res << "Sens_Rho_" << iVar << "\t";
-    }
-
-    if (de_effects) {
-      for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++) myfile_res << "Sens_EField_" << iVar << "\t";
-    }
-
-    myfile_res << "\n";
-  }
 }
 
 CDiscAdjFEAIteration::~CDiscAdjFEAIteration() = default;
@@ -71,31 +45,49 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
   auto dirNodes = solvers0[FEA_SOL]->GetNodes();
   auto adjNodes = solvers0[ADJFEA_SOL]->GetNodes();
 
-  /*--- For the dynamic adjoint, load direct solutions from restart files. ---*/
+  auto StoreDirectSolution = [&]() {
+    for (auto iPoint = 0ul; iPoint < geometry0->GetnPoint(); iPoint++) {
+      adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
+    }
+  };
+
+  /*--- For the dynamic adjoint, load direct solutions from restart files.
+   * For steady, store the direct solution to be able to reset it later. ---*/
 
   if (config[iZone]->GetTime_Domain()) {
     const int TimeIter = config[iZone]->GetTimeIter();
     const int Direct_Iter = SU2_TYPE::Int(config[iZone]->GetUnst_AdjointIter()) - TimeIter - 1;
 
-    /*--- We want to load the already converged solution at timesteps n and n-1 ---*/
+    /*--- We need the already converged solution at timesteps n and n-1. On the first
+     * adjoint time step we load both, then n-1 becomes "n" and we only load n-2. ---*/
 
-    /*--- Load solution at timestep n-1 ---*/
+    if (TimeIter > 0) {
+      /*--- Save n-1 to become n. ---*/
+      for (auto iPoint = 0ul; iPoint < geometry0->GetnPoint(); iPoint++) {
+        adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution_time_n(iPoint));
+      }
+    }
+
+    /*--- Load solution at timestep n-1 and push back to correct array. ---*/
 
     LoadDynamic_Solution(geometry, solver, config, iZone, iInst, Direct_Iter - 1);
-
-    /*--- Push solution back to correct array ---*/
-
     dirNodes->Set_Solution_time_n();
 
-    /*--- Load solution timestep n ---*/
+    /*--- Load or set solution at timestep n. ---*/
 
-    LoadDynamic_Solution(geometry, solver, config, iZone, iInst, Direct_Iter);
-  }
+    if (TimeIter == 0) {
+      LoadDynamic_Solution(geometry, solver, config, iZone, iInst, Direct_Iter);
+      StoreDirectSolution();
+    } else {
+      /*--- Set n-1 as n. ---*/
+      for (auto iPoint = 0ul; iPoint < geometry0->GetnPoint(); iPoint++)
+        for (auto iVar = 0u; iVar < solvers0[ADJFEA_SOL]->GetnVar(); iVar++)
+          dirNodes->SetSolution(iPoint, iVar, adjNodes->GetSolution_Direct(iPoint)[iVar]);
+    }
 
-  /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later. ---*/
-
-  for (auto iPoint = 0ul; iPoint < geometry0->GetnPoint(); iPoint++) {
-    adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
+  } else {
+    /*--- Steady. ---*/
+    StoreDirectSolution();
   }
 
   solvers0[ADJFEA_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
@@ -178,7 +170,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   const int mat_knowles = MAT_KNOWLES+offset;
   const int de_term = DE_TERM+offset;
 
-  for (unsigned short iProp = 0; iProp < config[iZone]->GetnElasticityMod(); iProp++) {
+  for (unsigned short iProp = 0; iProp < config[iZone]->GetnElasticityMat(); iProp++) {
     su2double E = adj_solver->GetVal_Young(iProp);
     su2double nu = adj_solver->GetVal_Poisson(iProp);
     su2double rho = adj_solver->GetVal_Rho(iProp);
@@ -302,44 +294,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                        CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  const bool dynamic = (config[iZone]->GetTime_Domain());
   auto solvers0 = solver[iZone][iInst][MESH_0];
-
-  // TEMPORARY output only for standalone structural problems
-  if (config[iZone]->GetAdvanced_FEAElementBased() && (rank == MASTER_NODE)) {
-    unsigned short iVar;
-
-    const bool de_effects = config[iZone]->GetDE_Effects();
-
-    /*--- Header of the temporary output file ---*/
-    ofstream myfile_res;
-    myfile_res.open("Results_Reverse_Adjoint.txt", ios::app);
-
-    myfile_res.precision(15);
-
-    myfile_res << config[iZone]->GetTimeIter() << "\t";
-
-    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone], solvers0);
-    myfile_res << scientific << solvers0[FEA_SOL]->GetTotal_ComboObj() << "\t";
-
-    for (iVar = 0; iVar < config[iZone]->GetnElasticityMod(); iVar++)
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
-    for (iVar = 0; iVar < config[iZone]->GetnPoissonRatio(); iVar++)
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
-    if (dynamic) {
-      for (iVar = 0; iVar < config[iZone]->GetnMaterialDensity(); iVar++)
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
-    }
-    if (de_effects) {
-      for (iVar = 0; iVar < config[iZone]->GetnElectric_Field(); iVar++)
-        myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
-    }
-    for (iVar = 0; iVar < solvers0[ADJFEA_SOL]->GetnDVFEA(); iVar++) {
-      myfile_res << scientific << solvers0[ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
-    }
-
-    myfile_res << "\n";
-  }
 
   // TEST: for implementation of python framework in standalone structural problems
   if (config[iZone]->GetAdvanced_FEAElementBased() && (rank == MASTER_NODE)) {

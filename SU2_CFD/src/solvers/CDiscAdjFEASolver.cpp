@@ -84,16 +84,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Initialize vector structures for multiple material definition ---*/
 
-  nMPROP = config->GetnElasticityMod();
-
-  /*--- For a material to be fully defined, we need to have the same number for all three parameters ---*/
-  bool checkDef = ((config->GetnElasticityMod() == config->GetnPoissonRatio()) &&
-                   (config->GetnElasticityMod() == config->GetnMaterialDensity()) &&
-                   (config->GetnMaterialDensity() == config->GetnPoissonRatio()));
-
-  if (!checkDef){
-    SU2_MPI::Error("WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions.", CURRENT_FUNCTION);
-  }
+  nMPROP = config->GetnElasticityMat();
 
   E.resize(nMPROP);
   Nu.resize(nMPROP);
