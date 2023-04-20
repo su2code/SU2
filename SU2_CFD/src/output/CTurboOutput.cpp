@@ -26,6 +26,7 @@
  */
 
 #include "../../include/output/CTurboOutput.hpp"
+#include "Common/include/parallelization/omp_structure.hpp"
 
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() { Density = Pressure = TangVelocity = 0.0; }
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitive, unsigned short nDim,
@@ -176,7 +177,7 @@ CTurboOutput::CTurboOutput(const CConfig& config, const CGeometry& geometry, CFl
 
       // TODO: I have a feeling this should not be in such a for loop, to be discussed with Salvo (Nitish)
       SU2_OMP_PARALLEL {
-        const int thread = omp_get_thread_num();
+        // const int thread = omp_get_thread_num();
 
         /* Switch between the Turbomachinery Performance Kind */
         // TODO: This needs to be fixed
@@ -202,6 +203,7 @@ CTurboOutput::CTurboOutput(const CConfig& config, const CGeometry& geometry, CFl
             break;
         }
       }
+      END_SU2_OMP_PARALLEL
     }
     BladesPerformances.push_back(bladeSpanPerformances);
   }
