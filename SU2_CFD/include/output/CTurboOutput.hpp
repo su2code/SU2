@@ -123,7 +123,7 @@ class CTurbomachineryState {
 
   su2double Norm(vector<su2double> const& u) const {
     su2double accum = 0.;
-    for (int i = 0; i < u.size(); ++i) {
+    for (auto i = 0u; i < u.size(); ++i) {
       accum += u[i] * u[i];
     }
     return sqrt(accum);
@@ -140,6 +140,8 @@ class CTurbomachineryBladePerformance {
  public:
   CTurbomachineryBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
                                   su2double areaOut, su2double radiusOut);
+
+  virtual ~CTurbomachineryBladePerformance() = default;
 
   virtual void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives){};
 

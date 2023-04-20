@@ -2462,9 +2462,6 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
         const bool fluid_donor = config[donor]->GetFluidProblem();
         const bool structural_donor = config[donor]->GetStructuralProblem();
 
-        /*--- Turbomachinery Bool for MIXING PLANE ---*/
-        const bool turbo = config[donor]->GetBoolTurbomachinery();
-
         /*--- Initialize the appropriate transfer strategy. ---*/
 
         if (rank == MASTER_NODE) cout << " Transferring ";

@@ -282,7 +282,7 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
         geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
       }
 
-      for (auto iZone = 0u; iZone < nZone-1; iZone++) {
+      for (auto iZone = 0; iZone < nZone-1; iZone++) {
         geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
       }
     }

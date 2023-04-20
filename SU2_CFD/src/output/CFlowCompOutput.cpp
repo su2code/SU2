@@ -522,9 +522,6 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePe
                                   std::shared_ptr<CTurboOutput> TurboPerf,
                                   CConfig *config) {
 
-  auto nZone = config->GetnZone();
-  unsigned short iStage, iZone;
-  auto nSpan = config->GetnSpanWiseSections();
   stringstream TurboMZPerf;
 
   PrintingToolbox::CTablePrinter TurboInOut(&TurboMZPerf);

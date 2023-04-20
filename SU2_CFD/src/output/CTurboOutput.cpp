@@ -182,7 +182,6 @@ CTurboOutput::CTurboOutput(const CConfig& config,
                                                        CFluidModel& fluidModel) {
   unsigned short nBladesRow = config.GetnMarker_Turbomachinery();
   unsigned short nDim = geometry.GetnDim();
-  unsigned short nStages = SU2_TYPE::Int(nBladesRow / 2);
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector <shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
@@ -193,7 +192,6 @@ CTurboOutput::CTurboOutput(const CConfig& config,
       su2double areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
       su2double radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
       su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
-      // std::cout << "Area In " << areaIn << "   Area Out " << areaOut << "   blade row " << iBladeRow <<std::endl;
 
       // TODO: I have a feeling this should not be in such a for loop, to be discussed with Salvo (Nitish)
       SU2_OMP_PARALLEL
