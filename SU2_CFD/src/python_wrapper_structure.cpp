@@ -29,7 +29,7 @@
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
 
-void CDriver::PythonInterfacePreprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
+void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
   int rank = MASTER_NODE;
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
@@ -76,7 +76,7 @@ string CDriver::GetSurfaceFileName() const { return config_container[ZONE_0]->Ge
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
+void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
   CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
 
@@ -86,7 +86,7 @@ void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, p
   solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
 }
 
-void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
+void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
   unsigned long iVertex;
@@ -100,49 +100,6 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha) {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CDriver::ResetConvergence() {
-  for (auto iZone = 0u; iZone < nZone; iZone++) {
-    switch (main_config->GetKind_Solver()) {
-      case MAIN_SOLVER::EULER:
-      case MAIN_SOLVER::NAVIER_STOKES:
-      case MAIN_SOLVER::RANS:
-      case MAIN_SOLVER::INC_EULER:
-      case MAIN_SOLVER::INC_NAVIER_STOKES:
-      case MAIN_SOLVER::INC_RANS:
-      case MAIN_SOLVER::NEMO_EULER:
-      case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-        integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-        if (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS)
-          integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
-        if (config_container[iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM)
-          integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
-        break;
-
-      case MAIN_SOLVER::FEM_ELASTICITY:
-        integration_container[iZone][INST_0][FEA_SOL]->SetConvergence(false);
-        break;
-
-      case MAIN_SOLVER::ADJ_EULER:
-      case MAIN_SOLVER::ADJ_NAVIER_STOKES:
-      case MAIN_SOLVER::ADJ_RANS:
-      case MAIN_SOLVER::DISC_ADJ_EULER:
-      case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-      case MAIN_SOLVER::DISC_ADJ_RANS:
-      case MAIN_SOLVER::DISC_ADJ_INC_EULER:
-      case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
-      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-        integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
-        if ((config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) ||
-            (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS))
-          integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
-        break;
-
-      default:
-        break;
-    }
-  }
-}
 
 void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);

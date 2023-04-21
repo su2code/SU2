@@ -108,7 +108,7 @@ class CBaseMPIWrapper {
   static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift = 0,
                        int sendshift = 0);
 
-  static void Error(std::string ErrorMsg, std::string FunctionName);
+  static void Error(const std::string& ErrorMsg, const std::string& FunctionName);
 
   static inline int GetRank() { return Rank; }
 

@@ -1,7 +1,7 @@
 /*!
  * \file CLookUp_ANN_tests.cpp
- * \brief Unit tests for NdFlattener template classes.
- * \author M. Aehle
+ * \brief Unit tests for CLookUp_ANN and CIOMap classes.
+ * \author E.C.Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,18 +27,21 @@
 
 #include "catch.hpp"
 #include "../../../../Common/include/CConfig.hpp"
-#include "../../../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
-#include "../../../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
+#if defined(HAVE_MLPCPP)
+#include "../../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
+#include <vector>
 
-TEST_CASE("LookUp ANN test", "[LookUpANN]"){
+#ifdef USE_MLPCPP
+TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   std::string MLP_input_files[] = {"src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp"};
   unsigned short n_MLPs = 1;
   MLPToolbox::CLookUp_ANN ANN(n_MLPs, MLP_input_files);
-  su2vector<std::string> MLP_input_names,
-                           MLP_output_names;
-  su2vector<su2double> MLP_inputs;
-  su2vector<su2double*> MLP_outputs;
-  su2double x,y,z;
+  std::vector<std::string> MLP_input_names, MLP_output_names;
+  std::vector<double> MLP_inputs;
+  std::vector<double*> MLP_outputs;
+  su2double x, y, z;
 
   /*--- Define MLP inputs and outputs ---*/
   MLP_input_names.resize(2);
@@ -52,8 +55,8 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   MLP_outputs[0] = &z;
 
   /*--- Generate input-output map ---*/
-  MLPToolbox::CIOMap iomap(&ANN, MLP_input_names, MLP_output_names);
-
+  MLPToolbox::CIOMap iomap(MLP_input_names, MLP_output_names);
+  ANN.PairVariableswithMLPs(iomap);
   /*--- MLP evaluation on point in the middle of the training data range ---*/
   x = 1.0;
   y = -0.5;
@@ -71,3 +74,4 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]"){
   ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
   CHECK(z == Approx(0.012737));
 }
+#endif

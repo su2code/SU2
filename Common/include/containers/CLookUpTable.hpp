@@ -285,7 +285,7 @@ class CLookUpTable {
                                                               const su2double val_CV3);
 
  public:
-  CLookUpTable(const std::string& file_name_lut, const std::string& name_CV1_in, const std::string& name_CV2_in);
+  CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
 
   /*!
    * \brief Print information to screen.

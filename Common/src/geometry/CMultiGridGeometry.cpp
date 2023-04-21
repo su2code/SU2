@@ -77,7 +77,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
        belongs to this physical domain, and it meets the geometrical
        criteria, the agglomeration is studied. ---*/
 
-      if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) && (fine_grid->nodes->GetDomain(iPoint)) &&
+      if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
           (GeometricalCheck(iPoint, fine_grid, config))) {
         unsigned short nChildren = 1;
 
@@ -114,12 +114,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
          markers is SEND_RECEIVE ---*/
 
         if (counter == 2) {
-          if ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE)) {
-            agglomerate_seed = true;
-          } else {
-            agglomerate_seed = false;
-          }
+          agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+                             (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarted ---*/
@@ -190,7 +186,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
-      if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) && (fine_grid->nodes->GetDomain(iPoint))) {
+      if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint))) {
         fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
         nodes->SetnChildren_CV(Index_CoarseCV, 1);
@@ -227,7 +223,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- If the element has not being previously agglomerated, belongs to the physical domain,
      and satisfies several geometrical criteria then the seed CV is accepted for agglomeration. ---*/
 
-    if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) && (fine_grid->nodes->GetDomain(iPoint)) &&
+    if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
         (GeometricalCheck(iPoint, fine_grid, config))) {
       unsigned short nChildren = 1;
 
@@ -249,7 +245,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
         /*--- Determine if the CVPoint can be agglomerated ---*/
 
-        if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) && (fine_grid->nodes->GetDomain(CVPoint)) &&
+        if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
             (GeometricalCheck(CVPoint, fine_grid, config))) {
           /*--- We set the value of the parent ---*/
 
@@ -278,7 +274,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       for (auto CVPoint : Suitable_Indirect_Neighbors) {
         /*--- The new point can be agglomerated ---*/
 
-        if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) && (fine_grid->nodes->GetDomain(CVPoint))) {
+        if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint))) {
           /*--- We set the value of the parent ---*/
 
           fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
@@ -314,7 +310,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Convert any point that was not agglomerated into a coarse point. ---*/
 
   for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++) {
-    if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) && (fine_grid->nodes->GetDomain(iPoint))) {
+    if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint))) {
       fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
       if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
       nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
@@ -508,7 +504,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
   /*--- Basic condition, the point has not being previously agglomerated, it belongs to the domain,
    and has passed some basic geometrical checks. ---*/
 
-  if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) && (fine_grid->nodes->GetDomain(CVPoint)) &&
+  if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
       (GeometricalCheck(CVPoint, fine_grid, config))) {
     /*--- If the point belongs to a boundary, its type must be compatible with the seed marker. ---*/
 
@@ -967,8 +963,8 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry* fine_grid, un
     unsigned short marker;
     su2double* target;
 
-    su2double Get(unsigned long iVertex) { return fine_grid->GetCustomBoundaryHeatFlux(marker, iVertex); }
-    void Set(unsigned long iVertex, const su2double& val) { target[iVertex] = val; }
+    su2double Get(unsigned long iVertex) const { return fine_grid->GetCustomBoundaryHeatFlux(marker, iVertex); }
+    void Set(unsigned long iVertex, const su2double& val) const { target[iVertex] = val; }
 
   } wall_heat_flux;
 
@@ -985,8 +981,8 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid,
     unsigned short marker;
     su2double* target;
 
-    su2double Get(unsigned long iVertex) { return fine_grid->GetCustomBoundaryTemperature(marker, iVertex); }
-    void Set(unsigned long iVertex, const su2double& val) { target[iVertex] = val; }
+    su2double Get(unsigned long iVertex) const { return fine_grid->GetCustomBoundaryTemperature(marker, iVertex); }
+    void Set(unsigned long iVertex, const su2double& val) const { target[iVertex] = val; }
 
   } wall_temperature;
 

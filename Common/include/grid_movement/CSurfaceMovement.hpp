@@ -433,7 +433,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
    * \param[in] val_mesh_filename - Name of the grid input file.
    */
-  void ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, string val_mesh_filename);
+  void ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, const string& val_mesh_filename);
 
   /*!
    * \brief Read the free form information from the grid input file.

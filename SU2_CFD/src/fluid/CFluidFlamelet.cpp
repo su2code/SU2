@@ -27,14 +27,13 @@
 
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
-#include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
-#include "../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
-
-CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+#if defined(HAVE_MLPCPP)
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
 #endif
 
+CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool display) : CFluidModel() {
+  rank = SU2_MPI::GetRank();
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
   n_control_vars = config->GetNControlVars();
@@ -73,12 +72,17 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       break;
 
     case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef USE_MLPCPP
       if (rank == MASTER_NODE) {
         cout << "***********************************************" << endl;
         cout << "*** initializing the multi-layer perceptron ***" << endl;
         cout << "***********************************************" << endl;
       }
       look_up_ANN = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      if ((rank == MASTER_NODE) && display) look_up_ANN->DisplayNetworkInfo();
+#else
+      SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
+#endif
       break;
     default:
       break;
@@ -126,11 +130,13 @@ CFluidFlamelet::~CFluidFlamelet() {
       delete look_up_table;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef USE_MLPCPP
       delete iomap_TD;
       if (PreferentialDiffusion) delete iomap_PD;
       delete iomap_Sources;
       delete iomap_LookUp;
       delete look_up_ANN;
+#endif
     default:
       break;
   }
@@ -147,8 +153,11 @@ unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
   val_controlling_vars[I_PROGVAR] = prog;
   val_controlling_vars[I_ENTH] = enth;
 
+#ifdef USE_MLPCPP
+  iomap_current = iomap_LookUp;
+#endif
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp, iomap_LookUp);
+  unsigned long exit_code = Evaluate_Dataset(varnames_LookUp, val_vars_LookUp);
 
   return exit_code;
 }
@@ -160,8 +169,11 @@ unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
   val_controlling_vars[I_PROGVAR] = val_scalars[I_PROGVAR];
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if (PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
+#ifdef USE_MLPCPP
+  iomap_current = iomap_Sources;
+#endif
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources, iomap_Sources);
+  unsigned long exit_code = Evaluate_Dataset(varnames_Sources, val_vars_Sources);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -185,8 +197,11 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   val_controlling_vars[I_PROGVAR] = val_scalars[I_PROGVAR];
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if (PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
+#ifdef USE_MLPCPP
+  iomap_current = iomap_TD;
+#endif
   /*--- add all quantities and their address to the look up vectors ---*/
-  Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
+  Evaluate_Dataset(varnames_TD, val_vars_TD);
 
   /*--- compute Cv from Cp and molar weight of the mixture (ideal gas) ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight);
@@ -200,8 +215,11 @@ unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_sca
   val_controlling_vars[I_PROGVAR] = val_scalars[I_PROGVAR];
   val_controlling_vars[I_ENTH] = val_scalars[I_ENTH];
   if (PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_scalars[I_MIXFRAC];
+#ifdef USE_MLPCPP
+  iomap_current = iomap_PD;
+#endif
   /*--- add all quantities and their address to the look up vectors ---*/
-  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD, iomap_PD);
+  unsigned long exit_code = Evaluate_Dataset(varnames_PD, val_vars_PD);
   return exit_code;
 }
 
@@ -217,6 +235,9 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
   unsigned long exit_code = 0, counter_limit = 50, counter = 0;
 
   bool converged = false;
+#ifdef USE_MLPCPP
+  iomap_current = iomap_TD;
+#endif
 
   val_controlling_vars[I_PROGVAR] = val_prog;
   if (PreferentialDiffusion) val_controlling_vars[I_MIXFRAC] = val_mixfrac;
@@ -224,7 +245,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
   while (!converged && (counter++ < counter_limit)) {
     val_controlling_vars[I_ENTH] = enth_iter;
     /*--- look up temperature and heat capacity ---*/
-    Evaluate_Dataset(varnames_TD, val_vars_TD, iomap_TD);
+    Evaluate_Dataset(varnames_TD, val_vars_TD);
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
 
@@ -247,6 +268,29 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
   return exit_code;
 }
 
+su2double CFluidFlamelet::GetBurntProgVar(su2double val_mixfrac) const {
+  su2double pv_burnt;
+  switch (manifold_format) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+    if (PreferentialDiffusion) {
+      auto inclusion_levels = look_up_table->FindInclusionLevels(val_mixfrac);
+      auto pv_bounds_lower = look_up_table->GetTableLimitsX(inclusion_levels.first);
+      auto pv_bounds_upper = look_up_table->GetTableLimitsX(inclusion_levels.second);
+      pv_burnt = 0.5*(pv_bounds_lower.second + pv_bounds_upper.second);
+    } else {
+      auto pv_bounds = look_up_table->GetTableLimitsX();
+      pv_burnt = pv_bounds.second;
+    }
+    break;
+    case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef USE_MLPCPP
+    auto pv_bounds = look_up_ANN->GetInputNorm(iomap_TD, I_PROGVAR);
+    pv_burnt = pv_bounds.second;
+#endif
+    break;
+  }
+  return pv_burnt;
+}
 void CFluidFlamelet::PreprocessLookUp() {
   /*--- Set lookup names and variables for all relevant lookup processes in the fluid model. ---*/
 
@@ -314,15 +358,22 @@ void CFluidFlamelet::PreprocessLookUp() {
     val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = &beta_mixfrac;
   }
   if (manifold_format == ENUM_DATADRIVEN_METHOD::MLP) {
-    iomap_TD = new MLPToolbox::CIOMap(look_up_ANN, controlling_variables, varnames_TD);
-    iomap_Sources = new MLPToolbox::CIOMap(look_up_ANN, controlling_variables, varnames_Sources);
-    iomap_LookUp = new MLPToolbox::CIOMap(look_up_ANN, controlling_variables, varnames_LookUp);
-    if (PreferentialDiffusion) iomap_PD = new MLPToolbox::CIOMap(look_up_ANN, controlling_variables, varnames_PD);
+#ifdef USE_MLPCPP
+    iomap_TD = new MLPToolbox::CIOMap(controlling_variables, varnames_TD);
+    look_up_ANN->PairVariableswithMLPs(*iomap_TD);
+    iomap_Sources = new MLPToolbox::CIOMap(controlling_variables, varnames_Sources);
+    look_up_ANN->PairVariableswithMLPs(*iomap_Sources);
+    iomap_LookUp = new MLPToolbox::CIOMap(controlling_variables, varnames_LookUp);
+    look_up_ANN->PairVariableswithMLPs(*iomap_LookUp);
+    if (PreferentialDiffusion){
+      iomap_PD = new MLPToolbox::CIOMap(controlling_variables, varnames_PD);
+      look_up_ANN->PairVariableswithMLPs(*iomap_PD);
+    }
+#endif
   }
 }
 
-unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars,
-                                               MLPToolbox::CIOMap* iomap) {
+unsigned long CFluidFlamelet::Evaluate_Dataset(vector<string>& varnames, vector<su2double*>& val_vars) {
   unsigned long exit_code = 0;
 
   vector<string> LUT_varnames;
@@ -348,8 +399,9 @@ unsigned long CFluidFlamelet::Evaluate_Dataset(su2vector<string>& varnames, su2v
 
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
-      exit_code = look_up_ANN->PredictANN(iomap, val_controlling_vars, val_vars);
-
+#ifdef USE_MLPCPP
+      exit_code = look_up_ANN->PredictANN(iomap_current, val_controlling_vars, val_vars);
+#endif
       break;
     default:
       break;

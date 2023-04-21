@@ -26,13 +26,13 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-tests=true --warnlevel=2 --werror'
+            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2 --werror'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
@@ -128,11 +128,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:230225-2136
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-<<<<<<< HEAD
-          args: -b ${{github.ref}} -t feature_multilayer_perceptron -c feature_multilayer_perceptron -s ${{matrix.testscript}}
-=======
           args: -b ${{github.ref}} -t develop -c feature_new_flamelet -s ${{matrix.testscript}}
->>>>>>> 89b2cda70d05938b9935fc518b3ab9a21599eb35
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:230225-2136
         with:

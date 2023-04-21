@@ -48,9 +48,6 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
-  /*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
-  feaIntegration->SetConvergence(false);
-
   /*--- FEA equations ---*/
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
@@ -87,12 +84,11 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
       if (disc_adj_fem) {
         config[val_iZone]->SetInnerIter(CurIter);
         break;
-      } else {
-        StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
+      }         StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
                            FFDBox, val_iZone, INST_0);
 
         if (StopCalc && (IntIter > 0)) break;
-      }
+     
     }
 
   } else {
@@ -187,7 +183,6 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                            unsigned short val_iInst) {
-  const auto TimeIter = config[val_iZone]->GetTimeIter();
   const bool dynamic = (config[val_iZone]->GetTime_Domain());
   const bool fsi = config[val_iZone]->GetFSI_Simulation();
 
@@ -199,14 +194,6 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
     integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
         geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
         MESH_0);
-    integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
-
-    /*--- Verify convergence criteria (based on total time) ---*/
-
-    const su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
-    const su2double Physical_t = (TimeIter + 1) * Physical_dt;
-    if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
-      integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
 
   } else if (fsi) {
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
@@ -252,11 +239,9 @@ bool CFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeom
 
   UsedTime = StopTime - StartTime;
 
-  if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()) {
-    output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
-                              config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                              config[val_iZone]->GetInnerIter());
-  }
+  output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+                           config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+                           config[val_iZone]->GetInnerIter());
 
   return output->GetConvergence();
 }
@@ -272,7 +257,4 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
   if (multizone && !config[val_iZone]->GetTime_Domain()) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), false, val_iZone, val_iInst);
   }
-
-  /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
-  integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 }

@@ -27,9 +27,14 @@
 
 #pragma once
 
+#include <vector>
 #include "../../Common/include/containers/CLookUpTable.hpp"
-#include "../../Common/include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
-#include "../../Common/include/toolboxes/multilayer_perceptron/CIOMap.hpp"
+#if defined(HAVE_MLPCPP)
+#define MLP_CUSTOM_TYPE su2double
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
+
 #include "CFluidModel.hpp"
 
 class CFluidFlamelet final : public CFluidModel {
@@ -42,11 +47,11 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
   unsigned short n_control_vars; /*!< \brief number of controlling variables. */
 
-  unsigned short manifold_format = ENUM_DATADRIVEN_METHOD::LUT;
+  ENUM_DATADRIVEN_METHOD manifold_format = ENUM_DATADRIVEN_METHOD::LUT;
 
   bool PreferentialDiffusion = false;
-  su2vector<string> controlling_variables;
-  su2vector<su2double> val_controlling_vars;
+  vector<string> controlling_variables;
+  vector<su2double> val_controlling_vars;
 
   vector<string> table_scalar_names, /*!< \brief vector to store names of scalar variables.   */
       table_source_names,            /*!< \brief vector to store names of scalar source variables.   */
@@ -61,30 +66,34 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> source_scalar, lookup_scalar, lookup_CV;
 
   CLookUpTable* look_up_table;
+
+
+  vector<string> varnames_CV;
+  vector<su2double*> val_vars_CV;
+
+  vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
+  vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
+
+  vector<string> varnames_PD;     /*!< \brief Lookup names for preferential diffusion scalars */
+  vector<su2double*> val_vars_PD; /*!< \brief References to preferential diffusion scalars*/
+
+  vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
+  vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
+
+  vector<string> varnames_LookUp;     /*!< \brief Lookup names for passive lookup variables. */
+  vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
+
+#ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* look_up_ANN;
-
-  su2vector<string> varnames_CV;
-  su2vector<su2double*> val_vars_CV;
+  MLPToolbox::CIOMap* iomap_current = nullptr;
   MLPToolbox::CIOMap* iomap_CV = nullptr;
-
-  su2vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
-  su2vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
   MLPToolbox::CIOMap* iomap_TD = nullptr;
-
-  su2vector<string> varnames_PD;     /*!< \brief Lookup names for preferential diffusion scalars */
-  su2vector<su2double*> val_vars_PD; /*!< \brief References to preferential diffusion scalars*/
   MLPToolbox::CIOMap* iomap_PD = nullptr;
-
-  su2vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
-  su2vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
   MLPToolbox::CIOMap* iomap_Sources = nullptr;
-
-  su2vector<string> varnames_LookUp;     /*!< \brief Lookup names for passive lookup variables. */
-  su2vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
   MLPToolbox::CIOMap* iomap_LookUp = nullptr;
-
+#endif
  public:
-  CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
+  CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool display=false);
 
   ~CFluidFlamelet();
 
@@ -163,6 +172,8 @@ class CFluidFlamelet final : public CFluidModel {
    */
   inline const su2double* GetScalarSources() const { return &source_scalar[0]; }
 
+  inline su2double GetBurntProgVar(su2double val_mixfrac=0) const;
+
  private:
   /*!
    * \brief Get the preferential diffusion scalar
@@ -180,6 +191,5 @@ class CFluidFlamelet final : public CFluidModel {
 
   inline unsigned short GetNControllingVariables() { return n_control_vars; }
 
-  unsigned long Evaluate_Dataset(su2vector<string>& varnames, su2vector<su2double*>& val_vars,
-                                 MLPToolbox::CIOMap* iomap = nullptr);
+  unsigned long Evaluate_Dataset(vector<string>& varnames, vector<su2double*>& val_vars);
 };

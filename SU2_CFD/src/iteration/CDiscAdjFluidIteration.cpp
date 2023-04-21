@@ -469,7 +469,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
+  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -601,26 +601,12 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->AddRadiation()) {
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
+  if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
   }
   END_SU2_OMP_PARALLEL
-}
-
-void CDiscAdjFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                    CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                    CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                    CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  /*--- Dual time stepping strategy ---*/
-
-  if ((config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-      (config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
-    for (unsigned short iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
-      integration[iZone][iInst][ADJFLOW_SOL]->SetConvergence(false);
-    }
-  }
 }
 
 bool CDiscAdjFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,

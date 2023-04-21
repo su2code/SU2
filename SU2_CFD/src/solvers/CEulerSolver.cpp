@@ -78,7 +78,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && config->GetFixed_CL_Mode()) {
+  if (restart && (iMesh == MESH_0) && nZone <= 1 && config->GetFixed_CL_Mode()) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -336,7 +336,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 }
 
-CEulerSolver::~CEulerSolver(void) {
+CEulerSolver::~CEulerSolver() {
 
   for(auto& model : FluidModel) delete model;
 }
@@ -459,9 +459,9 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   su2double *Buffer_Send_PrimVar = nullptr;
   long      *Buffer_Send_Data    = nullptr;
 
-  unsigned long *nPointTotal_s = new unsigned long[size];
-  unsigned long *nPointTotal_r = new unsigned long[size];
-  su2double *iPrimVar = new su2double [nPrimVar_];
+  auto *nPointTotal_s = new unsigned long[size];
+  auto *nPointTotal_r = new unsigned long[size];
+  auto *iPrimVar = new su2double [nPrimVar_];
 
   unsigned long Buffer_Size_PrimVar = 0;
   unsigned long Buffer_Size_Data    = 0;
@@ -791,7 +791,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
-  bool redefine_fluidmodel = true;
 
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -858,7 +857,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case DATADRIVEN_FLUID:
 
       auxFluidModel = new CDataDrivenFluid(config);
-      redefine_fluidmodel = false;
 
       break;
     case COOLPROP:
@@ -1058,7 +1056,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
-  if(redefine_fluidmodel) delete auxFluidModel;
+  delete auxFluidModel;
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
@@ -1094,7 +1092,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
 
       case DATADRIVEN_FLUID:
-        FluidModel[thread] = auxFluidModel;
+        FluidModel[thread] = new CDataDrivenFluid(config, false);
         break;
 
       case COOLPROP:
@@ -2573,32 +2571,32 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
   if (Evaluate_BC) {
 
-    su2double *Inlet_MassFlow         = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_ReverseMassFlow  = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Pressure         = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Mach             = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_MaxPressure      = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_MinPressure      = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_TotalPressure    = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Temperature      = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_TotalTemperature = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Area             = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_RamDrag          = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Force            = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_Power            = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_XCG              = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_YCG              = new su2double [config->GetnMarker_All()]();
-    su2double *Inlet_ZCG              = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_MassFlow         = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_ReverseMassFlow  = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Pressure         = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Mach             = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_MaxPressure      = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_MinPressure      = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_TotalPressure    = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Temperature      = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_TotalTemperature = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Area             = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_RamDrag          = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Force            = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_Power            = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_XCG              = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_YCG              = new su2double [config->GetnMarker_All()]();
+    auto *Inlet_ZCG              = new su2double [config->GetnMarker_All()]();
 
-    su2double *Outlet_MassFlow         = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_Pressure         = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_TotalPressure    = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_Temperature      = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_TotalTemperature = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_Area             = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_GrossThrust      = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_Force            = new su2double [config->GetnMarker_All()]();
-    su2double *Outlet_Power            = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_MassFlow         = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_Pressure         = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_TotalPressure    = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_Temperature      = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_TotalTemperature = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_Area             = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_GrossThrust      = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_Force            = new su2double [config->GetnMarker_All()]();
+    auto *Outlet_Power            = new su2double [config->GetnMarker_All()]();
 
     /*--- Comute MassFlow, average temp, press, etc. ---*/
 
@@ -2737,59 +2735,59 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
     /*--- Copy to the appropriate structure ---*/
 
-    su2double *Inlet_MassFlow_Local             = new su2double [nMarker_Inlet]();
-    su2double *Inlet_ReverseMassFlow_Local      = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Temperature_Local          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_TotalTemperature_Local     = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Pressure_Local             = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Mach_Local                 = new su2double [nMarker_Inlet]();
-    su2double *Inlet_MinPressure_Local          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_MaxPressure_Local          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Power_Local                = new su2double [nMarker_Inlet]();
-    su2double *Inlet_TotalPressure_Local        = new su2double [nMarker_Inlet]();
-    su2double *Inlet_RamDrag_Local              = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Force_Local                = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Area_Local                 = new su2double [nMarker_Inlet]();
-    su2double *Inlet_XCG_Local                  = new su2double [nMarker_Inlet]();
-    su2double *Inlet_YCG_Local                  = new su2double [nMarker_Inlet]();
-    su2double *Inlet_ZCG_Local                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_MassFlow_Local             = new su2double [nMarker_Inlet]();
+    auto *Inlet_ReverseMassFlow_Local      = new su2double [nMarker_Inlet]();
+    auto *Inlet_Temperature_Local          = new su2double [nMarker_Inlet]();
+    auto *Inlet_TotalTemperature_Local     = new su2double [nMarker_Inlet]();
+    auto *Inlet_Pressure_Local             = new su2double [nMarker_Inlet]();
+    auto *Inlet_Mach_Local                 = new su2double [nMarker_Inlet]();
+    auto *Inlet_MinPressure_Local          = new su2double [nMarker_Inlet]();
+    auto *Inlet_MaxPressure_Local          = new su2double [nMarker_Inlet]();
+    auto *Inlet_Power_Local                = new su2double [nMarker_Inlet]();
+    auto *Inlet_TotalPressure_Local        = new su2double [nMarker_Inlet]();
+    auto *Inlet_RamDrag_Local              = new su2double [nMarker_Inlet]();
+    auto *Inlet_Force_Local                = new su2double [nMarker_Inlet]();
+    auto *Inlet_Area_Local                 = new su2double [nMarker_Inlet]();
+    auto *Inlet_XCG_Local                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_YCG_Local                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_ZCG_Local                  = new su2double [nMarker_Inlet]();
 
-    su2double *Inlet_MassFlow_Total             = new su2double [nMarker_Inlet]();
-    su2double *Inlet_ReverseMassFlow_Total      = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Pressure_Total             = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Mach_Total                 = new su2double [nMarker_Inlet]();
-    su2double *Inlet_MinPressure_Total          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_MaxPressure_Total          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Power_Total                = new su2double [nMarker_Inlet]();
-    su2double *Inlet_TotalPressure_Total        = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Temperature_Total          = new su2double [nMarker_Inlet]();
-    su2double *Inlet_TotalTemperature_Total     = new su2double [nMarker_Inlet]();
-    su2double *Inlet_RamDrag_Total              = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Force_Total                = new su2double [nMarker_Inlet]();
-    su2double *Inlet_Area_Total                 = new su2double [nMarker_Inlet]();
-    su2double *Inlet_XCG_Total                  = new su2double [nMarker_Inlet]();
-    su2double *Inlet_YCG_Total                  = new su2double [nMarker_Inlet]();
-    su2double *Inlet_ZCG_Total                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_MassFlow_Total             = new su2double [nMarker_Inlet]();
+    auto *Inlet_ReverseMassFlow_Total      = new su2double [nMarker_Inlet]();
+    auto *Inlet_Pressure_Total             = new su2double [nMarker_Inlet]();
+    auto *Inlet_Mach_Total                 = new su2double [nMarker_Inlet]();
+    auto *Inlet_MinPressure_Total          = new su2double [nMarker_Inlet]();
+    auto *Inlet_MaxPressure_Total          = new su2double [nMarker_Inlet]();
+    auto *Inlet_Power_Total                = new su2double [nMarker_Inlet]();
+    auto *Inlet_TotalPressure_Total        = new su2double [nMarker_Inlet]();
+    auto *Inlet_Temperature_Total          = new su2double [nMarker_Inlet]();
+    auto *Inlet_TotalTemperature_Total     = new su2double [nMarker_Inlet]();
+    auto *Inlet_RamDrag_Total              = new su2double [nMarker_Inlet]();
+    auto *Inlet_Force_Total                = new su2double [nMarker_Inlet]();
+    auto *Inlet_Area_Total                 = new su2double [nMarker_Inlet]();
+    auto *Inlet_XCG_Total                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_YCG_Total                  = new su2double [nMarker_Inlet]();
+    auto *Inlet_ZCG_Total                  = new su2double [nMarker_Inlet]();
 
-    su2double *Outlet_MassFlow_Local            = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Pressure_Local            = new su2double [nMarker_Outlet]();
-    su2double *Outlet_TotalPressure_Local       = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Temperature_Local         = new su2double [nMarker_Outlet]();
-    su2double *Outlet_TotalTemperature_Local    = new su2double [nMarker_Outlet]();
-    su2double *Outlet_GrossThrust_Local         = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Force_Local               = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Power_Local               = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Area_Local                = new su2double [nMarker_Outlet]();
+    auto *Outlet_MassFlow_Local            = new su2double [nMarker_Outlet]();
+    auto *Outlet_Pressure_Local            = new su2double [nMarker_Outlet]();
+    auto *Outlet_TotalPressure_Local       = new su2double [nMarker_Outlet]();
+    auto *Outlet_Temperature_Local         = new su2double [nMarker_Outlet]();
+    auto *Outlet_TotalTemperature_Local    = new su2double [nMarker_Outlet]();
+    auto *Outlet_GrossThrust_Local         = new su2double [nMarker_Outlet]();
+    auto *Outlet_Force_Local               = new su2double [nMarker_Outlet]();
+    auto *Outlet_Power_Local               = new su2double [nMarker_Outlet]();
+    auto *Outlet_Area_Local                = new su2double [nMarker_Outlet]();
 
-    su2double *Outlet_MassFlow_Total            = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Pressure_Total            = new su2double [nMarker_Outlet]();
-    su2double *Outlet_TotalPressure_Total       = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Temperature_Total         = new su2double [nMarker_Outlet]();
-    su2double *Outlet_TotalTemperature_Total    = new su2double [nMarker_Outlet]();
-    su2double *Outlet_GrossThrust_Total         = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Force_Total               = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Power_Total               = new su2double [nMarker_Outlet]();
-    su2double *Outlet_Area_Total                = new su2double [nMarker_Outlet]();
+    auto *Outlet_MassFlow_Total            = new su2double [nMarker_Outlet]();
+    auto *Outlet_Pressure_Total            = new su2double [nMarker_Outlet]();
+    auto *Outlet_TotalPressure_Total       = new su2double [nMarker_Outlet]();
+    auto *Outlet_Temperature_Total         = new su2double [nMarker_Outlet]();
+    auto *Outlet_TotalTemperature_Total    = new su2double [nMarker_Outlet]();
+    auto *Outlet_GrossThrust_Total         = new su2double [nMarker_Outlet]();
+    auto *Outlet_Force_Total               = new su2double [nMarker_Outlet]();
+    auto *Outlet_Power_Total               = new su2double [nMarker_Outlet]();
+    auto *Outlet_Area_Total                = new su2double [nMarker_Outlet]();
 
     /*--- Copy the values to the local array for MPI ---*/
 
@@ -3533,12 +3531,11 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
       if ((InnerIter % Iter_Fixed_NetThrust == 0) && (InnerIter != 0)) {
         BCThrust_Counter++;
-        if ((BCThrust_Counter != 0) &&
+        Update_BCThrust_Bool = (BCThrust_Counter != 0) &&
             (BCThrust_Counter != 1) &&
             (BCThrust_Counter != Update_BCThrust) &&
             (BCThrust_Counter != Update_BCThrust + 2) &&
-            (BCThrust_Counter != Update_BCThrust + 4) ) Update_BCThrust_Bool = true;
-        else Update_BCThrust_Bool = false;
+            (BCThrust_Counter != Update_BCThrust + 4);
       }
 
       /*--- Store the update boolean for use on other mesh levels in the MG ---*/
@@ -4356,7 +4353,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool viscous        = config->GetViscous();
   bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
 
-  su2double *Normal = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -6151,10 +6148,12 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
-      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-      su2double relax_Newton = config->GetRelaxation_DataDriven();
-      GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-      GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
+        su2double relax_Newton = config->GetRelaxation_DataDriven();
+        GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
+        GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
+      }
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -6863,7 +6862,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
-  su2double *Normal = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -7119,7 +7118,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *Normal = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
@@ -7247,7 +7246,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   bool Engine_HalfModel = config->GetEngine_HalfModel();
 
-  su2double *Normal = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
 
   if (Kind_Engine_Inflow == FAN_FACE_MACH) {
@@ -7463,7 +7462,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   su2double DampingFactor = config->GetDamp_Engine_Exhaust();
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
 
-  su2double *Normal = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
   /*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
 
@@ -7753,8 +7752,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
   su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
 
-  su2double *Normal = new su2double[nDim];
-  su2double *Flow_Dir = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
+  auto *Flow_Dir = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -8553,7 +8552,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
     SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-    su2double* MyTotalAreaVelocity = new su2double[nDim];
+    auto* MyTotalAreaVelocity = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) {
       MyTotalAreaVelocity[iDim] = TotalAreaVelocity[iDim];
@@ -8901,7 +8900,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     TotalMassKine = Allreduce(TotalMassKine);
     TotalMassOmega = Allreduce(TotalMassOmega);
 
-    su2double* buffer = new su2double[max(nVar,nDim)];
+    auto* buffer = new su2double[max(nVar,nDim)];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
       SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -9301,9 +9300,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
 #ifdef HAVE_MPI
     unsigned short i, n1, n2, n1t,n2t;
-    su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
-    su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
-    int *TotMarkerTP = NULL;
+    su2double *TurbPerfIn= nullptr,*TurbPerfOut= nullptr;
+    su2double *TotTurbPerfIn = nullptr,*TotTurbPerfOut = nullptr;
+    int *TotMarkerTP = nullptr;
 
     n1          = 8;
     n2          = 8;

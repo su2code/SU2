@@ -32,7 +32,7 @@
 /*         Private member functions of CFEMStandardElementBase.                     */
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardElementBase::IntegrationPointsLine(void) {
+void CFEMStandardElementBase::IntegrationPointsLine() {
   /*--- Allocate the memory for the integration points
         and weights and determine them.                ---*/
   nIntegration = orderExact / 2 + 1;
@@ -42,7 +42,7 @@ void CFEMStandardElementBase::IntegrationPointsLine(void) {
   GaussLegendrePoints1D(rIntegration, wIntegration);
 }
 
-void CFEMStandardElementBase::IntegrationPointsQuadrilateral(void) {
+void CFEMStandardElementBase::IntegrationPointsQuadrilateral() {
   /*--- The 2D quadrature rule is a tensor product of the 1D Gauss-Legendre
         quadrature rule. First determine the number of integration points in 1D,
         which is stored in M, and determine them.                    ---*/
@@ -68,7 +68,7 @@ void CFEMStandardElementBase::IntegrationPointsQuadrilateral(void) {
   }
 }
 
-void CFEMStandardElementBase::IntegrationPointsPrism(void) {
+void CFEMStandardElementBase::IntegrationPointsPrism() {
   /*--- The 3D quadrature rule for a prism is a tensor product of the 1D Gauss-Legendre
         quadrature rule with the triangle quadrature rule. Determine the number of
         integration points in 1D, which is stored in M, and the actual integration
@@ -105,7 +105,7 @@ void CFEMStandardElementBase::IntegrationPointsPrism(void) {
   }
 }
 
-void CFEMStandardElementBase::IntegrationPointsHexahedron(void) {
+void CFEMStandardElementBase::IntegrationPointsHexahedron() {
   /*--- The 3D quadrature rule is a tensor product of the 1D Gauss-Legendre
         quadrature rule. Determine the number of integration points in 1D, which
         is stored in M, and the actual integration 1D integration points. ---*/
@@ -135,7 +135,7 @@ void CFEMStandardElementBase::IntegrationPointsHexahedron(void) {
   }
 }
 
-void CFEMStandardElementBase::IntegrationPointsTriangle(void) {
+void CFEMStandardElementBase::IntegrationPointsTriangle() {
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
   switch (orderExact) {
@@ -5524,7 +5524,7 @@ void CFEMStandardElementBase::IntegrationPointsTriangle(void) {
   }
 }
 
-void CFEMStandardElementBase::IntegrationPointsTetrahedron(void) {
+void CFEMStandardElementBase::IntegrationPointsTetrahedron() {
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
   switch (orderExact) {
@@ -10258,7 +10258,7 @@ void CFEMStandardElementBase::IntegrationPointsTetrahedron(void) {
   }
 }
 
-void CFEMStandardElementBase::IntegrationPointsPyramid(void) {
+void CFEMStandardElementBase::IntegrationPointsPyramid() {
   /*--- The 3D quadrature rule for a pyramid is obtained by transforming the
         standard pyramid into a standard hexahedron by means of the Duffy
         transformation. On the created hexahedron a tensor product rule is used,

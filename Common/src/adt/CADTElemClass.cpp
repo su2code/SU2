@@ -328,7 +328,7 @@ bool CADTElemClass::DetermineContainingElement_impl(vector<unsigned long>& front
           is empty the entire tree has been traversed and a break can be made
           from the infinite loop. ---*/
     frontLeaves = frontLeavesNew;
-    if (frontLeaves.size() == 0) break;
+    if (frontLeaves.empty()) break;
   }
 
   /* If this point is reached, no element is found that contains the coordinate
@@ -425,7 +425,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
 
             /* Store this bounding box in BBoxTargets and update the currently
                stored value of the distance squared. */
-            BBoxTargets.push_back(CBBoxTargetClass(kk, posDist2, guarDist2));
+            BBoxTargets.emplace_back(kk, posDist2, guarDist2);
             dist = min(dist, guarDist2);
           }
         } else {
@@ -477,7 +477,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
           is empty the entire tree has been traversed and a break can be made
           from the infinite loop. ---*/
     frontLeaves = frontLeavesNew;
-    if (frontLeaves.size() == 0) break;
+    if (frontLeaves.empty()) break;
   }
 
   /*----------------------------------------------------------------------------*/

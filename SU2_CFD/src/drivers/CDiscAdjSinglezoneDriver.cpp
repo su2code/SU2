@@ -28,7 +28,6 @@
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "../../include/output/tools/CWindowingTools.hpp"
 #include "../../include/output/COutputFactory.hpp"
-#include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
@@ -66,7 +65,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
     if (config->GetBoolTurbomachinery()) {
       direct_iteration = new CTurboIteration(config);
-      output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
     else { direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config); }
 
@@ -122,7 +120,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 }
 
-CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
+CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 
   delete direct_iteration;
   delete direct_output;
@@ -173,7 +171,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdj_ObjFunction();
+    SetAdjObjFunction();
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -320,7 +318,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
 }
 
-void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
+void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
 
   const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
@@ -360,29 +358,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-
-    /*--- These calls to be moved to a generic framework at a next stage        ---*/
-    /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (config->GetBoolTurbomachinery()) {
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
-
-      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-      unsigned short nSpanSections = config->GetnSpanWiseSections();
-
-      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-      case ENTROPY_GENERATION:
-        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      case FLOW_ANGLE_OUT:
-        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      case MASS_FLOW_IN:
-        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      default:
-        break;
-      }
-    }
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
@@ -429,7 +404,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Print the direct residual to screen ---*/
 
-  Print_DirectResidual(kind_recording);
+  PrintDirectResidual(kind_recording);
 
 }
 
@@ -462,7 +437,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  SetAdj_ObjFunction();
+  SetAdjObjFunction();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 

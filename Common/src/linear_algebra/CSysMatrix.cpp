@@ -62,7 +62,7 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
 }
 
 template <class ScalarType>
-CSysMatrix<ScalarType>::~CSysMatrix(void) {
+CSysMatrix<ScalarType>::~CSysMatrix() {
   delete[] omp_partitions;
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);

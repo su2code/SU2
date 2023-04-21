@@ -535,8 +535,8 @@ private:
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_DataDriven_Method,       /*!< \brief Method used for datset regression in datadriven fluid models. */
   n_Datadriven_files;
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
 
   su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
             DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in datadriven fluid models. */
@@ -1168,7 +1168,6 @@ private:
   unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
-  bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;              /*!< \brief Write the convergence history of each individual zone to screen. */
   bool Wrt_ZoneHist;              /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,             /*!< \brief Determines if the special output is written. */
@@ -1305,19 +1304,19 @@ private:
   /*!< \brief addDoubleOption creates a config file parser for an option with the given name whose
    value can be represented by a su2double.*/
 
-  void addDoubleOption(const string name, su2double & option_field, su2double default_value);
+  void addDoubleOption(const string& name, su2double & option_field, su2double default_value);
 
-  void addStringOption(const string name, string & option_field, string default_value);
+  void addStringOption(const string& name, string & option_field, string default_value);
 
-  void addIntegerOption(const string name, int & option_field, int default_value);
+  void addIntegerOption(const string& name, int & option_field, int default_value);
 
-  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value);
+  void addUnsignedLongOption(const string& name, unsigned long & option_field, unsigned long default_value);
 
-  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value);
+  void addUnsignedShortOption(const string& name, unsigned short & option_field, unsigned short default_value);
 
-  void addLongOption(const string name, long & option_field, long default_value);
+  void addLongOption(const string& name, long & option_field, long default_value);
 
-  void addBoolOption(const string name, bool & option_field, bool default_value);
+  void addBoolOption(const string& name, bool & option_field, bool default_value);
 
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
@@ -1328,48 +1327,48 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
-  void addDoubleArrayOption(const string name, const int size, su2double* option_field);
+  void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
 
-  void addUShortArrayOption(const string name, const int size, unsigned short* option_field);
+  void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
 
-  void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field);
+  void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
-  void addShortListOption(const string name, unsigned short & size, short * & option_field);
+  void addShortListOption(const string& name, unsigned short & size, short * & option_field);
 
-  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
+  void addUShortListOption(const string& name, unsigned short & size, unsigned short * & option_field);
 
-  void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
+  void addULongListOption(const string& name, unsigned short & size, unsigned long * & option_field);
 
-  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
+  void addStringListOption(const string& name, unsigned short & num_marker, string* & option_field);
 
-  void addConvectOption(const string name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field);
+  void addConvectOption(const string& name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field);
 
-  void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field);
+  void addConvectFEMOption(const string& name, unsigned short & space_field, unsigned short & fem_field);
 
-  void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
+  void addMathProblemOption(const string& name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default);
 
-  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
+  void addDVParamOption(const string& name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable);
 
-  void addDVValueOption(const string name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
+  void addDVValueOption(const string& name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
                         unsigned short* & design_variable);
 
-  void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag);
+  void addFFDDefOption(const string& name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag);
 
-  void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD);
+  void addFFDDegreeOption(const string& name, unsigned short & nFFD_field, unsigned short** & degreeFFD);
 
-  void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
+  void addStringDoubleListOption(const string& name, unsigned short & list_size, string * & string_field,
                                  su2double* & double_field);
 
-  void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+  void addInletOption(const string& name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
 
-  void addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
+  void addInletSpeciesOption(const string& name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
 
-  void addInletTurbOption(const string name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
+  void addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                           su2double** & Turb_Properties, unsigned short & nTurb_Properties);
 
   template <class Tenum>
@@ -1380,7 +1379,7 @@ private:
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2);
 
-  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
+  void addExhaustOption(const string& name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                         su2double* & Ttotal, su2double* & Ptotal);
 
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
@@ -1398,7 +1397,7 @@ private:
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
                              unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF);
 
-  void addPythonOption(const string name);
+  void addPythonOption(const string& name);
 
 public:
 
@@ -1476,7 +1475,7 @@ public:
    * \param[in] val_format - Format of the file with the grid information.
    * \return Total number of zones in the grid file.
    */
-  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format);
+  static unsigned short GetnZone(const string& val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Gets the number of dimensions in the mesh file
@@ -1484,7 +1483,7 @@ public:
    * \param[in] val_format - Format of the file with the grid information.
    * \return Total number of domains in the grid file.
    */
-  static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
+  static unsigned short GetnDim(const string& val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Initializes pointers to null
@@ -3945,14 +3944,12 @@ public:
   /*!
    * \brief Datadriven method for EoS evaluation.
    */
-  unsigned short GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
 
   /*!
    * \brief Get name of the input file for the data-driven fluid model interpolation method.
    * \return Name of the input file for the interpolation method.
    */
-  string GetDataDriven_Filename(unsigned short i_file=0) const { return DataDriven_Method_FileNames[i_file]; }
-
   string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
 
   /*!
@@ -5111,7 +5108,7 @@ public:
    * \brief Get the type of incompressible inlet from the list.
    * \return Kind of the incompressible inlet.
    */
-  INLET_TYPE GetKind_Inc_Inlet(string val_marker) const;
+  INLET_TYPE GetKind_Inc_Inlet(const string& val_marker) const;
 
   /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
@@ -5129,7 +5126,7 @@ public:
    * \brief Get the type of incompressible outlet from the list.
    * \return Kind of the incompressible outlet.
    */
-  INC_OUTLET_TYPE GetKind_Inc_Outlet(string val_marker) const;
+  INC_OUTLET_TYPE GetKind_Inc_Outlet(const string& val_marker) const;
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
@@ -5696,7 +5693,7 @@ public:
    * \param[in] Iter - the current iteration
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, int Iter) const;
+  string GetFilename(string filename, const string& ext, int Iter) const;
 
   /*!
    * \brief Add steady iteration number to the filename (does not overwrite previous files)
@@ -5711,7 +5708,7 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_FileName(string val_filename, int val_iZone, string ext) const;
+  string GetMultizone_FileName(string val_filename, int val_iZone, const string& ext) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5720,7 +5717,7 @@ public:
    * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5729,7 +5726,7 @@ public:
    * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
+  string GetMultiInstance_FileName(string val_filename, int val_iInst, const string& ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5800,7 +5797,7 @@ public:
    * \param[in] ext - the filename extension.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
+  string GetUnsteady_FileName(string val_filename, int val_iter, const string& ext) const;
 
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
@@ -6358,7 +6355,7 @@ public:
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Index in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TagBound(string val_marker) const;
+  unsigned short GetMarker_CfgFile_TagBound(const string& val_marker) const;
 
   /*!
    * \brief Get the name in the config information of the marker number <i>val_marker</i>.
@@ -6371,115 +6368,115 @@ public:
    * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
    * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_KindBC(string val_marker) const;
+  unsigned short GetMarker_CfgFile_KindBC(const string& val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Monitoring(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Monitoring(const string& val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_GeoEval(string val_marker) const;
+  unsigned short GetMarker_CfgFile_GeoEval(const string& val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Designing(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Designing(const string& val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Plotting(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Plotting(const string& val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Analyze(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Analyze(const string& val_marker) const;
 
   /*!
    * \brief Get the multi-physics interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker) const;
+  unsigned short GetMarker_CfgFile_ZoneInterface(const string& val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Turbomachinery(const string& val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const;
+  unsigned short GetMarker_CfgFile_TurbomachineryFlag(const string& val_marker) const;
 
   /*!
    * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const;
+  unsigned short GetMarker_CfgFile_MixingPlaneInterface(const string& val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_DV(string val_marker) const;
+  unsigned short GetMarker_CfgFile_DV(const string& val_marker) const;
 
   /*!
    * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Moving(const string& val_marker) const;
 
   /*!
    * \brief Get the gradient boundary information from the config definition for the marker <i>val_marker</i>.
    * \return Gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_SobolevBC(string val_marker) const;
+  unsigned short GetMarker_CfgFile_SobolevBC(const string& val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Deform_Mesh(const string& val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH_SYM_PLANE information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH_SYM_PLANE information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Deform_Mesh_Sym_Plane(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Deform_Mesh_Sym_Plane(const string& val_marker) const;
 
   /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
    * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker) const;
+  unsigned short GetMarker_CfgFile_Fluid_Load(const string& val_marker) const;
 
   /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PyCustom(string val_marker) const;
+  unsigned short GetMarker_CfgFile_PyCustom(const string& val_marker) const;
 
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
    * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PerBound(string val_marker) const;
+  unsigned short GetMarker_CfgFile_PerBound(const string& val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_marker</i>.
    * \return The interface which owns that marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_ZoneInterface(string val_marker) const;
+  unsigned short GetMarker_ZoneInterface(const string& val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_iMarker</i>.
@@ -6669,17 +6666,17 @@ public:
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
    */
-  const su2double *GetPeriodicRotCenter(string val_marker) const;
+  const su2double *GetPeriodicRotCenter(const string& val_marker) const;
 
   /*!
    * \brief Angles of rotation for a rotational periodic boundary.
    */
-  const su2double *GetPeriodicRotAngles(string val_marker) const;
+  const su2double *GetPeriodicRotAngles(const string& val_marker) const;
 
   /*!
    * \brief Translation vector for a translational periodic boundary.
    */
-  const su2double *GetPeriodicTranslation(string val_marker) const;
+  const su2double *GetPeriodicTranslation(const string& val_marker) const;
 
   /*!
    * \brief Get the translation vector for a periodic transformation.
@@ -6692,79 +6689,79 @@ public:
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
    * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_Periodic_Donor(string val_marker) const;
+  unsigned short GetMarker_Periodic_Donor(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_NetThrust(string val_marker) const;
+  su2double GetActDisk_NetThrust(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_Power(string val_marker) const;
+  su2double GetActDisk_Power(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_MassFlow(string val_marker) const;
+  su2double GetActDisk_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_Mach(string val_marker) const;
+  su2double GetActDisk_Mach(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_Force(string val_marker) const;
+  su2double GetActDisk_Force(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_BCThrust(string val_marker) const;
+  su2double GetActDisk_BCThrust(const string& val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_BCThrust_Old(string val_marker) const;
+  su2double GetActDisk_BCThrust_Old(const string& val_marker) const;
 
   /*!
    * \brief Get the tip radius of th actuator disk.
    */
-  su2double GetActDisk_Area(string val_marker) const;
+  su2double GetActDisk_Area(const string& val_marker) const;
 
   /*!
    * \brief Get the tip radius of th actuator disk.
    */
-  su2double GetActDisk_ReverseMassFlow(string val_marker) const;
+  su2double GetActDisk_ReverseMassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the thrust corffient of the actuator disk.
    */
-  su2double GetActDisk_PressJump(string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_PressJump(const string& val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the thrust corffient of the actuator disk.
    */
-  su2double GetActDisk_TempJump(string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_TempJump(const string& val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the rev / min of the actuator disk.
    */
-  su2double GetActDisk_Omega(string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ActDiskOutlet(string val_marker) const;
+  unsigned short GetMarker_CfgFile_ActDiskOutlet(const string& val_marker) const;
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_EngineExhaust(string val_marker) const;
+  unsigned short GetMarker_CfgFile_EngineExhaust(const string& val_marker) const;
 
   /*!
    * \brief Get the internal index for a moving boundary <i>val_marker</i>.
@@ -6807,13 +6804,13 @@ public:
    * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Fluid_Load(string val_marker) const;
+  unsigned short GetMarker_Fluid_Load(const string& val_marker) const;
 
   /*!
    * \brief Get the internal index for a gradient boundary condition <i>val_marker</i>.
    * \return Internal index for a gradient boundary  condition <i>val_marker</i>.
    */
-  unsigned short GetMarker_SobolevBC(string val_marker) const;
+  unsigned short GetMarker_SobolevBC(const string& val_marker) const;
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6868,35 +6865,35 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_Temperature_Target(string val_index) const;
+  su2double GetExhaust_Temperature_Target(const string& val_index) const;
 
   /*!
    * \brief Get the total temperature at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(string val_index) const;
+  su2double GetInlet_Ttotal(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet density.
    */
-  su2double GetInlet_Temperature(string val_index) const;
+  su2double GetInlet_Temperature(const string& val_index) const;
 
   /*!
    * \brief Get the pressure at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet pressure.
    */
-  su2double GetInlet_Pressure(string val_index) const;
+  su2double GetInlet_Pressure(const string& val_index) const;
 
   /*!
    * \brief Get the velocity vector at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet velocity vector.
    */
-  const su2double* GetInlet_Velocity(string val_index) const;
+  const su2double* GetInlet_Velocity(const string& val_index) const;
 
   /*!
    * \brief Get the mass fraction vector for a NEMO inlet boundary.
@@ -6917,21 +6914,21 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(string val_index) const;
+  su2double GetInlet_Ptotal(const string& val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
    * \param[in] val_pressure - Pressure value at the inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
-  void SetInlet_Ptotal(su2double val_pressure, string val_marker);
+  void SetInlet_Ptotal(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the species values at an inlet boundary
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet species values.
    */
-  const su2double* GetInlet_SpeciesVal(string val_index) const;
+  const su2double* GetInlet_SpeciesVal(const string& val_index) const;
 
   /*!
    * \brief Get the target species values at an inlet boundary
@@ -6954,14 +6951,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet turbulent values.
    */
-  const su2double* GetInlet_TurbVal(string val_index) const;
+  const su2double* GetInlet_TurbVal(const string& val_index) const;
 
   /*!
    * \brief Get the total pressure at an nacelle boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetExhaust_Pressure_Target(string val_index) const;
+  su2double GetExhaust_Pressure_Target(const string& val_index) const;
 
   /*!
    * \brief Value of the CFL reduction in turbulence problems.
@@ -6980,97 +6977,97 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  const su2double* GetInlet_FlowDir(string val_index) const;
+  const su2double* GetInlet_FlowDir(const string& val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Pressure(string val_index) const;
+  su2double GetOutlet_Pressure(const string& val_index) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
    * \param[in] val_pressure - Pressure value at the outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    */
-  void SetOutlet_Pressure(su2double val_pressure, string val_marker);
+  void SetOutlet_Pressure(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the var 1 at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The var1
    */
-  su2double GetRiemann_Var1(string val_marker) const;
+  su2double GetRiemann_Var1(const string& val_marker) const;
 
   /*!
    * \brief Get the var 2 at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The var2
    */
-  su2double GetRiemann_Var2(string val_marker) const;
+  su2double GetRiemann_Var2(const string& val_marker) const;
 
   /*!
    * \brief Get the Flowdir at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The Flowdir
    */
-  const su2double* GetRiemann_FlowDir(string val_marker) const;
+  const su2double* GetRiemann_FlowDir(const string& val_marker) const;
 
   /*!
    * \brief Get Kind Data of Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return Kind data
    */
-  unsigned short GetKind_Data_Riemann(string val_marker) const;
+  unsigned short GetKind_Data_Riemann(const string& val_marker) const;
 
   /*!
    * \brief Get the var 1 for the Giels BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var1
    */
-  su2double GetGiles_Var1(string val_marker) const;
+  su2double GetGiles_Var1(const string& val_marker) const;
 
   /*!
    * \brief Get the var 2 for the Giles boundary.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var2
    */
-  su2double GetGiles_Var2(string val_marker) const;
+  su2double GetGiles_Var2(const string& val_marker) const;
 
   /*!
    * \brief Get the Flowdir for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The Flowdir
    */
-  const su2double* GetGiles_FlowDir(string val_marker) const;
+  const su2double* GetGiles_FlowDir(const string& val_marker) const;
 
   /*!
    * \brief Get Kind Data for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return Kind data
    */
-  unsigned short GetKind_Data_Giles(string val_marker) const;
+  unsigned short GetKind_Data_Giles(const string& val_marker) const;
 
   /*!
    * \brief Set the var 1 for Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    */
-  void SetGiles_Var1(su2double newVar1, string val_marker);
+  void SetGiles_Var1(su2double newVar1, const string& val_marker);
 
   /*!
    * \brief Get the relax factor for the average component for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the average component
    */
-  su2double GetGiles_RelaxFactorAverage(string val_marker) const;
+  su2double GetGiles_RelaxFactorAverage(const string& val_marker) const;
 
   /*!
    * \brief Get the relax factor for the fourier component for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the fourier component
    */
-  su2double GetGiles_RelaxFactorFourier(string val_marker) const;
+  su2double GetGiles_RelaxFactorFourier(const string& val_marker) const;
 
   /*!
    * \brief Get the outlet pressure imposed as BC for internal flow.
@@ -7149,35 +7146,35 @@ public:
    * \param[in] val_index - Index corresponding to the isothermal boundary.
    * \return The wall temperature.
    */
-  su2double GetIsothermal_Temperature(string val_index) const;
+  su2double GetIsothermal_Temperature(const string& val_index) const;
 
   /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.
    * \param[in] val_index - Index corresponding to the constant heat flux boundary.
    * \return The heat flux.
    */
-  su2double GetWall_HeatFlux(string val_index) const;
+  su2double GetWall_HeatFlux(const string& val_index) const;
 
   /*!
    * \brief Get the heat transfer coefficient on a heat transfer boundary.
    * \param[in] val_index - Index corresponding to the heat transfer boundary.
    * \return The heat transfer coefficient.
    */
-  su2double GetWall_HeatTransfer_Coefficient(string val_index) const;
+  su2double GetWall_HeatTransfer_Coefficient(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at inifinty on a heat transfer boundary.
    * \param[in] val_index - Index corresponding to the heat transfer boundary.
    * \return The temperature at infinity.
    */
-  su2double GetWall_HeatTransfer_Temperature(string val_index) const;
+  su2double GetWall_HeatTransfer_Temperature(const string& val_index) const;
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.
    * \param[in] val_marker - String of the viscous wall marker.
    * \return The type of wall function treatment.
    */
-  WALL_FUNCTIONS GetWallFunction_Treatment(string val_marker) const;
+  WALL_FUNCTIONS GetWallFunction_Treatment(const string& val_marker) const;
 
   /*!
    * \brief Get the additional integer info for the wall function treatment
@@ -7185,7 +7182,7 @@ public:
    * \param[in] val_marker - String of the viscous wall marker.
    * \return Pointer to the integer info for the given marker.
    */
-  const unsigned short* GetWallFunction_IntInfo(string val_marker) const;
+  const unsigned short* GetWallFunction_IntInfo(const string& val_marker) const;
 
   /*!
    * \brief Get the additional double info for the wall function treatment
@@ -7193,7 +7190,7 @@ public:
    * \param[in] val_marker - String of the viscous wall marker.
    * \return Pointer to the double info for the given marker.
    */
-  const su2double* GetWallFunction_DoubleInfo(string val_marker) const;
+  const su2double* GetWallFunction_DoubleInfo(const string& val_marker) const;
 
   /*!
    * \brief Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal).
@@ -7207,35 +7204,35 @@ public:
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \return Target (pressure, massflow, etc) .
    */
-  su2double GetEngineInflow_Target(string val_marker) const;
+  su2double GetEngineInflow_Target(const string& val_marker) const;
 
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The fan face Mach number.
    */
-  su2double GetInflow_Mach(string val_marker) const;
+  su2double GetInflow_Mach(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow pressure.
    */
-  su2double GetInflow_Pressure(string val_marker) const;
+  su2double GetInflow_Pressure(const string& val_marker) const;
 
   /*!
    * \brief Get the mass flow rate at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine mass flow rate.
    */
-  su2double GetInflow_MassFlow(string val_marker) const;
+  su2double GetInflow_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The percentage of reverse flow.
    */
-  su2double GetInflow_ReverseMassFlow(string val_marker) const;
+  su2double GetInflow_ReverseMassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
@@ -7249,98 +7246,98 @@ public:
    * \param[in] val_marker - Name of the boundary.
    * \return The total pressure.
    */
-  su2double GetInflow_TotalPressure(string val_marker) const;
+  su2double GetInflow_TotalPressure(const string& val_marker) const;
 
   /*!
    * \brief Get the temperature (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow temperature.
    */
-  su2double GetInflow_Temperature(string val_marker) const;
+  su2double GetInflow_Temperature(const string& val_marker) const;
 
   /*!
    * \brief Get the total temperature at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow total temperature.
    */
-  su2double GetInflow_TotalTemperature(string val_marker) const;
+  su2double GetInflow_TotalTemperature(const string& val_marker) const;
 
   /*!
    * \brief Get the ram drag at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow ram drag.
    */
-  su2double GetInflow_RamDrag(string val_marker) const;
+  su2double GetInflow_RamDrag(const string& val_marker) const;
 
   /*!
    * \brief Get the force balance at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow force balance.
    */
-  su2double GetInflow_Force(string val_marker) const;
+  su2double GetInflow_Force(const string& val_marker) const;
 
   /*!
    * \brief Get the power at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow power.
    */
-  su2double GetInflow_Power(string val_marker) const;
+  su2double GetInflow_Power(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust pressure.
    */
-  su2double GetExhaust_Pressure(string val_marker) const;
+  su2double GetExhaust_Pressure(const string& val_marker) const;
 
   /*!
    * \brief Get the temperature (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust temperature.
    */
-  su2double GetExhaust_Temperature(string val_marker) const;
+  su2double GetExhaust_Temperature(const string& val_marker) const;
 
   /*!
    * \brief Get the massflow at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust massflow.
    */
-  su2double GetExhaust_MassFlow(string val_marker) const;
+  su2double GetExhaust_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the total pressure at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust total pressure.
    */
-  su2double GetExhaust_TotalPressure(string val_marker) const;
+  su2double GetExhaust_TotalPressure(const string& val_marker) const;
 
   /*!
    * \brief Get the total temperature at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_TotalTemperature(string val_marker) const;
+  su2double GetExhaust_TotalTemperature(const string& val_marker) const;
 
   /*!
    * \brief Get the gross thrust at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Gross thrust.
    */
-  su2double GetExhaust_GrossThrust(string val_marker) const;
+  su2double GetExhaust_GrossThrust(const string& val_marker) const;
 
   /*!
    * \brief Get the force balance at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Force balance.
    */
-  su2double GetExhaust_Force(string val_marker) const;
+  su2double GetExhaust_Force(const string& val_marker) const;
 
   /*!
    * \brief Get the power at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Power.
    */
-  su2double GetExhaust_Power(string val_marker) const;
+  su2double GetExhaust_Power(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7572,14 +7569,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Temperature(string val_marker) const;
+  su2double GetActDiskInlet_Temperature(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_TotalTemperature(string val_marker) const;
+  su2double GetActDiskInlet_TotalTemperature(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7600,21 +7597,21 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Temperature(string val_marker) const;
+  su2double GetActDiskOutlet_Temperature(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_TotalTemperature(string val_marker) const;
+  su2double GetActDiskOutlet_TotalTemperature(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_MassFlow(string val_marker) const;
+  su2double GetActDiskInlet_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7628,7 +7625,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_MassFlow(string val_marker) const;
+  su2double GetActDiskOutlet_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7642,14 +7639,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Pressure(string val_marker) const;
+  su2double GetActDiskInlet_Pressure(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_TotalPressure(string val_marker) const;
+  su2double GetActDiskInlet_TotalPressure(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7740,21 +7737,21 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_RamDrag(string val_marker) const;
+  su2double GetActDiskInlet_RamDrag(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Force(string val_marker) const;
+  su2double GetActDiskInlet_Force(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Power(string val_marker) const;
+  su2double GetActDiskInlet_Power(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7810,7 +7807,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_MassFlow(string val_marker) const;
+  su2double GetOutlet_MassFlow(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7824,7 +7821,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Density(string val_marker) const;
+  su2double GetOutlet_Density(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7838,7 +7835,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Area(string val_marker) const;
+  su2double GetOutlet_Area(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8050,7 +8047,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_BCThrust(string val_marker, su2double val_actdisk_bcthrust);
+  void SetActDisk_BCThrust(const string& val_marker, su2double val_actdisk_bcthrust);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8064,7 +8061,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_BCThrust_Old(string val_marker, su2double val_actdisk_bcthrust_old);
+  void SetActDisk_BCThrust_Old(const string& val_marker, su2double val_actdisk_bcthrust_old);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8304,35 +8301,35 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Pressure(string val_marker) const;
+  su2double GetActDiskOutlet_Pressure(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_TotalPressure(string val_marker) const;
+  su2double GetActDiskOutlet_TotalPressure(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_GrossThrust(string val_marker) const;
+  su2double GetActDiskOutlet_GrossThrust(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Force(string val_marker) const;
+  su2double GetActDiskOutlet_Force(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Power(string val_marker) const;
+  su2double GetActDiskOutlet_Power(const string& val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8374,91 +8371,91 @@ public:
    * \param[in] val_index - Index corresponding to the displacement boundary.
    * \return The displacement value.
    */
-  su2double GetDispl_Value(string val_index) const;
+  su2double GetDispl_Value(const string& val_index) const;
 
   /*!
    * \brief Get the force value at an load boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Value(string val_index) const;
+  su2double GetLoad_Value(const string& val_index) const;
 
   /*!
    * \brief Get the constant value at a damper boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The damper constant.
    */
-  su2double GetDamper_Constant(string val_index) const;
+  su2double GetDamper_Constant(const string& val_index) const;
 
   /*!
    * \brief Get the force value at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Dir_Value(string val_index) const;
+  su2double GetLoad_Dir_Value(const string& val_index) const;
 
   /*!
    * \brief Get the force multiplier at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load multiplier.
    */
-  su2double GetLoad_Dir_Multiplier(string val_index) const;
+  su2double GetLoad_Dir_Multiplier(const string& val_index) const;
 
   /*!
    * \brief Get the force value at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetDisp_Dir_Value(string val_index) const;
+  su2double GetDisp_Dir_Value(const string& val_index) const;
 
   /*!
    * \brief Get the force multiplier at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load multiplier.
    */
-  su2double GetDisp_Dir_Multiplier(string val_index) const;
+  su2double GetDisp_Dir_Multiplier(const string& val_index) const;
 
   /*!
    * \brief Get the force direction at a loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  const su2double* GetLoad_Dir(string val_index) const;
+  const su2double* GetLoad_Dir(const string& val_index) const;
 
   /*!
    * \brief Get the force direction at a loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  const su2double* GetDisp_Dir(string val_index) const;
+  const su2double* GetDisp_Dir(const string& val_index) const;
 
   /*!
    * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Sine_Amplitude(string val_index) const;
+  su2double GetLoad_Sine_Amplitude(const string& val_index) const;
 
   /*!
    * \brief Get the frequency of the sine-wave at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load frequency.
    */
-  su2double GetLoad_Sine_Frequency(string val_index) const;
+  su2double GetLoad_Sine_Frequency(const string& val_index) const;
 
   /*!
    * \brief Get the force direction at a sine-wave loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  const su2double* GetLoad_Sine_Dir(string val_index) const;
+  const su2double* GetLoad_Sine_Dir(const string& val_index) const;
 
   /*!
    * \brief Get the force value at an load boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetFlowLoad_Value(string val_index) const;
+  su2double GetFlowLoad_Value(const string& val_index) const;
 
   /*!
    * \brief Cyclic pitch amplitude for rotor blades.
@@ -8875,7 +8872,7 @@ public:
    * \param[in] val_function_name - string for the name of the profiled subroutine.
    * \param[in] val_group_id - string for the name of the profiled subroutine.
    */
-  void Tock(double val_start_time, string val_function_name, int val_group_id);
+  void Tock(double val_start_time, const string& val_function_name, int val_group_id);
 
   /*!
    * \brief Write a CSV file containing the results of the profiling.
@@ -9585,12 +9582,6 @@ public:
   bool GetMultizone_Residual(void) const { return Multizone_Residual; }
 
   /*!
-   * \brief Check if the (new) single-zone driver is to be used (temporary)
-   * \return YES if the (new) single-zone driver is to be used.
-   */
-  bool GetSinglezone_Driver(void) const { return SinglezoneDriver; }
-
-  /*!
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
@@ -9619,7 +9610,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall emissivity.
    */
-  su2double GetWall_Emissivity(string val_index) const;
+  su2double GetWall_Emissivity(const string& val_index) const;
 
   /*!
    * \brief Get the value of the CFL condition for radiation solvers.

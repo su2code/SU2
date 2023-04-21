@@ -291,7 +291,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      prog_burnt = 0.3;
+      prog_burnt = fluid_model_local->GetBurntProgVar();
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         for (unsigned long i_var = 0; i_var < nVar; i_var++) Solution[i_var] = 0.0;
 

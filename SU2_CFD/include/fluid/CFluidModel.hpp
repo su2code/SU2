@@ -174,6 +174,8 @@ class CFluidModel {
                                                const su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
 
+  virtual inline su2double GetBurntProgVar(su2double val_mixfrac=0) const { return 0.0; }
+
   /*!
    * \brief Set the preferential diffusion terms for the transported scalar equations.
    * \param[in] val_scalars - pointer to species mass fractions
@@ -389,26 +391,26 @@ class CFluidModel {
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
 
   /*!
-  * \brief Set the initial guess for the density in Newton solvers
-  * \param[in] rho - Initial value for density.
-  */
+   * \brief Set the initial guess for the density in Newton solvers
+   * \param[in] rho - Initial value for density.
+   */
   virtual void SetInitialDensity(su2double rho) {}
 
   /*!
-  * \brief Set the initial guess for the static energy in Newton solvers
-  * \param[in] e - Initial value for static energy.
-  */
+   * \brief Set the initial guess for the static energy in Newton solvers
+   * \param[in] e - Initial value for static energy.
+   */
   virtual void SetInitialEnergy(su2double e) {}
 
   /*!
-  * \brief Get fluid model extrapolation instance
-  * \return Query point lies outside fluid model data range.
-  */
+   * \brief Get fluid model extrapolation instance
+   * \return Query point lies outside fluid model data range.
+   */
   virtual unsigned long GetExtrapolation() { return 0; }
 
   /*!
-  * \brief Get number of Newton solver iterations.
-  * \return Newton solver iteration count at termination.
-  */
+   * \brief Get number of Newton solver iterations.
+   * \return Newton solver iteration count at termination.
+   */
   virtual unsigned long GetnIter_Newton() { return 0; }
 };
