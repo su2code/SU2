@@ -307,37 +307,22 @@ struct ModVort {
 struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
-    
+    const su2double c2 = 0.7, c3 = 0.9;
 
-    if(Sbar >= - var.c2 * var.S){
+    /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
+     * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    if (Sbar >= - c2 * var.S) {
       var.Shat = var.S + Sbar;
-
-      if (var.Shat <= 1.0e-10) {
-        var.Shat = 1.0e-10;
-        var.d_Shat = 0.0;
-      } else {
-        var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
-      }
     } else {
-      const su2double Num = var.S * ( var.c2*var.c2*var.S + var.c3 * Sbar);
-      const su2double Den = (var.c3-2*var.c2)*var.S - Sbar;
-
+      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
       var.Shat = var.S + Num / Den;
-
-      if (var.Shat <= 1.0e-10) {
-        var.Shat = 1.0e-10;
-        var.d_Shat = 0.0;
-      } else {
-        const su2double d_Sbar = (var.fv2 + nue * var.d_fv2);
-        const su2double k2_d2 = var.k2 * var.dist_i_2;
-        const su2double num1 = var.c2*var.c2 * var.S*var.S * k2_d2;
-        const su2double den1 = pow(k2_d2 * (var.c3-2*var.c2) * var.S - nue * var.fv2, 2.0);
-        const su2double num2_1 = var.c3*var.S*(k2_d2 * (var.c3-2*var.c2)*var.S - nue*var.fv2);
-        const su2double num2_2 = var.c3*var.S*nue*var.fv2;
-        const su2double den2 = pow(k2_d2* (var.c3-2*var.c2) * var.S - nue*var.fv2, 2.0);
-
-        var.d_Shat = num1*d_Sbar/den1 + (num2_1+num2_2)*d_Sbar/den2;
-      }
+    }
+    if (var.Shat <= 1e-10) {
+      var.Shat = 1e-10;
+      var.d_Shat = 0.0;
+    } else {
+      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
   }
 };
