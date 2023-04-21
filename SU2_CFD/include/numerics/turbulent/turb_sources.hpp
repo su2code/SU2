@@ -48,7 +48,8 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
-  const su2double CRot = 1.0; // It should be 2.0, but the HLPW5 wants 1.0
+  const su2double CRot = 1.0;
+  const su2double c2 = 0.7, c3 = 0.9; 
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -124,7 +125,8 @@ class CSourceBase_TurbSA : public CNumerics {
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
       var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
-      if(ScalarVar_i[0] < 0 ) var.Omega = abs(var.Omega);
+      /*--- Do not allow negative production for SA-neg. ---*/
+      if(ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
@@ -305,35 +307,36 @@ struct ModVort {
 struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
-    const su2double c2 = 0.7, c3 = 0.9;
+    
 
-    if(Sbar >= - c2 * var.S){
+    if(Sbar >= - var.c2 * var.S){
       var.Shat = var.S + Sbar;
-      var.Shat = max(var.Shat, 1.0e-10);
+
       if (var.Shat <= 1.0e-10) {
+        var.Shat = 1.0e-10;
         var.d_Shat = 0.0;
       } else {
-	      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
+        var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
       }
     } else {
-      const su2double Num = var.S * ( c2*c2*var.S + c3 * Sbar);
-      const su2double Den = (c3-2*c2)*var.S - Sbar;
+      const su2double Num = var.S * ( var.c2*var.c2*var.S + var.c3 * Sbar);
+      const su2double Den = (var.c3-2*var.c2)*var.S - Sbar;
 
       var.Shat = var.S + Num / Den;
-      var.Shat = max(var.Shat, 1.0e-10);
 
       if (var.Shat <= 1.0e-10) {
+        var.Shat = 1.0e-10;
         var.d_Shat = 0.0;
       } else {
-	      const su2double d_Sbar = (var.fv2 + nue * var.d_fv2);
+        const su2double d_Sbar = (var.fv2 + nue * var.d_fv2);
         const su2double k2_d2 = var.k2 * var.dist_i_2;
-        const su2double num1 = c2*c2 * var.S*var.S * k2_d2;
-        const su2double den1 = pow(k2_d2 * (c3-2*c2) * var.S - nue * var.fv2, 2.0);
-        const su2double num2_1 = c3*var.S*(k2_d2 * (c3-2*c2)*var.S - nue*var.fv2);
-        const su2double num2_2 = c3*var.S*nue*var.fv2;
-        const su2double den2 = pow(k2_d2* (c3-2*c2) * var.S - nue*var.fv2, 2.0);
+        const su2double num1 = var.c2*var.c2 * var.S*var.S * k2_d2;
+        const su2double den1 = pow(k2_d2 * (var.c3-2*var.c2) * var.S - nue * var.fv2, 2.0);
+        const su2double num2_1 = var.c3*var.S*(k2_d2 * (var.c3-2*var.c2)*var.S - nue*var.fv2);
+        const su2double num2_2 = var.c3*var.S*nue*var.fv2;
+        const su2double den2 = pow(k2_d2* (var.c3-2*var.c2) * var.S - nue*var.fv2, 2.0);
 
-        var.d_Shat = num1*d_Sbar/den1 + (num2_1+num2_2)*d_Sbar/den2 ;
+        var.d_Shat = num1*d_Sbar/den1 + (num2_1+num2_2)*d_Sbar/den2;
       }
     }
   }
