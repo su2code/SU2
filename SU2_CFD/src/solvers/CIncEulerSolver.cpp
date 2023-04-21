@@ -341,7 +341,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
 
       /*--- flamelet fluid model does not need to be redefined after nondimensionalization ---*/
-      redefine_fluid_model = false;
+      //redefine_fluid_model = false;
       break;
       
     case DATADRIVEN_FLUID:
@@ -503,7 +503,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLUID_FLAMELET:
-        fluidModel = auxFluidModel;
+        fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 

@@ -228,7 +228,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
     /*--- calculate delta_temperature ---*/
     delta_temp_iter = val_temp - Temperature;
 
-    if (abs(delta_temp_iter) < delta_temp_final) {
+    if (abs(delta_temp_iter)/val_temp < 1e-6) {
       converged = true;
     } else {
       /* calculate delta_enthalpy following dh = cp * dT */

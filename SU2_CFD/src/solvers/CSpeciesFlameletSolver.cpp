@@ -291,7 +291,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      prog_burnt = 0.0;
+      prog_burnt = 0.3;
       for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         for (unsigned long i_var = 0; i_var < nVar; i_var++) Solution[i_var] = 0.0;
 
@@ -565,7 +565,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(unsigned long iEdge, CGeometry* ge
     numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(jPoint));
   };
 
-  /*--- Regular viscous scalar residual computation ---*/
+  /*--- Regular viscous scalar residual computation. ---*/
 
   Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
 
