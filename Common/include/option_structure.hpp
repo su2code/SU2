@@ -1907,9 +1907,6 @@ enum ENUM_OBJECTIVE {
   SURFACE_SCALAR_08 = 88,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
   SURFACE_SCALAR_09 = 89,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  FLOW_ANGLE_OUT = 46,
-  MASS_FLOW_IN = 47,
-  ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
@@ -1962,9 +1959,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SCALAR_08", SURFACE_SCALAR_08)
   MakePair("SURFACE_SCALAR_09", SURFACE_SCALAR_09)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
-  MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
