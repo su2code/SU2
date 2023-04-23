@@ -288,7 +288,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           n_points_unburnt_local++;
         }
 
-        n_not_iterated_local += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet, enth_inlet);
+        n_not_iterated_local += fluid_model_local->GetEnthFromTemp(enth_inlet, prog_inlet, temp_inlet, enth_inlet);
         scalar_init[I_ENTH] = enth_inlet;
 
         n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_XY(
@@ -504,7 +504,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet_local = inlet_scalar[I_ENTH];
-  fluid_model_local->GetEnthFromTemp(&enth_inlet_local, inlet_scalar_local[I_PROGVAR], temp_inlet, inlet_scalar[I_ENTH]);
+  fluid_model_local->GetEnthFromTemp(enth_inlet_local, inlet_scalar_local[I_PROGVAR], temp_inlet, inlet_scalar[I_ENTH]);
   inlet_scalar_local[I_ENTH] = enth_inlet_local;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
@@ -632,7 +632,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         enth_init = nodes->GetSolution(iPoint, I_ENTH);
         enth_wall = enth_init;
 
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any
@@ -715,7 +715,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
         /*--- Set enthalpy on the wall. ---*/
 
         su2double prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall, enth_init);
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any

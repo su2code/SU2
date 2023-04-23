@@ -174,7 +174,7 @@ class CFluidModel {
   /*!
    * \brief Flamelet LUT - Get the total enthalpy from the temperature (reverse lookup).
    */
-  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
+  virtual inline unsigned long GetEnthFromTemp(su2double& enthalpy,
                                                const su2double  val_prog,
                                                const su2double  val_temp,
                                                su2double  initial_value=0) { return 0; }
