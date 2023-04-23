@@ -55,7 +55,7 @@ LINEAR_SOLVER_ITER= 100
 
 MESH_FORMAT= RECTANGLE
 MESH_BOX_SIZE= ( 17, 5, 0 )
-MESH_BOX_LENGTH= ( 0.5, 0.05, 0 )
+MESH_BOX_LENGTH= ( 0.5, __HEIGHT__, 0 )
 
 OUTPUT_FILES= RESTART, PARAVIEW
 OUTPUT_WRT_FREQ= 1
@@ -84,6 +84,7 @@ FEA_ADVANCED_MODE= YES
 UNST_ADJOINT_ITER= 21
 ITER_AVERAGE_OBJ= 0
 SOLUTION_FILENAME= restart.dat
+VOLUME_OUTPUT= SENSITIVITY_T0
 """
 
 
@@ -110,12 +111,16 @@ def ApplyLoad(driver, marker_id, peak_load):
   return derivatives
 
 
-def RunPrimal(density, peak_load):
-  """Runs the primal solver for a given density and peak load and returns the time average objective function."""
+def RunPrimal(density, peak_load, height):
+  """
+  Runs the primal solver for a given density, peak load, and beam height.
+  Returns the time average objective function.
+  """
   comm = MPI.COMM_WORLD
 
   with open('config_unsteady.cfg', 'w') as f:
-    f.write(common_settings.replace('__DENSITY__', str(density)) + primal_settings)
+    f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
+            primal_settings)
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -144,15 +149,16 @@ def RunPrimal(density, peak_load):
   return tavg_stress_penalty
 
 
-def RunAdjoint(density, peak_load):
+def RunAdjoint(density, peak_load, height):
   """
   Runs the adjoint solver and returns the sensitivity of the objective function to the peak
-  load and to the material density.
+  load, to the material density, and to the beam height.
   """
   comm = MPI.COMM_WORLD
 
   with open('config_unsteady_ad.cfg', 'w') as f:
-    f.write(common_settings.replace('__DENSITY__', str(density)) + adjoint_settings)
+    f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
+            adjoint_settings)
 
   # Initialize the adjoint driver of SU2, this includes solver preprocessing.
   try:
@@ -182,7 +188,8 @@ def RunAdjoint(density, peak_load):
     driver.Postprocess()
     driver.Update()
 
-    # Accumulate sensitivies.
+    # Accumulate load sensitivies (the solver doesn't accumulate
+    # these for when they are used for FSI adjoints).
     for i_vertex in range(n_vertex):
       load_sens += derivatives[i_vertex] * driver.GetMarkerFEALoadSensitivity(marker_id, i_vertex)[1]
 
@@ -192,10 +199,19 @@ def RunAdjoint(density, peak_load):
 
   rho_sens = driver.GetOutputValue('SENS_RHO_0')
 
+  height_sens = 0.0
+  sensitivity = driver.Sensitivity(driver.GetSolverIndices()['ADJ.FEA'])
+  coords = driver.Coordinates()
+
+  for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
+    y = coords(i_node, 1)
+    dy_dh = y / height
+    height_sens += dy_dh * sensitivity(i_node, 1)
+
   # Finalize the solver and exit cleanly.
   driver.Finalize()
 
-  return comm.allreduce(load_sens), rho_sens
+  return comm.allreduce(load_sens), rho_sens, comm.allreduce(height_sens)
 
 
 def main():
@@ -203,26 +219,31 @@ def main():
   rank = comm.Get_rank()
 
   # Run the primal with 2 loads to compute the sensitivity via finite differences.
-  obj_pert_load = RunPrimal(1, 2.002)
-  obj_pert_rho = RunPrimal(1.0001, 2)
-  obj = RunPrimal(1, 2)
+  obj_pert_height = RunPrimal(1, 2, 0.05001)
+  obj_pert_load = RunPrimal(1, 2.002, 0.05)
+  obj_pert_rho = RunPrimal(1.0001, 2, 0.05)
+  # Run the un-perturbed last to use the restarts for the adjoint.
+  obj = RunPrimal(1, 2, 0.05)
+  sens_height_fd = (obj_pert_height - obj) / 0.00001
   sens_load_fd = (obj_pert_load - obj) / 0.002
   sens_rho_fd = (obj_pert_rho - obj) / 0.0001
 
-  sens_load, sens_rho = RunAdjoint(1, 2)
+  sens_load, sens_rho, sens_height = RunAdjoint(1, 2, 0.05)
 
   if rank == 0:
-    print("      Finite Differences\tDiscrete Adjoint")
-    print(f"Load  {sens_load_fd}\t{sens_load}")
-    print(f"Rho   {sens_rho_fd}\t{sens_rho}")
+    print("       Finite Differences\tDiscrete Adjoint")
+    print(f"Height {sens_height_fd}\t{sens_height}")
+    print(f"Load   {sens_load_fd}\t{sens_load}")
+    print(f"Rho    {sens_rho_fd}\t{sens_rho}")
 
+  assert abs(sens_height / sens_height_fd - 1) < 1e-4, "Error in geometric derivatives."
   assert abs(sens_load / sens_load_fd - 1) < 1e-4, "Error in load derivative."
-  assert abs(sens_rho / sens_rho_fd - 1) < 1e-3, "Error in density derivative."
+  assert abs(sens_rho / sens_rho_fd - 1) < 1e-3, "Error in material derivative."
 
   # Print results for the regression script to check.
   if rank == 0:
     print("\n")
-    print(100, 100, sens_load_fd, sens_load, sens_rho_fd, sens_rho)
+    print(100, 100, sens_load_fd, sens_load, sens_rho_fd, sens_rho, sens_height_fd, sens_height)
 
 
 if __name__ == '__main__':

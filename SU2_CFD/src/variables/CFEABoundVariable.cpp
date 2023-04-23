@@ -75,3 +75,10 @@ void CFEABoundVariable::RegisterFlowTraction() {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction(iVertex,iVar));
 }
+
+void CFEABoundVariable::ResetInputFlowTraction() {
+  if (!fsi_analysis) return;
+  for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      AD::ResetInput(FlowTraction(iVertex,iVar));
+}

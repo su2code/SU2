@@ -2165,7 +2165,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual void ResetInputFlowTraction() { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2224,6 +2229,7 @@ public:
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
 
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 

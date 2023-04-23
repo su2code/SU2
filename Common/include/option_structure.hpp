@@ -1439,7 +1439,7 @@ enum class STRUCT_TIME_INT {
 };
 static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
+  // MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA) Not fully implemented.
 };
 
 /*!

@@ -193,6 +193,23 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
+
+  if (!config->GetTime_Domain()) return;
+
+  SetVolumeOutputValue("SENS_DISP-X", iPoint, Node_Struc->GetSolution_time_n(iPoint, 0));
+  SetVolumeOutputValue("SENS_DISP-Y", iPoint, Node_Struc->GetSolution_time_n(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("SENS_DISP-Z", iPoint, Node_Struc->GetSolution_time_n(iPoint, 2));
+
+  SetVolumeOutputValue("SENS_VEL-X", iPoint, Node_Struc->GetSolution_time_n(iPoint, nDim));
+  SetVolumeOutputValue("SENS_VEL-Y", iPoint, Node_Struc->GetSolution_time_n(iPoint, nDim + 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("SENS_VEL-Z", iPoint, Node_Struc->GetSolution_time_n(iPoint, 5));
+
+  SetVolumeOutputValue("SENS_ACCEL-X", iPoint, Node_Struc->GetSolution_time_n(iPoint, 2 * nDim));
+  SetVolumeOutputValue("SENS_ACCEL-Y", iPoint, Node_Struc->GetSolution_time_n(iPoint, 2 * nDim + 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("SENS_ACCEL-Z", iPoint, Node_Struc->GetSolution_time_n(iPoint, 8));
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -222,5 +239,24 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
     /// DESCRIPTION: Sensitivity z-component.
     AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "geometric sensitivity  in the z direction");
   /// END_GROUP
+
+  if (!config->GetTime_Domain()) return;
+
+  /*--- Sensitivities with respect to initial conditions. ---*/
+
+  AddVolumeOutput("SENS_DISP-X", "SensInitialDisp_x", "SENSITIVITY_T0", "sensitivity to the initial x displacement");
+  AddVolumeOutput("SENS_DISP-Y", "SensInitialDisp_y", "SENSITIVITY_T0", "sensitivity to the initial y displacement");
+  if (nDim == 3)
+    AddVolumeOutput("SENS_DISP-Z", "SensInitialDisp_z", "SENSITIVITY_T0", "sensitivity to the initial z displacement");
+
+  AddVolumeOutput("SENS_VEL-X", "SensInitialVel_x", "SENSITIVITY_T0", "sensitivity to the initial x velocity");
+  AddVolumeOutput("SENS_VEL-Y", "SensInitialVel_y", "SENSITIVITY_T0", "sensitivity to the initial y velocity");
+  if (nDim == 3)
+    AddVolumeOutput("SENS_VEL-Z", "SensInitialVel_z", "SENSITIVITY_T0", "sensitivity to the initial z velocity");
+
+  AddVolumeOutput("SENS_ACCEL-X", "SensInitialAccel_x", "SENSITIVITY_T0", "sensitivity to the initial x acceleration");
+  AddVolumeOutput("SENS_ACCEL-Y", "SensInitialAccel_y", "SENSITIVITY_T0", "sensitivity to the initial y acceleration");
+  if (nDim == 3)
+    AddVolumeOutput("SENS_ACCEL-Z", "SensInitialAccel_z", "SENSITIVITY_T0", "sensitivity to the initial z acceleration");
 
 }

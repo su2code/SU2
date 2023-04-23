@@ -125,13 +125,17 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   unsigned long iPoint;
-  unsigned short iVar;
+  unsigned short iDim, iVar;
 
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
       direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+
+    auto Coord = geometry->nodes->GetCoord(iPoint);
+    for (iDim = 0; iDim < nDim; iDim++) AD::ResetInput(Coord[iDim]);
+  }
 
   /*--- Reset the input for time n ---*/
 
@@ -197,6 +201,8 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
     if (fea_dv) {
       for (iVar = 0; iVar < nDV; iVar++) AD::ResetInput(DV[iVar]);
     }
+
+    direct_solver->GetNodes()->ResetInputFlowTraction();
 
     if (!reset) {
       E.Register();
@@ -294,7 +300,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
   if (config->GetnMarker_Fluid_Load() > 0) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       for (unsigned short iDim = 0; iDim < nDim; iDim++){
-        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTraction_Sensitivity(iPoint,iDim);
+        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTractionSensitivity(iPoint,iDim);
         nodes->SetFlowTractionSensitivity(iPoint, iDim, val_sens);
       }
     }
@@ -366,12 +372,12 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    auto Coord = geometry->nodes->GetCoord(iPoint);
+    //auto Coord = geometry->nodes->GetCoord(iPoint);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-      AD::ResetInput(Coord[iDim]);
+      //AD::ResetInput(Coord[iDim]);
 
       if (!time_domain) {
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);

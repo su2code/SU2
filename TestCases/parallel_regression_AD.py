@@ -276,7 +276,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.349377, 0.128475, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals         = [-4.349377, 0.189968, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -413,7 +413,7 @@ def main():
     pywrapper_Unst_FEA_AD.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_Unst_FEA_AD.cfg_file = "config.cfg"
     pywrapper_Unst_FEA_AD.test_iter = 100
-    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.031988, 0.032015]
+    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.031988, 0.032015, -18.44906, -18.45085]
     pywrapper_Unst_FEA_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
     pywrapper_Unst_FEA_AD.timeout = 1600
     pywrapper_Unst_FEA_AD.tol = 0.00001
