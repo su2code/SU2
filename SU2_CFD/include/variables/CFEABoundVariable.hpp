@@ -157,12 +157,7 @@ public:
   /*!
    * \brief Register the flow tractions as input variable.
    */
-  void RegisterFlowTraction() override;
-
-  /*!
-   * \brief Resets the AD indices of the flow tractions.
-   */
-  void ResetInputFlowTraction() override;
+  void RegisterFlowTraction(bool reset) override;
 
   /*!
    * \brief Extract the flow traction derivatives.

@@ -69,16 +69,10 @@ void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
 
 void CFEABoundVariable::Clear_SurfaceLoad_Res() { Residual_Ext_Surf.setConstant(0.0); }
 
-void CFEABoundVariable::RegisterFlowTraction() {
+void CFEABoundVariable::RegisterFlowTraction(bool reset) {
   if (!fsi_analysis) return;
   for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterInput(FlowTraction(iVertex,iVar));
-}
-
-void CFEABoundVariable::ResetInputFlowTraction() {
-  if (!fsi_analysis) return;
-  for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::ResetInput(FlowTraction(iVertex,iVar));
+      if (reset) AD::ResetInput(FlowTraction(iVertex,iVar));
+      else AD::RegisterInput(FlowTraction(iVertex,iVar));
 }

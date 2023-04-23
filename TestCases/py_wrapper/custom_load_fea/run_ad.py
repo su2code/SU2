@@ -243,7 +243,7 @@ def main():
   # Print results for the regression script to check.
   if rank == 0:
     print("\n")
-    print(100, 100, sens_load_fd, sens_load, sens_rho_fd, sens_rho, sens_height_fd, sens_height)
+    print(100, 100, sens_load_fd, sens_load, sens_rho_fd * 10, sens_rho * 10, sens_height_fd / 100, sens_height / 100)
 
 
 if __name__ == '__main__':

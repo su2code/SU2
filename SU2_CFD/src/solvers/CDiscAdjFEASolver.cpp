@@ -124,31 +124,20 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-  unsigned long iPoint;
-  unsigned short iDim, iVar;
-
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
-
-    auto Coord = geometry->nodes->GetCoord(iPoint);
-    for (iDim = 0; iDim < nDim; iDim++) AD::ResetInput(Coord[iDim]);
   }
 
   /*--- Reset the input for time n ---*/
 
   if (config->GetTime_Domain()) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
   }
-
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
-   * when running the discrete adjoint solver. ---*/
-
-  direct_solver->Jacobian.SetValZero();
 
   /*--- Set indices to zero ---*/
 
@@ -202,8 +191,6 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
       for (iVar = 0; iVar < nDV; iVar++) AD::ResetInput(DV[iVar]);
     }
 
-    direct_solver->GetNodes()->ResetInputFlowTraction();
-
     if (!reset) {
       E.Register();
       Nu.Register();
@@ -211,10 +198,11 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
       Rho_DL.Register();
       if (de_effects) EField.Register();
       if (fea_dv) DV.Register();
+    }
 
-      /*--- Register the flow tractions ---*/
-      if (config->GetnMarker_Fluid_Load() > 0)
-        direct_solver->GetNodes()->RegisterFlowTraction();
+    /*--- Register or reset the flow tractions ---*/
+    if (config->GetnMarker_Fluid_Load() > 0) {
+      direct_solver->GetNodes()->RegisterFlowTraction(reset);
     }
 
   }
@@ -372,12 +360,12 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    //auto Coord = geometry->nodes->GetCoord(iPoint);
+    auto Coord = geometry->nodes->GetCoord(iPoint);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-      //AD::ResetInput(Coord[iDim]);
+      AD::ResetInput(Coord[iDim]);
 
       if (!time_domain) {
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);

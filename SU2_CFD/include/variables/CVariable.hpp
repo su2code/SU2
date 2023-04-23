@@ -2160,12 +2160,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction() { }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void ResetInputFlowTraction() { }
+  inline virtual void RegisterFlowTraction(bool reset) { }
 
   /*!
    * \brief A virtual member.

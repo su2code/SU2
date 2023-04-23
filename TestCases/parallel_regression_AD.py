@@ -413,7 +413,7 @@ def main():
     pywrapper_Unst_FEA_AD.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_Unst_FEA_AD.cfg_file = "config.cfg"
     pywrapper_Unst_FEA_AD.test_iter = 100
-    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.031988, 0.032015, -18.44906, -18.45085]
+    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.319877, 0.320149, -0.184491, -0.184509]
     pywrapper_Unst_FEA_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
     pywrapper_Unst_FEA_AD.timeout = 1600
     pywrapper_Unst_FEA_AD.tol = 0.00001
