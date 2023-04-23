@@ -319,23 +319,21 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
-
-  const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  CWindowingTools windowEvaluator = CWindowingTools();
-
-  if (config->GetTime_Marching() != TIME_MARCHING::STEADY){
-    if (TimeIter < IterAvg_Obj){
-      /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
-      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
+  if (config->GetTime_Domain()) {
+    const auto IterAvg_Obj = config->GetIter_Avg_Objective();
+    if (TimeIter < IterAvg_Obj) {
+      /*--- Default behavior when no window is chosen is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
+      auto windowEvaluator = CWindowingTools();
+      const su2double weight = windowEvaluator.GetWndWeight(config->GetKindWindow(), TimeIter, IterAvg_Obj - 1);
+      seeding = weight / IterAvg_Obj;
     }
     else {
       seeding = 0.0;
     }
   }
-
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE) {
     SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);

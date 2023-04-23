@@ -157,12 +157,12 @@ public:
   /*!
    * \brief Register the flow tractions as input variable.
    */
-  void RegisterFlowTraction() override;
+  void RegisterFlowTraction(bool reset) override;
 
   /*!
    * \brief Extract the flow traction derivatives.
    */
-  inline su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const override {
+  inline su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const override {
     if (!fsi_analysis) return 0.0;
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));
