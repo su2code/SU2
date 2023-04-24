@@ -150,7 +150,6 @@ private:
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
   su2double Confinement_Param; /*!< \brief Confinement paramenter for Vorticity Confinement method. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
-  unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;              /*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;     /*!< \brief Limiter coefficient */
@@ -168,9 +167,6 @@ private:
   su2double HarmonicBalance_Period;  /*!< \brief Period of oscillation to be used with harmonic balance computations. */
   su2double Delta_UnstTime,          /*!< \brief Time step for unsteady computations. */
   Delta_UnstTimeND;                  /*!< \brief Time step for unsteady computations (non dimensional). */
-  su2double Delta_DynTime,        /*!< \brief Time step for dynamic structural computations. */
-  Total_DynTime,                  /*!< \brief Total time for dynamic structural computations. */
-  Current_DynTime;                /*!< \brief Global time of the dynamic structural computations. */
   su2double Total_UnstTime,       /*!< \brief Total time for unsteady computations. */
   Total_UnstTimeND;               /*!< \brief Total time for unsteady computations (non dimensional). */
   su2double Current_UnstTime,     /*!< \brief Global time of the unsteady simulation. */
@@ -2121,16 +2117,10 @@ public:
   su2double GetElasticyMod(unsigned short id_val) const { return ElasticityMod[id_val]; }
 
   /*!
-    * \brief Decide whether to apply DE effects to the model.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether to apply DE effects to the model.
+   * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+   */
   bool GetDE_Effects(void) const { return DE_Effects; }
-
-  /*!
-    * \brief Decide whether to predict the DE effects for the next time step.
-    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
-    */
-   bool GetDE_Predicted(void);
 
   /*!
    * \brief Get the number of different electric constants.
@@ -8732,34 +8722,6 @@ public:
   bool GetSteadyRestart(void) const { return SteadyRestart; }
 
   /*!
-   * \brief Provides information about the time integration of the structural analysis, and change the write in the output
-   *        files information about the iteration.
-   * \return The kind of time integration: Static or dynamic analysis
-   */
-  unsigned short GetDynamic_Analysis(void) const { return Dynamic_Analysis; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetDelta_DynTime(void) const { return Delta_DynTime; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetTotal_DynTime(void) const { return Total_DynTime; }
-
-  /*!
-   * \brief If we are prforming an unsteady simulation, there is only
-   *        one value of the time step for the complete simulation.
-   * \return Value of the time step in an unsteady simulation (non dimensional).
-   */
-  su2double GetCurrent_DynTime(void) const { return Current_DynTime; }
-
-  /*!
    * \brief Get the current instance.
    * \return Current instance identifier.
    */
@@ -8790,22 +8752,10 @@ public:
   unsigned short GetnIntCoeffs(void) const { return nIntCoeffs; }
 
   /*!
-   * \brief Get the number of different values for the elasticity modulus.
-   * \return Number of different values for the elasticity modulus.
+   * \brief Get the number of different materials for the elasticity solver.
+   * \return Number of different materials.
    */
-  unsigned short GetnElasticityMod(void) const { return nElasticityMod; }
-
-  /*!
-   * \brief Get the number of different values for the Poisson ratio.
-   * \return Number of different values for the Poisson ratio.
-   */
-  unsigned short GetnPoissonRatio(void) const { return nPoissonRatio; }
-
-  /*!
-   * \brief Get the number of different values for the Material density.
-   * \return Number of different values for the Material density.
-   */
-  unsigned short GetnMaterialDensity(void) const { return nMaterialDensity; }
+  unsigned short GetnElasticityMat(void) const { return nElasticityMod; }
 
   /*!
    * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.
@@ -9290,12 +9240,6 @@ public:
    * \param[in] val_iter - Number of time steps run
    */
   void SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
-
-  /*!
-   * \brief Get the number of pseudo-time iterations
-   * \return Number of pseudo-time steps run for the single-zone problem
-   */
-  unsigned long GetnIter(void) const { return nIter; }
 
   /*!
    * \brief Get the restart iteration
