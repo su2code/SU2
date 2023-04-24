@@ -362,8 +362,8 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CEulerSolver::InitTurboPerformance(CGeometry *geometry, CConfig *config){
-  TurbomachineryPerformance = std::make_shared<CTurboOutput>(*config, *geometry, *GetFluidModel());
+void CEulerSolver::InitTurboPerformance(CGeometry *geometry, CConfig** config){
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *GetFluidModel());
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){

@@ -265,7 +265,7 @@ class CIteration {
     /*!
    * \brief Monitors turbo computation (pressure and turbo ramps).
    */
-  virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid) {}
+  virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid) {}
 
   /*!
    * \brief A virtual member.

@@ -219,7 +219,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
-    
+
       output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -227,7 +227,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter());
   }
-
+  // should this be in an else statement?
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -350,9 +350,6 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
     
     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-
-    /*--- Machine Performance (Takes inlet of Zone 0 and Outlet of Zone N-1) ---*/
-    // TODO: This still crashed or gives garbage value if there are uneven spans
     auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
     nSpan = config_container[nZone-1]->GetnSpanWiseSections();
     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();

@@ -217,7 +217,7 @@ class CTurboOutput {
   // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
   // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
  public:
-  CTurboOutput(const CConfig& config, const CGeometry& geometry, CFluidModel& fluidModel);
+  CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel);
 
   vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>
 

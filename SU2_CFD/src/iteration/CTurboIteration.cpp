@@ -40,7 +40,8 @@ void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, 
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
 
   if (config[val_iZone]->GetBoolTurbomachinery()) {
-    InitTurboPerformance(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetFluidModel());
+    InitTurboPerformance(geometry[val_iZone][INST_0][MESH_0], config,
+                         solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetFluidModel());
   }
 }
 
@@ -59,7 +60,7 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
                                                                            geometry[val_iZone][val_iInst][MESH_0]);
 }
 
-void CTurboIteration::InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid){
-  TurbomachineryPerformance = std::make_shared<CTurboOutput>(*config, *geometry, *fluid);
+void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
   TurbomachineryStagePerformance = new CTurbomachineryStagePerformance(*fluid);
 }

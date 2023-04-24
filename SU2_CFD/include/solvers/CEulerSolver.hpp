@@ -1033,7 +1033,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void InitTurboPerformance(CGeometry *geometry, CConfig *config) final;
+  void InitTurboPerformance(CGeometry *geometry, CConfig** config) final;
   
   /*!
    * \brief Get Primal variables for turbo performance computation

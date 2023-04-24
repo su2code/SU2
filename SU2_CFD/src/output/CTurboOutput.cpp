@@ -161,13 +161,13 @@ void CPropellorBladePerformance::ComputePerformance(const CTurbomachineryCombine
   // TODO: to be implemented
 }
 
-CTurboOutput::CTurboOutput(const CConfig& config, const CGeometry& geometry, CFluidModel& fluidModel) {
-  unsigned short nBladesRow = config.GetnMarker_Turbomachinery();
+CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel) {
+  unsigned short nBladesRow = config[ZONE_0]->GetnMarker_Turbomachinery();
   unsigned short nDim = geometry.GetnDim();
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    unsigned short nSpan = config.GetnSpanWiseSections();
+    unsigned short nSpan = config[iBladeRow]->GetnSpanWiseSections();
     for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
       su2double areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
       su2double areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
@@ -180,7 +180,7 @@ CTurboOutput::CTurboOutput(const CConfig& config, const CGeometry& geometry, CFl
 
         /* Switch between the Turbomachinery Performance Kind */
         // TODO: This needs to be fixed
-        switch (config.GetKind_TurboPerf(iBladeRow)) {
+        switch (config[iBladeRow]->GetKind_TurboPerf(iBladeRow)) {
           case TURBO_PERF_KIND::TURBINE:
             bladeSpanPerformances.push_back(
                 make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));

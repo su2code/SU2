@@ -3810,7 +3810,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
+  inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config) { }
 
 
   /*!
