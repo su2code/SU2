@@ -93,7 +93,7 @@ class CProperty {
   /*!
    * \brief Extract the derivative of the Design density.
    */
-  inline virtual su2double GetAdjointDensity(void) const { return 0.0; }
+  inline virtual su2double GetAdjointDensity(void) { return 0.0; }
 
   /*!
    * \brief Register the Design density as an AD input variable.
@@ -177,7 +177,11 @@ class CElementProperty final : public CProperty {
   /*!
    * \brief Extract the derivative of the Design density.
    */
-  inline su2double GetAdjointDensity(void) const override { return SU2_TYPE::GetDerivative(design_rho); }
+  inline su2double GetAdjointDensity(void) override {
+    su2double der = SU2_TYPE::GetDerivative(design_rho);
+    AD::ResetInput(design_rho);
+    return der;
+  }
 
   /*!
    * \brief Register the Design density as an AD input variable.

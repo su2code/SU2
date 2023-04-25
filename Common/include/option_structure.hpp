@@ -1434,14 +1434,12 @@ static const MapType<std::string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
  * \brief Type of time integration schemes
  */
 enum class STRUCT_TIME_INT {
-  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
   GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
 static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
+  // MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA) Not fully implemented.
 };
 
 /*!
@@ -2366,18 +2364,6 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
-};
-
-/*!
- * \brief Types of schemes for dynamic structural computations
- */
-enum ENUM_DYNAMIC {
-  STATIC = 0,     /*!< \brief A static structural computation. */
-  DYNAMIC = 1     /*!< \brief Use a time stepping strategy for dynamic computations. */
-};
-static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
-  MakePair("NO", STATIC)
-  MakePair("YES", DYNAMIC)
 };
 
 /*!
