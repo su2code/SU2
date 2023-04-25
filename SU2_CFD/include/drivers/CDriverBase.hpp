@@ -500,6 +500,15 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read-only view of the geometry sensitivity of a discrete adjoint solver.
+   */
+  inline CPyWrapperMatrixView Sensitivity(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    auto& sensitivity = const_cast<su2activematrix&>(solver->GetNodes()->GetSensitivity());
+    return CPyWrapperMatrixView(sensitivity, "Sensitivity", true);
+  }
+
+  /*!
    * \brief Set the temperature of a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
    * \note This can be the input of a heat or flow solver in a CHT setting.
    * \param[in] iMarker - Marker identifier.

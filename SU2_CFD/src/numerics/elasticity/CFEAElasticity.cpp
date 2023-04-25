@@ -38,22 +38,18 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool pseudo_static = config->GetPseudoStatic();
 
-  unsigned short iVar, nProp;
+  unsigned short iVar;
 
   /*--- Initialize vector structures for multiple material definition ---*/
-  nProp = config->GetnElasticityMod();
+  const auto nProp = config->GetnElasticityMat();
 
   E_i = new su2double[nProp];
   for (iVar = 0; iVar < nProp; iVar++)
     E_i[iVar] = config->GetElasticyMod(iVar);
 
-  nProp = config->GetnPoissonRatio();
-
   Nu_i = new su2double[nProp];
   for (iVar = 0; iVar < nProp; iVar++)
     Nu_i[iVar] = config->GetPoissonRatio(iVar);
-
-  nProp = config->GetnMaterialDensity();
 
   Rho_s_i = new su2double[nProp];     // For inertial effects
   Rho_s_DL_i = new su2double[nProp];  // For dead loads
