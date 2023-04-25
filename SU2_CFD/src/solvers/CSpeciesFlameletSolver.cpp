@@ -213,10 +213,12 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     vector <su2double> scalar_init(nVar, 0.0);
-    const su2double* flame_offset = config->GetFlameOffset();
-    const su2double* flame_normal = config->GetFlameNormal();
-    const su2double flame_thickness = config->GetFlameThickness();
-    const su2double burnt_thickness = config->GetFlameBurntThickness();
+    const su2double* flame_init = config->GetFlameInit();
+    const su2double flame_offset[3] = {flame_init[0],flame_init[1],flame_init[2]};
+    const su2double flame_normal[3] = {flame_init[3],flame_init[4],flame_init[5]};
+    const su2double flame_thickness = flame_init[6];
+    const su2double flame_burnt_thickness = flame_init[7];
+
     const su2double flamenorm = GeometryToolbox::Norm(nDim, flame_normal);
     const su2double temp_inlet = config->GetInc_Temperature_Init();
     su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR];
@@ -278,7 +280,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           n_points_flame_local++;
 
           /* --- Burnt region behind the flame zone. --- */
-        } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)) {
+        } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + flame_burnt_thickness)) {
           scalar_init[I_PROGVAR] = prog_burnt;
           n_points_burnt_local++;
 
@@ -608,8 +610,8 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
                                                 unsigned short val_marker) {
 
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   su2double enth_init, enth_wall, prog_wall;

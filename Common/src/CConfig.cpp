@@ -1365,23 +1365,14 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
   addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
 
-  /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
-  flame_offset[0] = 0.0;
-  flame_offset[1] = 0.0;
-  flame_offset[2] = 0.0;
-  addDoubleArrayOption("FLAME_OFFSET", 3,flame_offset);
-
-  /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
-  addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
-
-  /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
-  flame_normal[0] = 1.0;
-  flame_normal[1] = 0.0;
-  flame_normal[2] = 0.0;
-  addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
-
-  /*!\brief FLAME_BURNT_THICKNESS \n DESCRIPTION: burnt thickness for flame initialization using the flamelet model \ingroup Config*/
-  addDoubleOption("FLAME_BURNT_THICKNESS", flame_burnt_thickness, 1);
+  /*!\brief FLAME_INIT \n DESCRIPTION: flame initialization using the flamelet model \ingroup Config*/
+  /*--- flame offset (x,y,z) ---*/
+  flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
+  /*--- flame normal (nx, ny, nz) ---*/
+  flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
+  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
+  flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 

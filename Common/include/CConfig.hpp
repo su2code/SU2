@@ -1221,12 +1221,7 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  su2double flame_thickness;       /*!< \brief Initial solution for flamelet solver: flame reaction zone thickness. */
-  su2double flame_burnt_thickness; /*!< \brief Initial solution for flamelet solver: burnt zone thickness. */
-  su2double flame_offset[3];       /*!< \brief Initial solution for flamelet solver: point on the plane separating
-                                               burnt from unburnt zone. */
-  su2double flame_normal[3];       /*!< \brief Initial solution for flamelet solver: normal of the plane separating
-                                               burnt from unburnt zone, pointing into direction of burnt. */
+  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
 
   /*--- lookup table ---*/
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
@@ -2135,32 +2130,14 @@ public:
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
   /*!
-   * \brief Get the flame offset (point on plane separating burnt and unburnt zone)
-            for flamelet model initialization.
-   * \return flame offset for flamelet model initialization
+   * \brief Get the flame initialization.
+   *        (x1,x2,x3) = flame offset.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
+   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
+   * \return Flame initialization for the flamelet model.
    */
-  su2double *GetFlameOffset(void) { return flame_offset; }
-
-  /*!
-   * \brief Get the flame normal (of the plane separating burnt and unburnt zone)
-            for flamelet model initialization. The normal points in the direction of the burnt zone.
-   * \return flame offset for flamelet model initialization
-   */
-  su2double *GetFlameNormal(void) { return flame_normal; }
-
-  /*!
-   * \brief Get the flame thickness (reaction zone) for flamelet model initialization.
-            This is the thickness of the transition layer from unburnt to burnt conditions.
-   * \return flame thickness for flamelet model initialization
-   */
-  su2double GetFlameThickness(void) const { return flame_thickness; }
-
-  /*!
-   * \brief Get the burnt region thickness for flamelet model initialization.
-            This is the thickness of the hot, burnt zone after the reaction zone.
-   * \return flame thickness for flamelet model initialization
-   */
-  su2double GetFlameBurntThickness(void) const { return flame_burnt_thickness; }
+  su2double *GetFlameInit(void) { return flame_init; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
