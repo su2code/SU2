@@ -174,35 +174,28 @@ CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidMo
       su2double radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
       su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
 
-      // TODO: I have a feeling this should not be in such a for loop, to be discussed with Salvo (Nitish)
-      SU2_OMP_PARALLEL {
-        // const int thread = omp_get_thread_num();
+      /* Switch between the Turbomachinery Performance Kind */
+      switch (config[iBladeRow]->GetKind_TurboPerf(iBladeRow)) {
+        case TURBO_PERF_KIND::TURBINE:
+          bladeSpanPerformances.push_back(
+              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+          break;
 
-        /* Switch between the Turbomachinery Performance Kind */
-        // TODO: This needs to be fixed
-        switch (config[iBladeRow]->GetKind_TurboPerf(iBladeRow)) {
-          case TURBO_PERF_KIND::TURBINE:
-            bladeSpanPerformances.push_back(
-                make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-            break;
+        case TURBO_PERF_KIND::COMPRESSOR:
+          bladeSpanPerformances.push_back(
+              make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+          break;
 
-          case TURBO_PERF_KIND::COMPRESSOR:
-            bladeSpanPerformances.push_back(
-                make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-            break;
+        case TURBO_PERF_KIND::PROPELLOR:
+          bladeSpanPerformances.push_back(
+              make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+          break;
 
-          case TURBO_PERF_KIND::PROPELLOR:
-            bladeSpanPerformances.push_back(
-                make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-            break;
-
-          default:
-            bladeSpanPerformances.push_back(
-                make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-            break;
-        }
+        default:
+          bladeSpanPerformances.push_back(
+              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+          break;
       }
-      END_SU2_OMP_PARALLEL
     }
     BladesPerformances.push_back(bladeSpanPerformances);
   }

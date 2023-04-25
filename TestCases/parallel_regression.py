@@ -987,12 +987,12 @@ def main():
     ### Turbomachinery                 ###
     ######################################
 
-    # Jones APU Turbocharger restart
+	# Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.986563, -3.096834, -14.849532, -9.102914, -11.787851, -6.266208, 7.3266e+04, 7.3266e+04]
+    Jones_tc_restart.test_vals = [-6.987181, -3.096835, -14.857733, -9.109735, -11.787852, -6.266208, 73266, 73266]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1000,7 +1000,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.047301, 1.661328, -2.913923, 2.588194, -2.486769, 3.050953, 106380, 106380]
+    axial_stage2D.test_vals         = [1.047861, 1.661689, -2.916002, 2.586160, -2.486401, 3.050953, 106380, 106380]
+    axial_stage2D.test_vals_aarch64 = [1.047861, 1.661689, -2.916002, 2.586160, -2.486401, 3.050953, 106380, 106380]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1008,7 +1009,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-7.544516, -6.822541, -6.689799, -1.581068, -6.798361, -0.746758, -471650]
+    transonic_stator_restart.test_vals         = [-7.545560, -6.807355, -6.697808, -1.582515, -6.801911, -0.746306, -471650]
+    transonic_stator_restart.test_vals_aarch64 = [-7.545560, -6.807355, -6.697808, -1.582515, -6.801911, -0.746306, -471650]
     test_list.append(transonic_stator_restart)
 
     ######################################
