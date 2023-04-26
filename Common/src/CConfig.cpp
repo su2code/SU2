@@ -2140,7 +2140,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief File name of the flamelet look up table.*/
   //addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
   /* DESCRIPTION: Define preferential diffusion combustion problem. \n DEFAULT: false (temporarily) */
-  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
+  //addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
@@ -5523,8 +5523,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
-    n_control_vars = preferential_diffusion ? 3 : 2;
-    n_scalars = n_control_vars + n_user_scalars;
+    n_scalars = nSpecies_Init;
+    n_control_vars = n_scalars - n_user_scalars;
 
     /*--- compute inlet enthalpy from progress variable and temperature ---*/
 

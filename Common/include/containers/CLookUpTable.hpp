@@ -373,4 +373,13 @@ class CLookUpTable {
   inline std::pair<su2double, su2double> GetTableLimitsX(unsigned long i_level = 0) const {
     return limits_table_x_global;
   }
+
+  /*!
+   * \brief Get the number of table dimensions.
+   * \returns Table dimensions.
+   */
+  inline unsigned short GetNDim() const { return table_dim; };
+
+  bool CheckForVariables(const std::vector<std::string>& vars_to_check);
+  
 };

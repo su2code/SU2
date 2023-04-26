@@ -46,10 +46,13 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_table_sources;
   unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
   unsigned short n_control_vars; /*!< \brief number of controlling variables. */
-
+  unsigned short n_datadriven_inputs;
+  
   ENUM_DATADRIVEN_METHOD manifold_format = ENUM_DATADRIVEN_METHOD::LUT;
 
-  bool PreferentialDiffusion = false;
+  bool PreferentialDiffusion = false,
+       include_mixfrac = false;
+
   vector<string> controlling_variables;
   vector<su2double> val_controlling_vars;
 
@@ -187,4 +190,7 @@ class CFluidFlamelet final : public CFluidModel {
   inline unsigned short GetNControllingVariables() { return n_control_vars; }
 
   unsigned long Evaluate_Dataset(vector<string>& varnames, vector<su2double*>& val_vars);
+
+  void CheckConsistency();
+
 };

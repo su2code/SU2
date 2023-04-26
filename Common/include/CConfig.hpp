@@ -2262,6 +2262,8 @@ public:
    */
   bool GetPreferentialDiffusion() const { return preferential_diffusion; }
 
+  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
+
   /*!
    * \brief Get the file name of the look up table.
    * \return File name of the look up table.

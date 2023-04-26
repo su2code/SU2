@@ -39,7 +39,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
   bool ignition = false;
-
+  bool include_mixfrac = false;
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.

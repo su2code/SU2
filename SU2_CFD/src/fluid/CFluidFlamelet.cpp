@@ -38,7 +38,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   n_user_scalars = config->GetNUserScalars();
   n_control_vars = config->GetNControlVars();
   n_scalars = config->GetNScalars();
-  PreferentialDiffusion = config->GetPreferentialDiffusion();
+  //PreferentialDiffusion = config->GetPreferentialDiffusion();
 
   if (rank == MASTER_NODE) {
     cout << "Number of scalars:           " << n_scalars << endl;
@@ -48,9 +48,13 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   controlling_variables.resize(n_control_vars);
 
+  n_datadriven_inputs = config->GetNDataDriven_Files();
+
+  include_mixfrac = (n_control_vars > 2);
+
   controlling_variables[I_PROGVAR] = "ProgressVariable";
   controlling_variables[I_ENTH] = "EnthalpyTot";
-  if (PreferentialDiffusion) controlling_variables[I_MIXFRAC] = "MixtureFraction";
+  if (include_mixfrac) controlling_variables[I_MIXFRAC] = "MixtureFraction";
 
   table_scalar_names.resize(n_scalars);
   for (size_t i_CV = 0; i_CV < n_control_vars; i_CV++) table_scalar_names[i_CV] = controlling_variables[i_CV];
@@ -69,16 +73,18 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       }
       look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR],
                                        table_scalar_names[I_ENTH]);
+      if (look_up_table->GetNDim() != n_control_vars)
+        SU2_MPI::Error("Mismatch between table dimension and number of controlling variables.", CURRENT_FUNCTION);
       break;
 
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && display) {
         cout << "***********************************************" << endl;
         cout << "*** initializing the multi-layer perceptron ***" << endl;
         cout << "***********************************************" << endl;
       }
-      look_up_ANN = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      look_up_ANN = new MLPToolbox::CLookUp_ANN(n_datadriven_inputs, config->GetDataDriven_FileNames());
       if ((rank == MASTER_NODE) && display) look_up_ANN->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
@@ -122,6 +128,12 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   Pressure = value_pressure_operating;
 
   PreprocessLookUp();
+
+  config->SetPreferentialDiffusion(PreferentialDiffusion);
+
+  if (rank == MASTER_NODE) {
+    cout << "Preferential Diffusion: " << (PreferentialDiffusion ? "Enabled" : "Disabled") << endl << endl;
+  }
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
@@ -314,8 +326,6 @@ void CFluidFlamelet::PreprocessLookUp() {
   val_vars_TD[4] = &Kt;
   varnames_TD[5] = "DiffusionCoefficient";
   val_vars_TD[5] = &mass_diffusivity;
-  // varnames_TD[6] = "MolarWeightMix";
-  // val_vars_TD[6] = &molar_weight;
 
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
@@ -343,20 +353,44 @@ void CFluidFlamelet::PreprocessLookUp() {
     val_vars_CV[iCV] = &lookup_CV[iCV];
   }
 
-  if (PreferentialDiffusion) {
-    varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-    val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
+  varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
+  val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
 
-    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
-    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
-    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
-    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = "Beta_MixFrac";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = "Beta_MixFrac";
 
-    val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = &beta_progvar;
-    val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = &beta_enth_thermal;
-    val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = &beta_enth;
-    val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = &beta_mixfrac;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = &beta_progvar;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = &beta_enth_thermal;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = &beta_enth;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = &beta_mixfrac;
+
+
+  size_t n_betas {0};
+  PreferentialDiffusion = false;
+  switch (manifold_format)
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    PreferentialDiffusion = look_up_table->CheckForVariables(varnames_PD);
+    break;
+  case ENUM_DATADRIVEN_METHOD::MLP:
+  #ifdef USE_MLPCPP
+    for (auto iMLP=0u; iMLP < n_datadriven_inputs; iMLP++) {
+      auto outputMap = look_up_ANN->FindVariableIndices(iMLP, varnames_PD, false);
+      n_betas += outputMap.size();
+    }
+    PreferentialDiffusion = (n_betas == varnames_PD.size());
+  #endif
+    break;
+  default:
+    break;
   }
+
+  if (PreferentialDiffusion && !include_mixfrac) 
+    SU2_MPI::Error("Preferential diffusion can only be used with mixture fraction as a controlling variable.", CURRENT_FUNCTION);
+
+
   if (manifold_format == ENUM_DATADRIVEN_METHOD::MLP) {
 #ifdef USE_MLPCPP
     iomap_TD = new MLPToolbox::CIOMap(controlling_variables, varnames_TD);

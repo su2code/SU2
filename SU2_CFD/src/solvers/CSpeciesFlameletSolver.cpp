@@ -42,6 +42,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   /*--- Dimension of the problem. ---*/
   nVar = config->GetNScalars();
   nPrimVar = nVar;
+  include_mixfrac = (config->GetNControlVars() > 2);
 
   if (nVar > MAXNVAR)
     SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
@@ -246,7 +247,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
   const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
-
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
@@ -266,12 +266,12 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR];
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
     su2double mixfrac_inlet = 0.0;
-    if (config->GetPreferentialDiffusion()) mixfrac_inlet = config->GetSpecies_Init()[I_MIXFRAC];
+    if (include_mixfrac) mixfrac_inlet = config->GetSpecies_Init()[I_MIXFRAC];
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
       cout << "initial condition: c = " << prog_inlet << endl;
       cout << "initial condition: h = " << enth_inlet << endl;
-      if (config->GetPreferentialDiffusion()) cout << "initial condition: Z = " << mixfrac_inlet << endl;
+      if (include_mixfrac) cout << "initial condition: Z = " << mixfrac_inlet << endl;
     }
     su2double prog_unburnt = prog_inlet;
 
@@ -334,7 +334,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
             break;
         }
 
-        if (config->GetPreferentialDiffusion()) scalar_init[I_MIXFRAC] = mixfrac_inlet;
+        if (include_mixfrac) scalar_init[I_MIXFRAC] = mixfrac_inlet;
 
         n_not_iterated_local +=
             fluid_model_local->GetEnthFromTemp(enth_inlet, prog_inlet, mixfrac_inlet, temp_inlet, enth_inlet);
@@ -727,7 +727,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   su2double* inlet_scalar = const_cast<su2double*>(inlet_scalar_original);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
-  if (config->GetPreferentialDiffusion()) mfrac_inlet = inlet_scalar[I_MIXFRAC];
+  if (include_mixfrac) mfrac_inlet = inlet_scalar[I_MIXFRAC];
   /*--- We compute inlet enthalpy from the temperature and progress variable ---*/
   enth_inlet = inlet_scalar_original[I_ENTH];
   fluid_model_local->GetEnthFromTemp(enth_inlet, inlet_scalar[I_PROGVAR], mfrac_inlet, temp_inlet,
@@ -903,7 +903,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
         enth_init = nodes->GetSolution(iPoint, I_ENTH);
         enth_wall = enth_init;
 
-        if (config->GetPreferentialDiffusion()) mixfrac_wall = nodes->GetSolution(iPoint, I_MIXFRAC);
+        if (include_mixfrac) mixfrac_wall = nodes->GetSolution(iPoint, I_MIXFRAC);
 
         n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, mixfrac_wall, temp_wall, enth_init);
 
@@ -988,7 +988,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
         /*--- Set enthalpy on the wall. ---*/
 
         su2double prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-        if (config->GetPreferentialDiffusion()) mixfrac_wall = nodes->GetSolution(iPoint, I_MIXFRAC);
+        if (include_mixfrac) mixfrac_wall = nodes->GetSolution(iPoint, I_MIXFRAC);
         n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, mixfrac_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
