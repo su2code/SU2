@@ -69,7 +69,7 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
+  CLookUpTable* look_up_table; /*!< \brief The lookup table for the flamelet combustion model.*/
   su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
@@ -145,30 +145,36 @@ class CFluidModel {
   virtual inline const su2double* GetScalarSources() const { return nullptr; }
 
   /*!
-   * \brief Flamelet LUT - Get the source term of the transported scalar.
-   * \param[in] val_ix - Index of the scalar.
+   * \brief Set the source terms for the flamelet model (obtained from LUT).
+   * \param[in] val_scalar - Pointer to the transported scalars.
    */
-  virtual inline su2double GetScalarSources(int val_ix) { return 0; }
+  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Flamelet LUT - Get the number of transported scalars.
    */
-  virtual inline const unsigned short GetNScalars() { return 0; }
+  virtual inline unsigned short GetNScalars() const { return 0; }
 
   /*!
-   * \brief Flamelet LUT - Get the looked up scalar field for combustion.
+   * \brief Flamelet LUT - Get the looked up values for visualization.
    */
-  virtual inline const su2double GetScalarLookups(int) { return 0; }
+  virtual inline su2double GetScalarLookups(int) const { return 0; }
+
+  /*!
+   * \brief Flamelet LUT - Set the looked up values for visualization.
+   * \param[in] val_scalar - Pointer to the transported scalars.
+   */
+  virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Flamelet LUT - Get the lookup table.
    */
-  virtual CLookUpTable* GetLookUpTable() { return look_up_table; }
+  virtual CLookUpTable* GetLookUpTable() { return nullptr; }
 
   /*!
    * \brief Flamelet LUT - Get the total enthalpy from the temperature (reverse lookup).
    */
-  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy,
+  virtual inline unsigned long GetEnthFromTemp(su2double& enthalpy,
                                                const su2double  val_prog,
                                                const su2double  val_mixfrac,
                                                const su2double  val_temp,
@@ -372,18 +378,6 @@ class CFluidModel {
    * \param[in] T - Temperature value at the point.
    */
   virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
-
-  /*!
-   * \brief Virtual member.
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
-
-  /*!
-   * \brief Virtual member.
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

@@ -37,7 +37,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
  protected:
   MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  su2vector<unsigned short> inside_table; /*!< \brief Vector of solutions inside the lookup table. */
+  su2vector<unsigned short> table_misses; /*!< \brief Vector of lookup table misses. */
 
  public:
   /*!
@@ -57,7 +57,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] val_lookup_scalar - the value of the scalar to set.
    * \param[in] val_ivar - Eqn. index to the transport equation.
    */
-  inline const void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
+  inline void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) override {
     lookup_scalar(iPoint, val_ivar) = val_lookup_scalar;
   }
 
@@ -73,28 +73,12 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   }
 
   /*!
-   * \brief Get the value of the transported scalar source term.
-   * \param[in] val_ivar - Eqn. index to the transported scalar source term.
-   * \return Value of the progress variable source term.
-   */
-  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override {
-    return source_scalar(iPoint, val_ivar);
-  }
-
-  /*!
-   * \brief Get the value of the looked up scalar field.
-   * \param[in] val_ivar - Eqn. index to the looked up scalar field.
-   * \return Value of the looked up scalar field.
-   */
-  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const override {
-    return lookup_scalar(iPoint, val_ivar);
-  }
-
-  /*!
    * \brief Get the value of the transported scalars source term.
    * \return Pointer to the transported scalars source term.
    */
   inline su2double* GetScalarSources(unsigned long iPoint) override { return source_scalar[iPoint]; }
+
+  inline su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) const override { return source_scalar[iPoint][val_ivar]; }
 
   /*!
    * \brief Get the value of the looked up table based on the transported scalar.
@@ -102,7 +86,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    */
   inline su2double *GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
 
-  inline void SetInsideTable(unsigned long iPoint, unsigned short inside) override { inside_table[iPoint] = inside; }
+  inline void SetDataExtrapolation(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 
-  inline unsigned short GetInsideTable(unsigned long iPoint) const override { return inside_table[iPoint]; }
+  inline unsigned short GetDataExtrapolation(unsigned long iPoint) const override { return table_misses[iPoint]; }
 };

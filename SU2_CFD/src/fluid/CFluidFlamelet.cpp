@@ -223,7 +223,7 @@ unsigned long CFluidFlamelet::SetPreferentialDiffusionScalars(su2double* val_sca
   return exit_code;
 }
 
-unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2double val_prog,
+unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2double val_prog,
                                               const su2double val_mixfrac, const su2double val_temp,
                                               su2double initial_value) {
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
@@ -260,7 +260,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double* val_enth, const su2doub
     }
   }
 
-  *val_enth = enth_iter;
+  val_enth = enth_iter;
 
   if (counter >= counter_limit) {
     exit_code = 1;

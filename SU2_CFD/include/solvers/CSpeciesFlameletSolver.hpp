@@ -37,7 +37,6 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
-  unsigned long n_table_misses;          /*!< \brief number of times we failed to do a lookup from the table */
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
   bool ignition = false;
 
