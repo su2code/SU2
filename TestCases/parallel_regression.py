@@ -47,7 +47,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-15.052249, -15.010125, -15.154698, -8.622403, -11.586758, -15.920579]
+    cfd_flamelet_ch4.test_vals = [-14.338432, -14.300024, -15.323572, -8.467015, -14.994510, -15.920766]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -56,18 +56,9 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-9.922515, -11.430008, -10.437913, -11.819051, -5.704062]
+    cfd_flamelet_ch4_axi.test_vals = [-11.054149, -12.276393, -11.299388, -13.877670, -6.291548]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
-
-    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
-    cfd_flamelet_ch4_cht = TestCase('cfd_flamelet_ch4_cht')
-    cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
-    cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd__master.cfg"
-    cfd_flamelet_ch4_cht.test_iter = 10
-    cfd_flamelet_ch4_cht.reference_file = "restart_0_ref.dat"
-    cfd_flamelet_ch4_cht.test_file = "restart_0.dat"
-    test_list.append(cfd_flamelet_ch4_cht)
 
     #########################
     ## NEMO solver ###
@@ -1532,6 +1523,23 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
+
+    ######################################
+    ### RUN CHT TEST WITH FILEDIFF     ###
+    ######################################
+
+    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
+    cfd_flamelet_ch4_cht                = TestCase('cfd_flamelet_ch4_cht')
+    cfd_flamelet_ch4_cht.cfg_dir        = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
+    cfd_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_cfd_master.cfg"
+    cfd_flamelet_ch4_cht.test_iter      = 10
+    cfd_flamelet_ch4_cht.command        = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cfd_flamelet_ch4_cht.timeout        = 1600
+    cfd_flamelet_ch4_cht.reference_file = "restart_0.csv.ref"
+    cfd_flamelet_ch4_cht.test_file      = "restart_0.csv"
+    cfd_flamelet_ch4_cht.multizone      = True
+    pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
+    test_list.append(cfd_flamelet_ch4_cht)
 
     ######################################
     ### RUN SU2_SOL TESTS              ###
