@@ -3757,6 +3757,12 @@ public:
    */
   inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config) { }
 
+   /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) const { return TurboPrimitive; }
 
   /*!
    * \brief virtual member.
@@ -4280,13 +4286,6 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
-
-  /*!
-   * \brief Get Primal variables for turbo performance computation
-   *        iteration can be executed by multiple threads.
-   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
-   */
-  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) {return TurboPrimitive;}
 
   /*!
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.

@@ -861,8 +861,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [1.047861, 1.661689, -2.916002, 2.586160, -2.486401, 3.050953, 106380, 106380]
-    axial_stage2D.test_vals_aarch64 = [1.047861, 1.661689, -2.916002, 2.586160, -2.486401, 3.050953, 106380, 106380]
+    axial_stage2D.test_vals         = [1.047883, 1.661703, -2.916020, 2.586144, -2.486401, 3.050955, 106380, 106380]
+    axial_stage2D.test_vals_aarch64 = [1.047883, 1.661703, -2.916020, 2.586144, -2.486401, 3.050955, 106380, 106380]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -870,8 +870,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-7.545560, -6.807355, -6.697808, -1.582515, -6.801911, -0.746306, -471650]
-    transonic_stator_restart.test_vals_aarch64 = [-7.545560, -6.807355, -6.697808, -1.582515, -6.801911, -0.746306, -471650]
+    transonic_stator_restart.test_vals         = [-7.533443, -6.826845, -6.612243, -1.566209, -6.765890, -0.742094, -471650]
+    transonic_stator_restart.test_vals_aarch64 = [-7.533443, -6.826845, -6.612243, -1.566209, -6.765890, -0.742094, -471650]
     test_list.append(transonic_stator_restart)
 
 

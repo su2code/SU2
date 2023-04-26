@@ -48,7 +48,7 @@ inline su2double hypot(const su2double& a, const su2double& b) {
 }
 }
 }
-#include "../../../externals/mel/mel.hpp"
+#include "mel.hpp"
 
 class CGeometry;
 class CSolver;

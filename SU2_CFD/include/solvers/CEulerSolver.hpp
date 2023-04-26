@@ -1055,7 +1055,7 @@ public:
         TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
     }
     return TurboPrimitive;
-  }
+  } 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
