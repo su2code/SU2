@@ -122,10 +122,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
-      // const su2double Crot = 2.0;  // Orig
-      const su2double Crot = 1.0;  // HLPW-5
-      var.Omega += Crot * min(0.0, StrainMag_i - var.Omega);
-      if(ScalarVar_i[0] < 0 ) var.Omega = abs(var.Omega);
+      var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
     }
 
     if (dist_i > 1e-10) {
