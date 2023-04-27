@@ -124,7 +124,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     const su2double vel_v = V_i[1 + idx.Velocity()];
     const su2double vel_w = (nDim == 3) ? V_i[2 + idx.Velocity()] : 0.0;
 
-    const su2double Velocity_Mag = sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w);
+    const su2double Velocity_Mag = max(sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w), 1e-20);
 
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
@@ -235,7 +235,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       const su2double Corr_Ret_lim = 20.0;
       su2double f_lambda = 1.0;
 
-      su2double Retheta_Error = 200.0, Retheta_old = 0.0;
+      su2double Retheta_Error = 200.0, Retheta_old = 1.0;
       su2double lambda = 0.0;
       su2double Corr_Ret = 20.0;
 

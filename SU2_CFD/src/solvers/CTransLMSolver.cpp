@@ -74,7 +74,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   isSepNeeded = true;
   // If the Simplified model is used coupled with SST then we do not need the separation induced intermittency 
   // due to the added production term to k equation
-  if (options.SLM && TurbFamily == TURB_FAMILY::KW) isSepNeeded = false;
+  if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) isSepNeeded = false;
 
 
   /*--- Single grid simulation ---*/
@@ -199,86 +199,6 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 
   if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
-    /*--- Reconstructon of auxiliary variables gradient ---*/
-
-    // Each rank collects all normals
-    
-    // vector<vector<vector<su2double>>> WallNormal;
-    // WallNormal.resize(config->GetnMarker_All());
-    // for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    //   if (config->GetViscous_Wall(iMarker)) {
-    //     WallNormal[iMarker].resize(geometry->GetnElem_Bound(iMarker));
-
-    //     // cout << "geometry->nVertex[iMarker] = " << geometry->nVertex[iMarker] << endl;
-    //     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-    //       vector<su2double> NormalHere(nDim, 0.0);
-
-    //       for (unsigned short iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
-    //         // Extract global coordinate of the node
-    //         unsigned long iPointHere = geometry->bound[iMarker][iElem]->GetNode(iNode);
-    //         long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
-    //         for (auto iDim = 0u; iDim < nDim; iDim++)
-    //           NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
-    //       }
-
-    //       for (auto iDim = 0u; iDim < nDim; iDim++)
-    //         NormalHere[iDim] /= geometry->bound[iMarker][iElem]->GetnNodes();
-
-    //       su2double NormalMag = 0.0;
-    //       for (auto iDim = 0u; iDim < nDim; iDim++)
-    //         NormalMag += NormalHere[iDim]*NormalHere[iDim];
-    //       NormalMag = sqrt(NormalMag);
-
-    //       for (auto iDim = 0u; iDim < nDim; iDim++)
-    //         NormalHere[iDim] /= NormalMag;
-
-    //       WallNormal[iMarker][iElem] = NormalHere;
-    //     }
-    //   } else {
-    //     WallNormal[iMarker].resize(1);
-    //     WallNormal[iMarker][0].resize(3);
-    //     WallNormal[iMarker][0][0] = 0.0;
-    //     WallNormal[iMarker][0][1] = 0.0;
-    //     WallNormal[iMarker][0][2] = 0.0;
-    //   }
-    // }
-
-    // auto normal_i =
-    // make_pair( config->GetnMarker_All(), [config,geometry,WallNormal](unsigned long iMarker){
-    //     auto nElem_Bou = geometry->GetnElem_Bound(iMarker);
-    //     if (!config->GetViscous_Wall(iMarker)) nElem_Bou = 1;
-
-    //     return make_pair(nElem_Bou, [WallNormal,iMarker](unsigned long iElem){
-    //       const auto dimensions = 3;
-
-    //       return make_pair(dimensions, [WallNormal,iMarker,iElem](unsigned short iDim){
-            
-    //         return WallNormal[iMarker][iElem][iDim];
-    //       });
-    //     });
-    //   });
-
-    // NdFlattener<3>Normals_Local(normal_i);
-    // NdFlattener<4> Normals_global(Nd_MPI_Environment(), Normals_Local);
-    // su2double** NormalPerPoint = new su2double* [nPoint];
-
-    // auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-    // SU2_OMP_FOR_STAT(omp_chunk_size)
-    // for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {    
-
-    //   // Extract nearest wall element and wall marker
-    //   int NearestWallRank = geometry->nodes->GetClosestWall_Rank(iPoint);
-    //   unsigned long NearestWallElement = geometry->nodes->GetClosestWall_Elem(iPoint);
-    //   unsigned short NearestWallMarker = geometry->nodes->GetClosestWall_Marker(iPoint);
-      
-    //   NormalPerPoint[iPoint] = new su2double [MAXNDIM];
-    //   for(auto iDim = 0; iDim < nDim; iDim++)
-    //     NormalPerPoint[iPoint][iDim] = Normals_global[NearestWallRank][NearestWallMarker][NearestWallElement][iDim];
-
-    //    nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, NormalPerPoint[iPoint]));
-    //   nodes->SetNormal(iPoint, NormalPerPoint[iPoint][0], NormalPerPoint[iPoint][1]);
-    // }
-    // END_SU2_OMP_FOR
 
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -345,10 +265,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       StrainMag = max(StrainMag, 1e-12); // safety against division by zero
       const su2double Intermittency = nodes->GetSolution(iPoint,0);
       const su2double Re_v = rho*dist*dist*StrainMag/mu;
-      const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
-      const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
-      const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
-      const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+      const su2double VelocityMag = max(sqrt(flowNodes->GetVelocity2(iPoint)), 1e-20);
       su2double omega = 0.0;
       su2double k = 0.0;
       if(TurbFamily == TURB_FAMILY::KW){
@@ -359,7 +276,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       su2double Re_t = 0.0;
       su2double Corr_Rec = 0.0;
 
-      if (options.SLM && TurbFamily == TURB_FAMILY::SA) {
+      if (options.SLM) {
         Re_t = nodes->GetRe_t(iPoint);
         Corr_Rec = nodes->GetCorr_Rec(iPoint);
       } else {

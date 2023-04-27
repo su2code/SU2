@@ -33,7 +33,7 @@
 #endif
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
-//#include <fenv.h>
+#include <fenv.h>
 
 using namespace std;
 
@@ -75,6 +75,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
+  feenableexcept(FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Initialize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM

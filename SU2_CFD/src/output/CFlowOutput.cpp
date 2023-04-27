@@ -1079,17 +1079,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       AddVolumeOutput("F_ONSET", "LM_F_onset", "DEBUG", "LM F_ONSET");
       AddVolumeOutput("STRAINMAG", "StrainMag", "DEBUG", "LM STRAINMAG");
       AddVolumeOutput("LAMBDA_THETA", "Lambda_theta", "DEBUG", "LM Lambda_theta");  
-        AddVolumeOutput("DU_DS", "du_ds", "DEBUG", "LM du_ds");
+      AddVolumeOutput("DU_DS", "du_ds", "DEBUG", "LM du_ds");
       if ((config->GetLMParsedOptions()).SLM) {
         AddVolumeOutput("TU", "Tu", "SOLUTION", "LM Tu");
         AddVolumeOutput("NORMAL_X", "Normal_x", "DEBUG", "LM Normal_x");
         AddVolumeOutput("NORMAL_Y", "Normal_y", "DEBUG", "LM Normal_y");
         AddVolumeOutput("NORMAL_Z", "Normal_z", "DEBUG", "LM Normal_z");
-        if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA) {
+        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
           AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
           AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
         }
       }
+      
       if (!(config->GetLMParsedOptions()).SLM) {
         AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
         AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
@@ -1266,7 +1267,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
         SetVolumeOutputValue("NORMAL_X", iPoint, (Node_Trans->GetNormal(iPoint)).first);
         SetVolumeOutputValue("NORMAL_Y", iPoint, (Node_Trans->GetNormal(iPoint)).second);
         SetVolumeOutputValue("NORMAL_Z", iPoint, 0.0);
-        if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA) {
+        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
           SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
           SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
         }

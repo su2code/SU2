@@ -122,7 +122,10 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
-      var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
+      // const su2double Crot = 2.0;  // Orig
+      const su2double Crot = 1.0;  // HLPW-5
+      var.Omega += Crot * min(0.0, StrainMag_i - var.Omega);
+      if(ScalarVar_i[0] < 0 ) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
@@ -832,7 +835,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
         // Check if the Prod_lim_k has to be introduced based on input options
-        if ((config->GetLMParsedOptions()).SLM) {
+        if ((config->GetLMParsedOptions()).SLM && (config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
           const su2double Re_theta_c_lim = 1100.0;
           const su2double C_k = 1.0;
           const su2double C_SEP = 1.0;
