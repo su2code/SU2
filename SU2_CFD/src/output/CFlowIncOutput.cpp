@@ -211,7 +211,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
 
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
