@@ -308,36 +308,28 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
   if (TimeIter == 0 || dual_time) {
+    auto SetSolutionDirect = [&](CSolver** solvers, int adj, int primal, unsigned long nPoint) {
+      SU2_OMP_FOR_STAT(1024)
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+        solvers[adj]->GetNodes()->SetSolution_Direct(iPoint, solvers[primal]->GetNodes()->GetSolution(iPoint));
+      END_SU2_OMP_FOR
+    };
+
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       auto solvers = solver[iZone][iInst][iMesh];
-      SU2_OMP_FOR_STAT(1024)
-      for (auto iPoint = 0ul; iPoint < geometries[iMesh]->GetnPoint(); iPoint++)
-        solvers[ADJFLOW_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint));
-      END_SU2_OMP_FOR
+      SetSolutionDirect(solvers, ADJFLOW_SOL, FLOW_SOL, geometries[iMesh]->GetnPoint());
     }
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-      SU2_OMP_FOR_STAT(1024)
-      for (auto iPoint = 0ul; iPoint < geometries[MESH_0]->GetnPoint(); iPoint++)
-        solvers0[ADJTURB_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers0[TURB_SOL]->GetNodes()->GetSolution(iPoint));
-      END_SU2_OMP_FOR
+      SetSolutionDirect(solvers0, ADJTURB_SOL, TURB_SOL, geometries[MESH_0]->GetnPoint());
     }
     if (species) {
-      SU2_OMP_FOR_STAT(1024)
-      for (auto iPoint = 0ul; iPoint < geometries[MESH_0]->GetnPoint(); iPoint++)
-        solvers0[ADJSPECIES_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers0[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
-      END_SU2_OMP_FOR
+      SetSolutionDirect(solvers0, ADJSPECIES_SOL, SPECIES_SOL, geometries[MESH_0]->GetnPoint());
     }
     if (heat) {
-      SU2_OMP_FOR_STAT(1024)
-      for (auto iPoint = 0ul; iPoint < geometries[MESH_0]->GetnPoint(); iPoint++)
-        solvers0[ADJHEAT_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers0[HEAT_SOL]->GetNodes()->GetSolution(iPoint));
-      END_SU2_OMP_FOR
+      SetSolutionDirect(solvers0, ADJHEAT_SOL, HEAT_SOL, geometries[MESH_0]->GetnPoint());
     }
     if (config[iZone]->AddRadiation()) {
-      SU2_OMP_FOR_STAT(1024)
-      for (auto iPoint = 0ul; iPoint < geometries[MESH_0]->GetnPoint(); iPoint++)
-        solvers0[ADJRAD_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers0[RAD_SOL]->GetNodes()->GetSolution(iPoint));
-      END_SU2_OMP_FOR
+      SetSolutionDirect(solvers0, ADJRAD_SOL, RAD_SOL, geometries[MESH_0]->GetnPoint());
     }
   }
 
@@ -369,22 +361,23 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
                                                    unsigned short iZone, unsigned short iInst, int DirectIter) {
 
   auto solvers = solver[iZone][iInst];
+  auto geometries = geometry[iZone][iInst];
   const bool species = config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   if (DirectIter >= 0) {
     if (rank == MASTER_NODE)
       cout << " Loading flow solution from direct iteration " << DirectIter << " for zone " << iZone << "." << endl;
 
-    solvers[MESH_0][FLOW_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, true);
+    solvers[MESH_0][FLOW_SOL]->LoadRestart(geometries, solvers, config[iZone], DirectIter, true);
 
     if (turbulent) {
-      solvers[MESH_0][TURB_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, false);
+      solvers[MESH_0][TURB_SOL]->LoadRestart(geometries, solvers, config[iZone], DirectIter, false);
     }
     if (species) {
-      solvers[MESH_0][SPECIES_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, false);
+      solvers[MESH_0][SPECIES_SOL]->LoadRestart(geometries, solvers, config[iZone], DirectIter, false);
     }
     if (config[iZone]->GetWeakly_Coupled_Heat()) {
-      solvers[MESH_0][HEAT_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, false);
+      solvers[MESH_0][HEAT_SOL]->LoadRestart(geometries, solvers, config[iZone], DirectIter, false);
     }
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
@@ -393,19 +386,19 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
 
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
-      solvers[iMesh][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh,
+      solvers[iMesh][FLOW_SOL]->Preprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh,
                                               DirectIter, RUNTIME_FLOW_SYS, false);
       if (turbulent) {
         solvers[iMesh][TURB_SOL]->SetFreeStream_Solution(config[iZone]);
-        solvers[iMesh][TURB_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh);
+        solvers[iMesh][TURB_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);
       }
       if (species) {
         solvers[iMesh][SPECIES_SOL]->SetFreeStream_Solution(config[iZone]);
-        solvers[iMesh][SPECIES_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh);
+        solvers[iMesh][SPECIES_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);
       }
       if (config[iZone]->GetWeakly_Coupled_Heat()) {
         solvers[iMesh][HEAT_SOL]->SetFreeStream_Solution(config[iZone]);
-        solvers[iMesh][HEAT_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh);
+        solvers[iMesh][HEAT_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);
       }
     }
   }
@@ -413,29 +406,31 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
 
 void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                             unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
   if (config[iZone]->GetFluidProblem()) {
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
 
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
   }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+    solvers0[ADJTURB_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    solver[iZone][iInst][MESH_0][ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+    solvers0[ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+    solvers0[ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
   }
   if (config[iZone]->AddRadiation()) {
-    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+    solvers0[ADJRAD_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
 
-    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJRAD_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
   }
 
   }
@@ -444,33 +439,35 @@ void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver*****
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                                unsigned short iZone, unsigned short iInst) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if (config[iZone]->GetFluidProblem()) {
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJFLOW_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJTURB_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    solver[iZone][iInst][MESH_0][ADJSPECIES_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJSPECIES_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJHEAT_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
   if (config[iZone]->AddRadiation()) {
-    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJRAD_SOL]->SetAdjoint_Output(geometry0, config[iZone]);
   }
 
   if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
-    solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[FLOW_SOL]->SetVertexTractionsAdjoint(geometry0, config[iZone]);
   }
 
   }
@@ -479,46 +476,48 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
 
     if (config[iZone]->GetFluidProblem()) {
-      solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJFLOW_SOL]->RegisterSolution(geometry0, config[iZone]);
 
-      solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJFLOW_SOL]->RegisterVariables(geometry0, config[iZone]);
     }
 
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-      solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
     if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-      solver[iZone][iInst][MESH_0][ADJSPECIES_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
     if (config[iZone]->GetWeakly_Coupled_Heat()) {
-      solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJHEAT_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
     if (config[iZone]->AddRadiation()) {
-      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJRAD_SOL]->RegisterSolution(geometry0, config[iZone]);
 
-      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solvers0[ADJRAD_SOL]->RegisterVariables(geometry0, config[iZone]);
     }
   }
 
   if (kind_recording == RECORDING::MESH_COORDS || kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register node coordinates as input ---*/
 
-    geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
+    geometry0->RegisterCoordinates();
   }
 
   if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
-    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJMESH_SOL]->RegisterSolution(geometry0, config[iZone]);
 
     /*--- Boundary displacements ---*/
-    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJMESH_SOL]->RegisterVariables(geometry0, config[iZone]);
   }
   }
   END_SU2_OMP_PARALLEL
@@ -527,6 +526,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
       (kind_recording == RECORDING::CLEAR_INDICES) ||
@@ -538,71 +539,68 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     CGeometry::ComputeWallDistance(config, geometry);
   }
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Compute coupling between flow, turbulent and species equations ---*/
-  solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
-                                                        config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-  solver[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+  solvers0[FLOW_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+  solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
+  solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
 
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
+    solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);
-    solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
+    solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    solver[iZone][iInst][MESH_0][SPECIES_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
-                                                             config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    solver[iZone][iInst][MESH_0][SPECIES_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    solver[iZone][iInst][MESH_0][SPECIES_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    solvers0[SPECIES_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
+    solvers0[SPECIES_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
   }
 
   }
   END_SU2_OMP_PARALLEL
 
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->Set_Heatflux_Areas(geometry[iZone][iInst][MESH_0], config[iZone]);
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
-                                                          config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
-                                                           config[iZone], MESH_0);
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solvers0[HEAT_SOL]->Set_Heatflux_Areas(geometry0, config[iZone]);
+    solvers0[HEAT_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
+    solvers0[HEAT_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
+    solvers0[HEAT_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
+    solvers0[HEAT_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
   }
   if (config[iZone]->AddRadiation()) {
-    solver[iZone][iInst][MESH_0][RAD_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
-                                                          config[iZone], MESH_0);
-    solver[iZone][iInst][MESH_0][RAD_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    solver[iZone][iInst][MESH_0][RAD_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solvers0[RAD_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
+    solvers0[RAD_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
+    solvers0[RAD_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
   }
 }
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                             unsigned short iZone, unsigned short iInst) {
+  auto solvers0 = solver[iZone][iInst][MESH_0];
+  auto geometry0 = geometry[iZone][iInst][MESH_0];
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Register conservative variables as output of the iteration ---*/
 
   if (config[iZone]->GetFluidProblem()) {
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJFLOW_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJTURB_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    solver[iZone][iInst][MESH_0][ADJSPECIES_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJSPECIES_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJHEAT_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
   if (config[iZone]->AddRadiation()) {
-    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[ADJRAD_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
   if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
-    solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solvers0[FLOW_SOL]->RegisterVertexTractions(geometry0, config[iZone]);
   }
 
   }

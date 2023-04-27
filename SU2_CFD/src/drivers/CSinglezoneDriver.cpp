@@ -110,8 +110,10 @@ void CSinglezoneDriver::StartSolver() {
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
-  /*--- Set the current time iteration in the config ---*/
+  /*--- Set the current time iteration in the config and also in the driver
+   * because the python interface doesn't offer an explicit way of doing it. ---*/
 
+  this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- Store the current physical time in the config container, as

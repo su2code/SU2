@@ -474,6 +474,25 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read/write view of the solution at time N-1 on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView SolutionTimeN1(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), "SolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the solution at time N-1 on the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN1(unsigned short iSolver, unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get the flow solver primitive variable names with their associated indices.
    * These correspond to the column indices in the matrix returned by Primitives.
    */
