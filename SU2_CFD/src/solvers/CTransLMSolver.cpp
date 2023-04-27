@@ -205,7 +205,7 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {    
       auto Normal = geometry->nodes->GetNormal(iPoint);
       nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
-      nodes->SetNormal(iPoint, Normal[0], Normal[1]);
+      nodes->SetNormal(iPoint, Normal[0], Normal[1], Normal[2]);
     }
     END_SU2_OMP_FOR
 

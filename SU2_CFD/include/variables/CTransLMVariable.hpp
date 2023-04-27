@@ -55,6 +55,7 @@ protected:
 
   VectorType normal_x;
   VectorType normal_y;
+  VectorType normal_z;
 
 public:
   /*!
@@ -104,7 +105,7 @@ public:
   void SetF_onset2(unsigned long iPoint, su2double val_F_onset2) override;
   void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) override;
   void SetF_onset(unsigned long iPoint, su2double val_F_onset) override;
-  void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y) override;
+  void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) override;
 
   /*!
    * \brief Calculate effective intermittency.
@@ -135,5 +136,7 @@ public:
   inline su2double GetF_onset2(unsigned long iPoint) const override { return F_onset2(iPoint); }
   inline su2double GetF_onset3(unsigned long iPoint) const override { return F_onset3(iPoint); }
   inline su2double GetF_onset(unsigned long iPoint) const override { return F_onset(iPoint); }
-  inline pair<su2double, su2double> GetNormal(unsigned long iPoint) const override {return make_pair(normal_x(iPoint), normal_y(iPoint));};
+  inline su2double GetNormal_x(unsigned long iPoint) const override {return normal_x(iPoint);};
+  inline su2double GetNormal_y(unsigned long iPoint) const override {return normal_y(iPoint);};
+  inline su2double GetNormal_z(unsigned long iPoint) const override {return normal_z(iPoint);};
 };

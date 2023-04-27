@@ -1264,9 +1264,9 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       } else {
         SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetRe_t(iPoint));
         SetVolumeOutputValue("TU", iPoint, Node_Trans->GetTu(iPoint));
-        SetVolumeOutputValue("NORMAL_X", iPoint, (Node_Trans->GetNormal(iPoint)).first);
-        SetVolumeOutputValue("NORMAL_Y", iPoint, (Node_Trans->GetNormal(iPoint)).second);
-        SetVolumeOutputValue("NORMAL_Z", iPoint, 0.0);
+        SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetNormal_x(iPoint));
+        SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetNormal_y(iPoint));
+        SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetNormal_z(iPoint));
         if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
           SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
           SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));

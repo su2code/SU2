@@ -1727,7 +1727,7 @@ public:
   inline virtual void SetF_onset2(unsigned long iPoint, su2double val_F_onset2) {};
   inline virtual void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) {};
   inline virtual void SetF_onset(unsigned long iPoint, su2double val_F_onset1) {};
-  inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y) {};
+  inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {};
 
   /*!
    * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
@@ -1743,7 +1743,9 @@ public:
   inline virtual su2double GetF_onset2(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetF_onset3(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetF_onset(unsigned long iPoint) const { return 0.0; }
-  inline virtual pair<su2double, su2double> GetNormal(unsigned long iPoint) const { return make_pair(0.0, 0.0); }
+  inline virtual su2double GetNormal_x(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_y(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_z(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).

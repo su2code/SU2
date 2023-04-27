@@ -62,6 +62,7 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
 
     normal_x.resize(nPoint) = 0.0;
     normal_y.resize(nPoint) = 0.0;
+    normal_z.resize(nPoint) = 0.0;
   }
 
 
@@ -127,7 +128,8 @@ void CTransLMVariable::SetF_onset3(unsigned long iPoint, su2double val_F_onset3)
 void CTransLMVariable::SetF_onset(unsigned long iPoint, su2double val_F_onset) {
   F_onset(iPoint) = val_F_onset;
 }
-void CTransLMVariable::SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y) {
+void CTransLMVariable::SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {
   normal_x(iPoint) = val_normal_x;
   normal_y(iPoint) = val_normal_y;
+  normal_z(iPoint) = val_normal_z;
 }
