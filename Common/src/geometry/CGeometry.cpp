@@ -4128,7 +4128,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
               unsigned long iPointHere = geometry->bound[iMarker][iElem]->GetNode(iNode);
               long iVertexHere = geometry->nodes->GetVertex(iPointHere, iMarker);
               for (auto iDim = 0u; iDim < 3; iDim++)
-                NormalHere[iDim] += geometry->vertex[iMarker][iElem]->GetNormal(iDim);
+                NormalHere[iDim] += geometry->vertex[iMarker][iVertexHere]->GetNormal(iDim);
             }
 
             for (auto iDim = 0u; iDim < 3; iDim++)
