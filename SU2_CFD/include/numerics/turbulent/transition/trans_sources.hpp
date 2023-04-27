@@ -552,9 +552,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         const su2double k = 0.25 - lambda_theta;
         const su2double FirstTerm = 4.14 * k;
         const su2double SecondTerm = 83.5 * pow(k, 2.0);
-        const su2double ThirdTerm = 854 * pow(k, 3.0);
-        const su2double ForthTerm = 3337 * pow(k, 4.0);
-        const su2double FifthTerm = 4576 * pow(k, 5.0);
+        const su2double ThirdTerm = 854.0 * pow(k, 3.0);
+        const su2double ForthTerm = 3337.0 * pow(k, 4.0);
+        const su2double FifthTerm = 4576.0 * pow(k, 5.0);
         const su2double H = min(2.0 + FirstTerm - SecondTerm + ThirdTerm - ForthTerm + FifthTerm, 2.7);
 
         // Computation of critical cross flow Reynolds number
