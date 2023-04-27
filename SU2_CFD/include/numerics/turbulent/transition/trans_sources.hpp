@@ -397,7 +397,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
   su2double IntermittencyEff = 1.0;
 
   su2double Re_t;
-  su2double Corr_Rec;
+  su2double Corr_Rec = 1.0;
   su2double AuxVar;
   su2double F2;
   su2double Tu_Here = 0.0;

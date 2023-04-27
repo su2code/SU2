@@ -66,7 +66,7 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
 
 
   Re_v.resize(nPoint) = 0.0;
-  Corr_Rec.resize(nPoint) = 0.0;
+  Corr_Rec.resize(nPoint) = 1.0;
   Prod.resize(nPoint) = 0.0;
   Destr.resize(nPoint) = 0.0;
   F_onset1.resize(nPoint) = 0.0;
