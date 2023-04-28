@@ -1289,6 +1289,15 @@ def main():
     pywrapper_aeroelastic.unsteady  = True
     test_list.append(pywrapper_aeroelastic)
 
+    # Custom FEA load
+    pywrapper_custom_fea_load = TestCase('pywrapper_custom_fea_load')
+    pywrapper_custom_fea_load.cfg_dir = "py_wrapper/custom_load_fea"
+    pywrapper_custom_fea_load.cfg_file = "config.cfg"
+    pywrapper_custom_fea_load.test_iter = 13
+    pywrapper_custom_fea_load.test_vals = [-7.263559, -4.946814, -14.165142, 34, -6.380144, 320.58]
+    pywrapper_custom_fea_load.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_custom_fea_load)
+
     # FSI, 2d
     pywrapper_fsi2d           = TestCase('pywrapper_fsi2d')
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
