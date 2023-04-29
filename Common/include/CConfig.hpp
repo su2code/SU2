@@ -3785,7 +3785,7 @@ public:
    * \brief Get name of the input file for the data-driven fluid model interpolation method.
    * \return Name of the input file for the interpolation method.
    */
-  string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
+  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
 
   /*!
    * \brief Get number of listed look-up table or multi-layer perceptron input files.
