@@ -172,6 +172,8 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
       SetHistoryOutputValue("BGS_ADJ_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_BGS(2)));
     }
   }
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){

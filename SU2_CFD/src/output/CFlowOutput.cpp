@@ -745,7 +745,7 @@ void CFlowOutput::SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, 
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
-void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx,
+void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, const bool allowSkip,
                                                   CustomOutput& output) const {
   const auto nameToIndex = PrimitiveNameToIndexMap(idx);
 
@@ -796,23 +796,38 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
     output.varIndices.back() += output.otherOutputs.size();
     output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
     if (output.otherOutputs.back() == nullptr) {
-      SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
-                     "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+      if (!allowSkip) {
+        SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                      "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+      } else {
+        if (rank == MASTER_NODE) {
+          std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
+                        "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+        }
+        output.skip = true;
+        break;
+      }
     }
   }
 }
 
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
+  const bool adjoint = config->GetDiscrete_Adjoint();
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   for (auto& output : customOutputs) {
+    if (output.skip) continue;
+
     if (output.varIndices.empty()) {
+      const bool allowSkip = adjoint && (output.type == OperationType::FUNCTION);
+
       /*--- Setup indices for the symbols in the expression. ---*/
       const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
           config->GetNEMOProblem(), nDim, config->GetnSpecies());
-      ConvertVariableSymbolsToIndices(primIdx, output);
+      ConvertVariableSymbolsToIndices(primIdx, allowSkip, output);
+      if (output.skip) continue;
 
       /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
