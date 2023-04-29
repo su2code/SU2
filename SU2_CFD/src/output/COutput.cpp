@@ -2310,7 +2310,7 @@ void COutput::ComputeSimpleCustomOutputs(const CConfig *config) {
           } else {
             if (rank == MASTER_NODE) {
               std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
-                          "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+                           "solver.\n      If the function is ignored twice it is invalid." << std::endl;
             }
             output.skip = true;
             break;

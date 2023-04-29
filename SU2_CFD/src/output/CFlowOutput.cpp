@@ -798,11 +798,11 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
     if (output.otherOutputs.back() == nullptr) {
       if (!allowSkip) {
         SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
-                      "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+                       "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
       } else {
         if (rank == MASTER_NODE) {
           std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
-                        "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+                       "solver.\n      If the function is ignored twice it is invalid." << std::endl;
         }
         output.skip = true;
         break;
