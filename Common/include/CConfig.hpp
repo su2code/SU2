@@ -8658,7 +8658,6 @@ public:
   unsigned short GetKind_Average(void) const { return Kind_Average; }
 
   /*!
-   *
    * \brief Get the direct differentation method.
    * \return direct differentiation method.
    */

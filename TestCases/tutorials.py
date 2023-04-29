@@ -92,7 +92,6 @@ def main():
     species3_primitiveVenturi.test_vals = [-6.074971, -5.306648, -5.150960, -5.959416, -1.625107, -6.343704, -6.460033, 5.000000, -0.808413, 5.000000, -2.325029, 5.000000, -0.274923, 1.646091, 0.499028, 0.601019, 0.546044]
     test_list.append(species3_primitiveVenturi)
 
-
     # 3 species (2 eq) primitive venturi mixing
     DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
