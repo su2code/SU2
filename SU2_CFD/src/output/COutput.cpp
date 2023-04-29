@@ -2291,7 +2291,10 @@ void COutput::ComputeSimpleCustomOutputs(const CConfig *config) {
   const bool adjoint = config->GetDiscrete_Adjoint();
 
   for (auto& output : customOutputs) {
-    if (output.type != OperationType::FUNCTION) continue;
+    if (output.type != OperationType::FUNCTION) {
+      if (adjoint) continue;
+      SU2_MPI::Error("The current solver can only use 'Function' custom outputs.", CURRENT_FUNCTION);
+    }
 
     if (output.varIndices.empty()) {
       output.varIndices.reserve(output.varSymbols.size());
