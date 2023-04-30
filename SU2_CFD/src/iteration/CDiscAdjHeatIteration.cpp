@@ -43,7 +43,8 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
-    const int Direct_Iter = static_cast<int>(config[val_iZone]->GetUnst_AdjointIter()) - static_cast<int>(TimeIter) - 2 + dual_time;
+    const int Direct_Iter = static_cast<int>(config[val_iZone]->GetUnst_AdjointIter()) -
+                            static_cast<int>(TimeIter) - 2 + dual_time;
 
     /*--- For dual-time stepping we want to load the already converged solution at previous timesteps.
      * In general we only load one file and shift the previously loaded solutions, on the first we
@@ -56,7 +57,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
     }
 
     if (TimeIter == 0) {
-      /*--- Push solution back one or two levels, ---*/
+      /*--- Push solution back one or two levels. ---*/
       if (dual_time) {
         for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
           solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
@@ -89,22 +90,17 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
         }
       }
 
-      /*--- If required also move timestep n-1 to timestep n. ---*/
-      if (dual_time_2nd) {
-        for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
-            solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n(
-                iPoint, solvers[iMesh][HEAT_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
-          }
-        }
-      }
-
       /*--- Finally, place the loaded solution in the correct place (n or n-1 depending on order). ---*/
       for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        auto* heatSol = solvers[iMesh][HEAT_SOL];
         for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
-          const auto sol = solvers[iMesh][HEAT_SOL]->GetNodes()->GetSolution_Old(iPoint);
-          if (dual_time_2nd) solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, sol);
-          else solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n(iPoint, sol);
+          if (dual_time_2nd) {
+            /*--- If required also move timestep n-1 to timestep n. ---*/
+            heatSol->GetNodes()->Set_Solution_time_n(iPoint, heatSol->GetNodes()->GetSolution_time_n1(iPoint));
+            heatSol->GetNodes()->Set_Solution_time_n1(iPoint, heatSol->GetNodes()->GetSolution_Old(iPoint));
+          } else {
+            heatSol->GetNodes()->Set_Solution_time_n(iPoint, heatSol->GetNodes()->GetSolution_Old(iPoint));
+          }
         }
       }
     }
