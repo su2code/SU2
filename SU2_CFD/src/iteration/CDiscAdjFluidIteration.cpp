@@ -48,22 +48,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
   unsigned long nSolvers = 1;
   std::array<int, 5> solversToProcess{{FLOW_SOL}};
-  if (turbulent) {
-    solversToProcess[nSolvers] = TURB_SOL;
-    ++nSolvers;
-  }
-  if (species) {
-    solversToProcess[nSolvers] = SPECIES_SOL;
-    ++nSolvers;
-  }
-  if (heat) {
-    solversToProcess[nSolvers] = HEAT_SOL;
-    ++nSolvers;
-  }
-  if (radiation) {
-    solversToProcess[nSolvers] = RAD_SOL;
-    ++nSolvers;
-  }
+  if (turbulent) solversToProcess[nSolvers++] = TURB_SOL;
+  if (species) solversToProcess[nSolvers++] = SPECIES_SOL;
+  if (heat) solversToProcess[nSolvers++] = HEAT_SOL;
+  if (radiation) solversToProcess[nSolvers++] = RAD_SOL;
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
