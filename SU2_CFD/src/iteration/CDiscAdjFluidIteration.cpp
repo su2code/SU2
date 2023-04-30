@@ -70,41 +70,39 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
     }
 
     if (TimeIter == 0) {
-      /*--- Push solution back one or two levels. ---*/
+      /*--- Push solution back one level. ---*/
 
       if (dual_time) {
         for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
           for (auto iSol = 0ul; iSol < nSolvers; ++iSol) {
             solver[iZone][iInst][iMesh][solversToProcess[iSol]]->GetNodes()->Set_Solution_time_n();
-            if (dual_time_2nd)
-              solver[iZone][iInst][iMesh][solversToProcess[iSol]]->GetNodes()->Set_Solution_time_n1();
           }
           if (grid_IsMoving) {
             geometries[iMesh]->nodes->SetCoord_n();
-            if (dual_time_2nd)
-              geometries[iMesh]->nodes->SetCoord_n1();
           }
           if (config[iZone]->GetDynamic_Grid()) {
             geometries[iMesh]->nodes->SetVolume_n();
-            if (dual_time_2nd)
-              geometries[iMesh]->nodes->SetVolume_nM1();
           }
         }
       }
 
-      /*--- If required load another time step. ---*/
+      /*--- If required load another time step. Push the previous time step to n-1 and the
+       loaded time step to n. ---*/
 
       if (dual_time_2nd) {
         LoadUnsteady_Solution(geometry, solver, config, iZone, iInst, Direct_Iter - 1);
 
         for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
           for (auto iSol = 0ul; iSol < nSolvers; ++iSol) {
+            solver[iZone][iInst][iMesh][solversToProcess[iSol]]->GetNodes()->Set_Solution_time_n1();
             solver[iZone][iInst][iMesh][solversToProcess[iSol]]->GetNodes()->Set_Solution_time_n();
           }
           if (grid_IsMoving) {
+            geometries[iMesh]->nodes->SetCoord_n1();
             geometries[iMesh]->nodes->SetCoord_n();
           }
           if (config[iZone]->GetDynamic_Grid()) {
+            geometries[iMesh]->nodes->SetVolume_nM1();
             geometries[iMesh]->nodes->SetVolume_n();
           }
         }

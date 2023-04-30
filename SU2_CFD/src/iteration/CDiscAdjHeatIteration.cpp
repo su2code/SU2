@@ -57,19 +57,20 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
     }
 
     if (TimeIter == 0) {
-      /*--- Push solution back one or two levels. ---*/
+      /*--- Push solution back one level. ---*/
       if (dual_time) {
         for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
           solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
-          if (dual_time_2nd) solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1();
         }
       }
 
-      /*--- If required load another time step. ---*/
+      /*--- If required load another time step. Push the previous time step to n-1 and the
+       loaded time step to n. ---*/
       if (dual_time_2nd) {
         LoadUnsteady_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter - 1);
 
         for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+          solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1();
           solvers[iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
         }
       }
