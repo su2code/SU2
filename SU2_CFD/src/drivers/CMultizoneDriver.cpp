@@ -248,7 +248,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   }
 
   /*--- Ramp turbo values for unsteady problems here, otherwise do it over outer iterations. ---*/
-  if (config_container[selected_iZone]->GetTime_Domain()) {
+  if (config_container[ZONE_0]->GetTime_Domain()) {
     RampTurbomachineryValues(TimeIter);
   }
 
@@ -294,7 +294,7 @@ void CMultizoneDriver::RunGaussSeidel() {
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++) {
 
     /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
-    if (!config_container[selected_iZone]->GetTime_Domain()) {
+    if (!config_container[ZONE_0]->GetTime_Domain()) {
       RampTurbomachineryValues(iOuter_Iter);
     }
 
@@ -352,7 +352,7 @@ void CMultizoneDriver::RunJacobi() {
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
     /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
-    if (!config_container[selected_iZone]->GetTime_Domain()) {
+    if (!config_container[ZONE_0]->GetTime_Domain()) {
       RampTurbomachineryValues(iOuter_Iter);
     }
 
@@ -407,7 +407,7 @@ void CMultizoneDriver::RunJacobi() {
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
   if (config_container[val_iZone]->GetRelaxation())
-    iteration_container[val_iZone][INST_0]->Relaxation(output_container[selected_iZone], integration_container,
+    iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container,
                                             geometry_container, solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 }
@@ -493,7 +493,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
-    BandwidthSum = config_container[selected_iZone]->GetRestart_Bandwidth_Agg();
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
 
     StartTime = SU2_MPI::Wtime();
 
@@ -632,8 +632,8 @@ void CMultizoneDriver::SetMixingPlane(unsigned short donorZone) {
 
 void CMultizoneDriver::SetTurboPerformance() {
   for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
-    interface_container[donorZone][selected_iZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
-                                                                solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL],
+    interface_container[donorZone][ZONE_0]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                                solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
                                                                 donorZone);
   }
 }
@@ -688,5 +688,5 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-  return output_container[selected_iZone]->GetCauchyCorrectedTimeConvergence(config_container[selected_iZone]);
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

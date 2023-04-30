@@ -120,8 +120,8 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
 
   /*--- Retrieve dimension from mesh file ---*/
 
-  nDim = CConfig::GetnDim(config_container[selected_iZone]->GetMesh_FileName(),
-                          config_container[selected_iZone]->GetMesh_FileFormat());
+  nDim = CConfig::GetnDim(config_container[ZONE_0]->GetMesh_FileName(),
+                          config_container[ZONE_0]->GetMesh_FileFormat());
 
   /*--- Output preprocessing ---*/
 
@@ -243,7 +243,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
     }
   }
 
-  if (config_container[selected_iZone]->GetBoolTurbomachinery()){
+  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
@@ -342,7 +342,7 @@ void CDriver::InitializeContainers(){
 
 void CDriver::Finalize() {
 
-  const bool wrt_perf = config_container[selected_iZone]->GetWrt_Performance();
+  const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
     /*--- Output some information to the console. ---*/
 
@@ -350,10 +350,10 @@ void CDriver::Finalize() {
 
     /*--- Print out the number of non-physical points and reconstructions ---*/
 
-    if (config_container[selected_iZone]->GetNonphysical_Points() > 0)
-      cout << "Warning: there are " << config_container[selected_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-    if (config_container[selected_iZone]->GetNonphysical_Reconstr() > 0)
-      cout << "Warning: " << config_container[selected_iZone]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+      cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+      cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
   }
 
   if (rank == MASTER_NODE)
@@ -456,8 +456,8 @@ void CDriver::Finalize() {
   // Note that for now this is called only by a single thread, but all
   // necessary variables have been made thread private for safety (tick/tock)!!
 
-  config_container[selected_iZone]->SetProfilingCSV();
-  config_container[selected_iZone]->GEMMProfilingCSV();
+  config_container[ZONE_0]->SetProfilingCSV();
+  config_container[ZONE_0]->GEMMProfilingCSV();
 
   /*--- Deallocate config container ---*/
   if (config_container!= nullptr) {
@@ -585,14 +585,14 @@ void CDriver::PreprocessInput(CConfig **&config, CConfig *&driver_config) {
 
   /*--- Keep a reference to the main (ZONE 0) config. ---*/
 
-  main_config = config_container[selected_iZone];
+  main_config = config_container[ZONE_0];
 
   /*--- Determine whether or not the FEM solver is used, which decides the type of
    *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
 
-  fem_solver = config_container[selected_iZone]->GetFEMSolver();
+  fem_solver = config_container[ZONE_0]->GetFEMSolver();
 
-  fsi = config_container[selected_iZone]->GetFSI_Simulation();
+  fsi = config_container[ZONE_0]->GetFSI_Simulation();
 }
 
 void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool dummy){
@@ -693,7 +693,7 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
 
   /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry. ---*/
 
-  main_geometry = geometry_container[selected_iZone][INST_0][MESH_0];
+  main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
 void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
@@ -2470,7 +2470,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           interface_type = FLOW_TRACTION;
           auto nConst = 2;
           bool conservative = config[target]->GetConservativeInterpolation();
-          if(!config[selected_iZone]->GetDiscrete_Adjoint()) {
+          if(!config[ZONE_0]->GetDiscrete_Adjoint()) {
             interface[donor][target] = new CFlowTractionInterface(nDim, nConst, config[donor], conservative);
           } else {
             interface[donor][target] = new CDiscAdjFlowTractionInterface(nDim, nConst, config[donor], conservative);
@@ -2570,7 +2570,7 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
         /*--- Set the grid velocities on all multigrid levels for a steadily
            rotating reference frame. ---*/
 
-        for (iMGlevel = 0; iMGlevel <= config_container[selected_iZone]->GetnMGLevels(); iMGlevel++){
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
           geometry[iMGlevel]->SetRotationalVelocity(config, true);
           geometry[iMGlevel]->SetShroudVelocity(config);
         }
@@ -2588,7 +2588,7 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
         /*--- Set the translational velocity on all grid levels. ---*/
 
-        for (iMGlevel = 0; iMGlevel <= config_container[selected_iZone]->GetnMGLevels(); iMGlevel++)
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
           geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
 
         break;
@@ -2667,8 +2667,8 @@ void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput
   }
 
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
-  if (config_container[selected_iZone]->GetTime_Domain() && config_container[selected_iZone]->GetRestart())
-    TimeIter = config_container[selected_iZone]->GetRestart_Iter();
+  if (config_container[ZONE_0]->GetTime_Domain() && config_container[ZONE_0]->GetRestart())
+    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
 }
 
@@ -2678,9 +2678,9 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
-  bool restart   = (config[selected_iZone]->GetRestart() || config[selected_iZone]->GetRestart_Flow());
-  mixingplane = config[selected_iZone]->GetBoolMixingPlaneInterface();
-  bool discrete_adjoint = config[selected_iZone]->GetDiscrete_Adjoint();
+  bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
+  mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
+  bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
   /*--- Create turbovertex structure ---*/
@@ -2694,7 +2694,7 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
         nSpanMax = config[iZone]->GetnSpanWiseSections();
       }
 
-      config[selected_iZone]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
+      config[ZONE_0]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
 
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
@@ -2737,13 +2737,13 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
   if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
   for (iZone = 1; iZone < nZone; iZone++) {
-    interface[iZone][selected_iZone]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[selected_iZone][INST_0][MESH_0], iZone);
+    interface[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[ZONE_0][INST_0][MESH_0], iZone);
   }
 
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
   for (iZone = 1; iZone < nZone; iZone++) {
     nBlades = config[iZone]->GetnBlades(iZone);
-    config[selected_iZone]->SetnBlades(iZone, nBlades);
+    config[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
   if (rank == MASTER_NODE){
@@ -2809,7 +2809,7 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
   if (rank != MASTER_NODE || kind_recording != RECORDING::SOLUTION_VARIABLES) return;
 
-  const bool multizone = config_container[selected_iZone]->GetMultizone_Problem();
+  const bool multizone = config_container[ZONE_0]->GetMultizone_Problem();
 
   /*--- Helper lambda func to return lenghty [iVar][iZone] string.  ---*/
   auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
@@ -2822,7 +2822,7 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
   const unsigned short fieldWidth = 15;
   PrintingToolbox::CTablePrinter RMSTable(&std::cout);
-  RMSTable.SetPrecision(config_container[selected_iZone]->GetOutput_Precision());
+  RMSTable.SetPrecision(config_container[ZONE_0]->GetOutput_Precision());
 
   /*--- The CTablePrinter requires two sweeps:
     *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
@@ -2920,7 +2920,7 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 }
 
 void CDriver::RampTurbomachineryValues(unsigned long iter) {
-  auto* config = config_container[selected_iZone];
+  auto* config = config_container[ZONE_0];
 
   /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
   if (config->GetGrid_Movement() && config->GetRampRotatingFrame()) {
@@ -2952,8 +2952,8 @@ void CDriver::RampTurbomachineryValues(unsigned long iter) {
       }
 
       for (auto iZone = 1u; iZone < nZone; iZone++) {
-        interface_container[iZone][selected_iZone]->GatherAverageTurboGeoValues(
-            geometry_container[iZone][INST_0][MESH_0], geometry_container[selected_iZone][INST_0][MESH_0], iZone);
+        interface_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(
+            geometry_container[iZone][INST_0][MESH_0], geometry_container[ZONE_0][INST_0][MESH_0], iZone);
       }
     }
   }
@@ -2996,7 +2996,7 @@ void CDriver::RampTurbomachineryValues(unsigned long iter) {
 }
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
-  Max_Iter = config_container[selected_iZone]->GetnInner_Iter();
+  Max_Iter = config_container[ZONE_0]->GetnInner_Iter();
 }
 
 CFluidDriver::~CFluidDriver() = default;
@@ -3024,7 +3024,7 @@ void CFluidDriver::StartSolver(){
     /*--- For the Disc.Adj. of a case with (rigidly) moving grid, the appropriate
           mesh cordinates are read from the restart files. ---*/
     if (!fem_solver &&
-        !(config_container[selected_iZone]->GetGrid_Movement() && config_container[selected_iZone]->GetDiscrete_Adjoint())) {
+        !(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint())) {
       DynamicMeshUpdate(Iter);
     }
 
@@ -3037,7 +3037,7 @@ void CFluidDriver::StartSolver(){
     Update();
 
     /*--- Terminate the simulation if only the Jacobian must be computed. ---*/
-    if (config_container[selected_iZone]->GetJacobian_Spatial_Discretization_Only()) break;
+    if (config_container[ZONE_0]->GetJacobian_Spatial_Discretization_Only()) break;
 
     /*--- Monitor the computations after each iteration. ---*/
 
@@ -3231,7 +3231,7 @@ CHBDriver::CHBDriver(char* confFile,
         MPICommunicator) {
   unsigned short kInst;
 
-  nInstHB = nInst[selected_iZone];
+  nInstHB = nInst[ZONE_0];
 
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB];
@@ -3254,17 +3254,17 @@ void CHBDriver::Run() {
    all zones before beginning the iteration. ---*/
 
   for (iInst = 0; iInst < nInstHB; iInst++)
-    iteration_container[selected_iZone][iInst]->Preprocess(output_container[selected_iZone], integration_container, geometry_container,
+    iteration_container[ZONE_0][iInst]->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
   for (iInst = 0; iInst < nInstHB; iInst++)
-    iteration_container[selected_iZone][iInst]->Iterate(output_container[selected_iZone], integration_container, geometry_container,
+    iteration_container[ZONE_0][iInst]->Iterate(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
   for (iInst = 0; iInst < nInstHB; iInst++)
-    iteration_container[selected_iZone][iInst]->Monitor(output_container[selected_iZone], integration_container, geometry_container,
+    iteration_container[ZONE_0][iInst]->Monitor(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
@@ -3279,7 +3279,7 @@ void CHBDriver::Update() {
   }
 
   /*--- Precondition the harmonic balance source terms ---*/
-  if (config_container[selected_iZone]->GetHB_Precondition() == YES) {
+  if (config_container[ZONE_0]->GetHB_Precondition() == YES) {
     StabilizeHarmonicBalance();
 
   }
@@ -3287,7 +3287,7 @@ void CHBDriver::Update() {
   for (iInst = 0; iInst < nInstHB; iInst++) {
 
     /*--- Update the harmonic balance terms across all zones ---*/
-    iteration_container[selected_iZone][iInst]->Update(output_container[selected_iZone], integration_container, geometry_container,
+    iteration_container[ZONE_0][iInst]->Update(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
@@ -3298,15 +3298,15 @@ void CHBDriver::Update() {
 void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 
   unsigned short iVar, jInst, iMGlevel;
-  unsigned short nVar = solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned short nVar = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
   unsigned long iPoint;
-  bool implicit = (config_container[selected_iZone]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool adjoint = (config_container[selected_iZone]->GetContinuous_Adjoint());
+  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
   if (adjoint) {
-    implicit = (config_container[selected_iZone]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   }
 
-  unsigned long InnerIter = config_container[selected_iZone]->GetInnerIter();
+  unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
   /*--- Retrieve values from the config file ---*/
   auto *U = new su2double[nVar];
@@ -3317,20 +3317,20 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   su2double deltaU, deltaPsi;
 
   /*--- Compute period of oscillation ---*/
-  su2double period = config_container[selected_iZone]->GetHarmonicBalance_Period();
+  su2double period = config_container[ZONE_0]->GetHarmonicBalance_Period();
 
   /*--- Non-dimensionalize the input period, if necessary.  */
-  period /= config_container[selected_iZone]->GetTime_Ref();
+  period /= config_container[ZONE_0]->GetTime_Ref();
 
   if (InnerIter == 0)
     ComputeHBOperator();
 
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[selected_iZone]->GetnMGLevels(); iMGlevel++) {
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
 
     /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[selected_iZone][iInst][iMGlevel]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iInst][iMGlevel]->GetnPoint(); iPoint++) {
 
       for (iVar = 0; iVar < nVar; iVar++) {
         Source[iVar] = 0.0;
@@ -3343,11 +3343,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
         for (iVar = 0; iVar < nVar; iVar++) {
 
           if (!adjoint) {
-            U[iVar] = solver_container[selected_iZone][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+            U[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
             Source[iVar] += U[iVar]*D[iInst][jInst];
 
             if (implicit) {
-              U_old[iVar] = solver_container[selected_iZone][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
+              U_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
               deltaU = U[iVar] - U_old[iVar];
               Source[iVar] += deltaU*D[iInst][jInst];
             }
@@ -3355,11 +3355,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
           }
 
           else {
-            Psi[iVar] = solver_container[selected_iZone][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+            Psi[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
             Source[iVar] += Psi[iVar]*D[jInst][iInst];
 
             if (implicit) {
-              Psi_old[iVar] = solver_container[selected_iZone][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
+              Psi_old[iVar] = solver_container[ZONE_0][jInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
               Source[iVar] += deltaPsi*D[jInst][iInst];
             }
@@ -3369,10 +3369,10 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
         /*--- Store sources for current row ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
           if (!adjoint) {
-            solver_container[selected_iZone][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
+            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
           }
           else {
-            solver_container[selected_iZone][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
+            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iVar]);
           }
         }
 
@@ -3381,29 +3381,29 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   }
 
   /*--- Source term for a turbulence model ---*/
-  if (config_container[selected_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) {
+  if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) {
 
     /*--- Extra variables needed if we have a turbulence model. ---*/
-    unsigned short nVar_Turb = solver_container[selected_iZone][INST_0][MESH_0][TURB_SOL]->GetnVar();
+    unsigned short nVar_Turb = solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->GetnVar();
     auto *U_Turb = new su2double[nVar_Turb];
     auto *Source_Turb = new su2double[nVar_Turb];
 
     /*--- Loop over only the finest mesh level (turbulence is always solved
      on the original grid only). ---*/
-    for (iPoint = 0; iPoint < geometry_container[selected_iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
       for (jInst = 0; jInst < nInstHB; jInst++) {
 
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
-          U_Turb[iVar] = solver_container[selected_iZone][jInst][MESH_0][TURB_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+          U_Turb[iVar] = solver_container[ZONE_0][jInst][MESH_0][TURB_SOL]->GetNodes()->GetSolution(iPoint, iVar);
           Source_Turb[iVar] += U_Turb[iVar]*D[iInst][jInst];
         }
       }
 
       /*--- Store sources for current iZone ---*/
       for (iVar = 0; iVar < nVar_Turb; iVar++)
-        solver_container[selected_iZone][iInst][MESH_0][TURB_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source_Turb[iVar]);
+        solver_container[ZONE_0][iInst][MESH_0][TURB_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source_Turb[iVar]);
     }
 
     delete [] U_Turb;
@@ -3421,9 +3421,9 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 void CHBDriver::StabilizeHarmonicBalance() {
 
   unsigned short i, j, k, iVar, iInst, jInst, iMGlevel;
-  unsigned short nVar = solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned short nVar = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
   unsigned long iPoint;
-  bool adjoint = (config_container[selected_iZone]->GetContinuous_Adjoint());
+  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
   auto *Source     = new su2double[nInstHB];
@@ -3438,13 +3438,13 @@ void CHBDriver::StabilizeHarmonicBalance() {
   }
 
   /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[selected_iZone]->GetnMGLevels(); iMGlevel++) {
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
 
     /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[selected_iZone][INST_0][iMGlevel]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMGlevel]->GetnPoint(); iPoint++) {
 
       /*--- Get time step for current node ---*/
-      Delta = solver_container[selected_iZone][INST_0][iMGlevel][FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
+      Delta = solver_container[ZONE_0][INST_0][iMGlevel][FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
 
       /*--- Setup stabilization matrix for this node ---*/
       for (iInst = 0; iInst < nInstHB; iInst++) {
@@ -3543,7 +3543,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
 
         /*--- Get current source terms (not yet preconditioned) and zero source array to prepare preconditioning ---*/
         for (iInst = 0; iInst < nInstHB; iInst++) {
-          Source_old[iInst] = solver_container[selected_iZone][iInst][iMGlevel][FLOW_SOL]->GetNodes()->GetHarmonicBalance_Source(iPoint, iVar);
+          Source_old[iInst] = solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->GetHarmonicBalance_Source(iPoint, iVar);
           Source[iInst] = 0;
         }
 
@@ -3555,10 +3555,10 @@ void CHBDriver::StabilizeHarmonicBalance() {
 
           /*--- Store updated source terms for current node ---*/
           if (!adjoint) {
-            solver_container[selected_iZone][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
+            solver_container[ZONE_0][iInst][iMGlevel][FLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
           }
           else {
-            solver_container[selected_iZone][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
+            solver_container[ZONE_0][iInst][iMGlevel][ADJFLOW_SOL]->GetNodes()->SetHarmonicBalance_Source(iPoint, iVar, Source[iInst]);
           }
         }
 
@@ -3594,15 +3594,15 @@ void CHBDriver::ComputeHBOperator() {
   }
 
   /*--- Get simualation period from config file ---*/
-  su2double Period = config_container[selected_iZone]->GetHarmonicBalance_Period();
+  su2double Period = config_container[ZONE_0]->GetHarmonicBalance_Period();
 
   /*--- Non-dimensionalize the input period, if necessary.      */
-  Period /= config_container[selected_iZone]->GetTime_Ref();
+  Period /= config_container[ZONE_0]->GetTime_Ref();
 
   /*--- Build the array containing the selected frequencies to solve ---*/
   for (iInst = 0; iInst < nInstHB; iInst++) {
-    Omega_HB[iInst]  = config_container[selected_iZone]->GetOmega_HB()[iInst];
-    Omega_HB[iInst] /= config_container[selected_iZone]->GetOmega_Ref(); //TODO: check
+    Omega_HB[iInst]  = config_container[ZONE_0]->GetOmega_HB()[iInst];
+    Omega_HB[iInst] /= config_container[ZONE_0]->GetOmega_Ref(); //TODO: check
   }
 
   /*--- Build the diagonal matrix of the frequencies DD ---*/

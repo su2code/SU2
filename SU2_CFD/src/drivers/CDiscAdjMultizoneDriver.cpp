@@ -440,7 +440,7 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- Check for convergence. ---*/
 
     StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1) ||
-               ((nZone==1) && output_container[selected_iZone]->GetConvergence());
+               ((nZone==1) && output_container[ZONE_0]->GetConvergence());
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
@@ -765,13 +765,13 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
   su2double seeding = 1.0;
 
-  if (config_container[selected_iZone]->GetTime_Domain()) {
-    const auto IterAvg_Obj = config_container[selected_iZone]->GetIter_Avg_Objective();
+  if (config_container[ZONE_0]->GetTime_Domain()) {
+    const auto IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
     if (TimeIter < IterAvg_Obj) {
       /*--- Default behavior when no window is chosen is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
       auto windowEvaluator = CWindowingTools();
       const su2double weight =
-          windowEvaluator.GetWndWeight(config_container[selected_iZone]->GetKindWindow(), TimeIter, IterAvg_Obj - 1);
+          windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj - 1);
       seeding = weight / IterAvg_Obj;
     }
     else {
