@@ -424,7 +424,7 @@ def main():
     # Heat solver unsteady AD
     pywrapper_Unst_Heat_AD = TestCase('pywrapper_Unst_Heat_AD')
     pywrapper_Unst_Heat_AD.cfg_dir = "py_wrapper/custom_heat_flux"
-    pywrapper_Unst_Heat_AD.cfg_file = "run_ad.cfg"
+    pywrapper_Unst_Heat_AD.cfg_file = "run_ad.py"
     pywrapper_Unst_Heat_AD.test_iter = 100
     pywrapper_Unst_Heat_AD.test_vals = [0.776365, 0.776430, 1.000003]
     pywrapper_Unst_Heat_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
