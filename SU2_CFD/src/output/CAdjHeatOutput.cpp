@@ -177,6 +177,14 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
   /// END_GROUP
 
+  if (!config->GetTime_Domain()) return;
+
+  /*--- Sensitivities with respect to initial conditions. ---*/
+
+  AddVolumeOutput("SENS_TEMP_N", "SensitivityTempN", "SENSITIVITY_N", "sensitivity to the previous temperature");
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+    AddVolumeOutput("SENS_TEMP_N1", "SensitivityTempN1", "SENSITIVITY_N", "sensitivity to the previous-1 temperature");
+  }
 }
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -199,6 +207,13 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
+
+  if (!config->GetTime_Domain()) return;
+
+  SetVolumeOutputValue("SENS_TEMP_N", iPoint, Node_AdjHeat->GetSolution_time_n(iPoint, 0));
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+    SetVolumeOutputValue("SENS_TEMP_N1", iPoint, Node_AdjHeat->GetSolution_time_n1(iPoint, 0));
+  }
 
 }
 
