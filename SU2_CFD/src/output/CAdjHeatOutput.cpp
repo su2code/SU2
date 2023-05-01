@@ -142,6 +142,7 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(solver[MESH_SOL]->System.GetResidual()));
   }
 
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
