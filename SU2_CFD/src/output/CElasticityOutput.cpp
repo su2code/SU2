@@ -146,6 +146,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
     SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
   }
+
+  ComputeSimpleCustomOutputs(config);
+
   /*--- Keep this as last, since it uses the history values that were set. ---*/
   SetCustomAndComboObjectives(FEA_SOL, config, solver);
 
@@ -266,7 +269,7 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-bool CElasticityOutput::SetInit_Residuals(const CConfig *config){
+bool CElasticityOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 

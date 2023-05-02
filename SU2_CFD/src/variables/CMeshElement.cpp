@@ -28,7 +28,7 @@
 
 #include "../../include/variables/CMeshElement.hpp"
 
-CMeshElement::CMeshElement(void){
+CMeshElement::CMeshElement(){
 
   Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
   Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */

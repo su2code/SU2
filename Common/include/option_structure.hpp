@@ -74,7 +74,7 @@ const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
+const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
@@ -820,7 +820,6 @@ enum class UPWIND {
   MSW,                    /*!< \brief Modified Steger-Warming method. */
   TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
   SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP,                   /*!< \brief Convective upwind and split pressure numerical method. */
   CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
   L2ROE,                  /*!< \brief L2ROE numerical method . */
   LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
@@ -844,7 +843,6 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)
   MakePair("MSW", UPWIND::MSW)
-  MakePair("CUSP", UPWIND::CUSP)
   MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
   MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
   MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
@@ -897,6 +895,9 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 enum class LIMITER {
   NONE                 , /*!< \brief No limiter. */
   VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  NISHIKAWA_R3          , /*!< \brief Slope limiter using Nishikawa's R3 method (stencil formulation). */
+  NISHIKAWA_R4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
+  NISHIKAWA_R5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
   VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
   BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
   VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
@@ -906,6 +907,9 @@ enum class LIMITER {
 static const MapType<std::string, LIMITER> Limiter_Map = {
   MakePair("NONE", LIMITER::NONE)
   MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("NISHIKAWA_R3", LIMITER::NISHIKAWA_R3)
+  MakePair("NISHIKAWA_R4", LIMITER::NISHIKAWA_R4)
+  MakePair("NISHIKAWA_R5", LIMITER::NISHIKAWA_R5)
   MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
   MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
   MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
@@ -1430,14 +1434,12 @@ static const MapType<std::string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
  * \brief Type of time integration schemes
  */
 enum class STRUCT_TIME_INT {
-  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
   GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
 static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
+  // MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA) Not fully implemented.
 };
 
 /*!
@@ -1871,9 +1873,6 @@ enum ENUM_OBJECTIVE {
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  FLOW_ANGLE_OUT = 46,
-  MASS_FLOW_IN = 47,
-  ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
@@ -1916,9 +1915,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
-  MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
@@ -2368,18 +2364,6 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
-};
-
-/*!
- * \brief Types of schemes for dynamic structural computations
- */
-enum ENUM_DYNAMIC {
-  STATIC = 0,     /*!< \brief A static structural computation. */
-  DYNAMIC = 1     /*!< \brief Use a time stepping strategy for dynamic computations. */
-};
-static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
-  MakePair("NO", STATIC)
-  MakePair("YES", DYNAMIC)
 };
 
 /*!

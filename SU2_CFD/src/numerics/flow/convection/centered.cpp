@@ -60,7 +60,7 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
+CCentLaxInc_Flow::~CCentLaxInc_Flow() {
 
   delete [] Diff_V;
   delete [] Velocity_i;
@@ -282,7 +282,7 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
+CCentJSTInc_Flow::~CCentJSTInc_Flow() {
 
   delete [] Diff_V;
   delete [] Diff_Lapl;

@@ -67,7 +67,7 @@ def main():
     # Apply the surface deformation.
     for iVertex in range(nVertex):
       dy = np.real(DeformFunction(CoordX[iVertex] - 0.9, time))
-      SU2Driver.SetMarkerDisplacements(MarkerID, iVertex, (0.0, dy))
+      SU2Driver.SetMarkerCustomDisplacement(MarkerID, iVertex, (0.0, dy))
 
     # Time iteration preprocessing.
     SU2Driver.Preprocess(TimeIter)
@@ -88,8 +88,13 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Check the value of an output to cover the functionality in a regression test.
+  assert 'DRAG' in SU2Driver.GetOutputNames()
+  assert abs(SU2Driver.GetOutputValue('DRAG') -
+             SU2Driver.GetMarkerMonitoringOutputValue('DRAG_ON_SURFACE', MarkerName)) < np.finfo(float).eps
+
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 # Imposed deformation

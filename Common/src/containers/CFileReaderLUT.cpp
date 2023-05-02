@@ -135,11 +135,8 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
           SU2_MPI::Error("Table levels are not provided in ascending order.", CURRENT_FUNCTION);
       }
       auto duplicate = adjacent_find(table_levels.begin(), table_levels.end()) != table_levels.end();
-      if (duplicate)
-        SU2_MPI::Error("Duplicate table levels are present in LUT file", CURRENT_FUNCTION);
+      if (duplicate) SU2_MPI::Error("Duplicate table levels are present in LUT file", CURRENT_FUNCTION);
     }
-
-    
 
     /*--- number of variables in LUT ---*/
     if (line.compare("[Number of variables]") == 0) {
@@ -153,7 +150,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
       for (unsigned long i = 0; i < n_variables; i++) {
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var[i] = line.substr(line.find(":") + 1);
+        names_var[i] = line.substr(line.find(':') + 1);
       }
     }
 
@@ -328,7 +325,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 }
 
 void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
-  string next_line = "";
+  string next_line;
 
   /*--- compare current line to flag and return if equal ---*/
   if (current_line.compare(flag) == 0) return;
