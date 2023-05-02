@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
@@ -235,6 +235,44 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",       "Energy",     "SOLUTION", "Energy");
   AddVolumeOutput("ENERGY_VE",    "Energy_ve",  "SOLUTION", "Energy_ve");
+  
+  if (config->GetReduced_Model()) {
+    for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_DENSITY_"+std::to_string(iSpecies),
+                        "POD_Mode"+std::to_string(iMode)+"_Density_"+std::to_string(iSpecies),
+                        "SOLUTION",
+                        "POD mode "+std::to_string(iMode)+" for density "+std::to_string(iSpecies));
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-x",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for x-momentum");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-y",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for y-momentum");
+    }
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                        "POD_Mode"+std::to_string(iMode)+"_Momentum-z",
+                        "SOLUTION", "POD mode "+std::to_string(iMode)+" for z-momentum");
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                      "POD_Mode"+std::to_string(iMode)+"_Energy",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for energy");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_ENERGY_VE",
+                      "POD_Mode"+std::to_string(iMode)+"_Energy_ve",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for energy_ve");
+    }
+  }
 
   //Auxiliary variables for post-processment
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -324,6 +362,40 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ENERGY_VE",  iPoint, Node_Flow->GetSolution(iPoint, nSpecies+3));
   }
 
+  if (config->GetReduced_Model() && config->GetOutput_POD()) {
+    for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_DENSITY_"+std::to_string(iSpecies),
+                             iPoint, solver[FLOW_SOL]->GetPOD(iPoint, iSpecies, iMode));
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, nSpecies, iMode));
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, nSpecies+1, iMode));
+    }
+    int j = 2;
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                             iPoint, solver[FLOW_SOL]->GetPOD(iPoint, nSpecies+j, iMode));
+        j++;
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, nSpecies+j, iMode));
+    }
+    j++;
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_ENERGY_VE",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, nSpecies+j, iMode));
+    }
+  }
+  
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("MASSFRAC_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
 

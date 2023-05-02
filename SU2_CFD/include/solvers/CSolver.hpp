@@ -1500,6 +1500,11 @@ public:
   void FindMaskedEdges(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Return value of POD basis at requested point, variable, and mode number.
+   */
+  su2double GetPOD(unsigned long iPoint, unsigned short iVar, unsigned short iMode);
+  
+  /*!
    * \brief Check for ROM convergence.
    * \param[out] bool - returns value of bool RomConverged
    */

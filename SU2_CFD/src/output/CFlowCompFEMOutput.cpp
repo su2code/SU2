@@ -154,6 +154,36 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
+  
+  if (config->GetReduced_Model()) {
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_DENSITY",
+                      "POD_Mode"+std::to_string(iMode)+"_Density",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for density");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-x",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for x-momentum");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-y",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for y-momentum");
+    }
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                        "POD_Mode"+std::to_string(iMode)+"_Momentum-z",
+                        "SOLUTION", "POD mode "+std::to_string(iMode)+" for z-momentum");
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                      "POD_Mode"+std::to_string(iMode)+"_Energy",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for energy");
+    }
+  }
 }
 
 void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
@@ -224,6 +254,33 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   if ((config->GetKind_Solver()  == MAIN_SOLVER::FEM_LES) && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)){
     // todo: Export Eddy instead of Laminar viscosity
     SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
+  }
+  
+  if (config->GetReduced_Model() && config->GetOutput_POD()) {
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_DENSITY",
+                            index, solver[FLOW_SOL]->GetPOD(index, 0, iMode));
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                           index, solver[FLOW_SOL]->GetPOD(index, 1, iMode));
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                           index, solver[FLOW_SOL]->GetPOD(index, 2, iMode));
+    }
+    int j = 2;
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                             index, solver[FLOW_SOL]->GetPOD(index, j, iMode));
+        j++;
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                           index, solver[FLOW_SOL]->GetPOD(index, j, iMode));
+    }
   }
 }
 

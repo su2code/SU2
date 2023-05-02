@@ -2896,6 +2896,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
   addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
+  /*!\brief OUTPUT_POD \n DESCRIPTION: Toggle writing POD modes to flow file (expensive). */
+  addBoolOption("OUTPUT_POD", Output_POD, false);
   
 
   /* END_CONFIG_OPTIONS */

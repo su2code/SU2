@@ -4810,6 +4810,13 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   }
 }
 
+/*! \brief Get value of POD mode at requested point, var, and mode number.
+ */
+su2double CSolver::GetPOD(unsigned long iPoint, unsigned short iVar, unsigned short iMode) {
+  unsigned long index = iPoint*nVar + iVar;
+  return TrialBasis[index][iMode];
+}
+
 bool CSolver::GetROMConvergence() {
   return RomConverged;
 }

@@ -110,7 +110,6 @@ private:
   su2double StartTime;
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
-  Reduced_Model,            /*!< \brief Flag to know if code is producing a reduced order model. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -1174,6 +1173,8 @@ private:
   Ref_Snapshot_FileName;         /*!< \brief Reference snapshot filename for reduced order model computation. */
   unsigned long nHyper_Nodes;    /*!< \brief Number of hyper-reduction nodes desired. */
   unsigned short nPOD_Modes;     /*!< \brief Number of POD mdoes desired. */
+  bool Reduced_Model,            /*!< \brief Flag to know if code is producing a reduced order model. */
+  Output_POD;                    /*!< \brief Flag to know if outputting POD modes to flow file. */
 
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -6271,6 +6272,12 @@ public:
    * \return true if ROM
    */
   bool GetReduced_Model(void) const { return Reduced_Model; }
+  
+  /*!
+   * \brief Determines whether or not to output POD modes to flow file
+   * \return true if toggled in config file
+   */
+  bool GetOutput_POD(void) const { return Output_POD; }
   
   /*!
    * \brief Determines if problem is viscous

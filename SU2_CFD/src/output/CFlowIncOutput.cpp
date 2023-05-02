@@ -296,6 +296,36 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
+  if (config->GetReduced_Model()) {
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_DENSITY",
+                      "POD_Mode"+std::to_string(iMode)+"_Density",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for density");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-x",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for x-momentum");
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                      "POD_Mode"+std::to_string(iMode)+"_Momentum-y",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for y-momentum");
+    }
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                        "POD_Mode"+std::to_string(iMode)+"_Momentum-z",
+                        "SOLUTION", "POD mode "+std::to_string(iMode)+" for z-momentum");
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      AddVolumeOutput("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                      "POD_Mode"+std::to_string(iMode)+"_Energy",
+                      "SOLUTION", "POD mode "+std::to_string(iMode)+" for energy");
+    }
+  }
+  
   SetVolumeOutputFields_ScalarSolution(config);
 
   // Radiation variables
@@ -439,6 +469,33 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   }
 
+  if (config->GetReduced_Model() && config->GetOutput_POD()) {
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_DENSITY",
+                            iPoint, solver[FLOW_SOL]->GetPOD(iPoint, 0, iMode));
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-X",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, 1, iMode));
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Y",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, 2, iMode));
+    }
+    int j = 2;
+    if (nDim == 3) {
+      for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+        SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_MOMENTUM-Z",
+                             iPoint, solver[FLOW_SOL]->GetPOD(iPoint, j, iMode));
+        j++;
+      }
+    }
+    for (int iMode = 0; iMode < config->GetnPOD_Modes(); iMode++) {
+      SetVolumeOutputValue("POD_MODE"+std::to_string(iMode)+"_ENERGY",
+                           iPoint, solver[FLOW_SOL]->GetPOD(iPoint, j, iMode));
+    }
+  }
+  
   LoadCommonFVMOutputs(config, geometry, iPoint);
 }
 
