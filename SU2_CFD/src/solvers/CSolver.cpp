@@ -4563,26 +4563,25 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   ifstream in_phi(phi_filename);
   if (!read_mask_from_file && !use_all_nodes) {
     std::cout << "Using greedy algorithm to compute " << desired_nodes << " nodes." << std::endl;
-  if (in_phi) {
-    std::string line;
-  
-    while (getline(in_phi, line)) {
-      stringstream sep(line);
-      string field;
-      int s = 0;
-      while (getline(sep, field, ',')) {
-        if (firstrun == 0) Phi.push_back({});
+    if (in_phi) {
+      std::string line;
+      
+      while (getline(in_phi, line)) {
+        stringstream sep(line);
+        string field;
+        int s = 0;
+        while (getline(sep, field, ',')) {
+          if (firstrun == 0) Phi.push_back({});
           Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
           s++;
+        }
+        firstrun++;
       }
-      firstrun++;
     }
-  }
   
   // TODO: Use all modes (since this is "offline") or only use truncated # modes?
     unsigned long nsnaps = config->GetnPOD_Modes();
   //unsigned long nsnaps = 20;
-  unsigned long j, k, ii, inode, nodewithMax;
   
   /*--- compute PhiNodes, the norm of Phi at each node ---*/
   std::vector<double> PhiNodes;
@@ -4597,6 +4596,7 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   }
   
   unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
+    unsigned long nodewithMax;
   
   /*--- Add first max node to mask set ---*/
   for (unsigned long i = 0; i < nodestoAdd; i++) {
@@ -4620,21 +4620,21 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
     masked_U.clear();
     masked_Phi.clear();
       
-    for (j = 0; j < ivec; j++) {
+    for (unsigned short j = 0; j < ivec; j++) {
       masked_U.push_back({});
     }
     
     /*--- loop through nodes to add masked Phi entries in correct order ---*/
-    for (unsigned long imask : Mask) {
+    for (auto imask : Mask) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
       
-      for (j = 0; j < ivec; j++) {
+      for (unsigned short j = 0; j < ivec; j++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
       }
     }
       
     /*--- compute gappy reconstruction: GappyPhi = A*B*c ---*/
-    for (ii = 0; ii < nPointDomain; ii++) {
+    for (unsigned long ii = 0; ii < nPointDomain; ii++) {
       double norm_phi = 0.0;
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         
@@ -4643,15 +4643,15 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
         ubar_phibar.clear();
         
         // B*c
-        for (j = 0; j < ivec; j++) {
+        for (unsigned short j = 0; j < ivec; j++) {
           ubar_phibar.push_back({});
-          for (k = 0; k < masked_Phi.size(); k++) {
+          for (unsigned long k = 0; k < masked_Phi.size(); k++) {
             ubar_phibar[j] += masked_U[j][k] * masked_Phi[k];
           }
         }
         
         // A*(B*c)
-        for (j = 0; j < ivec; j++) {
+        for (unsigned short j = 0; j < ivec; j++) {
           gappy_Phi[total_index] += U[j][total_index] * ubar_phibar[j];
         }
         
@@ -4665,7 +4665,7 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
     
     /*--- Add nodes corresponding to a single Phi vector ---*/
     nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
-    for (inode = 0; inode < nodestoAdd; inode++) {
+    for (unsigned long inode = 0; inode < nodestoAdd; inode++) {
         
       nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
       PhiNodes[nodewithMax] = -100000.0;
@@ -4713,6 +4713,7 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
   if (!read_mask_from_file) {
     if (!use_all_nodes) {
       ofstream fs;
+      string filename = "selectednodes" + std::to_string(desired_nodes) + ".csv";
       fs.open(hypernodes_filename);
       for (auto i : Mask) {
         fs << i << "," ;
@@ -4722,7 +4723,7 @@ void CSolver::MaskSelection(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  //sort(Mask.begin(),Mask.end());
+  sort(Mask.begin(),Mask.end());
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -4749,7 +4750,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   
   /*--- Find edges corresponding to neighbor depth of 1 ---*/
   
-  for (unsigned long iPoint : Mask) {
+  for (auto iPoint : Mask) {
     for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
       unsigned long jPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
       MaskNeighbors.insert(jPoint);
@@ -4758,7 +4759,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  for (unsigned long iPoint : Mask) {
+  for (auto iPoint : Mask) {
     MaskNeighbors.erase(iPoint);
   }
   
@@ -4770,7 +4771,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
       std::vector<unsigned long> temp_neighs;
       
       // locate all neighbors of neighbors but dont pull any Masked/Selected nodes
-      for (unsigned long i : MaskNeighbors) {
+      for (auto i : MaskNeighbors) {
         
         for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(i); kNeigh++) {
           unsigned long jPoint = geometry->nodes->GetPoint(i,kNeigh);
@@ -4781,7 +4782,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
         }
       }
       
-      for (unsigned long i : temp_neighs) {
+      for (auto i : temp_neighs) {
         MaskNeighbors.insert(i);
       }
     }
@@ -4867,16 +4868,10 @@ void CSolver::CheckLineSearch(CConfig *config, double ReducedRes) {
     for (unsigned long i = 0; i<GenCoordsY.size(); i++){
       GenCoordsY[i] = GenCoordsY_Old[i];
     }
-    
-    
-    
   }
   else {
     UpdateGenCoordsY_Old();
-    
   }
-  
-  
 }
 
 void CSolver::writeROMfiles(CGeometry *geometry, unsigned long InnerIter,
