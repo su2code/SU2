@@ -1003,7 +1003,7 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     unsigned long InnerIter = config->GetInnerIter();
     
-    if (InnerIter == 0) SetAlpha_ROM(0.1);
+    if (InnerIter == 0) SetAlpha_ROM(1.0);
     
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];

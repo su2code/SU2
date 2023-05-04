@@ -4832,7 +4832,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   
   else {
-    if (1.0 / ReducedRes >= 1e10) {
+    if (ReducedResNorm_Old / ReducedRes <= 1e10) {
       RomConverged = true;
       return;
     }
