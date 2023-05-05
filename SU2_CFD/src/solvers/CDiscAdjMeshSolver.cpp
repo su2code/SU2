@@ -80,6 +80,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   }
   static_cast<CDiscAdjMeshBoundVariable*>(nodes)->AllocateBoundaryVariables(config);
 
+  SolverName = "ADJ.MESH";
 }
 
 CDiscAdjMeshSolver::~CDiscAdjMeshSolver() { delete nodes; }

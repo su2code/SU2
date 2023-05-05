@@ -55,7 +55,43 @@ protected:
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
-  COutputLegacy* output_legacy;
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   */
+  void SetRecording(RECORDING kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   */
+  void DirectRun(RECORDING kind_recording);
+
+  /*!
+   * \brief Set the objective function.
+   */
+  void SetObjFunction(void);
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdjObjFunction(void);
+
+  /*!
+   * \brief Record the main computational path.
+   */
+  void MainRecording(void);
+
+  /*!
+   * \brief Record the secondary computational path.
+   */
+  void SecondaryRecording(void);
+
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return false
+   */
+  inline bool GetTimeConvergence() const override { return false; }
 
 public:
 
@@ -90,43 +126,4 @@ public:
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
   void Postprocess(void) override;
-
-  /*!
-   * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
-   */
-  void SetRecording(RECORDING kind_recording);
-
-  /*!
-   * \brief Run one iteration of the solver.
-   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
-   */
-  void DirectRun(RECORDING kind_recording);
-
-  /*!
-   * \brief Set the objective function.
-   */
-  void SetObjFunction(void);
-
-  /*!
-   * \brief Initialize the adjoint value of the objective function.
-   */
-  void SetAdj_ObjFunction(void);
-
-  /*!
-   * \brief Record the main computational path.
-   */
-  void MainRecording(void);
-
-  /*!
-   * \brief Record the secondary computational path.
-   */
-  void SecondaryRecording(void);
-
-  /*!
-   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
-   * \return false
-   */
-  inline bool GetTimeConvergence() const override {return false;};
-
 };

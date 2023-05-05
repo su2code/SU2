@@ -83,6 +83,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
+  /// TODO: This was always false.
+  const bool Convergence_FullMG = false;
+
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
     SetProlongated_Solution(RunTime_EqSystem,
@@ -311,7 +314,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double *Solution = new su2double[nVar];
+  auto *Solution = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -506,7 +509,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric();
 
-  su2double *Residual = new su2double[nVar];
+  auto *Residual = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -619,7 +622,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double **Gradient = new su2double* [nVar];
+  auto **Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new su2double [nDim];
 

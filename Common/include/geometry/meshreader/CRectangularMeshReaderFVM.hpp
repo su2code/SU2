@@ -35,10 +35,8 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CRectangularMeshReaderFVM: public CMeshReaderFVM {
-
-private:
-
+class CRectangularMeshReaderFVM : public CMeshReaderFVM {
+ private:
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
 
@@ -66,13 +64,9 @@ private:
    */
   void ComputeRectangularSurfaceConnectivity();
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the CRectangularMeshReaderFVM class.
    */
-  CRectangularMeshReaderFVM(const CConfig *val_config,
-                            unsigned short val_iZone,
-                            unsigned short val_nZone);
-
+  CRectangularMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 };
