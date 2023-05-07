@@ -89,6 +89,8 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(heat_solver->GetResLinSolver()));
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
+  ComputeSimpleCustomOutputs(config);
+
   /*--- Keep this as last, since it uses the history values that were set. ---*/
   SetCustomAndComboObjectives(HEAT_SOL, config, solver);
 }

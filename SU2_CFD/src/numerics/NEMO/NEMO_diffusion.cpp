@@ -69,7 +69,7 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
 
 }
 
-CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
+CAvgGrad_NEMO::~CAvgGrad_NEMO() {
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;
@@ -230,7 +230,7 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
 
 }
 
-CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
+CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO() {
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;

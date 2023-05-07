@@ -52,12 +52,12 @@ class CDiscAdjDeformationDriver : public CDriverBase {
   /*!
    * \brief Launch the driver computation.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
+  void Finalize() override;
 
  protected:
   /*!

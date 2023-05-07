@@ -258,10 +258,10 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
-  unsigned long *index = new unsigned long[size]();
+  auto *index = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
 
-  unsigned long *haloIndex = new unsigned long[size]();
+  auto *haloIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
 
   /*--- Loop through our elements and load the elems and their

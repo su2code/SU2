@@ -39,10 +39,11 @@ struct CPyramidConnectivity {
   enum { nFaces = N_FACES_PYRAMID };
   enum { maxNodesFace = N_POINTS_QUADRILATERAL };
   enum { VTK_Type = PYRAMID };
-  static constexpr unsigned short nNodesFace[5] = {4,3,3,3,3};
-  static constexpr unsigned short Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
-  static constexpr unsigned short nNeighbor_Nodes[5] = {3,3,3,3,4};
-  static constexpr unsigned short Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
+  static constexpr unsigned short nNodesFace[5] = {4, 3, 3, 3, 3};
+  static constexpr unsigned short Faces[5][4] = {{0, 3, 2, 1}, {4, 3, 0, 0}, {4, 0, 1, 1}, {2, 4, 1, 1}, {3, 4, 2, 2}};
+  static constexpr unsigned short nNeighbor_Nodes[5] = {3, 3, 3, 3, 4};
+  static constexpr unsigned short Neighbor_Nodes[5][4] = {
+      {1, 3, 4, 4}, {0, 2, 4, 4}, {1, 3, 4, 4}, {2, 0, 4, 4}, {0, 1, 2, 3}};
 };
 
 /*!
@@ -50,22 +51,21 @@ struct CPyramidConnectivity {
  * \brief Class for pyramid element definition.
  * \author F. Palacios
  */
-class CPyramid final: public CPrimalGridWithConnectivity<CPyramidConnectivity> {
-public:
- /*!
-  * \brief Constructor using the nodes and index.
-  * \param[in] val_point_0 - Index of the 1st point read from the grid file.
-  * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
-  * \param[in] val_point_2 - Index of the 3th point read from the grid file.
-  * \param[in] val_point_3 - Index of the 4th point read from the grid file.
-  * \param[in] val_point_4 - Index of the 5th point read from the grid file.
-  */
- CPyramid(unsigned long val_point_0, unsigned long val_point_1,
-          unsigned long val_point_2, unsigned long val_point_3,
-          unsigned long val_point_4);
+class CPyramid final : public CPrimalGridWithConnectivity<CPyramidConnectivity> {
+ public:
+  /*!
+   * \brief Constructor using the nodes and index.
+   * \param[in] val_point_0 - Index of the 1st point read from the grid file.
+   * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
+   * \param[in] val_point_2 - Index of the 3th point read from the grid file.
+   * \param[in] val_point_3 - Index of the 4th point read from the grid file.
+   * \param[in] val_point_4 - Index of the 5th point read from the grid file.
+   */
+  CPyramid(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2, unsigned long val_point_3,
+           unsigned long val_point_4);
 
- /*!
-  * \brief Change the orientation of an element.
-  */
- void Change_Orientation() override;
+  /*!
+   * \brief Change the orientation of an element.
+   */
+  void Change_Orientation() override;
 };

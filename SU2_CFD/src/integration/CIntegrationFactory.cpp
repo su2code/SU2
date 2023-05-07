@@ -35,7 +35,7 @@
 CIntegration** CIntegrationFactory::CreateIntegrationContainer(MAIN_SOLVER kindMainSolver,
                                                                const CSolver* const* solver_container){
 
-  CIntegration **integration = new CIntegration* [MAX_SOLS]();
+  auto **integration = new CIntegration* [MAX_SOLS]();
 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iSol] != nullptr){

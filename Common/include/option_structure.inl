@@ -31,21 +31,16 @@ using namespace std;
 
 template <class Tenum, class TField>
 class COptionEnum final : public COptionBase {
-
   const map<string, Tenum>& m;
-  TField& field; // Reference to the fieldname
-  const Tenum def; // Default value
-  const string name; // identifier for the option
+  TField& field;      // Reference to the fieldname
+  const Tenum def;    // Default value
+  const string name;  // identifier for the option
 
-public:
+ public:
   COptionEnum() = delete;
 
-  COptionEnum(string option_field_name, const map<string, Tenum>& m_, TField& option_field, Tenum default_value) :
-    m(m_),
-    field(option_field),
-    def(default_value),
-    name(std::move(option_field_name)) {
-  }
+  COptionEnum(string option_field_name, const map<string, Tenum>& m_, TField& option_field, Tenum default_value)
+      : m(m_), field(option_field), def(default_value), name(std::move(option_field_name)) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -73,26 +68,19 @@ public:
   void SetDefault() override { field = def; }
 };
 
-template<typename Scalar>
+template <typename Scalar>
 class COptionScalar : public COptionBase {
-protected:
-  Scalar& field; // Reference to the fieldname
-  const Scalar def; // Default value
-  const string name; // identifier for the option
-  const string typeName; // name for the scalar type
+ protected:
+  Scalar& field;          // Reference to the fieldname
+  const Scalar def;       // Default value
+  const string name;      // identifier for the option
+  const string typeName;  // name for the scalar type
 
-public:
+ public:
   COptionScalar() = delete;
 
-  COptionScalar(const string& type_name,
-                const string& option_field_name,
-                Scalar& option_field,
-                Scalar default_value) :
-    field(option_field),
-    def(default_value),
-    name(option_field_name),
-    typeName(type_name) {
-  }
+  COptionScalar(const string& type_name, const string& option_field_name, Scalar& option_field, Scalar default_value)
+      : field(option_field), def(default_value), name(option_field_name), typeName(type_name) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -106,63 +94,49 @@ public:
     return badValue(typeName, name);
   }
 
-  void SetDefault() final {
-    field = def;
-  }
+  void SetDefault() final { field = def; }
 };
 
 class COptionDouble final : public COptionScalar<su2double> {
-public:
-  template<class... Ts>
-  COptionDouble(Ts&&... args) :
-    COptionScalar<su2double>("su2double", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionDouble(Ts&&... args) : COptionScalar<su2double>("su2double", args...) {}
 };
 
 class COptionInt final : public COptionScalar<int> {
-public:
-  template<class... Ts>
-  COptionInt(Ts&&... args) :
-    COptionScalar<int>("int", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionInt(Ts&&... args) : COptionScalar<int>("int", args...) {}
 };
 
 class COptionULong final : public COptionScalar<unsigned long> {
-public:
-  template<class... Ts>
-  COptionULong(Ts&&... args) :
-    COptionScalar<unsigned long>("unsigned long", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionULong(Ts&&... args) : COptionScalar<unsigned long>("unsigned long", args...) {}
 };
 
 class COptionUShort final : public COptionScalar<unsigned short> {
-public:
-  template<class... Ts>
-  COptionUShort(Ts&&... args) :
-    COptionScalar<unsigned short>("unsigned short", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionUShort(Ts&&... args) : COptionScalar<unsigned short>("unsigned short", args...) {}
 };
 
 class COptionLong final : public COptionScalar<long> {
-public:
-  template<class... Ts>
-  COptionLong(Ts&&... args) :
-    COptionScalar<long>("long", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionLong(Ts&&... args) : COptionScalar<long>("long", args...) {}
 };
 
 class COptionBool final : public COptionScalar<bool> {
-public:
-  template<class... Ts>
-  COptionBool(Ts&&... args) :
-    COptionScalar<bool>("bool", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionBool(Ts&&... args) : COptionScalar<bool>("bool", args...) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
 
     string result;
-    auto msg = COptionScalar<string>("bool",name,result,"").SetValue(option_value);
+    auto msg = COptionScalar<string>("bool", name, result, "").SetValue(option_value);
 
     if (!msg.empty()) return msg;
 
@@ -180,21 +154,16 @@ public:
 };
 
 class COptionString final : public COptionBase {
-protected:
-  string& field; // Reference to the fieldname
-  const string def; // Default value
-  const string name; // identifier for the option
+ protected:
+  string& field;      // Reference to the fieldname
+  const string def;   // Default value
+  const string name;  // identifier for the option
 
-public:
+ public:
   COptionString() = delete;
 
-  COptionString(const string& option_field_name,
-                string& option_field,
-                string default_value) :
-    field(option_field),
-    def(default_value),
-    name(option_field_name) {
-  }
+  COptionString(const string& option_field_name, string& option_field, string default_value)
+      : field(option_field), def(default_value), name(option_field_name) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -206,32 +175,27 @@ public:
     return "";
   }
 
-  void SetDefault() override {
-    field = def;
-  }
+  void SetDefault() override { field = def; }
 };
 
 template <class Tenum, class TField>
 class COptionEnumList final : public COptionBase {
-
   const map<string, Tenum>& m;
   TField*& field;
   unsigned short& mySize;
   const string name;
 
-public:
+ public:
   COptionEnumList() = delete;
 
-  COptionEnumList(string option_field_name, const map<string,Tenum>& m_, TField*& option_field, unsigned short& list_size) :
-    m(m_),
-    field(option_field),
-    mySize(list_size),
-    name(option_field_name) {
+  COptionEnumList(string option_field_name, const map<string, Tenum>& m_, TField*& option_field,
+                  unsigned short& list_size)
+      : m(m_), field(option_field), mySize(list_size), name(option_field_name) {
     field = nullptr;
   }
 
   ~COptionEnumList() {
-    delete [] field;
+    delete[] field;
     field = nullptr;
   }
 
@@ -266,18 +230,15 @@ public:
   void SetDefault() override { mySize = 0; }
 };
 
-template<class Type>
+template <class Type>
 class COptionArray final : public COptionBase {
-  string name; // Identifier for the option
-  const int size; // Number of elements
-  Type* field; // Reference to the field
+  string name;     // Identifier for the option
+  const int size;  // Number of elements
+  Type* field;     // Reference to the field
 
-public:
-  COptionArray(string option_field_name, const int list_size, Type* option_field) :
-    name(option_field_name),
-    size(list_size),
-    field(option_field) {
-  }
+ public:
+  COptionArray(string option_field_name, const int list_size, Type* option_field)
+      : name(option_field_name), size(list_size), field(option_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -296,7 +257,7 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    for (int i  = 0; i < this->size; i++) {
+    for (int i = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
         return badValue(" array", this->name);
@@ -308,29 +269,24 @@ public:
   void SetDefault() override {}
 };
 
-template<typename Scalar>
+template <typename Scalar>
 class COptionScalarList : public COptionBase {
-  Scalar*& field; // reference to the field
-  const string name; // identifier for the option
-  unsigned short& mySize; // size of the list
-  const string typeName; // name of the scalar type
+  Scalar*& field;          // reference to the field
+  const string name;       // identifier for the option
+  unsigned short& mySize;  // size of the list
+  const string typeName;   // name of the scalar type
 
-public:
+ public:
   COptionScalarList() = delete;
 
-  COptionScalarList(const string& type_name,
-                    const string& option_field_name,
-                    unsigned short& list_size,
-                    Scalar*& option_field) :
-    field(option_field),
-    name(option_field_name),
-    mySize(list_size),
-    typeName(type_name) {
+  COptionScalarList(const string& type_name, const string& option_field_name, unsigned short& list_size,
+                    Scalar*& option_field)
+      : field(option_field), name(option_field_name), mySize(list_size), typeName(type_name) {
     field = nullptr;
   }
 
   ~COptionScalarList() {
-    delete [] field;
+    delete[] field;
     // prevent double free
     field = nullptr;
   }
@@ -351,7 +307,7 @@ public:
       istringstream is(option_value[i]);
       Scalar val;
       if (!(is >> val)) {
-        return badValue(typeName+" list", name);
+        return badValue(typeName + " list", name);
       }
       field[i] = std::move(val);
     }
@@ -359,59 +315,49 @@ public:
   }
 
   void SetDefault() final {
-    mySize = 0; // There is no default value for list
+    mySize = 0;  // There is no default value for list
   }
 };
 
 class COptionDoubleList final : public COptionScalarList<su2double> {
-public:
-  template<class... Ts>
-  COptionDoubleList(Ts&&... args) :
-    COptionScalarList<su2double>("su2double", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionDoubleList(Ts&&... args) : COptionScalarList<su2double>("su2double", args...) {}
 };
 
 class COptionShortList final : public COptionScalarList<short> {
-public:
-  template<class... Ts>
-  COptionShortList(Ts&&... args) :
-    COptionScalarList<short>("short", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionShortList(Ts&&... args) : COptionScalarList<short>("short", args...) {}
 };
 
 class COptionUShortList final : public COptionScalarList<unsigned short> {
-public:
-  template<class... Ts>
-  COptionUShortList(Ts&&... args) :
-    COptionScalarList<unsigned short>("unsigned short", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionUShortList(Ts&&... args) : COptionScalarList<unsigned short>("unsigned short", args...) {}
 };
 
 class COptionULongList final : public COptionScalarList<unsigned long> {
-public:
-  template<class... Ts>
-  COptionULongList(Ts&&... args) :
-    COptionScalarList<unsigned long>("unsigned long", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionULongList(Ts&&... args) : COptionScalarList<unsigned long>("unsigned long", args...) {}
 };
 
 class COptionStringList final : public COptionScalarList<string> {
-public:
-  template<class... Ts>
-  COptionStringList(Ts&&... args) :
-    COptionScalarList<string>("string", args...) {
-  }
+ public:
+  template <class... Ts>
+  COptionStringList(Ts&&... args) : COptionScalarList<string>("string", args...) {}
 };
 
 class COptionConvect : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & space;
-  CENTERED & centered;
-  UPWIND & upwind;
+  string name;  // identifier for the option
+  unsigned short& space;
+  CENTERED& centered;
+  UPWIND& upwind;
 
-public:
-  COptionConvect(string option_field_name, unsigned short & space_field, CENTERED & centered_field, UPWIND & upwind_field)
-    : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
+ public:
+  COptionConvect(string option_field_name, unsigned short& space_field, CENTERED& centered_field, UPWIND& upwind_field)
+      : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -436,7 +382,6 @@ public:
     // Make them defined in case something weird happens
     SetDefault();
     return badValue("convect", this->name);
-
   }
 
   void SetDefault() override {
@@ -446,17 +391,18 @@ public:
   }
 };
 
-class COptionFEMConvect : public COptionBase{
-  string name; // identifier for the option
-  unsigned short & space;
-  unsigned short & fem;
+class COptionFEMConvect : public COptionBase {
+  string name;  // identifier for the option
+  unsigned short& space;
+  unsigned short& fem;
 
-public:
-  COptionFEMConvect(string option_field_name, unsigned short & space_field, unsigned short & fem_field) : space(space_field), fem(fem_field) {
+ public:
+  COptionFEMConvect(string option_field_name, unsigned short& space_field, unsigned short& fem_field)
+      : space(space_field), fem(fem_field) {
     this->name = option_field_name;
   }
 
-  ~COptionFEMConvect() override {};
+  ~COptionFEMConvect() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
 
@@ -474,56 +420,51 @@ public:
     // Make them defined in case something weird happens
     this->fem = NO_FEM;
     return badValue("convect", this->name);
-
   }
 
-  void SetDefault() override {
-    this->fem = NO_FEM;
-  }
+  void SetDefault() override { this->fem = NO_FEM; }
 };
 
 class COptionMathProblem : public COptionBase {
-  string name; // identifier for the option
-  bool & cont_adjoint;
+  string name;  // identifier for the option
+  bool& cont_adjoint;
   bool cont_adjoint_def;
-  bool & disc_adjoint;
+  bool& disc_adjoint;
   bool disc_adjoint_def;
-  bool & restart;
+  bool& restart;
   bool restart_def;
 
-public:
-  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
+ public:
+  COptionMathProblem(string option_field_name, bool& cont_adjoint_field, bool cont_adjoint_default,
+                     bool& disc_adjoint_field, bool disc_adjoint_default, bool& restart_field, bool restart_default)
+      : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
     name = option_field_name;
     cont_adjoint_def = cont_adjoint_default;
     disc_adjoint_def = disc_adjoint_default;
     restart_def = restart_default;
   }
 
-  ~COptionMathProblem() override {};
+  ~COptionMathProblem() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", name);
     if (out.compare("") != 0) {
       return out;
-    }
-    else if (option_value[0] == "ADJOINT") {
+    } else if (option_value[0] == "ADJOINT") {
       return badValue("math problem (try CONTINUOUS_ADJOINT)", name);
-    }
-    else if (option_value[0] == "DIRECT") {
+    } else if (option_value[0] == "DIRECT") {
       cont_adjoint = false;
       disc_adjoint = false;
       restart = false;
       return "";
-    }
-    else if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      cont_adjoint= true;
+    } else if (option_value[0] == "CONTINUOUS_ADJOINT") {
+      cont_adjoint = true;
       disc_adjoint = false;
-      restart= true;
+      restart = true;
       return "";
-    }
-    else if (option_value[0] == "DISCRETE_ADJOINT") {
+    } else if (option_value[0] == "DISCRETE_ADJOINT") {
       disc_adjoint = true;
-      cont_adjoint= false;
+      cont_adjoint = false;
       restart = true;
       return "";
     }
@@ -535,22 +476,23 @@ public:
     disc_adjoint = disc_adjoint_def;
     restart = restart_def;
   }
-
 };
 
 class COptionDVParam : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & nDV;
-  su2double ** & paramDV;
-  string * & FFDTag;
-  unsigned short* & design_variable;
+  string name;  // identifier for the option
+  unsigned short& nDV;
+  su2double**& paramDV;
+  string*& FFDTag;
+  unsigned short*& design_variable;
 
-public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
+ public:
+  COptionDVParam(string option_field_name, unsigned short& nDV_field, su2double**& paramDV_field, string*& FFDTag_field,
+                 unsigned short*& design_variable_field)
+      : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
     this->name = option_field_name;
   }
 
-  ~COptionDVParam() override {};
+  ~COptionDVParam() override{};
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -566,18 +508,17 @@ public:
       newstring.append(": may not have beginning semicolon");
       return newstring;
     }
-    if (option_value[option_value.size()-1].compare(";") == 0) {
+    if (option_value[option_value.size() - 1].compare(";") == 0) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
 
-
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nDV = 0;
-    //unsigned int num_semi = 0;
+    // unsigned int num_semi = 0;
     for (unsigned int i = 0; i < static_cast<unsigned int>(option_value.size()); i++) {
       if (option_value[i].compare(";") == 0) {
         this->nDV++;
@@ -588,10 +529,12 @@ public:
     // One more design variable than semicolon
     this->nDV++;
 
-    if ( (this->nDV > 0) && (this->design_variable == nullptr) ) {
+    if ((this->nDV > 0) && (this->design_variable == nullptr)) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
+      newstring.append(
+          ": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration "
+          "file.");
       return newstring;
     }
 
@@ -602,48 +545,116 @@ public:
 
     this->FFDTag = new string[this->nDV];
 
-   vector<unsigned short> nParamDV(nDV, 0);
-   unsigned short totalnParamDV = 0;
-   stringstream ss;
-   unsigned int i = 0;
+    vector<unsigned short> nParamDV(nDV, 0);
+    unsigned short totalnParamDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
 
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
-        case NO_DEFORMATION:       nParamDV[iDV] = 0; break;
-        case FFD_SETTING:          nParamDV[iDV] = 0; break;
-        case FFD_CONTROL_POINT_2D: nParamDV[iDV] = 5; break;
-        case FFD_CAMBER_2D:        nParamDV[iDV] = 2; break;
-        case FFD_THICKNESS_2D:     nParamDV[iDV] = 2; break;
-        case FFD_TWIST_2D:         nParamDV[iDV] = 3; break;
-        case HICKS_HENNE:          nParamDV[iDV] = 2; break;
-        case SURFACE_BUMP:         nParamDV[iDV] = 3; break;
-        case CST:                  nParamDV[iDV] = 3; break;
-        case ANGLE_OF_ATTACK:      nParamDV[iDV] = 1; break;
-        case SCALE:                nParamDV[iDV] = 0; break;
-        case TRANSLATION:          nParamDV[iDV] = 3; break;
-        case ROTATION:             nParamDV[iDV] = 6; break;
-        case NACA_4DIGITS:         nParamDV[iDV] = 3; break;
-        case PARABOLIC:            nParamDV[iDV] = 2; break;
-        case AIRFOIL:              nParamDV[iDV] = 2; break;
-        case FFD_CONTROL_POINT:    nParamDV[iDV] = 7; break;
-        case FFD_NACELLE:          nParamDV[iDV] = 6; break;
-        case FFD_GULL:             nParamDV[iDV] = 2; break;
-        case FFD_TWIST:            nParamDV[iDV] = 8; break;
-        case FFD_ROTATION:         nParamDV[iDV] = 7; break;
-        case FFD_CONTROL_SURFACE:  nParamDV[iDV] = 7; break;
-        case FFD_CAMBER:           nParamDV[iDV] = 3; break;
-        case FFD_THICKNESS:        nParamDV[iDV] = 3; break;
-        case FFD_ANGLE_OF_ATTACK:  nParamDV[iDV] = 2; break;
-        case SURFACE_FILE:         nParamDV[iDV] = 0; break;
-        case DV_EFIELD:            nParamDV[iDV] = 2; break;
-        case DV_YOUNG:             nParamDV[iDV] = 0; break;
-        case DV_POISSON:           nParamDV[iDV] = 0; break;
-        case DV_RHO:               nParamDV[iDV] = 0; break;
-        case DV_RHO_DL:            nParamDV[iDV] = 0; break;
-        case SCALE_GRID:           nParamDV[iDV] = 0; break;
-        case TRANSLATE_GRID:       nParamDV[iDV] = 3; break;
-        case ROTATE_GRID:          nParamDV[iDV] = 6; break;
-        default : {
+        case NO_DEFORMATION:
+          nParamDV[iDV] = 0;
+          break;
+        case FFD_SETTING:
+          nParamDV[iDV] = 0;
+          break;
+        case FFD_CONTROL_POINT_2D:
+          nParamDV[iDV] = 5;
+          break;
+        case FFD_CAMBER_2D:
+          nParamDV[iDV] = 2;
+          break;
+        case FFD_THICKNESS_2D:
+          nParamDV[iDV] = 2;
+          break;
+        case FFD_TWIST_2D:
+          nParamDV[iDV] = 3;
+          break;
+        case HICKS_HENNE:
+          nParamDV[iDV] = 2;
+          break;
+        case SURFACE_BUMP:
+          nParamDV[iDV] = 3;
+          break;
+        case CST:
+          nParamDV[iDV] = 3;
+          break;
+        case ANGLE_OF_ATTACK:
+          nParamDV[iDV] = 1;
+          break;
+        case SCALE:
+          nParamDV[iDV] = 0;
+          break;
+        case TRANSLATION:
+          nParamDV[iDV] = 3;
+          break;
+        case ROTATION:
+          nParamDV[iDV] = 6;
+          break;
+        case NACA_4DIGITS:
+          nParamDV[iDV] = 3;
+          break;
+        case PARABOLIC:
+          nParamDV[iDV] = 2;
+          break;
+        case AIRFOIL:
+          nParamDV[iDV] = 2;
+          break;
+        case FFD_CONTROL_POINT:
+          nParamDV[iDV] = 7;
+          break;
+        case FFD_NACELLE:
+          nParamDV[iDV] = 6;
+          break;
+        case FFD_GULL:
+          nParamDV[iDV] = 2;
+          break;
+        case FFD_TWIST:
+          nParamDV[iDV] = 8;
+          break;
+        case FFD_ROTATION:
+          nParamDV[iDV] = 7;
+          break;
+        case FFD_CONTROL_SURFACE:
+          nParamDV[iDV] = 7;
+          break;
+        case FFD_CAMBER:
+          nParamDV[iDV] = 3;
+          break;
+        case FFD_THICKNESS:
+          nParamDV[iDV] = 3;
+          break;
+        case FFD_ANGLE_OF_ATTACK:
+          nParamDV[iDV] = 2;
+          break;
+        case SURFACE_FILE:
+          nParamDV[iDV] = 0;
+          break;
+        case DV_EFIELD:
+          nParamDV[iDV] = 2;
+          break;
+        case DV_YOUNG:
+          nParamDV[iDV] = 0;
+          break;
+        case DV_POISSON:
+          nParamDV[iDV] = 0;
+          break;
+        case DV_RHO:
+          nParamDV[iDV] = 0;
+          break;
+        case DV_RHO_DL:
+          nParamDV[iDV] = 0;
+          break;
+        case SCALE_GRID:
+          nParamDV[iDV] = 0;
+          break;
+        case TRANSLATE_GRID:
+          nParamDV[iDV] = 3;
+          break;
+        case ROTATE_GRID:
+          nParamDV[iDV] = 6;
+          break;
+        default: {
           string newstring;
           newstring.append(this->name);
           newstring.append(": undefined design variable type found in configuration file. ");
@@ -653,40 +664,31 @@ public:
       totalnParamDV += nParamDV[iDV];
     }
 
-    if (totalnParamDV > option_value.size()){
+    if (totalnParamDV > option_value.size()) {
       SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
     }
 
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       for (unsigned short iParamDV = 0; iParamDV < nParamDV[iDV]; iParamDV++) {
-
         ss << option_value[i] << " ";
 
         if ((iParamDV == 0) &&
-            ((this->design_variable[iDV] == NO_DEFORMATION) ||
-             (this->design_variable[iDV] == FFD_SETTING) ||
-             (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK)||
-             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
-             (this->design_variable[iDV] == FFD_CAMBER_2D) ||
-             (this->design_variable[iDV] == FFD_TWIST_2D) ||
-             (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
-             (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
-             (this->design_variable[iDV] == FFD_NACELLE) ||
-             (this->design_variable[iDV] == FFD_GULL) ||
-             (this->design_variable[iDV] == FFD_TWIST) ||
-             (this->design_variable[iDV] == FFD_ROTATION) ||
-             (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
-             (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS))) {
-              ss >> this->FFDTag[iDV];
-              this->paramDV[iDV][iParamDV] = 0;
-            }
-        else
+            ((this->design_variable[iDV] == NO_DEFORMATION) || (this->design_variable[iDV] == FFD_SETTING) ||
+             (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) || (this->design_variable[iDV] == FFD_CAMBER_2D) ||
+             (this->design_variable[iDV] == FFD_TWIST_2D) || (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT) || (this->design_variable[iDV] == FFD_NACELLE) ||
+             (this->design_variable[iDV] == FFD_GULL) || (this->design_variable[iDV] == FFD_TWIST) ||
+             (this->design_variable[iDV] == FFD_ROTATION) || (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
+             (this->design_variable[iDV] == FFD_CAMBER) || (this->design_variable[iDV] == FFD_THICKNESS))) {
+          ss >> this->FFDTag[iDV];
+          this->paramDV[iDV][iParamDV] = 0;
+        } else
           ss >> this->paramDV[iDV][iParamDV];
 
         i++;
       }
-      if (iDV < (this->nDV-1)) {
+      if (iDV < (this->nDV - 1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
           newstring.append(this->name);
@@ -710,19 +712,25 @@ public:
 };
 
 class COptionDVValue : public COptionBase {
-  string name; // identifier for the option
-  unsigned short* & nDV_Value;
-  su2double ** & valueDV;
-  unsigned short & nDV;
-  su2double ** & paramDV;
-  unsigned short* & design_variable;
+  string name;  // identifier for the option
+  unsigned short*& nDV_Value;
+  su2double**& valueDV;
+  unsigned short& nDV;
+  su2double**& paramDV;
+  unsigned short*& design_variable;
 
-public:
-  COptionDVValue(string option_field_name, unsigned short* & nDVValue_field, su2double** & valueDV_field, unsigned short & nDV_field,  su2double** & paramDV_field, unsigned short * & design_variable_field) : nDV_Value(nDVValue_field), valueDV(valueDV_field), nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field) {
+ public:
+  COptionDVValue(string option_field_name, unsigned short*& nDVValue_field, su2double**& valueDV_field,
+                 unsigned short& nDV_field, su2double**& paramDV_field, unsigned short*& design_variable_field)
+      : nDV_Value(nDVValue_field),
+        valueDV(valueDV_field),
+        nDV(nDV_field),
+        paramDV(paramDV_field),
+        design_variable(design_variable_field) {
     this->name = option_field_name;
   }
 
-  ~COptionDVValue() override {};
+  ~COptionDVValue() override{};
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -731,16 +739,20 @@ public:
       return "";
     }
 
-    if ( (this->nDV > 0) && (this->design_variable == nullptr) ) {
+    if ((this->nDV > 0) && (this->design_variable == nullptr)) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration file.");
+      newstring.append(
+          ": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration "
+          "file.");
       return newstring;
     }
-    if ( (this->nDV > 0) && (this->paramDV == nullptr) ) {
+    if ((this->nDV > 0) && (this->paramDV == nullptr)) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in configuration file.");
+      newstring.append(
+          ": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in "
+          "configuration file.");
       return newstring;
     }
 
@@ -758,23 +770,20 @@ public:
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
         case FFD_CONTROL_POINT:
-          if((this->paramDV[iDV][4] == 0) &&
-             (this->paramDV[iDV][5] == 0) &&
-             (this->paramDV[iDV][6] == 0)) {
+          if ((this->paramDV[iDV][4] == 0) && (this->paramDV[iDV][5] == 0) && (this->paramDV[iDV][6] == 0)) {
             nValueDV = 3;
           } else {
             nValueDV = 1;
           }
           break;
         case FFD_CONTROL_POINT_2D:
-          if((this->paramDV[iDV][3] == 0) &&
-             (this->paramDV[iDV][4] == 0)) {
+          if ((this->paramDV[iDV][3] == 0) && (this->paramDV[iDV][4] == 0)) {
             nValueDV = 2;
           } else {
             nValueDV = 1;
           }
           break;
-        default :
+        default:
           nValueDV = 1;
       }
 
@@ -783,7 +792,6 @@ public:
       totalnValueDV += nValueDV;
 
       for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
-
         if (i >= option_value.size()) {
           string newstring;
           newstring.append(this->name);
@@ -823,12 +831,10 @@ class COptionFFDDef : public COptionBase {
   su2double**& CoordFFD;
   string*& FFDTag;
 
-public:
-  COptionFFDDef(string option_field_name, unsigned short& nFFD_field, su2double**& coordFFD_field, string*& FFDTag_field)
-    : name(option_field_name),
-      nFFD(nFFD_field),
-      CoordFFD(coordFFD_field),
-      FFDTag(FFDTag_field) {
+ public:
+  COptionFFDDef(string option_field_name, unsigned short& nFFD_field, su2double**& coordFFD_field,
+                string*& FFDTag_field)
+      : name(option_field_name), nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
     nFFD = 0;
     CoordFFD = nullptr;
     FFDTag = nullptr;
@@ -853,10 +859,9 @@ public:
     if (option_value[0].compare(";") == 0) {
       return name + ": may not have beginning semicolon";
     }
-    if (option_value[option_value.size()-1].compare(";") == 0) {
+    if (option_value[option_value.size() - 1].compare(";") == 0) {
       return name + ": may not have ending semicolon";
     }
-
 
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
@@ -882,20 +887,20 @@ public:
     unsigned int i = 0;
 
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-
       nCoordFFD = 25;
 
       for (unsigned short iCoordFFD = 0; iCoordFFD < nCoordFFD; iCoordFFD++) {
-
         ss << option_value[i] << " ";
 
-        if (iCoordFFD == 0) ss >> this->FFDTag[iFFD];
-        else ss >> this->CoordFFD[iFFD][iCoordFFD-1];
+        if (iCoordFFD == 0)
+          ss >> this->FFDTag[iFFD];
+        else
+          ss >> this->CoordFFD[iFFD][iCoordFFD - 1];
 
         i++;
       }
 
-      if (iFFD < (this->nFFD-1)) {
+      if (iFFD < (this->nFFD - 1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
           newstring.append(this->name);
@@ -904,7 +909,6 @@ public:
         }
         i++;
       }
-
     }
 
     // Need to return something...
@@ -919,11 +923,9 @@ class COptionFFDDegree : public COptionBase {
   unsigned short& nFFD;
   unsigned short**& DegreeFFD;
 
-public:
+ public:
   COptionFFDDegree(string option_field_name, unsigned short& nFFD_field, unsigned short**& degreeFFD_field)
-    : name(option_field_name),
-      nFFD(nFFD_field),
-      DegreeFFD(degreeFFD_field) {
+      : name(option_field_name), nFFD(nFFD_field), DegreeFFD(degreeFFD_field) {
     nFFD = 0;
     DegreeFFD = nullptr;
   }
@@ -945,10 +947,9 @@ public:
     if (option_value[0].compare(";") == 0) {
       return name + ": may not have beginning semicolon";
     }
-    if (option_value[option_value.size()-1].compare(";") == 0) {
+    if (option_value[option_value.size() - 1].compare(";") == 0) {
       return name + ": may not have ending semicolon";
     }
-
 
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
@@ -972,7 +973,6 @@ public:
     unsigned int i = 0;
 
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-
       nDegreeFFD = 3;
 
       for (unsigned short iDegreeFFD = 0; iDegreeFFD < nDegreeFFD; iDegreeFFD++) {
@@ -981,7 +981,7 @@ public:
         i++;
       }
 
-      if (iFFD < (this->nFFD-1)) {
+      if (iFFD < (this->nFFD - 1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
           newstring.append(this->name);
@@ -990,7 +990,6 @@ public:
         }
         i++;
       }
-
     }
 
     // Need to return something...
@@ -1001,22 +1000,22 @@ public:
 };
 
 class COptionInlet : public COptionBase {
-  string name; // identifier for the option
+  string name;  // identifier for the option
   unsigned short& size;
   string*& marker;
   su2double*& ttotal;
   su2double*& ptotal;
   su2double**& flowdir;
 
-public:
+ public:
   COptionInlet(string option_field_name, unsigned short& nMarker_Inlet, string*& Marker_Inlet, su2double*& Ttotal,
                su2double*& Ptotal, su2double**& FlowDir)
-    : name(option_field_name),
-      size(nMarker_Inlet),
-      marker(Marker_Inlet),
-      ttotal(Ttotal),
-      ptotal(Ptotal),
-      flowdir(FlowDir) {
+      : name(option_field_name),
+        size(nMarker_Inlet),
+        marker(Marker_Inlet),
+        ttotal(Ttotal),
+        ptotal(Ptotal),
+        flowdir(FlowDir) {
     size = 0;
     marker = nullptr;
     ttotal = nullptr;
@@ -1061,14 +1060,14 @@ public:
     bool err = false;
 
     auto getval = [&](unsigned short i, unsigned short j) {
-      istringstream ss(option_value[6*i + j]);
+      istringstream ss(option_value[6 * i + j]);
       su2double val;
       if (!(ss >> val)) err = true;
       return val;
     };
 
     for (unsigned short i = 0; i < nVals; i++) {
-      marker[i].assign(option_value[6*i]);
+      marker[i].assign(option_value[6 * i]);
       ttotal[i] = getval(i, 1);
       ptotal[i] = getval(i, 2);
       flowdir[i][0] = getval(i, 3);
@@ -1096,40 +1095,40 @@ template <class T>
 struct CStringValuesListHelper<T*> {
   static T* resize(unsigned short n) { return new T[n]; }
   static T& access(T* ptr, unsigned short i) { return ptr[i]; }
-  static void clear(T* ptr) { delete [] ptr; }
+  static void clear(T* ptr) { delete[] ptr; }
 };
 
 // Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
 template <class Type>
 class COptionStringValuesList final : public COptionBase {
-  const string name;     // identifier for the option
-  unsigned short& size;  // number of string-value pairs
-  string*& strings;      // the strings in the option
-  Type*& values;         // the values per string
-  unsigned short& num_vals; // how many values per string
-  unsigned short optional_num_vals = 0; // num_vals points to this when it is not provided in the ctor.
+  const string name;                     // identifier for the option
+  unsigned short& size;                  // number of string-value pairs
+  string*& strings;                      // the strings in the option
+  Type*& values;                         // the values per string
+  unsigned short& num_vals;              // how many values per string
+  unsigned short optional_num_vals = 0;  // num_vals points to this when it is not provided in the ctor.
 
-public:
-  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_,
-                          Type*& values_, unsigned short& num_vals_) :
-    name(name_), size(size_), strings(strings_), values(values_), num_vals(num_vals_) {
+ public:
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_,
+                          unsigned short& num_vals_)
+      : name(name_), size(size_), strings(strings_), values(values_), num_vals(num_vals_) {
     strings = nullptr;
     values = nullptr;
   }
 
-  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_) :
-    name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_)
+      : name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
     strings = nullptr;
     values = nullptr;
   }
 
   ~COptionStringValuesList() {
-    delete [] strings;
+    delete[] strings;
     strings = nullptr;
     for (unsigned short i = 0; i < size; ++i) {
       CStringValuesListHelper<Type>::clear(values[i]);
     }
-    delete [] values;
+    delete[] values;
     values = nullptr;
   }
 
@@ -1188,32 +1187,32 @@ public:
   }
 
   void SetDefault() override {
-    size = 0; // There is no default value for lists
+    size = 0;  // There is no default value for lists
     num_vals = 0;
   }
 };
 
-
 template <class Tenum>
 class COptionRiemann : public COptionBase {
-
-protected:
+ protected:
   map<string, Tenum> m;
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  unsigned short* & field; // Reference to the field name
-  su2double * & var1;
-  su2double * & var2;
-  su2double ** & flowdir;
+  string name;  // identifier for the option
+  unsigned short& size;
+  string*& marker;
+  unsigned short*& field;  // Reference to the field name
+  su2double*& var1;
+  su2double*& var2;
+  su2double**& flowdir;
 
-public:
-  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_Riemann),
-                  marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
+ public:
+  COptionRiemann(string option_field_name, unsigned short& nMarker_Riemann, string*& Marker_Riemann,
+                 unsigned short*& option_field, const map<string, Tenum> m, su2double*& var1, su2double*& var2,
+                 su2double**& FlowDir)
+      : size(nMarker_Riemann), marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionRiemann() override {};
+  ~COptionRiemann() override{};
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -1254,36 +1253,36 @@ public:
     }
 
     for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[7*i]);
-        // Check to see if the enum value is in the map
-    if (this->m.find(option_value[7*i + 1]) == m.end()) {
-      string str;
-      str.append(this->name);
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
-    }
-      Tenum val = this->m[option_value[7*i + 1]];
+      this->marker[i].assign(option_value[7 * i]);
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[7 * i + 1]) == m.end()) {
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[0]);
+        str.append(". Check current SU2 options in config_template.cfg.");
+        return str;
+      }
+      Tenum val = this->m[option_value[7 * i + 1]];
       this->field[i] = val;
 
-      istringstream ss_1st(option_value[7*i + 2]);
+      istringstream ss_1st(option_value[7 * i + 2]);
       if (!(ss_1st >> this->var1[i])) {
         return badValue("Riemann", this->name);
       }
-      istringstream ss_2nd(option_value[7*i + 3]);
+      istringstream ss_2nd(option_value[7 * i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
         return badValue("Riemann", this->name);
       }
-      istringstream ss_3rd(option_value[7*i + 4]);
+      istringstream ss_3rd(option_value[7 * i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
         return badValue("Riemann", this->name);
       }
-      istringstream ss_4th(option_value[7*i + 5]);
+      istringstream ss_4th(option_value[7 * i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
         return badValue("Riemann", this->name);
       }
-      istringstream ss_5th(option_value[7*i + 6]);
+      istringstream ss_5th(option_value[7 * i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
         return badValue("Riemann", this->name);
       }
@@ -1297,31 +1296,39 @@ public:
     this->var1 = nullptr;
     this->var2 = nullptr;
     this->flowdir = nullptr;
-    this->size = 0; // There is no default value for list
+    this->size = 0;  // There is no default value for list
   }
 };
 
 template <class Tenum>
-class COptionGiles : public COptionBase{
-
+class COptionGiles : public COptionBase {
   map<string, Tenum> m;
-  unsigned short & size;
-  string * & marker;
-  unsigned short* & field; // Reference to the fieldname
-  string name; // identifier for the option
-  su2double * & var1;
-  su2double * & var2;
-  su2double ** & flowdir;
-  su2double * & relfac1;
-  su2double * & relfac2;
+  unsigned short& size;
+  string*& marker;
+  unsigned short*& field;  // Reference to the fieldname
+  string name;             // identifier for the option
+  su2double*& var1;
+  su2double*& var2;
+  su2double**& flowdir;
+  su2double*& relfac1;
+  su2double*& relfac2;
 
-public:
-  COptionGiles(string option_field_name, unsigned short & nMarker_Giles, string* & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_Giles),
-               marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
+ public:
+  COptionGiles(string option_field_name, unsigned short& nMarker_Giles, string*& Marker_Giles,
+               unsigned short*& option_field, const map<string, Tenum> m, su2double*& var1, su2double*& var2,
+               su2double**& FlowDir, su2double*& relfac1, su2double*& relfac2)
+      : size(nMarker_Giles),
+        marker(Marker_Giles),
+        field(option_field),
+        var1(var1),
+        var2(var2),
+        flowdir(FlowDir),
+        relfac1(relfac1),
+        relfac2(relfac2) {
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionGiles() override {};
+  ~COptionGiles() override{};
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
@@ -1368,44 +1375,44 @@ public:
     }
 
     for (unsigned int i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[9*i]);
-        // Check to see if the enum value is in the map
-    if (this->m.find(option_value[9*i + 1]) == m.end()) {
-      string str;
-      str.append(this->name);
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
-    }
-      Tenum val = this->m[option_value[9*i + 1]];
+      this->marker[i].assign(option_value[9 * i]);
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[9 * i + 1]) == m.end()) {
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[0]);
+        str.append(". Check current SU2 options in config_template.cfg.");
+        return str;
+      }
+      Tenum val = this->m[option_value[9 * i + 1]];
       this->field[i] = val;
 
-      istringstream ss_1st(option_value[9*i + 2]);
+      istringstream ss_1st(option_value[9 * i + 2]);
       if (!(ss_1st >> this->var1[i])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_2nd(option_value[9*i + 3]);
+      istringstream ss_2nd(option_value[9 * i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_3rd(option_value[9*i + 4]);
+      istringstream ss_3rd(option_value[9 * i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_4th(option_value[9*i + 5]);
+      istringstream ss_4th(option_value[9 * i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_5th(option_value[9*i + 6]);
+      istringstream ss_5th(option_value[9 * i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_6th(option_value[9*i + 7]);
+      istringstream ss_6th(option_value[9 * i + 7]);
       if (!(ss_6th >> this->relfac1[i])) {
         return badValue("Giles BC", this->name);
       }
-      istringstream ss_7th(option_value[9*i + 8]);
+      istringstream ss_7th(option_value[9 * i + 8]);
       if (!(ss_7th >> this->relfac2[i])) {
         return badValue("Giles BC", this->name);
       }
@@ -1421,25 +1428,21 @@ public:
     this->relfac1 = nullptr;
     this->relfac2 = nullptr;
     this->flowdir = nullptr;
-    this->size = 0; // There is no default value for list
+    this->size = 0;  // There is no default value for list
   }
 };
 
 class COptionExhaust : public COptionBase {
-  string name; // identifier for the option
+  string name;  // identifier for the option
   unsigned short& size;
   string*& marker;
   su2double*& ttotal;
   su2double*& ptotal;
 
-public:
-  COptionExhaust(string option_field_name, unsigned short& nMarker_Exhaust, string*& Marker_Exhaust,
-                 su2double*& Ttotal, su2double*& Ptotal)
-    : name(option_field_name),
-      size(nMarker_Exhaust),
-      marker(Marker_Exhaust),
-      ttotal(Ttotal),
-      ptotal(Ptotal) {
+ public:
+  COptionExhaust(string option_field_name, unsigned short& nMarker_Exhaust, string*& Marker_Exhaust, su2double*& Ttotal,
+                 su2double*& Ptotal)
+      : name(option_field_name), size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal) {
     size = 0;
     marker = nullptr;
     ttotal = nullptr;
@@ -1472,12 +1475,12 @@ public:
     ptotal = new su2double[nVals];
 
     for (unsigned short i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[3*i]);
+      this->marker[i].assign(option_value[3 * i]);
 
-      istringstream ss_1st(option_value[3*i + 1]);
+      istringstream ss_1st(option_value[3 * i + 1]);
       if (!(ss_1st >> ttotal[i])) return badValue("exhaust fixed", name);
 
-      istringstream ss_2nd(option_value[3*i + 2]);
+      istringstream ss_2nd(option_value[3 * i + 2]);
       if (!(ss_2nd >> ptotal[i])) return badValue("exhaust fixed", name);
     }
     return "";
@@ -1487,7 +1490,7 @@ public:
 };
 
 class COptionPeriodic : public COptionBase {
-  string name; // identifier for the option
+  string name;  // identifier for the option
   unsigned short& size;
   string*& marker_bound;
   string*& marker_donor;
@@ -1495,16 +1498,16 @@ class COptionPeriodic : public COptionBase {
   su2double**& rot_angles;
   su2double**& translation;
 
-public:
+ public:
   COptionPeriodic(const string option_field_name, unsigned short& nMarker_PerBound, string*& Marker_PerBound,
                   string*& Marker_PerDonor, su2double**& RotCenter, su2double**& RotAngles, su2double**& Translation)
-    : name(option_field_name),
-      size(nMarker_PerBound),
-      marker_bound(Marker_PerBound),
-      marker_donor(Marker_PerDonor),
-      rot_center(RotCenter),
-      rot_angles(RotAngles),
-      translation(Translation) {
+      : name(option_field_name),
+        size(nMarker_PerBound),
+        marker_bound(Marker_PerBound),
+        marker_donor(Marker_PerDonor),
+        rot_center(RotCenter),
+        rot_angles(RotAngles),
+        translation(Translation) {
     size = 0;
     COptionPeriodic::SetDefault();
   }
@@ -1535,7 +1538,7 @@ public:
       return name + ": must have a number of entries divisible by 11";
     }
 
-    const unsigned short nVals = 2 * (totalVals / mod_num); // "2" to account for periodic and donor
+    const unsigned short nVals = 2 * (totalVals / mod_num);  // "2" to account for periodic and donor
     size = nVals;
     marker_bound = new string[nVals];
     marker_donor = new string[nVals];
@@ -1548,43 +1551,43 @@ public:
       translation[i] = new su2double[3];
     }
 
-    const su2double deg2rad = PI_NUMBER/180.0;
+    const su2double deg2rad = PI_NUMBER / 180.0;
 
     bool err = false;
 
     auto getval = [&](unsigned short i, unsigned short j) {
-      istringstream ss(option_value[mod_num*i + j]);
+      istringstream ss(option_value[mod_num * i + j]);
       su2double val;
       if (!(ss >> val)) err = true;
       return val;
     };
 
     for (unsigned short i = 0; i < nVals / 2; i++) {
-      marker_bound[i].assign(option_value[mod_num*i]);
-      marker_donor[i].assign(option_value[mod_num*i+1]);
+      marker_bound[i].assign(option_value[mod_num * i]);
+      marker_donor[i].assign(option_value[mod_num * i + 1]);
       /*--- Mirror the connection between markers. ---*/
-      marker_bound[i+nVals/2] = marker_donor[i];
-      marker_donor[i+nVals/2] = marker_bound[i];
+      marker_bound[i + nVals / 2] = marker_donor[i];
+      marker_donor[i + nVals / 2] = marker_bound[i];
 
-      rot_center[i][0] = rot_center[i+nVals/2][0] = getval(i, 2);
-      rot_center[i][1] = rot_center[i+nVals/2][1] = getval(i, 3);
-      rot_center[i][2] = rot_center[i+nVals/2][2] = getval(i, 4);
+      rot_center[i][0] = rot_center[i + nVals / 2][0] = getval(i, 2);
+      rot_center[i][1] = rot_center[i + nVals / 2][1] = getval(i, 3);
+      rot_center[i][2] = rot_center[i + nVals / 2][2] = getval(i, 4);
 
-      rot_angles[i][0] = rot_angles[i+nVals/2][0] = getval(i, 5) * deg2rad;
-      rot_angles[i][1] = rot_angles[i+nVals/2][1] = getval(i, 6) * deg2rad;
-      rot_angles[i][2] = rot_angles[i+nVals/2][2] = getval(i, 7) * deg2rad;
+      rot_angles[i][0] = rot_angles[i + nVals / 2][0] = getval(i, 5) * deg2rad;
+      rot_angles[i][1] = rot_angles[i + nVals / 2][1] = getval(i, 6) * deg2rad;
+      rot_angles[i][2] = rot_angles[i + nVals / 2][2] = getval(i, 7) * deg2rad;
 
-      translation[i][0] = translation[i+nVals/2][0] = getval(i, 8);
-      translation[i][1] = translation[i+nVals/2][1] = getval(i, 9);
-      translation[i][2] = translation[i+nVals/2][2] = getval(i, 10);
+      translation[i][0] = translation[i + nVals / 2][0] = getval(i, 8);
+      translation[i][1] = translation[i + nVals / 2][1] = getval(i, 9);
+      translation[i][2] = translation[i + nVals / 2][2] = getval(i, 10);
 
       /*--- Mirror the rotational angles and translation vector (rotational center does not need to move). ---*/
-      rot_angles[i+nVals/2][0] *= -1;
-      rot_angles[i+nVals/2][1] *= -1;
-      rot_angles[i+nVals/2][2] *= -1;
-      translation[i+nVals/2][0] *= -1;
-      translation[i+nVals/2][1] *= -1;
-      translation[i+nVals/2][2] *= -1;
+      rot_angles[i + nVals / 2][0] *= -1;
+      rot_angles[i + nVals / 2][1] *= -1;
+      rot_angles[i + nVals / 2][2] *= -1;
+      translation[i + nVals / 2][0] *= -1;
+      translation[i + nVals / 2][1] *= -1;
+      translation[i + nVals / 2][2] *= -1;
 
       if (err) return badValue("periodic", name);
     }
@@ -1602,18 +1605,19 @@ public:
 };
 
 class COptionTurboPerformance : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker_turboIn;
-  string * & marker_turboOut;
+  string name;  // identifier for the option
+  unsigned short& size;
+  string*& marker_turboIn;
+  string*& marker_turboOut;
 
-public:
-  COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
-                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut){
+ public:
+  COptionTurboPerformance(const string option_field_name, unsigned short& nMarker_TurboPerf,
+                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut)
+      : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut) {
     this->name = option_field_name;
   }
 
-  ~COptionTurboPerformance() override {};
+  ~COptionTurboPerformance() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 2;
@@ -1621,7 +1625,7 @@ public:
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker_turboIn= nullptr;
+      this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
       return "";
     }
@@ -1631,8 +1635,9 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 2");
       this->size = 0;
-      this->marker_turboIn= nullptr;
-      this->marker_turboOut = nullptr;;
+      this->marker_turboIn = nullptr;
+      this->marker_turboOut = nullptr;
+      ;
       return newstring;
     }
 
@@ -1641,59 +1646,60 @@ public:
     this->marker_turboIn = new string[nVals];
     this->marker_turboOut = new string[nVals];
     for (unsigned long i = 0; i < nVals; i++) {
-      this->marker_turboIn[i].assign(option_value[mod_num*i]);
-      this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
-     }
-
+      this->marker_turboIn[i].assign(option_value[mod_num * i]);
+      this->marker_turboOut[i].assign(option_value[mod_num * i + 1]);
+    }
 
     return "";
   }
 
   void SetDefault() override {
     this->size = 0;
-    this->marker_turboIn= nullptr;
+    this->marker_turboIn = nullptr;
     this->marker_turboOut = nullptr;
   }
 };
 
 class COptionPython : public COptionBase {
   string name;
-public:
-  COptionPython(const string name) {
-    this->name = name;
-  }
-  ~COptionPython() override {};
+
+ public:
+  COptionPython(const string name) { this->name = name; }
+  ~COptionPython() override{};
   // No checking happens with python options
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     return "";
   }
   // No defaults with python options
-  void SetDefault() override {
-    return;
-  };
+  void SetDefault() override { return; };
 };
 
 class COptionActDisk : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & inlet_size;
-  unsigned short & outlet_size;
-  string * & marker_inlet;
-  string * & marker_outlet;
-  su2double ** & press_jump;
-  su2double ** & temp_jump;
-  su2double ** & omega;
+  string name;  // identifier for the option
+  unsigned short& inlet_size;
+  unsigned short& outlet_size;
+  string*& marker_inlet;
+  string*& marker_outlet;
+  su2double**& press_jump;
+  su2double**& temp_jump;
+  su2double**& omega;
 
-public:
-  COptionActDisk(const string name,
-                 unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet,
-                 su2double ** & ActDisk_PressJump, su2double ** & ActDisk_TempJump, su2double ** & ActDisk_Omega) :
-  inlet_size(nMarker_ActDiskInlet), outlet_size(nMarker_ActDiskOutlet), marker_inlet(Marker_ActDiskInlet), marker_outlet(Marker_ActDiskOutlet),
-  press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
+ public:
+  COptionActDisk(const string name, unsigned short& nMarker_ActDiskInlet, unsigned short& nMarker_ActDiskOutlet,
+                 string*& Marker_ActDiskInlet, string*& Marker_ActDiskOutlet, su2double**& ActDisk_PressJump,
+                 su2double**& ActDisk_TempJump, su2double**& ActDisk_Omega)
+      : inlet_size(nMarker_ActDiskInlet),
+        outlet_size(nMarker_ActDiskOutlet),
+        marker_inlet(Marker_ActDiskInlet),
+        marker_outlet(Marker_ActDiskOutlet),
+        press_jump(ActDisk_PressJump),
+        temp_jump(ActDisk_TempJump),
+        omega(ActDisk_Omega) {
     this->name = name;
   }
 
-  ~COptionActDisk() override {};
+  ~COptionActDisk() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 8;
@@ -1729,29 +1735,29 @@ public:
     string tname = "actuator disk";
 
     for (int i = 0; i < this->inlet_size; i++) {
-      this->marker_inlet[i].assign(option_value[mod_num*i]);
-      this->marker_outlet[i].assign(option_value[mod_num*i+1]);
-      istringstream ss_1st(option_value[mod_num*i + 2]);
+      this->marker_inlet[i].assign(option_value[mod_num * i]);
+      this->marker_outlet[i].assign(option_value[mod_num * i + 1]);
+      istringstream ss_1st(option_value[mod_num * i + 2]);
       if (!(ss_1st >> this->press_jump[i][0])) {
         return badValue(tname, this->name);
       }
-      istringstream ss_2nd(option_value[mod_num*i + 3]);
+      istringstream ss_2nd(option_value[mod_num * i + 3]);
       if (!(ss_2nd >> this->temp_jump[i][0])) {
         return badValue(tname, this->name);
       }
-      istringstream ss_3rd(option_value[mod_num*i + 4]);
+      istringstream ss_3rd(option_value[mod_num * i + 4]);
       if (!(ss_3rd >> this->omega[i][0])) {
         return badValue(tname, this->name);
       }
-      istringstream ss_4th(option_value[mod_num*i + 5]);
+      istringstream ss_4th(option_value[mod_num * i + 5]);
       if (!(ss_4th >> this->press_jump[i][1])) {
         return badValue(tname, this->name);
       }
-      istringstream ss_5th(option_value[mod_num*i + 6]);
+      istringstream ss_5th(option_value[mod_num * i + 6]);
       if (!(ss_5th >> this->temp_jump[i][1])) {
         return badValue(tname, this->name);
       }
-      istringstream ss_6th(option_value[mod_num*i + 7]);
+      istringstream ss_6th(option_value[mod_num * i + 7]);
       if (!(ss_6th >> this->omega[i][1])) {
         return badValue(tname, this->name);
       }
@@ -1770,22 +1776,22 @@ public:
 };
 
 class COptionWallFunction : public COptionBase {
-  string name; // identifier for the option
+  string name;  // identifier for the option
   unsigned short& nMarkers;
   string*& markers;
   WALL_FUNCTIONS*& walltype;
   unsigned short**& intInfo;
   su2double**& doubleInfo;
 
-public:
+ public:
   COptionWallFunction(const string name_WF, unsigned short& nMarker_WF, string*& Marker_WF, WALL_FUNCTIONS*& type_WF,
                       unsigned short**& intInfo_WF, su2double**& doubleInfo_WF)
-    : name(name_WF),
-      nMarkers(nMarker_WF),
-      markers(Marker_WF),
-      walltype(type_WF),
-      intInfo(intInfo_WF),
-      doubleInfo(doubleInfo_WF) {
+      : name(name_WF),
+        nMarkers(nMarker_WF),
+        markers(Marker_WF),
+        walltype(type_WF),
+        intInfo(intInfo_WF),
+        doubleInfo(doubleInfo_WF) {
     nMarkers = 0;
     COptionWallFunction::SetDefault();
   }
@@ -1813,8 +1819,7 @@ public:
     /*--- Determine the number of markers, for which a wall
           function treatment has been specified. ---*/
     unsigned short counter = 0, nVals = 0;
-    while (counter < totalSize ) {
-
+    while (counter < totalSize) {
       /* Update the counter for the number of markers specified
          and store the current index for possible error messages. */
       ++nVals;
@@ -1826,17 +1831,18 @@ public:
       const unsigned short indWallType = counter;
       auto typeWF = WALL_FUNCTIONS::NONE;
       bool validWF = true;
-      if (counter == totalSize) validWF = false;
+      if (counter == totalSize)
+        validWF = false;
       else {
         map<string, WALL_FUNCTIONS>::const_iterator it;
         it = Wall_Functions_Map.find(option_value[counter]);
-        if(it == Wall_Functions_Map.end())
+        if (it == Wall_Functions_Map.end())
           validWF = false;
         else
-          typeWF  = it->second;
+          typeWF = it->second;
       }
 
-      if (!validWF ) {
+      if (!validWF) {
         string newstring;
         newstring.append(this->name);
         newstring.append(": Invalid wall function type, ");
@@ -1852,11 +1858,18 @@ public:
       /*--- For some wall function types some additional info
             must be specified. Hence the counter must be updated
             accordingly. ---*/
-      switch( typeWF ) {
-        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL:    counter += 3; break;
-        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: counter += 2; break;
-        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: counter += 3; break;
-        default: break;
+      switch (typeWF) {
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL:
+          counter += 3;
+          break;
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL:
+          counter += 2;
+          break;
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL:
+          counter += 3;
+          break;
+        default:
+          break;
       }
 
       /* In case the counter is larger than totalSize, the data for
@@ -1874,17 +1887,16 @@ public:
     }
 
     /* Allocate the memory to store the data for the wall function markers. */
-    this->nMarkers   = nVals;
-    this->markers    = new string[nVals];
-    this->walltype   = new WALL_FUNCTIONS[nVals];
-    this->intInfo    = new unsigned short*[nVals]();
+    this->nMarkers = nVals;
+    this->markers = new string[nVals];
+    this->walltype = new WALL_FUNCTIONS[nVals];
+    this->intInfo = new unsigned short*[nVals]();
     this->doubleInfo = new su2double*[nVals]();
 
     /*--- Loop over the wall markers and store the info in the
           appropriate arrays. ---*/
     counter = 0;
-    for (unsigned short i=0; i<nVals; i++) {
-
+    for (unsigned short i = 0; i < nVals; i++) {
       /* Set the name of the wall function marker. */
       this->markers[i].assign(option_value[counter++]);
 
@@ -1897,13 +1909,11 @@ public:
 
       /*--- For some wall function types, some additional info
             is needed, which is extracted from option_value. ---*/
-      switch( this->walltype[i] ) {
-
+      switch (this->walltype[i]) {
         case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
-
           /* LES equilibrium wall model. The exchange distance, stretching
              factor and number of points in the wall model must be specified. */
-          this->intInfo[i]    = new unsigned short[1];
+          this->intInfo[i] = new unsigned short[1];
           this->doubleInfo[i] = new su2double[2];
 
           istringstream ss_1st(option_value[counter++]);
@@ -1925,24 +1935,23 @@ public:
         }
 
         case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: {
-
           /* LES non-equilibrium model. The RANS turbulence model and
              the exchange distance need to be specified. */
-          this->intInfo[i]    = new unsigned short[1];
+          this->intInfo[i] = new unsigned short[1];
           this->doubleInfo[i] = new su2double[1];
 
           /* Check for a valid RANS turbulence model. */
           map<string, TURB_MODEL>::const_iterator iit;
           iit = Turb_Model_Map.find(option_value[counter++]);
-          if(iit == Turb_Model_Map.end()) {
+          if (iit == Turb_Model_Map.end()) {
             string newstring;
             newstring.append(this->name);
             newstring.append(", marker ");
             newstring.append(this->markers[i]);
             newstring.append(", wall function type ");
-            newstring.append(option_value[counter-2]);
+            newstring.append(option_value[counter - 2]);
             newstring.append(": Invalid RANS turbulence model, ");
-            newstring.append(option_value[counter-1]);
+            newstring.append(option_value[counter - 1]);
             newstring.append(", specified");
             return newstring;
           }
@@ -1956,10 +1965,9 @@ public:
           break;
         }
         case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
-
           /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
            factor and number of points in the wall model must be specified. */
-          this->intInfo[i]    = new unsigned short[1];
+          this->intInfo[i] = new unsigned short[1];
           this->doubleInfo[i] = new su2double[2];
 
           istringstream ss_1st(option_value[counter++]);
@@ -1980,7 +1988,7 @@ public:
           break;
         }
 
-        default: // Just to avoid a compiler warning.
+        default:  // Just to avoid a compiler warning.
           break;
       }
     }
