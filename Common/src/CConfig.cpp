@@ -9454,6 +9454,14 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
+void CConfig::Tick(double *val_start_time) {
+
+#ifdef PROFILE
+  *val_start_time = SU2_MPI::Wtime();
+#endif
+
+}
+
 void CConfig::Tock(double val_start_time, const string& val_function_name, int val_group_id) {
 
 #ifdef PROFILE
