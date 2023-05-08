@@ -235,6 +235,7 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
     SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(adjspecies_solver->GetResLinSolver()));
   }
 
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* config) {
