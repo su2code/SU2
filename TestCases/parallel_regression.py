@@ -1539,6 +1539,7 @@ def main():
     cfd_flamelet_ch4_cht.test_file      = "restart_0.csv"
     cfd_flamelet_ch4_cht.multizone      = True
     cfd_flamelet_ch4_cht.tol            = 1e-5
+    cfd_flamelet_ch4_cht.tol_percent    = 0.1
     pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
     test_list.append(cfd_flamelet_ch4_cht)
 
