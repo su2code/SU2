@@ -2558,23 +2558,8 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
     switch (Kind_Grid_Movement) {
 
       case ROTATING_FRAME:
-
-        /*--- Steadily rotating frame: set the grid velocities just once
-         before the first iteration flow solver. ---*/
-
-        if (rank == MASTER_NODE) {
-          cout << endl << " Setting rotating frame grid velocities";
-          cout << " for zone " << iZone << "." << endl;
-        }
-
-        /*--- Set the grid velocities on all multigrid levels for a steadily
-           rotating reference frame. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, true);
-          geometry[iMGlevel]->SetShroudVelocity(config);
-        }
-
+        /*--- Do nothing here, the steady rotating frame will be handled in the first iteration
+         * of the flow solver, see CIteration::SetGrid_Movement(). ---*/
         break;
 
       case STEADY_TRANSLATION:
