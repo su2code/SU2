@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 from mpi4py import MPI
-import SU2, pysu2
+import pysu2
 
 """
 This test case updates the translation and rotation rates given in the config file via the python wrapper
