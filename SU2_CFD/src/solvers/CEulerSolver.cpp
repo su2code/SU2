@@ -1655,7 +1655,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
     /*--- Compressible flow, primitive variables nDim+9, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = nodes->SetPrimVar(iPoint, GetFluidModel());
+    bool physical = nodes->SetPrimVar(iPoint, GetFluidModel(), GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /* Check for non-realizable states for reporting. */
@@ -8427,7 +8427,7 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
     }
     nodes->SetSolution(iPoint,nVar-1, Density_Inf*Energy_Inf);
 
-    nodes->SetPrimVar(iPoint, GetFluidModel());
+    nodes->SetPrimVar(iPoint, GetFluidModel(),GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
   }
 

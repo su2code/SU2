@@ -992,7 +992,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    auto physical = nodes->SetPrimVar(iPoint,GetFluidModel());
+    auto physical = nodes->SetPrimVar(iPoint,GetFluidModel(),GetFluidModel());
 
     /* Check for non-realizable states for reporting. */
 

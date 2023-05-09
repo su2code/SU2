@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
+#include "../../include/fluid/CSU2TCLib.hpp"
 
 /*--- Explicit instantiation of the parent class of CNEMOEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
@@ -132,7 +133,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     /*--- Compressible flow, primitive variables. ---*/
 
-    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel, FluidModel_transport);
 
     /* Check for non-realizable states for reporting. */
 
@@ -537,7 +538,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  const su2double C = 5;
+  const su2double C = 1;
 
   /*--- Identify the boundary ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -557,6 +558,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    //std::cout << std::endl << "iPoint=" << iPoint << std::endl;
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -601,6 +604,48 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                  (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
     Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
+
+
+//    vector<su2double> rhos; rhos.resize(nSpecies,0.0);
+//    vector<su2double> energies;
+//
+//    for (unsigned short i = 0; i < nSpecies; i++) {
+//      rhos[i]=nodes->GetDensity(iPoint,i);
+//    }
+//
+//    FluidModel->SetTDStateRhosTTv(rhos, Twall, Twall);
+//    energies = FluidModel->ComputeMixtureEnergies();
+//
+//    nodes->SetEnergy_Old(iPoint,energies);
+//
+//    for (unsigned short i = 0; i < 2; i++) {
+//     LinSysRes(iPoint, nSpecies+nDim+i) = 0.0;
+//     nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+nDim+i);
+//    }
+
+
+
+
+//    Res_Visc[nSpecies+nDim]   = (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C*Area/dist_ij;
+//    Res_Visc[nSpecies+nDim+1] = kve*(Twall-Tvei)*C*Area/dist_ij;
+
+
+    //std::cout << std::endl << "Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << std::endl;
+    //std::cout  << "iPoint=" << iPoint << " Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << std::endl;
+
+
+    //std::cout << std::endl << "ktr=" << ktr << std::endl;
+    //std::cout << std::endl << "kve=" << kve << std::endl;
+
+
+
+    //std::cout << std::endl << "Ti=" << Ti << std::endl;
+    //std::cout << std::endl << "Tj=" << Tj << std::endl;
+    //std::cout << std::endl << "Tvei=" << Tvei << std::endl;
+    //std::cout << std::endl << "Tvej=" << Tvej << std::endl;
+    //std::cout << std::endl << "Twall=" << Twall << std::endl;
+    //std::cout << std::endl << "Area=" << Area << std::endl;
+    //std::cout << std::endl << "dist_ij=" << dist_ij << std::endl;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
     if (implicit) {

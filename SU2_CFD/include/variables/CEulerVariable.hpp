@@ -129,7 +129,7 @@ class CEulerVariable : public CFlowVariable {
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) final;
 
   /*!
    * \brief A virtual member.

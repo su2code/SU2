@@ -64,7 +64,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   }
 }
 
-bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) {
 
   bool physical = true;
 

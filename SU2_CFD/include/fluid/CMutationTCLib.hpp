@@ -69,6 +69,8 @@ public:
    */
   void SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve) final;
 
+  //void SetEquilState(su2double val_temperature, su2double val_pressure)final;
+
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */

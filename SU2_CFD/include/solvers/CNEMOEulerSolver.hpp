@@ -60,6 +60,7 @@ protected:
   Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
 
   CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
+  CNEMOGas  *FluidModel_transport;
 
   CNEMOEulerVariable* node_infty = nullptr;
 

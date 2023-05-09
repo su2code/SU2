@@ -42,7 +42,7 @@
  */
 class CNEMOEulerVariable : public CFlowVariable {
  public:
-  static constexpr size_t MAXNVAR = 25;
+  static constexpr size_t MAXNVAR = 30;
 
   template <class IndexType>
   struct CIndices {
@@ -91,6 +91,7 @@ class CNEMOEulerVariable : public CFlowVariable {
   VectorType Gamma;  /*!< \brief Ratio of specific heats. */
 
   CNEMOGas *fluidmodel;
+  CNEMOGas *fluidmodel_transport;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
@@ -174,14 +175,14 @@ class CNEMOEulerVariable : public CFlowVariable {
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) override;
 
    /*!
   * \brief Set all the primitive and secondary variables from the conserved vector.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves);
+                    su2double *val_Cvves, bool point_bool);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
@@ -284,6 +285,12 @@ class CNEMOEulerVariable : public CFlowVariable {
      }
   }
 
+  inline void SetEnergy_Old(unsigned long iPoint, const vector<su2double>& val_energy)  {
+    for (unsigned long i = 0; i < 2; i++){
+      Solution_Old(iPoint,nSpecies+nDim+i) = val_energy[i]*Primitive(iPoint,RHO_INDEX);
+     }
+  }
+
   /*!
    * \brief A virtual member.
    * \return Value of the vibrational-electronic temperature.
@@ -344,6 +351,10 @@ class CNEMOEulerVariable : public CFlowVariable {
    */
   inline su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const final {
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
+  }
+
+  inline su2double GetSpeciesDensities(unsigned long iPoint, unsigned long val_Species) const final {
+    return Primitive(iPoint,RHOS_INDEX+val_Species);
   }
 
   /*!

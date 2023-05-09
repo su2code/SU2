@@ -202,7 +202,7 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) final;
 
   /*!
    * \brief Set the specific heat Cp.

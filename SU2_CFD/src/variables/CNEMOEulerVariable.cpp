@@ -50,6 +50,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
+  //std::cout << std::endl << "CNEMOEulerVariable" << std::endl;
+  //std::cout << std::endl << "val_temperature=" << val_temperature << std::endl;
+  //std::cout << std::endl << "val_temperature_ve=" << val_temperature_ve << std::endl;
+
   /*--- Setting variable amounts ---*/
 
   nSpecies        = config->GetnSpecies();
@@ -112,6 +116,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
   }
 
+  //std::cout << std::endl << "rho*(energies[0])=" << rho*(energies[0]) << std::endl;
+  //std::cout << std::endl << "rho*(energies[1])=" << rho*(energies[1]) << std::endl;
+
   Solution_Old = Solution;
 
   if (classical_rk4) Solution_New = Solution;
@@ -137,15 +144,18 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
   }
 }
 
-bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) {
 
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
+  fluidmodel_transport = static_cast<CNEMOGas*>(FluidModel_transport);
+
+  std::cout << "iPoint=" << iPoint << std::endl;
 
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], true);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
@@ -154,7 +164,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
 
     /*--- Recompute Primitive from previous solution ---*/
     Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], true);
   }
 
   /*--- Set additional point quantities ---*/
@@ -168,13 +178,15 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
 bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
                                       su2double *val_dPdU, su2double *val_dTdU,
                                       su2double *val_dTvedU, su2double *val_eves,
-                                      su2double *val_Cvves) {
+                                      su2double *val_Cvves, bool point_bool) {
 
   unsigned short iDim, iSpecies;
   su2double Tmin, Tmax, Tvemin, Tvemax;
   vector<su2double> rhos;
 
   rhos.resize(nSpecies,0.0);
+
+  //std::cout << std::endl << "inside CNEMOEulerVariable" << std::endl;
 
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -184,12 +196,15 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   bool nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 50.0; Tmax   = 8E4;
+  //Tmin   = 50.0; Tmax   = 8E4;
+  Tmin   = 50.0; Tmax   = 100000;
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Rename variables for convenience ---*/
   su2double rhoE   = U[nSpecies+nDim];     // Density * energy [J/m3]
   su2double rhoEve = U[nSpecies+nDim+1];   // Density * energy_ve [J/m3]
+
+  
 
   /*--- Assign species & mixture density ---*/
   // Note: if any species densities are < 0, these values are re-assigned
@@ -218,28 +233,48 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
+  if (true){
+
+    //std::cout << "rhoE=" << rhoE - 0.5*rho*sqvel << std::endl;
+    //std::cout << "rhoEve=" << rhoEve << std::endl;
+    //std::cout << std::endl << "0.5*rho*sqvel=" << 0.5*rho*sqvel << std::endl;
+    //std::cout << std::endl << "Tve_old=" << V[TVE_INDEX] << std::endl;
+    //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //  std::cout << std::endl << "rhos["<< iSpecies << "]=" << rhos[iSpecies] << std::endl;
+    //}
+  }  
+
   /*--- Assign temperatures ---*/
   const su2double Tve_old = V[TVE_INDEX];
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old);
+
+
 
   /*--- Temperatures ---*/
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
 
+  //if (rhoEve <= 0) rhoEve = 0.0001; V[TVE_INDEX] = 55.0; //nonPhys = true; return nonPhys;
+
+  //std::cout << std::endl << "V[T_INDEX]=" << V[T_INDEX] << std::endl;
+  //std::cout << std::endl << "V[TVE_INDEX]=" << V[TVE_INDEX] << std::endl;
+
   // Determine if the temperature lies within the acceptable range
-  if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
-  if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
-  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] <= Tmin)      { std::cout << std::endl << "Tmin" << std::endl; nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] >= Tmax) { std::cout << std::endl << "Tmax" << std::endl;  nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] != V[T_INDEX]){ std::cout << std::endl << "T nan" << std::endl; nonPhys = true; return nonPhys;} 
+  
 
   if (!monoatomic){
-    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
-    if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] <= Tvemin)      { std::cout << std::endl << "Tve_min" << std::endl; nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] >= Tvemax) { std::cout << std::endl << "Tve_max" << std::endl; nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){  std::cout << "Tve nan" << std::endl; nonPhys = true; return nonPhys;} 
   }
   else {V[TVE_INDEX] = Tve_Freestream;}
 
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
+  fluidmodel_transport->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
 
   const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle(V[TVE_INDEX]);
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
@@ -256,6 +291,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[P_INDEX] = fluidmodel->ComputePressure();
 
   if (V[P_INDEX] < 0.0) {
+    std::cout << std::endl << "P min" << std::endl;
     V[P_INDEX] = 1E-20;
     nonPhys = true;
   }

@@ -971,6 +971,7 @@ public:
    * \return Value of the mass fraction of species s.
    */
   inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
+  inline virtual su2double GetSpeciesDensities(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
 
   /*!
    * \brief Get the species enthalpy.
@@ -1221,7 +1222,7 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
-  inline virtual bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) { return true; }
+  inline virtual bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) { return true; }
 
   /*!
    * \brief A virtual member.

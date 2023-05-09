@@ -80,7 +80,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   }
 }
 
-bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, CFluidModel *FluidModel_transport) {
 
   bool RightVol = true;
 

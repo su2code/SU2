@@ -30,6 +30,8 @@
 
 CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
 
+//  std::cout << std::endl << "here 1" << std::endl;
+
   unsigned short maxEl = 0;
   su2double mf = 0.0;
 
@@ -655,6 +657,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
   } else if (gas_model == "AIR-7"){
 
+    //std::cout << std::endl << "here 2" << std::endl;
+
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 7) {
       SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
@@ -903,78 +907,96 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     //N2 + e -> N + N + e
     Reactions(21,0,0)=1;   Reactions(21,0,1)=0;  Reactions(21,0,2)=nSpecies;   Reactions(21,1,0)=4;  Reactions(21,1,1)=4;  Reactions(21,1,2)= 0;
 
+// e-
+// N2
+// O2
+// NO
+// N
+// O
+// NO+
+
+    //ref [1]: PARK, CHUL (1989). Assessment of two-temperature kinetic model for ionizing air.
+    //Journal of Thermophysics and Heat Transfer, 3(3), 233–244. doi:10.2514/3.28771
+
+    //ref [2]: Park, Chul; Jaffe, Richard L.; Partridge, Harry (2001). Chemical-Kinetic Parameters of Hyperbolic Earth Entry.
+    //Journal of Thermophysics and Heat Transfer, 15(1), 76–90. doi:10.2514/2.6582
+
+    //ref [3]: Park, Chul; Howe, John T.; Jaffe, Richard L.; Candler, Graham V. (1994). Review of chemical-kinetic problems of future NASA missions.
+    //II - Mars entries. Journal of Thermophysics and Heat Transfer, 8(1), 9–23. doi:10.2514/3.496
+
+
     /*--- Set Arrhenius coefficients for reactions ---*/
     // Pre-exponential factor
-    ArrheniusCoefficient[0]  = 7.0E21;
-    ArrheniusCoefficient[1]  = 7.0E21;
-    ArrheniusCoefficient[2]  = 7.0E21;
-    ArrheniusCoefficient[3]  = 3.0E22;
-    ArrheniusCoefficient[4]  = 3.0E22;
-    ArrheniusCoefficient[5]  = 7.0E21;
-    ArrheniusCoefficient[6]  = 2.0E21;
-    ArrheniusCoefficient[7]  = 2.0E21;
-    ArrheniusCoefficient[8]  = 2.0E21;
-    ArrheniusCoefficient[9]  = 1.0E22;
-    ArrheniusCoefficient[10] = 1.0E22;
-    ArrheniusCoefficient[11] = 2.0E21;
-    ArrheniusCoefficient[12] = 5.0E15;
-    ArrheniusCoefficient[13] = 5.0E15;
-    ArrheniusCoefficient[14] = 5.0E15;
-    ArrheniusCoefficient[15] = 1.1E17;
-    ArrheniusCoefficient[16] = 1.1E17;
-    ArrheniusCoefficient[17] = 5.0E15;
-    ArrheniusCoefficient[18] = 6.4E17;
-    ArrheniusCoefficient[19] = 8.4E12;
-    ArrheniusCoefficient[20] = 5.3E12;
-    ArrheniusCoefficient[21] = 3.0E24;
+    ArrheniusCoefficient[0]  = 7.0E21; // N2 dissociation,     ref [2],        collision partner N2
+    ArrheniusCoefficient[1]  = 7.0E21; // N2 dissociation,     ref [2],        collision partner O2
+    ArrheniusCoefficient[2]  = 7.0E21; // N2 dissociation,     ref [2],        collision partner NO
+    ArrheniusCoefficient[3]  = 3.0E22; // N2 dissociation,     ref [2],        collision partner N
+    ArrheniusCoefficient[4]  = 3.0E22; // N2 dissociation,     ref [2],        collision partner O
+    ArrheniusCoefficient[5]  = 7.0E21; // N2 dissociation,     ref [2],        collision partner NO+
+    ArrheniusCoefficient[6]  = 2.0E21; // O2 dissociation,     ref [2],        collision partner N2
+    ArrheniusCoefficient[7]  = 2.0E21; // O2 dissociation,     ref [2],        collision partner O2
+    ArrheniusCoefficient[8]  = 2.0E21; // O2 dissociation,     ref [2],        collision partner NO
+    ArrheniusCoefficient[9]  = 1.0E22; // O2 dissociation,     ref [2],        collision partner N
+    ArrheniusCoefficient[10] = 1.0E22; // O2 dissociation,     ref [2],        collision partner O
+    ArrheniusCoefficient[11] = 2.0E21; // O2 dissociation,     ref [2],        collision partner NO+
+    ArrheniusCoefficient[12] = 5.0E15; // NO dissociation,     ref [3],        collision partner N2
+    ArrheniusCoefficient[13] = 5.0E15; // NO dissociation,     ref [3],        collision partner O2
+    ArrheniusCoefficient[14] = 5.0E15; // NO dissociation,     ref [],         collision partner NO //typo: should be 1.1E17
+    ArrheniusCoefficient[15] = 1.1E17; // NO dissociation,     ref [3],        collision partner N
+    ArrheniusCoefficient[16] = 1.1E17; // NO dissociation,     ref [3],        collision partner O
+    ArrheniusCoefficient[17] = 5.0E15; // NO dissociation,     ref [Scoggins], collision partner NO+
+    ArrheniusCoefficient[18] = 6.4E17; // N2 + O -> NO + N,    ref [1]
+    ArrheniusCoefficient[19] = 8.4E12; // NO + O -> O2 + N,    ref [1]
+    ArrheniusCoefficient[20] = 5.3E12; // N + O -> NO+ + e,    ref [2]
+    ArrheniusCoefficient[21] = 3.0E24; // N2 + e -> N + N + e, ref [2]
 
     // Rate-controlling temperature exponent
-    ArrheniusEta[0]  = -1.60;
-    ArrheniusEta[1]  = -1.60;
-    ArrheniusEta[2]  = -1.60;
-    ArrheniusEta[3]  = -1.60;
-    ArrheniusEta[4]  = -1.60;
-    ArrheniusEta[5]  = -1.60;
-    ArrheniusEta[6]  = -1.50;
-    ArrheniusEta[7]  = -1.50;
-    ArrheniusEta[8]  = -1.50;
-    ArrheniusEta[9]  = -1.50;
-    ArrheniusEta[10] = -1.50;
-    ArrheniusEta[11] = -1.50;
-    ArrheniusEta[12] = 0.0;
-    ArrheniusEta[13] = 0.0;
-    ArrheniusEta[14] = 0.0;
-    ArrheniusEta[15] = 0.0;
-    ArrheniusEta[16] = 0.0;
-    ArrheniusEta[17] = 0.0;
-    ArrheniusEta[18] = -1.0;
-    ArrheniusEta[19] = 0.0;
-    ArrheniusEta[20] = 0.0;
-    ArrheniusEta[21] = -1.60;
+    ArrheniusEta[0]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[1]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[2]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[3]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[4]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[5]  = -1.60; // N2 dissociation,    
+    ArrheniusEta[6]  = -1.50; // O2 dissociation,    
+    ArrheniusEta[7]  = -1.50; // O2 dissociation,    
+    ArrheniusEta[8]  = -1.50; // O2 dissociation,    
+    ArrheniusEta[9]  = -1.50; // O2 dissociation,    
+    ArrheniusEta[10] = -1.50; // O2 dissociation,    
+    ArrheniusEta[11] = -1.50; // O2 dissociation,    
+    ArrheniusEta[12] = 0.0;   // NO dissociation,    
+    ArrheniusEta[13] = 0.0;   // NO dissociation,    
+    ArrheniusEta[14] = 0.0;   // NO dissociation,    
+    ArrheniusEta[15] = 0.0;   // NO dissociation,    
+    ArrheniusEta[16] = 0.0;   // NO dissociation,    
+    ArrheniusEta[17] = 0.0;   // NO dissociation,    
+    ArrheniusEta[18] = -1.0;  // N2 + O -> NO + N,   
+    ArrheniusEta[19] = 0.0;   // NO + O -> O2 + N,   
+    ArrheniusEta[20] = 0.0;   // N + O -> NO+ + e,   
+    ArrheniusEta[21] = -1.60; // N2 + e -> N + N + e
 
     // Characteristic temperature
-    ArrheniusTheta[0]  = 113200.0;
-    ArrheniusTheta[1]  = 113200.0;
-    ArrheniusTheta[2]  = 113200.0;
-    ArrheniusTheta[3]  = 113200.0;
-    ArrheniusTheta[4]  = 113200.0;
-    ArrheniusTheta[5]  = 113200.0;
-    ArrheniusTheta[6]  = 59500.0;
-    ArrheniusTheta[7]  = 59500.0;
-    ArrheniusTheta[8]  = 59500.0;
-    ArrheniusTheta[9]  = 59500.0;
-    ArrheniusTheta[10]  = 59500.0;
-    ArrheniusTheta[11]  = 59500.0;
-    ArrheniusTheta[12] = 75500.0;
-    ArrheniusTheta[13] = 75500.0;
-    ArrheniusTheta[14] = 75500.0;
-    ArrheniusTheta[15] = 75500.0;
-    ArrheniusTheta[16] = 75500.0;
-    ArrheniusTheta[17] = 75500.0;
-    ArrheniusTheta[18] = 38400.0;
-    ArrheniusTheta[19] = 19450.0;
-    ArrheniusTheta[20] = 31900.0;
-    ArrheniusTheta[21] = 113200.0;
+    ArrheniusTheta[0]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[1]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[2]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[3]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[4]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[5]  = 113200.0; // N2 dissociation,   
+    ArrheniusTheta[6]  = 59500.0;  // O2 dissociation,   
+    ArrheniusTheta[7]  = 59500.0;  // O2 dissociation,   
+    ArrheniusTheta[8]  = 59500.0;  // O2 dissociation,   
+    ArrheniusTheta[9]  = 59500.0;  // O2 dissociation,   
+    ArrheniusTheta[10]  = 59500.0; // O2 dissociation,   
+    ArrheniusTheta[11]  = 59500.0; // O2 dissociation,   
+    ArrheniusTheta[12] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[13] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[14] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[15] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[16] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[17] = 75500.0;  // NO dissociation,   
+    ArrheniusTheta[18] = 38400.0;  // N2 + O -> NO + N,  
+    ArrheniusTheta[19] = 19450.0;  // NO + O -> O2 + N,  
+    ArrheniusTheta[20] = 31900.0;  // N + O -> NO+ + e,  
+    ArrheniusTheta[21] = 113200.0; // N2 + e -> N + N + e
 
     /*--- Set rate-controlling temperature exponents ---*/
     //  -----------  Tc = Ttr^a * Tve^b  -----------
@@ -1162,6 +1184,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
 CSU2TCLib::~CSU2TCLib()= default;
 
+//void CSU2TCLib::SetEquilState(su2double val_temperature, su2double val_pressure){}
+
 void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
   rhos = val_rhos;
@@ -1180,7 +1204,10 @@ vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
 
   if(ionization) Cvtrs[0] = 0.0;
 
-  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++)
+  //std::cout << std::endl << "nSpecies=" << nSpecies << std::endl;
+  //std::cout << std::endl << "nHeavy=" << nHeavy << std::endl;
+
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
 
   return Cvtrs;
@@ -1247,6 +1274,23 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
   su2double rhoEve  = 0.0;
   su2double denom   = 0.0;
 
+  su2double rhoEv_tot   = 0.0;
+  su2double rhoEe_tot   = 0.0;
+  su2double rhoEref_cat   = 0.0;
+  su2double rhoCvtr_cat   = 0.0;
+  su2double rhoEve_cat   = 0.0;
+  su2double rhoEf_cat   = 0.0;
+  su2double rhoEel_cat   = 0.0;
+  su2double rhoEel_tr   = 0.0;
+
+/*
+
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
+    rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
+    rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
+    rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
+  }  */
+
   // Electrons
   for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
 
@@ -1254,7 +1298,9 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
 
     // Electron t-r mode contributes to mixture vib-el energy
-    rhoEve += rhos[iSpecies]*((3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]));
+    rhoEel_tr = rhos[iSpecies]*((3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]));
+    rhoEve += rhoEel_tr;
+    rhoEel_cat = rhoEve;
   }
 
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++){
@@ -1262,11 +1308,15 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     // Species formation energy
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
 
+    rhoEf_cat += rhos[iSpecies]*Ef;
+
     // Species vibrational energy
     if (CharVibTemp[iSpecies] != 0.0)
       Ev = Ru/MolarMass[iSpecies] * CharVibTemp[iSpecies] / (exp(CharVibTemp[iSpecies]/Tve)-1.0);
     else
       Ev = 0.0;
+
+    rhoEv_tot += rhos[iSpecies]*Ev; 
 
     // Species electronic energy
     num = 0.0;
@@ -1277,16 +1327,31 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     }
     Ee = Ru/MolarMass[iSpecies] * (num/denom);
 
+    rhoEe_tot += rhos[iSpecies]*Ee;
+
     // Mixture total energy
     rhoEmix += rhos[iSpecies] * ((3.0/2.0+RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies] * (T-Ref_Temperature[iSpecies]) + Ev + Ee + Ef);
+
+    rhoEref_cat += rhos[iSpecies] * (3.0/2.0+RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies] * (-Ref_Temperature[iSpecies]) ;
+    rhoCvtr_cat += rhos[iSpecies] * (3.0/2.0+RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies] ;
 
     // Mixture vibrational-electronic energy
     rhoEve += rhos[iSpecies] * (Ev + Ee);
 
   }
 
-  energies[0] = rhoEmix/Density;
+  energies[0] = (rhoEmix+rhoEel_tr)/Density;
   energies[1] = rhoEve/Density;
+
+  rhoEve_cat = rhoEv_tot + rhoEe_tot + rhoEel_cat;
+
+//  std::cout << std::endl << "COMPUTE ENERGIES" << std::endl;
+//
+//  std::cout << std::endl << "rhoEref=" << rhoEref_cat << std::endl;
+//  std::cout << std::endl << "rhoEve=" << rhoEve_cat << std::endl;
+//  std::cout << std::endl << "rhoCvtr=" << rhoCvtr_cat << std::endl;
+//  std::cout << std::endl << "rhoE_f=" << rhoEf_cat << std::endl;
+//  std::cout << std::endl << "rhoEmix=" << rhoCvtr_cat+rhoEref_cat + rhoEve_cat + rhoEf_cat << std::endl;
 
   return energies;
 
@@ -1720,9 +1785,10 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
+
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
    DiffusionCoeffWBE();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS || Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
    DiffusionCoeffGY();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
    DiffusionCoeffWBE();
@@ -1735,7 +1801,7 @@ su2double CSU2TCLib::GetViscosity(){
 
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ViscosityWBE();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS || Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
     ViscosityGY();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
     ViscositySuth();
@@ -1746,9 +1812,11 @@ su2double CSU2TCLib::GetViscosity(){
 
 vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
+  //std::cout << std::endl << "GetThermalConductivities(" << std::endl;
+
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ThermalConductivitiesWBE();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS || Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
     ThermalConductivitiesGY();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
     ThermalConductivitiesSuth();
@@ -2008,6 +2076,9 @@ void CSU2TCLib::ViscosityGY(){
 
 void CSU2TCLib::ThermalConductivitiesGY(){
 
+  //std::cout << std::endl << "GetThermalConductivitiesGY(" << std::endl;
+
+
   const su2double Na   = AVOGAD_CONSTANT;
   const su2double kb   = BOLTZMANN_CONSTANT;
 
@@ -2115,12 +2186,25 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double rhoE_ref = 0.0;
   su2double rhoCvtr  = 0.0;
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
+    //std::cout << std:: endl << "Cvtrs[" << iSpecies << "]=" << Cvtrs[iSpecies] << std::endl;
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
   }
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
+
+//  std::cout << std::endl << "COMPUTE TEMPERATURES" << std::endl;
+//
+//  std::cout << std::endl << "rhoEref=" << rhoE_ref << std::endl;
+//  std::cout << std::endl << "rhoEve=" << rhoEve << std::endl;
+//  std::cout << std::endl << "rhoCvtr=" << rhoCvtr << std::endl;
+//  std::cout << std::endl << "rhoE_f=" << rhoE_f << std::endl;
+//  std::cout << std::endl << "rhoEmix=" << rhoE - rhoEvel << std::endl;
+//
+//  std::cout << std::endl << "T=" << T << std::endl;
+//
+//  exit(0);
 
   /*--- Set temperature clipping values ---*/
   const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
@@ -2277,6 +2361,8 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
     }
 
   } else if (gas_model == "AIR-7"){
+
+   // std::cout << std::endl << "here 3" << std::endl;
 
     if (iReaction <= 5) {
 

@@ -40,7 +40,8 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   omega_vec.resize(1,0.0);
   CatRecombTable.resize(nSpecies,2) = 0;
 
-  /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
+  /*--- Set up inputs to define type of mixture in the Mutation++ libra:q
+  ry ---*/
 
   /*--- Define transport model ---*/
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
@@ -57,6 +58,9 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   /* Initialize mixture object */
   mix.reset(new Mutation::Mixture(opt));
+
+ // mix->addComposition("e-:1e-6, N2:0.799999, O2:0.21", false);
+
 
   // x1000 to have Molar Mass in kg/kmol
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -115,6 +119,12 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
   mix->setState(rhos.data(), temperatures.data(), 1);
 
 }
+
+//void CMutationTCLib::SetEquilState(su2double val_temperature, su2double val_pressure){
+//
+//  mix->setState(&val_temperature, &val_pressure);
+//
+//}
 
 vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){
 
@@ -215,7 +225,7 @@ vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& val_rh
   energies[0] = rhoE - rhoEvel;
   energies[1] = rhoEve;
 
-  mix->setState(rhos.data(), energies.data(), 0);
+  mix->setState(rhos.data(), energies.data(), 0, Tve_old);
 
   mix->getTemperatures(temperatures.data());
 

@@ -109,11 +109,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
-
+  //std::cout << std::endl << "Preprocessing 0" << std::endl;
   solver_container[iZone][iInst][MESH_0][Solver_Position]->Preprocessing(geometry[iZone][iInst][MESH_0],
                                                                          solver_container[iZone][iInst][MESH_0],
                                                                          config[iZone], MESH_0, NO_RK_ITER,
                                                                          RunTime_EqSystem, true);
+  //std::cout << std::endl << "Preprocessing 1" << std::endl;
 
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
@@ -243,7 +244,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
-
+ 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/

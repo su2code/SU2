@@ -118,8 +118,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
-  SetNondimensionalization(config, iMesh);
 
+  std::cout << std::endl << "here 0" << std::endl;
+  SetNondimensionalization(config, iMesh);
+  //exit(0);
   /// TODO: This type of variables will be replaced.
 
   AllocateTerribleLegacyTemporaryVariables();
@@ -190,10 +192,13 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
+    //std::cout << std::endl << "new CNEMONSVariable nodes" << std::endl;
     nodes      = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
                                          Temperature_Inf, Temperature_ve_Inf,
                                          nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
                                          config, FluidModel);
+
+    //std::cout << std::endl << "new CNEMONSVariable node_infty" << std::endl;
     node_infty = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
                                         Temperature_Inf, Temperature_ve_Inf,
                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
@@ -210,7 +215,13 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  node_infty->SetPrimVar(0, FluidModel);
+  //std::cout << std::endl << "CNEMOEulerSolver 0 " << std::endl;
+
+  node_infty->SetPrimVar(0, FluidModel, FluidModel_transport);
+
+  //std::cout << std::endl << "CNEMOEulerSolver 1" << std::endl;
+
+  //exit(0);
 
   /*--- Initial comms. ---*/
 
@@ -243,6 +254,8 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool center_jst_ke = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
+
+  //std::cout << std::endl << "CommonPreprocessing" << std::endl;
 
   /*--- Set the primitive variables ---*/
   ompMasterAssignBarrier(ErrorCounter,0);
@@ -324,7 +337,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    nonphysical = nodes->SetPrimVar(iPoint,FluidModel, FluidModel_transport);
 
     /* Check for non-realizable states for reporting. */
 
@@ -754,6 +767,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   const bool viscous    = config->GetViscous();
   const bool rans       = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
+  //std::cout << std::endl << "Source_Residual" << std::endl;
+
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
   /*--- Initialize the error counter ---*/
@@ -774,6 +789,24 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- loop over interior points ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    //std::cout << std::endl << "iPoint=" << iPoint << std::endl;
+
+    const su2double Ti   = nodes->GetTemperature(iPoint);
+    //const su2double Tj   = nodes->GetTemperature(Point_Normal);
+    const su2double Tvei = nodes->GetTemperature_ve(iPoint);
+    //const su2double Tvej = nodes->GetTemperature_ve(Point_Normal);
+
+    /*--- Rename variables for convenience ---*/
+    const su2double ktr = nodes->GetThermalConductivity(iPoint);
+    const su2double kve = nodes->GetThermalConductivity_ve(iPoint);
+
+    //std::cout << std::endl << "ktr=" << ktr << std::endl;
+    //std::cout << std::endl << "kve=" << kve << std::endl;
+    //std::cout << std::endl << "Ti=" << Ti << std::endl;
+    ////std::cout << std::endl << "Tj=" << Tj << std::endl;
+    //std::cout << std::endl << "Tvei=" << Tvei << std::endl;
+    ////std::cout << std::endl << "Tvej=" << Tvej << std::endl;    
 
     /*--- Set conserved & primitive variables  ---*/
     numerics->SetConservative(nodes->GetSolution(iPoint),  nullptr);
@@ -877,6 +910,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     }
   }
   END_SU2_OMP_FOR
+
+  //exit(0);
 
   AD::EndNoSharedReading();
 
@@ -1027,13 +1062,20 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   case MUTATIONPP:
    #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
      FluidModel = new CMutationTCLib(config, nDim);
+     //std::cout << std::endl << "here 1" << std::endl;
+     FluidModel_transport = new CSU2TCLib(config, nDim, viscous);
+     //std::cout << std::endl << "here 2" << std::endl;
+
    #else
      SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
      CURRENT_FUNCTION);
    #endif
    break;
   case SU2_NONEQ:
+   //std::cout << std::endl << "here 1" << std::endl;
    FluidModel = new CSU2TCLib(config, nDim, viscous);
+   FluidModel_transport = new CSU2TCLib(config, nDim, viscous);
+   //std::cout << std::endl << "here 2" << std::endl;
    break;
   }
 
@@ -1046,9 +1088,26 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Compressible non dimensionalization ---*/
   /*---                                     ---*/
 
+  ////////// PLOT TH COND TBATH /////////////////
+
+  su2double T0 = 200;
+  su2double N = 5;//4981;
+
+//  for (int i = 0; i < N; i++){
+//    su2double T = T0 + i*10;
+//    FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, T, T);
+//    const auto& thermalconductivities = FluidModel->GetThermalConductivities();
+//    std::cout << "T=" << T << " k_tr=" << thermalconductivities[0] << " k_ve=" << thermalconductivities[1] << std::endl;
+//  }
+//  exit(0);
+
+
+
   /*--- Set mixture state based on pressure, mass fractions and temperatures ---*/
   FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf,
                              Temperature_FreeStream, Temperature_ve_FreeStream);
+  FluidModel_transport->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf,
+                           Temperature_FreeStream, Temperature_ve_FreeStream);
 
   /*--- Compute Gas Constant ---*/
   GasConstant_Inf = FluidModel->ComputeGasConstant();
@@ -1081,6 +1140,24 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Calculate energies ---*/
   const auto& energies = FluidModel->ComputeMixtureEnergies();
 
+//  ofstream myfile;
+//  myfile.open ("th_cond_su2mpp.csv");
+//  
+//  std::cout << std::endl << "BEFORE TBATH" << std::endl;
+//
+//  for (int i = 0; i < N; i++){
+//    su2double T = T0 + i*10;
+//    std::cout << "T=" << T << std::endl;
+//    FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, T, T);
+//    rho = FluidModel->GetDensity();
+//    FluidModel->SetTDStateRhosTTv(rho*MassFrac_Inf, T, T);
+//    const auto& thermalconductivities = FluidModel->GetThermalConductivities();
+//    std::cout << "T=" << T << " k_tr=" << thermalconductivities[0] << " k_ve=" << thermalconductivities[1] << std::endl;
+//    myfile <<  T << ", " << thermalconductivities[0] << ", " << thermalconductivities[1] <<"\n";
+//  }
+//  myfile.close();
+//  exit(0);  
+
   /*--- Viscous initialization ---*/
   if (viscous) {
 
@@ -1094,6 +1171,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
       /*--- Thermodynamics quantities based initialization ---*/
       Viscosity_FreeStream = FluidModel->GetViscosity();
+      const auto& thermalconductivities = FluidModel->GetThermalConductivities();
       Energy_FreeStream    = energies[0] + 0.5*sqvel;
 
     } else {
@@ -2169,7 +2247,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
   CNEMOEulerVariable node_inlet(Pressure, Mass_Frac, Mvec, Temperature,
                                 Temperature_ve, 1, nDim, nVar, nPrimVar,
                                 nPrimVarGrad, config, FluidModel);
-  node_inlet.SetPrimVar(0, FluidModel);
+  node_inlet.SetPrimVar(0, FluidModel, FluidModel_transport);
 
   su2double Normal[MAXNDIM] = {0.0};
 

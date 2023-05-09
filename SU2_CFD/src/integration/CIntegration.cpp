@@ -173,6 +173,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
 
+    
+  //std::cout << std::endl << "After space integration" << std::endl;  
+
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals

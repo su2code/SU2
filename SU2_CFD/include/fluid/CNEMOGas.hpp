@@ -110,6 +110,8 @@ public:
    */
   void SetTDStatePTTv(su2double P, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve);
 
+  //virtual void SetEquilState(su2double val_temperature, su2double val_pressure){}
+
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
