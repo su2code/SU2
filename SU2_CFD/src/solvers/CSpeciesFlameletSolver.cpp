@@ -292,7 +292,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
       prog_burnt = fluid_model_local->GetBurntProgVar();
-      for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
+      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
 
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
@@ -800,80 +800,80 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   END_SU2_OMP_FOR
 }
 
-void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  /*--- Loop over all the vertices on this boundary marker ---*/
+// void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+//                                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+//   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+//   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    /*--- Strong zero flux Neumann boundary condition at the outlet. ---*/
+//   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+//   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//     /*--- Strong zero flux Neumann boundary condition at the outlet. ---*/
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+//     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
+//     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetSpecies_StrongBC()) {
-      /*--- Allocate the value at the outlet ---*/
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+//     if (config->GetSpecies_StrongBC()) {
+//       /*--- Allocate the value at the outlet ---*/
+//       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
+//       nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
 
-      LinSysRes.SetBlock_Zero(iPoint);
+//       LinSysRes.SetBlock_Zero(iPoint);
 
-      /*--- Includes 1 on the diagonal ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-    } else {  // weak BC
+//       /*--- Includes 1 on the diagonal ---*/
+//       for (auto iVar = 0u; iVar < nVar; iVar++) {
+//         auto total_index = iPoint * nVar + iVar;
+//         Jacobian.DeleteValsRowi(total_index);
+//       }
+//     } else {  // weak BC
 
-      /*--- Allocate the value at the outlet ---*/
-      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+//       /*--- Allocate the value at the outlet ---*/
+//       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+//       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+//       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
-      /*--- Set various quantities in the solver class ---*/
+//       /*--- Set various quantities in the solver class ---*/
 
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
+//       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-      /*--- Set the species variables. Here we use a Neumann BC such
-      that the species variable is copied from the interior of the
-      domain to the outlet before computing the residual. ---*/
+//       /*--- Set the species variables. Here we use a Neumann BC such
+//       that the species variable is copied from the interior of the
+//       domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+//       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
-      /*--- Set Normal (negate for outward convention) ---*/
+//       /*--- Set Normal (negate for outward convention) ---*/
 
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
+//       su2double Normal[MAXNDIM] = {0.0};
+//       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+//       conv_numerics->SetNormal(Normal);
 
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+//       if (dynamic_grid)
+//         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      if (conv_numerics->GetBoundedScalar()) {
-        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
-      }
+//       if (conv_numerics->GetBoundedScalar()) {
+//         const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+//         const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+//         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+//       }
 
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
+//       /*--- Compute the residual using an upwind scheme ---*/
+//       auto residual = conv_numerics->ComputeResidual(config);
+//       LinSysRes.AddBlock(iPoint, residual);
 
-      /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+//       /*--- Jacobian contribution for implicit integration ---*/
+//       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
-    }
-  }
-  END_SU2_OMP_FOR
-}
+//       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+//     }
+//   }
+//   END_SU2_OMP_FOR
+// }
 
 void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,

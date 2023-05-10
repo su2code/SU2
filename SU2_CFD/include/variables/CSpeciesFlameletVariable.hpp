@@ -84,7 +84,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \brief Get the value of the looked up table based on the transported scalar.
    * \return Pointer to the transported scalars source term.
    */
-  inline su2double *GetScalarLookups(unsigned long iPoint) override { return lookup_scalar[iPoint]; }
+  inline su2double GetScalarLookups(unsigned long iPoint, unsigned short iVar) const  { return lookup_scalar[iPoint][iVar]; }
 
   inline void SetDataExtrapolation(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 

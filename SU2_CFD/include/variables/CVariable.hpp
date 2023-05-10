@@ -2321,7 +2321,7 @@ public:
   inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
   
   inline virtual su2double *GetScalarSources(unsigned long iPoint) { return nullptr; }
-  inline virtual su2double *GetScalarLookups(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
   
   /*!
    * \brief Set fluid entropy
