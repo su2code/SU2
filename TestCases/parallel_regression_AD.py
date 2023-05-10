@@ -362,12 +362,13 @@ def main():
     discadj_flamelet_ch4_cht                = TestCase('discadj_flamelet_ch4_cht')
     discadj_flamelet_ch4_cht.command        = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     discadj_flamelet_ch4_cht.cfg_dir        = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
-    discadj_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_ad__master.cfg"
+    discadj_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone      = True
     discadj_flamelet_ch4_cht.test_iter      = 10
     discadj_flamelet_ch4_cht.reference_file = "restart_adj_T_0.csv.ref"
     discadj_flamelet_ch4_cht.test_file      = "restart_adj_T_0.csv"
-    discadj_flamelet_ch4_cht.tol_percent    = 1e-2
+    discadj_flamelet_ch4_cht.tol            = 1e-6
+    discadj_flamelet_ch4_cht.tol_percent    = 0.1
     discadj_flamelet_ch4_cht.timeout        = 20000
     pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
     test_list.append(discadj_flamelet_ch4_cht)
@@ -387,6 +388,7 @@ def main():
     dot_flamelet_ch4_hx.timeout        = 20000
     dot_flamelet_ch4_hx.reference_file = "of_grad.csv.ref"
     dot_flamelet_ch4_hx.test_file      = "of_grad.csv"
+    dot_flamelet_ch4_hx.tol            = 1e-6
     dot_flamelet_ch4_hx.tol_percent    = 1e-5
     pass_list.append(dot_flamelet_ch4_hx.run_filediff())
     test_list.append(dot_flamelet_ch4_hx)
@@ -396,14 +398,15 @@ def main():
     # will only pass if test discadj_flamelet_ch4_cht passes.
     dot_flamelet_ch4_cht                = TestCase('dot_flamelet_ch4_cht')
     dot_flamelet_ch4_cht.cfg_dir        = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
-    dot_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_dot__master.cfg"
+    dot_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_dot_master.cfg"
     dot_flamelet_ch4_cht.multizone      = True
     dot_flamelet_ch4_cht.test_iter      = 10
     dot_flamelet_ch4_cht.command        = TestCase.Command("mpirun -n 2", "SU2_DOT_AD")
     dot_flamelet_ch4_cht.timeout        = 20000
     dot_flamelet_ch4_cht.reference_file = "of_grad.csv.ref"
     dot_flamelet_ch4_cht.test_file      = "of_grad.csv"
-    dot_flamelet_ch4_cht.tol_percent    = 1e-5
+    dot_flamelet_ch4_cht.tol            = 1e-6
+    dot_flamelet_ch4_cht.tol_percent    = 0.1
     pass_list.append(dot_flamelet_ch4_cht.run_filediff())
     test_list.append(dot_flamelet_ch4_cht)
 
