@@ -500,6 +500,7 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
+  inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
 
   /*!
    * \brief Set the value of the old residual.
