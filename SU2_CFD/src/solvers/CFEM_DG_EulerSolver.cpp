@@ -32,6 +32,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 
 enum {
 SIZE_ARR_NORM = 8
@@ -897,6 +898,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config, false);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+
+      break;
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -1083,6 +1098,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     case COOLPROP:
       FluidModel = new CCoolProp(config->GetFluid_Name());
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
+
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
   }

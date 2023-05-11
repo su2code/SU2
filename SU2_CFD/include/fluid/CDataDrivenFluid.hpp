@@ -46,17 +46,20 @@
 class CDataDrivenFluid final : public CFluidModel {
  protected:
   int rank{MASTER_NODE}; /*!< \brief MPI Rank. */
-  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method = ENUM_DATADRIVEN_METHOD::LUT;  /*!< \brief Interpolation method for data set evaluation. */
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
+      ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
 
-  size_t idx_rho,  /*!< \brief Interpolator index for density input. */
-      idx_e;       /*!< \brief Interpolator index for energy input. */
+  size_t idx_rho, /*!< \brief Interpolator index for density input. */
+      idx_e;      /*!< \brief Interpolator index for energy input. */
 
-  su2double Newton_Relaxation,  /*!< \brief Relaxation factor for Newton solvers. */
-      rho_start,                /*!< \brief Initial value for the density in Newton solver processes. */
-      e_start,                  /*!< \brief Initial value for the energy in Newton solver processes. */
-      Newton_Tolerance;         /*!< \brief Normalized tolerance for Newton solvers. */
+  su2double Newton_Relaxation, /*!< \brief Relaxation factor for Newton solvers. */
+      rho_start,               /*!< \brief Starting value for the density in Newton solver processes. */
+      e_start,                 /*!< \brief Starting value for the energy in Newton solver processes. */
+      rho_init,                /*!< \brief Initial value for the density from config. */
+      e_init,                  /*!< \brief Initial value for the energy from config. */
+      Newton_Tolerance;        /*!< \brief Normalized tolerance for Newton solvers. */
 
-  unsigned long MaxIter_Newton;  /*!< \brief Maximum number of iterations for Newton solvers. */
+  unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
   su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
       dsdrho_e,       /*!< \brief Entropy derivative w.r.t. static energy. */
@@ -64,23 +67,29 @@ class CDataDrivenFluid final : public CFluidModel {
       d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy. */
       d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density. */
 
-  vector<string>
-      input_names_rhoe,   /*!< \brief Data-driven method input variable names of the independent variables (density, energy). */
-      output_names_rhoe;  /*!< \brief Output variable names listed in the data-driven method input file name. */
+  su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
+      dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
+      dhde_rho;       /*!< \brief Enthalpy derivative w.r.t. static energy. */
 
-  vector<su2double*> outputs_rhoe;  /*!< \brief Pointers to output variables. */
+  vector<string> input_names_rhoe, /*!< \brief Data-driven method input variable names of the independent variables
+                                      (density, energy). */
+      output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
+
+  vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
+
+  bool set_local_rhoe = false;
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
-  MLPToolbox::CLookUp_ANN* lookup_mlp;  /*!< \brief Multi-layer perceptron collection. */
-  MLPToolbox::CIOMap* iomap_rhoe;       /*!< \brief Input-output map. */
+  MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap* iomap_rhoe;      /*!< \brief Input-output map. */
 #endif
-  vector<su2double> MLP_inputs;  /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
+  vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
 
-  unsigned long outside_dataset,  /*!< \brief Density-energy combination lies outside data set. */
-      nIter_Newton;               /*!< \brief Number of Newton solver iterations. */
+  unsigned long outside_dataset, /*!< \brief Density-energy combination lies outside data set. */
+      nIter_Newton;              /*!< \brief Number of Newton solver iterations. */
 
   /*!
    * \brief Map dataset variables to specific look-up operations.
@@ -110,11 +119,34 @@ class CDataDrivenFluid final : public CFluidModel {
    */
   void Evaluate_Dataset(su2double rho, su2double e);
 
+  /*!
+   * \brief 2D Newton solver for computing the density and energy corresponding to Y1_target and Y2_target.
+   * \param[in] Y1_target - Target value for output quantity 1.
+   * \param[in] Y2_target - Target value for output quantity 2.
+   * \param[in] Y1 - Pointer to output quantity 1.
+   * \param[in] Y2 - Pointer to output quantity 2.
+   * \param[in] dY1drho - Pointer to the partial derivative of quantity 1 w.r.t. density at constant energy.
+   * \param[in] dY1de - Pointer to the partial derivative of quantity 1 w.r.t. energy at constant density.
+   * \param[in] dY2drho - Pointer to the partial derivative of quantity 2 w.r.t. density at constant energy.
+   * \param[in] dY2de - Pointer to the partial derivative of quantity 2 w.r.t. energy at constant density.
+   */
+  void Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double* Y1, su2double* Y2, su2double* dY1drho,
+                         su2double* dY1de, su2double* dY2drho, su2double* dY2de);
+
+  /*!
+   * \brief 1D Newton solver for computing the density or energy corresponding to Y_target.
+   * \param[in] Y_target - Target quantity value.
+   * \param[in] Y - Pointer to output quantity.
+   * \param[in] X - Pointer to controlling variable (density or energy).
+   * \param[in] dYdX - Pointer to the partial derivative of target quantity w.r.t. controlling variable.
+   */
+  void Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX);
+
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CDataDrivenFluid(const CConfig* config, bool display=true);
+  CDataDrivenFluid(const CConfig* config, bool display = true);
 
   ~CDataDrivenFluid();
   /*!

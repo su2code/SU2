@@ -61,8 +61,12 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   MapInputs_to_Outputs();
 
   /*--- Set initial values for density and energy based on config options. ---*/
-  rho_start = config->GetDensity_Init_DataDriven();
-  e_start = config->GetEnergy_Init_DataDriven();
+  rho_init = config->GetDensity_Init_DataDriven();
+  e_init = config->GetEnergy_Init_DataDriven();
+
+  /*--- Set default Newton solver density and energy values. ---*/
+  rho_start = rho_init;
+  e_start = e_init;
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
@@ -121,7 +125,6 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   /*--- Compute thermodynamic state based on density and energy. ---*/
-
   Density = rho;
   StaticEnergy = e;
 
@@ -138,6 +141,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
   Density = rho;
   StaticEnergy = e;
+  Enthalpy = e + Pressure / rho;
 
   /*--- Compute secondary flow variables ---*/
   dTde_rho = -pow(dsde_rho, -2) * d2sde2;
@@ -147,227 +151,52 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
 
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
-  su2double dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
-  su2double dhde_rho = 1 + dPde_rho / rho;
+  dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
+  dhde_rho = 1 + dPde_rho / rho;
 
   dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
   dhdP_rho = dhde_rho * (1 / dPde_rho);
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
+
+  if (set_local_rhoe) {
+    rho_start = Newton_Relaxation * Density + (1 - Newton_Relaxation) * rho_init;
+    e_start = Newton_Relaxation * StaticEnergy + (1 - Newton_Relaxation) * e_init;
+  }
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
-  /*--- Setting initial values for density and energy. ---*/
-  su2double rho = rho_start, e = e_start;
-
-  bool converged = false;
-  unsigned long Iter = 0;
-
-  su2double delta_P,
-      delta_T,    
-      delta_rho,
-      delta_e,
-      determinant;
-  /*--- Initiating Newton solver ---*/
-  while (!converged && (Iter < MaxIter_Newton)) {
-    /*--- Determine thermodynamic state based on current density and energy. ---*/
-    SetTDState_rhoe(rho, e);
-
-    /*--- Determine pressure and temperature residuals. ---*/
-    delta_P = Pressure - P;
-    delta_T = Temperature - T;
-    /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if ((abs(delta_P / P) < Newton_Tolerance) && (abs(delta_T / T) < Newton_Tolerance)) {
-      converged = true;
-    } else {
-      /*--- Compute step size for density and energy. ---*/
-      determinant = dPdrho_e * dTde_rho - dPde_rho * dTdrho_e;
-
-      delta_rho = (dTde_rho * delta_P - dPde_rho * delta_T) / determinant;
-      delta_e = (-dTdrho_e * delta_P + dPdrho_e * delta_T) / determinant;
-
-      /*--- Update density and energy values ---*/
-      rho -= Newton_Relaxation * delta_rho;
-      e -= Newton_Relaxation * delta_e;
-    }
-    Iter++;
-  }
-
-  /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
-  SetTDState_rhoe(rho, e);
-
-  nIter_Newton = Iter;
+  /*--- Run 2D Newton solver for pressure and temperature ---*/
+  Run_Newton_Solver(P, T, &Pressure, &Temperature, &dPdrho_e, &dPde_rho, &dTdrho_e, &dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
   /*--- Computing static energy according to pressure and density. ---*/
   SetEnergy_Prho(P, rho);
-
-  /*--- Calculate thermodynamic state based on converged value for energy. ---*/
-  SetTDState_rhoe(rho, StaticEnergy);
 }
 
 void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
-  /*--- Setting initial values for energy. ---*/
-  su2double e = e_start;
-
-  bool converged = false;
-  unsigned long Iter = 0;
-
-  su2double delta_P,
-      delta_e;
-
-  while (!converged && (Iter < MaxIter_Newton)) {
-    /*--- Determine thermodynamic state based on current density and energy. ---*/
-    SetTDState_rhoe(rho, e);
-
-    /*--- Determine pressure and temperature residuals. ---*/
-    delta_P = Pressure - P;
-
-    /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if (abs(delta_P / P) < Newton_Tolerance) {
-      converged = true;
-    } else {
-      /*--- Compute step size for energy. ---*/
-      delta_e = delta_P / dPde_rho;
-
-      /*--- Update energy value. ---*/
-      e -= Newton_Relaxation * delta_e;
-    }
-    Iter++;
-  }
-
-  /*--- Setting static energy as the converged value. ---*/
-  StaticEnergy = e;
-
-  nIter_Newton = Iter;
+  /*--- Run 1D Newton solver for pressure at constant density. ---*/
+  Density = rho;
+  StaticEnergy = e_start;
+  Run_Newton_Solver(P, &Pressure, &StaticEnergy, &dPde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
-  /*--- Setting initial values for density and energy. ---*/
-  su2double e = e_start;
-
-  bool converged = false;
-  unsigned long Iter = 0;
-
-  su2double delta_T,
-      delta_e;
-
-  /*--- Initiating Newton solver. ---*/
-  while (!converged && (Iter < MaxIter_Newton)) {
-    /*--- Determine thermodynamic state based on current density and energy. ---*/
-    SetTDState_rhoe(rho, e);
-
-    /*--- Determine temperature residual ---*/
-    delta_T = Temperature - T;
-
-    /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if (abs(delta_T / T) < Newton_Tolerance) {
-      converged = true;
-    } else {
-      delta_e = delta_T / dTde_rho;
-
-      /*--- Update energy value ---*/
-      e -= Newton_Relaxation * delta_e;
-    }
-    Iter++;
-  }
-
-  /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
-  SetTDState_rhoe(rho, e);
-
-  nIter_Newton = Iter;
+  /*--- Run 1D Newton solver for temperature at constant density. ---*/
+  Density = rho;
+  StaticEnergy = e_start;
+  Run_Newton_Solver(T, &Temperature, &StaticEnergy, &dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
-  /*--- Setting initial values for density and energy. ---*/
-  su2double rho = rho_start, e = e_start;
-
-  bool converged = false;
-  unsigned long Iter = 0;
-
-  su2double delta_h,
-      delta_s,
-      delta_rho,
-      delta_e,
-      determinant;
-
-  /*--- Initiating Newton solver. ---*/
-  while (!converged && (Iter < MaxIter_Newton)) {
-    /*--- Determine thermodynamic state based on current density and energy. ---*/
-    SetTDState_rhoe(rho, e);
-
-    su2double Enthalpy = e + Pressure / rho;
-    /*--- Determine pressure and temperature residuals. ---*/
-    delta_h = Enthalpy - h;
-    delta_s = Entropy - s;
-
-    /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if ((abs(delta_h / h) < Newton_Tolerance) && (abs(delta_s / s) < Newton_Tolerance)) {
-      converged = true;
-    } else {
-      su2double dh_de = 1 + dPde_rho / rho;
-      su2double dh_drho = -Pressure * pow(rho, -2) + dPdrho_e / rho;
-
-      determinant = dh_drho * dsde_rho - dh_de * dsdrho_e;
-      delta_rho = (dsde_rho * delta_h - dh_de * delta_s) / determinant;
-      delta_e = (-dsdrho_e * delta_h + dh_drho * delta_s) / determinant;
-
-      /*--- Update density and energy values. ---*/
-      rho -= Newton_Relaxation * delta_rho;
-      e -= Newton_Relaxation * delta_e;
-    }
-    Iter++;
-  }
-  /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
-  SetTDState_rhoe(rho, e);
-
-  nIter_Newton = Iter;
+  /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
+  Run_Newton_Solver(h, s, &Enthalpy, &Entropy, &dhdrho_e, &dhde_rho, &dsdrho_e, &dsde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
-  /*--- Setting initial values for density and energy. ---*/
-  su2double rho = rho_start, e = e_start;
-
-  bool converged = false;
-  unsigned long Iter = 0;
-
-  su2double delta_P,
-      delta_s,
-      delta_rho,
-      delta_e,
-      determinant;
-
-  /*--- Initiating Newton solver ---*/
-  while (!converged && (Iter < MaxIter_Newton)) {
-    /*--- Determine thermodynamic state based on current density and energy. ---*/
-    SetTDState_rhoe(rho, e);
-
-    /*--- Determine pressure and temperature residuals. ---*/
-    delta_P = Pressure - P;
-    delta_s = Entropy - s;
-
-    /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if ((abs(delta_P / P) < Newton_Tolerance) && (abs(delta_s / s) < Newton_Tolerance)) {
-      converged = true;
-    } else {
-      /*--- Compute step size for density and energy. ---*/
-      determinant = dPdrho_e * dsde_rho - dPde_rho * dsdrho_e;
-
-      delta_rho = (dsde_rho * delta_P - dPde_rho * delta_s) / determinant;
-      delta_e = (-dsdrho_e * delta_P + dPdrho_e * delta_s) / determinant;
-
-      /*--- Update density and energy values. ---*/
-      rho -= Newton_Relaxation * delta_rho;
-      e -= Newton_Relaxation * delta_e;
-    }
-    Iter++;
-  }
-
-  /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
-  SetTDState_rhoe(rho, e);
-
-  nIter_Newton = Iter;
+  /*--- Run 2D Newton solver for pressure and entropy ---*/
+  Run_Newton_Solver(P, s, &Pressure, &Entropy, &dPdrho_e, &dPde_rho, &dsdrho_e, &dsde_rho);
 }
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
@@ -411,4 +240,86 @@ void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
     default:
       break;
   }
+}
+
+void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double* Y1, su2double* Y2,
+                                         su2double* dY1drho, su2double* dY1de, su2double* dY2drho, su2double* dY2de) {
+  /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
+   * ---*/
+
+  /*--- Setting initial values for density and energy. ---*/
+  su2double rho = rho_start, e = e_start;
+
+  bool converged = false;
+  unsigned long Iter = 0;
+
+  su2double delta_Y1, delta_Y2, delta_rho, delta_e, determinant;
+
+  set_local_rhoe = false;
+  /*--- Initiating Newton solver ---*/
+  while (!converged && (Iter < MaxIter_Newton)) {
+    /*--- Determine thermodynamic state based on current density and energy. ---*/
+    SetTDState_rhoe(rho, e);
+
+    /*--- Determine residuals. ---*/
+    delta_Y1 = *Y1 - Y1_target;
+    delta_Y2 = *Y2 - Y2_target;
+
+    /*--- Continue iterative process if residuals are outside tolerances. ---*/
+    if ((abs(delta_Y1 / *Y1) < Newton_Tolerance) && (abs(delta_Y2 / *Y2) < Newton_Tolerance)) {
+      converged = true;
+    } else {
+      /*--- Compute step size for density and energy. ---*/
+      determinant = (*dY1drho) * (*dY2de) - (*dY1de) * (*dY2drho);
+
+      delta_rho = (*dY2de * delta_Y1 - *dY1de * delta_Y2) / determinant;
+      delta_e = (-*dY2drho * delta_Y1 + *dY1drho * delta_Y2) / determinant;
+
+      /*--- Update density and energy values. ---*/
+      rho -= Newton_Relaxation * delta_rho;
+      e -= Newton_Relaxation * delta_e;
+    }
+    Iter++;
+  }
+  nIter_Newton = Iter;
+
+  /*--- Evaluation of final state. ---*/
+  Density = rho;
+  StaticEnergy = e;
+  SetTDState_rhoe(Density, StaticEnergy);
+  set_local_rhoe = true;
+}
+
+void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX) {
+  /*--- 1D Newton solver, computing the density or internal energy value corresponding to Y_target. ---*/
+
+  bool converged = false;
+  unsigned long Iter = 0;
+
+  su2double delta_Y, delta_X;
+
+  /*--- Initiating Newton solver. ---*/
+  while (!converged && (Iter < MaxIter_Newton)) {
+    /*--- Determine thermodynamic state based on current density and energy. ---*/
+    SetTDState_rhoe(Density, StaticEnergy);
+
+    /*--- Determine residual ---*/
+    delta_Y = Y_target - *Y;
+
+    /*--- Continue iterative process if residuals are outside tolerances. ---*/
+    if (abs(delta_Y / *Y) < Newton_Tolerance) {
+      converged = true;
+    } else {
+      delta_X = delta_Y / *dYdX;
+
+      /*--- Update energy value ---*/
+      *X += Newton_Relaxation * delta_X;
+    }
+    Iter++;
+  }
+
+  /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
+  SetTDState_rhoe(Density, StaticEnergy);
+
+  nIter_Newton = Iter;
 }

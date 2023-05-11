@@ -4677,13 +4677,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
-
-      /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
-        su2double relax_Newton = config->GetRelaxation_DataDriven();
-        GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-        GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
-      }
       
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
@@ -5673,6 +5666,15 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 {
                   Velocity_i[iDim] = nodes->GetVelocity(iPoint,iDim);
                 }
+
+                /*--- Set Newton solver starting point in case of data-driven fluid model. ---*/
+                if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+                  su2double Velocity2_i = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
+                  su2double Energy_i = nodes->GetEnergy(iPoint);
+                  su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+                  GetFluidModel()->SetTDState_rhoe(AverageDensity[iMarker][iSpan], StaticEnergy_i);
+                }
+                
                 ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
                 if(nDim ==2){
@@ -5888,6 +5890,12 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         relfacAvg = relfacAvgCfg;
         relfacFou = relfacFouCfg;
       }
+    }
+
+    /*--- Set Newton solver starting point in case of data-driven fluid model. ---*/
+    if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+      GetFluidModel()->SetInitialDensity(AverageDensity[val_marker][iSpan]);
+      GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
     }
 
     GetFluidModel()->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
@@ -6146,13 +6154,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-
-      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-        /*--- Set initial values for density and energy for Newton solvers in fluid model ---*/
-        su2double relax_Newton = config->GetRelaxation_DataDriven();
-        GetFluidModel()->SetInitialDensity(relax_Newton*Density_i + (1 - relax_Newton)*config->GetDensity_Init_DataDriven());
-        GetFluidModel()->SetInitialEnergy(relax_Newton*StaticEnergy_i + (1 - relax_Newton)*config->GetEnergy_Init_DataDriven());
-      }
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
