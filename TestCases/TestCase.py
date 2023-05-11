@@ -386,7 +386,9 @@ class TestCase:
                                         # Only do a relative comparison when the absolute tolerance is met.
                                         # This is to prevent large relative differences for very small numbers.
                                         if (float(from_word) > self.tol):
-                                          delta     = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                          delta = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                        else:
+                                          delta = 0.0
                                         max_delta = max(max_delta, delta)
                                         compare_counter += 1
                                     except ZeroDivisionError:
