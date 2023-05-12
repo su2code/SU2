@@ -2555,33 +2555,6 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
   if (!fem_solver) {
 
-    switch (Kind_Grid_Movement) {
-
-      case ROTATING_FRAME:
-        /*--- Do nothing here, the steady rotating frame will be handled in the first iteration
-         * of the flow solver, see CIteration::SetGrid_Movement(). ---*/
-        break;
-
-      case STEADY_TRANSLATION:
-
-        /*--- Set the translational velocity and hold the grid fixed during
-         the calculation (similar to rotating frame, but there is no extra
-         source term for translation). ---*/
-
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting translational grid velocities." << endl;
-
-        /*--- Set the translational velocity on all grid levels. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
-
-        break;
-
-      default:
-        break;
-    }
-
     if (config->GetnMarker_Moving() > 0) {
 
       /*--- Fixed wall velocities: set the grid velocities only one time

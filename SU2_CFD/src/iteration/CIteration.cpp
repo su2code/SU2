@@ -61,13 +61,23 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       break;
 
     case STEADY_TRANSLATION:
-      /*--- Pure translation is initialized in the static mesh movement routine at driver level. ---*/
+      /*--- Set or update the translating frame mesh movement with the current translation rates,
+       * which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << endl << " Setting translational grid velocities." << endl;
+
+      /*--- Set the grid velocities on finest multigrid level for a translating reference frame. ---*/
+      geometry[MESH_0]->SetTranslationalVelocity(config, true);
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       * including computing the grid velocities on the coarser levels. ---*/
+      grid_movement->UpdateMultiGrid(geometry, config);
 
     case ROTATING_FRAME:
       /*--- Set or update the rotating frame mesh movement with the current translation and rotation
        * rates, which might be altered via the python interface. ---*/
 
-      if (rank == MASTER_NODE) cout << endl << " Setting rotating frame grid velocities" << endl;
+      if (rank == MASTER_NODE) cout << endl << " Setting rotating frame grid velocities." << endl;
 
       /*--- Set the grid velocities on finest multigrid level for a rotating reference frame. ---*/
       geometry[MESH_0]->SetRotationalVelocity(config, true);
