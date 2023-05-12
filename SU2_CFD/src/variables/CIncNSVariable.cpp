@@ -64,11 +64,15 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
   from the dynamic pressure being iterated. ---*/
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Use the fluid model to compute the new value of density. ---*/
 
   FluidModel->SetTDState_T(Temperature, scalar);
+
+  /*--- Set the value of the density ---*/
+  
+  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
