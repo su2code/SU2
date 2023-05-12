@@ -171,4 +171,17 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
     conjugate_var[val_marker][val_vertex][pos_var] =
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
+
+  /*!
+   * \brief Generic implementation of the isothermal wall also covering CHT cases,
+   * for which the wall temperature is given by GetConjugateHeatVariable.
+   */
+  void BC_Isothermal_Wall_Generic(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *conv_numerics,
+                                  CNumerics *visc_numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker,
+                                  bool cht_mode = false);
+
 };

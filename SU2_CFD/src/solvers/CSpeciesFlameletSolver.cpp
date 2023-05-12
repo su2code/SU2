@@ -605,16 +605,16 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
   END_SU2_OMP_FOR
 }
 
-void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
+void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
-                                                unsigned short val_marker) {
+                                                unsigned short val_marker, bool cht_mode) {
 
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
+  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  su2double enth_init, enth_wall, prog_wall;
+    su2double enth_init, enth_wall, prog_wall;
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
@@ -622,18 +622,21 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    if (cht_mode)
+      temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      /*--- Set enthalpy on the wall. ---*/
-
-      prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
       if (config->GetSpecies_StrongBC()) {
         /*--- Initial guess for enthalpy value. ---*/
 
         enth_init = nodes->GetSolution(iPoint, I_ENTH);
         enth_wall = enth_init;
 
+      /*--- Set enthalpy on the wall. ---*/
+
+        prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
         n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, temp_wall, enth_init);
 
         /*--- Impose the value of the enthalpy as a strong boundary
@@ -684,92 +687,20 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
     }
   }
   if (rank == MASTER_NODE && n_not_iterated > 0) {
-    cout << " !!! Isothermal wall bc (" << Marker_Tag
+    cout << " !!! Wall bc (" << Marker_Tag
          << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
   }
+}
+
+void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
+                                                unsigned short val_marker) {
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+
 }
 
 void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CConfig* config,
                                                         unsigned short val_marker) {
-
-  const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  unsigned long n_not_iterated = 0;
-
-  /*--- Loop over all the vertices on this boundary marker. ---*/
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    su2double temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-      if (config->GetSpecies_StrongBC()) {
-        /*--- Initial guess for enthalpy. ---*/
-
-        su2double enth_init = nodes->GetSolution(iPoint, I_ENTH);
-        su2double enth_wall = enth_init;
-
-        /*--- Set enthalpy on the wall. ---*/
-
-        su2double prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, temp_wall, enth_init);
-
-        /*--- Impose the value of the enthalpy as a strong boundary
-        condition (Dirichlet) and remove any
-        contribution to the residual at this node. ---*/
-
-        nodes->SetSolution(iPoint, I_ENTH, enth_wall);
-        nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
-
-        LinSysRes(iPoint, I_ENTH) = 0.0;
-
-        nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
-
-        if (implicit) {
-          unsigned long total_index = iPoint * nVar + I_ENTH;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      } else {
-        /*--- Weak BC formulation. ---*/
-        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-
-        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        /*--- Get coordinates of i & nearest normal and compute distance. ---*/
-
-        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        su2double Edge_Vector[MAXNDIM];
-        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-        su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-        su2double dist_ij = sqrt(dist_ij_2);
-
-        /*--- Compute the normal gradient in temperature using Twall. ---*/
-
-        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
-
-        /*--- Get thermal conductivity ---*/
-
-        su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
-
-        /*--- Apply a weak boundary condition for the energy equation.
-        Compute the residual due to the prescribed heat flux. ---*/
-
-        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity * dTdn * Area;
-      }
-    }
-  }
-  END_SU2_OMP_FOR
-
-  if (rank == MASTER_NODE && n_not_iterated > 0) {
-    cout << " !!! CHT interface (" << config->GetMarker_All_TagBound(val_marker)
-         << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
-  }
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
