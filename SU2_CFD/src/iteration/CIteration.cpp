@@ -73,6 +73,8 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
        * including computing the grid velocities on the coarser levels. ---*/
       grid_movement->UpdateMultiGrid(geometry, config);
 
+      break;
+
     case ROTATING_FRAME:
       /*--- Set or update the rotating frame mesh movement with the current translation and rotation
        * rates, which might be altered via the python interface. ---*/
