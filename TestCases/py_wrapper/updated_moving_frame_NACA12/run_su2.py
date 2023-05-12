@@ -62,17 +62,15 @@ class SU2Interface:
         # a node that belongs to a moving surface marker.
         has_moving_marker = [marker in solver_markers for marker in solver_all_moving_markers]
 
-        f = open('forces_'+str(self.myid)+'.csv','w')
-
-        for marker in solver_all_moving_markers[has_moving_marker]:
-            solver_marker_id = solver_marker_ids[marker]
-            n_vertices = self.FluidSolver.GetNumberMarkerNodes(solver_marker_id)
-            for i_vertex in range(n_vertices):
-                fxyz = self.FluidSolver.GetMarkerFlowLoad(solver_marker_id, i_vertex)
-                iPoint = self.FluidSolver.GetMarkerNode(solver_marker_id, i_vertex)
-                GlobalIndex = self.FluidSolver.GetNodeGlobalIndex(iPoint)
-                f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], 0.0))
-        f.close()
+        with open('forces_'+str(self.myid)+'.csv','w') as f:
+            for marker in solver_all_moving_markers[has_moving_marker]:
+                solver_marker_id = solver_marker_ids[marker]
+                n_vertices = self.FluidSolver.GetNumberMarkerNodes(solver_marker_id)
+                for i_vertex in range(n_vertices):
+                    fxyz = self.FluidSolver.GetMarkerFlowLoad(solver_marker_id, i_vertex)
+                    iPoint = self.FluidSolver.GetMarkerNode(solver_marker_id, i_vertex)
+                    GlobalIndex = self.FluidSolver.GetNodeGlobalIndex(iPoint)
+                    f.write('{}, {:.2f}, {:.2f}, {:.2f}\n'.format(GlobalIndex, fxyz[0], fxyz[1], 0.0))
 
 cfd_interface = SU2Interface('config.cfg')
 cfd_interface.update_moving_frame()
