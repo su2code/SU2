@@ -2547,11 +2547,8 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
   unsigned short iMGlevel, iMGfine;
-  unsigned short Kind_Grid_Movement;
 
   unsigned short iZone = config->GetiZone();
-
-  Kind_Grid_Movement = config->GetKind_GridMovement();
 
   if (!fem_solver) {
 
