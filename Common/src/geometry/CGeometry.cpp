@@ -3443,7 +3443,7 @@ void CGeometry::SetRotationalVelocity(const CConfig* config, bool print) {
     cout << " Rotational origin (x, y, z): ( " << Center[0] << ", " << Center[1];
     cout << ", " << Center[2] << " )\n";
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
-    cout << Omega[1] << ", " << Omega[2] << " )" << endl;
+    cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
     cout << " Translational velocity in x, y, z direction: (" << xDot[0] << ", " << xDot[1] << ", " << xDot[2] << ")."
          << endl;
   }
