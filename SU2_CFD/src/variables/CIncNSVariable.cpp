@@ -59,7 +59,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, nDim+1);
-  const auto check_temp = SetTemperature(iPoint, FluidModel->GetTemperature());
+  const auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
