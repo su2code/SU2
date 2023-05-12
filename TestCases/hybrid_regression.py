@@ -478,6 +478,15 @@ def main():
     sine_gust.test_vals = [-1.977520, 3.481804, -0.012402, -0.007454]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
+    
+    # Cosine gust in z-direction
+    cosine_gust           = TestCase('cosine_gust_zdir')
+    cosine_gust.cfg_dir   = "gust"
+    cosine_gust.cfg_file  = "cosine_gust_zdir.cfg"
+    cosine_gust.test_iter = 79
+    cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
+    cosine_gust.unsteady  = True
+    test_list.append(cosine_gust)
 
     # Aeroelastic
     aeroelastic           = TestCase('aeroelastic')
