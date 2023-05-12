@@ -64,14 +64,12 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       /*--- Set or update the translating frame mesh movement with the current translation rates,
        * which might be altered via the python interface. ---*/
 
-      if (rank == MASTER_NODE) cout << endl << " Setting translational grid velocities." << endl;
+      if (rank == MASTER_NODE) cout << "\n Setting translational grid velocities." << endl;
 
-      /*--- Set the grid velocities on finest multigrid level for a translating reference frame. ---*/
-      geometry[MESH_0]->SetTranslationalVelocity(config, true);
+        /*--- Set the translational velocity on all grid levels. ---*/
 
-      /*--- Update the multigrid structure after moving the finest grid,
-       * including computing the grid velocities on the coarser levels. ---*/
-      grid_movement->UpdateMultiGrid(geometry, config);
+        for (auto iMGlevel = 0u; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
 
       break;
 
@@ -79,14 +77,15 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       /*--- Set or update the rotating frame mesh movement with the current translation and rotation
        * rates, which might be altered via the python interface. ---*/
 
-      if (rank == MASTER_NODE) cout << endl << " Setting rotating frame grid velocities." << endl;
+      if (rank == MASTER_NODE) cout << "\n Setting rotating frame grid velocities." << endl;
 
-      /*--- Set the grid velocities on finest multigrid level for a rotating reference frame. ---*/
-      geometry[MESH_0]->SetRotationalVelocity(config, true);
+        /*--- Set the grid velocities on all multigrid levels for a steadily
+           rotating reference frame. ---*/
 
-      /*--- Update the multigrid structure after moving the finest grid,
-            including computing the grid velocities on the coarser levels. ---*/
-      grid_movement->UpdateMultiGrid(geometry, config);
+        for (auto iMGlevel = 0u; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
+          geometry[iMGlevel]->SetRotationalVelocity(config, true);
+          geometry[iMGlevel]->SetShroudVelocity(config);
+        }
 
       break;
   }
