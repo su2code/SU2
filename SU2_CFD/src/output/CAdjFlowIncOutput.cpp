@@ -97,7 +97,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
 
 }
 
-CAdjFlowIncOutput::~CAdjFlowIncOutput(void) {}
+CAdjFlowIncOutput::~CAdjFlowIncOutput() = default;
 
 void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
 
@@ -275,6 +275,8 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
 
   LoadHistoryDataAdjScalar(config, solver);
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {

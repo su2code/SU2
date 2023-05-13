@@ -29,12 +29,10 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
 CCSVFileWriter::CCSVFileWriter(CParallelDataSorter *valDataSorter) :
-  CFileWriter(valDataSorter, std::move(".csv")){}
+  CFileWriter(valDataSorter, ".csv"){}
 
 
-CCSVFileWriter::~CCSVFileWriter(){
-
-}
+CCSVFileWriter::~CCSVFileWriter()= default;
 
 void CCSVFileWriter::WriteData(string val_filename){
 
@@ -79,10 +77,10 @@ void CCSVFileWriter::WriteData(string val_filename){
 
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
 
-  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
+  auto *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
   su2double *bufD_Recv = nullptr;
 
-  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
+  auto *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
   unsigned long *bufL_Recv = nullptr;
 
   /*--- Load send buffers with the local data on this rank. ---*/

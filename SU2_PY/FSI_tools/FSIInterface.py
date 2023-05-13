@@ -2660,7 +2660,6 @@ class Interface:
                 )
                 self.MPIBarrier()
                 if myid in self.fluidSolverProcessors:
-                    FluidSolver.ResetConvergence()
                     FluidSolver.Run()
                     self.MPIBarrier()
                     FluidSolver.Postprocess()
@@ -2777,7 +2776,6 @@ class Interface:
             # --- Fluid solver call for FSI subiteration ---#
 
             if myid in self.fluidSolverProcessors:
-                FluidSolver.ResetConvergence()  # This is setting to zero the convergence in the integrator, important to reset it.
                 # The mesh will be deformed in the context of the preprocessor, there is no need to set the initial
                 # mesh pushing back the solution to avoid spurious velocities, as the velocity is not computed at all
                 self.MPIPrint("\nPerforming static mesh deformation...\n")

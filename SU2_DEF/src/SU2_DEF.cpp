@@ -53,10 +53,6 @@ int main(int argc, char* argv[]) {
 
   CDeformationDriver driver(config_file_name, comm);
 
-  /*--- Preprocess the solver data. ---*/
-
-  driver.Preprocess();
-
   /*--- Launch the main external loop of the solver. ---*/
 
   driver.Run();

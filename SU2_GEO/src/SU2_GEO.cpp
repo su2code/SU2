@@ -612,7 +612,7 @@ int main(int argc, char* argv[]) {
 
     /*--- Write the objective function in a external file ---*/
     string filename = config_container[ZONE_0]->GetObjFunc_Value_FileName();
-    unsigned short lastindex = filename.find_last_of(".");
+    unsigned short lastindex = filename.find_last_of('.');
     filename = filename.substr(0, lastindex);
     if (tabTecplot)
       filename += ".dat";
@@ -730,7 +730,7 @@ int main(int argc, char* argv[]) {
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
       string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
-      unsigned short lastindex = filename.find_last_of(".");
+      unsigned short lastindex = filename.find_last_of('.');
       filename = filename.substr(0, lastindex);
       if (tabTecplot)
         filename += ".dat";

@@ -192,5 +192,5 @@ std::vector<su2double> CorrectedInletValues(const std::vector<su2double>& Inlet_
  * \param[in] nDim - the dimensions of the problem.
  * \param[in] nColumns - the number of columns in the final interpolated data
  */
-void PrintInletInterpolatedData(const std::vector<su2double>& Inlet_Data_Interpolated, std::string Marker,
+void PrintInletInterpolatedData(const std::vector<su2double>& Inlet_Data_Interpolated, const std::string& Marker,
                                 unsigned long nVertex, unsigned short nDim, unsigned short nColumns);

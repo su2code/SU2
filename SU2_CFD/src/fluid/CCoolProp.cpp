@@ -31,7 +31,7 @@
 #include "AbstractState.h"
 #include "CoolProp.h"
 
-CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
+CCoolProp::CCoolProp(const string &fluidname) : CFluidModel() {
   fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
   Gas_Constant = fluid_entity->gas_constant() / fluid_entity->molar_mass();
   Pressure_Critical = fluid_entity->p_critical();
@@ -56,18 +56,12 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
   if (fluid_entity->phase() == CoolProp::iphase_twophase) {
-    // assume it is pure gas
-    fluid_entity->specify_phase(CoolProp::iphase_gas);
+    // impose gas phase
+    Temperature = Temperature + 0.1;
     CheckPressure(Pressure);
+    CheckTemperature(Temperature);
     fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
-    if (abs(fluid_entity->rhomass() / Density - 1) < dp) {
-      // origial phase is near saturation gas, then just compute sound speed
-      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
-    } else {
-      // original phase is not near saturation gas, then specify the phase as gas phase
-      fluid_entity->specify_phase(CoolProp::iphase_gas);
-      SetTDState_PT(Pressure, Temperature);
-    }
+    SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   } else {
     SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   }
@@ -75,6 +69,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
   CheckPressure(P);
+  CheckTemperature(T);
   fluid_entity->update(CoolProp::PT_INPUTS, P, T);
   su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();
@@ -124,7 +119,7 @@ void CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
 }
 
 #else
-CCoolProp::CCoolProp(string fluidname) {
+CCoolProp::CCoolProp(const string& fluidname) {
   SU2_MPI::Error(
       "SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff "
       "or autodiff",

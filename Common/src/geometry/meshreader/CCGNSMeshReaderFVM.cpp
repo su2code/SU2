@@ -71,10 +71,10 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig* val_config, unsigned short val_i
 #endif
 }
 
-CCGNSMeshReaderFVM::~CCGNSMeshReaderFVM(void) {}
+CCGNSMeshReaderFVM::~CCGNSMeshReaderFVM() = default;
 
 #ifdef HAVE_CGNS
-void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
+void CCGNSMeshReaderFVM::OpenCGNSFile(const string& val_filename) {
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
   int file_type;
@@ -227,7 +227,7 @@ void CCGNSMeshReaderFVM::ReadCGNSPointCoordinates() {
    +1 for CGNS convention. ---*/
 
   cgsize_t range_min = (cgsize_t)pointPartitioner.GetFirstIndexOnRank(rank) + 1;
-  cgsize_t range_max = (cgsize_t)pointPartitioner.GetLastIndexOnRank(rank);
+  auto range_max = (cgsize_t)pointPartitioner.GetLastIndexOnRank(rank);
 
   /*--- Loop over each set of coordinates. ---*/
 
@@ -340,7 +340,7 @@ void CCGNSMeshReaderFVM::ReadCGNSSectionMetadata() {
       /* Retrieve the connectivity information for the first element. */
 
       if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, s + 1, startE, startE, connElemCGNS.data(),
-                                        connOffsetCGNS.data(), NULL) != CG_OK)
+                                        connOffsetCGNS.data(), nullptr) != CG_OK)
         cg_error_exit();
 
       /* The element type is in the first position of the connectivity
@@ -448,12 +448,12 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
       if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1,
                                         (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
                                         (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank), connElemCGNS.data(),
-                                        connOffsetCGNS.data(), NULL) != CG_OK)
+                                        connOffsetCGNS.data(), nullptr) != CG_OK)
         cg_error_exit();
     } else {
       if (cg_elements_partial_read(
               cgnsFileID, cgnsBase, cgnsZone, val_section + 1, (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
-              (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank), connElemCGNS.data(), NULL) != CG_OK)
+              (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank), connElemCGNS.data(), nullptr) != CG_OK)
         cg_error_exit();
     }
   }
@@ -629,7 +629,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    We have assumed a constant message size of a hex element (8 nodes)
    + 2 extra values for the ID and VTK. ---*/
 
-  unsigned long *connSend = NULL, iSend = 0;
+  unsigned long *connSend = nullptr, iSend = 0;
   unsigned long sendSize = (unsigned long)SU2_CONN_SIZE * nElem_Send[size];
   connSend = new unsigned long[sendSize];
   for (iSend = 0; iSend < sendSize; iSend++) connSend[iSend] = 0;
@@ -688,15 +688,15 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL, iRecv = 0;
+  unsigned long *connRecv = nullptr, iRecv = 0;
   unsigned long recvSize = (unsigned long)SU2_CONN_SIZE * nElem_Recv[size];
   connRecv = new unsigned long[recvSize];
   for (iRecv = 0; iRecv < recvSize; iRecv++) connRecv[iRecv] = 0;
 
   /*--- Allocate memory for the MPI requests if we will communicate. ---*/
 
-  SU2_MPI::Request* connSendReq = NULL;
-  SU2_MPI::Request* connRecvReq = NULL;
+  SU2_MPI::Request* connSendReq = nullptr;
+  SU2_MPI::Request* connRecvReq = nullptr;
 
   if (nSends > 0) {
     connSendReq = new SU2_MPI::Request[nSends];
@@ -754,8 +754,8 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq != NULL) delete[] connSendReq;
-  if (connRecvReq != NULL) delete[] connRecvReq;
+  delete[] connSendReq;
+  delete[] connRecvReq;
 
   delete[] connSend;
   delete[] connRecv;
@@ -832,10 +832,11 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
     if (elemType == MIXED || elemType == NGON_n || elemType == NFACE_n) {
       vector<cgsize_t> connOffsetTemp(nElems[val_section] + 1, 0);
       if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, startE, endE,
-                                        connElemTemp.data(), connOffsetTemp.data(), NULL) != CG_OK)
+                                        connElemTemp.data(), connOffsetTemp.data(), nullptr) != CG_OK)
         cg_error_exit();
     } else {
-      if (cg_elements_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, connElemTemp.data(), NULL)) cg_error_exit();
+      if (cg_elements_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, connElemTemp.data(), nullptr))
+        cg_error_exit();
     }
 
     /*--- Allocate the memory for the data structure used to carry

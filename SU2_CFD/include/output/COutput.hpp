@@ -223,6 +223,10 @@ protected:
      We store pointers to the required outputs to speed-up access. ---*/
     std::vector<const su2double*> otherOutputs;
 
+    /*--- For discrete adjoint we may need to skip some expressions because there is one output class
+     for the primal solver and one for the discrete adjoint (each with different variables). ---*/
+    bool skip = false;
+
     /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
      point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
      with primitive indices. ---*/
@@ -729,7 +733,7 @@ protected:
    * \param[in] name - Name of the field.
    * \param[in] iPoint - The point location in the field.
    */
-  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
+  su2double GetVolumeOutputValue(const string& name, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field
@@ -737,7 +741,7 @@ protected:
    * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
-  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  void SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
 
   /*!
    * \brief Set the value of a volume output field
@@ -745,7 +749,7 @@ protected:
    * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
-  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  void SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
 
   /*!
    * \brief CheckHistoryOutput
@@ -806,6 +810,14 @@ protected:
    * \brief Parses user-defined outputs.
    */
   void SetCustomOutputs(const CConfig *config);
+
+  /*!
+   * \brief Evaluates function-type custom outputs.
+   * Derived classes can use this to compute simple expressions of other outputs if they
+   * do not implement surface averages. This should be called just before evaluating the
+   * custom objective function.
+   */
+  void ComputeSimpleCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.

@@ -42,7 +42,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*, cons
 #endif
 
 /* Constructor. Initialize the const member variables, if needed. */
-CBlasStructure::CBlasStructure(void)
+CBlasStructure::CBlasStructure()
 #if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
     (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     : mc(256),
