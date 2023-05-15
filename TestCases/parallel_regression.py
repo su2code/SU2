@@ -1529,17 +1529,17 @@ def main():
     ######################################
 
     # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
-    cfd_flamelet_ch4_cht                = TestCase('cfd_flamelet_ch4_cht')
-    cfd_flamelet_ch4_cht.cfg_dir        = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
-    cfd_flamelet_ch4_cht.cfg_file       = "lam_prem_ch4_cht_cfd_master.cfg"
-    cfd_flamelet_ch4_cht.test_iter      = 10
-    cfd_flamelet_ch4_cht.command        = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    cfd_flamelet_ch4_cht.timeout        = 1600
-    cfd_flamelet_ch4_cht.reference_file = "restart_0.csv.ref"
-    cfd_flamelet_ch4_cht.test_file      = "restart_0.csv"
-    cfd_flamelet_ch4_cht.multizone      = True
-    cfd_flamelet_ch4_cht.tol            = 1e-6
-    cfd_flamelet_ch4_cht.tol_percent    = 0.1
+    cfd_flamelet_ch4_cht                  = TestCase('cfd_flamelet_ch4_cht')
+    cfd_flamelet_ch4_cht.cfg_dir          = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
+    cfd_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_cfd_master.cfg"
+    cfd_flamelet_ch4_cht.test_iter        = 10
+    cfd_flamelet_ch4_cht.command          = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cfd_flamelet_ch4_cht.timeout          = 1600
+    cfd_flamelet_ch4_cht.reference_file   = "restart_0.csv.ref"
+    cfd_flamelet_ch4_cht.test_file        = "restart_0.csv"
+    cfd_flamelet_ch4_cht.multizone        = True
+    cfd_flamelet_ch4_cht.comp_threshold   = 1e-6
+    cfd_flamelet_ch4_cht.tol_file_percent = 0.1
     pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
     test_list.append(cfd_flamelet_ch4_cht)
 
