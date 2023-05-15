@@ -778,7 +778,14 @@ void CSurfaceMovement::SetParametricCoord(CGeometry* geometry, CConfig* config, 
     SU2_MPI::Error("The FFD box '" + FFDBox->GetTag() +
                        "' is not properly defined. The first 4 points must be listed counter\n"
                        "clockwise, such that applying the right-hand rule results in a vector into the box.\n"
-                       "This is according to the VTK hexahedron ordering. The CCW convention also applies in 2D.",
+                       "This is according to the VTK hexahedron ordering:\n"
+                       "    7 +----+ 6 \n"
+                       "     /|   /|   \n"
+                       "  4 +----+5|   \n"
+                       "    |3+--|-+ 2 \n"
+                       "    |/   |/    \n"
+                       "  0 +----+ 1   \n"
+                       "The CCW convention also applies in 2D, where only the bottom face is specified.",
                    CURRENT_FUNCTION);
   }
 
