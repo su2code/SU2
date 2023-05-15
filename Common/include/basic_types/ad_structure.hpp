@@ -369,9 +369,16 @@ FORCEINLINE void Reset() {
   }
 }
 
+FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
+
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
-FORCEINLINE void SetDerivative(int index, const double val) { AD::getTape().setGradient(index, val); }
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+FORCEINLINE void SetDerivative(int index, const double val) {
+  using ResizingPolicy = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::ResizingPolicy;
+  AD::getTape().setGradient(index, val, ResizingPolicy::NoBoundsChecking);
+}
 
 FORCEINLINE double GetDerivative(int index) { return AD::getTape().getGradient(index); }
 

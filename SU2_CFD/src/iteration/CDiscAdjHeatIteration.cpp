@@ -157,6 +157,8 @@ void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry****
                                               unsigned short iZone, unsigned short iInst) {
 
   /*--- Initialize the adjoints the solution variables ---*/
+
+  AD::ResizeAdjoints();
   solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
