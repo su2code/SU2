@@ -260,7 +260,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   /*--- Set the primitive variables ---*/
   ompMasterAssignBarrier(ErrorCounter,0);
   SU2_OMP_ATOMIC
-  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output, geometry);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   { /*--- Ops that are not OpenMP parallel go in this block. ---*/
@@ -328,7 +328,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output, CGeometry *geometry) {
 
   unsigned long nonPhysicalPoints = 0;
   bool nonphysical = true;
@@ -1090,15 +1090,58 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   ////////// PLOT TH COND TBATH /////////////////
 
-  su2double T0 = 200;
-  su2double N = 5;//4981;
+  ofstream myfile1;
+  myfile1.open ("eve1.csv");
+  ofstream myfile2;
+  myfile2.open ("eve2.csv");  
 
+  vector<su2double> rhos; rhos.resize(nSpecies);
+ 
+
+//  su2double T0 = 60;
+//  su2double N = 50;//4981;
+//
 //  for (int i = 0; i < N; i++){
+//
 //    su2double T = T0 + i*10;
 //    FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, T, T);
-//    const auto& thermalconductivities = FluidModel->GetThermalConductivities();
-//    std::cout << "T=" << T << " k_tr=" << thermalconductivities[0] << " k_ve=" << thermalconductivities[1] << std::endl;
+//    const auto& energies = FluidModel->ComputeMixtureEnergies();
+//
+//    myfile1 << "T=" << T << " Eve=" << energies[1]<<"\n";
+//    std::cout << "T=" << T << " Eve=" << energies[1]<<"\n";
+//
+//    GasConstant_Inf = FluidModel->ComputeGasConstant();
+//    su2double rho = FluidModel->GetDensity();
+//    for (int i = 0; i < nSpecies; i++) rhos[i] = rho*MassFrac_Inf[i];
+//    soundspeed         = FluidModel->ComputeSoundSpeed();
+//    Gamma              = FluidModel->ComputeGamma();
+//  
+//    /*--- Compute the Free Stream velocity, using the Mach number ---*/
+//    if (nDim == 2) {
+//      config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*soundspeed;
+//      config->GetVelocity_FreeStream()[1] = sin(Alpha)*Mach*soundspeed;
+//    }
+//    if (nDim == 3) {
+//      config->GetVelocity_FreeStream()[0] = cos(Alpha)*cos(Beta)*Mach*soundspeed;
+//      config->GetVelocity_FreeStream()[1] = sin(Beta)*Mach*soundspeed;
+//      config->GetVelocity_FreeStream()[2] = sin(Alpha)*cos(Beta)*Mach*soundspeed;
+//    }
+//  
+////    /*--- Compute the modulus of the free stream velocity ---*/
+////    ModVel_FreeStream = 0.0;
+////    for (auto iDim = 0ul; iDim < nDim; iDim++){
+////      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+////    }
+////    sqvel = ModVel_FreeStream;
+////
+////    const auto& T_mpp        = FluidModel->ComputeTemperatures(rhos, rho*(energies[0] + 0.5*sqvel), rho*energies[1], 0.5*rho*sqvel, 300);
+//
+//    //myfile2 << "T=" << T << " Eve=" << energies[1]<<"\n";
+//    std::cout << "T=" << T << " Eve=" << energies[1]<<"\n";
+//    
 //  }
+//  myfile1.close();
+//  myfile2.close();
 //  exit(0);
 
 
@@ -1584,6 +1627,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
        iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    //std::cout << "Farf iPoint=" << iPoint << std::endl;
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -1992,6 +2037,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    //std::cout << "Outlet iPoint=" << geometry->nodes->GetGlobalIndex(iPoint)  << std::endl;
+    //std::cout << "x=" << geometry->nodes->GetCoord(iPoint,0) << std::endl;
+    //std::cout << "y=" << geometry->nodes->GetCoord(iPoint,1) << std::endl;    
+
     /*--- Allocate the value at the outlet ---*/
     V_outlet = GetCharacPrimVar(val_marker, iVertex);
 
@@ -2063,64 +2112,67 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
       } else {
 
-        /*--- Subsonic exit flow: there is one incoming characteristic,
-         therefore one variable can be specified (back pressure) and is used
-         to update the conservative variables. Compute the entropy and the
-         acoustic Riemann variable. These invariants, as well as the
-         tangential velocity components, are extrapolated. The Temperatures
-         (T and Tve) and species concentraition are also assumed to be extrapolated.
-         ---*/
+        for (auto iVar = 0ul; iVar < nVar; iVar++)     U_outlet[iVar] = U_domain[iVar];
+        for (auto iVar = 0ul; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
 
-        const su2double Entropy = Pressure*pow(1.0/Density,Gamma);
-        const su2double Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-
-        /*--- Compute the new fictious state at the outlet ---*/
-        //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
-        //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-        Density    = pow(P_Exit/Entropy,1.0/Gamma);
-        Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-        Velocity2  = 0.0;
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies ++) {
-          V_outlet[iSpecies] = Ys[iSpecies]*Density;
-          rhos[iSpecies] = V_outlet[iSpecies];
-        }
-
-        V_outlet[T_INDEX] = V_domain[T_INDEX];
-        V_outlet[TVE_INDEX] = V_domain[TVE_INDEX];
-
-        for (auto iDim = 0ul; iDim < nDim; iDim++){
-          V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
-        }
-
-        V_outlet[P_INDEX]     = Pressure;
-        V_outlet[RHO_INDEX]   = Density;
-        V_outlet[A_INDEX]     = SoundSpeed;
-
-        /*--- Set mixture state and compute quantities ---*/
-        FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
-        V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
-        V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
-
-        const auto& energies = FluidModel->ComputeMixtureEnergies();
-
-        /*--- Conservative variables, using the derived quantities ---*/
-        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies ++){
-          U_outlet[iSpecies] = V_outlet[iSpecies];
-        }
-
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
-
-        U_outlet[nVar-2] = (energies[0] + 0.5*Velocity2) * Density;
-        U_outlet[nVar-1] = energies[1] * Density;
+//        /*--- Subsonic exit flow: there is one incoming characteristic,
+//         therefore one variable can be specified (back pressure) and is used
+//         to update the conservative variables. Compute the entropy and the
+//         acoustic Riemann variable. These invariants, as well as the
+//         tangential velocity components, are extrapolated. The Temperatures
+//         (T and Tve) and species concentraition are also assumed to be extrapolated.
+//         ---*/
+//
+//        const su2double Entropy = Pressure*pow(1.0/Density,Gamma);
+//        const su2double Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+//
+//        /*--- Compute the new fictious state at the outlet ---*/
+//        //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+//        //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+//        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+//        Pressure   = P_Exit;
+//        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+//        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+//        Velocity2  = 0.0;
+//        for (auto iDim = 0ul; iDim < nDim; iDim++) {
+//          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+//          Velocity2 += Velocity[iDim]*Velocity[iDim];
+//        }
+//
+//        /*--- Primitive variables, using the derived quantities ---*/
+//        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies ++) {
+//          V_outlet[iSpecies] = Ys[iSpecies]*Density;
+//          rhos[iSpecies] = V_outlet[iSpecies];
+//        }
+//
+//        V_outlet[T_INDEX] = V_domain[T_INDEX];
+//        V_outlet[TVE_INDEX] = V_domain[TVE_INDEX];
+//
+//        for (auto iDim = 0ul; iDim < nDim; iDim++){
+//          V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
+//        }
+//
+//        V_outlet[P_INDEX]     = Pressure;
+//        V_outlet[RHO_INDEX]   = Density;
+//        V_outlet[A_INDEX]     = SoundSpeed;
+//
+//        /*--- Set mixture state and compute quantities ---*/
+//        FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
+//        V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
+//        V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
+//
+//        const auto& energies = FluidModel->ComputeMixtureEnergies();
+//
+//        /*--- Conservative variables, using the derived quantities ---*/
+//        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies ++){
+//          U_outlet[iSpecies] = V_outlet[iSpecies];
+//        }
+//
+//        for (auto iDim = 0ul; iDim < nDim; iDim++)
+//          U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
+//
+//        U_outlet[nVar-2] = (energies[0] + 0.5*Velocity2) * Density;
+//        U_outlet[nVar-1] = energies[1] * Density;
 
       }
 
@@ -2208,6 +2260,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   delete [] U_outlet;
   delete [] Normal;
   delete [] Ys;
+
+  //exit(0);
 
 }
 

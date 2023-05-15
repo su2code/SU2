@@ -194,7 +194,7 @@ public:
    * \return - The number of non-physical points.
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                               CConfig *config, bool Output);
+                                               CConfig *config, bool Output, CGeometry *geometry);
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over

@@ -108,7 +108,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   }
 }
 
-unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {
+unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output, CGeometry *geometry) {
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -134,6 +134,8 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
     /*--- Compressible flow, primitive variables. ---*/
 
     bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel, FluidModel_transport);
+
+    if (nonphysical) std::cout << std::endl << "iPoint=" <<  geometry->nodes->GetGlobalIndex(iPoint) << std::endl;
 
     /* Check for non-realizable states for reporting. */
 
@@ -555,9 +557,15 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  int i=0;
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    i++;
+
+    //std::cout << "Isoth iPoint=" << geometry->nodes->GetGlobalIndex(iPoint)  << std::endl;
+    //std::cout << "x=" << geometry->nodes->GetCoord(iPoint,0) << std::endl;
+    //std::cout << "y=" << geometry->nodes->GetCoord(iPoint,1) << std::endl;
 
     //std::cout << std::endl << "iPoint=" << iPoint << std::endl;
 

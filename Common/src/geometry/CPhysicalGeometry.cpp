@@ -3688,6 +3688,8 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
 
       const unsigned long surfElems = mesh->GetNumberOfSurfaceElementsForMarker(iMarker);
 
+      std::cout << "iMarker=" << iMarker << " surfElems=" << surfElems << std::endl;
+
       const vector<unsigned long>& connElems = mesh->GetSurfaceElementConnectivityForMarker(iMarker);
 
       /*--- Set the number of boundary elements in this marker. ---*/

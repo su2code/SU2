@@ -50,7 +50,7 @@ private:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output) override;
+                                       CConfig *config, bool Output, CGeometry *geometry) override;
 
   /*!
    * \brief Compute the viscous residuals.

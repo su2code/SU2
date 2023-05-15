@@ -85,7 +85,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel, 
   //std::cout << std::endl << "iPoint=" << iPoint << std::endl;
 
   bool point_bool = false;
-  if (iPoint == 3 || iPoint ==4) point_bool = true;
+//  if (iPoint == 3 || iPoint ==4) point_bool = true;
 
   //std::cout << std::endl << "point_bool=" << point_bool << std::endl;
 
