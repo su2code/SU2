@@ -467,7 +467,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Output the relative residual if necessary ---*/
 
-    if ((((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) && (masterRank)) {
+    if ((((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0))) {
       SU2_OMP_MASTER
       WriteHistory(i + 1, beta / norm0);
       END_SU2_OMP_MASTER
@@ -677,7 +677,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       norm_r = r.norm();
       if (norm_r < tol * norm0) break;
-      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0) && (masterRank)) {
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
         SU2_OMP_MASTER
         WriteHistory(i + 1, norm_r / norm0);
         END_SU2_OMP_MASTER
