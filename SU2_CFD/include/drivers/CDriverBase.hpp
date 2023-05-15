@@ -54,7 +54,7 @@ class CDriverBase {
       UsedTime;        /*!< \brief Elapsed time between Start and Stop point of the timer. */
 
   unsigned long TimeIter;
-  unsigned long selected_iZone = ZONE_0; /*!< \brief Selected zone for the driver. Defaults to ZONE_0 */
+  unsigned short selected_iZone = ZONE_0; /*!< \brief Selected zone for the driver. Defaults to ZONE_0 */
   unsigned short iMesh,  /*!< \brief Iterator on mesh levels. */
       iZone,             /*!< \brief Iterator on zones. */
       nZone,             /*!< \brief Total number of zones in the problem. */
@@ -530,12 +530,12 @@ class CDriverBase {
     main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
   }
 
-
   /*!
    * \brief Selects zone to be used for Driver operation
    * \param[in] iZone - Zone identifier.
    */
-  inline void SelectZone(unsigned long iZone) {
+  inline void SelectZone(unsigned short iZone) {
+    if (iZone >= nZone) SU2_MPI::Error("Zone index out of range", CURRENT_FUNCTION);
     selected_iZone = iZone;
     main_geometry = geometry_container[selected_iZone][INST_0][MESH_0];
     main_config = config_container[selected_iZone];
