@@ -355,7 +355,7 @@ def main():
     discadj_flamelet_ch4_hx.reference_file = "restart_adj_avgsclr03.csv.ref"
     discadj_flamelet_ch4_hx.test_file      = "restart_adj_avgsclr03.csv"
     discadj_flamelet_ch4_hx.tol            = 1e-6
-    discadj_flamelet_ch4_hx.tol_percent    = 0.1
+    discadj_flamelet_ch4_hx.tol_percent    = 1.0e-5
     pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
     test_list.append(discadj_flamelet_ch4_hx)
 
