@@ -171,8 +171,6 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
                                                                         solver[val_iZone][val_iInst][iMesh][MESH_SOL],
                                                                         config[val_iZone], iMesh);
-
-      integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
     SetDualTime_Aeroelastic(config[val_iZone]);
@@ -185,7 +183,6 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                       solver[val_iZone][val_iInst][MESH_0][TURB_SOL],
                                                                       config[val_iZone], MESH_0);
-      integration[val_iZone][val_iInst][TURB_SOL]->SetConvergence(false);
     }
 
     /*--- Update dual time solver for the transition model ---*/
@@ -194,7 +191,6 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);
-      integration[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
     }
 
     /*--- Update dual time solver for the weakly coupled energy equation ---*/
@@ -203,7 +199,6 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                       solver[val_iZone][val_iInst][MESH_0][HEAT_SOL],
                                                                       config[val_iZone], MESH_0);
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
   }
 }
@@ -218,11 +213,9 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   UsedTime = StopTime - StartTime;
 
-  if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()) {
-    output->SetHistoryOutput(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
-                              config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                              config[val_iZone]->GetInnerIter());
-  }
+  output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+                           config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+                           config[val_iZone]->GetInnerIter());
 
   /*--- If convergence was reached --*/
   StopCalc = output->GetConvergence();
@@ -243,7 +236,7 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
 
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
-  if (config[val_iZone]->GetSinglezone_Driver()) {
+  if (!config[val_iZone]->GetMultizone_Problem()) {
 
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
@@ -296,15 +289,6 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
 
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
-
-    /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
-
-    if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION) {
-      integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
-    }
-    else {
-      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-    }
   }
 }
 
@@ -512,7 +496,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vecto
   while (file.good()) {
     getline(file, line);
     std::stringstream ss(line);
-    if (line.size() != 0) {  // ignore blank lines if they exist.
+    if (!line.empty()) {  // ignore blank lines if they exist.
       ss >> x_temp;
       ss >> y_temp;
       ss >> vort_strength_temp;
@@ -588,9 +572,8 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-        } else {
-          owner = 0;
-        }
+        }           owner = 0;
+       
 
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);

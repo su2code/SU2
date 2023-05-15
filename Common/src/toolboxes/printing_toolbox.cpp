@@ -27,7 +27,6 @@
 
 #include <stdexcept>
 #include <iomanip>
-#include <stdexcept>
 #include "../../include/toolboxes/printing_toolbox.hpp"
 
 PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream* output, const std::string& separator) {

@@ -739,13 +739,13 @@ void CFlowOutput::SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, 
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
+    config->SetSurface_Species_Variance(iMarker_Analyze, SpeciesVariance);
     Tot_Surface_SpeciesVariance += SpeciesVariance;
-    config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
-void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx,
+void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, const bool allowSkip,
                                                   CustomOutput& output) const {
   const auto nameToIndex = PrimitiveNameToIndexMap(idx);
 
@@ -796,23 +796,38 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
     output.varIndices.back() += output.otherOutputs.size();
     output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
     if (output.otherOutputs.back() == nullptr) {
-      SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
-                     "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+      if (!allowSkip) {
+        SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                       "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+      } else {
+        if (rank == MASTER_NODE) {
+          std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
+                       "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+        }
+        output.skip = true;
+        break;
+      }
     }
   }
 }
 
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
+  const bool adjoint = config->GetDiscrete_Adjoint();
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   for (auto& output : customOutputs) {
+    if (output.skip) continue;
+
     if (output.varIndices.empty()) {
+      const bool allowSkip = adjoint && (output.type == OperationType::FUNCTION);
+
       /*--- Setup indices for the symbols in the expression. ---*/
       const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
           config->GetNEMOProblem(), nDim, config->GetnSpecies());
-      ConvertVariableSymbolsToIndices(primIdx, output);
+      ConvertVariableSymbolsToIndices(primIdx, allowSkip, output);
+      if (output.skip) continue;
 
       /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
@@ -873,9 +888,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
           if (solIdx == FLOW_SOL) {
             return flowNodes->GetPrimitive(iPoint, varIdx);
-          } else {
-            return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
           }
+          return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
         } else {
           return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
         }
@@ -1479,7 +1493,8 @@ void CFlowOutput::AddHeatCoefficients(const CConfig* config) {
   AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux across all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
 
   vector<string> Marker_Monitoring;
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+  Marker_Monitoring.reserve(config->GetnMarker_Monitoring());
+for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker));
   }
   /// DESCRIPTION:  Total heatflux
@@ -2145,7 +2160,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   auto fileName = config->GetBreakdown_FileName();
   if (unsteady) {
-    const auto lastindex = fileName.find_last_of(".");
+    const auto lastindex = fileName.find_last_of('.');
     const auto ext = fileName.substr(lastindex, fileName.size());
     fileName = fileName.substr(0, lastindex);
     fileName = config->GetFilename(fileName, ext, curTimeIter);
@@ -3626,8 +3641,8 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
     /* only write 'double' files for the restart files */
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
       ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0) ||
-      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart==true) || // Restarts need 2 old solutions.
-      (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
+      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart) || // Restarts need 2 old solutions.
+      (((Iter+2) == config->GetnTime_Iter()) && writeRestart))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
@@ -3635,7 +3650,7 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
     return ((Iter > 0) && Iter % config->GetVolumeOutputFrequency(iFile) == 0) || force_writing;
   }
 
-  return false || force_writing;
+  return force_writing;
 }
 
 void CFlowOutput::SetTimeAveragedFields(){

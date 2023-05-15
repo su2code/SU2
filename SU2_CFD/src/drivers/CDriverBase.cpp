@@ -62,9 +62,9 @@ CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPIC
   AD::Initialize();
 }
 
-CDriverBase::~CDriverBase(void) {}
+CDriverBase::~CDriverBase() = default;
 
-void CDriverBase::SetContainers_Null() {
+void CDriverBase::InitializeContainers() {
   /*--- Create pointers to all the classes that may be used by drivers. In general, the pointers are instantiated
    * down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
    * below. ---*/
@@ -390,7 +390,7 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
   return values;
 }
 
-void CDriverBase::CommunicateMeshDisplacements(void) {
+void CDriverBase::CommunicateMeshDisplacements() {
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
 }

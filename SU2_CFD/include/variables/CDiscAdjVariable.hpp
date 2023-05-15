@@ -72,6 +72,7 @@ public:
   inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const final {
     return Sensitivity(iPoint,iDim);
   }
+  inline const MatrixType& GetSensitivity() const final { return Sensitivity; }
 
   /*!
    * \brief Set/store the dual time contributions to the adjoint variable.

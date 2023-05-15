@@ -172,6 +172,8 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", adjspecies_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(adjspecies_solver->GetResLinSolver()));
   }
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* config) {

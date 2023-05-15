@@ -95,22 +95,7 @@ class CDriverBase {
   /*!
    * \brief A virtual member.
    */
-  virtual void Preprocessing(){}
-
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Run(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update(){}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Output(){}
 
   /*!
    * \brief A virtual member.
@@ -489,6 +474,25 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read/write view of the solution at time N-1 on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView SolutionTimeN1(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), "SolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the solution at time N-1 on the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN1(unsigned short iSolver, unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get the flow solver primitive variable names with their associated indices.
    * These correspond to the column indices in the matrix returned by Primitives.
    */
@@ -512,6 +516,15 @@ class CDriverBase {
     return CPyWrapperMarkerMatrixView(
         const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), main_geometry->vertex[iMarker],
         main_geometry->GetnVertex(iMarker), "MarkerPrimitives", false);
+  }
+
+  /*!
+   * \brief Get a read-only view of the geometry sensitivity of a discrete adjoint solver.
+   */
+  inline CPyWrapperMatrixView Sensitivity(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    auto& sensitivity = const_cast<su2activematrix&>(solver->GetNodes()->GetSensitivity());
+    return CPyWrapperMatrixView(sensitivity, "Sensitivity", true);
   }
 
   /*!
@@ -691,7 +704,7 @@ class CDriverBase {
   /*!
    * \brief Initialize containers.
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Delete containers.
@@ -703,7 +716,7 @@ class CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void InputPreprocessing(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -711,7 +724,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -719,7 +732,7 @@ class CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -728,7 +741,7 @@ class CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Preprocess the output container.
@@ -737,6 +750,6 @@ class CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void OutputPreprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 };

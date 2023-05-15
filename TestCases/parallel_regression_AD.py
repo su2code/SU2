@@ -230,7 +230,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -1.941681, -1.984570]
+    discadj_trans_stator.test_vals = [79, 0.770040, 2.052053]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -276,8 +276,8 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.349377, 0.128475, -1.303589, 7.5407e-09, 2.3244]
-    discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals         = [-4.349377, 0.192713, -1.303589, 0.75407, 2.3244]
+    discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 0.75407, 2.3244]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
@@ -407,6 +407,32 @@ def main():
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+    # FEA unsteady AD Load Sensitivity
+    pywrapper_Unst_FEA_AD = TestCase('pywrapper_Unst_FEA_AD')
+    pywrapper_Unst_FEA_AD.cfg_dir = "py_wrapper/custom_load_fea"
+    pywrapper_Unst_FEA_AD.cfg_file = "config.cfg"
+    pywrapper_Unst_FEA_AD.test_iter = 100
+    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.319877, 0.320149, -0.184491, -0.184509]
+    pywrapper_Unst_FEA_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
+    pywrapper_Unst_FEA_AD.timeout = 1600
+    pywrapper_Unst_FEA_AD.tol = 0.00001
+    pywrapper_Unst_FEA_AD.new_output = False
+    test_list.append(pywrapper_Unst_FEA_AD)
+    pass_list.append(pywrapper_Unst_FEA_AD.run_test())
+
+    # Heat solver unsteady AD
+    pywrapper_Unst_Heat_AD = TestCase('pywrapper_Unst_Heat_AD')
+    pywrapper_Unst_Heat_AD.cfg_dir = "py_wrapper/custom_heat_flux"
+    pywrapper_Unst_Heat_AD.cfg_file = "run_ad.py"
+    pywrapper_Unst_Heat_AD.test_iter = 100
+    pywrapper_Unst_Heat_AD.test_vals = [0.776365, 0.776430, 1.000003]
+    pywrapper_Unst_Heat_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
+    pywrapper_Unst_Heat_AD.timeout = 1600
+    pywrapper_Unst_Heat_AD.tol = 0.00001
+    pywrapper_Unst_Heat_AD.new_output = False
+    test_list.append(pywrapper_Unst_Heat_AD)
+    pass_list.append(pywrapper_Unst_Heat_AD.run_test())
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')

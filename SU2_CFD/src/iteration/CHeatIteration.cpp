@@ -58,8 +58,6 @@ void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeom
       integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
                                                                         solver[val_iZone][val_iInst][iMesh][MESH_SOL],
                                                                         config[val_iZone], iMesh);
-
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
   }
 }
