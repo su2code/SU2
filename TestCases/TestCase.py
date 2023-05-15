@@ -110,7 +110,8 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
-        self.tol_percent = 0.0
+        self.tol_file_percent = 0.0
+        self.comp_threshold = 0.0
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
@@ -334,21 +335,21 @@ class TestCase:
                     todate = time.ctime(os.stat(tofile).st_mtime)
                     tolines = open(tofile, 'U').readlines()
 
-                    # If tolerance is set to 0, make regular diff on whole file
-                    if self.tol_percent == 0.0:
+                    # If file tolerance is set to 0, make regular diff
+                    if self.tol_file_percent == 0.0:
                         diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                     # Else test word by word with given tolerance
                     else:
 
-                        diff            = [];
-                        max_delta       = 0
+                        diff = []
+                        max_delta = 0
                         compare_counter = 0
-                        ignore_counter  = 0
+                        ignore_counter = 0
 
                         # Assert that both files have the same number of lines
                         if len(fromlines) != len(tolines):
-                            diff   = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                            diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
                             passed = False
                         
                         # Loop through all lines
@@ -356,55 +357,64 @@ class TestCase:
 
                             if passed == False: break
 
-                            from_line = fromlines[i_line].split(",")
-                            to_line   = tolines[i_line].split(",")
+                            # Extract next line and split it
+                            from_line = fromlines[i_line].split()
+                            to_line = tolines[i_line].split()
 
                             # Assert that both lines have the same number of words
                             if len(from_line) != len(to_line):
-                                diff   = ["ERROR: Number of words in line " + str(i_line+1) + " differ."]
+                                diff = ["ERROR: Number of words in line " + str(i_line+1) + " differ."]
                                 passed = False
                                 break
                             
                             # Loop through all words of one line
                             for i_word in range(0, len(from_line)):
-                                from_word = from_line[i_word]
-                                to_word   = to_line[i_word]
 
-                                # Assert that both words are either numeric or non-numeric
+                                # Extract next word and strip whitespace and commas
+                                from_word = from_line[i_word].strip().strip(',')
+                                to_word = to_line[i_word].strip().strip(',')
+
+                                # Assert that words are either both numeric or both non-numeric
                                 from_isfloat = is_float(from_word)
-                                to_isfloat   = is_float(to_word)
+                                to_isfloat = is_float(to_word)
                                 if from_isfloat != to_isfloat:
-                                    diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
-                                    passed    = False
-                                    delta     = 0.0
+                                    diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
+                                    passed = False
+                                    delta = 0.0
                                     max_delta = "Not applicable"
                                     break
 
                                 # Make actual comparison
+                                # Compare floats
                                 if from_isfloat:
                                     try:
-                                        # Only do a relative comparison when the absolute tolerance is met.
+                                        # Only do a relative comparison when the threshold is met.
                                         # This is to prevent large relative differences for very small numbers.
-                                        if (float(from_word) > self.tol):
-                                          delta = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                        if (abs(float(from_word)) > self.comp_threshold):
+                                            delta = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                            compare_counter += 1
                                         else:
-                                          delta = 0.0
+                                            delta = 0.0
+                                            ignore_counter += 1
+
                                         max_delta = max(max_delta, delta)
-                                        compare_counter += 1
+
                                     except ZeroDivisionError:
                                         ignore_counter += 1
                                         continue
+
+                                # Compare non-floats
                                 else:
-                                    delta  = 0.0
+                                    delta = 0.0
                                     compare_counter += 1
                                     if from_word != to_word:
-                                        diff      = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
-                                        passed    = False
+                                        diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
+                                        passed = False
                                         max_delta = "Not applicable"
                                         break
-                                
-                                if delta > self.tol_percent:
-                                    diff   = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + " differ."]
+
+                                if delta > self.tol_file_percent:
+                                    diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
                                     passed = False
                                     break
 
@@ -417,10 +427,6 @@ class TestCase:
                 print("Current working directory contents:")
                 print(os.listdir("."))
 
-
-
-
-
             if (diff==[]):
                 passed=True
             else:
@@ -431,18 +437,20 @@ class TestCase:
         else:
             passed = False
 
+        # Report results
         diff_time_stop = datetime.datetime.now()
-        diff_time      = (diff_time_stop - diff_time_start).microseconds
+        diff_time = (diff_time_stop - diff_time_start).microseconds
 
         print('CPU architecture:    %s'%self.cpu_arch)
         print('Test duration:       %.2f min'%(running_time/60.0))
         print('Diff duration:       %.2f sec'%(diff_time/1e6))
+        print('Specified tolerance: ' + str(self.tol_file_percent) + '%')
+        print('Specified threshold: ' + str(self.comp_threshold)) 
 
-        if self.tol_percent != 0.0:
+        if self.tol_file_percent != 0.0:
             print('Compared entries:    ' + str(compare_counter))
             print('Ignored entries:     ' + str(ignore_counter))
-            print('Maximum difference:  ' + str(max_delta) + ' %')
-            print('Specified tolerance: ' + str(self.tol_percent) + ' %') 
+            print('Maximum difference:  ' + str(max_delta) + '%')
 
         print('==================== End Test: %s ====================\n'%self.tag)
 
@@ -747,7 +755,7 @@ class TestCase:
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
-                passed    = False
+                passed = False
 
         # Examine the output
         f = open(logfilename,'r')
@@ -781,7 +789,7 @@ class TestCase:
                             delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
                             if delta_vals[j] > self.tol:
                                 exceed_tol = True
-                                passed     = False
+                                passed = False
                         break
                     else:
                         iter_missing = True
