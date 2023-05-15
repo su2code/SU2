@@ -523,14 +523,14 @@ FORCEINLINE void delete_handler(void* handler) {
 
 FORCEINLINE bool BeginPassive() {
   if (AD::getTape().isActive()) {
-    StopRecording();
+    AD::getTape().setPassive();
     return true;
   }
   return false;
 }
 
 FORCEINLINE void EndPassive(bool wasActive) {
-  if (wasActive) StartRecording();
+  if (wasActive) AD::getTape().setActive();
 }
 
 FORCEINLINE bool PausePreaccumulation() {
