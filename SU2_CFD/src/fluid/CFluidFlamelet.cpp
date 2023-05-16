@@ -90,7 +90,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   }
 
   source_scalar.resize(n_scalars);
-  lookup_scalar.resize(n_lookups);
 
   Pressure = value_pressure_operating;
 
@@ -99,17 +98,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
 CFluidFlamelet::~CFluidFlamelet() {
   delete look_up_table;
-}
-
-/*--- do a lookup for the list of variables in table_lookup_names, for visualization purposes ---*/
-unsigned long CFluidFlamelet::SetScalarLookups(const su2double* val_scalars) {
-  su2double enth = val_scalars[I_ENTH];
-  su2double prog = val_scalars[I_PROGVAR];
-
-  /*--- perform table lookup ---*/
-  unsigned long exit_code = look_up_table->LookUp_XY(table_lookup_names, lookup_scalar, prog, enth);
-
-  return exit_code;
 }
 
 /*--- set the source terms for the transport equations ---*/

@@ -162,10 +162,17 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain = 0;
+  vector<su2double*> look_up_data;
+  vector<string> table_lookup_names(config->GetNLookups());
+  vector<su2double> lookup_scalar(config->GetNLookups());
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+
+  for (int i_lookup = 0; i_lookup <  config->GetNLookups(); ++i_lookup) {
+    table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
+  }
 
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -179,10 +186,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     nodes->SetTableMisses(i_point, misses);
     n_not_in_domain += exit_code;
 
-    /*--- Get lookup scalars ---*/
-    fluid_model_local->SetScalarLookups(scalars);
     for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
-      nodes->SetLookupScalar(i_point, fluid_model_local->GetScalarLookups(i_lookup), i_lookup);
+
+      n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_XY(
+            table_lookup_names, lookup_scalar, scalars[I_PROGVAR], scalars[I_ENTH]);
+
+      nodes->SetLookupScalar(i_point, lookup_scalar[i_lookup], i_lookup);
     }
 
     for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)

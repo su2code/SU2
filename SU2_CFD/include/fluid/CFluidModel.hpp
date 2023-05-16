@@ -69,7 +69,7 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  //CLookUpTable* look_up_table; /*!< \brief The lookup table for the flamelet combustion model.*/
+  CLookUpTable* look_up_table; /*!< \brief The lookup table for the flamelet combustion model.*/
   su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
@@ -158,13 +158,13 @@ class CFluidModel {
   /*!
    * \brief Flamelet LUT - Get the looked up values for visualization.
    */
-  virtual inline su2double GetScalarLookups(int) const { return 0; }
+  //virtual inline su2double GetScalarLookups(int) const { return 0; }
 
   /*!
    * \brief Flamelet LUT - Set the looked up values for visualization.
    * \param[in] val_scalar - Pointer to the transported scalars.
    */
-  virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
+  //virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
 
   /*!
    * \brief Flamelet LUT - Get the lookup table.
