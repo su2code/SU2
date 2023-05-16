@@ -50,7 +50,6 @@ class CFluidFlamelet final : public CFluidModel {
   su2double molar_weight;     /*!< \brief local molar weight of the mixture */
 
   vector<su2double> source_scalar;
-  //vector<su2double> lookup_scalar;
 
   CLookUpTable* look_up_table;
 
@@ -129,11 +128,6 @@ class CFluidFlamelet final : public CFluidModel {
   inline const su2double* GetScalarSources() const { return source_scalar.data(); }
 
  private:
-  /*!
-   * \brief Get the value of the looked up variable
-   * \param[in] i_scalar - index to the value that we need to retrieve from the lookup table
-   */
-  //inline su2double GetScalarLookups(int i_scalar) const { return lookup_scalar[i_scalar]; }
 
   void PreprocessLookUp();
 

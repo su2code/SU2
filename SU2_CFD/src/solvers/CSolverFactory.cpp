@@ -395,25 +395,13 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
 
   CSolver *speciesSolver = nullptr;
 
-  switch (config->GetKind_Species_Model()) {
-    case SPECIES_MODEL::SPECIES_TRANSPORT:
-      if (adjoint) {
-        speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
-      } else {
-        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
-      }
-      break;
-    case SPECIES_MODEL::FLAMELET:
-      if (adjoint) {
-        speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
-      } else {
-        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
-      }
-      break;
-    case SPECIES_MODEL::NONE:
-      break;
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    if (adjoint){
+      speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
+    } else {
+      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+    }
   }
-
   return speciesSolver;
 }
 

@@ -1232,7 +1232,6 @@ private:
   unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
 
   vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  vector<string> table_source_names;  /*!< \brief Names of transported scalar source variables. */
   string* table_lookup_names;         /*!< \brief Names of LUT variables. */
   string file_name_lut;               /*!< \brief Filename of the LUT. */
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
@@ -2174,31 +2173,9 @@ public:
   unsigned short GetNLookups(void) const { return n_lookups; }
 
   /*!
-   * \brief Store the names of scalar variables that are being solved.
-   * \param[out] stores the names in vector table_scalar_names.
-   */
-  inline void SetLUTScalarNames(vector<string> &val_tableScalarNames) { table_scalar_names = val_tableScalarNames; }
-
-  /*!
-   * \brief Get the name of the independent variable from the lookup table.
-   */
-  string GetLUTScalarName(unsigned short i_scalar) const { return table_scalar_names[i_scalar]; }
-
-  /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table.
    */
   string GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
-
-  /*!
-   * \brief Store the names of scalar source term variables.
-   * \param[out] stores the names in vector table_source_names.
-   */
-  inline void SetLUTSourceNames(vector<string> &val_tableSourceNames) { table_source_names = val_tableSourceNames; }
-
-  /*!
-   * \brief Get the scalar source term name i_source.
-   */
-  string GetLUTSourceName(unsigned short i_source) const { return table_source_names[i_source]; }
 
   /*!
    * \brief Get the file name of the look up table.

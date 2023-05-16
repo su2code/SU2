@@ -59,8 +59,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
-  config->SetLUTScalarNames(table_scalar_names);
-
   /*--- we currently only need 1 source term from the LUT for the progress variable
         and each auxiliary equations needs 2 source terms ---*/
   n_table_sources = 1 + 2 * n_user_scalars;
@@ -79,7 +77,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_source_names[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
   }
 
-  config->SetLUTSourceNames(table_source_names);
+  //config->SetLUTSourceNames(table_source_names);
 
   look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
