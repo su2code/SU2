@@ -155,17 +155,6 @@ class CFluidModel {
   virtual inline unsigned short GetNScalars() const { return 0; }
 
   /*!
-   * \brief Flamelet LUT - Get the looked up values for visualization.
-   */
-  //virtual inline su2double GetScalarLookups(int) const { return 0; }
-
-  /*!
-   * \brief Flamelet LUT - Set the looked up values for visualization.
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  //virtual unsigned long SetScalarLookups(const su2double* val_scalars) { return 0; }
-
-  /*!
    * \brief Flamelet LUT - Get the lookup table.
    */
   virtual CLookUpTable* GetLookUpTable() { return nullptr; }

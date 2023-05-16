@@ -54,7 +54,7 @@ class CFluidFlamelet final : public CFluidModel {
   CLookUpTable* look_up_table;
 
   vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
-  vector<su2double*> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
+  vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
   vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
   vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
@@ -65,27 +65,21 @@ class CFluidFlamelet final : public CFluidModel {
   ~CFluidFlamelet();
 
   /*!
-   * \brief Set the thermodynamioc state
+   * \brief Set the thermodynamioc state.
    * \param[in] val_temperature - temperature
    * \param[in] val_scalars - pointer to species mass fractions
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   /*!
-   * \brief Set the reaction source terms for the transported species equations
+   * \brief Set the reaction source terms for the transported species equations.
    * \param[in] val_scalars - pointer to species mass fractions
    * \param[out] exit_code = error code
    */
   unsigned long SetScalarSources(const su2double* val_scalars) override;
 
   /*!
-   * \brief Retrieve and set the lookup values for the species
-   * \param[in] val_scalars - pointer to species mass fractions
-   */
-  //unsigned long SetScalarLookups(const su2double* val_scalars) override;
-
-  /*!
-   * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup)
+   * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup).
    * \param[in/out] enthalpy - total enthalpy
    * \param[in] val_prog - progress variable
    * \param[in] val_temp - temperature
@@ -96,36 +90,56 @@ class CFluidFlamelet final : public CFluidModel {
                                 su2double initial_value = 0);
 
   /*!
-   * \brief return a pointer to the lookup table
+   * \brief Return a pointer to the lookup table
    * \param[out] look_up_table - pointer to lookup table
    */
   inline CLookUpTable* GetLookUpTable() { return look_up_table; }
 
   /*!
-   * \brief Get the mass diffusivity of the species
+   * \brief Get the mass diffusivity of the species.
    * \param[in] iVar - index to the species
    * \param[out] mass_diffusivity - value of the mass diffusivity
    */
   inline su2double GetMassDiffusivity(int iVar) final { return mass_diffusivity; }
 
   /*!
-   * \brief Get the thermal conductivity of the species
+   * \brief Get the thermal conductivity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Kt - value of the thermal conductivity
    */
   inline su2double GetThermalConductivity() { return Kt; }
 
   /*!
-   * \brief Get the laminar viscosity of the species
+   * \brief Get the laminar viscosity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() { return Mu; }
 
   /*!
-   * \brief Get the reaction source term of all species equations
+   * \brief Get the reaction source term of all species equations.
    */
   inline const su2double* GetScalarSources() const { return source_scalar.data(); }
+
+  /*!
+   * \brief Get the index of a string in a vector.
+   */
+  inline int GetIdx(vector<string> v,string s) {
+
+    auto it = find(v.begin(), v.end(), s);
+  
+    if (it != v.end()) 
+        return(it - v.begin());
+    else 
+        return(-1);
+  }
+
+  /*!
+   * \brief Get the value of the LUT variable using the string name.
+   */
+  inline su2double GetLUTVal(string varname_TD) {
+      return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
+    };
 
  private:
 
