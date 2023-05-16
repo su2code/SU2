@@ -60,9 +60,6 @@ class CFluidFlamelet final : public CFluidModel {
   vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
   vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
 
-  vector<string> varnames_LookUp;     /*!< \brief Lookup names for passive lookup variables. */
-  vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
-
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 

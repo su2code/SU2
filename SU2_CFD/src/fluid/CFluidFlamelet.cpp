@@ -217,12 +217,4 @@ void CFluidFlamelet::PreprocessLookUp() {
     val_vars_Sources[iSource] = &table_sources[iSource];
   }
 
-  /*--- Passive lookups ---*/
-  varnames_LookUp.resize(n_lookups);
-  val_vars_LookUp.resize(n_lookups);
-
-  for (size_t iLookup = 0; iLookup < n_lookups; iLookup++) {
-    varnames_LookUp[iLookup] = table_lookup_names[iLookup];
-    val_vars_LookUp[iLookup] = &lookup_scalar[iLookup];
-  }
 }
