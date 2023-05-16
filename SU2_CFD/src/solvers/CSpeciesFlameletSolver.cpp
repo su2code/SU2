@@ -570,41 +570,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   END_SU2_OMP_FOR
 }
 
-void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  /*--- Loop over all the vertices on this boundary marker. ---*/
-
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    /*--- Strong zero flux Neumann boundary condition at the outlet. ---*/
-
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-      /*--- Allocate the value at the outlet. ---*/
-
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
-
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-      }
-
-      /*--- Includes 1 in the diagonal. ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-    }
-  }
-  END_SU2_OMP_FOR
-}
-
 void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
                                                 unsigned short val_marker, bool cht_mode) {

@@ -69,7 +69,7 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  CLookUpTable* look_up_table; /*!< \brief The lookup table for the flamelet combustion model.*/
+  //CLookUpTable* look_up_table; /*!< \brief The lookup table for the flamelet combustion model.*/
   su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
@@ -177,7 +177,7 @@ class CFluidModel {
   virtual inline unsigned long GetEnthFromTemp(su2double& enthalpy,
                                                const su2double  val_prog,
                                                const su2double  val_temp,
-                                               su2double  initial_value=0) { return 0; }
+                                               su2double  initial_value) { return 0; }
 
   /*!
    * \brief Get fluid dynamic viscosity.
