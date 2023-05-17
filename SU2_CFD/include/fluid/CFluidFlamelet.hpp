@@ -68,7 +68,7 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<su2double> source_scalar, lookup_scalar, lookup_CV;
 
-  CLookUpTable* look_up_table;
+  CLookUpTable* look_up_table = nullptr;
 
 
   vector<string> varnames_CV;
@@ -87,7 +87,7 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double*> val_vars_LookUp; /*!< \brief References to lookup variables. */
 
 #ifdef USE_MLPCPP
-  MLPToolbox::CLookUp_ANN* look_up_ANN;
+  MLPToolbox::CLookUp_ANN* look_up_ANN = nullptr;
   MLPToolbox::CIOMap* iomap_current = nullptr;
   MLPToolbox::CIOMap* iomap_CV = nullptr;
   MLPToolbox::CIOMap* iomap_TD = nullptr;

@@ -32,7 +32,7 @@
 #define USE_MLPCPP
 #endif
 
-CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool display) : CFluidModel() {
+CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool generate_manifold) : CFluidModel() {
   rank = SU2_MPI::GetRank();
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
@@ -40,7 +40,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   n_scalars = config->GetNScalars();
   //PreferentialDiffusion = config->GetPreferentialDiffusion();
 
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && generate_manifold) {
     cout << "Number of scalars:           " << n_scalars << endl;
     cout << "Number of user scalars:      " << n_user_scalars << endl;
     cout << "Number of control variables: " << n_control_vars << endl;
@@ -64,7 +64,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   }
 
   manifold_format = config->GetKind_DataDriven_Method();
-  switch (manifold_format) {
+  if (generate_manifold) {
+    switch (manifold_format) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (rank == MASTER_NODE) {
         cout << "*****************************************" << endl;
@@ -79,13 +80,13 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      if ((rank == MASTER_NODE) && display) {
+      if ((rank == MASTER_NODE) && generate_manifold) {
         cout << "***********************************************" << endl;
         cout << "*** initializing the multi-layer perceptron ***" << endl;
         cout << "***********************************************" << endl;
       }
       look_up_ANN = new MLPToolbox::CLookUp_ANN(n_datadriven_inputs, config->GetDataDriven_FileNames());
-      if ((rank == MASTER_NODE) && display) look_up_ANN->DisplayNetworkInfo();
+      if ((rank == MASTER_NODE) && generate_manifold) look_up_ANN->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
 #endif
@@ -93,6 +94,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     default:
       break;
   }
+  }
+  
 
   config->SetLUTScalarNames(table_scalar_names);
 
@@ -126,28 +129,30 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   lookup_scalar.resize(n_lookups);
 
   Pressure = value_pressure_operating;
-
-  PreprocessLookUp();
-
-  config->SetPreferentialDiffusion(PreferentialDiffusion);
-
-  if (rank == MASTER_NODE) {
-    cout << "Preferential Diffusion: " << (PreferentialDiffusion ? "Enabled" : "Disabled") << endl << endl;
+  
+  if (generate_manifold){
+    PreprocessLookUp();
+    config->SetPreferentialDiffusion(PreferentialDiffusion);
+    if (rank == MASTER_NODE)
+      cout << "Preferential Diffusion: " << (PreferentialDiffusion ? "Enabled" : "Disabled") << endl << endl;
   }
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
   switch (manifold_format) {
     case ENUM_DATADRIVEN_METHOD::LUT:
-      delete look_up_table;
+      if (look_up_table != nullptr)
+        delete look_up_table;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      delete iomap_TD;
-      if (PreferentialDiffusion) delete iomap_PD;
-      delete iomap_Sources;
-      delete iomap_LookUp;
-      delete look_up_ANN;
+      if (iomap_TD != nullptr){
+        delete iomap_TD;
+        if (PreferentialDiffusion) delete iomap_PD;
+        delete iomap_Sources;
+        delete iomap_LookUp;
+        delete look_up_ANN;
+      }
 #endif
     default:
       break;

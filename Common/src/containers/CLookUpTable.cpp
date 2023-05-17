@@ -98,7 +98,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
         break;
       case 3:
         cout << endl;
-        cout << "| Memory footprint:" << setw(45) << right << floor(table_size) << " MB |" << endl;
+        cout << "| Memory footprint:" << setw(45) << right << table_size << " MB |" << endl;
         cout << "Construction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
         break;
       default:
