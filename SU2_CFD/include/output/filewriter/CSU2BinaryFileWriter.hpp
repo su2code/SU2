@@ -53,6 +53,6 @@ public:
    * \brief Write sorted data to file in SU2 binary file format
    * \param[in] filename - The filename to write
    */
-  void Write_Data(string filename) override;
+  void WriteData(string filename) override ;
 
 };

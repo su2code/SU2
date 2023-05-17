@@ -27,28 +27,38 @@
 
 import os, sys
 from optparse import OptionParser
-sys.path.append(os.environ['SU2_RUN'])
+
+sys.path.append(os.environ["SU2_RUN"])
 import SU2
 
 # -------------------------------------------------------------------
 #  Main
 # -------------------------------------------------------------------
 
+
 def main():
 
     # Command Line Options
     parser = OptionParser()
-    parser.add_option("-f", "--file", dest="filename",
-                      help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--partitions", dest="partitions", default=2,
-                      help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option(
+        "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
+    )
+    parser.add_option(
+        "-n",
+        "--partitions",
+        dest="partitions",
+        default=2,
+        help="number of PARTITIONS",
+        metavar="PARTITIONS",
+    )
 
-    (options, args)=parser.parse_args()
-    options.partitions = int( options.partitions )
+    (options, args) = parser.parse_args()
+    options.partitions = int(options.partitions)
 
     # Run Parallel Comutation
-    mesh_deformation ( options.filename    ,
-                       options.partitions   )
+    mesh_deformation(options.filename, options.partitions)
+
+
 #: def main()
 
 
@@ -56,8 +66,8 @@ def main():
 #  Parallel Computation Function
 # -------------------------------------------------------------------
 
-def mesh_deformation( filename           ,
-                      partitions  = 2     ):
+
+def mesh_deformation(filename, partitions=2):
 
     # Config
     config = SU2.io.Config(filename)
@@ -75,6 +85,7 @@ def mesh_deformation( filename           ,
 
     return state
 
+
 #: mesh_deformation()
 
 
@@ -83,7 +94,5 @@ def mesh_deformation( filename           ,
 # -------------------------------------------------------------------
 
 # this is only accessed if running from command prompt
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-

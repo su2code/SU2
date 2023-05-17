@@ -30,10 +30,9 @@
 #include "../basic_types/datatype_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-template<class ScalarType>
+template <class ScalarType>
 struct CSysSolve_b {
-  static void Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m,
-                      const su2double::Real* y, const su2double::Real* y_b, size_t n,
-                      codi::DataStore* d);
+  static void Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m, const su2double::Real* y,
+                      const su2double::Real* y_b, size_t n, codi::ExternalFunctionUserData* d);
 };
 #endif

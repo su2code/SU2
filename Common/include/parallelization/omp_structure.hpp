@@ -57,14 +57,13 @@
 #else
 #include "opdi/backend/macro/macroBackend.hpp"
 #endif
-#include "codi/externals/codiOpdiTool.hpp"
 #include "opdi.hpp"
 #endif
 
 /*--- The generic start of OpenMP constructs. ---*/
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
-#else // Compile without OpenMP
+#else  // Compile without OpenMP
 #include <ctime>
 
 /*--- Disable pragmas to quiet compilation warnings. ---*/
@@ -73,32 +72,32 @@
 /*!
  * \brief Maximum number of threads available.
  */
-inline constexpr int omp_get_max_threads() {return 1;}
+inline constexpr int omp_get_max_threads() { return 1; }
 
 /*!
  * \brief Number of threads in current team.
  */
-inline constexpr int omp_get_num_threads() {return 1;}
+inline constexpr int omp_get_num_threads() { return 1; }
 
 /*!
  * \brief Set the maximum number of threads.
  */
-inline void omp_set_num_threads(int) { }
+inline void omp_set_num_threads(int) {}
 
 /*!
  * \brief Index of current thread, akin to MPI rank.
  */
-inline constexpr int omp_get_thread_num() {return 0;}
+inline constexpr int omp_get_thread_num() { return 0; }
 
 /*!
  * \brief Returns true if inside a parallel section.
  */
-inline constexpr bool omp_in_parallel() {return false;}
+inline constexpr bool omp_in_parallel() { return false; }
 
 /*!
  * \brief Return the wall time.
  */
-inline passivedouble omp_get_wtime() {return passivedouble(clock()) / CLOCKS_PER_SEC;}
+inline passivedouble omp_get_wtime() { return passivedouble(clock()) / CLOCKS_PER_SEC; }
 
 /*!
  * \brief Dummy lock type and associated functions.
@@ -106,14 +105,14 @@ inline passivedouble omp_get_wtime() {return passivedouble(clock()) / CLOCKS_PER
 struct omp_lock_t {};
 struct DummyVectorOfLocks {
   omp_lock_t l;
-  inline omp_lock_t& operator[](int) {return l;}
+  inline omp_lock_t& operator[](int) { return l; }
 };
-inline void omp_init_lock(omp_lock_t*){}
-inline void omp_set_lock(omp_lock_t*){}
-inline void omp_unset_lock(omp_lock_t*){}
-inline void omp_destroy_lock(omp_lock_t*){}
+inline void omp_init_lock(omp_lock_t*) {}
+inline void omp_set_lock(omp_lock_t*) {}
+inline void omp_unset_lock(omp_lock_t*) {}
+inline void omp_destroy_lock(omp_lock_t*) {}
 
-#endif // end OpenMP detection
+#endif  // end OpenMP detection
 
 /*--- Initialization and finalization ---*/
 
@@ -173,8 +172,8 @@ void omp_finalize();
 #define SU2_OMP_PARALLEL_ON(NTHREADS) OPDI_PARALLEL(num_threads(NTHREADS))
 
 #define SU2_OMP_FOR_(ARGS) OPDI_FOR(ARGS)
-#define SU2_OMP_FOR_DYN(CHUNK) OPDI_FOR(schedule(dynamic,CHUNK))
-#define SU2_OMP_FOR_STAT(CHUNK) OPDI_FOR(schedule(static,CHUNK))
+#define SU2_OMP_FOR_DYN(CHUNK) OPDI_FOR(schedule(dynamic, CHUNK))
+#define SU2_OMP_FOR_STAT(CHUNK) OPDI_FOR(schedule(static, CHUNK))
 
 #define SU2_NOWAIT OPDI_NOWAIT
 
@@ -190,35 +189,28 @@ void omp_finalize();
  */
 
 #define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
-  SU2_OMP_BARRIER \
+  SU2_OMP_BARRIER                        \
   SU2_OMP_MASTER
 
 #define END_SU2_OMP_SAFE_GLOBAL_ACCESS \
-  END_SU2_OMP_MASTER \
+  END_SU2_OMP_MASTER                   \
   SU2_OMP_BARRIER
 
-#define SU2_OMP_SAFE_GLOBAL_ACCESS(...) \
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
-  { \
-    __VA_ARGS__ \
-  } \
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+#define SU2_OMP_SAFE_GLOBAL_ACCESS(...) BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS{__VA_ARGS__} END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
 /*!
  * \brief Integer division rounding up.
  */
-inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator)
-{
-  return (numerator+denominator-1)/denominator;
+inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator) {
+  return (numerator + denominator - 1) / denominator;
 }
 
 /*!
  * \brief Round up to next multiple.
  */
-inline constexpr size_t nextMultiple(size_t argument, size_t multiple)
-{
+inline constexpr size_t nextMultiple(size_t argument, size_t multiple) {
   return roundUpDiv(argument, multiple) * multiple;
 }
 
@@ -230,11 +222,8 @@ inline constexpr size_t nextMultiple(size_t argument, size_t multiple)
  * \param[in] maxChunkSize - Upper bound for chunk size.
  * \return The chunkSize.
  */
-inline size_t computeStaticChunkSize(size_t totalWork,
-                                     size_t numThreads,
-                                     size_t maxChunkSize)
-{
-  if(!totalWork) return maxChunkSize;
+inline size_t computeStaticChunkSize(size_t totalWork, size_t numThreads, size_t maxChunkSize) {
+  if (!totalWork) return maxChunkSize;
   size_t workPerThread = roundUpDiv(totalWork, numThreads);
   size_t chunksPerThread = roundUpDiv(workPerThread, maxChunkSize);
   return roundUpDiv(workPerThread, chunksPerThread);
@@ -246,11 +235,10 @@ inline size_t computeStaticChunkSize(size_t totalWork,
  * \param[in] src - Source array.
  * \param[in] dst - Destination array.
  */
-template<class T, class U>
-void parallelCopy(size_t size, const T* src, U* dst)
-{
+template <class T, class U>
+void parallelCopy(size_t size, const T* src, U* dst) {
   SU2_OMP_FOR_STAT(2048)
-  for(size_t i=0; i<size; ++i) dst[i] = src[i];
+  for (size_t i = 0; i < size; ++i) dst[i] = src[i];
   END_SU2_OMP_FOR
 }
 
@@ -260,11 +248,10 @@ void parallelCopy(size_t size, const T* src, U* dst)
  * \param[in] val - Value to set.
  * \param[in] dst - Destination array.
  */
-template<class T, class U>
-void parallelSet(size_t size, T val, U* dst)
-{
+template <class T, class U>
+void parallelSet(size_t size, T val, U* dst) {
   SU2_OMP_FOR_STAT(2048)
-  for(size_t i=0; i<size; ++i) dst[i] = val;
+  for (size_t i = 0; i < size; ++i) dst[i] = val;
   END_SU2_OMP_FOR
 }
 
@@ -274,16 +261,14 @@ void parallelSet(size_t size, T val, U* dst)
  * \param[in] rhs - Local variable being added to the shared one.
  * \param[in,out] lhs - Shared variable being updated.
  */
-template<class T, su2enable_if<!std::is_arithmetic<T>::value> = 0>
-inline void atomicAdd(T rhs, T& lhs)
-{
+template <class T, su2enable_if<!std::is_arithmetic<T>::value> = 0>
+inline void atomicAdd(T rhs, T& lhs) {
   SU2_OMP_CRITICAL
   lhs += rhs;
   END_SU2_OMP_CRITICAL
 }
-template<class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
-inline void atomicAdd(T rhs, T& lhs)
-{
+template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
+inline void atomicAdd(T rhs, T& lhs) {
   SU2_OMP_ATOMIC
   lhs += rhs;
 }

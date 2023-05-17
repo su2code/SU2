@@ -56,10 +56,8 @@ def main():
   if options.with_MPI == True:
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
   else:
     comm = 0
-    rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
@@ -68,24 +66,28 @@ def main():
   MarkerName = 'RightBeamS'       # Specified by the user
 
   # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
+  MarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
   #Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
+  # Only print on the rank to which the marker belongs.
+  # WARNING: We only do this for the regression test, there is no guarantee that a marker will only belong to one rank.
+
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
-  if rank == 0:
+  if MarkerID != None:
     print("\n------------------------------ Begin Solver -----------------------------\n")
   sys.stdout.flush()
   if options.with_MPI == True:
     comm.Barrier()
 
   # Define the load at the target vertex
-  SU2Driver.SetFEA_Loads(MarkerID,5,0,-0.005,0)
+  if MarkerID != None:
+    SU2Driver.SetMarkerCustomFEALoad(MarkerID, 5, (0, -0.005, 0))
 
   # Time iteration preprocessing
   SU2Driver.Preprocess(0)
@@ -102,20 +104,22 @@ def main():
   # Output the solution to file
   SU2Driver.Output(0)
 
-  sens=[]
-  disp=[]
-  # Recover the sensitivity
-  sens.append(SU2Driver.GetFlowLoad_Sensitivity(MarkerID,5))
-  disp.append(SU2Driver.GetFEA_Displacements(MarkerID,5))
+  if MarkerID != None:
+    sens=[]
+    disp=[]
 
-  print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
-  print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
+    # Recover the sensitivity
+    sens.append(SU2Driver.GetMarkerFEALoadSensitivity(MarkerID, 5))
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+    fea_sol = SU2Driver.GetSolverIndices()["FEA"]
+    marker_disp = SU2Driver.MarkerSolution(fea_sol, MarkerID)
+    disp.append(marker_disp.Get(5))
 
-  if SU2Driver != None:
-    del SU2Driver
+    print("Sens[0]\tSens[1]\tDisp[0]\tDisp[1]\t")
+    print(100, 100, sens[0][0], sens[0][1], disp[0][0], disp[0][1])
+
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 

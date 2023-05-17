@@ -163,7 +163,7 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
   /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
 
-  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+  solver[MESH_SOL]->SetMesh_Stiffness(numerics[MESH_SOL], config);
 
   /*--- Deform the volume grid around the new boundary locations ---*/
 
@@ -175,6 +175,6 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
 void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
                         unsigned long InnerIter, bool StopCalc, unsigned short val_iZone, unsigned short val_iInst) {
-  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
+  output->SetResultFiles(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }

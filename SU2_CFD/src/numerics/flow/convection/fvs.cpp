@@ -65,7 +65,7 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 
 }
 
-CUpwMSW_Flow::~CUpwMSW_Flow(void) {
+CUpwMSW_Flow::~CUpwMSW_Flow() {
 
   delete [] Fc_i;
   delete [] Fc_j;
