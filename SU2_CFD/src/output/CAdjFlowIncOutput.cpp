@@ -275,6 +275,8 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
 
   LoadHistoryDataAdjScalar(config, solver);
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
