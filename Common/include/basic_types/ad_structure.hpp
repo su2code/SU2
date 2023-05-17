@@ -380,7 +380,13 @@ FORCEINLINE void SetDerivative(int index, const double val) {
   AD::getTape().setGradient(index, val, BoundsChecking::False);
 }
 
-FORCEINLINE double GetDerivative(int index) { return AD::getTape().getGradient(index); }
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// If called after tape evaluations, the adjoints should exist.
+// Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+FORCEINLINE double GetDerivative(int index) {
+  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
+  return AD::getTape().getGradient(index, BoundsChecking::False);
+}
 
 FORCEINLINE bool IsIdentifierActive(su2double const& value) {
   return getTape().isIdentifierActive(value.getIdentifier());
