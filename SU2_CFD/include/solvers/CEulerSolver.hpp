@@ -1040,7 +1040,7 @@ public:
    *        iteration can be executed by multiple threads.
    * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
    */
-  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {
+  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) override {
     TurboPrimitive.clear();
     if (INLET) {
       TurboPrimitive.push_back(DensityIn[iBlade][iSpan]); TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);

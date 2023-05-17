@@ -3770,8 +3770,8 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     AddHistoryOutput("MassFlowOut_" + tag.str(),         "MassFlowOut_" + tag.str(),         ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total efficiency " + tag.str(),           HistoryFieldType::DEFAULT);
     AddHistoryOutput("MachIn_" + tag.str(),   "MachIn_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
     AddHistoryOutput("MachOut_" + tag.str(),   "MachOut_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("FlowAngleIn_" + tag.str(),   "FlowAngleIn_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("FlowAngleOut_" + tag.str(),   "FlowAngleOut_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
+    AddHistoryOutput("AbsFlowAngleIn_" + tag.str(),   "AbsFlowAngleIn_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag.str(), HistoryFieldType::DEFAULT);
+    AddHistoryOutput("AbsFlowAngleOut_" + tag.str(),   "AbsFlowAngleOut_" + tag.str(),   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag.str(), HistoryFieldType::DEFAULT);
   }
   //Adds turbomachinery machine performance variables
   AddHistoryOutput("EntropyGeneration",   "EntropyGen",   ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);

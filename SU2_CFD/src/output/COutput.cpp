@@ -230,7 +230,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 void COutput::SetHistoryOutput(CGeometry *geometry,
                                   CSolver **solver,
-                                  CConfig *config,
+                                  CConfig **config,
                                   CTurbomachineryStagePerformance* TurboStagePerf,
                                   std::shared_ptr<CTurboOutput> TurboPerf,
                                   unsigned short val_iZone,
@@ -240,21 +240,22 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
   unsigned long Iter= InnerIter;
 
-  if (config->GetMultizone_Problem())
+  if (config[ZONE_0]->GetMultizone_Problem())
     Iter = OuterIter;
     
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0) {
-    SetTurboPerformance_Output(TurboPerf, config, TimeIter, OuterIter, InnerIter);
-
-  if (rank == MASTER_NODE)
-    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config);
+    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
+    if (rank == MASTER_NODE) SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+    for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
+      WriteTurboSpanwisePerformance(TurboPerf, geometry, config, iZone);
+    }
   }
 
   /*--- Update turboperformance history file*/
-  LoadTurboHistoryData(TurboStagePerf, TurboPerf, config);
+  LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
 
-  SetHistoryOutput(geometry, solver, config, TimeIter, OuterIter,InnerIter);
+  SetHistoryOutput(geometry, solver, config[val_iZone], TimeIter, OuterIter,InnerIter);
 
 }
 

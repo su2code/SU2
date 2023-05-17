@@ -103,4 +103,14 @@ public:
   void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
                                   std::shared_ptr<CTurboOutput> TurboPerf,
                                   CConfig *config) override;
+
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) override;
 };

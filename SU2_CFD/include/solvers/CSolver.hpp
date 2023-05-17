@@ -3762,7 +3762,7 @@ public:
    *        iteration can be executed by multiple threads.
    * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
    */
-  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) const { return TurboPrimitive; }
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) { return TurboPrimitive; }
 
   /*!
    * \brief virtual member.

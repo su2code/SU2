@@ -387,7 +387,7 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig **config,
                          CTurbomachineryStagePerformance* TurboStagePerf,
                          std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
@@ -972,6 +972,16 @@ protected:
   inline virtual void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
                                   std::shared_ptr<CTurboOutput> TurboPerf,
                                   CConfig *config) {};
+                                  
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] solver - The container hold all solution data
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) {};
 
   /*!
    * \brief Set the available history output fields
