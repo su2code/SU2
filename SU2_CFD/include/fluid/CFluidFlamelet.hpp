@@ -57,7 +57,6 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
   vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
-  vector<su2double*> val_vars_Sources; /*!< \brief References to scalar sources. */
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);

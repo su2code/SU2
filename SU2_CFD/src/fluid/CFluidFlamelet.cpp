@@ -105,7 +105,7 @@ unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
   su2double prog = val_scalars[I_PROGVAR];
 
   /*--- perform table lookup ---*/
-  unsigned long exit_code = look_up_table->LookUp_XY(varnames_Sources, val_vars_Sources, prog, enth);
+  unsigned long exit_code = look_up_table->LookUp_XY(varnames_Sources, table_sources, prog, enth);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
   source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
@@ -131,13 +131,13 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- Add all quantities and their names to the look up vectors. ---*/
   look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
 
-  Temperature = val_vars_TD[0];
-  Density = val_vars_TD[1];
-  Cp = val_vars_TD[2];
-  Mu = val_vars_TD[3];
-  Kt = val_vars_TD[4];
-  mass_diffusivity = val_vars_TD[5];
-  molar_weight = val_vars_TD[6];
+  Temperature = val_vars_TD[GetIdx(varnames_TD,"Temperature")];
+  Density = val_vars_TD[GetIdx(varnames_TD,"Density")];
+  Cp = val_vars_TD[GetIdx(varnames_TD,"Cp")];
+  Mu = val_vars_TD[GetIdx(varnames_TD,"ViscosityDyn")];
+  Kt = val_vars_TD[GetIdx(varnames_TD,"Conductivity")];
+  mass_diffusivity = val_vars_TD[GetIdx(varnames_TD,"DiffusionCoefficient")];
+  molar_weight = val_vars_TD[GetIdx(varnames_TD,"MolarWeightMix")];
 
   /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
@@ -188,27 +188,18 @@ void CFluidFlamelet::PreprocessLookUp() {
 
   /*--- The string in varnames_TD as it appears in the LUT file. ---*/
   varnames_TD[0] = "Temperature";
-  //val_vars_TD[0] = Temperature;
   varnames_TD[1] = "Density";
-  //val_vars_TD[1] = Density;
   varnames_TD[2] = "Cp";
-  //val_vars_TD[2] = Cp;
   varnames_TD[3] = "ViscosityDyn";
-  //val_vars_TD[3] = Mu;
   varnames_TD[4] = "Conductivity";
-  //val_vars_TD[4] = Kt;
   varnames_TD[5] = "DiffusionCoefficient";
-  //val_vars_TD[5] = mass_diffusivity;
   varnames_TD[6] = "MolarWeightMix";
-  //val_vars_TD[6] = molar_weight;
 
   /*--- Source term variables ---*/
   varnames_Sources.resize(n_table_sources);
-  val_vars_Sources.resize(n_table_sources);
 
   for (size_t iSource = 0; iSource < n_table_sources; iSource++) {
     varnames_Sources[iSource] = table_source_names[iSource];
-    val_vars_Sources[iSource] = &table_sources[iSource];
   }
 
 }
