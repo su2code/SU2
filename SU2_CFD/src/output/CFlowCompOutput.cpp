@@ -511,7 +511,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> T
       TurboInOut << "Tangential Velocity "  << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetVelocity()[1]                 << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetVelocity()[1];
       TurboInOut << "Mass Flow "            << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow();
       TurboInOut << "Mach "                 << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue();
-      TurboInOut << "Flow Angle "           << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+      TurboInOut << "Abs Flow Angle "       << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
       TurboInOut.PrintFooter();
     }
     cout<<TurboInOutTable.str();
@@ -579,8 +579,8 @@ void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* Turb
         SetHistoryOutputValue("MassFlowOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow());
         SetHistoryOutputValue("MachIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue());
         SetHistoryOutputValue("MachOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue());
-        SetHistoryOutputValue("FlowAngleIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
-        SetHistoryOutputValue("FlowAngleOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
+        SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
+        SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
       }
       SetHistoryOutputValue("EntropyGeneration", TurboStagePerf->GetNormEntropyGen()*100);
       SetHistoryOutputValue("EulerianWork", TurboStagePerf->GetEulerianWork());
