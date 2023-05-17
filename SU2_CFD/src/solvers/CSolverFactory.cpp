@@ -399,7 +399,10 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
     if (adjoint){
       speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
     } else {
-      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT)
+        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      else if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
     }
   }
   return speciesSolver;
