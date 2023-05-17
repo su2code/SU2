@@ -164,7 +164,6 @@ void CPropellorBladePerformance::ComputePerformance(const CTurbomachineryCombine
 CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel) {
   unsigned short nBladesRow = config[ZONE_0]->GetnMarker_Turbomachinery();
   unsigned short nDim = geometry.GetnDim();
-  unsigned short nStages = SU2_TYPE::Int(nBladesRow / 2);
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
