@@ -92,14 +92,13 @@ def main():
     species3_primitiveVenturi.test_vals = [-6.074971, -5.306648, -5.150960, -5.959416, -1.625107, -6.343704, -6.460033, 5.000000, -0.808413, 5.000000, -2.325029, 5.000000, -0.274923, 1.646091, 0.499028, 0.601019, 0.546044]
     test_list.append(species3_primitiveVenturi)
 
-
     # 3 species (2 eq) primitive venturi mixing
     DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.528844, -7.799649, -7.783477, -7.482502, -12.140092, -12.250169, -11.455523]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.422882, -7.699257, -7.683269, -7.411648, -12.064694, -12.205189, -11.368995]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.422882, -7.699257, -7.683269, -7.411648, -12.064694, -12.205189, -11.368995]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 

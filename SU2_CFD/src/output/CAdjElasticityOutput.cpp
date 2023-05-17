@@ -172,6 +172,8 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
       SetHistoryOutputValue("BGS_ADJ_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_BGS(2)));
     }
   }
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -244,19 +246,19 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   /*--- Sensitivities with respect to initial conditions. ---*/
 
-  AddVolumeOutput("SENS_DISP-X", "SensInitialDisp_x", "SENSITIVITY_T0", "sensitivity to the initial x displacement");
-  AddVolumeOutput("SENS_DISP-Y", "SensInitialDisp_y", "SENSITIVITY_T0", "sensitivity to the initial y displacement");
+  AddVolumeOutput("SENS_DISP-X", "SensitivityDispN_x", "SENSITIVITY_N", "sensitivity to the previous x displacement");
+  AddVolumeOutput("SENS_DISP-Y", "SensitivityDispN_y", "SENSITIVITY_N", "sensitivity to the previous y displacement");
   if (nDim == 3)
-    AddVolumeOutput("SENS_DISP-Z", "SensInitialDisp_z", "SENSITIVITY_T0", "sensitivity to the initial z displacement");
+    AddVolumeOutput("SENS_DISP-Z", "SensitivityDispN_z", "SENSITIVITY_N", "sensitivity to the previous z displacement");
 
-  AddVolumeOutput("SENS_VEL-X", "SensInitialVel_x", "SENSITIVITY_T0", "sensitivity to the initial x velocity");
-  AddVolumeOutput("SENS_VEL-Y", "SensInitialVel_y", "SENSITIVITY_T0", "sensitivity to the initial y velocity");
+  AddVolumeOutput("SENS_VEL-X", "SensitivityVelN_x", "SENSITIVITY_N", "sensitivity to the previous x velocity");
+  AddVolumeOutput("SENS_VEL-Y", "SensitivityVelN_y", "SENSITIVITY_N", "sensitivity to the previous y velocity");
   if (nDim == 3)
-    AddVolumeOutput("SENS_VEL-Z", "SensInitialVel_z", "SENSITIVITY_T0", "sensitivity to the initial z velocity");
+    AddVolumeOutput("SENS_VEL-Z", "SensitivityVelN_z", "SENSITIVITY_N", "sensitivity to the previous z velocity");
 
-  AddVolumeOutput("SENS_ACCEL-X", "SensInitialAccel_x", "SENSITIVITY_T0", "sensitivity to the initial x acceleration");
-  AddVolumeOutput("SENS_ACCEL-Y", "SensInitialAccel_y", "SENSITIVITY_T0", "sensitivity to the initial y acceleration");
+  AddVolumeOutput("SENS_ACCEL-X", "SensitivityAccelN_x", "SENSITIVITY_N", "sensitivity to the previous x acceleration");
+  AddVolumeOutput("SENS_ACCEL-Y", "SensitivityAccelN_y", "SENSITIVITY_N", "sensitivity to the previous y acceleration");
   if (nDim == 3)
-    AddVolumeOutput("SENS_ACCEL-Z", "SensInitialAccel_z", "SENSITIVITY_T0", "sensitivity to the initial z acceleration");
+    AddVolumeOutput("SENS_ACCEL-Z", "SensitivityAccelN_z", "SENSITIVITY_N", "sensitivity to the previous z acceleration");
 
 }
