@@ -337,7 +337,7 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
 
   CFileWriter *fileWriter = nullptr;
-  bool do_write_iter_file = false;
+  bool doWriteIterFile = false;
 
   /*--- if it is still present, strip the extension (suffix) from the filename ---*/
   unsigned short lastindex = fileName.find_last_of('.');
@@ -376,7 +376,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -404,7 +404,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Restart_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -433,7 +433,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Restart_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -466,7 +466,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -499,7 +499,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -532,7 +532,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -564,7 +564,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -596,7 +596,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -670,7 +670,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -704,7 +704,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -738,7 +738,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -772,7 +772,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -808,7 +808,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -844,7 +844,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -878,7 +878,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -911,7 +911,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Volume_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -945,7 +945,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If file overwrite is turned off, switch on additional file output
        *    with the value of 'filename_iter' as file name ---*/
       if (!config->GetWrt_Surface_Overwrite())
-        do_write_iter_file = true;
+        doWriteIterFile = true;
 
       break;
 
@@ -963,7 +963,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
     /*--- Write data with iteration number to file ---*/
 
-    if (!filename_iter.empty() && do_write_iter_file){
+    if (!filename_iter.empty() && doWriteIterFile){
       fileWriter->WriteData(filename_iter);
 
       /*--- overwrite bandwidth ---*/
