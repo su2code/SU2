@@ -337,6 +337,7 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
 
   CFileWriter *fileWriter = nullptr;
+  bool do_write_iter_file = false;
 
   /*--- if it is still present, strip the extension (suffix) from the filename ---*/
   unsigned short lastindex = fileName.find_last_of('.');
@@ -361,6 +362,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "CSV file" << fileName + extension;
 
@@ -368,7 +370,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "CSV file + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CSU2FileWriter(surfaceDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -382,7 +390,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
 
-
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 ASCII restart" << fileName + extension;
 
@@ -390,7 +398,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CSU2FileWriter(volumeDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Restart_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -404,7 +418,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
 
-
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 binary restart" << fileName + extension;
 
@@ -413,8 +427,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
 
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Restart_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -432,7 +451,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Set the mesh ASCII format ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 mesh" << fileName + extension;
 
@@ -440,9 +459,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "SU2 mesh + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CSU2MeshFileWriter(volumeDataSorter,
                                           config->GetiZone(), config->GetnZone());
 
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -460,7 +484,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, false);
 
-      /*--- Write tecplot binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Tecplot binary" << fileName + extension;
 
@@ -468,8 +492,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Tecplot binary + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -487,7 +517,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write tecplot ascii ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Tecplot ASCII" << fileName + extension;
 
@@ -495,8 +525,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Tecplot ASCII + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CTecplotFileWriter(volumeDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -514,7 +550,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview" << fileName + extension;
 
@@ -522,7 +558,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -540,7 +582,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview binary (legacy)" << fileName + extension;
 
@@ -548,7 +590,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview binary + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewBinaryFileWriter(volumeDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -567,6 +615,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
+        /*--- Write output information to screen ---*/
         if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Paraview Multiblock" << fileName + extension;
 
@@ -575,12 +624,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         }
 
         /*--- Allocate the vtm file writer (using fileName as the folder name) ---*/
-
         fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"),
                                                 config->GetiZone(), config->GetnZone());
 
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-
         auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
 
         /*--- then we write the data into the folder---*/
@@ -609,7 +656,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview ascii ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview ASCII" << fileName + extension;
 
@@ -617,7 +664,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewFileWriter(volumeDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -637,7 +690,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview ascii ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview ASCII surface" << fileName + extension;
 
@@ -645,7 +698,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewFileWriter(surfaceDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -665,7 +724,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview binary surface (legacy)" << fileName + extension;
 
@@ -673,7 +732,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview binary surface + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewBinaryFileWriter(surfaceDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -693,7 +758,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview surface" << fileName + extension;
 
@@ -701,7 +766,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
           (*fileWritingTable) << "Paraview surface + iter" << filename_iter + extension;
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -721,7 +792,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot ascii ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Tecplot ASCII surface" << fileName + extension;
 
@@ -730,8 +801,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CTecplotFileWriter(surfaceDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -751,7 +828,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot binary ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Tecplot binary surface" << fileName + extension;
 
@@ -760,8 +837,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -777,11 +860,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
 
       /*--- Load and sort the output data and connectivity. ---*/
-
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write ASCII STL ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "STL ASCII" << fileName + extension;
 
@@ -790,7 +872,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CSTLFileWriter(surfaceDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -808,7 +896,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- Load and sort the output data and connectivity. ---*/
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write CGNS ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "CGNS" << fileName + extension;
 
@@ -817,7 +905,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CCGNSFileWriter(volumeDataSorter);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Volume_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -836,7 +930,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write SURFACE_CGNS ---*/
+      /*--- Write output information to screen ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "CGNS surface" << fileName + extension;
 
@@ -845,7 +939,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       }
 
+      /*--- Create file writer that will later be used to write the file to disk ---*/
       fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
+
+      /*--- If file overwrite is turned off, switch on additional file output
+       *    with the value of 'filename_iter' as file name ---*/
+      if (!config->GetWrt_Surface_Overwrite())
+        do_write_iter_file = true;
 
       break;
 
@@ -863,7 +963,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
     /*--- Write data with iteration number to file ---*/
 
-    if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
+    if (!filename_iter.empty() && do_write_iter_file){
       fileWriter->WriteData(filename_iter);
 
       /*--- overwrite bandwidth ---*/
