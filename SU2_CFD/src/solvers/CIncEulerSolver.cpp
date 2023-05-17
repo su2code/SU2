@@ -494,7 +494,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLUID_FLAMELET:
-        fluidModel = auxFluidModel;
+        fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
