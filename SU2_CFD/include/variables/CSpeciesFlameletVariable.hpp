@@ -52,7 +52,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
                            const CConfig* config);
 
   /*!
-   * \brief Set the value of the transported scalar source term
+   * \brief Set the value of the transported scalar source term.
    * \param[in] iPoint - the location where the value has to be set.
    * \param[in] val_lookup_scalar - the value of the scalar to set.
    * \param[in] val_ivar - Eqn. index to the transport equation.

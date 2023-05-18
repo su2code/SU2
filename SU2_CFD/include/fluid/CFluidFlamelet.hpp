@@ -36,27 +36,19 @@ class CFluidFlamelet final : public CFluidModel {
 
   unsigned short n_scalars;
   unsigned short n_lookups;
-  unsigned short n_table_sources;
   unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
   unsigned short n_control_vars; /*!< \brief number of controlling variables. */
 
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names; /*!< \brief vector to store names of scalar source variables.   */
   vector<string> table_lookup_names; /*!< \brief vector to store names of look up variables.   */
-
-  vector<su2double> table_sources;
 
   su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
   su2double molar_weight;     /*!< \brief local molar weight of the mixture */
-
-  vector<su2double> source_scalar;
 
   CLookUpTable* look_up_table;
 
   vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
-
-  vector<string> varnames_Sources;     /*!< \brief Lookup names for scalar source terms. */
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -69,13 +61,6 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
-
-  /*!
-   * \brief Set the reaction source terms for the transported species equations.
-   * \param[in] val_scalars - pointer to species mass fractions
-   * \param[out] exit_code = error code
-   */
-  unsigned long SetScalarSources(const su2double* val_scalars) override;
 
   /*!
    * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup).
@@ -114,11 +99,6 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() { return Mu; }
-
-  /*!
-   * \brief Get the reaction source term of all species equations.
-   */
-  inline const su2double* GetScalarSources() const { return source_scalar.data(); }
 
   /*!
    * \brief Get the index of a string in a vector.

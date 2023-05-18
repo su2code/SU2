@@ -59,24 +59,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
-  /*--- we currently only need 1 source term from the LUT for the progress variable
-        and each auxiliary equations needs 2 source terms ---*/
-  n_table_sources = 1 + 2 * n_user_scalars;
-
-  table_source_names.resize(n_table_sources);
-  table_sources.resize(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
-  /*--- No source term for enthalpy ---*/
-
-  /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
-        S_tot = S_PROD + S_CONS * Y ---*/
-
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    table_source_names[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
-    table_source_names[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
-  }
-
   look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
   n_lookups = config->GetNLookups();
@@ -85,8 +67,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
   }
 
-  source_scalar.resize(n_scalars);
-
   Pressure = value_pressure_operating;
 
   PreprocessLookUp();
@@ -94,34 +74,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
 CFluidFlamelet::~CFluidFlamelet() {
   delete look_up_table;
-}
-
-/*--- set the source terms for the transport equations ---*/
-unsigned long CFluidFlamelet::SetScalarSources(const su2double* val_scalars) {
-  table_sources[0] = 0.0;
-
-  /*--- value for the progress variable and enthalpy ---*/
-  su2double enth = val_scalars[I_ENTH];
-  su2double prog = val_scalars[I_PROGVAR];
-
-  /*--- perform table lookup ---*/
-  unsigned long exit_code = look_up_table->LookUp_XY(varnames_Sources, table_sources, prog, enth);
-
-  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
-  source_scalar[I_PROGVAR] = max(EPS, table_sources[I_SRC_TOT_PROGVAR]);
-  source_scalar[I_ENTH] = 0.0;
-
-  /*--- Source term for the auxiliary species transport equations ---*/
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
-          S_TOT = S_PROD + S_CONS * Y ---*/
-    su2double y_aux = val_scalars[n_control_vars + i_aux];
-    su2double source_prod = table_sources[1 + 2 * i_aux];
-    su2double source_cons = table_sources[1 + 2 * i_aux + 1];
-    source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
-  }
-
-  return exit_code;
 }
 
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
@@ -180,7 +132,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2doub
 }
 
 void CFluidFlamelet::PreprocessLookUp() {
-  /*--- Set lookup names and variables for all relevant lookup processes in the fluid model. ---*/
+  /*--- Set lookup names for all relevant lookup processes in the fluid model. ---*/
 
   /*--- Thermodynamic state variables and names. ---*/
   varnames_TD.resize(7);
@@ -194,12 +146,5 @@ void CFluidFlamelet::PreprocessLookUp() {
   varnames_TD[4] = "Conductivity";
   varnames_TD[5] = "DiffusionCoefficient";
   varnames_TD[6] = "MolarWeightMix";
-
-  /*--- Source term variables ---*/
-  varnames_Sources.resize(n_table_sources);
-
-  for (size_t iSource = 0; iSource < n_table_sources; iSource++) {
-    varnames_Sources[iSource] = table_source_names[iSource];
-  }
 
 }

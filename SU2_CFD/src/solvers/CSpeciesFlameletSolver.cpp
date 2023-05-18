@@ -166,6 +166,37 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   vector<string> table_lookup_names(config->GetNLookups());
   vector<su2double> lookup_scalar(config->GetNLookups());
 
+  unsigned short n_user_scalars = config->GetNUserScalars();
+  unsigned short n_control_vars = config->GetNControlVars();
+  unsigned short n_scalars = config->GetNScalars();
+  vector<string> table_scalar_names(n_scalars);
+
+  table_scalar_names.resize(n_scalars);
+  table_scalar_names[I_ENTH] = "EnthalpyTot";
+  table_scalar_names[I_PROGVAR] = "ProgressVariable";
+  /*--- auxiliary species transport equations---*/
+  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+    table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
+  }
+
+  /*--- we currently only need 1 source term from the LUT for the progress variable
+        and each auxiliary equations needs 2 source terms ---*/
+  unsigned short n_table_sources = 1 + 2 * n_user_scalars;
+
+  vector<string> table_source_names(n_table_sources);
+  vector<su2double> table_sources(n_table_sources);
+  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
+  /*--- No source term for enthalpy ---*/
+
+  /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
+        S_tot = S_PROD + S_CONS * Y ---*/
+
+  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+    /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
+    table_source_names[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
+    table_source_names[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
+  }
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -174,28 +205,44 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
   }
 
-  /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
 
-    /*--- Compute scalar source terms ---*/
-    unsigned long exit_code = fluid_model_local->SetScalarSources(scalars);
+    /*--- Compute total source terms from the production and consumption. ---*/
+    
+    unsigned long exit_code = fluid_model_local->GetLookUpTable()->LookUp_XY(
+      table_source_names, table_sources, scalars[I_PROGVAR], scalars[I_ENTH]);
+
+    /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
+
+    vector<su2double> source_scalar(config->GetNScalars());
+    source_scalar[I_PROGVAR] = fmax(EPS, table_sources[I_SRC_TOT_PROGVAR]);
+    source_scalar[I_ENTH] = 0.0;
+
+    /*--- Source term for the auxiliary species transport equations. ---*/
+    for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
+      /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
+            S_TOT = S_PROD + S_CONS * Y ---*/
+      su2double y_aux = scalars[n_control_vars + i_aux];
+      su2double source_prod = table_sources[1 + 2 * i_aux];
+      su2double source_cons = table_sources[1 + 2 * i_aux + 1];
+      source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
+    }
+    for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
+      nodes->SetScalarSource(i_point, i_scalar, source_scalar[i_scalar]);
+
     unsigned short misses = exit_code;
     nodes->SetTableMisses(i_point, misses);
     n_not_in_domain += exit_code;
 
+    n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_XY(
+           table_lookup_names, lookup_scalar, scalars[I_PROGVAR], scalars[I_ENTH]);
+
     for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
-
-      n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_XY(
-            table_lookup_names, lookup_scalar, scalars[I_PROGVAR], scalars[I_ENTH]);
-
       nodes->SetLookupScalar(i_point, lookup_scalar[i_lookup], i_lookup);
     }
-
-    for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-      nodes->SetScalarSource(i_point, i_scalar, fluid_model_local->GetScalarSources()[i_scalar]);
 
     su2double T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);

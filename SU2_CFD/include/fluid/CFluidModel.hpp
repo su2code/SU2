@@ -139,17 +139,6 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
-   * \brief Flamelet LUT - Get the source term of the transported scalar.
-   */
-  virtual inline const su2double* GetScalarSources() const { return nullptr; }
-
-  /*!
-   * \brief Set the source terms for the flamelet model (obtained from LUT).
-   * \param[in] val_scalar - Pointer to the transported scalars.
-   */
-  virtual unsigned long SetScalarSources(const su2double* val_scalars) { return 0; }
-
-  /*!
    * \brief Flamelet LUT - Get the number of transported scalars.
    */
   virtual inline unsigned short GetNScalars() const { return 0; }
