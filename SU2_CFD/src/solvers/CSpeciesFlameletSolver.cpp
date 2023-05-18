@@ -161,19 +161,14 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
-  unsigned long n_not_in_domain = 0;
-  vector<su2double*> look_up_data;
-  vector<string> table_lookup_names(config->GetNLookups());
-  vector<su2double> lookup_scalar(config->GetNLookups());
 
   unsigned short n_user_scalars = config->GetNUserScalars();
   unsigned short n_control_vars = config->GetNControlVars();
-  unsigned short n_scalars = config->GetNScalars();
-  vector<string> table_scalar_names(n_scalars);
 
-  table_scalar_names.resize(n_scalars);
+  vector<string> table_scalar_names(config->GetNScalars());
   table_scalar_names[I_ENTH] = "EnthalpyTot";
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
+
   /*--- auxiliary species transport equations---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
@@ -184,7 +179,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   unsigned short n_table_sources = 1 + 2 * n_user_scalars;
 
   vector<string> table_source_names(n_table_sources);
-  vector<su2double> table_sources(n_table_sources);
   table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
   /*--- No source term for enthalpy ---*/
 
@@ -201,6 +195,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
+  vector<string> table_lookup_names(config->GetNLookups());
   for (int i_lookup = 0; i_lookup <  config->GetNLookups(); ++i_lookup) {
     table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
   }
@@ -212,8 +207,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     /*--- Compute total source terms from the production and consumption. ---*/
     
-    unsigned long exit_code = fluid_model_local->GetLookUpTable()->LookUp_XY(
+    vector<su2double> table_sources(n_table_sources);
+    unsigned long misses = fluid_model_local->GetLookUpTable()->LookUp_XY(
       table_source_names, table_sources, scalars[I_PROGVAR], scalars[I_ENTH]);
+    nodes->SetTableMisses(i_point, misses);
 
     /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
@@ -233,11 +230,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
       nodes->SetScalarSource(i_point, i_scalar, source_scalar[i_scalar]);
 
-    unsigned short misses = exit_code;
-    nodes->SetTableMisses(i_point, misses);
-    n_not_in_domain += exit_code;
 
-    n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_XY(
+    vector<su2double> lookup_scalar(config->GetNLookups());
+    misses = fluid_model_local->GetLookUpTable()->LookUp_XY(
            table_lookup_names, lookup_scalar, scalars[I_PROGVAR], scalars[I_ENTH]);
 
     for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
@@ -392,11 +387,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
 
     if (rank == MASTER_NODE && n_not_in_domain_global > 0)
-      cout << " !!! Initial condition: Number of points outside of table domain: " << n_not_in_domain_global << " !!!"
+      cout << " Initial condition: Number of points outside of table domain: " << n_not_in_domain_global << " !!!"
            << endl;
 
     if (rank == MASTER_NODE && n_not_iterated_global > 0)
-      cout << " !!! Initial condition: Number of points in which enthalpy could not be iterated: "
+      cout << " Initial condition: Number of points in which enthalpy could not be iterated: "
            << n_not_iterated_global << " !!!" << endl;
 
     if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
