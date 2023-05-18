@@ -58,35 +58,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nDim = geometry->GetnDim();
 
-  /*--- Single grid simulation ---*/
+  Initialize(geometry, config, iMesh);
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
-
-    /*--- Define some auxiliary vector related with the residual ---*/
-
-    Residual_RMS.resize(nVar, 0.0);
-    Residual_Max.resize(nVar, 0.0);
-    Point_Max.resize(nVar, 0);
-    Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
-
-    /*--- Initialize the BGS residuals in multizone problems. ---*/
-    if (config->GetMultizone_Problem()) {
-      Residual_BGS.resize(nVar, 0.0);
-      Residual_Max_BGS.resize(nVar, 0.0);
-      Point_Max_BGS.resize(nVar, 0);
-      Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
-    }
-
-    /*--- Initialization of the structure of the whole Jacobian ---*/
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (species transport model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    System.SetxIsZero(true);
-
-    if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  }
 
   /*--- Initialize lower and upper limits---*/
 
@@ -170,6 +143,39 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   /*--- Add the solver name. ---*/
   SolverName = "SPECIES";
 }
+
+
+void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh) {
+  
+if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+
+    /*--- Define some auxiliary vector related with the residual ---*/
+
+    Residual_RMS.resize(nVar, 0.0);
+    Residual_Max.resize(nVar, 0.0);
+    Point_Max.resize(nVar, 0);
+    Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
+
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (config->GetMultizone_Problem()) {
+      Residual_BGS.resize(nVar, 0.0);
+      Residual_Max_BGS.resize(nVar, 0.0);
+      Point_Max_BGS.resize(nVar, 0);
+      Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
+    }
+
+    /*--- Initialization of the structure of the whole Jacobian ---*/
+
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (species transport model)." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    System.SetxIsZero(true);
+
+    if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
+}
+
 
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {

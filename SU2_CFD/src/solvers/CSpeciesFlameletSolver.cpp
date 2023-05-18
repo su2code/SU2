@@ -71,34 +71,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
   for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
 
-  /*--- Single grid simulation ---*/
-
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
-    /*--- Define some auxiliary vector related with the residual. ---*/
-
-    Residual_RMS.resize(nVar, 0.0);
-    Residual_Max.resize(nVar, 0.0);
-    Point_Max.resize(nVar, 0);
-    Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
-
-    /*--- Initialize the BGS residuals in multizone problems. ---*/
-    if (config->GetMultizone_Problem()) {
-      Residual_BGS.resize(nVar, 0.0);
-      Residual_Max_BGS.resize(nVar, 0.0);
-      Point_Max_BGS.resize(nVar, 0);
-      Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
-    }
-
-    /*--- Initialization of the structure of the whole Jacobian. ---*/
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (flamelet model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    System.SetxIsZero(true);
-
-    if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  }
+  Initialize(geometry, config, iMesh);
 
   /*--- Initialize clipping, lower and upper limits. ---*/
 
