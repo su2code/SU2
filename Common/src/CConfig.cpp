@@ -8909,14 +8909,6 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
 
-void CConfig::SetInlet_SpeciesVal(su2double val, const string& val_marker, unsigned long iVar) const {
-  unsigned short iMarker_Inlet;
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++){
-    if (Marker_Inlet[iMarker_Inlet] == val_marker)
-      Inlet_SpeciesVal[iMarker_Inlet][iVar] = val;
-  }
-}
-
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {
   /*--- If Turbulent Inlet is not provided for the marker, return free stream values. ---*/
   for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {

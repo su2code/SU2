@@ -1428,7 +1428,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
       numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
 
-    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET){
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
       numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWiseTransportedScalarGeneral(nDim, nVar_Species, config);
     }
     else {

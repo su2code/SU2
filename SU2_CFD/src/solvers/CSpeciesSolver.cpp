@@ -60,27 +60,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   Initialize(geometry, config, iMesh);
 
-
-  /*--- Initialize lower and upper limits---*/
-
-  if (config->GetSpecies_Clipping()) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      lowerlimit[iVar] = config->GetSpecies_Clipping_Min(iVar);
-      upperlimit[iVar] = config->GetSpecies_Clipping_Max(iVar);
-    }
-  } else {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      lowerlimit[iVar] = -1.0e15;
-      upperlimit[iVar] = 1.0e15;
-    }
-  }
-
-  /*--- Scalar variable state at the far-field. ---*/
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
-  }
-
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CSpeciesVariable(Solution_Inf, nPoint, nDim, nVar, config);
@@ -146,7 +125,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
 
 void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh) {
-  
+
 if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
@@ -173,6 +152,26 @@ if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
     System.SetxIsZero(true);
 
     if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
+
+  /*--- Initialize lower and upper limits---*/
+
+  if (config->GetSpecies_Clipping()) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      lowerlimit[iVar] = config->GetSpecies_Clipping_Min(iVar);
+      upperlimit[iVar] = config->GetSpecies_Clipping_Max(iVar);
+    }
+  } else {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      lowerlimit[iVar] = -1.0e15;
+      upperlimit[iVar] = 1.0e15;
+    }
+  }
+
+  /*--- Scalar variable state at the far-field. ---*/
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
   }
 }
 

@@ -73,26 +73,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   Initialize(geometry, config, iMesh);
 
-  /*--- Initialize clipping, lower and upper limits. ---*/
-
-  if (config->GetSpecies_Clipping()) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      lowerlimit[iVar] = config->GetSpecies_Clipping_Min(iVar);
-      upperlimit[iVar] = config->GetSpecies_Clipping_Max(iVar);
-    }
-  } else {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      lowerlimit[iVar] = -1.0e15;
-      upperlimit[iVar] = 1.0e15;
-    }
-  }
-
-  /*--- Scalar variable state at the far-field. ---*/
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
-  }
-
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
