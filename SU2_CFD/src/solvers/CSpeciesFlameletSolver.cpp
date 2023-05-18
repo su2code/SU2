@@ -475,8 +475,8 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
-  CSpeciesSolver::Source_Residual("all the stuff")
-  }
+  /*--- call the species solver for the shared sources (axisymmetric) ---*/
+  CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
 }
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
@@ -484,76 +484,20 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
-  const su2double* inlet_scalar = config->GetInlet_SpeciesVal(Marker_Tag);
-
-  vector<su2double> inlet_scalar_local(inlet_scalar,inlet_scalar+nVar);
-
-  CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+  const su2double* scalar_inlet = config->GetInlet_SpeciesVal(Marker_Tag);
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
-  su2double enth_inlet_local = inlet_scalar[I_ENTH];
-  fluid_model_local->GetEnthFromTemp(enth_inlet_local, inlet_scalar_local[I_PROGVAR], temp_inlet, inlet_scalar[I_ENTH]);
-  inlet_scalar_local[I_ENTH] = enth_inlet_local;
-
-  /*--- Loop over all the vertices on this boundary marker. ---*/
-
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  su2double enth_inlet = scalar_inlet[I_ENTH];
+  solver_container[FLOW_SOL]->GetFluidModel()->GetEnthFromTemp(enth_inlet,
+                scalar_inlet[I_PROGVAR], temp_inlet, scalar_inlet[I_ENTH]);
+ 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
-
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-    if (config->GetSpecies_StrongBC()) {
-      nodes->SetSolution_Old(iPoint, inlet_scalar_local.data());
-
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- Includes 1 in the diagonal. ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-    } else {
-      /*--- Normal vector for this vertex (negate for outward convention). ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Allocate the value at the inlet. ---*/
-
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node. ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class. ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Set the species variable state at the inlet. ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
-
-      /*--- Set various other quantities in the solver class. ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme. ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration. ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
+    Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
   }
-  END_SU2_OMP_FOR
+
+  /*--- Call the general inlet boundary condition implementation. ---*/
+  CSpeciesSolver::BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+
 }
 
 void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
