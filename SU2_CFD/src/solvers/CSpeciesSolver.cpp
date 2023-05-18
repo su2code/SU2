@@ -558,40 +558,6 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
 
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
-
-  SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    /*--- Set primitive variables w/o reconstruction. ---*/
-
-    first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
-
-    /*--- Set scalar variables w/o reconstruction. ---*/
-
-    first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
-
-    first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
-
-    /*--- Set volume of the dual cell. ---*/
-
-    first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
-
-    /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
-    first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
-
-    auto residual = first_numerics->ComputeResidual(config);
-
-    /*--- Add Residual. ---*/
-
-    LinSysRes.SubtractBlock(i_point, residual);
-
-    /*--- Implicit part. ---*/
-
-    if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
-  }
-  END_SU2_OMP_FOR
-  
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_SECOND_TERM  + omp_get_thread_num()*MAX_TERMS];
 

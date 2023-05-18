@@ -463,86 +463,86 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
   END_SU2_OMP_FOR
 }
 
-// void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
-//                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
-//   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-//   const bool axisymmetric = config->GetAxisymmetric();
+void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
+                                             CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool axisymmetric = config->GetAxisymmetric();
 
-//   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-//   auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
 
-//   SU2_OMP_FOR_DYN(omp_chunk_size)
-//   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-//     /*--- Set primitive variables w/o reconstruction. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    /*--- Set primitive variables w/o reconstruction. ---*/
 
-//     first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
+    first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
 
-//     /*--- Set scalar variables w/o reconstruction. ---*/
+    /*--- Set scalar variables w/o reconstruction. ---*/
 
-//     first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
+    first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
 
-//     first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
+    first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
 
-//     /*--- Set volume of the dual cell. ---*/
+    /*--- Set volume of the dual cell. ---*/
 
-//     first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
+    first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
 
-//     /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
-//     first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
+    /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
+    first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
 
-//     auto residual = first_numerics->ComputeResidual(config);
+    auto residual = first_numerics->ComputeResidual(config);
 
-//     /*--- Add Residual. ---*/
+    /*--- Add Residual. ---*/
 
-//     LinSysRes.SubtractBlock(i_point, residual);
+    LinSysRes.SubtractBlock(i_point, residual);
 
-//     /*--- Implicit part. ---*/
+    /*--- Implicit part. ---*/
 
-//     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
-//   }
-//   END_SU2_OMP_FOR
+    if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
+  }
+  END_SU2_OMP_FOR
 
-//   /*--- Axisymmetry source term for the scalar equation. ---*/
-//   if (axisymmetric) {
-//     CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+  /*--- Axisymmetry source term for the scalar equation. ---*/
+  if (axisymmetric) {
+    CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
 
-//     SU2_OMP_FOR_DYN(omp_chunk_size)
-//     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
-//       /*--- Set primitive variables w/o reconstruction. ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set primitive variables w/o reconstruction. ---*/
 
-//       numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
-//       /*--- Set scalar variables w/o reconstruction. ---*/
+      /*--- Set scalar variables w/o reconstruction. ---*/
 
-//       numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
-//       numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
 
-//       /*--- Set volume of the dual cell. ---*/
+      /*--- Set volume of the dual cell. ---*/
 
-//       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-//       /*--- Set y coordinate. ---*/
+      /*--- Set y coordinate. ---*/
 
-//       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
-//       /*--- Set gradients. ---*/
+      /*--- Set gradients. ---*/
 
-//       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
-//       auto residual = numerics->ComputeResidual(config);
+      auto residual = numerics->ComputeResidual(config);
 
-//       /*--- Add Residual. ---*/
+      /*--- Add Residual. ---*/
 
-//       LinSysRes.SubtractBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(iPoint, residual);
 
-//       /*--- Implicit part. ---*/
+      /*--- Implicit part. ---*/
 
-//       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//     }
-//     END_SU2_OMP_FOR
-//   }
-// }
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+  }
+}
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
