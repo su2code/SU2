@@ -129,6 +129,7 @@ private:
   using Base::Jacobian_j;
   
   const su2double sigma_n = 1.0;
+  const su2double sigma_y = 1.0;
   
   /*!
    * \brief Adds any extra variables to AD
@@ -139,24 +140,52 @@ private:
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
+
   void FinishResidualCalc(const CConfig* config) override {
-	const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
-	/*--- Compute mean effective dynamic viscosity ---*/
-	const su2double diff_i_amplification = (Laminar_Viscosity_i + Eddy_Viscosity_i)/sigma_n;
-	const su2double diff_j_amplification = (Laminar_Viscosity_j + Eddy_Viscosity_j)/sigma_n;
+    /*--- Compute mean effective dynamic viscosity ---*/
+    const su2double diff_i_n = sigma_n*(Laminar_Viscosity_i + Eddy_Viscosity_i);
+    const su2double diff_j_n = sigma_n*(Laminar_Viscosity_j + Eddy_Viscosity_j);
+    const su2double diff_i_gamma = Laminar_Viscosity_i + (Eddy_Viscosity_i/sigma_y);
+    const su2double diff_j_gamma = Laminar_Viscosity_j + (Eddy_Viscosity_j/sigma_y);
 
-	const su2double diff_amplification = 0.5*(diff_i_amplification + diff_j_amplification);
+    const su2double diff_n = 0.5*(diff_i_n + diff_j_n);
+    const su2double diff_gamma = 0.5*(diff_i_gamma + diff_j_gamma);
 
-    Flux[0] = diff_amplification*Proj_Mean_GradScalarVar[0];
+    Flux[0] = diff_n*Proj_Mean_GradScalarVar[0];
+    Flux[1] = diff_gamma*Proj_Mean_GradScalarVar[1];
 
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-
+    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
     if (implicit) {
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-diff_amplification*proj_vector_ij);
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+diff_amplification*proj_vector_ij);
+      const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+      Jacobian_i[0][0] = -diff_n*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;                        Jacobian_i[1][1] = -diff_gamma*proj_on_rho_i;
+
+      const su2double proj_on_rho_j = proj_vector_ij/Density_j;
+      Jacobian_j[0][0] = diff_n*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = 0.0;                        Jacobian_j[1][1] = diff_gamma*proj_on_rho_j;
     }
   }
+
+//  void FinishResidualCalc(const CConfig* config) override {
+//	const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+//
+//	/*--- Compute mean effective dynamic viscosity ---*/
+//	const su2double diff_i_amplification = (Laminar_Viscosity_i + Eddy_Viscosity_i)/sigma_n;
+//	const su2double diff_j_amplification = (Laminar_Viscosity_j + Eddy_Viscosity_j)/sigma_n;
+//
+//	const su2double diff_amplification = 0.5*(diff_i_amplification + diff_j_amplification);
+//
+//    Flux[0] = diff_amplification*Proj_Mean_GradScalarVar[0];
+//
+//    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+//
+//    if (implicit) {
+//      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-diff_amplification*proj_vector_ij);
+//      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+diff_amplification*proj_vector_ij);
+//    }
+//  }
 
 public:
   /*!

@@ -33,8 +33,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*---  This is the implementation of the eN transition model.
-       The main reference for this model is: James G. Coder∗ and Mark D. Maughmer 2014
-       DOI: https://doi.org/10.2514/1.J052905 ---*/
+       The main reference for this model is: Coder, J.G., https://doi.org/10.2514/6.2019-0039.  ---*/
 
 CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config, true) {
@@ -45,8 +44,8 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> 1 Transport equation (Amplification factor) ---*/
-  nVar = 1;
-  nPrimVar = 1;
+  nVar = 2;
+  nPrimVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -97,28 +96,22 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   }
 
-  /*--- Initialize lower and upper limits:
-   * Standard farfield BC should be 0.0. But to improve large gradients at the start of the simulation,
-   * for compressible flow, it is set at a negative number to further reduce SA production term. Incompressible does not have this problem ---*/
+  /*--- Initialize lower and upper limits ---*/
+  lowerlimit[0] = 1.0e-4;
+  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
 
-  su2double lowlimit; su2double AmplificationFactor_Inf;
-  if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-    lowlimit = -20;
-    AmplificationFactor_Inf = -20;
-  }
-  else {
-    lowlimit = 1e-4;
-    AmplificationFactor_Inf = 0;
-  }
-
-  lowerlimit[0] = lowlimit;
-  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100)*10;
+  lowerlimit[1] = 1.0e-4;
+  upperlimit[1] = 5;
 
   /*--- Far-field flow state quantities and initialization. ---*/
+  const su2double AmplificationFactor_Inf = 0;
+  const su2double ModifiedIntermittency_Inf = 0;
+
   Solution_Inf[0] = AmplificationFactor_Inf;
+  Solution_Inf[1] = ModifiedIntermittency_Inf;
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  nodes = new CTransENVariable(AmplificationFactor_Inf, nPoint, nDim, nVar, config);
+  nodes = new CTransENVariable(AmplificationFactor_Inf,ModifiedIntermittency_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -161,6 +154,35 @@ void CTransENSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+  /*--- Setting normals for HL parameter. ---*/
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+    auto Normal = geometry->nodes->GetNormal(iPoint);
+    nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
+    nodes->SetNormal(iPoint, Normal[0], Normal[1], Normal[2]);
+  }
+  END_SU2_OMP_FOR
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetAuxVar_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetAuxVar_Gradient_LS(geometry, config);
+  }
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+    su2double AuxVarHere = 0.0;
+    auto Normal = geometry->nodes->GetNormal(iPoint);
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+	  AuxVarHere += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+    nodes->SetAuxVar(iPoint, 0, AuxVarHere);
+  }
+  END_SU2_OMP_FOR
+
 }
 
 void CTransENSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -239,12 +261,26 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
-    /*--- Set coordnate (for debugging) ---*/
+    /*--- Set coordinates (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
     
+    /*--- Set wall normal derivative of the wall normal momentum ---*/
+    numerics->SetAuxVar(nodes->GetAuxVar(iPoint, 0));
+
     /*--- Compute the source term ---*/
-	
     auto residual = numerics->ComputeResidual(config);
+
+    /*--- Debug terms ---*/
+    nodes->SetProd(iPoint, numerics->GetProd());
+    nodes->SetUedge(iPoint, numerics->GetUedge());
+    nodes->SetHL(iPoint, numerics->GetHL());
+    nodes->SetH12(iPoint, numerics->GetH12());
+    nodes->SetFG(iPoint, numerics->GetFG());
+    nodes->SetFC(iPoint, numerics->GetFC());
+    nodes->SetREY(iPoint, numerics->GetREY());
+    nodes->SetREY0(iPoint, numerics->GetREY0());
+    nodes->SetDist(iPoint, numerics->GetDist());
+	nodes->SetStrain(iPoint, numerics->GetStrain());
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -368,8 +404,8 @@ void CTransENSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
         Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
       }
 
-      /*--- Set the LM variable states. ---*/
-      /*--- Load the inlet transition LM model variables (uniform by default). ---*/
+      /*--- Set the eN variable states. ---*/
+      /*--- Load the inlet transition eN model variables (uniform by default). ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
 
@@ -448,6 +484,7 @@ void CTransENSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
         nodes ->SetAmplificationFactor(iPoint_Local,  Restart_Data[index + 2]);
+//        nodes ->SetModifiedIntermittency(iPoint_Local,  Restart_Data[index + 3]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -532,7 +569,7 @@ void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-  su2double allowableRatio = 0.99;
+  su2double allowableRatio = 0.5;
 
   unsigned long Inner_Iter = config->GetInnerIter();
 

@@ -335,8 +335,28 @@ class CSourcePieceWise_TransEN final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
 
-  su2double Residual, *Jacobian_i;
-  su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
+  /*--- Debug terms ---*/
+  su2double Prod_Local = 0.0;
+  su2double Uedge_Local = 0.0;
+  su2double HL_Local = 0.0;
+  su2double H12_Local = 0.0;
+  su2double FG_Local = 0.0;
+  su2double FC_Local = 0.0;
+  su2double REY_Local = 0.0;
+  su2double REY0_Local = 0.0;
+  su2double Dist_Local = 0.0;
+  su2double Strain_Local = 0.0;
+
+  /*--- eN Closure constants ---*/
+  su2double c_1 = 100.0;
+  su2double c_2 = 0.06;
+  su2double c_3 = 50.0;
+
+  su2double AuxVar;
+
+  su2double Residual[2];
+  su2double* Jacobian_i[2];
+  su2double Jacobian_Buffer[4];  // Static storage for the Jacobian (which needs to be pointer for return type).
 
  public:
   /*!
@@ -350,7 +370,8 @@ class CSourcePieceWise_TransEN final : public CNumerics {
         idx(val_nDim, config->GetnSpecies()) {
     
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
-	Jacobian_i = &Jacobian_Buffer;
+	Jacobian_i[0] = Jacobian_Buffer;
+	Jacobian_i[1] = Jacobian_Buffer + 2;
   }
 
   /*!
@@ -370,6 +391,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
     su2double rho 			= V_i[idx.Density()];
     su2double p 			= V_i[idx.Pressure()];
     su2double muLam 		= V_i[idx.LaminarViscosity()];
+    su2double muEddy		= V_i[idx.EddyViscosity()];
 
     const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 
@@ -377,7 +399,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
     const su2double vel_v 	= V_i[1+idx.Velocity()];
     const su2double vel_w 	= (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
 
-    const su2double vel_mag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+    const su2double vel_mag = max(sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w), 1e-20);
 
     su2double rhoInf		= config->GetDensity_FreeStreamND();
     su2double pInf 			= config->GetPressure_FreeStreamND();
@@ -388,77 +410,108 @@ class CSourcePieceWise_TransEN final : public CNumerics {
     	velInf2 += velInf[iDim]*velInf[iDim];
     }
 
-    Residual = 0.0;
-    Jacobian_i[0] = 0.0;
+    Residual[0] = 0.0;
+    Residual[1] = 0.0;
+    Jacobian_i[0][0] = 0.0;
+    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;
+    Jacobian_i[1][1] = 0.0;
 
     if (dist_i > 1e-10) {
 
-      su2double u_e;
-      if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-
-  		/*--- Estimate of the equivalent flow velocity at the edge of the boundary layer based on compressible Bernoulli's equation ---*/
-  		const su2double Gamma = config->GetGamma();
-  		const su2double G_over_G = Gamma/(Gamma-1);
-
-  		const su2double rho_e = pow(((pow(rhoInf,Gamma)/pInf)*p),(1/Gamma));
-
-  		/*--- Abs value taken to account of negative difference between pInf and local p ---*/
-  		//u_e = sqrt(2*(G_over_G*( (pInf/rhoInf) -(p/rho_e) )) + velInf2 );
-  		u_e = sqrt(2*(G_over_G*(pInf/rhoInf) + (velInf2/2) - G_over_G*(p/rho_e)));
-
-      } else {
-
-    	/*--- Inviscid edge velocity based on incompressible Bernoulli's equation---*/
-    	//u_e = sqrt((rhoInf*velInf2 + 2*(pInf-p))/rho);
-    	u_e = sqrt((rhoInf*velInf2 + 2*(p-pInf))/rho);
-
-      }
+      Dist_Local = dist_i;
+      Strain_Local = StrainMag_i;
 
       /*--- Local pressure-gradient parameter for the boundary layer shape factor. Minimum value of 0.328 for stability ---*/
-      const su2double H_L 		= max(((StrainMag_i*dist_i)/u_e),0.328);
+      const su2double H_L 		= (pow(dist_i,2)/(muLam/rho))*AuxVar;
+
+      HL_Local = H_L;
 
       /*--- Integral shape factor ---*/
-      const su2double H_12 		= 13.9766*pow(H_L,4) - 22.9166*pow(H_L,3) + 13.7227*pow(H_L,2) - 1.0023*H_L + 1.6778;
+      const su2double H_12 		= min(max(0.26*H_L + 2.4, 2.2), 20.0);
+
+      H12_Local = H_12;
 
       /*--- F growth parameters ---*/
-      const su2double DH_12 	= (0.0616*pow(H_12,2) + 0.2339*H_12 + 3.4298)/
-    		  	  	  	  	  	     (0.0047*pow(H_12,3) - 0.1056*pow(H_12,2) + 0.9350*H_12 - 1.2071);
-
+      const su2double DH_12		= 2.4*H_12 / (H_12 - 1.0);
       const su2double lH_12 	= (6.54*H_12 - 14.07)/pow(H_12,2);
-      const su2double mH_12 	= (0.058*(pow((H_12 - 4),2)/(H_12 - 1)) - 0.068)*(1/lH_12);
+      const su2double mH_12 	= (1/lH_12) * ( 0.058*(pow((H_12 - 4.0),2)/(H_12 - 1)) - 0.068 );
 
-      const su2double F_growth 	= DH_12*((1 + mH_12)*lH_12)/2;
+      const su2double F_growth 	= DH_12*( (1 + mH_12)/2 )* lH_12;
+
+      FG_Local = F_growth;
 
       /*--- F crit parameters ---*/
-      const su2double Re_y 		= (rho*vel_mag*dist_i)/muLam;
-      const su2double k_y 		= -0.00315*pow(H_12,3) + 0.0986*pow(H_12,2) - 0.242*H_12 + 3.739;
-      const su2double Re_d2_0 	= pow(10,(0.7*tanh((14/(H_12 - 1)) - 9.24) + 2.492/pow((H_12 - 1),0.43) + 0.62));
-      const su2double Re_y_0	= k_y * Re_d2_0;
+      const su2double Re_v 		= (rho*StrainMag_i*pow(dist_i,2))/(muLam + muEddy);
+	  const su2double k_v 		= 1/(0.4036*pow(H_12,2)-2.5394*H_12+4.3273);
+	  const su2double Re_d2_0 	= pow(10,(0.7*tanh((14/(H_12 - 1)) - 9.24) + 2.492/(pow((H_12 - 1),0.43)) + 0.62));
+	  const su2double Re_v_0	= k_v * Re_d2_0;
+
+      REY_Local = Re_v;
+	  REY0_Local = Re_v_0;
 
       short int F_crit = 0;
-      if (Re_y > Re_y_0){
-        F_crit = 1;
-      } else {
+      if (Re_v < Re_v_0){
         F_crit = 0;
+      } else {
+        F_crit = 1;
       }
 
-      /*--- Source term expresses stream wise growth of Tollmien_schlichting instabilities ---*/
-      const su2double dn_over_dRe_d2 = 0.028*(H_12 - 1) - 0.0345*exp(-pow((3.87/(H_12 - 1) - 2.52),2));
+      FC_Local = F_crit;
 
-      /*--- Production term ---*/
-      const su2double P_amplification = rho*VorticityMag*F_crit*F_growth*dn_over_dRe_d2;
+      /*--- Source term expresses stream wise growth of Tollmien_schlichting instabilities ---*/
+      const su2double dn_over_dRe_d2 = 0.028*(H_12 - 1) - 0.0345*exp( -(pow( (3.87/(H_12 - 1) - 2.52),2) ) );
+
+      /*--- F onset parameters ---*/
+      const su2double Ntemp 	= 2.5*tanh(config->GetTurbulenceIntensity_FreeStream()/2.5);
+      const su2double Ncrit 	= -8.43 - 2.4*log(Ntemp/100);
+      const su2double F_onset1 	= TransVar_i[0]/Ncrit;
+
+      const su2double F_onset2	= min(F_onset1,2.0);
+
+      const su2double Rt 		= muEddy/muLam;
+      const su2double F_onset3 	= max(1-( pow((Rt/3.5),3) ),0.0);
+
+      const su2double Fonset	= max((F_onset2 - F_onset3), 0.0);
+
+      /*--- F turb parameters ---*/
+      const su2double Fturb		= exp(- (pow((Rt/2),4)));
+
+      /*--- Production terms ---*/
+      const su2double P_amplification 	= rho*VorticityMag*F_crit*F_growth*dn_over_dRe_d2;
+      const su2double P_gamma			= c_1*rho*StrainMag_i*Fonset*( 1-exp(TransVar_i[1]) );
+      const su2double D_gamma 			= c_2*rho*VorticityMag*Fturb*( c_3*exp(TransVar_i[1]) -1 );
+
+      Prod_Local = P_amplification;
 
       /*--- Add Production to residual ---*/
-      Residual += P_amplification * Volume;
+      Residual[0] += P_amplification * Volume;
+      Residual[1] += (P_gamma - D_gamma) * Volume;
 
       /*--- Implicit part ---*/
-	  Jacobian_i[0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
+      Jacobian_i[0][0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;
+      Jacobian_i[1][1] = ( -c_1*rho*StrainMag_i*Fonset*exp(TransVar_i[1]) - c_2*rho*VorticityMag*Fturb* c_3*exp(TransVar_i[1]) ) * Volume;
 
     }
 
-    AD::SetPreaccOut(Residual);
+    AD::SetPreaccOut(Residual, nVar);
     AD::EndPreacc();
 
-    return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+
+  inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
+
+  inline su2double GetProd() override {return Prod_Local;}
+  inline su2double GetUedge() override {return Uedge_Local;}
+  inline su2double GetHL() override {return HL_Local;}
+  inline su2double GetH12() override {return H12_Local;}
+  inline su2double GetFG() override {return FG_Local;}
+  inline su2double GetFC() override {return FC_Local;}
+  inline su2double GetREY() override {return REY_Local;}
+  inline su2double GetREY0() override {return REY0_Local;}
+  inline su2double GetDist() override {return Dist_Local;}
+  inline su2double GetStrain() override {return Strain_Local;}
 };

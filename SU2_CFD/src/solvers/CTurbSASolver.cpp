@@ -382,6 +382,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::EN) {
 	  numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,0));
+	  numerics-> SetModifiedIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,1));
 	}
 
     /*--- Effective Intermittency ---*/

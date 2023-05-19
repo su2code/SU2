@@ -44,5 +44,8 @@ using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
  * \ingroup ConvDiscr
  */
 template <class FlowIndices>
-using CUpwSca_TransEN  = CUpwSca_TurbSA<FlowIndices>;
+using CUpwSca_TransEN  = CUpwSca_TurbSST<FlowIndices>;
+
+//template <class FlowIndices>
+//using CUpwSca_TransEN  = CUpwSca_TurbSA<FlowIndices>;
 

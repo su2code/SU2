@@ -38,21 +38,35 @@
 
 class CTransENVariable final : public CTurbVariable {
 protected:
-	VectorType AmplificationFactor;
+  VectorType AmplificationFactor;
+  VectorType ModifiedIntermittency;
+
+  /*--- Debug terms ---*/
+  VectorType Prod;
+  VectorType Uedge;
+  VectorType HL;
+  VectorType H12;
+  VectorType FG;
+  VectorType FC;
+  VectorType REY;
+  VectorType REY0;
+  VectorType Dist;
+  VectorType Strain;
+
+  VectorType normal_x;
+  VectorType normal_y;
+  VectorType normal_z;
 
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] Intermittency - intermittency(gamma) (initialization value).
-   * \param[in] ReThetaT - momentum thickness Reynolds number(ReThetaT)(initialization value).
-   * \param[in] gammaSep - separation intermittency(gamma) (initialization value).
-   * \param[in] gammaEff - effective intermittency(gamma) (initialization value).
+   * \param[in] AmplificationFactor - Amplification factor(n) (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransENVariable(su2double AmplificationFactor, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CTransENVariable(su2double AmplificationFactor,su2double ModifiedIntermittency, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -65,8 +79,47 @@ public:
   void SetAmplificationFactor(unsigned long iPoint, su2double val_AmplificationFactor) override ;
 
   /*!
+   * \brief Set Amplification Factor.
+   */
+  void SetModifiedIntermittency(unsigned long iPoint, su2double val_Gamma) override ;
+
+  void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) override;
+
+  void SetProd(unsigned long iPoint, su2double val_Prod) override;
+  void SetUedge(unsigned long iPoint, su2double val_Uedge) override;
+  void SetHL(unsigned long iPoint, su2double val_HL) override;
+  void SetH12(unsigned long iPoint, su2double val_H12) override;
+  void SetFG(unsigned long iPoint, su2double val_FG) override;
+  void SetFC(unsigned long iPoint, su2double val_FC) override;
+  void SetREY(unsigned long iPoint, su2double val_REY) override;
+  void SetREY0(unsigned long iPoint, su2double val_REY0) override;
+  void SetDist(unsigned long iPoint, su2double val_Dist) override;
+  void SetStrain(unsigned long iPoint, su2double val_Strain) override;
+
+  /*!
    * \brief Value of AmplificationFactor.
    */
   inline su2double GetAmplificationFactor(unsigned long iPoint) const override { return AmplificationFactor(iPoint); }
+
+  /*!
+   * \brief Value of AmplificationFactor.
+   */
+  inline su2double GetModifiedIntermittency(unsigned long iPoint) const override { return ModifiedIntermittency(iPoint); }
+
+
+  inline su2double GetNormal_x(unsigned long iPoint) const override {return normal_x(iPoint);};
+  inline su2double GetNormal_y(unsigned long iPoint) const override {return normal_y(iPoint);};
+  inline su2double GetNormal_z(unsigned long iPoint) const override {return normal_z(iPoint);};
+
+  inline su2double GetProd(unsigned long iPoint) const override { return Prod(iPoint); }
+  inline su2double GetUedge(unsigned long iPoint) const override { return Uedge(iPoint); }
+  inline su2double GetHL(unsigned long iPoint) const override { return HL(iPoint); }
+  inline su2double GetH12(unsigned long iPoint) const override { return H12(iPoint); }
+  inline su2double GetFG(unsigned long iPoint) const override { return FG(iPoint); }
+  inline su2double GetFC(unsigned long iPoint) const override { return FC(iPoint); }
+  inline su2double GetREY(unsigned long iPoint) const override { return REY(iPoint); }
+  inline su2double GetREY0(unsigned long iPoint) const override { return REY0(iPoint); }
+  inline su2double GetDist(unsigned long iPoint) const override { return Dist(iPoint); }
+  inline su2double GetStrain(unsigned long iPoint) const override { return Strain(iPoint); }
 
 };

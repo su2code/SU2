@@ -80,7 +80,8 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
-  amplification_factor_i;  /*!< \brief amplification factor at point i. */
+  amplification_factor_i, 	/*!< \brief amplification factor at point i. */
+  modified_intermittency_i;	/*!< \brief modified intermittency at point i. */
   su2double
   intermittency_eff_i, /*!< \brief effective intermittency at point i. */
   intermittency_i; /*!< \brief intermittency at point i. */
@@ -712,17 +713,49 @@ public:
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
 
   /*!
-  * \brief Get the Amplification factor for the e^N model.
+  * \brief Get the Amplification factor for the e^N transition model.
   */
   inline su2double GetAmplificationFactor() const { return amplification_factor_i; }
 
   /*!
-   * \brief Set the value of the amplification factor for the e^N model.
+   * \brief Set the value of the amplification factor for the e^N transition model.
    * \param[in] amplification_factor_i - Value of the amplification factor at point i.
    */
   void SetAmplificationFactor(su2double val_amplification_factor_i) {
     amplification_factor_i = val_amplification_factor_i;
   };
+
+  /*!
+  * \brief Get the Modified Intermittency for the e^N transition model.
+  */
+  inline su2double GetModifiedIntermittency() const { return modified_intermittency_i; }
+
+  /*!
+   * \brief Set the value of the modified intermittency for the e^N transition model.
+   * \param[in] modified_intermittency_i - Value of the modified intermittency at point i.
+   */
+  void SetModifiedIntermittency(su2double val_modified_intermittency_i) {
+	  modified_intermittency_i = val_modified_intermittency_i;
+  };
+
+  /*--- Debug terms ---*/
+  inline virtual su2double GetProd() {return 0.0;}
+  inline virtual su2double GetUedge() {return 0.0;}
+  inline virtual su2double GetHL() {return 0.0;}
+  inline virtual su2double GetH12() {return 0.0;}
+  inline virtual su2double GetFG() {return 0.0;}
+  inline virtual su2double GetFC() {return 0.0;}
+  inline virtual su2double GetREY() {return 0.0;}
+  inline virtual su2double GetREY0() {return 0.0;}
+  inline virtual su2double GetDist() {return 0.0;}
+  inline virtual su2double GetStrain() {return 0.0;}
+
+  /*!
+   * \brief Set the gradient of the auxiliary variables.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
+   */
+  inline virtual void SetAuxVar(su2double val_AuxVar) {}
 
   /*!
    * \brief Set the value of the effective intermittency for the LM model.

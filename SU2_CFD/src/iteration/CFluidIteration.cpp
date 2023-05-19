@@ -283,6 +283,9 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
       Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
     }
 
+//    if (Inner_Iter == 9)
+//      SU2_MPI::Error("10 Iterations done", CURRENT_FUNCTION);
+
     /*--- If the iteration has converged, break the loop ---*/
     if (StopCalc) break;
 
