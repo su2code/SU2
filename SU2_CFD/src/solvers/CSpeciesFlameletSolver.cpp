@@ -419,7 +419,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  const bool axisymmetric = config->GetAxisymmetric();
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
