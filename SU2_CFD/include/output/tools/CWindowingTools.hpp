@@ -105,7 +105,7 @@ private:
    * \param currentIter - current time Iteration
    * \param startIter - iteration to start the windowed-time average.
    */
-  void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
+  void AddValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
 private:
   /*!

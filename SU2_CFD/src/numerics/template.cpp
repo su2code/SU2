@@ -32,9 +32,7 @@ CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned sho
 
 }
 
-CConvective_Template::~CConvective_Template(void) {
-
-}
+CConvective_Template::~CConvective_Template() = default;
 
 void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                            su2double **val_Jacobian_j, CConfig *config) {
@@ -46,9 +44,7 @@ CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val
 
 }
 
-CViscous_Template::~CViscous_Template(void) {
-
-}
+CViscous_Template::~CViscous_Template() = default;
 
 void CViscous_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                         su2double **val_Jacobian_j, CConfig *config) {
@@ -61,9 +57,7 @@ CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CSource_Template::~CSource_Template(void) {
-
-}
+CSource_Template::~CSource_Template() = default;
 
 void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 

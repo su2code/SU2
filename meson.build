@@ -1,13 +1,15 @@
 project('SU2', 'c', 'cpp',
         version: '7.5.1 "Blackbird"',
+        meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
 
-if meson.version() != '0.61.1'
-  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+fsmod = import('fs')
+if not fsmod.exists('su2preconfig.timestamp')
+  error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
 endif
 
 pymod = import('python')

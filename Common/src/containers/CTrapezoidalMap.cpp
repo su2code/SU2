@@ -99,7 +99,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
        * (vertical edges are automatically discarded) */
       if (((edge_limits_x[i_edge][0] <= band_lower_x) and (edge_limits_x[i_edge][1] >= band_upper_x)) or
           ((edge_limits_x[i_edge][1] <= band_lower_x) and (edge_limits_x[i_edge][0] >= band_upper_x))) {
-        y_edge_at_band_mid[i_band].push_back(make_pair(0.0, 0));
+        y_edge_at_band_mid[i_band].emplace_back(0.0, 0);
 
         x_0 = edge_limits_x[i_edge][0];
         y_0 = edge_limits_y[i_edge][0];

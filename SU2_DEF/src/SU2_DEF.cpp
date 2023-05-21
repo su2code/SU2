@@ -28,7 +28,6 @@
 #include "../include/drivers/CDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
 
   /*--- MPI initialization ---*/
@@ -54,17 +53,13 @@ int main(int argc, char* argv[]) {
 
   CDeformationDriver driver(config_file_name, comm);
 
-  /*--- Preprocess the solver data. ---*/
-
-  driver.Preprocess();
-
   /*--- Launch the main external loop of the solver. ---*/
 
   driver.Run();
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver.Postprocessing();
+  driver.Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
 

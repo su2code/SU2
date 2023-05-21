@@ -91,7 +91,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
 }
 
-CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {}
+CAdjFlowCompOutput::~CAdjFlowCompOutput() = default;
 
 void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config) {
 
@@ -164,7 +164,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config) {
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  AddHistoryOutputFields_AdjScalarLinsol(config);
+  AddHistoryOutputFieldsAdjScalarLinsol(config);
 
   if (config->GetDeform_Mesh()) {
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
@@ -224,7 +224,9 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->System.GetResidual()));
   }
 
-  LoadHistoryData_AdjScalar(config, solver);
+  LoadHistoryDataAdjScalar(config, solver);
+
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
@@ -248,7 +250,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
   /// DESCRIPTION: Adjoint energy.
   AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION", "Adjoint energy");
 
-  SetVolumeOutputFields_AdjScalarSolution(config);
+  SetVolumeOutputFieldsAdjScalarSolution(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables.
@@ -264,7 +266,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
   /// DESCRIPTION: Residual of the adjoint energy.
   AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL", "Residual of the adjoint energy");
 
-  SetVolumeOutputFields_AdjScalarResidual(config);
+  SetVolumeOutputFieldsAdjScalarResidual(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
@@ -317,7 +319,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 2));
 
-  LoadVolumeData_AdjScalar(config, solver, iPoint);
+  LoadVolumeDataAdjScalar(config, solver, iPoint);
 }
 
 void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {
@@ -327,7 +329,7 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 }
 
 
-bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config) {
+bool CAdjFlowCompOutput::SetInitResiduals(const CConfig *config) {
 
   return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
          ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));

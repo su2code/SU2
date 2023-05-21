@@ -37,7 +37,6 @@
 
 using namespace std;
 
-class COutputLegacy;
 class CInterpolator;
 class CIteration;
 class COutput;
@@ -51,7 +50,6 @@ class COutput;
 
 class CDriver : public CDriverBase {
  protected:
-  char runtime_file_name[MAX_STRING_SIZE];
   su2double
       UsedTimeOutput; /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
 
@@ -65,9 +63,6 @@ class CDriver : public CDriverBase {
       MpointsDomain; /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;   /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain; /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-
-  ofstream** ConvHist_file; /*!< \brief Convergence history file.*/
-  ofstream FSIHist_file;    /*!< \brief FSI convergence history file.*/
 
   bool StopCalc,   /*!< \brief Stop computation flag.*/
       mixingplane, /*!< \brief mixing-plane simulation flag.*/
@@ -97,25 +92,25 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDriver(void);
+  ~CDriver(void) override;
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Run(){};
+  void Run() override{};
 
  protected:
   /*!
-   * \brief Init_Containers
+   * \brief Initialize containers.
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Read in the config and mesh files.
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void PreprocessInput(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -123,28 +118,28 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryDGFEM(CConfig* config, CGeometry**& geometry);
 
   /*!
-   * \brief Geometrical_Preprocessing_FVM
+   * \brief InitializeGeometryFVM
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_FVM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryFVM(CConfig* config, CGeometry**& geometry);
 
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iteration - Pointer to the iteration container to be instantiated.
    */
-  void Iteration_Preprocessing(CConfig* config, CIteration*& iteration) const;
+  void PreprocessIteration(CConfig* config, CIteration*& iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -152,7 +147,15 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessInlet(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -161,7 +164,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] update_geo - Boolean to indicate if geometry should be updated.
    */
-  void Solver_Restart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
+  void RestartSolver(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -170,7 +173,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Solver_Postprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
+  void FinalizeSolver(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -178,7 +181,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
+  void InitializeIntegration(CConfig* config, CSolver** solver, CIntegration**& integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -187,7 +190,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Integration_Postprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
+  void FinalizeIntegration(CIntegration*** integration, CGeometry** geometry, CConfig* config,
                                   unsigned short val_iInst);
 
   /*!
@@ -199,7 +202,7 @@ class CDriver : public CDriverBase {
    * \param[in] interface - Class defining the physical transfer of information.
    * \param[in] interpolation -  Object defining the interpolation.
    */
-  void Interface_Preprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
+  void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
                                unsigned short** interface_types, CInterface*** interface,
                                vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
@@ -210,7 +213,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
@@ -240,7 +243,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Numerics_Postprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
+  void FinalizeNumerics(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
                                unsigned short val_iInst);
 
   /*!
@@ -252,16 +255,17 @@ class CDriver : public CDriverBase {
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] surface_movement - Surface movement classes of the problem.
    */
-  void DynamicMesh_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
+  void PreprocessDynamicMesh(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
                                  CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
-   * \brief Initialize Python interface functionalities
+   * \brief Initialize Python interface functionalities. When using multigrid,
+   * it is important to call this after modifying custom boundary values.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -270,7 +274,7 @@ class CDriver : public CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
+  void PreprocessOutput(CConfig** config, CConfig* driver_config, COutput**& output_container,
                             COutput*& driver_output);
 
   /*!
@@ -278,7 +282,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void StaticMesh_Preprocessing(const CConfig* config, CGeometry** geometry);
+  void PreprocessStaticMesh(const CConfig* config, CGeometry** geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -287,36 +291,43 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+  void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
+
+  /*!
+   * \brief Ramp some simulation settings for turbomachinery problems.
+   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
+   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
+   */
+  void RampTurbomachineryValues(unsigned long iter);
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -324,7 +335,7 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationDisplacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -332,313 +343,13 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
-
-  /*!
-   * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
-   */
-  virtual void Run_GaussSeidel() {}
-
-  /*!
-   * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
-   */
-  virtual void Run_Jacobi() {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update() {}
+  virtual void RelaxationTractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void Print_DirectResidual(RECORDING kind_recording);
-
- public:
-  /*!
-   * \brief Launch the computation for all zones and all physics.
-   */
-  virtual void StartSolver() {}
-
-  /*!
-   * \brief Deallocation routine
-   */
-  void Postprocessing();
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ResetConvergence();
-
-  /*!
-   * \brief Perform some pre-processing before an iteration of the physics.
-   */
-  virtual void Preprocess(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  virtual bool Monitor(unsigned long TimeIter) { return false; }
-
-  /*!
-   * \brief Output the solution in solution file.
-   */
-  virtual void Output(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
-   */
-  virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
-   */
-  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
-
-  /*!
-   * \brief Perform a mesh deformation as initial condition.
-   */
-  virtual void SetInitialMesh() {}
-
-/// \addtogroup PySU2
-/// \{
-
-  /*!
-   * \brief Process the boundary conditions and update the multi-grid structure.
-   */
-  void BoundaryConditionsUpdate();
-
-  /*!
-   * \brief Get the total drag.
-   * \return Total drag.
-   */
-  passivedouble Get_Drag() const;
-
-  /*!
-   * \brief Get the total lift.
-   * \return Total lift.
-   */
-  passivedouble Get_Lift() const;
-
-  /*!
-   * \brief Get the total x moment.
-   * \return Total x moment.
-   */
-  passivedouble Get_Mx() const;
-
-  /*!
-   * \brief Get the total y moment.
-   * \return Total y moment.
-   */
-  passivedouble Get_My() const;
-
-  /*!
-   * \brief Get the total z moment.
-   * \return Total z moment.
-   */
-  passivedouble Get_Mz() const;
-
-  /*!
-   * \brief Get the total drag coefficient.
-   * \return Total drag coefficient.
-   */
-  passivedouble Get_DragCoeff() const;
-
-  /*!
-   * \brief Get the total lift coefficient.
-   * \return Total lift coefficient.
-   */
-  passivedouble Get_LiftCoeff() const;
-
-  /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
-   */
-  unsigned long GetNumberTimeIter() const;
-
-  /*!
-   * \brief Get the current external iteration.
-   * \return Current external iteration.
-   */
-  unsigned long GetTimeIter() const;
-
-  /*!
-   * \brief Get the unsteady time step.
-   * \return Unsteady time step.
-   */
-  passivedouble GetUnsteadyTimeStep() const;
-
-  /*!
-   * \brief Get the name of the output file for the surface.
-   * \return File name for the surface output.
-   */
-  string GetSurfaceFileName() const;
-
-  /*!
-   * \brief Get the temperature at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Temperature of the vertex.
-   */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the temperature of a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallTemp - Value of the temperature.
-   */
-  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
-
-  /*!
-   * \brief Get the heat flux at a vertex on a specified marker (3 components).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return True if the vertex is a halo node.
-   */
-  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Wall normal component of the heat flux at the vertex.
-   */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
-   */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
-
-  /*!
-   * \brief Get the thermal conductivity at a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Thermal conductivity at the vertex.
-   */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Preprocess the inlets via file input for all solvers.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
-
-  /*!
-   * \brief Get all the CHT boundary marker tags.
-   * \return List of CHT boundary markers tags.
-   */
-  vector<string> GetCHTMarkerTags() const;
-
-  /*!
-   * \brief Get all the inlet boundary marker tags.
-   * \return List of inlet boundary markers tags.
-   */
-  vector<string> GetInletMarkerTags() const;
-
-  /*!
-   * \brief Return the sensitivities of the mesh boundary vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vector of sensitivities.
-   */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the load in X direction for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX, passivedouble LoadY,
-                    passivedouble LoadZ);
-
-  /*!
-   * \brief Get the sensitivity of the flow loads for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the load in the direction X.
-   * \param[in] LoadX - Value of the load in the direction Y.
-   * \param[in] LoadX - Value of the load in the direction Z.
-   */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
-   * strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint of the flow tractions (from the extra step -
-   * the repeated methods should be unified once the postprocessing strategy is in place).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                           passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the adjoint of the structural displacements (from an outside source)
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
-   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
-   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
-   */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
-  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
-                                passivedouble val_AdjointY, passivedouble val_AdjointZ);
-
-  /*!
-   * \brief Set the position of the heat source.
-   * \param[in] alpha - Angle of rotation respect to Z axis.
-   * \param[in] pos_x - Position X.
-   * \param[in] pos_y - Position Y.
-   * \param[in] pos_z - Position Z.
-   */
-  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
-
-  /*!
-   * \brief Set the direction of the inlet.
-   * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
-   */
-  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
-
-/// \}
-
-  /*!
-   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \return Total number of solution variables.
-   */
-  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
-    unsigned short nVar = 0;
-    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
-    }
-    return nVar;
-  }
+  void PrintDirectResidual(RECORDING kind_recording);
 
   /*!
    * \brief Set the solution of all solvers (adjoint or primal) in a zone.
@@ -691,6 +402,129 @@ class CDriver : public CDriverBase {
       offset += solver->GetnVar();
     }
   }
+
+  /*!
+   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
+    unsigned short nVar = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
+    }
+    return nVar;
+  }
+
+ public:
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  virtual void StartSolver() {}
+
+  /*!
+   * \brief Deallocation routine
+   */
+  void Finalize() override;
+
+  /*!
+   * \brief Perform some pre-processing before an iteration of the physics.
+   */
+  virtual void Preprocess(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  virtual bool Monitor(unsigned long TimeIter) { return false; }
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  virtual void Output(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
+   * structure.
+   */
+  virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
+
+  /*!
+   * \brief Update the dual-time solution.
+   */
+  virtual void Update() {}
+
+  /*!
+   * \brief Perform a mesh deformation as initial condition.
+   */
+  virtual void SetInitialMesh() {}
+
+/// \addtogroup PySU2
+/// \{
+
+  /*!
+   * \brief Process the boundary conditions and update the multi-grid structure.
+   */
+  void BoundaryConditionsUpdate();
+
+  /*!
+   * \brief Get the number of time iterations.
+   * \return Number of time iterations.
+   */
+  unsigned long GetNumberTimeIter() const;
+
+  /*!
+   * \brief Get the current time iteration.
+   * \return Current time iteration.
+   */
+  unsigned long GetTimeIter() const;
+
+  /*!
+   * \brief Get the unsteady time step.
+   * \return Unsteady time step.
+   */
+  passivedouble GetUnsteadyTimeStep() const;
+
+  /*!
+   * \brief Get the name of the output file for the surface.
+   * \return File name for the surface output.
+   */
+  string GetSurfaceFileName() const;
+
+  /*!
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
+   */
+  void SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
+   */
+  void SetInletAngle(unsigned short iMarker, passivedouble alpha);
+
+  /*!
+   * \brief Set the dynamic mesh translation rates.
+   * \param[in] xDot - Value of translational velocity in x-direction.
+   * \param[in] yDot - Value of translational velocity in y-direction.
+   * \param[in] zDot - Value of translational velocity in z-direction.
+   */
+  void SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot);
+
+  /*!
+   * \brief Set the dynamic mesh rotation rates.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
+   */
+  void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+
+/// \}
 };
 
 /*!
@@ -703,7 +537,6 @@ class CFluidDriver : public CDriver {
  protected:
   unsigned long Max_Iter;
 
- protected:
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -711,6 +544,11 @@ class CFluidDriver : public CDriver {
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Transfer data among different zones (multiple zone).
+   */
+  void TransferData(unsigned short donorZone, unsigned short targetZone);
 
  public:
   /*!
@@ -753,57 +591,6 @@ class CFluidDriver : public CDriver {
    * structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Transfer data among different zones (multiple zone).
-   */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
-};
-
-/*!
- * \class CTurbomachineryDriver
- * \ingroup Drivers
- * \brief Class for driving an iteration for turbomachinery flow analysis.
- * \author S. Vitale
- */
-class CTurbomachineryDriver : public CFluidDriver {
- private:
-  COutputLegacy* output_legacy;
-
- public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CTurbomachineryDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbomachineryDriver(void) override;
-
-  /*!
-   * \brief Run a single iteration of the physics within multiple zones.
-   */
-
-  void Run() override;
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  bool Monitor(unsigned long TimeIter) override;
 };
 
 /*!
@@ -814,9 +601,27 @@ class CTurbomachineryDriver : public CFluidDriver {
  */
 class CHBDriver : public CFluidDriver {
  private:
-  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
+
+  /*!
+   * \brief Computation and storage of the Harmonic Balance method source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] iZone - Current zone number.
+   */
+  void SetHarmonicBalance(unsigned short iZone);
+
+  /*!
+   * \brief Precondition Harmonic Balance source term for stability
+   * \author J. Howison
+   */
+  void StabilizeHarmonicBalance();
+
+  /*!
+   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+   * \author A. Rubino, S. Nimmagadda
+   */
+  void ComputeHBOperator();
 
  public:
   /*!
@@ -838,31 +643,7 @@ class CHBDriver : public CFluidDriver {
   void Run() override;
 
   /*!
-   * \brief Computation and storage of the Harmonic Balance method source terms.
-   * \author T. Economon, K. Naik
-   * \param[in] iZone - Current zone number.
-   */
-  void SetHarmonicBalance(unsigned short iZone);
-
-  /*!
-   * \brief Precondition Harmonic Balance source term for stability
-   * \author J. Howison
-   */
-  void StabilizeHarmonicBalance();
-
-  /*!
-   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
-   * \author A. Rubino, S. Nimmagadda
-   */
-  void ComputeHB_Operator();
-
-  /*!
    * \brief Update the solution for the Harmonic Balance.
    */
   void Update() override;
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
-   */
-  void ResetConvergence() override;
 };

@@ -28,7 +28,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-from .. import io  as su2io
+from .. import io as su2io
 from .interface import SOL as SU2_SOL
 from .interface import SOL_FSI as SU2_SOL_FSI
 
@@ -36,32 +36,33 @@ from .interface import SOL_FSI as SU2_SOL_FSI
 #  Merge Mesh
 # ----------------------------------------------------------------------
 
-def merge( config ):
-    """ info = SU2.run.merge(config)
 
-        Merges mesh with:
-            SU2.run.SOL()    (volume merging)
-            internal scripts (surface merging)
+def merge(config):
+    """info = SU2.run.merge(config)
 
-        Assumptions:
-            config.NUMBER_PART is set
-            Skip if config.NUMBER_PART > 1
+    Merges mesh with:
+        SU2.run.SOL()    (volume merging)
+        internal scripts (surface merging)
 
-        Inputs:
-            config - an SU2 config
+    Assumptions:
+        config.NUMBER_PART is set
+        Skip if config.NUMBER_PART > 1
 
-        Ouputs:
-            info - an empty SU2 State
+    Inputs:
+        config - an SU2 config
 
-        Executes in:
-            ./
+    Ouputs:
+        info - an empty SU2 State
+
+    Executes in:
+        ./
     """
 
     # local copy
     konfig = copy.deepcopy(config)
 
     # check if needed
-    partitions = konfig['NUMBER_PART']
+    partitions = konfig["NUMBER_PART"]
     if partitions <= 1:
         return su2io.State()
 
@@ -72,10 +73,10 @@ def merge( config ):
     multizone_cases = su2io.get_multizone(konfig)
 
     # # MERGING # #
-    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+    if "FLUID_STRUCTURE_INTERACTION" in multizone_cases:
         merge_multizone(konfig)
     else:
-        if 'WRT_UNSTEADY' in special_cases:
+        if "WRT_UNSTEADY" in special_cases:
             merge_unsteady(konfig)
         else:
             merge_solution(konfig)
@@ -85,38 +86,45 @@ def merge( config ):
 
     return info
 
+
 #: merge
 
-def merge_unsteady( config, begintime=0, endtime=None ):
+
+def merge_unsteady(config, begintime=0, endtime=None):
 
     if not endtime:
         endtime = config.EXT_ITER
 
     # SU2_SOL handles unsteady volume merge
-    merge_solution( config )
+    merge_solution(config)
 
     return
+
 
 #: def merge_unsteady()
 
-def merge_solution( config ):
-    """ SU2.io.merge.merge_solution(config)
-        general volume surface merging with SU2_SOL
+
+def merge_solution(config):
+    """SU2.io.merge.merge_solution(config)
+    general volume surface merging with SU2_SOL
     """
 
-    SU2_SOL( config )
+    SU2_SOL(config)
 
     return
 
+
 #: merge_solution( config )
 
-def merge_multizone( config, begintime=0, endtime=None ):
+
+def merge_multizone(config, begintime=0, endtime=None):
 
     if not endtime:
         endtime = config.TIME_ITER
 
-    SU2_SOL_FSI( config )
+    SU2_SOL_FSI(config)
 
     return
+
 
 #: merge_solution( config )

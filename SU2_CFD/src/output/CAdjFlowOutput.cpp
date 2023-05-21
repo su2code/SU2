@@ -114,7 +114,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
   }
 }
 
-void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarLinsol(const CConfig* config) {
+void CAdjFlowOutput::AddHistoryOutputFieldsAdjScalarLinsol(const CConfig* config) {
   if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence.");
@@ -127,7 +127,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarLinsol(const CConfig* confi
 }
 // clang-format on
 
-void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver) {
+void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolver* const* solver) {
   const auto adjturb_solver = solver[ADJTURB_SOL];
   const auto adjspecies_solver = solver[ADJSPECIES_SOL];
 
@@ -172,9 +172,11 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", adjspecies_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(adjspecies_solver->GetResLinSolver()));
   }
+
+  ComputeSimpleCustomOutputs(config);
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* config) {
+void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* config) {
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {
       case TURB_FAMILY::SA:
@@ -200,7 +202,7 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* conf
   }
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* config) {
+void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* config) {
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {
       case TURB_FAMILY::SA:
@@ -229,7 +231,7 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* conf
   }
 }
 
-void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver,
+void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolver* const* solver,
                                               const unsigned long iPoint) {
   const auto Node_AdjTurb =
       ((turb_model != TURB_MODEL::NONE) && !frozen_visc) ? solver[ADJTURB_SOL]->GetNodes() : nullptr;
