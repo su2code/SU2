@@ -69,7 +69,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       /*--- Set the translational velocity on all grid levels. ---*/
 
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        geometry[iMGlevel]->SetTranslationalVelocity(config, true);
+        geometry[iMGlevel]->SetTranslationalVelocity(config, iMGlevel == 0);
 
       break;
 
@@ -83,7 +83,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
          rotating reference frame. ---*/
 
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
-        geometry[iMGlevel]->SetRotationalVelocity(config, true);
+        geometry[iMGlevel]->SetRotationalVelocity(config, iMGlevel == 0);
         geometry[iMGlevel]->SetShroudVelocity(config);
       }
 
