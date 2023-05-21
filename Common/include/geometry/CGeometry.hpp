@@ -596,17 +596,6 @@ class CGeometry {
   }
 
   /*!
-   * \brief Get the distance between a plane (defined by three point) and a point.
-   * \param[in] Coord - Coordinates of the point.
-   * \param[in] iCoord - Coordinates of the first point that defines the plane.
-   * \param[in] jCoord - Coordinates of the second point that defines the plane.
-   * \param[in] kCoord - Coordinates of the third point that defines the plane.
-   * \return Signed distance.
-   */
-  su2double Point2Plane_Distance(const su2double* Coord, const su2double* iCoord, const su2double* jCoord,
-                                 const su2double* kCoord);
-
-  /*!
    * \brief Create a file for testing the geometry.
    */
   void TestGeometry() const;
