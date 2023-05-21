@@ -751,6 +751,18 @@ def main():
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     file_diff_list.append(pywrapper_translating_naca0012)
+    
+    # NACA0012 with updated moving frame
+    pywrapper_updated_moving_frame_naca0012 = TestCase('pywrapper_updated_moving_frame_naca0012')
+    pywrapper_updated_moving_frame_naca0012.cfg_dir = "py_wrapper/updated_moving_frame_NACA12"
+    pywrapper_updated_moving_frame_naca0012.cfg_file = "config.cfg"
+    pywrapper_updated_moving_frame_naca0012.command = TestCase.Command(exec = "python", param = "run_su2.py")
+    pywrapper_updated_moving_frame_naca0012.timeout = 60
+    pywrapper_updated_moving_frame_naca0012.reference_file = "forces_0.csv.ref"
+    pywrapper_updated_moving_frame_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
+    pywrapper_updated_moving_frame_naca0012.test_file = "forces_0.csv"
+    pywrapper_updated_moving_frame_naca0012.enabled_on_cpu_arch = ["x86_64"]
+    file_diff_list.append(pywrapper_updated_moving_frame_naca0012)
 
     ######################################
     ### RUN TESTS                      ###

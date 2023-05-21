@@ -642,12 +642,10 @@ class CFreeFormDefBox : public CGridMovement {
   }
 
   /*!
-   * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iFFDBox - Index of the FFDBox.
+   * \brief Returns true if the point is inside the FFD.
+   * \param[in] coord - Coordinate of the point to check.
    */
-  bool GetPointFFD(CGeometry* geometry, CConfig* config, unsigned long iPoint) const;
+  bool CheckPointInsideFFD(const su2double* coord) const;
 
   /*!
    * \brief Set the zone of the computational domain that is going to be deformed.
