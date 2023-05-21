@@ -191,7 +191,7 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   GradientType& gradient,
                                   RMatrixType& Rmatrix)
 {
-  const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0);
+  const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0) && (!config.GetPeriodic_DummyBC());
 
   const size_t nPointDomain = geometry.GetnPointDomain();
 

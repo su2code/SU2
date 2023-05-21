@@ -89,7 +89,8 @@ void computeLimiters_impl(CSolver* solver,
 
   const bool periodic = (solver != nullptr) &&
                         (kindPeriodicComm1 != PERIODIC_NONE) &&
-                        (config.GetnMarker_Periodic() > 0);
+                        (config.GetnMarker_Periodic() > 0) &&
+                        (!config.GetPeriodic_DummyBC());
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;

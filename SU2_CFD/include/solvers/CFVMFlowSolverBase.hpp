@@ -726,7 +726,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
 
-    const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+    const bool isPeriodic = (config->GetnMarker_Periodic() > 0) && (!config->GetPeriodic_DummyBC());
 
     /*--- Loop domain points. ---*/
 

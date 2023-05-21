@@ -206,6 +206,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       break;
     case PERIODIC_RESIDUAL:
       COUNT_PER_POINT  = nVar + nVar*nVar + 1;
+      if (config->GetPeriodic_DummyBC()) COUNT_PER_POINT = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PERIODIC_IMPLICIT:
@@ -344,6 +345,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   if (rotate_periodic && config->GetNEMOProblem()) {
     SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
+  }
+
+  if (config->GetPeriodic_DummyBC()) {
+    InitiatePeriodicDummyComms(geometry, config, val_periodic_index, commType);
+    return;
   }
 
   /*--- Local variables ---*/
@@ -1003,6 +1009,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   if (commType == PERIODIC_NONE) return;
 
+  if (config->GetPeriodic_DummyBC()) {
+    CompletePeriodicDummyComms(geometry, config, val_periodic_index, commType);
+    return;
+  }
+
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
   unsigned short COUNT_PER_POINT = 0, MPI_TYPE = 0, ICOUNT = 0, JCOUNT = 0;
@@ -1319,6 +1330,379 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_i[iVar];
   delete [] Jacobian_i;
+
+}
+
+void CSolver::InitiatePeriodicDummyComms(CGeometry *geometry,
+                                    const CConfig *config,
+                                    unsigned short val_periodic_index,
+                                    unsigned short commType) {
+
+  /*--- Periodic BCs with dummy points ---*/
+
+  /*--- Two artificial layers of dummy points (the outermost two layers
+        of both side, periodic/passive slices) are constructed during 
+        grid generation for the periodic boundary, and the inner two
+        layers ( donor/master/owner slices) are used to send variables
+        to the periodic slices on the other side. 
+        Therefore, four layers of mesh are required on each side of 
+        the boundary for data transfer to construct a data structure 
+        that satisfies the MUSCL interpolation. 
+        In this way, the amount of data transferred can be minimized, 
+        only flow field variables are needed instead of gradient,
+        limiter, volume, etc. And the logic is easier.---*/
+  /*--- This implementation is based on the logic of the internal boundary.
+        For the master slices, only data collection is carried out.
+        For the passive slices, only updating variables for MUSCL 
+        interpolation and cleaning the Jacobian and residual contributions
+        to not participate in the linear solve are carried out. ---*/
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, jVar, iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  unsigned short ICOUNT          = nVar;
+  unsigned short JCOUNT          = nVar;
+
+  int iMessage, iSend, nSend;
+
+  unsigned long iPoint, msg_offset, buf_offset, iPeriodic;
+
+  const su2double *center, *angles, *trans;
+  su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
+  su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double rotCoord_i[3] = {0.0}, rotCoord_j[3] = {0.0};
+  su2double translation[3] = {0.0}, distance[3] = {0.0};
+  const su2double zeros[3] = {0.0};
+
+  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
+    if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
+    else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
+  };
+
+  string Marker_Tag;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetPeriodicCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE, ICOUNT, JCOUNT);
+
+  /*--- Allocate buffers for matrices that need rotation. ---*/
+
+  su2activematrix jacBlock(ICOUNT,JCOUNT);
+  su2activematrix rotBlock(ICOUNT,JCOUNT);
+
+  /*--- Check to make sure we have created a large enough buffer
+   for these comms during preprocessing. It will be reallocated whenever
+   we find a larger count per point than currently exists. After the
+   first cycle of comms, this should be inactive. ---*/
+
+  geometry->AllocatePeriodicComms(COUNT_PER_POINT);
+
+  /*--- Set some local pointers to make access simpler. ---*/
+
+  su2double *bufDSend = geometry->bufD_PeriodicSend;
+
+  unsigned short *bufSSend = geometry->bufS_PeriodicSend;
+
+  /*--- Load the specified quantity from the solver into the generic
+   communication buffer in the geometry class. ---*/
+
+  if (geometry->nPeriodicSend > 0) {
+
+    /*--- Post all non-blocking recvs first before sends. ---*/
+
+    geometry->PostPeriodicRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT);
+
+    for (iMessage = 0; iMessage < geometry->nPeriodicSend; iMessage++) {
+
+      /*--- Get the offset in the buffer for the start of this message. ---*/
+
+      msg_offset = geometry->nPoint_PeriodicSend[iMessage];
+
+      /*--- Get the number of periodic points we need to
+       communicate on the current periodic marker. ---*/
+
+      nSend = (geometry->nPoint_PeriodicSend[iMessage+1] -
+               geometry->nPoint_PeriodicSend[iMessage]);
+
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (iSend = 0; iSend < nSend; iSend++) {
+
+        /*--- Get the local index for this communicated data. We need
+         both the node and periodic face index (for rotations). ---*/
+
+        iPoint    = geometry->Local_Point_PeriodicSend[msg_offset  + iSend];
+        iPeriodic = geometry->Local_Marker_PeriodicSend[msg_offset + iSend];
+
+        if (rotate_periodic) {
+        
+          /*--- Retrieve the supplied periodic information. ---*/
+
+          Marker_Tag = config->GetMarker_All_TagBound(iPeriodic);
+          center     = config->GetPeriodicRotCenter(Marker_Tag);
+          angles     = config->GetPeriodicRotAngles(Marker_Tag);
+          trans      = config->GetPeriodicTranslation(Marker_Tag);
+
+          /*--- Store (center+trans) as it is constant and will be added. ---*/
+
+          translation[0] = center[0] + trans[0];
+          translation[1] = center[1] + trans[1];
+          translation[2] = center[2] + trans[2];
+
+          /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+          su2double Theta = angles[0];
+          su2double Phi = angles[1];
+          su2double Psi = angles[2];
+
+          /*--- Compute the rotation matrix. Note that the implicit
+           ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+
+          if (nDim==2) {
+            GeometryToolbox::RotationMatrix(Psi, rotMatrix2D);
+          } else {
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
+          }
+        
+        }
+
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+
+        buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
+
+        /*--- Load the send buffers depending on the particular value
+         that has been requested for communication. ---*/
+
+        switch (commType) {
+
+          case PERIODIC_VOLUME: case PERIODIC_NEIGHBORS:
+          case PERIODIC_LAPLACIAN: case PERIODIC_MAX_EIG:
+          case PERIODIC_SENSOR:
+          case PERIODIC_SOL_GG: case PERIODIC_SOL_GG_R:
+          case PERIODIC_PRIM_GG: case PERIODIC_PRIM_GG_R:
+          case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
+          case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
+          case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
+          case PERIODIC_PRIM_LS_R: case PERIODIC_PRIM_ULS_R:
+          case PERIODIC_LIM_PRIM_1: case PERIODIC_LIM_SOL_1:
+          case PERIODIC_LIM_PRIM_2: case PERIODIC_LIM_SOL_2:
+          case PERIODIC_RESIDUAL:
+
+            break;
+
+          case PERIODIC_IMPLICIT:
+
+            /*--- Communicate the solution from our master set of periodic
+             nodes (from the linear solver perspective) to the passive
+             periodic nodes on the matching face. This is done at the
+             end of the iteration to synchronize the solution after the
+             linear solve. ---*/
+
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
+            }
+
+            /*--- Rotate the momentum components of the solution array. ---*/
+
+            if (rotate_periodic) {
+              Rotate(zeros, &base_nodes->GetSolution(iPoint)[1], &bufDSend[buf_offset+1]);
+            }
+
+            break;
+
+          default:
+            SU2_MPI::Error("Unrecognized quantity for periodic communication.",
+                           CURRENT_FUNCTION);
+            break;
+        }
+      }
+      END_SU2_OMP_FOR
+
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+
+      geometry->PostPeriodicSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage);
+
+    }
+  }
+
+}
+
+void CSolver::CompletePeriodicDummyComms(CGeometry *geometry,
+                                    const CConfig *config,
+                                    unsigned short val_periodic_index,
+                                    unsigned short commType) {
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  unsigned short COUNT_PER_POINT = 0, MPI_TYPE = 0, ICOUNT = 0, JCOUNT = 0;
+  GetPeriodicCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE, ICOUNT, JCOUNT);
+
+  /*--- Local variables ---*/
+
+  unsigned short nPeriodic = config->GetnMarker_Periodic();
+  unsigned short iDim, jDim, iVar, jVar, iPeriodic;
+
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
+
+  int source, iMessage, jRecv;
+
+  /*--- Status is global so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
+
+  /*--- Set some local pointers to make access simpler. ---*/
+
+  const su2double *bufDRecv = geometry->bufD_PeriodicRecv;
+
+  const unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
+
+  /*--- Store the data that was communicated into the appropriate
+   location within the local class data structures. ---*/
+
+  if (geometry->nPeriodicRecv > 0) {
+
+    for (iMessage = 0; iMessage < geometry->nPeriodicRecv; iMessage++) {
+
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
+
+#ifdef HAVE_MPI
+      /*--- Once we have recv'd a message, get the source rank. ---*/
+      int ind;
+      SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nPeriodicRecv, geometry->req_PeriodicRecv, &ind, &status);)
+      source = status.MPI_SOURCE;
+#else
+      /*--- For serial calculations, we know the rank. ---*/
+      source = rank;
+      SU2_OMP_BARRIER
+#endif
+
+      /*--- We know the offsets based on the source rank. ---*/
+
+      jRecv = geometry->PeriodicRecv2Neighbor[source];
+
+      /*--- Get the offset in the buffer for the start of this message. ---*/
+
+      msg_offset = geometry->nPoint_PeriodicRecv[jRecv];
+
+      /*--- Get the number of packets to be received in this message. ---*/
+
+      nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
+               geometry->nPoint_PeriodicRecv[jRecv]);
+
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+
+        /*--- Get the local index for this communicated data. ---*/
+
+        iPoint    = geometry->Local_Point_PeriodicRecv[msg_offset  + iRecv];
+        iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
+
+        /*--- While all periodic face data was accumulated, we only store
+         the values for the current pair of periodic faces. This is slightly
+         inefficient when we have multiple pairs of periodic faces, but
+         it simplifies the communications. ---*/
+
+        if ((iPeriodic == val_periodic_index) ||
+            (iPeriodic == val_periodic_index + nPeriodic/2)) {
+
+          /*--- Compute the offset in the recv buffer for this point. ---*/
+
+          buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
+
+          /*--- Store the data correctly depending on the quantity. ---*/
+
+          switch (commType) {
+
+            case PERIODIC_VOLUME:
+            case PERIODIC_NEIGHBORS:
+            case PERIODIC_LAPLACIAN:
+            case PERIODIC_MAX_EIG:
+            case PERIODIC_SENSOR:
+            case PERIODIC_SOL_GG:
+            case PERIODIC_SOL_GG_R:
+            case PERIODIC_PRIM_GG:
+            case PERIODIC_PRIM_GG_R:
+            case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
+            case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
+            case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
+            case PERIODIC_PRIM_LS_R: case PERIODIC_PRIM_ULS_R:
+            case PERIODIC_LIM_PRIM_1:
+            case PERIODIC_LIM_SOL_1:
+            case PERIODIC_LIM_PRIM_2:
+            case PERIODIC_LIM_SOL_2:
+              
+              break;
+
+            case PERIODIC_RESIDUAL:
+
+              /*--- For implicit integration, we choose the first
+               periodic face of each pair to be the master/owner of
+               the solution for the linear system while fixing the
+               solution at the matching face during the solve. Here,
+               we remove the Jacobian and residual contributions from
+               the passive face such that it does not participate in
+               the linear solve. ---*/
+
+              if (implicit_periodic) {
+
+                if (iPeriodic == val_periodic_index + nPeriodic/2) {
+                  for (iVar = 0; iVar < nVar; iVar++) {
+                    LinSysRes(iPoint, iVar) = 0.0;
+                    total_index = iPoint*nVar+iVar;
+                    Jacobian.DeleteValsRowi(total_index);
+                  }
+                }
+
+              }
+
+              break;
+
+            case PERIODIC_IMPLICIT:
+
+              /*--- For implicit integration, we choose the first
+               periodic face of each pair to be the master/owner of
+               the solution for the linear system while fixing the
+               solution at the matching face during the solve. Here,
+               we are updating the solution at the passive nodes
+               using the new solution from the master. ---*/
+
+              if ((implicit_periodic) &&
+                  (iPeriodic == val_periodic_index + nPeriodic/2)) {
+
+                /*--- Directly set the solution on the passive periodic
+                 face that is provided from the master. ---*/
+
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset]);
+                  base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset]);
+                  buf_offset++;
+                }
+
+              }
+
+              break;
+
+            default:
+
+              SU2_MPI::Error("Unrecognized quantity for periodic communication.",
+                             CURRENT_FUNCTION);
+              break;
+
+          }
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+
+#ifdef HAVE_MPI
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nPeriodicSend, geometry->req_PeriodicSend, MPI_STATUS_IGNORE);)
+#endif
+  }
 
 }
 

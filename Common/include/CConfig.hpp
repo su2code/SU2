@@ -224,6 +224,7 @@ private:
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
+  bool Periodic_DummyBC;        /*!< \brief True if achieve periodic BCs with dummy points. */
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
@@ -4866,6 +4867,12 @@ public:
    * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
    */
   bool GetSens_Remove_Sharp(void) const { return Sens_Remove_Sharp; }
+
+  /*!
+   * \brief Check if achieve periodic BCs with dummy points.
+   * \return True if achieve periodic BCs with dummy points.
+   */
+  bool GetPeriodic_DummyBC(void) const { return Periodic_DummyBC; }
 
   /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
