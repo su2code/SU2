@@ -1246,30 +1246,6 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, un
 #endif
 }
 
-su2double CGeometry::Point2Plane_Distance(const su2double* Coord, const su2double* iCoord, const su2double* jCoord,
-                                          const su2double* kCoord) {
-  su2double CrossProduct[3], iVector[3], jVector[3], distance, modulus;
-  unsigned short iDim;
-
-  for (iDim = 0; iDim < 3; iDim++) {
-    iVector[iDim] = jCoord[iDim] - iCoord[iDim];
-    jVector[iDim] = kCoord[iDim] - iCoord[iDim];
-  }
-
-  CrossProduct[0] = iVector[1] * jVector[2] - iVector[2] * jVector[1];
-  CrossProduct[1] = iVector[2] * jVector[0] - iVector[0] * jVector[2];
-  CrossProduct[2] = iVector[0] * jVector[1] - iVector[1] * jVector[0];
-
-  modulus =
-      sqrt(CrossProduct[0] * CrossProduct[0] + CrossProduct[1] * CrossProduct[1] + CrossProduct[2] * CrossProduct[2]);
-
-  distance = 0.0;
-  for (iDim = 0; iDim < 3; iDim++) distance += CrossProduct[iDim] * (Coord[iDim] - iCoord[iDim]);
-  distance /= modulus;
-
-  return distance;
-}
-
 void CGeometry::SetEdges() {
   nEdge = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
