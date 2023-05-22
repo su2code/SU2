@@ -1329,7 +1329,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1376,7 +1376,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config[ZONE_0]->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1418,7 +1418,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-void COutput::CheckHistoryOutput() {
+void COutput::CheckHistoryOutput(unsigned short nZone) {
 
   /*--- Set screen convergence output header and remove unavailable fields ---*/
 
@@ -1495,6 +1495,18 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   vector<bool> FoundField(nRequestedHistoryFields, false);
+
+  /*--- Checks if TURBO_PERF is enabled in config and sets the final zone calculations to be output ---*/
+
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (requestedHistoryFields[iReqField] == "TURBO_PERF"){
+        char buffer [14]; //This makes the assumption the number of zones is 10 or lower
+        std::string strZones = std::to_string(nZone-1);
+        char const *valZones = strZones.c_str();
+        snprintf(buffer, 14, "TURBO_PERF[%s]", valZones);
+        requestedHistoryFields[iReqField] = buffer;
+    }
+  }
 
   for (const auto& fieldReference : historyOutput_List) {
     const auto &field = historyOutput_Map.at(fieldReference);
