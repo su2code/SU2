@@ -75,6 +75,11 @@ inline void RegisterInput(su2double& data, bool push_index = true) {}
 inline void RegisterOutput(su2double& data) {}
 
 /*!
+ * \brief Resize the adjoint vector, for subsequent access without bounds checking.
+ */
+inline void ResizeAdjoints() {}
+
+/*!
  * \brief Sets the adjoint value at index to val
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
