@@ -546,18 +546,6 @@ FORCEINLINE void EndPassive(bool wasActive) {
   if (wasActive) AD::getTape().setActive();
 }
 
-FORCEINLINE bool PausePreaccumulation() {
-  const auto current = PreaccEnabled;
-  if (!current) return false;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
-  return true;
-}
-
-FORCEINLINE void ResumePreaccumulation(bool wasActive) {
-  if (!wasActive) return;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
-}
-
 FORCEINLINE void StartNoSharedReading() {
 #ifdef HAVE_OPDI
   opdi::logic->setAdjointAccessMode(opdi::LogicInterface::AdjointAccessMode::Classical);
@@ -571,6 +559,19 @@ FORCEINLINE void EndNoSharedReading() {
   opdi::logic->addReverseBarrier();
 #endif
 }
+
+FORCEINLINE bool PausePreaccumulation() {
+  const auto current = PreaccEnabled;
+  if (!current) return false;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
+  return true;
+}
+
+FORCEINLINE void ResumePreaccumulation(bool wasActive) {
+  if (!wasActive) return;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
+}
+
 #endif  // CODI_REVERSE_TYPE
 
 void Initialize();
