@@ -188,16 +188,14 @@ void omp_finalize();
  * thread, with all threads and memory views synchronized both beforehand and afterwards.
  */
 
-#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS  \
-  SU2_OMP_BARRIER                         \
-  if (omp_in_parallel())                  \
-    AD::StartNoSharedReading();           \
+#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS             \
+  SU2_OMP_BARRIER                                    \
+  if (omp_in_parallel()) AD::StartNoSharedReading(); \
   SU2_OMP_MASTER
 
-#define END_SU2_OMP_SAFE_GLOBAL_ACCESS  \
-  END_SU2_OMP_MASTER                    \
-  if (omp_in_parallel())                \
-    AD::EndNoSharedReading();           \
+#define END_SU2_OMP_SAFE_GLOBAL_ACCESS             \
+  END_SU2_OMP_MASTER                               \
+  if (omp_in_parallel()) AD::EndNoSharedReading(); \
   SU2_OMP_BARRIER
 
 #define SU2_OMP_SAFE_GLOBAL_ACCESS(...) BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS{__VA_ARGS__} END_SU2_OMP_SAFE_GLOBAL_ACCESS
