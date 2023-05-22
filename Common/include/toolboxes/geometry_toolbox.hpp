@@ -150,6 +150,15 @@ inline void QuadrilateralNormal(const T& coords, U* normal) {
   normal[2] *= 0.5;
 }
 
+/*! \brief Signed distance from a point to a plane defined by 3 coordinates. */
+template <class T, class U>
+inline U PointToPlaneDistance(const T& coords, const U* point) {
+  U normal[3], distance[3];
+  TriangleNormal(coords, normal);
+  Distance(3, point, coords[0], distance);
+  return DotProduct(3, distance, normal) / Norm(3, normal);
+}
+
 /*!
  * \brief Compute a 3D rotation matrix.
  * \note The implicit ordering is rotation about the x, y, and then z axis.
