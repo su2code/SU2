@@ -263,6 +263,7 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   SetAerodynamicCoefficients(config, flow_solver);
 
+  ComputeSimpleCustomOutputs(config);
 }
 
 bool CFlowCompFEMOutput::SetInitResiduals(const CConfig *config){

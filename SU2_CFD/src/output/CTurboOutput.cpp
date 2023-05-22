@@ -175,7 +175,7 @@ CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidMo
       su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
 
       /* Switch between the Turbomachinery Performance Kind */
-      switch (config[iBladeRow]->GetKind_TurboPerf(iBladeRow)) {
+      switch (config[ZONE_0]->GetKind_TurboPerf(iBladeRow)) {
         case TURBO_PERF_KIND::TURBINE:
           bladeSpanPerformances.push_back(
               make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));

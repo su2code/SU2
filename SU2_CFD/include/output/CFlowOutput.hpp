@@ -222,7 +222,8 @@ protected:
    * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
    * to evaluate the custom expressions.
    */
-  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, CustomOutput& output) const;
+  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, bool allowSkip,
+                                       CustomOutput& output) const;
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
@@ -303,7 +304,7 @@ protected:
    * \param[in] force_writing - boolean that forces writing of volume output
    * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override; 
+  bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
   /*!
    * \brief Write the forces breakdown file
    * \param[in] config - Definition of the particular problem per zone.

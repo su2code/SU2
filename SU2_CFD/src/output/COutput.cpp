@@ -2180,7 +2180,7 @@ bool COutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_
     return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
       return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
- 
+
 }
 
 void COutput::SetCommonHistoryFields() {
@@ -2330,6 +2330,46 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     }
   }
 
+}
+
+void COutput::ComputeSimpleCustomOutputs(const CConfig *config) {
+  const bool adjoint = config->GetDiscrete_Adjoint();
+
+  for (auto& output : customOutputs) {
+    if (output.type != OperationType::FUNCTION) {
+      if (adjoint) continue;
+      SU2_MPI::Error("The current solver can only use 'Function' custom outputs.", CURRENT_FUNCTION);
+    }
+
+    if (output.varIndices.empty()) {
+      output.varIndices.reserve(output.varSymbols.size());
+      output.otherOutputs.reserve(output.varSymbols.size());
+
+      for (const auto& var : output.varSymbols) {
+        output.varIndices.push_back(output.varIndices.size());
+        output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+        if (output.otherOutputs.back() == nullptr) {
+          if (!adjoint) {
+            // In primal mode all functions must be valid.
+            SU2_MPI::Error("Invalid history output (" + var + ") used in function " + output.name, CURRENT_FUNCTION);
+          } else {
+            if (rank == MASTER_NODE) {
+              std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
+                           "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+            }
+            output.skip = true;
+            break;
+          }
+        }
+      }
+    }
+    if (output.skip) continue;
+
+    auto Functor = [&](unsigned long i) {
+      return *output.otherOutputs[i];
+    };
+    SetHistoryOutputValue(output.name, output.Eval(Functor));
+  }
 }
 
 void COutput::LoadCommonHistoryData(const CConfig *config) {
