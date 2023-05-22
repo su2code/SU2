@@ -117,10 +117,13 @@ def RunPrimal(density, peak_load, height):
   Returns the time average objective function.
   """
   comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
 
-  with open('config_unsteady.cfg', 'w') as f:
-    f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
-            primal_settings)
+  if rank == 0:
+    with open('config_unsteady.cfg', 'w') as f:
+      f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
+              primal_settings)
+  comm.Barrier()
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -155,10 +158,13 @@ def RunAdjoint(density, peak_load, height):
   load, to the material density, and to the beam height.
   """
   comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
 
-  with open('config_unsteady_ad.cfg', 'w') as f:
-    f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
-            adjoint_settings)
+  if rank == 0:
+    with open('config_unsteady_ad.cfg', 'w') as f:
+      f.write(common_settings.replace('__DENSITY__', str(density)).replace('__HEIGHT__', str(height)) +
+              adjoint_settings)
+  comm.Barrier()
 
   # Initialize the adjoint driver of SU2, this includes solver preprocessing.
   try:
