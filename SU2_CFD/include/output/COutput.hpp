@@ -763,7 +763,7 @@ protected:
   /*!
    * \brief CheckHistoryOutput
    */
-  void CheckHistoryOutput();
+  void CheckHistoryOutput(unsigned short nZone);
 
   /*!
    * \brief Open the history file and write the header.
