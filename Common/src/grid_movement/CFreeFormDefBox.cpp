@@ -28,6 +28,7 @@
 #include "../../include/grid_movement/CFreeFormDefBox.hpp"
 #include "../../include/grid_movement/CBezierBlending.hpp"
 #include "../../include/grid_movement/CBSplineBlending.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 CFreeFormDefBox::CFreeFormDefBox() : CGridMovement() {}
 
@@ -1014,13 +1015,8 @@ su2double* CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
   return ParamCoord;
 }
 
-bool CFreeFormDefBox::GetPointFFD(CGeometry* geometry, CConfig* config, unsigned long iPoint) const {
-  bool Inside = true;
-  bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
-  bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
-  bool polar = (config->GetFFD_CoordSystem() == POLAR);
-
-  /*--- indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7 ---*/
+bool CFreeFormDefBox::CheckPointInsideFFD(const su2double* coord) const {
+  /*--- Indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7 ---*/
 
   unsigned short Index[6][5] = {{0, 1, 2, 3, 0},   // front side
                                 {1, 5, 6, 2, 1},   // right side
@@ -1029,76 +1025,34 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry* geometry, CConfig* config, unsigned
                                 {4, 5, 1, 0, 4},   // bottom side
                                 {4, 7, 6, 5, 4}};  // back side
 
-  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles
-      by defining a supporting middle point. This allows nonplanar FFD boxes.
-      Note that the definition of the FFD box is as follows: the FFD box is a 6-sided die and we are looking at the side
-     "1". The opposite side is side "6". If we are looking at side "1", we define the nodes counterclockwise. If we are
-     looking at side "6", we define the face clockwise  ---*/
+  /*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles by defining
+   a supporting middle point. This allows nonplanar FFD boxes. Note that the definition of the FFD box is as follows:
+   the FFD box is a 6-sided die and we are looking at the side "1". The opposite side is side "6". If we are looking at
+   side "1", we define the nodes counterclockwise. If we are looking at side "6", we define the face clockwise. ---*/
 
-  unsigned short nDim = geometry->GetnDim();
+  /*--- Loop over the faces of the FFD box. ---*/
 
-  su2double Coord[3] = {0.0, 0.0, 0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) Coord[iDim] = geometry->nodes->GetCoord(iPoint, iDim);
+  for (unsigned short iFace = 0; iFace < 6; iFace++) {
+    /*--- Every face needs an interpolated middle point for the triangles. ---*/
 
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
-
-  if (cylindrical) {
-    X_0 = config->GetFFD_Axis(0);
-    Y_0 = config->GetFFD_Axis(1);
-    Z_0 = config->GetFFD_Axis(2);
-
-    Xbar = Coord[0] - X_0;
-    Ybar = Coord[1] - Y_0;
-    Zbar = Coord[2] - Z_0;
-
-    Coord[0] = sqrt(Ybar * Ybar + Zbar * Zbar);
-    Coord[1] = atan2(Zbar, Ybar);
-    if (Coord[1] > PI_NUMBER / 2.0) Coord[1] -= 2.0 * PI_NUMBER;
-    Coord[2] = Xbar;
-
-  }
-
-  else if (spherical || polar) {
-    X_0 = config->GetFFD_Axis(0);
-    Y_0 = config->GetFFD_Axis(1);
-    Z_0 = config->GetFFD_Axis(2);
-
-    Xbar = Coord[0] - X_0;
-    Ybar = Coord[1] - Y_0;
-    Zbar = Coord[2] - Z_0;
-
-    Coord[0] = sqrt(Xbar * Xbar + Ybar * Ybar + Zbar * Zbar);
-    Coord[1] = atan2(Zbar, Ybar);
-    if (Coord[1] > PI_NUMBER / 2.0) Coord[1] -= 2.0 * PI_NUMBER;
-    Coord[2] = acos(Xbar / Coord[0]);
-  }
-
-  /*--- loop over the faces of the FFD box  ---*/
-
-  for (unsigned short iVar = 0; iVar < 6; iVar++) {
     su2double P[3] = {0.0, 0.0, 0.0};
-
-    /*--- every face needs an interpolated middle point for the triangles ---*/
-
     for (int p = 0; p < 4; p++) {
-      P[0] += 0.25 * Coord_Corner_Points[Index[iVar][p]][0];
-      P[1] += 0.25 * Coord_Corner_Points[Index[iVar][p]][1];
-      P[2] += 0.25 * Coord_Corner_Points[Index[iVar][p]][2];
+      P[0] += 0.25 * Coord_Corner_Points[Index[iFace][p]][0];
+      P[1] += 0.25 * Coord_Corner_Points[Index[iFace][p]][1];
+      P[2] += 0.25 * Coord_Corner_Points[Index[iFace][p]][2];
     }
 
-    /*--- loop over the 4 triangles making up the FFD box. The sign is equal for all distances ---*/
+    /*--- Loop over the 4 triangles making up the FFD box. The sign should be equal for all distances. ---*/
 
-    for (unsigned short jVar = 0; jVar < 4; jVar++) {
-      su2double Distance_Point = geometry->Point2Plane_Distance(Coord, Coord_Corner_Points[Index[iVar][jVar]],
-                                                                Coord_Corner_Points[Index[iVar][jVar + 1]], P);
-      if (Distance_Point < 0) {
-        Inside = false;
-        return Inside;
+    for (int iNode = 0; iNode < 4; iNode++) {
+      const su2double* plane[] = {P, Coord_Corner_Points[Index[iFace][iNode]],
+                                  Coord_Corner_Points[Index[iFace][iNode + 1]]};
+      if (GeometryToolbox::PointToPlaneDistance(plane, coord) < 0) {
+        return false;
       }
     }
   }
-
-  return Inside;
+  return true;
 }
 
 su2double CFreeFormDefBox::GetDerivative1(su2double* uvw, unsigned short val_diff, unsigned short* ijk,
