@@ -69,7 +69,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   FluidModel->SetTDState_T(Temperature, scalar);
 
-  Solution(iPoint, indices.Temperature()) = FluidModel->GetTemperature();
+  //Solution(iPoint, indices.Temperature()) = FluidModel->GetTemperature();
 
   /*--- Set the value of the density ---*/
 

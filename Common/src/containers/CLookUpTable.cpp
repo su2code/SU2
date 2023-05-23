@@ -92,10 +92,10 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   if (rank == MASTER_NODE) {
     switch (table_dim) {
       case 2:
-        cout << "Construction of trapezoidal map took " << stopTime - startTime << " seconds\n" << endl;
+        cout << "\nConstruction of trapezoidal map took " << stopTime - startTime << " seconds\n" << endl;
         break;
       case 3:
-        cout << "Construction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
+        cout << "\nConstruction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
         break;
       default:
         break;
