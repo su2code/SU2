@@ -103,9 +103,12 @@ def RunPrimal(size):
   Returns the final average boundary temperature.
   """
   comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
 
-  with open('config_unsteady.cfg', 'w') as f:
-    f.write(common_settings.replace('__SIZE__', str(size)) + primal_settings)
+  if rank == 0:
+    with open('config_unsteady.cfg', 'w') as f:
+      f.write(common_settings.replace('__SIZE__', str(size)) + primal_settings)
+  comm.Barrier()
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -154,9 +157,12 @@ def RunAdjoint(size):
   size of the domain and to the initial temperature.
   """
   comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
 
-  with open('config_unsteady_ad.cfg', 'w') as f:
-    f.write(common_settings.replace('__SIZE__', str(size)) + adjoint_settings)
+  if rank == 0:
+    with open('config_unsteady_ad.cfg', 'w') as f:
+      f.write(common_settings.replace('__SIZE__', str(size)) + adjoint_settings)
+  comm.Barrier()
 
   # Initialize the adjoint driver of SU2, this includes solver preprocessing.
   try:
