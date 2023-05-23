@@ -360,6 +360,8 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
+  AD::ResizeAdjoints();
+
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Initialize the adjoints the conservative variables ---*/
