@@ -293,7 +293,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
-    solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    const su2double pressure = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) ? solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint): 0.0;
+    solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, pressure, scalar);
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
