@@ -521,11 +521,11 @@ private:
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
-  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in datadriven fluid models. */
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
-  su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in datadriven fluid models. */
-            DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in datadriven fluid models. */
-            DataDriven_initial_energy;    /*!< \brief Initial static energy value for Newton solvers in datadriven fluid models. */
+  su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+            DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in data-driven fluid models. */
+            DataDriven_initial_energy;    /*!< \brief Initial static energy value for Newton solvers in data-driven fluid models. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -806,7 +806,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for datadriven fluid models. */
+  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -3789,7 +3789,7 @@ public:
 
   /*!
    * \brief Get number of listed look-up table or multi-layer perceptron input files.
-   * \return Number of listed datadriven method input files.
+   * \return Number of listed data-driven method input files.
    */
   unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
 

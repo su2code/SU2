@@ -4922,6 +4922,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Data-driven fluid model is currently only supported for compressible flow problems. ---*/
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == DATADRIVEN_FLUID)) {
+    SU2_MPI::Error("Data-driven fluid model can only be used for compressible flows.", CURRENT_FUNCTION);
+  }
+
   if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {

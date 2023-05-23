@@ -75,9 +75,9 @@ class CEulerVariable : public CFlowVariable {
   MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
 
   bool DataDrivenFluid = false; /*!< \brief Usage of data-driven fluid model. DatasetExtrapolation and FluidEntropy will not be sized if disabled. */
-  su2vector<unsigned short> DatasetExtrapolation; /*!< \brief Stores instances of dataset bounds violation when using datadriven fluid models. */
-  su2vector<unsigned long> NIterNewtonsolver;    /*!< \brief Stores number of Newton solver iterations when using datadriven fluid models. */
-  VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the datadriven fluid model. */
+  su2vector<unsigned short> DatasetExtrapolation; /*!< \brief Stores instances of dataset bounds violation when using data-driven fluid models. */
+  su2vector<unsigned long> NIterNewtonsolver;    /*!< \brief Stores number of Newton solver iterations when using data-driven fluid models. */
+  VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the data-driven fluid model. */
 
  public:
   /*!

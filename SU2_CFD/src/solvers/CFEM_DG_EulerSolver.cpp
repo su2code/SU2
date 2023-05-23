@@ -7789,8 +7789,16 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
       P_Total /= config->GetPressure_Ref();
       T_Total /= config->GetTemperature_Ref();
 
+      /* Set initial guesses for density and static energy in case of 
+         data-driven fluid model. */
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        FluidModel->SetInitialDensity(config->GetDensity_Init_DataDriven());
+        FluidModel->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
+      }
+      
       /* Compute the total enthalpy and entropy from these values. */
       FluidModel->SetTDState_PT(P_Total, T_Total);
+
       const su2double Enthalpy_e = FluidModel->GetStaticEnergy()
                                  + FluidModel->GetPressure()/FluidModel->GetDensity();
       const su2double Entropy_e  = FluidModel->GetEntropy();
@@ -7850,6 +7858,13 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
       P_static /= config->GetPressure_Ref();
       T_static /= config->GetTemperature_Ref();
 
+      /* Set initial guesses for density and static energy in case of 
+         data-driven fluid model. */
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        FluidModel->SetInitialDensity(config->GetDensity_Init_DataDriven());
+        FluidModel->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
+      }
+
       /* Compute the prescribed density, static energy per unit mass
          and speed of sound. */
       FluidModel->SetTDState_PT(P_static, T_static);
@@ -7900,6 +7915,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
       P_static /= config->GetPressure_Ref();
       Rho_static /= config->GetDensity_Ref();
+
+      /* Set initial guess for static energy in case of 
+         data-driven fluid model. */
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        FluidModel->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
+      }
 
       /* Compute the prescribed pressure, static energy per unit mass
          and speed of sound. */
@@ -7986,6 +8007,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
       const su2double Pressure_e = config->GetRiemann_Var1(Marker_Tag)
                                  / config->GetPressure_Ref();
 
+      /* Set initial guesses for density and static energy in case of 
+         data-driven fluid model. */             
+      if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
+        FluidModel->SetInitialDensity(config->GetDensity_Init_DataDriven());
+        FluidModel->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
+      }
       /* Loop over the faces that are treated simultaneously. */
       for(unsigned short l=0; l<nFaceSimul; ++l) {
         const unsigned short llNVar = l*nVar;
