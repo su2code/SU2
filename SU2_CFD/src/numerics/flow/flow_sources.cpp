@@ -790,7 +790,7 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
     residual[2] = 0.0;
     residual[3] = 0.0;
     residual[4] = 0.0;
-    }
+  }
 
   /*--- For now the source term Jacobian is just set to zero ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
