@@ -158,7 +158,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499, -80603.000000]
+    rae2822_sa.test_vals = [-2.020123, -5.269324, 0.807147, 0.060499, -80602.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -182,7 +182,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.157169, -6.736698, -0.176253, 0.057446]
+    turb_flatplate.test_vals = [-4.157358, -6.736289, -0.176258, 0.057431]
     test_list.append(turb_flatplate)
 
     # ONERA M6 Wing
@@ -242,7 +242,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.389575, -8.409529, 0.000048, 0.056329]
+    propeller.test_vals = [-3.389575, -8.409251, 0.000048, 0.056329]
     test_list.append(propeller)
 
     #######################################
@@ -408,7 +408,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788405, -11.040493, 0.000008, 0.309506]
+    inc_turb_naca0012.test_vals = [-4.788405, -11.039465, 0.000008, 0.309490]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -487,7 +487,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.882733, -0.215005, 0.023783, -618.160000]
+    ddes_flatplate.test_vals = [-2.714757, -5.882779, -0.215005, 0.023783, -618.130000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 

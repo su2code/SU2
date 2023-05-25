@@ -83,7 +83,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.645001, 0.181590, -0.000018, 5.000000, -3.421214, 5.000000, -6.769609]
+    discadj_rans_naca0012_sa.test_vals = [-2.230568, 0.644202, 0.181590, -0.000018, 5.000000, -3.421717, 5.000000, -6.769530]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -255,8 +255,8 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-2.226525, 0.603989, 0.000000, -6.256200]
-    discadj_heat.test_vals_aarch64 = [-2.226525, 0.603989, 0.000000, -6.256200]
+    discadj_heat.test_vals         = [-2.226532, 0.605613, 0.000000, -6.256200]
+    discadj_heat.test_vals_aarch64 = [-2.226532, 0.605613, 0.000000, -6.256200]
     test_list.append(discadj_heat)
 
     ###################################

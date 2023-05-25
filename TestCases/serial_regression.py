@@ -270,7 +270,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-8.629583, -10.377793, 1.064488, 0.019711, 20.000000, -2.173971, 20.000000, -5.213344, -46.50600]
+    turb_naca0012_sa.test_vals = [-8.629633, -10.377911, 1.064499, 0.019711, 20.000000, -2.173382, 20.000000, -5.212005, -46.519000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
 

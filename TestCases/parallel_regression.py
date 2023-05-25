@@ -1414,7 +1414,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.843481, -3.585988, -3.486593, -7.560545, -5.094245, 5.000000, -1.898097, 5.000000, -3.328995, 5.000000, -2.113241, 2.482221, 0.974142, 0.607219, 0.900860
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.843481, -3.585988, -3.486593, -7.560545, -5.094245, 5.000000, -1.898097, 5.000000, -3.328995, 5.000000, -2.113241, 2.482221, 0.974142, 0.607219, 0.900860]
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
