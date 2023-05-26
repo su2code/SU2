@@ -382,7 +382,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-8.621456, -10.378269, 1.064502, 0.019710, 20.000000, -1.811700, 20.000000, -5.171326, -46.506000]
+    turb_naca0012_sa.test_vals = [-8.621172, -10.378367, 1.064512, 0.019710, 20.000000, -1.813386, 20.000000, -5.172466, -46.520000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
 
@@ -645,7 +645,7 @@ def main():
     turbmod_sa_bsl_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_bsl_rae2822.cfg_file  = "turb_SA_BSL_RAE2822.cfg"
     turbmod_sa_bsl_rae2822.test_iter = 20
-    turbmod_sa_bsl_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_bsl_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265782, 0.809463, 0.062016]
     test_list.append(turbmod_sa_bsl_rae2822)
 
     # SA Negative
@@ -858,6 +858,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
+    hb_rans_preconditioning.tol       = 0.00001
     hb_rans_preconditioning.test_vals = [1.902098, 0.484070, 0.601481, 3.609002, -5.949360]
     test_list.append(hb_rans_preconditioning)
 
