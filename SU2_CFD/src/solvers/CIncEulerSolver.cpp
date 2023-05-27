@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
   const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
-  unsigned short iMarker, nLineLets;
+  unsigned short iMarker;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -65,7 +65,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+  if (restart && (iMesh == MESH_0) && nZone <= 1) {
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -161,11 +161,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)
@@ -226,7 +221,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetBounded_Scalar())
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "INC.FLOW";
 
   /*--- Finally, check that the static arrays will be large enough (keep this
@@ -235,7 +230,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.", CURRENT_FUNCTION);
 }
 
-CIncEulerSolver::~CIncEulerSolver(void) {
+CIncEulerSolver::~CIncEulerSolver() {
 
   for(auto& model : FluidModel) delete model;
 }
@@ -2889,9 +2884,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   if (Evaluate_BC) {
 
-    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+    auto *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
+    auto *Outlet_Density  = new su2double[config->GetnMarker_All()];
+    auto *Outlet_Area     = new su2double[config->GetnMarker_All()];
 
     /*--- Comute MassFlow, average temp, press, etc. ---*/
 
@@ -2949,13 +2944,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
     /*--- Copy to the appropriate structure ---*/
 
-    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
+    auto *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
+    auto *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    auto *Outlet_Area_Local     = new su2double[nMarker_Outlet];
 
-    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
+    auto *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
+    auto *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    auto *Outlet_Area_Total     = new su2double[nMarker_Outlet];
 
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;

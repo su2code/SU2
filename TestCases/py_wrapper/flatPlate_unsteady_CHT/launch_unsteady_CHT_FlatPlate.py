@@ -3,14 +3,14 @@
 ## \file launch_unsteady_CHT_FlatPlate.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -86,18 +86,14 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_CHTMarker = 0         # total number of vertices (physical + halo)
-  nVertex_CHTMarker_HALO = 0    # number of halo vertices
-  nVertex_CHTMarker_PHYS = 0    # number of physical vertices
 
   if CHTMarkerID != None:
-    nVertex_CHTMarker = SU2Driver.GetNumberMarkerVertices(CHTMarkerID)
-    nVertex_CHTMarker_HALO = SU2Driver.GetNumberMarkerHaloVertices(CHTMarkerID)
-    nVertex_CHTMarker_PHYS = nVertex_CHTMarker - nVertex_CHTMarker_HALO
+    nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -114,7 +110,7 @@ def main():
     WallTemp = 293.0 + 57.0*sin(2*pi*time)
     # Set this temperature to all the vertices on the specified CHT marker
     for iVertex in range(nVertex_CHTMarker):
-      SU2Driver.SetVertexTemperature(CHTMarkerID, iVertex, WallTemp)
+      SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
     SU2Driver.BoundaryConditionsUpdate()
@@ -133,8 +129,6 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program

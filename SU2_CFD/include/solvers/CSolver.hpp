@@ -1,15 +1,15 @@
 /*!
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
- * \author F. Palacios, T. Economon, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \author F. Palacios, T. Economon
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -558,7 +558,7 @@ class CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry* geometry, const CConfig* config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Compute slope limiter.
@@ -590,7 +590,7 @@ class CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Restart_OldGeometry(CGeometry* geometry, CConfig* config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief A virtual member.
@@ -3100,42 +3100,6 @@ class CSolver {
 
   /*!
    * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Young Modulus E
-   */
-  inline virtual su2double GetGlobal_Sens_E(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Poisson's ratio Nu
-   */
-  inline virtual su2double GetGlobal_Sens_Nu(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural density sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural weight sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
-   */
-  inline virtual su2double GetGlobal_Sens_EField(unsigned short iEField) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
-   */
-  inline virtual su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
    */
   inline virtual su2double GetVal_Young(unsigned short iVal) const { return 0.0; }
@@ -3309,7 +3273,8 @@ class CSolver {
    * \param[in] adjoint - Boolean to identify the restart file of an adjoint run.
    * \param[in] val_filename - String name of the restart file.
    */
-  void Read_SU2_Restart_Metadata(CGeometry* geometry, CConfig* config, bool adjoint_run, string val_filename) const;
+  void Read_SU2_Restart_Metadata(CGeometry* geometry, CConfig* config, bool adjoint_run,
+                                 const string& val_filename) const;
 
   /*!
    * \brief Load a inlet profile data from file into a particular solver.
@@ -3574,27 +3539,8 @@ class CSolver {
 
   /*!
    * \brief A virtual member.
-   * \return Value of the dynamic Aitken relaxation factor
    */
-  inline virtual su2double GetWAitken_Dyn(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual su2double GetWAitken_Dyn_tn1(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the dynamic Aitken relaxation factor
-   */
-  inline virtual void SetWAitken_Dyn(su2double waitk) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1) {}
+  inline virtual void SetWAitken_Dyn_tn1() {}
 
   /*!
    * \brief A virtual member.
@@ -4092,9 +4038,9 @@ class CSolver {
 
   /*!
    * \brief Retrieve the solver name for output purposes.
-   * \param[out] val_solvername - Name of the solver.
+   * \returns Name of the solver.
    */
-  inline string GetSolverName(void) { return SolverName; }
+  inline const string& GetSolverName() const  { return SolverName; }
 
   /*!
    * \brief Get the solution fields.

@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,6 @@
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
-
-  unsigned short nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -71,12 +69,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -174,7 +166,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "SA";
 
 }
@@ -249,6 +241,52 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   }
   END_SU2_OMP_FOR
+
+
+  /*--- Compute turbulence index ---*/
+  if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE || config->GetSAParsedOptions().bc) {
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      if (config->GetViscous_Wall(iMarker)) {
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+          if (geometry->nodes->GetDomain(iPoint)) {
+            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            su2double FrictionVelocity = 0.0;
+            /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|)
+            (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the
+            standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
+            if(nDim == 2){
+              su2double shearStress = 0.0;
+              for(auto iDim = 0u; iDim < nDim; iDim++) {
+                shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
+              }
+              shearStress = sqrt(shearStress);
+
+              FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+            } else {
+              su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+              FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
+            }
+
+            const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+            const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
+            const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
+
+            nodes->SetTurbIndex(iPoint, turbulence_index);
+
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+    }
+  }
 
   AD::EndNoSharedReading();
 }
@@ -338,14 +376,21 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     }
 
+    /*--- Effective Intermittency ---*/
+
+    if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+      numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the intermittency ---*/
 
-    if (transition_BC) {
-      nodes->SetGammaBC(iPoint,numerics->GetGammaBC());
+    if (transition_BC || config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+      nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
 
     /*--- Subtract residual and the Jacobian ---*/
@@ -502,7 +547,32 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       su2double Inlet_Vars[MAXNVAR];
       Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
       if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
+         Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
+      } else {
+         /*--- Obtain fluid model for computing the nu tilde to impose at the inlet boundary. ---*/
+         CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+         /*--- Obtain density and laminar viscosity at inlet boundary node ---*/
+
+         su2double Density_Inlet;
+         if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+           Density_Inlet = V_inlet[prim_idx.Density()];
+           FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+         } else {
+           const su2double* Scalar_Inlet = nullptr;
+           if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+           }
+           FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+           Density_Inlet = FluidModel->GetDensity();
+         }
+         const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+         const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+         const su2double Nu_Factor = Turb_Properties[0];
+         Inlet_Vars[0] = Nu_Factor * Laminar_Viscosity_Inlet / Density_Inlet;
+         if (config->GetSAParsedOptions().bc) {
+           Inlet_Vars[0] *= 0.005;
+         }
       }
 
       /*--- Load the inlet turbulence variable (uniform by default). ---*/

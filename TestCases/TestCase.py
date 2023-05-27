@@ -1,22 +1,22 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -34,6 +34,12 @@ def print_vals(vals, name="Values"):
     """Print an array of floats."""
     print(name + ': ' + ', '.join('{:f}'.format(v) for v in vals))
 
+def is_float(test_string):
+    try:
+        float(test_string)
+        return True
+    except ValueError:
+        return False
 
 class TestCase:
 
@@ -89,7 +95,7 @@ class TestCase:
         self.no_restart = False
 
         # Indicate whether the new output is used
-        self.new_output = True   
+        self.new_output = True
 
         # multizone problem
         self.multizone = False
@@ -97,13 +103,15 @@ class TestCase:
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
-        self.test_vals = []  
+        self.test_vals = []
         self.test_vals_aarch64 = []
         self.cpu_arch = platform.processor()
         self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_file_percent = 0.0
+        self.comp_threshold = 0.0
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
@@ -127,7 +135,7 @@ class TestCase:
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
-            self.adjust_iter() 
+            self.adjust_iter()
 
         # Check for disabling the restart
         if self.no_restart:
@@ -217,7 +225,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -230,7 +238,7 @@ class TestCase:
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
-            subprocess.call(['cat', logfilename])      
+            subprocess.call(['cat', logfilename])
 
         print('execution command: %s' % shell_command)
 
@@ -313,19 +321,103 @@ class TestCase:
             print("Output from the failed case:")
             subprocess.call(["cat", logfilename])
 
+        diff_time_start = datetime.datetime.now()
         if not timed_out and passed:
             # Compare files
             fromfile = self.reference_file
-            tofile = self.test_file 
+            tofile = self.test_file
             # Initial value s.t. will fail if it does not get to diff step
             diff = ''
             try:
                 fromdate = time.ctime(os.stat(fromfile).st_mtime)
                 fromlines = open(fromfile, 'U').readlines()
-                try: 
+                try:
                     todate = time.ctime(os.stat(tofile).st_mtime)
                     tolines = open(tofile, 'U').readlines()
-                    diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
+
+                    # If file tolerance is set to 0, make regular diff
+                    if self.tol_file_percent == 0.0:
+                        diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
+
+                    # Else test word by word with given tolerance
+                    else:
+
+                        diff = []
+                        max_delta = 0
+                        compare_counter = 0
+                        ignore_counter = 0
+
+                        # Assert that both files have the same number of lines
+                        if len(fromlines) != len(tolines):
+                            diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                            passed = False
+                        
+                        # Loop through all lines
+                        for i_line in range(0, len(fromlines)):
+
+                            if passed == False: break
+
+                            # Extract next line and split it
+                            from_line = fromlines[i_line].split()
+                            to_line = tolines[i_line].split()
+
+                            # Assert that both lines have the same number of words
+                            if len(from_line) != len(to_line):
+                                diff = ["ERROR: Number of words in line " + str(i_line+1) + " differ."]
+                                passed = False
+                                break
+                            
+                            # Loop through all words of one line
+                            for i_word in range(0, len(from_line)):
+
+                                # Extract next word and strip whitespace and commas
+                                from_word = from_line[i_word].strip().strip(',')
+                                to_word = to_line[i_word].strip().strip(',')
+
+                                # Assert that words are either both numeric or both non-numeric
+                                from_isfloat = is_float(from_word)
+                                to_isfloat = is_float(to_word)
+                                if from_isfloat != to_isfloat:
+                                    diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
+                                    passed = False
+                                    delta = 0.0
+                                    max_delta = "Not applicable"
+                                    break
+
+                                # Make actual comparison
+                                # Compare floats
+                                if from_isfloat:
+                                    try:
+                                        # Only do a relative comparison when the threshold is met.
+                                        # This is to prevent large relative differences for very small numbers.
+                                        if (abs(float(from_word)) > self.comp_threshold):
+                                            delta = abs( (float(from_word) - float(to_word)) / float(from_word) ) * 100
+                                            compare_counter += 1
+                                        else:
+                                            delta = 0.0
+                                            ignore_counter += 1
+
+                                        max_delta = max(max_delta, delta)
+
+                                    except ZeroDivisionError:
+                                        ignore_counter += 1
+                                        continue
+
+                                # Compare non-floats
+                                else:
+                                    delta = 0.0
+                                    compare_counter += 1
+                                    if from_word != to_word:
+                                        diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
+                                        passed = False
+                                        max_delta = "Not applicable"
+                                        break
+
+                                if delta > self.tol_file_percent:
+                                    diff = ["ERROR: File entries '" + from_word + "' and '" + to_word + "' in line " + str(i_line+1) + ", word " + str(i_word+1) + " differ."]
+                                    passed = False
+                                    break
+
                 except OSError:
                     print("OS error, most likely from missing reference file:", fromfile)
                     print("Current working directory contents:")
@@ -334,10 +426,6 @@ class TestCase:
                 print("OS error, most likely from missing reference file:", fromfile)
                 print("Current working directory contents:")
                 print(os.listdir("."))
-
-
-
-
 
             if (diff==[]):
                 passed=True
@@ -349,8 +437,21 @@ class TestCase:
         else:
             passed = False
 
-        print('CPU architecture=%s'%self.cpu_arch)
-        print('test duration: %.2f min'%(running_time/60.0))
+        # Report results
+        diff_time_stop = datetime.datetime.now()
+        diff_time = (diff_time_stop - diff_time_start).microseconds
+
+        print('CPU architecture:    %s'%self.cpu_arch)
+        print('Test duration:       %.2f min'%(running_time/60.0))
+        print('Diff duration:       %.2f sec'%(diff_time/1e6))
+        print('Specified tolerance: ' + str(self.tol_file_percent) + '%')
+        print('Specified threshold: ' + str(self.comp_threshold)) 
+
+        if self.tol_file_percent != 0.0:
+            print('Compared entries:    ' + str(compare_counter))
+            print('Ignored entries:     ' + str(ignore_counter))
+            print('Maximum difference:  ' + str(max_delta) + '%')
+
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()
@@ -369,7 +470,7 @@ class TestCase:
         iter_missing = True
         start_solver = True
 
-        # Adjust the number of iterations in the config file   
+        # Adjust the number of iterations in the config file
         self.adjust_opt_iter()
 
         self.adjust_test_data()
@@ -442,7 +543,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -451,7 +552,7 @@ class TestCase:
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
-            subprocess.call(['cat', logfilename])      
+            subprocess.call(['cat', logfilename])
 
         print('execution command: %s' % shell_command)
 
@@ -503,7 +604,7 @@ class TestCase:
 
         # if root, add flag to mpirun
         self.command.allow_mpi_as_root()
-                
+
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
@@ -576,7 +677,7 @@ class TestCase:
             if iter_missing:
                 passed = False
 
-        # Write the test results 
+        # Write the test results
         #for j in output:
         #  print(j)
 
@@ -625,7 +726,7 @@ class TestCase:
         timed_out    = False
         iter_missing = True
         start_solver = True
-    
+
         self.adjust_test_data()
 
         # if root, add flag to mpirun
@@ -634,14 +735,14 @@ class TestCase:
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         shell_command = "%s %s > %s 2>&1" % (self.command.assemble(), self.cfg_file, logfilename)
-    
+
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
-    
+
         # check for timeout
         while process.poll() is None:
             time.sleep(0.1)
@@ -654,8 +755,8 @@ class TestCase:
                 except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
                     pass
                 timed_out = True
-                passed    = False
-    
+                passed = False
+
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
@@ -676,7 +777,7 @@ class TestCase:
                         continue
                     except IndexError:
                         continue
-    
+
                     if iter_number == self.test_iter:  # Found the iteration number we're checking for
                         iter_missing = False
                         if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
@@ -688,42 +789,42 @@ class TestCase:
                             delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
                             if delta_vals[j] > self.tol:
                                 exceed_tol = True
-                                passed     = False
+                                passed = False
                         break
                     else:
                         iter_missing = True
-    
+
             if not start_solver:
                 passed = False
-    
+
             if iter_missing:
                 passed = False
-    
-        # Write the test results 
+
+        # Write the test results
         #for j in output:
         #  print(j)
-    
+
         if passed:
             print("%s: PASSED"%self.tag)
         else:
             print("%s: FAILED"%self.tag)
             print('Output for the failed case')
             subprocess.call(['cat', logfilename])
-    
+
         print('execution command: %s' % shell_command)
-    
+
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
-    
+
         if exceed_tol:
             print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
-    
+
         if not start_solver:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
-    
+
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
-    
+
         print('test_iter=%d' % self.test_iter)
 
         print_vals(self.test_vals, name="test_vals (stored)")
@@ -731,13 +832,13 @@ class TestCase:
         print_vals(sim_vals, name="sim_vals (computed)")
 
         print_vals(delta_vals, name="delta_vals")
- 
+
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
-    
+
         sys.stdout.flush()
         os.chdir(workdir)
-        return passed    
+        return passed
 
     def adjust_iter(self):
 
@@ -830,6 +931,6 @@ class TestCase:
         if self.cpu_arch == 'aarch64':
             if len(self.test_vals_aarch64) != 0:
                 self.test_vals = self.test_vals_aarch64
-        
+
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64

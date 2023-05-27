@@ -2,14 +2,14 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sstream>
 #include <string>
 
 #include "../../include/output/CFlowOutput.hpp"
@@ -32,9 +33,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
-#include "../../include/variables/CEulerVariable.hpp"
-#include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CNEMOEulerVariable.hpp"
+#include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
@@ -562,7 +561,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
       SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
 
-    SetAnalyzeSurface_SpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
+    SetAnalyzeSurfaceSpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
   }
 
@@ -650,7 +649,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
-void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry,
+void CFlowOutput::SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, const CGeometry *geometry,
                                                     CConfig *config, const su2activematrix& Surface_Species_Total,
                                                     const vector<su2double>& Surface_MassFlow_Abs_Total,
                                                     const vector<su2double>& Surface_Area_Total) {
@@ -758,40 +757,131 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
+    config->SetSurface_Species_Variance(iMarker_Analyze, SpeciesVariance);
     Tot_Surface_SpeciesVariance += SpeciesVariance;
-    config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
+void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, const bool allowSkip,
+                                                  CustomOutput& output) const {
+  const auto nameToIndex = PrimitiveNameToIndexMap(idx);
+
+  std::stringstream knownVariables;
+  for (const auto& items : nameToIndex) {
+    knownVariables << items.first + '\n';
+  }
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\n";
+
+  auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
+    /*--- Primitives of the flow solver. ---*/
+    const auto flowOffset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+    const auto it = nameToIndex.find(var);
+    if (it != nameToIndex.end()) return flowOffset + it->second;
+
+    /*--- Index-based (no name) access to variables of other solvers. ---*/
+    auto GetIndex = [](const std::string& s, int nameLen) {
+      /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
+      return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
+    };
+    if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+    if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
+    return CustomOutput::NOT_A_VARIABLE;
+  };
+
+  output.otherOutputs.clear();
+  output.varIndices.clear();
+  output.varIndices.reserve(output.varSymbols.size());
+
+  for (const auto& var : output.varSymbols) {
+    output.varIndices.push_back(IndexOfVariable(nameToIndex, var));
+
+    if (output.type == OperationType::FUNCTION && output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Custom outputs of type 'Function' cannot reference solver variables.", CURRENT_FUNCTION);
+    }
+    /*--- Symbol is a valid solver variable. ---*/
+    if (output.varIndices.back() < CustomOutput::NOT_A_VARIABLE) continue;
+
+    /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
+    if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {
+      SU2_MPI::Error("Inactive solver variable (" + var + ") used in function " + output.name + "\n"
+                      "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
+    }
+
+    /*--- An index equal to NOT_A_VARIABLE may refer to a history output. ---*/
+    output.varIndices.back() += output.otherOutputs.size();
+    output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+    if (output.otherOutputs.back() == nullptr) {
+      if (!allowSkip) {
+        SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                       "\nValid solvers variables:\n" + knownVariables.str(), CURRENT_FUNCTION);
+      } else {
+        if (rank == MASTER_NODE) {
+          std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
+                       "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+        }
+        output.skip = true;
+        break;
+      }
+    }
+  }
+}
+
 void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
+  const bool adjoint = config->GetDiscrete_Adjoint();
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   for (auto& output : customOutputs) {
+    if (output.skip) continue;
+
     if (output.varIndices.empty()) {
+      const bool allowSkip = adjoint && (output.type == OperationType::FUNCTION);
+
       /*--- Setup indices for the symbols in the expression. ---*/
+      const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
+          config->GetNEMOProblem(), nDim, config->GetnSpecies());
+      ConvertVariableSymbolsToIndices(primIdx, allowSkip, output);
+      if (output.skip) continue;
 
-      if (config->GetNEMOProblem()) {
-        ConvertVariableSymbolsToIndices(
-            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else {
-        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
-      }
-      /*--- Convert marker names to their index (if any) in this rank. ---*/
+      /*--- Convert marker names to their index (if any) in this rank. Or probe locations to nearest points. ---*/
 
-      output.markerIndices.clear();
-      for (const auto& marker : output.markers) {
-        for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
-          if (config->GetMarker_All_TagBound(iMarker) == marker) {
-            output.markerIndices.push_back(iMarker);
-            continue;
+      if (output.type != OperationType::PROBE) {
+        output.markerIndices.clear();
+        for (const auto& marker : output.markers) {
+          for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
+            if (config->GetMarker_All_TagBound(iMarker) == marker) {
+              output.markerIndices.push_back(iMarker);
+              continue;
+            }
           }
+        }
+      } else {
+        if (output.markers.size() != nDim) {
+          SU2_MPI::Error("Wrong number of coordinates to specify probe " + output.name, CURRENT_FUNCTION);
+        }
+        su2double coord[3] = {};
+        for (auto iDim = 0u; iDim < nDim; ++iDim) coord[iDim] = std::stod(output.markers[iDim]);
+        su2double minDist = std::numeric_limits<su2double>::max();
+        unsigned long minPoint = 0;
+        for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+          const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
+          if (dist < minDist) {
+            minDist = dist;
+            minPoint = iPoint;
+          }
+        }
+        /*--- Decide which rank owns the probe. ---*/
+        su2double globMinDist;
+        SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+        if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+          std::cout << "Probe " << output.name << " is using global point "
+                    << geometry->nodes->GetGlobalIndex(output.iPoint)
+                    << ", distance from target location is " << sqrt(minDist) << std::endl;
         }
       }
     }
@@ -801,7 +891,37 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         /*--- Functions only reference other history outputs. ---*/
         return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
       };
-      SetHistoryOutputValue(output.name, output.eval(Functor));
+      SetHistoryOutputValue(output.name, output.Eval(Functor));
+      continue;
+    }
+
+    /*--- Prepares the functor that maps symbol indices to values at a given point
+     * (see ConvertVariableSymbolsToIndices). ---*/
+
+    auto MakeFunctor = [&](unsigned long iPoint) {
+      /*--- This returns another lambda that captures iPoint by value. ---*/
+      return [&, iPoint](unsigned long i) {
+        if (i < CustomOutput::NOT_A_VARIABLE) {
+          const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+          const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+          if (solIdx == FLOW_SOL) {
+            return flowNodes->GetPrimitive(iPoint, varIdx);
+          }
+          return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+        } else {
+          return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+        }
+      };
+    };
+
+    if (output.type == OperationType::PROBE) {
+      su2double value = std::numeric_limits<su2double>::max();
+      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+        value = output.Eval(MakeFunctor(output.iPoint));
+      }
+      su2double tmp = value;
+      SU2_MPI::Allreduce(&tmp, &value, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      SetHistoryOutputValue(output.name, value);
       continue;
     }
 
@@ -830,23 +950,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
-
-          /*--- Prepare the functor that maps symbol indices to values (see ConvertVariableSymbolsToIndices). ---*/
-
-          auto Functor = [&](unsigned long i) {
-            if (i < CustomOutput::NOT_A_VARIABLE) {
-              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-              if (solIdx == FLOW_SOL) {
-                return flowNodes->GetPrimitive(iPoint, varIdx);
-              } else {
-                return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-              }
-            } else {
-              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-            }
-          };
-          local_integral[0] += weight * output.eval(Functor);
+          local_integral[0] += weight * output.Eval(MakeFunctor(iPoint));
         }
         END_SU2_OMP_FOR
       }
@@ -886,8 +990,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 
     case TURB_FAMILY::NONE: break;
   }
-  switch (config->GetKind_Trans_Model()) {    
-    
+  switch (config->GetKind_Trans_Model()) {
+
     case TURB_TRANS_MODEL::LM:
       /// DESCRIPTION: Root-mean square residual of the intermittency (LM model).
       AddHistoryOutput("RMS_INTERMITTENCY", "rms[LM_1]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of intermittency (LM model).", HistoryFieldType::RESIDUAL);
@@ -896,7 +1000,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
-  } 
+  }
 
    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
@@ -923,8 +1027,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
   }
 
-  switch (config->GetKind_Trans_Model()) {    
-    
+  switch (config->GetKind_Trans_Model()) {
+
     case TURB_TRANS_MODEL::LM:
       /// DESCRIPTION: Maximum residual of the intermittency (LM model).
       AddHistoryOutput("MAX_INTERMITTENCY", "max[LM_1]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
@@ -962,8 +1066,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_FAMILY::NONE: break;
   }
 
-  switch (config->GetKind_Trans_Model()) {    
-    case TURB_TRANS_MODEL::LM: 
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::LM:
       /// DESCRIPTION: Maximum residual of the intermittency (LM model).
       AddHistoryOutput("BGS_INTERMITTENCY", "bgs[LM_1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
@@ -980,7 +1084,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   }
 }
 
-void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
+void CFlowOutput::AddHistoryOutputFieldsScalarLinsol(const CConfig* config) {
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
@@ -989,7 +1093,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_TRANS", "LinSolIterTrans", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for transition solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_TRANS", "LinSolResTrans", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for transition solver.");
-  }  
+  }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
@@ -998,7 +1102,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
 }
 // clang-format on
 
-void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
+void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
@@ -1027,7 +1131,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
   }
 
-  switch (config->GetKind_Trans_Model()) {    
+  switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
@@ -1037,6 +1141,8 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
         SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
         SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
       }
+      SetHistoryOutputValue("LINSOL_ITER_TRANS", solver[TRANS_SOL]->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_TRANS", log10(solver[TRANS_SOL]->GetResLinSolver()));
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
@@ -1056,7 +1162,9 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
+void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
+  /*--- Only place outputs of the "SOLUTION" group here. ---*/
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
@@ -1071,12 +1179,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       break;
   }
 
-  switch (config->GetKind_Trans_Model()) {    
+  switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
       AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
-      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1084,12 +1190,15 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+    }
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
+  /*--- Only place outputs of the "RESIDUAL" group here. ---*/
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
@@ -1104,7 +1213,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       break;
   }
 
-  switch (config->GetKind_Trans_Model()) {    
+  switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
       AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
@@ -1115,12 +1224,15 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
       AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+    }
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
+  /*--- Place "PRIMITIVE", "LIMITER", and other groups here. ---*/
+
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
       case TURB_FAMILY::SA:
@@ -1142,6 +1254,20 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
         AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
     }
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+    }
+  }
+
+  switch (config->GetKind_Trans_Model()) {
+    case TURB_TRANS_MODEL::LM:
+      AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+      AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
+      break;
+
+    case TURB_TRANS_MODEL::NONE:
+      break;
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -1170,7 +1296,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   }
 }
 
-void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                         const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
   const auto* trans_solver = solver[TRANS_SOL];
@@ -1187,7 +1313,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1221,15 +1347,16 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   if (config->GetSAParsedOptions().bc) {
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
+    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittencyEff(iPoint));
   }
 
-  switch (config->GetKind_Trans_Model()) {    
+  switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
       SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
       SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
+      SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
       SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
       break;
@@ -1248,6 +1375,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+      SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
         SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
@@ -1272,6 +1400,8 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
+  /// DESCRIPTION: Reference force for aerodynamic coefficients
+  AddHistoryOutput("REFERENCE_FORCE", "RefForce", ScreenOutputFormat::FIXED, "AERO_COEFF", "Reference force used to compute aerodynamic coefficients", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Drag coefficient
   AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
@@ -1329,6 +1459,7 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
+  SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
@@ -1380,7 +1511,8 @@ void CFlowOutput::AddHeatCoefficients(const CConfig* config) {
   AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux across all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
 
   vector<string> Marker_Monitoring;
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+  Marker_Monitoring.reserve(config->GetnMarker_Monitoring());
+for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker));
   }
   /// DESCRIPTION:  Total heatflux
@@ -1421,12 +1553,12 @@ void CFlowOutput::SetRotatingFrameCoefficients(const CSolver* flow_solver) {
   SetHistoryOutputValue("FIGURE_OF_MERIT", flow_solver->GetTotal_CMerit());
 }
 
-void CFlowOutput::Add_CpInverseDesignOutput(){
+void CFlowOutput::AddCpInverseDesignOutput(){
 
   AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design", HistoryFieldType::COEFFICIENT);
 }
 
-void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
+void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
@@ -1514,12 +1646,12 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 }
 
-void CFlowOutput::Add_NearfieldInverseDesignOutput(){
+void CFlowOutput::AddNearfieldInverseDesignOutput(){
 
   AddHistoryOutput("EQUIVALENT_AREA", "CEquiv_Area", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
 }
 
-void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
+void CFlowOutput::SetNearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
   ofstream EquivArea_file;
   su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX,
@@ -2046,7 +2178,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   auto fileName = config->GetBreakdown_FileName();
   if (unsteady) {
-    const auto lastindex = fileName.find_last_of(".");
+    const auto lastindex = fileName.find_last_of('.');
     const auto ext = fileName.substr(lastindex, fileName.size());
     fileName = fileName.substr(0, lastindex);
     fileName = config->GetFilename(fileName, ext, curTimeIter);
@@ -2220,7 +2352,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -2231,7 +2363,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2022, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -2284,9 +2416,14 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       if (transition) {
         file << "Transition model: ";
         switch (Kind_Trans_Model) {
-        case TURB_TRANS_MODEL::NONE: break;        
+        case TURB_TRANS_MODEL::NONE: break;
         case TURB_TRANS_MODEL::LM:
-          file << "Langtry and Menter's transition\n";
+          file << "Langtry and Menter's transition";
+          if (config->GetLMParsedOptions().LM2015) {
+            file << " w/ cross-flow corrections (2015)\n";
+          } else {
+            file << " (2009)\n";
+          }
           break;
         }
       }
@@ -3503,7 +3640,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
-bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
 
   bool writeRestart = false;
   auto FileFormat = config->GetVolumeOutputFiles();
@@ -3522,8 +3659,8 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
     /* only write 'double' files for the restart files */
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
       ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0) ||
-      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart==true) || // Restarts need 2 old solutions.
-      (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
+      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart) || // Restarts need 2 old solutions.
+      (((Iter+2) == config->GetnTime_Iter()) && writeRestart))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
@@ -3531,7 +3668,7 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
     return ((Iter > 0) && Iter % config->GetVolumeOutputFrequency(iFile) == 0) || force_writing;
   }
 
-  return false || force_writing;
+  return force_writing;
 }
 
 void CFlowOutput::SetTimeAveragedFields(){
@@ -3620,7 +3757,7 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     else
       FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
     FixedCLSummary.PrintFooter();
-    SetScreen_Header(config);
+    SetScreenHeader(config);
   }
 
   else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){

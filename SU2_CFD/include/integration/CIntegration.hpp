@@ -2,14 +2,14 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,9 +48,6 @@ class CIntegration {
 protected:
   int rank,      /*!< \brief MPI Rank. */
   size;          /*!< \brief MPI Size. */
-  bool Convergence,   /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
-  Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;  /*!< \brief To indicate if the full multigrid has converged or not. */
 
   /*!
    * \brief Do the space integration of the numerical system.
@@ -87,41 +84,6 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CIntegration(void) = default;
-
-  /*!
-   * \brief Get the indicator of the convergence for the direct, adjoint and linearized problem.
-   * \return <code>TRUE</code> means that the convergence criteria is satisfied;
-   *         otherwise <code>FALSE</code>.
-   */
-  inline bool GetConvergence(void) const { return Convergence; }
-
-  /*!
-   * \brief Get the indicator of the convergence for the Fluid-Structure Interaction problem.
-   * \return <code>TRUE</code> means that the convergence criteria is satisfied;
-   *         otherwise <code>FALSE</code>.
-   */
-  inline bool GetConvergence_FSI(void) const { return Convergence_FSI; }
-
-  /*!
-   * \brief Set the indicator of the convergence.
-   * \param[in] value - <code>TRUE</code> means that the convergence criteria is satisfied;
-   *            otherwise <code>FALSE</code>.
-   */
-  inline void SetConvergence(bool value) { Convergence = value; }
-
-  /*!
-   * \brief Set the indicator of the convergence for FSI.
-   * \param[in] valueFSI - <code>TRUE</code> means that the convergence criteria for FSI is satisfied;
-   *            otherwise <code>FALSE</code>.
-   */
-  inline void SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
-
-  /*!
-   * \brief Get the indicator of the convergence for the full multigrid problem.
-   * \return <code>TRUE</code> means that the convergence criteria is satisfied;
-   *         otherwise <code>FALSE</code>.
-   */
-  inline bool GetConvergence_FullMG(void) const { return Convergence_FullMG; }
 
   /*!
    * \brief Save the geometry at different time steps.

@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
+CUpwRoeBase_Flow::~CUpwRoeBase_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;
@@ -477,7 +477,7 @@ CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVa
   }
 }
 
-CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
+CUpwTurkel_Flow::~CUpwTurkel_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;
@@ -709,7 +709,7 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
   }
 }
 
-CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
+CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;

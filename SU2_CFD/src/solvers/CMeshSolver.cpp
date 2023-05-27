@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -165,6 +165,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINE
     }
     Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
+
+  SolverName = "MESH";
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -539,63 +541,6 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 }
 
-void CMeshSolver::DeformMesh(CGeometry *geometry, CNumerics **numerics, CConfig *config){
-
-  if (multizone) nodes->Set_BGSSolution_k();
-
-  /*--- Capture a few MPI dependencies for AD. ---*/
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  InitiateComms(geometry, config, MESH_DISPLACEMENTS);
-  CompleteComms(geometry, config, MESH_DISPLACEMENTS);
-
-  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
-
-  const bool wasActive = AD::BeginPassive();
-
-  Compute_StiffMatrix(geometry, numerics, config);
-
-  AD::EndPassive(wasActive);
-
-  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL {
-    LinSysRes.SetValZero();
-    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
-  }
-  END_SU2_OMP_PARALLEL
-
-  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry, config, false);
-
-  /*--- Solve the linear system. ---*/
-  Solve_System(geometry, config);
-
-  SU2_OMP_PARALLEL {
-
-  /*--- Update the grid coordinates and cell volumes using the solution
-     of the linear system (usol contains the x, y, z displacements). ---*/
-  UpdateGridCoord(geometry, config);
-
-  /*--- Update the dual grid (without multigrid). ---*/
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
-
-  geometry->SetControlVolume(config, UPDATE);
-  geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
-
-  /*--- Check for failed deformation (negative volumes). ---*/
-  SetMinMaxVolume(geometry, config, true);
-
-  }
-  END_SU2_OMP_PARALLEL
-
-}
-
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
@@ -810,7 +755,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config,
 
 }
 
-void CMeshSolver::SetDualTime_Mesh(void){
+void CMeshSolver::SetDualTime_Mesh(){
 
   nodes->Set_Solution_time_n1();
   nodes->Set_Solution_time_n();

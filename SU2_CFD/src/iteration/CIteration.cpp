@@ -2,14 +2,14 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,9 +60,33 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
       break;
 
-      /*--- Already initialized in the static mesh movement routine at driver level. ---*/
     case STEADY_TRANSLATION:
+      /*--- Set or update the translating frame mesh movement with the current translation rates,
+       * which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting translational grid velocities." << endl;
+
+      /*--- Set the translational velocity on all grid levels. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        geometry[iMGlevel]->SetTranslationalVelocity(config, iMGlevel == 0);
+
+      break;
+
     case ROTATING_FRAME:
+      /*--- Set or update the rotating frame mesh movement with the current translation and rotation
+       * rates, which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting rotating frame grid velocities." << endl;
+
+      /*--- Set the grid velocities on all multigrid levels for a steadily
+         rotating reference frame. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
+        geometry[iMGlevel]->SetRotationalVelocity(config, iMGlevel == 0);
+        geometry[iMGlevel]->SetShroudVelocity(config);
+      }
+
       break;
   }
 
@@ -175,6 +199,6 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
 void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
                         unsigned long InnerIter, bool StopCalc, unsigned short val_iZone, unsigned short val_iInst) {
-  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
+  output->SetResultFiles(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }

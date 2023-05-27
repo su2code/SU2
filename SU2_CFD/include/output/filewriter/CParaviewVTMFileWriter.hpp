@@ -2,14 +2,14 @@
  * \file CParaviewVTMFileWriter.hpp
  * \brief Headers fo paraview binary file writer class.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ public:
    * \brief Write sorted data to file in paraview binary file format
    * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
     /*!
    * \brief Write all data of the zones, boundaries into the folder
@@ -110,7 +110,7 @@ public:
    * \param[in] surfaceDataSorter - sorted surface data
    * \param[in] geometry - the geometry of the problem
    */
-  void WriteFolderData(string foldername, CConfig *config,
+  void WriteFolderData(const string& foldername, CConfig *config,
                        string multiZoneHeaderString,
                        CParallelDataSorter* volumeDataSorter,
                        CParallelDataSorter* surfaceDataSorter,
@@ -124,7 +124,7 @@ public:
    * \param[in] dataSorter - Datasorter object containing the actual data. Note, data must be sorted.
    */
   //void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
-  void AddDataset(string foldername, string name, string file, CParallelDataSorter* dataSorter);
+  void AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter);
 
   /*!
    * \brief Start a new block

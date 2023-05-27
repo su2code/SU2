@@ -2,14 +2,14 @@
  * \file CAdjFlowOutput.hpp
  * \brief Headers of the adjoint flow output.
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,26 +64,26 @@ class CAdjFlowOutput : public COutput {
   /*!
    * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_AdjScalarLinsol(const CConfig* config);
+  void AddHistoryOutputFieldsAdjScalarLinsol(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) history field values.
    */
-  void LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver);
+  void LoadHistoryDataAdjScalar(const CConfig* config, const CSolver* const* solver);
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_AdjScalarSolution(const CConfig* config);
+  void SetVolumeOutputFieldsAdjScalarSolution(const CConfig* config);
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_AdjScalarResidual(const CConfig* config);
+  void SetVolumeOutputFieldsAdjScalarResidual(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) volume field values for a point.
@@ -91,5 +91,5 @@ class CAdjFlowOutput : public COutput {
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
+  void LoadVolumeDataAdjScalar(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
 };

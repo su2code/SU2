@@ -2,14 +2,14 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -123,7 +123,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
     zoneIndex = "[" + PrintingToolbox::to_string(iZone) + "]";
 
     /*--- For all the variables per solver ---*/
-    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutput_List()) {
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputList()) {
 
       if (nameSinglezone != "TIME_ITER" && nameSinglezone != "OUTER_ITER") {
 
@@ -151,7 +151,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
     /*--- Add the PerSurface outputs. ---*/
     const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
 
-    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurfaceList()) {
 
       const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
 
@@ -186,7 +186,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
-bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
+bool CMultizoneOutput::WriteScreenHeader(const CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
 
@@ -202,7 +202,7 @@ bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
   return false;
 }
 
-bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
+bool CMultizoneOutput::WriteScreenOutput(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
@@ -228,7 +228,7 @@ bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
   return true;
 }
 
-bool CMultizoneOutput::WriteHistoryFile_Output(const CConfig *config){
+bool CMultizoneOutput::WriteHistoryFileOutput(const CConfig *config){
 
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);

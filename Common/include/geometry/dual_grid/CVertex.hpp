@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,19 +36,19 @@
  * \author F. Palacios
  */
 class CVertex : public CDualGrid {
-protected:
-  unsigned long Nodes[1];               /*!< \brief Vector to store the global nodes of an element. */
-  su2double Normal[3] = {0.0};          /*!< \brief Normal coordinates of the element and its center of gravity. */
-  su2double Aux_Var;                    /*!< \brief Auxiliar variable defined only on the surface. */
-  su2double CartCoord[3] = {0.0};       /*!< \brief Vertex cartesians coordinates. */
-  su2double VarCoord[3] = {0.0};        /*!< \brief Used for storing the coordinate variation due to a surface modification. */
-  long PeriodicPoint[5] = {-1};         /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
-  bool ActDisk_Perimeter = false;       /*!< \brief Identify nodes at the perimeter of the actuator disk */
-  short Rotation_Type;                  /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-  unsigned long Normal_Neighbor;        /*!< \brief Index of the closest neighbor. */
-  su2double Basis_Function[3] = {0.0};  /*!< \brief Basis function values for interpolation across zones. */
+ protected:
+  unsigned long Nodes[1];         /*!< \brief Vector to store the global nodes of an element. */
+  su2double Normal[3] = {0.0};    /*!< \brief Normal coordinates of the element and its center of gravity. */
+  su2double Aux_Var;              /*!< \brief Auxiliar variable defined only on the surface. */
+  su2double CartCoord[3] = {0.0}; /*!< \brief Vertex cartesians coordinates. */
+  su2double VarCoord[3] = {0.0}; /*!< \brief Used for storing the coordinate variation due to a surface modification. */
+  long PeriodicPoint[5] = {-1};  /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter = false;      /*!< \brief Identify nodes at the perimeter of the actuator disk */
+  short Rotation_Type;                 /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
+  unsigned long Normal_Neighbor;       /*!< \brief Index of the closest neighbor. */
+  su2double Basis_Function[3] = {0.0}; /*!< \brief Basis function values for interpolation across zones. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_point - Node of the vertex.
@@ -75,8 +75,8 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \return Compute the normal (dimensional) to the face that makes the vertex.
    */
-  void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_FaceElem_CG,
-                      const su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(const su2double* val_coord_Edge_CG, const su2double* val_coord_FaceElem_CG,
+                      const su2double* val_coord_Elem_CG) override;
 
   /*!
    * \overload
@@ -84,22 +84,21 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \return Compute the normal (dimensional) to the face that makes the vertex.
    */
-  void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(const su2double* val_coord_Edge_CG, const su2double* val_coord_Elem_CG) override;
 
   /*!
    * \brief Copy the the normal vector of a face.
    * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
    */
-  inline void GetNormal(su2double *val_normal) const override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      val_normal[iDim] = Normal[iDim];
+  inline void GetNormal(su2double* val_normal) const override {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) val_normal[iDim] = Normal[iDim];
   }
 
   /*!
    * \brief Get the normal to a face of the control volume asociated with a vertex.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) override { return Normal; }
+  inline su2double* GetNormal(void) override { return Normal; }
 
   /*!
    * \brief Get the ith component of the normal.
@@ -110,8 +109,7 @@ public:
    * \brief Initialize normal vector.
    */
   inline void SetZeroValues(void) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim ++)
-      Normal[iDim] = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = 0.0;
   }
 
   /*!
@@ -137,58 +135,53 @@ public:
    * \param[in] val_face_normal - Vector to initialize the normal vector.
    * \return Value of the normal vector.
    */
-  inline void SetNormal(const su2double *val_face_normal) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim]=val_face_normal[iDim];
+  inline void SetNormal(const su2double* val_face_normal) override {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = val_face_normal[iDim];
   }
 
   /*!
    * \brief Add a vector to the normal vector.
    * \param[in] val_face_normal - Vector to add to the normal vector.
    */
-  inline void AddNormal(const su2double *val_face_normal) override {
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] += val_face_normal[iDim];
+  inline void AddNormal(const su2double* val_face_normal) override {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] += val_face_normal[iDim];
   }
 
   /*!
    * \brief Set the value of the coordinate variation due to a surface modification.
    * \param[in] val_varcoord - Variation of the coordinate.
    */
-  inline void SetVarCoord(const su2double *val_varcoord) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = val_varcoord[iDim];
+  inline void SetVarCoord(const su2double* val_varcoord) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) VarCoord[iDim] = val_varcoord[iDim];
   }
 
   /*!
    * \brief Add the value of the coordinate variation due to a surface modification.
    * \param[in] val_varcoord - Variation of the coordinate.
    */
-  inline void AddVarCoord(const su2double *val_varcoord) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] += val_varcoord[iDim];
+  inline void AddVarCoord(const su2double* val_varcoord) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) VarCoord[iDim] += val_varcoord[iDim];
   }
 
   /*!
    * \brief Get the value of the coordinate variation due to a surface modification.
    * \return Variation of the coordinate.
    */
-  inline su2double *GetVarCoord(void) { return VarCoord; }
+  inline su2double* GetVarCoord(void) { return VarCoord; }
 
   /*!
    * \brief Set the value of the cartesian coordinate for the vertex.
    * \param[in] val_coord - Value of the cartesian coordinate.
    */
-  inline void SetCoord(const su2double *val_coord) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      CartCoord[iDim] = val_coord[iDim];
+  inline void SetCoord(const su2double* val_coord) override {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) CartCoord[iDim] = val_coord[iDim];
   }
 
   /*!
    * \brief Get the value of the cartesian coordinate for the vertex.
    * \return Value of the cartesian coordinate of the vertex.
    */
-  inline su2double *GetCoord(void) override { return CartCoord; }
+  inline su2double* GetCoord(void) override { return CartCoord; }
 
   /*!
    * \brief Get the value of the cartesian coordinate for the vertex.
@@ -293,7 +286,7 @@ public:
    * \brief Get the value of the periodic point of a vertex, and its somain
    * \return Value of the periodic point of a vertex, and the domain.
    */
-  inline long *GetPeriodicPointDomain(void) { return PeriodicPoint; }
+  inline long* GetPeriodicPointDomain(void) { return PeriodicPoint; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex, and its somain
@@ -326,5 +319,4 @@ public:
    * \return Index of the closest neighbor.
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
-
 };

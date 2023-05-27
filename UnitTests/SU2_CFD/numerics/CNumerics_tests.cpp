@@ -2,14 +2,14 @@
  * \file CNumerics_tests.cpp
  * \brief Unit tests for the numerics classes.
  * \author C. Pederson
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,13 +30,13 @@
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
-
   std::stringstream config_options;
-  
+
   config_options << "SOLVER= NAVIER_STOKES" << std::endl;
-  config_options << "ROE_LOW_DISSIPATION= " << "NTS" << std::endl;
+  config_options << "ROE_LOW_DISSIPATION= "
+                 << "NTS" << std::endl;
   config_options << "REYNOLDS_NUMBER= 5" << std::endl;
-  
+
   /*--- Setup ---*/
 
   CConfig* config = new CConfig(config_options, SU2_COMPONENT::SU2_CFD, false);
@@ -49,11 +49,8 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   /*--- Test ---*/
 
   CNumerics numerics;
-  const su2double dissipation_ij = numerics.GetRoe_Dissipation(dissipation_i,
-                                                               dissipation_j,
-                                                               sensor_i,
-                                                               sensor_j,
-                                                               config);
+  const su2double dissipation_ij =
+      numerics.GetRoe_Dissipation(dissipation_i, dissipation_j, sensor_i, sensor_j, config);
 
   REQUIRE(dissipation_ij >= 0.05);
 
@@ -61,4 +58,3 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
 
   delete config;
 }
-

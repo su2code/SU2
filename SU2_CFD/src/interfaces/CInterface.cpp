@@ -2,14 +2,14 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CInterface::CInterface(void) :
+CInterface::CInterface() :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()) {
 }
@@ -49,7 +49,7 @@ CInterface::CInterface(unsigned short val_nVar, unsigned short val_nConst) :
   valAggregated      = true;
 }
 
-CInterface::~CInterface(void) {
+CInterface::~CInterface() {
 
   delete [] Physical_Constants;
   delete [] Donor_Variable;
@@ -227,11 +227,10 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+          /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
       Donor_Flag   = -1;
-    }
+   
   }
 
 #ifdef HAVE_MPI
@@ -273,10 +272,9 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+          /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-    }
+   
   }
 
   if (Marker_Target != -1 && Marker_Donor != -1){
@@ -343,9 +341,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
 
 #ifdef HAVE_MPI
   int iSize;
-  su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL,
-      *BuffAvg3DVelDonor = NULL, *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL,
-      *BuffAvgKineDonor = NULL, *BuffAvgOmegaDonor = NULL;
+  su2double *BuffAvgPressureDonor = nullptr, *BuffAvgDensityDonor = nullptr, *BuffAvgNormalVelDonor = nullptr,
+      *BuffAvg3DVelDonor = nullptr, *BuffAvgTangVelDonor = nullptr, *BuffAvgNuDonor = nullptr,
+      *BuffAvgKineDonor = nullptr, *BuffAvgOmegaDonor = nullptr;
   int nSpanSize, *BuffMarkerDonor;
 #endif
 
@@ -418,10 +416,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
       /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+          /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
-    }
+   
   }
   /*--- Here we want to make available the quantities for all the processors and collect them in a buffer
    * for each span of the donor the span-wise height vector also so
@@ -534,10 +531,9 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
-    else {
-      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+          /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-    }
+   
   }
 
 

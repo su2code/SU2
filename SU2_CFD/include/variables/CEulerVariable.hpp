@@ -2,14 +2,14 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,8 @@ class CEulerVariable : public CFlowVariable {
   struct CIndices {
     const IndexType nDim;
     CIndices(IndexType ndim, IndexType) : nDim(ndim) {}
+    inline IndexType NDim() const { return nDim; }
+    inline IndexType NSpecies() const { return 0; }
     inline IndexType Temperature() const { return 0; }
     inline IndexType Velocity() const { return 1; }
     inline IndexType Pressure() const { return nDim+1; }
@@ -58,6 +60,7 @@ class CEulerVariable : public CFlowVariable {
     inline IndexType CpTotal() const { return nDim+8; }
 
     /*--- For compatible interface with NEMO. ---*/
+    inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
   };
 

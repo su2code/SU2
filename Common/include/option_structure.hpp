@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
+const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
@@ -94,6 +94,7 @@ const su2double STANDARD_GRAVITY = 9.80665;         /*!< \brief Acceleration due
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598; /*!< \brief Universal gas constant in J/(mol*K) */
 const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*!< \brief Boltzmann's constant [J K^-1] */
 const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
+const su2double FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
 
 const su2double EPS = 1.0E-16;      /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -273,22 +274,8 @@ static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
   MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
   MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
   MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
   MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
@@ -542,12 +529,6 @@ enum ENUM_SPACE {
   SPACE_UPWIND = 2,   /*!< \brief Upwind convective numerical method. */
   FINITE_ELEMENT = 3  /*!< \brief Finite element convective numerical method. */
 };
-static const MapType<std::string, ENUM_SPACE> Space_Map = {
-  MakePair("NONE", NO_CONVECTIVE)
-  MakePair("SPACE_CENTERED", SPACE_CENTERED)
-  MakePair("SPACE_UPWIND", SPACE_UPWIND)
-  MakePair("FINITE_ELEMENT", FINITE_ELEMENT)
-};
 
 /*!
  * \brief Types of fluid model
@@ -683,7 +664,7 @@ enum class MIXINGVISCOSITYMODEL {
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
@@ -824,26 +805,25 @@ static const MapType<std::string, CENTERED> Centered_Map = {
  * \brief Types of upwind spatial discretizations
  */
 enum class UPWIND {
-  NONE,                /*!< \brief No upwind scheme is used. */
-  ROE,                 /*!< \brief Roe's upwind numerical method. */
-  SCALAR_UPWIND,       /*!< \brief Scalar upwind numerical method. */
-  AUSM,                /*!< \brief AUSM numerical method. */
-  HLLC,                /*!< \brief HLLC numerical method. */
-  SW,                  /*!< \brief Steger-Warming method. */
-  MSW,                 /*!< \brief Modified Steger-Warming method. */
-  TURKEL,              /*!< \brief Roe-Turkel's upwind numerical method. */
-  SLAU,                /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP,                /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE, /*!< \brief Template for new numerical method . */
-  L2ROE,               /*!< \brief L2ROE numerical method . */
-  LMROE,               /*!< \brief Rieper's Low Mach ROE numerical method . */
-  SLAU2,               /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
-  FDS,                 /*!< \brief Flux difference splitting upwind method (incompressible flows). */
-  LAX_FRIEDRICH,       /*!< \brief Lax-Friedrich numerical method. */
-  AUSMPLUSUP,          /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2,         /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS,          /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
-  BOUNDED_SCALAR       /*!< \brief Scalar advection numerical method. */
+  NONE,                   /*!< \brief No upwind scheme is used. */
+  ROE,                    /*!< \brief Roe's upwind numerical method. */
+  SCALAR_UPWIND,          /*!< \brief Scalar upwind numerical method. */
+  AUSM,                   /*!< \brief AUSM numerical method. */
+  HLLC,                   /*!< \brief HLLC numerical method. */
+  SW,                     /*!< \brief Steger-Warming method. */
+  MSW,                    /*!< \brief Modified Steger-Warming method. */
+  TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
+  SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
+  CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
+  L2ROE,                  /*!< \brief L2ROE numerical method . */
+  LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2,                  /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
+  FDS,                    /*!< \brief Flux difference splitting upwind method (incompressible flows). */
+  LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
+  AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
+  AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
+  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("NONE", UPWIND::NONE)
@@ -852,12 +832,11 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("AUSM", UPWIND::AUSM)
   MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("AUSMPLUSM", UPWIND::AUSMPLUSM)
   MakePair("SLAU", UPWIND::SLAU)
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)
   MakePair("MSW", UPWIND::MSW)
-  MakePair("CUSP", UPWIND::CUSP)
   MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
   MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
   MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
@@ -908,18 +887,23 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
  * \brief Types of slope limiters
  */
 enum class LIMITER {
-  NONE,                 /*!< \brief No limiter. */
-  VENKATAKRISHNAN,      /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
-  VENKATAKRISHNAN_WANG, /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil
-                           formulation). */
-  BARTH_JESPERSEN,      /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
-  VAN_ALBADA_EDGE,      /*!< \brief Slope limiter using Van Albada method (edge formulation). */
-  SHARP_EDGES,          /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE         /*!< \brief Slope limiter using wall distance. */
+  NONE                 , /*!< \brief No limiter. */
+  VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  NISHIKAWA_R3          , /*!< \brief Slope limiter using Nishikawa's R3 method (stencil formulation). */
+  NISHIKAWA_R4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
+  NISHIKAWA_R5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
+  VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
+  BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
 };
 static const MapType<std::string, LIMITER> Limiter_Map = {
   MakePair("NONE", LIMITER::NONE)
   MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("NISHIKAWA_R3", LIMITER::NISHIKAWA_R3)
+  MakePair("NISHIKAWA_R4", LIMITER::NISHIKAWA_R4)
+  MakePair("NISHIKAWA_R5", LIMITER::NISHIKAWA_R5)
   MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
   MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
   MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
@@ -1180,6 +1164,119 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
 };
 
 /*!
+ * \brief LM Options
+ */
+enum class LM_OPTIONS {
+  NONE,         /*!< \brief No option / default. */
+  LM2015,       /*!< \brief Cross-flow corrections. */
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
+  MakePair("NONE", LM_OPTIONS::NONE)
+  MakePair("LM2015", LM_OPTIONS::LM2015)
+  MakePair("MALAN", LM_OPTIONS::MALAN)
+  MakePair("SULUKSNA", LM_OPTIONS::SULUKSNA)
+  MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
+  MakePair("KRAUSE_HYPER", LM_OPTIONS::KRAUSE_HYPER)
+  MakePair("MEDIDA_BAEDER", LM_OPTIONS::MEDIDA_BAEDER)
+  MakePair("MENTER_LANGTRY", LM_OPTIONS::MENTER_LANGTRY)
+  MakePair("DEFAULT", LM_OPTIONS::DEFAULT)
+};
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class TURB_TRANS_CORRELATION {
+  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+};
+
+/*!
+ * \brief Structure containing parsed LM options.
+ */
+struct LM_ParsedOptions {
+  LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
+  bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
+  TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
+};
+
+/*!
+ * \brief Function to parse LM options.
+ * \param[in] LM_Options - Selected LM option from config.
+ * \param[in] nLM_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned short nLM_Options, int rank, TURB_MODEL Kind_Turb_Model) {
+  LM_ParsedOptions LMParsedOptions;
+
+  auto IsPresent = [&](LM_OPTIONS option) {
+    const auto lm_options_end = LM_Options + nLM_Options;
+    return std::find(LM_Options, lm_options_end, option) != lm_options_end;
+  };
+
+  LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
+
+  int NFoundCorrelations = 0;
+  if (IsPresent(LM_OPTIONS::MALAN)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::SULUKSNA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::SULUKSNA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::KRAUSE_HYPER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::KRAUSE_HYPER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA_BAEDER)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA_BAEDER;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MEDIDA)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MEDIDA;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::MENTER_LANGTRY)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    NFoundCorrelations++;
+  }
+
+  if (NFoundCorrelations > 1) {
+    SU2_MPI::Error("Two correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (LMParsedOptions.Correlation == TURB_TRANS_CORRELATION::DEFAULT){
+    if (Kind_Turb_Model == TURB_MODEL::SST) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+      LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
+    }
+  }
+
+  return LMParsedOptions;
+}
+
+/*!
  * \brief types of species transport models
  */
 enum class SPECIES_MODEL {
@@ -1333,14 +1430,12 @@ static const MapType<std::string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
  * \brief Type of time integration schemes
  */
 enum class STRUCT_TIME_INT {
-  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
   GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
 static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
+  // MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA) Not fully implemented.
 };
 
 /*!
@@ -1770,27 +1865,16 @@ enum ENUM_OBJECTIVE {
   SURFACE_SECONDARY = 53,          /*!< \brief Secondary flow strength objective function definition. */
   SURFACE_MOM_DISTORTION = 54,     /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
-  SURFACE_PRESSURE_DROP = 56,    /*!< \brief Pressure drop objective function definition. */
-  SURFACE_SPECIES_0 = 58,        /*!< \brief Surface Avg. Species_0 objective function definition. */
-  SURFACE_SPECIES_VARIANCE = 59, /*!< \brief Species Variance objective function definition. */
-  CUSTOM_OBJFUNC = 31,           /*!< \brief Custom objective function definition. */
-  AVG_NORMAL_VEL = 32,           /*!< \brief Mass-averaged normal velocity. */
-  TOTAL_PRESSURE_LOSS = 39,
-  KINETIC_ENERGY_LOSS = 40,
-  TOTAL_EFFICIENCY = 41,
-  TOTAL_STATIC_EFFICIENCY = 42,
-  EULERIAN_WORK = 43,
-  TOTAL_ENTHALPY_IN = 44,
-  FLOW_ANGLE_IN = 45,
-  FLOW_ANGLE_OUT = 46,
-  MASS_FLOW_IN = 47,
-  ENTROPY_GENERATION = 50,
-  REFERENCE_GEOMETRY = 60, /*!< \brief Norm of displacements with respect to target geometry. */
-  REFERENCE_NODE = 61,     /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
-  VOLUME_FRACTION = 62,    /*!< \brief Volume average physical density, for material-based topology optimization applications. */
-  TOPOL_DISCRETENESS = 63, /*!< \brief Measure of the discreteness of the current topology. */
-  TOPOL_COMPLIANCE = 64,   /*!< \brief Measure of the discreteness of the current topology. */
-  STRESS_PENALTY = 65,     /*!< \brief Penalty function of VM stresses above a maximum value. */
+  SURFACE_PRESSURE_DROP = 56,   /*!< \brief Pressure drop objective function definition. */
+  SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
+  SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
+  CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
+  REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
+  REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
+  VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
+  TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
+  STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -1827,16 +1911,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("AVG_NORMAL_VEL", AVG_NORMAL_VEL)
-  MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
-  MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
-  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
-  MakePair("EULERIAN_WORK", EULERIAN_WORK)
-  MakePair("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
-  MakePair("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
-  MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
-  MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
@@ -2284,18 +2358,6 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
-};
-
-/*!
- * \brief Types of schemes for dynamic structural computations
- */
-enum ENUM_DYNAMIC {
-  STATIC = 0, /*!< \brief A static structural computation. */
-  DYNAMIC = 1 /*!< \brief Use a time stepping strategy for dynamic computations. */
-};
-static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
-  MakePair("NO", STATIC)
-  MakePair("YES", DYNAMIC)
 };
 
 /*!

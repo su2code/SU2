@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -492,6 +492,7 @@ public:
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -499,6 +500,7 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
+  inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
 
   /*!
    * \brief Set the value of the old residual.
@@ -1116,6 +1118,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the mass diffusivity.
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the specific heat at constant P
    */
   inline virtual su2double GetSpecificHeatCp(unsigned long iPoint) const { return 0.0; }
@@ -1137,9 +1146,16 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Returns intermittency
+   * \return Sets separation intermittency
    */
-  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+  inline virtual void SetGammaSep(unsigned long iPoint, su2double gamma_sep) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Sets Effective intermittency
+   */
+  inline virtual void SetGammaEff(unsigned long iPoint) {}
 
   /*!
    * \brief A virtual member.
@@ -1671,14 +1687,26 @@ public:
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the intermittency.
+   * \return the value of the intermittency.
+   */
+  inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the intermittency.
+   * \param[in] val_dist - Value of the  intermittency.
+   */
+  inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
+
+  /*!
    * \brief Get the value of the separation intermittency.
    * \return the value of the separation intermittency.
    */
   inline virtual su2double GetIntermittencySep(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the separation intermittency(gamma).
-   * \param[in] val_dist - Value of the separation intermittency(gamma).
+   * \brief Set the separation intermittency (gamma_sep).
+   * \param[in] val_dist - Value of the separation intermittency (gamma_sep).
    */
   inline virtual void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {}
 
@@ -1689,8 +1717,8 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Set the effective intermittency(gamma).
-   * \param[in] Value of the effective intermittency(gamma).
+   * \brief Set the effective intermittency (gamma_eff).
+   * \param[in] Value of the effective intermittency (gamma_eff).
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
@@ -1699,6 +1727,18 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  /*!
+   * \brief Set the value of the turbulence index.
+   * \param[in] val_turb_index - turbulence index
+   */
+  inline virtual void SetTurbIndex(unsigned long iPoint, su2double val_turb_index) {}
+
+  /*!
+   * \brief Get the value of the turbulence index.
+   * \return val_turb_index - turbulence index
+   */
+  inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 
   /*!
    * \brief A virtual member.
@@ -1867,10 +1907,10 @@ public:
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
+   * \brief Get the velocity (Structural Analysis).
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double* GetSolution_Vel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1880,11 +1920,10 @@ public:
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
+   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
+  inline virtual su2double* GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -2012,6 +2051,11 @@ public:
   inline virtual const su2double *GetMesh_Coord(unsigned long iPoint) const { return nullptr; }
 
   /*!
+   * \brief A virtual member. Get the undeformed coordinates for the entire domain.
+   */
+  inline virtual const MatrixType *GetMesh_Coord() const { return nullptr; }
+
+  /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
@@ -2117,12 +2161,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction() { }
+  inline virtual void RegisterFlowTraction(bool reset) { }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2181,6 +2225,7 @@ public:
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
 
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 

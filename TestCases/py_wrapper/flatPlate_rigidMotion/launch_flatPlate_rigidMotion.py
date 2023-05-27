@@ -3,14 +3,14 @@
 ## \file flatPlate_rigidMotion.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.4.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -87,25 +87,21 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_MovingMarker = 0         #total number of vertices (physical + halo)
-  nVertex_MovingMarker_HALO = 0    #number of halo vertices
-  nVertex_MovingMarker_PHYS = 0    #number of physical vertices
 
   if MovingMarkerID != None:
-    nVertex_MovingMarker = SU2Driver.GetNumberMarkerVertices(MovingMarkerID)
-    nVertex_MovingMarker_HALO = SU2Driver.GetNumberMarkerHaloVertices(MovingMarkerID)
-    nVertex_MovingMarker_PHYS = nVertex_MovingMarker - nVertex_MovingMarker_HALO
+    nVertex_MovingMarker = SU2Driver.GetNumberMarkerNodes(MovingMarkerID)\
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Extract the initial position of each node on the moving marker
   CoordX = np.zeros(nVertex_MovingMarker)
   CoordY = np.zeros(nVertex_MovingMarker)
   for iVertex in range(nVertex_MovingMarker):
-    CoordX[iVertex], CoordY[iVertex] = SU2Driver.GetMarkerInitialCoordinates(MovingMarkerID, iVertex)
+    CoordX[iVertex], CoordY[iVertex] = SU2Driver.MarkerInitialCoordinates(MovingMarkerID).Get(iVertex)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -119,7 +115,7 @@ def main():
     value = 0.0, 0.0175*sin(2*pi*time)
 
     for iVertex in range(nVertex_MovingMarker):
-      SU2Driver.SetMarkerDisplacements(MovingMarkerID, int(iVertex), value)
+      SU2Driver.SetMarkerCustomDisplacement(MovingMarkerID, int(iVertex), value)
 
     # Time iteration preprocessing
     SU2Driver.Preprocess(TimeIter)
@@ -138,11 +134,9 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program

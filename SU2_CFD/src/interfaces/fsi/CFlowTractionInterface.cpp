@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,7 +132,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
   /*--- Apply a ramp to the transfer of the fluid loads ---*/
 
   su2double ModAmpl = 0.0;
-  su2double CurrentTime = struct_config->GetCurrent_DynTime();
+  su2double CurrentTime = struct_config->GetCurrent_UnstTime();
 
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();

@@ -2,14 +2,14 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,17 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/SU2_DEF.hpp"
-
-using namespace std;
+#include "../include/drivers/CDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
-
-  /*--- Create a pointer to the main SU2_DEF Driver ---*/
-
-  CDeformationDriver* driver = nullptr;
 
   /*--- MPI initialization ---*/
 
@@ -58,21 +51,15 @@ int main(int argc, char* argv[]) {
 
   /*--- Initialize the mesh deformation driver. ---*/
 
-  driver = new CDeformationDriver(config_file_name, comm);
-
-  /*--- Preprocess the solver data. ---*/
-
-  driver->Preprocess();
+  CDeformationDriver driver(config_file_name, comm);
 
   /*--- Launch the main external loop of the solver. ---*/
 
-  driver->Run();
+  driver.Run();
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver->Postprocessing();
-
-  delete driver;
+  driver.Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
 

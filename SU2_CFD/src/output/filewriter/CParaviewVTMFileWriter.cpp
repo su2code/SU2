@@ -2,14 +2,14 @@
  * \file CParaviewVTMFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <utility>
 
 #include "../../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
@@ -43,11 +45,9 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(su2double valTime,
 }
 
 
-CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
+CParaviewVTMFileWriter::~CParaviewVTMFileWriter()= default;
 
-}
-
-void CParaviewVTMFileWriter::Write_Data(string val_filename){
+void CParaviewVTMFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -63,7 +63,7 @@ void CParaviewVTMFileWriter::Write_Data(string val_filename){
       multiBlockFile.open(val_filename.c_str(), ios::app);
 
     if (iZone == 0){
-      multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
+      multiBlockFile << R"(<VTKFile type="vtkMultiBlockDataSet" version="1.0">)" << endl;
       multiBlockFile << "<vtkMultiBlockDataSet>" << endl;
     }
 
@@ -87,7 +87,7 @@ void CParaviewVTMFileWriter::Write_Data(string val_filename){
 
 }
 
-void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string file, CParallelDataSorter* dataSorter){
+void CParaviewVTMFileWriter::AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter){
 
   /*--- Construct the full file name incl. folder ---*/
   /*--- Note that the folder name is simply the filename ---*/
@@ -97,24 +97,24 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
   /*--- Create an XML writer and dump data into file ---*/
 
   CParaviewXMLFileWriter XMLWriter(dataSorter);
-  XMLWriter.Write_Data(fullFilename);
+  XMLWriter.WriteData(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
 
-  AddDataset(name, fullFilename + CParaviewXMLFileWriter::fileExt);
+  AddDataset(std::move(name), fullFilename + CParaviewXMLFileWriter::fileExt);
 
   /*--- Update the bandwidth ---*/
 
   nWrittenDatasets++;
 
-  accumulatedBandwidth += XMLWriter.Get_Bandwidth();
+  accumulatedBandwidth += XMLWriter.GetBandwidth();
 
   bandwidth = accumulatedBandwidth/nWrittenDatasets;
 }
 
 
 
-void CParaviewVTMFileWriter::WriteFolderData(string foldername, CConfig *config,
+void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *config,
                                              string multiZoneHeaderString,
                                              CParallelDataSorter* volumeDataSorter,
                                              CParallelDataSorter* surfaceDataSorter,
@@ -133,7 +133,7 @@ void CParaviewVTMFileWriter::WriteFolderData(string foldername, CConfig *config,
 
    /*--- Open a block for the zone ---*/
 
-  StartBlock(multiZoneHeaderString);
+  StartBlock(std::move(multiZoneHeaderString));
 
   StartBlock("Internal");
   AddDataset(foldername,"Internal", "Internal", volumeDataSorter);

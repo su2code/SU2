@@ -2,14 +2,14 @@
  * \file CDeformationDriver.hpp
  * \brief Headers of the main subroutines for driving the mesh deformation.
  * \author A. Gastaldi, H. Patel
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,15 +27,12 @@
 
 #pragma once
 
-#define ENABLE_MAPS
 #include "../../../Common/include/CConfig.hpp"
-#undef ENABLE_MAPS
-
-#include "../../../Common/include/drivers/CDriverBase.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../SU2_CFD/include/drivers/CDriverBase.hpp"
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 #include "../../../SU2_CFD/include/output/COutput.hpp"
 
@@ -52,68 +49,53 @@ class CDeformationDriver : public CDriverBase {
   CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CDeformationDriver(void);
-
-  /*!
-   * \brief Preprocess the driver data.
-   */
-  void Preprocess();
-
-  /*!
    * \brief Launch the driver computation.
    */
-  void Run();
-
-  /*!
-   * \brief Output the mesh.
-   */
-  void Output();
+  void Run() override;
 
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
-
-  /*!
-   * \brief Communicate boundary mesh displacements.
-   */
-  void CommunicateMeshDisplacements(void);
+  void Finalize() override;
 
  protected:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing();
+  void PreprocessInput();
 
   /*!
    * \brief Construction of the edge-based data structure.
    */
-  void Geometrical_Preprocessing();
+  void InitializeGeometry();
 
   /*!
    * \brief Preprocess the output container.
    */
-  void Output_Preprocessing();
+  void PreprocessOutput();
 
   /*!
    * \brief Preprocess the mesh solver container.
    */
-  void Solver_Preprocessing();
+  void InitializeSolver();
 
   /*!
    * \brief Preprocess the numerics container.
    */
-  void Numerics_Preprocessing();
+  void InitializeNumerics();
+
+  /*!
+   * \brief Output the mesh.
+   */
+  void OutputFiles();
 
   /*!
    * \brief Mesh deformation based on linear elasticity solver (CMeshSolver).
    */
-  void Update();
+  void DeformMesh();
 
   /*!
    * \brief Mesh deformation based on legacy implementation.
    */
-  void Update_Legacy();
+  void DeformLegacy();
 };

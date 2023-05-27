@@ -1,16 +1,16 @@
 /*!
- * \file driver_structure.hpp
+ * \file CDriver.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,16 +28,15 @@
 
 #pragma once
 
-#include "../../../Common/include/drivers/CDriverBase.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
 #include "../interfaces/CInterface.hpp"
 #include "../solvers/CSolver.hpp"
+#include "CDriverBase.hpp"
 
 using namespace std;
 
-class COutputLegacy;
 class CInterpolator;
 class CIteration;
 class COutput;
@@ -51,7 +50,6 @@ class COutput;
 
 class CDriver : public CDriverBase {
  protected:
-  char runtime_file_name[MAX_STRING_SIZE];
   su2double
       UsedTimeOutput; /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
 
@@ -66,14 +64,12 @@ class CDriver : public CDriverBase {
   su2double MDOFs;   /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain; /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
 
-  ofstream** ConvHist_file; /*!< \brief Convergence history file.*/
-  ofstream FSIHist_file;    /*!< \brief FSI convergence history file.*/
-
   bool StopCalc,   /*!< \brief Stop computation flag.*/
       mixingplane, /*!< \brief mixing-plane simulation flag.*/
       fsi,         /*!< \brief FSI simulation flag.*/
       fem_solver;  /*!< \brief FEM fluid solver simulation flag. */
 
+  CFreeFormDefBox*** FFDBox;              /*!< \brief FFD FFDBoxes of the problem. */
   CIteration*** iteration_container;      /*!< \brief Container vector with all the iteration methods. */
   CIntegration**** integration_container; /*!< \brief Container vector with all the integration methods. */
   vector<vector<unique_ptr<CInterpolator>>>
@@ -95,25 +91,25 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDriver(void);
+  ~CDriver(void) override;
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Run(){};
+  void Run() override{};
 
  protected:
   /*!
-   * \brief Init_Containers
+   * \brief Initialize containers.
    */
-  void SetContainers_Null();
+  void InitializeContainers();
 
   /*!
    * \brief Read in the config and mesh files.
    * \param[in] config - Definition of the particular problem.
    * \param[in] driver_config - Definition of the driver configuration.
    */
-  void Input_Preprocessing(CConfig**& config, CConfig*& driver_config);
+  void PreprocessInput(CConfig**& config, CConfig*& driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multi-grid structure.
@@ -121,28 +117,28 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] dummy - Definition of the dummy driver.
    */
-  void Geometrical_Preprocessing(CConfig* config, CGeometry**& geometry, bool dummy);
+  void InitializeGeometry(CConfig* config, CGeometry**& geometry, bool dummy);
 
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryDGFEM(CConfig* config, CGeometry**& geometry);
 
   /*!
-   * \brief Geometrical_Preprocessing_FVM
+   * \brief InitializeGeometryFVM
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Geometrical_Preprocessing_FVM(CConfig* config, CGeometry**& geometry);
+  void InitializeGeometryFVM(CConfig* config, CGeometry**& geometry);
 
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iteration - Pointer to the iteration container to be instantiated.
    */
-  void Iteration_Preprocessing(CConfig* config, CIteration*& iteration) const;
+  void PreprocessIteration(CConfig* config, CIteration*& iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -150,7 +146,15 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver***& solver);
+  void InitializeSolver(CConfig* config, CGeometry** geometry, CSolver***& solver);
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessInlet(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -159,7 +163,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] update_geo - Boolean to indicate if geometry should be updated.
    */
-  void Solver_Restart(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
+  void RestartSolver(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -168,7 +172,7 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Solver_Postprocessing(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
+  void FinalizeSolver(CSolver**** solver, CGeometry** geometry, CConfig* config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -176,7 +180,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig* config, CSolver** solver, CIntegration**& integration) const;
+  void InitializeIntegration(CConfig* config, CSolver** solver, CIntegration**& integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -185,8 +189,8 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Integration_Postprocessing(CIntegration*** integration, CGeometry** geometry, CConfig* config,
-                                  unsigned short val_iInst);
+  void FinalizeIntegration(CIntegration*** integration, CGeometry** geometry, CConfig* config,
+                           unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -197,9 +201,9 @@ class CDriver : public CDriverBase {
    * \param[in] interface - Class defining the physical transfer of information.
    * \param[in] interpolation -  Object defining the interpolation.
    */
-  void Interface_Preprocessing(CConfig** config, CSolver***** solver, CGeometry**** geometry,
-                               unsigned short** interface_types, CInterface*** interface,
-                               vector<vector<unique_ptr<CInterpolator>>>& interpolation);
+  void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
+                           unsigned short** interface_types, CInterface*** interface,
+                           vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -208,7 +212,7 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    */
-  void Numerics_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
+  void InitializeNumerics(CConfig* config, CGeometry** geometry, CSolver*** solver, CNumerics****& numerics) const;
 
   /*!
    * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
@@ -221,8 +225,8 @@ class CDriver : public CDriverBase {
    * \brief Helper to instantiate transition numerics specialized for different flow solvers.
    */
   template <class FlowIndices>
-  void InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig *config,
-                                    const CSolver* trans_solver, CNumerics ****&numerics) const;
+  void InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig* config,
+                                     const CSolver* trans_solver, CNumerics****& numerics) const;
   /*!
    * \brief Helper to instantiate species transport numerics specialized for different flow solvers.
    */
@@ -238,8 +242,8 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Current solver instance.
    */
-  void Numerics_Postprocessing(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
-                               unsigned short val_iInst);
+  void FinalizeNumerics(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
+                        unsigned short val_iInst);
 
   /*!
    * \brief GridMovement_Preprocessing
@@ -250,16 +254,17 @@ class CDriver : public CDriverBase {
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] surface_movement - Surface movement classes of the problem.
    */
-  void DynamicMesh_Preprocessing(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
-                                 CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
+  void PreprocessDynamicMesh(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
+                             CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
-   * \brief Initialize Python interface functionalities
+   * \brief Initialize Python interface functionalities. When using multigrid,
+   * it is important to call this after modifying custom boundary values.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
+  void PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Preprocess the output container.
@@ -268,15 +273,14 @@ class CDriver : public CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void Output_Preprocessing(CConfig** config, CConfig* driver_config, COutput**& output_container,
-                            COutput*& driver_output);
+  void PreprocessOutput(CConfig** config, CConfig* driver_config, COutput**& output_container, COutput*& driver_output);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void StaticMesh_Preprocessing(const CConfig* config, CGeometry** geometry);
+  void PreprocessStaticMesh(const CConfig* config, CGeometry** geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -285,36 +289,42 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
    */
-  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface);
+  void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver, CInterface*** interface);
+
+  /*!
+   * \brief Ramp some simulation settings for turbomachinery problems.
+   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
+   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
+   */
+  void RampTurbomachineryValues(unsigned long iter);
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void PredictTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferDisplacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
+  virtual void TransferTractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -322,7 +332,7 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
+  virtual void RelaxationDisplacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -330,28 +340,80 @@ class CDriver : public CDriverBase {
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
-
-  /*!
-   * \brief A virtual member to run a Block Gauss-Seidel iteration in multi-zone problems.
-   */
-  virtual void Run_GaussSeidel() {}
-
-  /*!
-   * \brief A virtual member to run a Block-Jacobi iteration in multi-zone problems.
-   */
-  virtual void Run_Jacobi() {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Update() {}
+  virtual void RelaxationTractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void Print_DirectResidual(RECORDING kind_recording);
+  void PrintDirectResidual(RECORDING kind_recording);
+
+  /*!
+   * \brief Set the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[in] solution - Solution object with interface (iPoint,iVar).
+   * \tparam Old - If true set "old solutions" instead.
+   */
+  template <class Container, bool Old = false>
+  void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          if (!Old) {
+            solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint, offset + iVar));
+          } else {
+            solver->GetNodes()->SetSolution_Old(iPoint, iVar, solution(iPoint, offset + iVar));
+          }
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Set the "old solution" of all solvers (adjoint or primal) in a zone.
+   */
+  template <class Container>
+  void SetAllSolutionsOld(unsigned short iZone, bool adjoint, const Container& solution) {
+    SetAllSolutions<Container, true>(iZone, adjoint, solution);
+  }
+
+  /*!
+   * \brief Get the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[out] solution - Solution object with interface (iPoint,iVar).
+   */
+  template <class Container>
+  void GetAllSolutions(unsigned short iZone, bool adjoint, Container& solution) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      const auto& sol = solver->GetNodes()->GetSolution();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solution(iPoint, offset + iVar) = SU2_TYPE::GetValue(sol(iPoint, iVar));
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
+    unsigned short nVar = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
+    }
+    return nVar;
+  }
 
  public:
   /*!
@@ -362,12 +424,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void ResetConvergence();
+  void Finalize() override;
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
@@ -391,15 +448,17 @@ class CDriver : public CDriverBase {
   virtual void DynamicMeshUpdate(unsigned long TimeIter) {}
 
   /*!
-   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multi-grid
-   * structure.
+   * \brief Update the dual-time solution.
    */
-  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {}
+  virtual void Update() {}
 
   /*!
    * \brief Perform a mesh deformation as initial condition.
    */
   virtual void SetInitialMesh() {}
+
+/// \addtogroup PySU2
+/// \{
 
   /*!
    * \brief Process the boundary conditions and update the multi-grid structure.
@@ -417,47 +476,6 @@ class CDriver : public CDriverBase {
   void UpdateFarfield();
 
   /*!
-   * \brief Get the total drag force or drag coefficient.
-   * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
-   * \return Total drag.
-   */
-  passivedouble GetDrag(bool coefficient = true) const;
-
-  /*!
-   * \brief Get the total lift force or lift coefficient.
-   * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
-   * \return Total lift.
-   */
-  passivedouble GetLift(bool coefficient = true) const;
-
-  /*!
-   * \brief Get the total roll moment (x-direction) or roll moment coefficient.
-   * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
-   * \return Total roll moment.
-   */
-  passivedouble GetRollMoment(bool coefficient = true) const;
-
-  /*!
-   * \brief Get the total pitch moment (y-direction) or pitch moment coefficient.
-   * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
-   * \return Total pitch moment.
-   */
-  passivedouble GetPitchMoment(bool coefficient = true) const;
-
-  /*!
-   * \brief Get the total yaw moment (z-direction) or yaw moment coefficient.
-   * \param[in] coefficient - Boolean to indicate if normalized coefficient should be returned.
-   * \return Total yaw moment.
-   */
-  passivedouble GetYawMoment(bool coefficient = true) const;
-
-  /*!
-   * \brief Get the objective function.
-   * \return Objective function.
-   */
-  passivedouble GetObjective() const;
-
-  /*!
    * \brief Get the number of external iterations.
    * \return Number of external iterations.
    */
@@ -467,7 +485,7 @@ class CDriver : public CDriverBase {
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetCurrentTimeIteration() const;
+  unsigned long GetTimeIteration() const;
 
   /*!
    * \brief Get the unsteady time step.
@@ -482,47 +500,20 @@ class CDriver : public CDriverBase {
   string GetSurfaceFileName() const;
 
   /*!
-   * \brief Get the temperature at the mesh vertices.
-   * \return Vertex temperatures (nPoint).
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
    */
-  vector<passivedouble> GetTemperatures() const;
+  void SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
 
   /*!
-   * \brief Get the temperature at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Vertex temperature.
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
    */
-  passivedouble GetTemperatures(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the temperature at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Vertex temperatures (nVertex).
-   */
-  vector<passivedouble> GetMarkerTemperatures(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the temperature at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Vertex temperature.
-   */
-  passivedouble GetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the temperatures at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Vertex temperatures (nVertex).
-   */
-  void SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the temperatures at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Vertex temperature.
-   */
-  void SetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex, passivedouble value);
+  void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
   /*!
    * \brief Get the heat fluxes at the mesh vertices.
@@ -698,32 +689,6 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetNonequilibriumMassFractions(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the nonequilibrium conservative flow states for the specified species.
-   * \return Nonequilibrium flow states (nPoint, nVar).
-   */
-  vector<vector<passivedouble>> GetNonequilibriumStates() const;
-
-  /*!
-   * \brief Get nonequilibrium conservative flow states for the specified species.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Nonequilibrium flow states (nVar).
-   */
-  vector<passivedouble> GetNonequilibriumStates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Set the nonequilibrium conservative flow states for the specified species.
-   * \param[in] values - Nonequilibrium flow states (nPoint, nVar).
-   */
-  void SetNonequilibriumStates(vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the nonequilibrium conservative flow states for the specified species.
-
-   * \param[in] values - Nonequilibrium flow states (nVar).
-   */
-  void SetNonequilibriumStates(unsigned long iPoint, vector<passivedouble> values);
-
-  /*!
    * \brief Get nonequilibrium vibrational electronic temperatures.
    * \return Nonequilibrium vibrational electronic temperatures (nPoint).
    */
@@ -735,7 +700,6 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inlet_Preprocessing(CSolver*** solver, CGeometry** geometry, CConfig* config) const;
 
   /*!
    * \brief Get the free-stream Reynolds number.
@@ -826,90 +790,6 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetMarkerResiduals(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
-   * \brief Get the conservative flow states at the mesh vertices.
-   * \return Flow states (nPoint, nVar).
-   */
-  vector<vector<passivedouble>> GetStates() const;
-
-  /*!
-   * \brief Get the conservative flow states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Flow states (nVar).
-   */
-  vector<passivedouble> GetStates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the conservative flow states at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Flow states (nVertex, nVar).
-   */
-  vector<vector<passivedouble>> GetMarkerStates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the conservative flow states at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Flow states (nVar).
-   */
-  vector<passivedouble> GetMarkerStates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the conservative states at the mesh vertices.
-   * \param[in] values - Flow states (nPoint, nVar).
-   */
-  void SetStates(vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the conservative states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \param[in] values - Flow states (nVar).
-   */
-  void SetStates(unsigned long iPoint, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the conservative states at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Flow states (nVertex, nVar).
-   */
-  void SetMarkerStates(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the conservative states at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Flow states (nVar).
-   */
-  void SetMarkerStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
-   * \brief Get the primitive state variables (i.e. density, velocities, and pressure) at the mesh vertices.
-   * \return Primitive states (nPoint, nPrim).
-   */
-  vector<vector<passivedouble>> GetPrimitiveStates() const;
-
-  /*!
-   * \brief Get the primitive state variables (i.e. density, velocities, and pressure) at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Primitive states (nPrim).
-   */
-  vector<passivedouble> GetPrimitiveStates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the primitive state variables (i.e. density, velocities, and pressure) at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Primitive states (nVertex, nPrim).
-   */
-  vector<vector<passivedouble>> GetMarkerPrimitiveStates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the primitive state variables (i.e. density, velocities, and pressure) at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Primitive states (nPrim)
-   */
-  vector<passivedouble> GetMarkerPrimitiveStates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
    * \brief Get the local speed of sound at the mesh vertices.
    * \return Speed of sound (nPoint).
    */
@@ -936,77 +816,6 @@ class CDriver : public CDriverBase {
    * \return Speed of sound.
    */
   passivedouble GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the surface forces at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Surface forces (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerForces(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the surface forces at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Surface forces (nDim).
-   */
-  vector<passivedouble> GetMarkerForces(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the adjoint conservative flow states at the mesh vertices.
-   * \return Adjoint flow states (nPoint, nVar).
-   */
-  vector<vector<passivedouble>> GetAdjointStates() const;
-
-  /*!
-   * \brief Get the adjoint conservative flow states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Adjoint flow states (nVar).
-   */
-  vector<passivedouble> GetAdjointStates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the adjoint conservative flow states at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Adjoint flow states (nVertex, nVar).
-   */
-  vector<vector<passivedouble>> GetMarkerAdjointStates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the adjoint conservative flow states at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Adjoint flow states (nVar).
-   */
-  vector<passivedouble> GetMarkerAdjointStates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint conservative states at the mesh vertices.
-   * \param[in] values - Adjoint flow states (nPoint, nVar).
-   */
-  void SetAdjointStates(vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the adjoint conservative states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \param[in] values - Adjoint flow states (nVar).
-   */
-  void SetAdjointStates(unsigned long iPoint, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the adjoint conservative states at the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Adjoint flow states (nVertex, nVar).
-   */
-  void SetMarkerAdjointStates(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the adjoint conservative states at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Adjoint flow states (nVar).
-   */
-  void SetMarkerAdjointStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
 
   /*!
    * \brief Get the adjoint flow forces at the marker vertices.
@@ -1037,62 +846,6 @@ class CDriver : public CDriverBase {
    * \param[in] values - Adjoint flow forces (nDim).
    */
   void SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
-   * \brief Get the adjoint coordinates of the mesh vertices.
-   * \return Adjoint mesh coordinates (nPoint, nDim).
-   */
-  vector<vector<passivedouble>> GetAdjointCoordinates() const;
-
-  /*!
-   * \brief Get the adjoint coordinates of a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Adjoint mesh coordinates (nDim).
-   */
-  vector<passivedouble> GetAdjointCoordinates(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the adjoint coordinates of the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \return Adjoint mesh coordinates (nVertex, nDim).
-   */
-  vector<vector<passivedouble>> GetMarkerAdjointCoordinates(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the adjoint coordinates of a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Adjoint mesh coordinates (nDim).
-   */
-  vector<passivedouble> GetMarkerAdjointCoordinates(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the adjoint coordinates of the mesh vertices.
-   * \param[in] values - Adjoint mesh coordinates (nPoint, nDim).
-   */
-  void SetAdjointCoordinates(vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the adjoint coordinates of a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \param[in] values - Adjoint mesh coordinates (nDim).
-   */
-  void SetAdjointCoordinates(unsigned long iPoint, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the adjoint coordinates of the marker vertices.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Adjoint mesh coordinates (nVertex, nDim).
-   */
-  void SetMarkerAdjointCoordinates(unsigned short iMarker, vector<vector<passivedouble>> values);
-
-  /*!
-   * \brief Set the adjoint coordinates of a marker vertex.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Adjoint mesh coordinates (nDim).
-   */
-  void SetMarkerAdjointCoordinates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
 
   /*!
    * \brief Get the sensitivity of volume coordinates w.r.t. initial coordinates at the mesh vertices.
@@ -1282,155 +1035,22 @@ class CDriver : public CDriverBase {
   vector<string> GetFluidLoadMarkerTags() const;
 
   /*!
-   * \brief Get all the heat transfer boundary markers tags.
-   * \return List of heat transfer boundary markers tags.
+   * \brief Set the dynamic mesh translation rates.
+   * \param[in] xDot - Value of translational velocity in x-direction.
+   * \param[in] yDot - Value of translational velocity in y-direction.
+   * \param[in] zDot - Value of translational velocity in z-direction.
    */
-  vector<string> GetCHTMarkerTags() const;
+  void SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot);
 
   /*!
-   * \brief Get all the inlet boundary marker tags.
-   * \return List of inlet boundary markers tags.
+   * \brief Set the dynamic mesh rotation rates.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
    */
-  vector<string> GetInletMarkerTags() const;
+  void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
 
-  /*!
-   * \brief Get sensitivities of the mesh boundary displacements.
-   * \param[in] iMarker - Marker identifier.
-   * \return Sensitivity of mesh displacements (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerDisplacementsSensitivities(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get sensitivities of the flow forces for the structural solver.
-   * \param[in] iMarker - Marker identifier.
-   * \return Sensitivity of flow forces (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
-
-  /*!
-   * \brief Set forces for the structural solver on the specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - FEA traction components (nVertex, nDim).
-   */
-  void SetMarkerFEAForces(unsigned short iMarker, vector<passivedouble> values);
-
-  /*!
-   * \brief Get displacements from the structural solver on the specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \return Structural displacements (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerFEADisplacements(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get velocities from the structural solver on the specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \return Structural velocities (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerFEAVelocity(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get velocities at time n from the structural solver on the specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \return Structural velocities at time n (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerCurrentFEAVelocity(unsigned short iMarker) const;
-
-  /*!
-   * \brief Set the adjoint of the structural displacements (from an outside source).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Adjoint structural displacements (nVertex, nDim).
-   */
-  void SetMarkerAdjointDisplacementSourceTerm(unsigned short iMarker, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the adjoint of the structural velocities (from an outside source).
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] values - Adjoint structural velocities (nVertex, nDim).
-   */
-  void SetMarkerAdjointVelocitySourceTerm(unsigned short iMarker, vector<passivedouble> values);
-
-  /*!
-   * \brief Set the position of the heat source.
-   * \param[in] alpha - Angle of rotation respect to Z axis.
-   * \param[in] pos_x - Position X.
-   * \param[in] pos_y - Position Y.
-   * \param[in] pos_z - Position Z.
-   */
-  void SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
-
-  /*!
-   * \brief Set the direction of the inlet.
-   * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle of attack.
-   */
-  void SetInletAngle(unsigned short iMarker, passivedouble alpha);
-
-  /*!
-   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \return Total number of solution variables.
-   */
-  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
-    unsigned short nVar = 0;
-    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
-    }
-    return nVar;
-  }
-
-  /*!
-   * \brief Set the solution of all solvers (adjoint or primal) in a zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \param[in] solution - Solution object with interface (iPoint,iVar).
-   * \tparam Old - If true set "old solutions" instead.
-   */
-  template <class Container, bool Old = false>
-  void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          if (!Old) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint, offset + iVar));
-          } else {
-            solver->GetNodes()->SetSolution_Old(iPoint, iVar, solution(iPoint, offset + iVar));
-          }
-      offset += solver->GetnVar();
-    }
-  }
-
-  /*!
-   * \brief Set the "old solution" of all solvers (adjoint or primal) in a zone.
-   */
-  template <class Container>
-  void SetAllSolutionsOld(unsigned short iZone, bool adjoint, const Container& solution) {
-    SetAllSolutions<Container, true>(iZone, adjoint, solution);
-  }
-
-  /*!
-   * \brief Get the solution of all solvers (adjoint or primal) in a zone.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
-   * \param[out] solution - Solution object with interface (iPoint,iVar).
-   */
-  template <class Container>
-  void GetAllSolutions(unsigned short iZone, bool adjoint, Container& solution) const {
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
-      const auto& sol = solver->GetNodes()->GetSolution();
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solution(iPoint, offset + iVar) = SU2_TYPE::GetValue(sol(iPoint, iVar));
-      offset += solver->GetnVar();
-    }
-  }
+  /// \}
 };
 
 /*!
@@ -1443,7 +1063,6 @@ class CFluidDriver : public CDriver {
  protected:
   unsigned long Max_Iter;
 
- protected:
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -1451,6 +1070,11 @@ class CFluidDriver : public CDriver {
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Transfer data among different zones (multiple zone).
+   */
+  void TransferData(unsigned short donorZone, unsigned short targetZone);
 
  public:
   /*!
@@ -1493,57 +1117,6 @@ class CFluidDriver : public CDriver {
    * structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Transfer data among different zones (multiple zone).
-   */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
-};
-
-/*!
- * \class CTurbomachineryDriver
- * \ingroup Drivers
- * \brief Class for driving an iteration for turbomachinery flow analysis.
- * \author S. Vitale
- */
-class CTurbomachineryDriver : public CFluidDriver {
- private:
-  COutputLegacy* output_legacy;
-
- public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CTurbomachineryDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbomachineryDriver(void) override;
-
-  /*!
-   * \brief Run a single iteration of the physics within multiple zones.
-   */
-
-  void Run() override;
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  bool Monitor(unsigned long TimeIter) override;
 };
 
 /*!
@@ -1554,9 +1127,27 @@ class CTurbomachineryDriver : public CFluidDriver {
  */
 class CHBDriver : public CFluidDriver {
  private:
-  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
+
+  /*!
+   * \brief Computation and storage of the Harmonic Balance method source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] iZone - Current zone number.
+   */
+  void SetHarmonicBalance(unsigned short iZone);
+
+  /*!
+   * \brief Precondition Harmonic Balance source term for stability
+   * \author J. Howison
+   */
+  void StabilizeHarmonicBalance();
+
+  /*!
+   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+   * \author A. Rubino, S. Nimmagadda
+   */
+  void ComputeHBOperator();
 
  public:
   /*!
@@ -1578,31 +1169,7 @@ class CHBDriver : public CFluidDriver {
   void Run() override;
 
   /*!
-   * \brief Computation and storage of the Harmonic Balance method source terms.
-   * \author T. Economon, K. Naik
-   * \param[in] iZone - Current zone number.
-   */
-  void SetHarmonicBalance(unsigned short iZone);
-
-  /*!
-   * \brief Precondition Harmonic Balance source term for stability
-   * \author J. Howison
-   */
-  void StabilizeHarmonicBalance();
-
-  /*!
-   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
-   * \author A. Rubino, S. Nimmagadda
-   */
-  void ComputeHB_Operator();
-
-  /*!
    * \brief Update the solution for the Harmonic Balance.
    */
   void Update() override;
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
-   */
-  void ResetConvergence() override;
 };

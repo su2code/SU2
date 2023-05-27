@@ -2,14 +2,14 @@
  * \file CSpeciesSolver.cpp
  * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,13 +81,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (species transport model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -123,7 +116,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
       nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
     }
@@ -174,7 +167,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "SPECIES";
 }
 
@@ -292,14 +285,17 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
-      su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
+    const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+    const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
+    solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    for (auto iVar = 0u; iVar <= nVar; iVar++) {
+      const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
 
@@ -572,7 +568,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
-      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), 0);
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nullptr);
 
       /*--- Set volume of the dual cell. ---*/
 

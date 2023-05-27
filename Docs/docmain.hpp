@@ -2,14 +2,14 @@
  * \file docmain.hpp
  * \brief This file contains documentation for Doxygen and does not have any significance with respect to C++.
  * \author F. Palacios
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! 
- * \mainpage SU2 version 7.4.0 "Blackbird"
+/*!
+ * \mainpage SU2 version 7.5.1 "Blackbird"
  * SU2 suite is an open-source collection of C++ based software tools
- * to perform PDE analysis and PDE constrained optimization.  The toolset is designed with 
+ * to perform PDE analysis and PDE constrained optimization.  The toolset is designed with
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
  * include other families of governing equations such as potential flow, electrodynamics, chemically reacting
  * flows, and many others.  SU2 is released under an open-source license.
@@ -66,43 +66,43 @@
 
 /*!
  * \defgroup ConvDiscr Discretization of the convective terms
- * \brief Group of classes which define the numerical methods for 
- *		  discretizing the convective terms of a Partial Differential Equation. 
- *		  There are methods for solving the direct, adjoint and linearized 
+ * \brief Group of classes which define the numerical methods for
+ *		  discretizing the convective terms of a Partial Differential Equation.
+ *		  There are methods for solving the direct, adjoint and linearized
  *		  systems of equations.
  */
 
 /*!
  * \defgroup ViscDiscr Discretization of the viscous terms
- * \brief Group of classes which define the numerical methods for 
- *		  discretizing the viscous terms of a Partial Differential Equation. 
- *		  There are methods for solving the direct, adjoint and linearized 
+ * \brief Group of classes which define the numerical methods for
+ *		  discretizing the viscous terms of a Partial Differential Equation.
+ *		  There are methods for solving the direct, adjoint and linearized
  *		  systems of equations.
  */
 
 /*!
  * \defgroup SourceDiscr Discretization of the source terms
- * \brief Group of classes which define the numerical methods for 
- *		  discretizing the source terms of a Partial Differential Equation. 
- *		  There are methods for solving the direct, adjoint and linearized 
+ * \brief Group of classes which define the numerical methods for
+ *		  discretizing the source terms of a Partial Differential Equation.
+ *		  There are methods for solving the direct, adjoint and linearized
  *		  systems of equations.
  */
 
 /*!
  * \defgroup Euler_Equations Solving the Euler equations
- * \brief Group of classes which define the system of Euler equations in 
+ * \brief Group of classes which define the system of Euler equations in
  *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes equations
- * \brief Group of classes which define the system of Navier-Stokes equations in 
+ * \brief Group of classes which define the system of Navier-Stokes equations in
  *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
  * \defgroup Turbulence_Model Solving the turbulence model equations
- * \brief Group of classes which define the turbulence model in 
+ * \brief Group of classes which define the turbulence model in
  *		  three formulations: direct, adjoint, and linearized.
  */
 
@@ -128,6 +128,13 @@
  *        In general, "Driver" classes use "Iteration" classes to advance one inner
  *        iteration, in turn "Iteration" classes use "Integration" classes to perform
  *        space and time integration. The latter use mostly the "Solvers".
+ */
+
+/*!
+ * \defgroup PySU2 Python Wrapper functions
+ * \brief Functions of the driver classes (\ref Drivers) that can be used to customize SU2
+ *        via Python. For example, set custom temperature distributions at boundaries,
+ *        deform the mesh, etc.
  */
 
 /*!

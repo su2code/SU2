@@ -2,14 +2,14 @@
  * \file CDiscAdjDeformationDriver.cpp
  * \brief Main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez, A. Gastaldi, H. Patel
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,31 +25,23 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/drivers/CDiscAdjDeformationDriver.hpp"
+#define ENABLE_MAPS
+#include "../../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
+#include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
+#include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
+#include "../../../SU2_CFD/include/solvers/CGradientSmoothingSolver.hpp"
+#include "../../include/drivers/CDiscAdjDeformationDriver.hpp"
 
 using namespace std;
 
 CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     : CDriverBase(confFile, 1, MPICommunicator) {
-
-/*--- Initialize MeDiPack (must also be here to initialize it from Python). ---*/
-#ifdef HAVE_MPI
-#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-  SU2_MPI::Init_AMPI();
-#endif
-#endif
-
-  SU2_MPI::SetComm(MPICommunicator);
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  /*--- Initialize containers. --- */
-
-  SetContainers_Null();
-
   /*--- Preprocessing of the config files. ---*/
 
   Input_Preprocessing();
@@ -60,8 +52,7 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
   Gradient = new su2double*[nDV];
 
   for (auto iDV = 0u; iDV < nDV; iDV++) {
-    /*--- Initialize to zero. ---*/
-
+    /*--- structure to store the gradient. ---*/
     unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
 
     Gradient[iDV] = new su2double[nValue];
@@ -90,8 +81,6 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
   UsedTimeCompute = 0.0;
 }
 
-CDiscAdjDeformationDriver::~CDiscAdjDeformationDriver(void) {}
-
 void CDiscAdjDeformationDriver::Input_Preprocessing() {
   /*--- Initialize a char to store the zone filename. ---*/
 
@@ -103,14 +92,18 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
   nZone = driver_config->GetnZone();
 
+  /*--- Initialize containers. --- */
+
+  InitializeContainers();
+
   /*--- Loop over all zones to initialize the various classes. In most
-   cases, nZone is equal to one. This represents the solution of a partial
-   differential equation on a single block, unstructured mesh. ---*/
+   * cases, nZone is equal to one. This represents the solution of a partial
+   * differential equation on a single block, unstructured mesh. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Definition of the configuration option class for all zones. In this
-     constructor, the input configuration file is parsed and all options are
-     read and stored. ---*/
+     * constructor, the input configuration file is parsed and all options are
+     * read and stored. ---*/
 
     if (driver_config->GetnConfigFiles() > 0) {
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
@@ -121,8 +114,9 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
     config_container[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
 
-    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
-      SU2_MPI::Error("The discrete adjoint solver was not specified in the configuration file.", CURRENT_FUNCTION);
+    if (!config_container[iZone]->GetDiscrete_Adjoint() && !config_container[iZone]->GetContinuous_Adjoint()) {
+      SU2_MPI::Error("An adjoint solver (discrete or continuous) was not specified in the configuration file.",
+                     CURRENT_FUNCTION);
     }
   }
 
@@ -143,8 +137,8 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
 void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
   /*--- Loop over all zones to initialize the various classes. In most
-   cases, nZone is equal to one. This represents the solution of a partial
-   differential equation on a single block, unstructured mesh. ---*/
+   * cases, nZone is equal to one. This represents the solution of a partial
+   * differential equation on a single block, unstructured mesh. ---*/
 
   unsigned short nMesh = 1;
 
@@ -216,9 +210,9 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
 
       if (fem_solver) {
         /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
-         define all virtual functions in the base class CGeometry. ---*/
+         * define all virtual functions in the base class CGeometry. ---*/
 
-        CMeshFEM_DG* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
+        auto* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
 
         /*--- Determine the standard elements for the volume elements. ---*/
 
@@ -226,7 +220,7 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         DGMesh->CreateStandardVolumeElements(config_container[iZone]);
 
         /*--- Create the face information needed to compute the contour integral
-         for the elements in the Discontinuous Galerkin formulation. ---*/
+         * for the elements in the Discontinuous Galerkin formulation. ---*/
 
         if (rank == MASTER_NODE) cout << "Creating face information." << endl;
         DGMesh->CreateFaces(config_container[iZone]);
@@ -281,39 +275,54 @@ void CDiscAdjDeformationDriver::Output_Preprocessing() {}
 
 void CDiscAdjDeformationDriver::Preprocess() {
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-    unsigned short nInst_Zone = nInst[iZone];
+    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
+      if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
+      geometry_container[iZone][INST_0][MESH_0]->SetBoundSensitivity(config_container[iZone]);
 
-    grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-    grid_movement[iZone][INST_0] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    } else {
+      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
+      unsigned short nInst_Zone = nInst[iZone];
 
-    /*--- Read in sensitivities from file. ---*/
+      grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
+      grid_movement[iZone][INST_0] =
+          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
-    if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
-      geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
-    else
-      geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
+      /*--- Read in sensitivities from file. ---*/
+
+      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII) {
+        geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
+      } else {
+        geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
+      }
+    }
   }
 }
 
 void CDiscAdjDeformationDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
+    if (!config_container[iZone]->GetDiscrete_Adjoint()) {
+      continue;
+    }
+
     if (rank == MASTER_NODE)
       cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
     if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
         config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
-      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], grid_movement[iZone][INST_0]);
+      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
+                                          grid_movement[iZone][INST_0]);
     } else {
       grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
                                                           config_container[iZone], false, true);
     }
   }
 
-  if (rank == MASTER_NODE)
-    cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
+  if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
+    if (rank == MASTER_NODE)
+      cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
+    SetSensitivity_Files(geometry_container, config_container, nZone);
+  }
 
-  SetSensitivity_Files(geometry_container, config_container, nZone);
-
+  ofstream Gradient_file;
   Gradient_file.precision(driver_config->OptionIsSet("OUTPUT_PRECISION") ? driver_config->GetOutput_Precision() : 6);
 
   /*--- For multi-zone computations the gradient contributions are summed up and written into one file. ---*/
@@ -339,10 +348,12 @@ void CDiscAdjDeformationDriver::Run() {
           DerivativeTreatment_Gradient(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
                                        grid_movement[iZone][INST_0], surface_movement[iZone], Gradient);
         } else {
-          SetProjection_AD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone], Gradient);
+          SetProjection_AD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone],
+                           Gradient);
         }
       } else {
-        SetProjection_FD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone], Gradient);
+        SetProjection_FD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone],
+                         Gradient);
       }
     }
   }
@@ -356,97 +367,20 @@ void CDiscAdjDeformationDriver::Run() {
   OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
 }
 
-void CDiscAdjDeformationDriver::Postprocessing() {
+void CDiscAdjDeformationDriver::Finalize() {
   for (auto iDV = 0u; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
     delete[] Gradient[iDV];
   }
   delete[] Gradient;
 
-  delete driver_config;
-  driver_config = nullptr;
+  if (rank == MASTER_NODE) cout << "\n------------------------- Finalize Solver  -------------------------" << endl;
 
-  if (rank == MASTER_NODE)
-    cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (numerics_container[iZone] != nullptr) {
-      delete[] numerics_container[iZone];
-    }
-  }
-  delete[] numerics_container;
-  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (solver_container[iZone] != nullptr) {
-      delete[] solver_container[iZone];
-    }
-  }
-  delete[] solver_container;
-  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
-
-  if (geometry_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != nullptr) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-          delete geometry_container[iZone][iInst][MESH_0];
-          delete[] geometry_container[iZone][iInst];
-        }
-        delete[] geometry_container[iZone];
-      }
-    }
-    delete[] geometry_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete[] FFDBox[iZone];
-  }
-  delete[] FFDBox;
-  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
-
-  if (surface_movement != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete surface_movement[iZone];
-    }
-    delete[] surface_movement;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
-
-  if (grid_movement != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (grid_movement[iZone] != nullptr) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-          delete grid_movement[iZone][iInst];
-        }
-        delete[] grid_movement[iZone];
-      }
-    }
-    delete[] grid_movement;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
-
-  if (config_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete config_container[iZone];
-    }
-    delete[] config_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-
-  if (output_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      delete output_container[iZone];
-    }
-    delete[] output_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-
-  if (nInst != nullptr) delete[] nInst;
+  CommonFinalize();
 
   /*--- Exit the solver cleanly. ---*/
 
   if (rank == MASTER_NODE)
-    cout << endl << "------------------------- Exit Success (SU2_DEF_AD) ------------------------" << endl << endl;
+    cout << "\n------------------------- Exit Success (SU2_DEF_AD) ------------------------" << endl << endl;
 }
 
 void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* config,
@@ -474,7 +408,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
   for (iDV = 0; iDV < nDV; iDV++) {
     nDV_Value = config->GetnDV_Value(iDV);
     if (nDV_Value != 1) {
-      SU2_MPI::Error("The projection using finite differences currently only supports a fixed direction of movement for FFD points.", CURRENT_FUNCTION);
+      SU2_MPI::Error(
+          "The projection using finite differences currently only supports a fixed direction of movement for FFD "
+          "points.",
+          CURRENT_FUNCTION);
     }
   }
 
@@ -735,7 +672,7 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
   AD::StartRecording();
 
   /*--- Register design variables as input and set them to zero
-   (since we want to have the derivative at alpha = 0, i.e. for the current design). ---*/
+   * (since we want to have the derivative at alpha = 0, i.e. for the current design). ---*/
 
   for (iDV = 0; iDV < nDV; iDV++) {
     for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
@@ -754,13 +691,13 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
   AD::StopRecording();
 
   /*--- Create a structure to identify points that have been already visited.
-   We need that to make sure to set the sensitivity of surface points only once.
-   Markers share points, so we would visit them more than once in the loop over the markers below). ---*/
+   * We need that to make sure to set the sensitivity of surface points only once.
+   * Markers share points, so we would visit them more than once in the loop over the markers below). ---*/
 
   vector<bool> visited(geometry->GetnPoint(), false);
 
   /*--- Initialize the derivatives of the output of the surface deformation routine
-   with the discrete adjoints from the CFD solution. ---*/
+   * with the discrete adjoints from the CFD solution. ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
@@ -816,7 +753,6 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
 }
 
 void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file) {
-
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
 
   int rank = SU2_MPI::GetRank();
@@ -831,7 +767,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
       /*--- Print the kind of design variable on screen. ---*/
 
       cout << endl << "Design variable (";
-      for (std::map<string, ENUM_PARAM>::const_iterator it = Param_Map.begin(); it != Param_Map.end(); ++it) {
+      for (auto it = Param_Map.begin(); it != Param_Map.end(); ++it) {
         if (it->second == config->GetDesign_Variable(iDV)) {
           cout << it->first << ") number " << iDV << "." << endl;
         }
@@ -839,7 +775,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
 
       /*--- Print the kind of objective function to screen. ---*/
 
-      for (std::map<string, ENUM_OBJECTIVE>::const_iterator it = Objective_Map.begin(); it != Objective_Map.end(); ++it) {
+      for (auto it = Objective_Map.begin(); it != Objective_Map.end(); ++it) {
         if (it->second == config->GetKind_ObjFunc()) {
           cout << it->first << " gradient : ";
           if (iDV == 0) Gradient_file << it->first << " gradient " << endl;
@@ -881,25 +817,26 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
     /*--- We create a baseline solver to easily merge the sensitivity information. ---*/
 
     vector<string> fieldnames;
-    fieldnames.push_back("\"Point\"");
-    fieldnames.push_back("\"x\"");
-    fieldnames.push_back("\"y\"");
+    fieldnames.emplace_back("\"Point\"");
+    fieldnames.emplace_back("\"x\"");
+    fieldnames.emplace_back("\"y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"z\"");
+      fieldnames.emplace_back("\"z\"");
     }
-    fieldnames.push_back("\"Sensitivity_x\"");
-    fieldnames.push_back("\"Sensitivity_y\"");
+    fieldnames.emplace_back("\"Sensitivity_x\"");
+    fieldnames.emplace_back("\"Sensitivity_y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\"");
+      fieldnames.emplace_back("\"Sensitivity_z\"");
     }
-    fieldnames.push_back("\"Surface_Sensitivity\"");
+    fieldnames.emplace_back("\"Surface_Sensitivity\"");
 
     solver = new CBaselineSolver(geometry[iZone][INST_0][MESH_0], config[iZone], nVar + nDim, fieldnames);
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         solver->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0][MESH_0]->nodes->GetCoord(iPoint, iDim));
-        solver->GetNodes()->SetSolution(iPoint, iDim + nDim, geometry[iZone][INST_0][MESH_0]->GetSensitivity(iPoint, iDim));
+        solver->GetNodes()->SetSolution(iPoint, iDim + nDim,
+                                        geometry[iZone][INST_0][MESH_0]->GetSensitivity(iPoint, iDim));
       }
     }
 
@@ -943,15 +880,15 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
 
     /*--- Load the data. --- */
 
-    output->Load_Data(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
+    output->LoadData(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
 
     /*--- Set the surface filename. ---*/
 
-    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+    output->SetSurfaceFilename(config[iZone]->GetSurfSens_FileName());
 
     /*--- Set the volume filename. ---*/
 
-    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
+    output->SetVolumeFilename(config[iZone]->GetVolSens_FileName());
 
     /*--- Write to file. ---*/
 
@@ -974,7 +911,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_MeshSensitivity(CGeometry* g
   int rank = SU2_MPI::GetRank();
 
   /*--- Warning if chosen smoothing mode is unsupported.
-   This is the default option if the user has not specified a mode in the config file. ---*/
+   * This is the default option if the user has not specified a mode in the config file. ---*/
 
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::NONE) {
     SU2_MPI::Error("Unsupported operation modus for the Sobolev Smoothing Solver.", CURRENT_FUNCTION);
@@ -1037,7 +974,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
   int rank = SU2_MPI::GetRank();
 
   /*--- Error if chosen smoothing mode is unsupported.
-   This is the default option if the user has not specified a mode in the config file. ---*/
+   * This is the default option if the user has not specified a mode in the config file. ---*/
 
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::NONE) {
     SU2_MPI::Error("Unsupported operation modus for the Sobolev Smoothing Solver.", CURRENT_FUNCTION);

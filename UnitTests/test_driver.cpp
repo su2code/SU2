@@ -2,14 +2,14 @@
  * \file test_driver.cpp
  * \brief The main entry point for unit tests (the main()).
  * \author C. Pederson
- * \version 7.4.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,7 @@
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char* argv[]) {
   /*--- Startup MPI, if supported ---*/
 #if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
