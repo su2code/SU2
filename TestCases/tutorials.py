@@ -171,7 +171,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
-    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.901015, -0.429375, 0.201236
+    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.901015, -0.429375, 0.201236]
     tutorial_turb_flatplate.no_restart = True
     test_list.append(tutorial_turb_flatplate)
 
