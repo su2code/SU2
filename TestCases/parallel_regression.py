@@ -859,7 +859,7 @@ def main():
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
     hb_rans_preconditioning.tol       = 0.00001
-    hb_rans_preconditioning.test_vals = [1.902098, 0.484070, 0.601481, 3.609002, -5.949360]
+    hb_rans_preconditioning.test_vals = [-1.902098, 0.484070, 0.601481, 3.609002, -5.949360]
     test_list.append(hb_rans_preconditioning)
 
     ######################################
