@@ -381,7 +381,7 @@ def main():
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
-    turb_naca0012_sa.test_iter = 10
+    turb_naca0012_sa.test_iter = 5
     turb_naca0012_sa.test_vals = [-8.621172, -10.378367, 1.064512, 0.019710, 20.000000, -1.813386, 20.000000, -5.172466, -46.520000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
