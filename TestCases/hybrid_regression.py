@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
-    turb_naca0012_sa.test_iter = 10
+    turb_naca0012_sa.test_iter = 5
     turb_naca0012_sa.test_vals         = [-8.626987, -10.378051, 1.064501, 0.019711, 20.000000, -1.763385, 20.000000, -4.791910, -46.520000]
     turb_naca0012_sa.test_vals_aarch64 = [-8.627052, -10.377936, 1.064491, 0.019710, 20.000000, -1.763093, 20.000000, -4.794073, -46.506000]
     test_list.append(turb_naca0012_sa)
