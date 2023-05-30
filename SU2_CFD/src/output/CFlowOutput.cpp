@@ -549,36 +549,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           config->SetSurface_Species_0(iMarker_Analyze, Species);
       }
     }
-
-    if (flamelet) {
-      for (unsigned short i_var = 0; i_var < nScalars; i_var++) {
-        su2double scalar = Surface_Scalars_Total(iMarker_Analyze, i_var);
-        std::stringstream str_i_var;
-        str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-        SetHistoryOutputPerSurfaceValue("SURFACE_SCALAR_" + str_i_var.str(), scalar, iMarker_Analyze);
-        Tot_Surface_Scalar[i_var] += scalar;
-        if (i_var == 0)
-          config->SetSurface_Scalar_00(iMarker_Analyze, scalar);
-        if (i_var == 1)
-          config->SetSurface_Scalar_01(iMarker_Analyze, scalar);
-        if (i_var == 2)
-          config->SetSurface_Scalar_02(iMarker_Analyze, scalar);
-        if (i_var == 3)
-          config->SetSurface_Scalar_03(iMarker_Analyze, scalar);
-        if (i_var == 4)
-          config->SetSurface_Scalar_04(iMarker_Analyze, scalar);
-        if (i_var == 5)
-          config->SetSurface_Scalar_05(iMarker_Analyze, scalar);
-        if (i_var == 6)
-          config->SetSurface_Scalar_06(iMarker_Analyze, scalar);
-        if (i_var == 7)
-          config->SetSurface_Scalar_07(iMarker_Analyze, scalar);
-        if (i_var == 8)
-          config->SetSurface_Scalar_08(iMarker_Analyze, scalar);
-        if (i_var == 9)
-          config->SetSurface_Scalar_09(iMarker_Analyze, scalar);
-      }
-    }
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note

@@ -36,26 +36,28 @@
 
 CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CSpeciesSolver(geometry, config, true) {
-  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
-  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Dimension of the problem. ---*/
   nVar = config->GetNScalars();
-  nPrimVar = nVar;
 
-  if (nVar > MAXNVAR)
-    SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
+  Initialize(geometry, config, iMesh, nVar);
 
-  nPoint = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  /*--- Initialize nVarGrad for deallocation. ---*/
+  nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
 
-  nVarGrad = nVar;
+  /*--- Store the initial CFL number for all grid points. ---*/
 
-  /*--- Define geometry constants in the solver structure. ---*/
-
-  nDim = geometry->GetnDim();
+  const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  END_SU2_OMP_FOR
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
@@ -70,42 +72,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
   for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
-
-  Initialize(geometry, config, iMesh);
-
-  /*--- Initialize the solution to the far-field state everywhere. ---*/
-
-  nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
-  SetBaseClassPointerToNodes();
-
-  /*--- Set the column number for species in inlet-files.
-   * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
-  Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
-
-  /*-- Allocation of inlet-values. Will be filled either by an inlet files,
-   * or uniformly by a uniform boundary condition. ---*/
-
-  Inlet_SpeciesVars.resize(nMarker);
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_SpeciesVars[iMarker].resize(nVertex[iMarker], nVar);
-    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Inlet_SpeciesVars[iMarker](iVertex, iVar) = Solution_Inf[iVar];
-      }
-    }
-  }
-
-  /*--- Store the initial CFL number for all grid points. ---*/
-
-  const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    nodes->SetLocalCFL(iPoint, CFL);
-  }
-  END_SU2_OMP_FOR
-  Min_CFL_Local = CFL;
-  Max_CFL_Local = CFL;
-  Avg_CFL_Local = CFL;
 
   /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";

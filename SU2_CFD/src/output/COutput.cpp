@@ -263,7 +263,6 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 }
 
 void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHistoryOutput& output) const {
-
   std::vector<std::string> symbols;
   output.expression = mel::Parse<passivedouble>(expression, symbols);
 

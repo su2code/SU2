@@ -36,29 +36,12 @@ template class CScalarSolver<CSpeciesVariable>;
 
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
-  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
-  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Dimension of the problem. ---*/
 
   nVar = config->GetnSpecies();
-  nPrimVar = nVar;
 
-  if (nVar > MAXNVAR)
-    SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
-
-  nPoint = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-
-  /*--- Initialize nVarGrad for deallocation ---*/
-
-  nVarGrad = nVar;
-
-  /*--- Define geometry constants in the solver structure ---*/
-
-  nDim = geometry->GetnDim();
-
-  Initialize(geometry, config, iMesh);
+  Initialize(geometry, config, iMesh, nVar);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -90,23 +73,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
     }
   }
 
-  /*--- Set the column number for species in inlet-files.
-   * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
-  Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
-
-  /*-- Allocation of inlet-values. Will be filled either by an inlet files,
-   * or uniformly by a uniform boundary condition. ---*/
-
-  Inlet_SpeciesVars.resize(nMarker);
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_SpeciesVars[iMarker].resize(nVertex[iMarker], nVar);
-    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Inlet_SpeciesVars[iMarker](iVertex, iVar) = Solution_Inf[iVar];
-      }
-    }
-  }
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
@@ -124,7 +90,26 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 }
 
 
-void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh) {
+void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar) {
+  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
+  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+
+  nPrimVar = nVar;
+
+  if (nVar > MAXNVAR)
+    SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
+
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+
+  /*--- Initialize nVarGrad for deallocation ---*/
+
+  nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
 
 if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
@@ -172,6 +157,23 @@ if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
+  }
+
+  /*--- Set the column number for species in inlet-files.
+   * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
+  Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
+
+  /*-- Allocation of inlet-values. Will be filled either by an inlet file,
+   * or uniformly by a uniform boundary condition. ---*/
+
+  Inlet_SpeciesVars.resize(nMarker);
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_SpeciesVars[iMarker].resize(nVertex[iMarker], nVar);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        Inlet_SpeciesVars[iMarker](iVertex, iVar) = Solution_Inf[iVar];
+      }
+    }
   }
 }
 
@@ -496,20 +498,20 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetSpecies_StrongBC()) {
-      /*--- Allocate the value at the outlet ---*/
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
-
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- Includes 1 on the diagonal ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-    } else {  // weak BC
+//    if (config->GetSpecies_StrongBC()) {
+//      /*--- Allocate the value at the outlet ---*/
+//      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+//
+//      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
+//
+//      LinSysRes.SetBlock_Zero(iPoint);
+//
+//      /*--- Includes 1 on the diagonal ---*/
+//      for (auto iVar = 0u; iVar < nVar; iVar++) {
+//        auto total_index = iPoint * nVar + iVar;
+//        Jacobian.DeleteValsRowi(total_index);
+//      }
+//    } else {  // weak BC
 
       /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
@@ -552,7 +554,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
 
-    }
+//    }
   }
   END_SU2_OMP_FOR
 }

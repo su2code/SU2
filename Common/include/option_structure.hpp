@@ -1894,16 +1894,6 @@ enum ENUM_OBJECTIVE {
   SURFACE_PRESSURE_DROP = 56,   /*!< \brief Pressure drop objective function definition. */
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
-  SURFACE_SCALAR_00 = 80,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_01 = 81,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_02 = 82,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_03 = 83,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_04 = 84,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_05 = 85,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_06 = 86,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_07 = 87,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_08 = 88,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
-  SURFACE_SCALAR_09 = 89,        /*!< \brief Surface Avg. Scalar_0 objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
@@ -1946,16 +1936,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
-  MakePair("SURFACE_SCALAR_00", SURFACE_SCALAR_00)
-  MakePair("SURFACE_SCALAR_01", SURFACE_SCALAR_01)
-  MakePair("SURFACE_SCALAR_02", SURFACE_SCALAR_02)
-  MakePair("SURFACE_SCALAR_03", SURFACE_SCALAR_03)
-  MakePair("SURFACE_SCALAR_04", SURFACE_SCALAR_04)
-  MakePair("SURFACE_SCALAR_05", SURFACE_SCALAR_05)
-  MakePair("SURFACE_SCALAR_06", SURFACE_SCALAR_06)
-  MakePair("SURFACE_SCALAR_07", SURFACE_SCALAR_07)
-  MakePair("SURFACE_SCALAR_08", SURFACE_SCALAR_08)
-  MakePair("SURFACE_SCALAR_09", SURFACE_SCALAR_09)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)

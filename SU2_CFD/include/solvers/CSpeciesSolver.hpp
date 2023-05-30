@@ -65,7 +65,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
-  void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh);
+  void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar);
 
   /*!
    * \brief Restart residual and compute gradients.

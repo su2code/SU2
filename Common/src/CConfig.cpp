@@ -930,17 +930,6 @@ void CConfig::SetPointersNull() {
   Surface_DC60             = nullptr;   Surface_IDC = nullptr;
   Surface_Species_Variance = nullptr;   Surface_Species_0 = nullptr;
 
-  Surface_Scalar_00 = nullptr;
-  Surface_Scalar_01 = nullptr;
-  Surface_Scalar_02 = nullptr;
-  Surface_Scalar_03 = nullptr;
-  Surface_Scalar_04 = nullptr;
-  Surface_Scalar_05 = nullptr;
-  Surface_Scalar_06 = nullptr;
-  Surface_Scalar_07 = nullptr;
-  Surface_Scalar_08 = nullptr;
-  Surface_Scalar_09 = nullptr;
-
   Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
 
   Surface_Uniformity = nullptr; Surface_SecondaryStrength = nullptr; Surface_SecondOverUniform = nullptr;
@@ -3660,16 +3649,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_PRESSURE_DROP:
         case SURFACE_SPECIES_0:
         case SURFACE_SPECIES_VARIANCE:
-        case SURFACE_SCALAR_00:
-        case SURFACE_SCALAR_01:
-        case SURFACE_SCALAR_02:
-        case SURFACE_SCALAR_03:
-        case SURFACE_SCALAR_04:
-        case SURFACE_SCALAR_05:
-        case SURFACE_SCALAR_06:
-        case SURFACE_SCALAR_07:
-        case SURFACE_SCALAR_08:
-        case SURFACE_SCALAR_09:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
             SU2_MPI::Error("The following objectives can only be used for the first surface in a multi-objective \n"
@@ -3677,7 +3656,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                            "INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n"
                            "FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n"
                            "SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n"
-                           "SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0, SURFACE_SCALAR_<i>\n"
+                           "SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n"
                            "SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n", CURRENT_FUNCTION);
           }
           break;
@@ -5603,16 +5582,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Surface_PressureDrop = new su2double[nMarker_Analyze] ();
   Surface_Species_0 = new su2double[nMarker_Analyze] ();
   Surface_Species_Variance = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_00 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_01 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_02 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_03 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_04 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_05 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_06 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_07 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_08 = new su2double[nMarker_Analyze] ();
-  Surface_Scalar_09 = new su2double[nMarker_Analyze] ();
   Surface_DC60 = new su2double[nMarker_Analyze] ();
   Surface_IDC = new su2double[nMarker_Analyze] ();
   Surface_IDC_Mach = new su2double[nMarker_Analyze] ();
@@ -8127,16 +8096,6 @@ CConfig::~CConfig() {
   delete[] Surface_PressureDrop;
   delete[] Surface_Species_0;
   delete[] Surface_Species_Variance;
-  delete[] Surface_Scalar_00;
-  delete[] Surface_Scalar_01;
-  delete[] Surface_Scalar_02;
-  delete[] Surface_Scalar_03;
-  delete[] Surface_Scalar_04;
-  delete[] Surface_Scalar_05;
-  delete[] Surface_Scalar_06;
-  delete[] Surface_Scalar_07;
-  delete[] Surface_Scalar_08;
-  delete[] Surface_Scalar_09;
   delete[] Surface_DC60;
   delete[] Surface_IDC;
   delete[] Surface_IDC_Mach;
@@ -8348,16 +8307,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
         case SURFACE_SPECIES_0:           AdjExt = "_avgspec0"; break;
         case SURFACE_SPECIES_VARIANCE:    AdjExt = "_specvar";  break;
-        case SURFACE_SCALAR_00:           AdjExt = "_avgsclr00";break;
-        case SURFACE_SCALAR_01:           AdjExt = "_avgsclr01";break;
-        case SURFACE_SCALAR_02:           AdjExt = "_avgsclr02";break;
-        case SURFACE_SCALAR_03:           AdjExt = "_avgsclr03";break;
-        case SURFACE_SCALAR_04:           AdjExt = "_avgsclr04";break;
-        case SURFACE_SCALAR_05:           AdjExt = "_avgsclr05";break;
-        case SURFACE_SCALAR_06:           AdjExt = "_avgsclr06";break;
-        case SURFACE_SCALAR_07:           AdjExt = "_avgsclr07";break;
-        case SURFACE_SCALAR_08:           AdjExt = "_avgsclr08";break;
-        case SURFACE_SCALAR_09:           AdjExt = "_avgsclr09";break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
