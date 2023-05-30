@@ -561,7 +561,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
 
-//    }
+    }
   }
   END_SU2_OMP_FOR
 }
