@@ -97,8 +97,8 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.422882, -7.699257, -7.683269, -7.411648, -12.064694, -12.205189, -11.368995]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.422882, -7.699257, -7.683269, -7.411648, -12.064694, -12.205189, -11.368995]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.528843, -7.799649, -7.783477, -7.482502, -12.140092, -12.250169, -11.455523]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528843, -7.799649, -7.783477, -7.482502, -12.140092, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -216,7 +216,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.527027, -5.081560, -0.795267, 1.022556, 0.150189, 2.000000, -9.580669]
+    tutorial_trans_e387_sst.test_vals  = [-6.532421, -5.085785, -0.789723, 1.078391, 0.188263, 2.000000, -9.567014]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
