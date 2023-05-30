@@ -468,7 +468,10 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      if (config->GetSpecies_StrongBC()) {
+      /*--- Identify the boundary by string name ---*/
+      string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+      if (config->GetMarker_StrongBC(Marker_Tag)==true) {
         /*--- Initial guess for enthalpy value. ---*/
 
         enth_init = nodes->GetSolution(iPoint, I_ENTH);

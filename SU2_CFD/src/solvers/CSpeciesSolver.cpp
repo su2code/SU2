@@ -346,7 +346,10 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetSpecies_StrongBC()) {
+    /*--- Identify the boundary by string name ---*/
+    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+   
+    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
@@ -487,6 +490,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -497,21 +501,24 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
+  
+    /*--- Identify the boundary by string name ---*/
+   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-//    if (config->GetSpecies_StrongBC()) {
-//      /*--- Allocate the value at the outlet ---*/
-//      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-//
-//      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
-//
-//      LinSysRes.SetBlock_Zero(iPoint);
-//
-//      /*--- Includes 1 on the diagonal ---*/
-//      for (auto iVar = 0u; iVar < nVar; iVar++) {
-//        auto total_index = iPoint * nVar + iVar;
-//        Jacobian.DeleteValsRowi(total_index);
-//      }
-//    } else {  // weak BC
+   if (config->GetMarker_StrongBC(Marker_Tag)==true) {
+     /*--- Allocate the value at the outlet ---*/
+     auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+     nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
+
+     LinSysRes.SetBlock_Zero(iPoint);
+
+     /*--- Includes 1 on the diagonal ---*/
+     for (auto iVar = 0u; iVar < nVar; iVar++) {
+       auto total_index = iPoint * nVar + iVar;
+       Jacobian.DeleteValsRowi(total_index);
+     }
+   } else {  // weak BC
 
       /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
