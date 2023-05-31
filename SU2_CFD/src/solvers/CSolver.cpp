@@ -4045,6 +4045,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
+  int index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4064,8 +4065,8 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
       /*--- Set the adjoint of the vertex traction from the value received ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+        AD::SetIndex(index, VertexTraction[iMarker][iVertex][iDim]);
+        AD::SetDerivative(index, SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
     END_SU2_OMP_FOR
