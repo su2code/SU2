@@ -2873,6 +2873,11 @@ public:
 
   /*!
    * \brief A virtual member
+   */
+  inline virtual void UpdateFarfield_Velocity(const CConfig* config) {}
+
+  /*!
+   * \brief A virtual member
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)

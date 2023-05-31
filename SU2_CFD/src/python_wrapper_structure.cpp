@@ -97,6 +97,16 @@ void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   }
 }
 
+void CDriver::SetFarFieldAoA(passivedouble AoA) {
+  config_container[ZONE_0]->SetAoA(AoA);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfield_Velocity(config_container[ZONE_0]);
+}
+
+void CDriver::SetFarFieldAoS(passivedouble AoS) {
+  config_container[ZONE_0]->SetAoS(AoS);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfield_Velocity(config_container[ZONE_0]);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,3 +166,4 @@ void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passived
     config_container[iZone]->SetRotation_Rate(2, rot_z);
   }
 }
+
