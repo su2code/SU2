@@ -27,6 +27,7 @@
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 #include <math.h>
+#include <iomanip>
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
@@ -103,13 +104,21 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies]; 
+      //std::cout << std::setprecision(20) << "Solution(iPoint,iSpecies)=" << Solution(iPoint,iSpecies) << std::endl;
+    }
 
-    Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
-    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
+    for (iDim = 0; iDim < nDim; iDim++){
+      Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed; 
+      //std::cout << std::setprecision(20) << " Solution(iPoint,nSpecies+iDim)=" <<  Solution(iPoint,nSpecies+iDim) << std::endl;
+    }  
+
+    Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);  std::cout << std::setprecision(20) << "Solution(iPoint,nSpecies+nDim)=" <<Solution(iPoint,nSpecies+nDim) << std::endl;
+    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);  std::cout << std::setprecision(20) << " Solution(iPoint,nSpecies+nDim+1) =" <<  Solution(iPoint,nSpecies+nDim+1)  << std::endl;
+    Primitive(iPoint,T_INDEX)   = val_temperature;
+    Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
+    Primitive(iPoint,P_INDEX)   = val_pressure;
   }
 
   Solution_Old = Solution;
@@ -142,6 +151,8 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
+
+ // std::cout << "iPoint=" << iPoint << std::endl;
 
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
@@ -215,16 +226,30 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   su2double sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     V[VEL_INDEX+iDim] = U[nSpecies+iDim]/V[RHO_INDEX];
+    //std::cout << std::setprecision(20) << "U[nSpecies+iDim]=" << U[nSpecies+iDim] << std::endl;
+    //std::cout << std::setprecision(20) << "V[RHO_INDEX]=" << V[RHO_INDEX] << std::endl;
+    //std::cout << std::setprecision(20) << "V[VEL_INDEX+iDim]=" << V[VEL_INDEX+iDim] << std::endl;    
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
+  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)  std::cout << std::setprecision(20) << "rhos[iSpecies]=" << rhos[iSpecies] << std::endl;
+  //std::cout << std::setprecision(20) << "rhoE=" << rhoE << std::endl;
+  //std::cout << std::setprecision(20) << "0.5*rho*sqvel=" << 0.5*rho*sqvel << std::endl;
+
+
+  //std::cout << "rhoEve=" << rhoEve << std::endl;
+
   /*--- Assign temperatures ---*/
   const su2double Tve_old = V[TVE_INDEX];
+  //std::cout << std::setprecision(20) << "Tve_old=" << Tve_old << std::endl; 
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old);
 
   /*--- Temperatures ---*/
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
+
+  //std::cout << std::setprecision(20) << "T=" << V[T_INDEX] << std::endl;
+  //std::cout << std::setprecision(20) << "Tve=" << V[TVE_INDEX] << std::endl;
 
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
@@ -243,9 +268,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle(V[TVE_INDEX]);
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
-
+  //std::cout << "Tve=" << V[TVE_INDEX] << std::endl;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     val_eves[iSpecies]  = eves[iSpecies];
+    //std::cout << "val_eves[iSpecies]=" << val_eves[iSpecies] << std::endl;
     val_Cvves[iSpecies] = cvves[iSpecies];
   }
 

@@ -357,29 +357,49 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
+//template <class V, ENUM_REGIME R>
+//void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
+//                                                        bool reconstruction) {
+//  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+//  bool weighted;
+//  PERIODIC_QUANTITIES commPer;
+//
+//  if (reconstruction) {
+//    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+//    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
+//  }
+//  else {
+//    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+//    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+//  }
+//
+//  const auto& primitives = nodes->GetPrimitive();
+//  auto& rmatrix = nodes->GetRmatrix();
+//  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+//  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+//
+//  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
+//                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+//}
+
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
                                                         bool reconstruction) {
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
-  PERIODIC_QUANTITIES commPer;
 
-  if (reconstruction) {
+  if (reconstruction)
     weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
-  }
-  else {
+  else
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-  }
 
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted ? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config, weighted, primitives, 0,
+                               nPrimVarGrad, gradient, rmatrix);
 }
 
 template <class V, ENUM_REGIME R>

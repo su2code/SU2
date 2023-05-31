@@ -2183,6 +2183,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   temperatures[0] = T;
   temperatures[1] = Tve;
 
+//  std::cout << "Tve=" << Tve << std::endl;exit(0);
+
   return temperatures;
 
 }

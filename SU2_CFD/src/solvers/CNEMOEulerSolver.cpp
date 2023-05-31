@@ -211,7 +211,11 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
+  std::cout << std::endl << "0" << std::endl;
+
   node_infty->SetPrimVar(0, FluidModel);
+
+  std::cout << std::endl << "1" << std::endl;
 
   /*--- Initial comms. ---*/
 
@@ -321,6 +325,8 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
   unsigned long iPoint, nonPhysicalPoints = 0;
   bool nonphysical = true;
 
+  std::cout << std::endl << "2" << std::endl;
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Incompressible flow, primitive variables ---*/
@@ -336,6 +342,8 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
   }
+
+  std::cout << std::endl << "3" << std::endl;
 
   return nonPhysicalPoints;
 }
@@ -499,6 +507,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     auto iPoint = geometry->edges->GetNode(iEdge, 0);
     auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
+    std::cout << "iPoint=" << iPoint << std::endl;
+    std::cout << "jPoint=" << jPoint << std::endl;    
+
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     auto Coord_i = geometry->nodes->GetCoord(iPoint);
@@ -531,6 +542,19 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- Retrieve gradient information ---*/
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
+      for (iVar = 0; iVar < nPrimVar; iVar++) {
+        std::cout << setprecision(20) << "V_i[" << iVar << "]=" <<V_i[iVar] << std::endl;
+        std::cout << setprecision(20) << "V_j[" << iVar << "]=" <<V_j[iVar] << std::endl;
+      }      
+
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+         std::cout << setprecision(20) << "Gradient_i[" << iVar << "][" << iDim << "]=" << Gradient_i[iVar][iDim] << std::endl;
+         std::cout << setprecision(20) << "Gradient_j[" << iVar << "][" << iDim << "]=" << Gradient_j[iVar][iDim] << std::endl;
+        }
+      }
+      //exit(0);     
 
       /*--- Set and extract limiters ---*/
       su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
@@ -572,6 +596,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
         Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
       }
+
+      for (iVar = 0; iVar < nPrimVar; iVar++) {
+        std::cout << setprecision(20) << "Primitive_i[" << iVar << "]=" <<Primitive_i[iVar] << std::endl;
+        std::cout << setprecision(20) << "Primitive_j[" << iVar << "]=" <<Primitive_j[iVar] << std::endl;
+      }       
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -1070,8 +1099,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Compute the freestream density, soundspeed ---*/
   Density_FreeStream = FluidModel->GetDensity();
+  std::cout << std::setprecision(20) << "Density_FreeStream=" << Density_FreeStream << std::endl;
   soundspeed         = FluidModel->ComputeSoundSpeed();
+  std::cout << std::setprecision(20) << "soundspeed=" << soundspeed << std::endl;
   Gamma              = FluidModel->ComputeGamma();
+  std::cout << std::setprecision(20) << "Gamma=" << Gamma << std::endl;
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
@@ -1092,8 +1124,14 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   sqvel = ModVel_FreeStream;
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
+  std::cout << std::setprecision(20) << "ModVel_FreeStream=" << ModVel_FreeStream << std::endl;
+
   /*--- Calculate energies ---*/
   const auto& energies = FluidModel->ComputeMixtureEnergies();
+
+  std::cout << std::setprecision(20) << "energies[0]=" << energies[0] << std::endl;
+
+  std::cout << std::setprecision(20) << "energies[1]=" << energies[1] << std::endl;
 
   /*--- Viscous initialization ---*/
   if (viscous) {

@@ -29,6 +29,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
+#include <iomanip>
 
 class CNumericsSIMD;
 
@@ -826,6 +827,8 @@ class CFVMFlowSolverBase : public CSolver {
 
         preconditioner.compute(config, iPoint);
 
+        //std::cout << std::endl << "iPoint=" << iPoint << std::endl;
+
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
           su2double Res = preconditioner.apply(iVar, Residual, Res_TruncError);
@@ -835,6 +838,9 @@ class CFVMFlowSolverBase : public CSolver {
 
             case EULER_EXPLICIT:
               nodes->AddSolution(iPoint,iVar, -Res*Delta);
+              //std::cout << std::endl << "iVar=" << iVar << std::endl;
+              //std::cout << std::setprecision(20) << std::endl << "Res=" << Res << std::endl;
+              //std::cout << std::setprecision(20) << std::endl << "Delta=" << Delta << std::endl;              
               break;
 
             case RUNGE_KUTTA_EXPLICIT:
