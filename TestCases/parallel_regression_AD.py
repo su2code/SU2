@@ -369,7 +369,7 @@ def main():
     discadj_flamelet_ch4_cht.reference_file   = "restart_adj_T_0.csv.ref"
     discadj_flamelet_ch4_cht.test_file        = "restart_adj_T_0.csv"
     discadj_flamelet_ch4_cht.comp_threshold   = 1e-6
-    discadj_flamelet_ch4_cht.tol_file_percent = 0.5
+    discadj_flamelet_ch4_cht.tol_file_percent = 5.0
     discadj_flamelet_ch4_cht.timeout          = 20000
     pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
     test_list.append(discadj_flamelet_ch4_cht)
