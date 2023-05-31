@@ -332,7 +332,6 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -500,24 +499,24 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
-  
+
     /*--- Identify the boundary by string name ---*/
-   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-   if (config->GetMarker_StrongBC(Marker_Tag)==true) {
-     /*--- Allocate the value at the outlet ---*/
-     auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
+      /*--- Allocate the value at the outlet ---*/
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-     nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
 
-     LinSysRes.SetBlock_Zero(iPoint);
+      LinSysRes.SetBlock_Zero(iPoint);
 
-     /*--- Includes 1 on the diagonal ---*/
-     for (auto iVar = 0u; iVar < nVar; iVar++) {
-       auto total_index = iPoint * nVar + iVar;
-       Jacobian.DeleteValsRowi(total_index);
-     }
-   } else {  // weak BC
+      /*--- Includes 1 on the diagonal ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        auto total_index = iPoint * nVar + iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    } else {  // weak BC
 
       /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
