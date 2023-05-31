@@ -563,7 +563,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
            if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
             Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
            }
-           FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], 0.0, Scalar_Inlet);
+           FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
            Density_Inlet = FluidModel->GetDensity();
          }
          const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();

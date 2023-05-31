@@ -215,12 +215,11 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
   return mean_cp;
 }
 
-void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double val_pressure,  const su2double* val_scalars) {
+void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
-  Pressure = val_pressure; 
-  Density = (Pressure_Thermodynamic + Pressure)/ (Temperature * Gas_Constant);
+  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
 

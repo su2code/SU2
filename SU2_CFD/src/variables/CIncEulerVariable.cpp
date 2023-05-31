@@ -75,7 +75,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, nDim+1);
-  su2double Pressure = 0.0;
   const auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
@@ -84,7 +83,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Use the fluid model to compute the new value of density. ---*/
 
-  FluidModel->SetTDState_T(Temperature, Pressure);
+  FluidModel->SetTDState_T(Temperature);
 
   /*--- Set the value of the density ---*/
 
@@ -102,9 +101,8 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
     /*--- Recompute the primitive variables ---*/
 
     Temperature = Solution(iPoint, nDim+1);
-    Pressure = 0.0;
     SetTemperature(iPoint, Temperature);
-    FluidModel->SetTDState_T(Temperature, Pressure);
+    FluidModel->SetTDState_T(Temperature);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
