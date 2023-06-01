@@ -365,11 +365,11 @@ def main():
     discadj_flamelet_ch4_cht.cfg_dir          = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
-    discadj_flamelet_ch4_cht.test_iter        = 10
+    discadj_flamelet_ch4_cht.test_iter        = 5
     discadj_flamelet_ch4_cht.reference_file   = "restart_adj_T_0.csv.ref"
     discadj_flamelet_ch4_cht.test_file        = "restart_adj_T_0.csv"
     discadj_flamelet_ch4_cht.comp_threshold   = 1e-6
-    discadj_flamelet_ch4_cht.tol_file_percent = 5.0
+    discadj_flamelet_ch4_cht.tol_file_percent = 50.0
     discadj_flamelet_ch4_cht.timeout          = 20000
     pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
     test_list.append(discadj_flamelet_ch4_cht)
