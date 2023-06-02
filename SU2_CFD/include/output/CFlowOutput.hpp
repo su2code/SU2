@@ -80,7 +80,7 @@ protected:
    * \param[in] Surface_MassFlow_Abs_Total - Massflow on all Marker_Analyze
    * \param[in] Surface_Area_Total - Area of all Marker_Analyze
    */
-  void SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config,
+  void SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config,
                                          const su2activematrix& Surface_Species_Total,
                                          const vector<su2double>& Surface_MassFlow_Abs_Total,
                                          const vector<su2double>& Surface_Area_Total);
@@ -103,32 +103,32 @@ protected:
   /*!
    * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_ScalarLinsol(const CConfig* config);
+  void AddHistoryOutputFieldsScalarLinsol(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) history field values.
    */
-  void LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver);
+  void LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver);
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarSolution(const CConfig* config);
+  void SetVolumeOutputFieldsScalarSolution(const CConfig* config);
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarResidual(const CConfig* config);
+  void SetVolumeOutputFieldsScalarResidual(const CConfig* config);
 
   /*!
    * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_ScalarLimiter(const CConfig* config);
+  void SetVolumeOutputFieldsScalarMisc(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) volume field values for a point.
@@ -137,7 +137,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+  void LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                              const unsigned long iPoint);
 
   /*!
@@ -180,7 +180,7 @@ protected:
   /*!
    * \brief Add CP inverse design output as history fields
    */
-  void Add_CpInverseDesignOutput();
+  void AddCpInverseDesignOutput();
 
   /*!
    * \brief Set CP inverse design output field values (and also into the solver).
@@ -188,12 +188,12 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+  void SetCpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Add nearfield inverse design output as history fields
    */
-  void Add_NearfieldInverseDesignOutput();
+  void AddNearfieldInverseDesignOutput();
 
   /*!
    * \brief Set nearfield inverse design output field values (and also into the solver).
@@ -201,7 +201,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+  void SetNearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the custom outputs.
@@ -215,7 +215,8 @@ protected:
    * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
    * to evaluate the custom expressions.
    */
-  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, CustomOutput& output) const;
+  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, bool allowSkip,
+                                       CustomOutput& output) const;
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
@@ -223,7 +224,7 @@ protected:
    * \return Value of the Q criteration at the node
    */
   template<class T>
-  su2double GetQ_Criterion(const T& VelocityGradient) const {
+  su2double GetQCriterion(const T& VelocityGradient) const {
 
     /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/
 
@@ -296,8 +297,7 @@ protected:
    * \param[in] force_writing - boolean that forces writing of volume output
    * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
-
+  bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
   /*!
    * \brief Write the forces breakdown file
    * \param[in] config - Definition of the particular problem per zone.

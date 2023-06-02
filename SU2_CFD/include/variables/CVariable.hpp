@@ -492,6 +492,7 @@ public:
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -499,6 +500,7 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
+  inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
 
   /*!
    * \brief Set the value of the old residual.
@@ -1112,6 +1114,13 @@ public:
    * \return Value of the thermal conductivity (translational/rotational)
    */
   inline virtual su2double GetThermalConductivity(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the mass diffusivity.
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1898,10 +1907,10 @@ public:
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
+   * \brief Get the velocity (Structural Analysis).
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double* GetSolution_Vel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1911,11 +1920,10 @@ public:
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
+   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
+  inline virtual su2double* GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -2153,12 +2161,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction() { }
+  inline virtual void RegisterFlowTraction(bool reset) { }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2217,6 +2225,7 @@ public:
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
 
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 

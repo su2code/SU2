@@ -28,11 +28,11 @@
 
 #include "../../include/solvers/CTemplateSolver.hpp"
 
-CTemplateSolver::CTemplateSolver(void) : CSolver() { }
+CTemplateSolver::CTemplateSolver() : CSolver() { }
 
 CTemplateSolver::CTemplateSolver(CGeometry *geometry, CConfig *config) : CSolver() { }
 
-CTemplateSolver::~CTemplateSolver(void) { }
+CTemplateSolver::~CTemplateSolver() = default;
 
 void CTemplateSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
 

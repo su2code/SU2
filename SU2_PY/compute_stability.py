@@ -34,35 +34,50 @@ import SU2
 
 # Command Line Options
 parser = OptionParser()
-parser.add_option("-f", "--file", dest="filename",
-                  help="read config from FILE", metavar="FILE")
-parser.add_option("-n", "--partitions", dest="partitions", default=2,
-                  help="number of PARTITIONS", metavar="PARTITIONS")
-parser.add_option("-i", "--iterations", dest="iterations", default=99999,
-                  help="number of ITERATIONS", metavar="ITERATIONS")
+parser.add_option(
+    "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
+)
+parser.add_option(
+    "-n",
+    "--partitions",
+    dest="partitions",
+    default=2,
+    help="number of PARTITIONS",
+    metavar="PARTITIONS",
+)
+parser.add_option(
+    "-i",
+    "--iterations",
+    dest="iterations",
+    default=99999,
+    help="number of ITERATIONS",
+    metavar="ITERATIONS",
+)
 
-(options, args)=parser.parse_args()
-options.partitions = int( options.partitions )
-options.iterations = int( options.iterations )
+(options, args) = parser.parse_args()
+options.partitions = int(options.partitions)
+options.iterations = int(options.iterations)
 
 # load config, start state
 config = SU2.io.Config(options.filename)
-state  = SU2.io.State()
+state = SU2.io.State()
 
 # prepare config
 config.NUMBER_PART = options.partitions
-config.EXT_ITER    = options.iterations
+config.EXT_ITER = options.iterations
 
 # find solution files if they exist
 state.find_files(config)
 
 # run su2
-drag_alpha = SU2.eval.func('D_DRAG_D_ALPHA',config,state)
-moment_y_alpha= SU2.eval.func('D_MOMENT_Z_D_ALPHA',config,state)
+drag_alpha = SU2.eval.func("D_DRAG_D_ALPHA", config, state)
+moment_y_alpha = SU2.eval.func("D_MOMENT_Z_D_ALPHA", config, state)
 
-grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','CONTINUOUS_ADJOINT',config,state)
+grad_moment_y_alpha = SU2.eval.grad(
+    "D_MOMENT_Z_D_ALPHA", "CONTINUOUS_ADJOINT", config, state
+)
 
-print('D_DRAG_D_ALPHA     =' , drag_alpha)
-print('D_MOMENT_Y_D_ALPHA =' , moment_y_alpha)
+print("D_DRAG_D_ALPHA     =", drag_alpha)
+print("D_MOMENT_Y_D_ALPHA =", moment_y_alpha)
 
-print('DD_MOMENT_Y_D_ALPHA_D_X =', grad_moment_y_alpha)
+print("DD_MOMENT_Y_D_ALPHA_D_X =", grad_moment_y_alpha)

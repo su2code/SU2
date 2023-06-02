@@ -34,11 +34,37 @@
 using namespace std;
 
 CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator)
-    : config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), TimeIter(0), nZone(val_nZone) {}
+    : config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), TimeIter(0), nZone(val_nZone) {
 
-CDriverBase::~CDriverBase(void) {}
+  /*--- Some initializations are placed here so that they are also seen by the python wrapper. Note that the python
+   * wrapper instantiates a driver directly. ---*/
 
-void CDriverBase::SetContainers_Null() {
+  /*--- MPI is required to be initialized already, e.g, via SU2_MPI::Init, SU2_MPI::Init_thread, or via mpi4py in the
+   * python wrapper. ---*/
+
+  /*--- Initialize MeDiPack ---*/
+#ifdef HAVE_MPI
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+  SU2_MPI::Init_AMPI();
+#endif
+#endif
+
+  /*--- Set up MPI ---*/
+  SU2_MPI::SetComm(MPICommunicator);
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  /*--- OpenMP initialization ---*/
+  omp_initialize();
+
+  /*--- Initialize AD ---*/
+  AD::Initialize();
+}
+
+CDriverBase::~CDriverBase() = default;
+
+void CDriverBase::InitializeContainers() {
   /*--- Create pointers to all the classes that may be used by drivers. In general, the pointers are instantiated
    * down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
    * below. ---*/
@@ -58,7 +84,7 @@ void CDriverBase::SetContainers_Null() {
   }
 }
 
-void CDriverBase::CommonPostprocessing() {
+void CDriverBase::CommonFinalize() {
 
   if (numerics_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -277,6 +303,36 @@ vector<string> CDriverBase::GetDeformableMarkerTags() const {
   return tags;
 }
 
+vector<string> CDriverBase::GetCHTMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  // The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    if ((main_config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
+         main_config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) &&
+        main_config->GetMarker_All_PyCustom(iMarker)) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
+vector<string> CDriverBase::GetInletMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = main_config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (main_config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+
+    if (isCustomizable && isInlet) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
 unsigned long CDriverBase::GetNumberMarkerElements(unsigned short iMarker) const {
   if (iMarker >= GetNumberMarkers()) {
     SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
@@ -315,7 +371,7 @@ unsigned long CDriverBase::GetMarkerNode(unsigned short iMarker, unsigned long i
   if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
-  return geometry_container[MESH_0][INST_0][ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+  return main_geometry->vertex[iMarker][iVertex]->GetNode();
 }
 
 vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker, unsigned long iVertex,
@@ -334,61 +390,7 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
   return values;
 }
 
-vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Disp(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint, iDim, values[iDim]);
-  }
-}
-
-vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Vel(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Vel(iPoint, iDim, values[iDim]);
-  }
-}
-
-void CDriverBase::CommunicateMeshDisplacements(void) {
+void CDriverBase::CommunicateMeshDisplacements() {
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
   solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
 }
@@ -403,6 +405,27 @@ map<string, unsigned short> CDriverBase::GetSolverIndices() const {
     }
   }
   return indexMap;
+}
+
+std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
+  if (solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL] == nullptr) {
+    SU2_MPI::Error("The FEA solver does not exist.", CURRENT_FUNCTION);
+  }
+  const auto nDim = main_geometry->GetnDim();
+  std::map<string, unsigned short> names;
+  names["DISPLACEMENT_X"] = 0;
+  names["DISPLACEMENT_Y"] = 1;
+  if (nDim == 3) names["DISPLACEMENT_Z"] = 2;
+
+  if (main_config->GetTime_Domain()) {
+    names["VELOCITY_X"] = nDim;
+    names["VELOCITY_Y"] = nDim + 1;
+    if (nDim == 3) names["VELOCITY_Z"] = nDim + 2;
+    names["ACCELERATION_X"] = 2 * nDim;
+    names["ACCELERATION_Y"] = 2 * nDim + 1;
+    if (nDim == 3) names["ACCELERATION_Z"] = 2 * nDim + 2;
+  }
+  return names;
 }
 
 map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {

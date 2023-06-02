@@ -91,9 +91,9 @@ def main():
     nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -110,7 +110,7 @@ def main():
     WallTemp = 293.0 + 57.0*sin(2*pi*time)
     # Set this temperature to all the vertices on the specified CHT marker
     for iVertex in range(nVertex_CHTMarker):
-      SU2Driver.SetVertexTemperature(CHTMarkerID, iVertex, WallTemp)
+      SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
     SU2Driver.BoundaryConditionsUpdate()
@@ -129,8 +129,6 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program

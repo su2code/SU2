@@ -50,7 +50,8 @@ private:
     su2double* val = nullptr;         /*!< \brief Value of the variable. */
     su2double* LocalSens = nullptr;   /*!< \brief Local sensitivity (domain). */
     su2double* GlobalSens = nullptr;  /*!< \brief Global sensitivity (mpi). */
-    su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (time domain). */
+    su2double* OldSens = nullptr;     /*!< \brief Previous global sensitivity, used to update the total. */
+    su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (integrated over time). */
 
     su2double& operator[] (unsigned short i) { return val[i]; }
     const su2double& operator[] (unsigned short i) const { return val[i]; }
@@ -61,6 +62,7 @@ private:
       val = new su2double[n]();
       LocalSens = new su2double[n]();
       GlobalSens = new su2double[n]();
+      OldSens = new su2double[n]();
       TotalSens = new su2double[n]();
     }
 
@@ -69,6 +71,7 @@ private:
       delete [] val;
       delete [] LocalSens;
       delete [] GlobalSens;
+      delete [] OldSens;
       delete [] TotalSens;
     }
 
@@ -80,10 +83,19 @@ private:
       for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
 
       SU2_MPI::Allreduce(LocalSens, GlobalSens, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+      for (auto i = 0u; i < size; ++i) {
+        /*--- Update the total by subtracting the old and adding the new value.
+         * Then update the old value for the next call to this function. ---*/
+        TotalSens[i] += GlobalSens[i] - OldSens[i];
+        OldSens[i] = GlobalSens[i];
+      }
     }
 
-    void UpdateTotal() {
-      for (auto i = 0u; i < size; ++i) TotalSens[i] += GlobalSens[i];
+    void Store() {
+      /*--- Clears the old values such that on the next time step the total is
+       * incremented instead of updated. ---*/
+      for (auto i = 0u; i < size; ++i) OldSens[i] = 0.0;
     }
 
     ~SensData() { clear(); }
@@ -212,42 +224,6 @@ public:
    * \return Value of the total sensitivity coefficient for the FEA DV in the region iDVFEA (time averaged)
    */
   inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) const override { return DV.TotalSens[iDVFEA]; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Young Modulus E
-   */
-  inline su2double GetGlobal_Sens_E(unsigned short iVal) const override { return E.GlobalSens[iVal]; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
-   */
-  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) const override { return Nu.GlobalSens[iVal]; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
-   */
-  inline su2double GetGlobal_Sens_EField(unsigned short iEField) const override { return EField.GlobalSens[iEField]; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
-   */
-  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const override { return DV.GlobalSens[iDVFEA]; }
-
-  /*!
-   * \brief Get the total sensitivity for the structural density
-   * \return Value of the structural density sensitivity
-   */
-  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) const override { return Rho.GlobalSens[iVal]; }
-
-  /*!
-   * \brief Get the total sensitivity for the structural weight
-   * \return Value of the structural weight sensitivity
-   */
-  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const override { return Rho_DL.GlobalSens[iVal]; }
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver

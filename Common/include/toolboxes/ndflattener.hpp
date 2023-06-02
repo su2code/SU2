@@ -212,8 +212,9 @@ class NdFlattener;
  *  Introducing this was necessary because MPICH's Allgatherv behaved unexpectedly if there
  *  is only one MPI rank (seemingly ignoring displs[0] != 0).
  */
-static inline void SU2_MPI_Allgatherv_safe(const void* sendbuf, int sendcount, SU2_MPI::Datatype sendtype, void* recvbuf,
-                              const int* recvcounts, const int* displs, SU2_MPI::Datatype recvtype, SU2_MPI::Comm comm) {
+static inline void SU2_MPI_Allgatherv_safe(const void* sendbuf, int sendcount, SU2_MPI::Datatype sendtype,
+                                           void* recvbuf, const int* recvcounts, const int* displs,
+                                           SU2_MPI::Datatype recvtype, SU2_MPI::Comm comm) {
   if (SU2_MPI::GetSize() == 1) {
     SU2_MPI::CopyData(sendbuf, recvbuf, sendcount, sendtype, displs[0]);
   } else {
@@ -242,8 +243,7 @@ struct Nd_MPI_Environment {
   const int rank;
   const int size;
 
-  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE,
-                     MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
+  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE, MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
                      MPI_Communicator_t comm = SU2_MPI::GetComm(),
                      MPI_Allgather_t MPI_Allgather_fun = &(SU2_MPI::Allgather),
                      MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI_Allgatherv_safe))
@@ -311,19 +311,15 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_, Check> {
 
   /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
    */
-  using Nd_Base_t = su2conditional_t<
-    std::is_const<Nd_t>::value,
-    const typename Nd_t::Base,
-    typename Nd_t::Base
-  >;
+  using Nd_Base_t = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Base, typename Nd_t::Base>;
   /*! Return type of operator[]. */
   using LookupType = IndexAccumulator<N - 1, Nd_Base_t>;
   /*! Return type of operator[] const. */
   using LookupType_const = IndexAccumulator<N - 1, const typename Nd_t::Base>;
+  using Base::CheckBound;
   using Base::nd;
   using Base::offset;
   using Base::size;
-  using Base::CheckBound;
 
   /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
    * previous indices. Non-const version.
@@ -359,16 +355,12 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_,
   /*! Return type of operator[].
    * \details Data type of NdFlattener, but do also preserve constness.
    */
-  using LookupType = su2conditional_t<
-    std::is_const<Nd_t>::value,
-    const typename Nd_t::Data_t,
-    typename Nd_t::Data_t
-  >;
+  using LookupType = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Data_t, typename Nd_t::Data_t>;
   using LookupType_const = const typename Nd_t::Data_t;
+  using Base::CheckBound;
   using Base::nd;
   using Base::offset;
   using Base::size;
-  using Base::CheckBound;
 
   /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
    * Non-const version.
@@ -672,7 +664,7 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
   void set_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t> const& Nodes_all,
              CurrentLayer const& local_version) {
     std::vector<int> Nodes_all_K_as_int(mpi_env.size);
-    std::vector<int> Nodes_all_k_cumulated( mpi_env.size + 1);
+    std::vector<int> Nodes_all_k_cumulated(mpi_env.size + 1);
     //< [r] is the number of nodes in the current layer, summed over all processes with rank below r, **plus one**.
     // Used as displacements in Allgatherv, as we do not want to transfer the initial zeros, but we want to transfer the
     // last element of indices, which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.

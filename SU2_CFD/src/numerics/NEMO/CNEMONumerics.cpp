@@ -75,7 +75,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     }
 }
 
-CNEMONumerics::~CNEMONumerics(void) {
+CNEMONumerics::~CNEMONumerics() {
 
   delete fluidmodel;
 }
