@@ -65,7 +65,9 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
 
     AddHistoryOutput("RMS_ADJ_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
     AddHistoryOutput("RMS_ADJ_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
-    
+    if (config->GetNControlVars() > 2)
+      AddHistoryOutput("RMS_ADJ_MIXTURE_FRACTION", "rms[Mixfrac]", ScreenOutputFormat::FIXED,"RMS_RES", "Root-mean square residual of the adjoint mixture fraction.", HistoryFieldType::RESIDUAL);
+      
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
@@ -101,7 +103,9 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
 
     AddHistoryOutput("MAX_ADJ_PROGRESS_VARIABLE", "max[PV]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
     AddHistoryOutput("MAX_ADJ_ENTHALPY", "max[Enth]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
-    
+    if (config->GetNControlVars() > 2)
+      AddHistoryOutput("MAX_ADJ_MIXTURE_FRACTION", "max[Mixfrac]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint mixture fraction.", HistoryFieldType::RESIDUAL);
+      
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("MAX_ADJ_" + scalar_name, "max[scalar_" + scalar_name + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
@@ -139,7 +143,9 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
 
     AddHistoryOutput("BGS_ADJ_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
     AddHistoryOutput("BGS_ADJ_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
-
+    if (config->GetNControlVars() > 2)
+      AddHistoryOutput("BGS_ADJ_MIXTURE_FRACTIOn", "bgs[Mixfrac]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint mixture fraction.", HistoryFieldType::RESIDUAL);
+    
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("BGS_ADJ_" + scalar_name, "bgs[" + scalar_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
@@ -217,9 +223,16 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
       SetHistoryOutputValue("MAX_ADJ_PROGRESS_VARIABLE", log10(adjspecies_solver->GetRes_Max(I_PROGVAR)));
       SetHistoryOutputValue("RMS_ADJ_ENTHALPY", log10(adjspecies_solver->GetRes_RMS(I_ENTH)));
       SetHistoryOutputValue("MAX_ADJ_ENTHALPY", log10(adjspecies_solver->GetRes_Max(I_ENTH)));
+      if (config->GetNControlVars() > 2) {
+        SetHistoryOutputValue("RMS_ADJ_MIXTURE_FRACTION", log10(adjspecies_solver->GetRes_RMS(I_MIXFRAC)));
+        SetHistoryOutputValue("MAX_ADJ_MIXTURE_FRACTION", log10(adjspecies_solver->GetRes_Max(I_MIXFRAC)));
+      }
+
       if (multiZone) {
         SetHistoryOutputValue("BGS_ADJ_PROGRESS_VARIABLE", log10(adjspecies_solver->GetRes_BGS(I_PROGVAR)));
         SetHistoryOutputValue("BGS_ADJ_ENTHALPY", log10(adjspecies_solver->GetRes_BGS(I_ENTH)));
+        if (config->GetNControlVars() > 2)
+          SetHistoryOutputValue("BGS_ADJ_MIXTURE_FRACTION", log10(adjspecies_solver->GetRes_BGS(I_MIXFRAC)));
       }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
@@ -266,6 +279,8 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* confi
 
     AddVolumeOutput("ADJ_PROGRESS_VARIABLE", "Adjoint_PV", "SOLUTION", "Adjoint of the progress variable.");
     AddVolumeOutput("ADJ_ENTHALPY", "Adjoint_Enth", "SOLUTION", "Adjoint of the total enthalphy.");
+    if (config->GetNControlVars() > 2)
+      AddVolumeOutput("ADJ_MIXTURE_FRACTION", "Adjoint_Mixfrac", "SOLUTION", "Adjoint of the mixture fraction.");
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);
@@ -306,6 +321,8 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
 
     AddVolumeOutput("RES_ADJ_PROGRESS_VARIABLE", "Residual_Adjoint_PV", "RESIDUAL", "Residual of the adjoint of the progress variable");
     AddVolumeOutput("RES_ADJ_ENTHALPY", "Residual_Adjoint_Enth", "RESIDUAL", "Residual of the adjoint of the total enthalpy");
+    if (config->GetNControlVars() > 2)
+      AddVolumeOutput("RES_ADJ_MIXTURE_FRACTION", "Residual_Adjoint_Mixfrac", "RESIDUAL", "Residual of the adjoint of the mixture fraction");
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);
@@ -355,6 +372,10 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
       SetVolumeOutputValue("RES_ADJ_PROGRESS_VARIABLE", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_PROGVAR) - Node_AdjSpecies->GetSolution_Old(iPoint, I_PROGVAR));
       SetVolumeOutputValue("ADJ_ENTHALPY", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_ENTH));
       SetVolumeOutputValue("RES_ADJ_ENTHALPY", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_ENTH) - Node_AdjSpecies->GetSolution_Old(iPoint, I_ENTH));
+      if (config->GetNControlVars() > 2) {
+        SetVolumeOutputValue("ADJ_MIXTURE_FRACTION", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_MIXFRAC));
+        SetVolumeOutputValue("RES_ADJ_MIXTURE_FRACTION", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_MIXFRAC) - Node_AdjSpecies->GetSolution_Old(iPoint, I_MIXFRAC));  
+      }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       string scalar_name = config->GetUserScalarName(i_scalar);

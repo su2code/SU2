@@ -95,6 +95,7 @@ class CFluidFlamelet final : public CFluidModel {
   MLPToolbox::CIOMap* iomap_Sources = nullptr;
   MLPToolbox::CIOMap* iomap_LookUp = nullptr;
 #endif
+void Measure_Evaluation_Time();
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool display=false);
 
