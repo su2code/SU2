@@ -75,6 +75,11 @@ inline void RegisterInput(su2double& data, bool push_index = true) {}
 inline void RegisterOutput(su2double& data) {}
 
 /*!
+ * \brief Resize the adjoint vector, for subsequent access without bounds checking.
+ */
+inline void ResizeAdjoints() {}
+
+/*!
  * \brief Sets the adjoint value at index to val
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
@@ -369,11 +374,27 @@ FORCEINLINE void Reset() {
   }
 }
 
+FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
+
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
-FORCEINLINE void SetDerivative(int index, const double val) { AD::getTape().setGradient(index, val); }
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+FORCEINLINE void SetDerivative(int index, const double val) {
+  if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+    return;
 
-FORCEINLINE double GetDerivative(int index) { return AD::getTape().getGradient(index); }
+  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
+  AD::getTape().setGradient(index, val, BoundsChecking::False);
+}
+
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// If called after tape evaluations, the adjoints should exist.
+// Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+FORCEINLINE double GetDerivative(int index) {
+  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
+  return AD::getTape().getGradient(index, BoundsChecking::False);
+}
 
 FORCEINLINE bool IsIdentifierActive(su2double const& value) {
   return getTape().isIdentifierActive(value.getIdentifier());
@@ -523,26 +544,14 @@ FORCEINLINE void delete_handler(void* handler) {
 
 FORCEINLINE bool BeginPassive() {
   if (AD::getTape().isActive()) {
-    StopRecording();
+    AD::getTape().setPassive();
     return true;
   }
   return false;
 }
 
 FORCEINLINE void EndPassive(bool wasActive) {
-  if (wasActive) StartRecording();
-}
-
-FORCEINLINE bool PausePreaccumulation() {
-  const auto current = PreaccEnabled;
-  if (!current) return false;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
-  return true;
-}
-
-FORCEINLINE void ResumePreaccumulation(bool wasActive) {
-  if (!wasActive) return;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
+  if (wasActive) AD::getTape().setActive();
 }
 
 FORCEINLINE void StartNoSharedReading() {
@@ -558,6 +567,19 @@ FORCEINLINE void EndNoSharedReading() {
   opdi::logic->addReverseBarrier();
 #endif
 }
+
+FORCEINLINE bool PausePreaccumulation() {
+  const auto current = PreaccEnabled;
+  if (!current) return false;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
+  return true;
+}
+
+FORCEINLINE void ResumePreaccumulation(bool wasActive) {
+  if (!wasActive) return;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
+}
+
 #endif  // CODI_REVERSE_TYPE
 
 void Initialize();
