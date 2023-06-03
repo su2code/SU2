@@ -126,7 +126,7 @@ class CSourceBase_TurbSA : public CNumerics {
     if (options.rot) {
       var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
       /*--- Do not allow negative production for SA-neg. ---*/
-      if(ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
+      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
