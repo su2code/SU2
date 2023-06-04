@@ -98,10 +98,10 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialize lower and upper limits ---*/
   lowerlimit[0] = 1.0e-4;
-  upperlimit[0] = -8.43 - 2.4*log(config->GetTurbulenceIntensity_FreeStream()/100);
+  upperlimit[0] = (-8.43 - 2.4*log(2.5*tanh(config->GetTurbulenceIntensity_FreeStream()/2.5)/100))*2;
 
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 5;
+  lowerlimit[1] = -5;
+  upperlimit[1] = 1.0e-4;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AmplificationFactor_Inf = 0;
@@ -271,16 +271,21 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Debug terms ---*/
-    nodes->SetProd(iPoint, numerics->GetProd());
-    nodes->SetUedge(iPoint, numerics->GetUedge());
+    nodes->SetProdN(iPoint, numerics->GetProdN());
+    nodes->SetProdG(iPoint, numerics->GetProdG());
+    nodes->SetDestG(iPoint, numerics->GetDestG());
+    nodes->SetGammaN(iPoint, numerics->GetGammaN());
     nodes->SetHL(iPoint, numerics->GetHL());
     nodes->SetH12(iPoint, numerics->GetH12());
     nodes->SetFG(iPoint, numerics->GetFG());
     nodes->SetFC(iPoint, numerics->GetFC());
-    nodes->SetREY(iPoint, numerics->GetREY());
-    nodes->SetREY0(iPoint, numerics->GetREY0());
+    nodes->SetREV(iPoint, numerics->GetREV());
+    nodes->SetREV0(iPoint, numerics->GetREV0());
     nodes->SetDist(iPoint, numerics->GetDist());
 	nodes->SetStrain(iPoint, numerics->GetStrain());
+	nodes->SetFonset1(iPoint, numerics->GetFonset1());
+	nodes->SetFonset(iPoint, numerics->GetFonset());
+	nodes->SetFturb(iPoint, numerics->GetFturb());
 
     /*--- Subtract residual and the Jacobian ---*/
 

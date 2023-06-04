@@ -49,16 +49,21 @@ CTransENVariable::CTransENVariable(su2double AmplificationFactor,su2double Modif
   normal_z.resize(nPoint) = 0.0;
 
   /* List of debug variables */
-  Prod.resize(nPoint) = 0.0;
-  Uedge.resize(nPoint) = 0.0;
+  Prod_n.resize(nPoint) = 0.0;
+  Prod_g.resize(nPoint) = 0.0;
+  Dest_g.resize(nPoint) = 0.0;
+  GammaN.resize(nPoint) = 0.0;
   HL.resize(nPoint) = 0.0;
   H12.resize(nPoint) = 0.0;
   FG.resize(nPoint) = 0.0;
   FC.resize(nPoint) = 0.0;
-  REY.resize(nPoint) = 0.0;
-  REY0.resize(nPoint) = 0.0;
+  REV.resize(nPoint) = 0.0;
+  REV0.resize(nPoint) = 0.0;
   Dist.resize(nPoint) = 0.0;
   Strain.resize(nPoint) = 0.0;
+  Fonset1.resize(nPoint) = 0.0;
+  Fonset.resize(nPoint) = 0.0;
+  Fturb.resize(nPoint) = 0.0;
 
 }
 
@@ -76,12 +81,20 @@ void CTransENVariable::SetNormal(unsigned long iPoint, su2double val_normal_x, s
   normal_z(iPoint) = val_normal_z;
 }
 
-void CTransENVariable::SetProd(unsigned long iPoint, su2double val_Prod) {
-  Prod(iPoint) = val_Prod;
+void CTransENVariable::SetProdN(unsigned long iPoint, su2double val_ProdN) {
+  Prod_n(iPoint) = val_ProdN;
 }
 
-void CTransENVariable::SetUedge(unsigned long iPoint, su2double val_Uedge) {
-  Uedge(iPoint) = val_Uedge;
+void CTransENVariable::SetProdG(unsigned long iPoint, su2double val_ProdG) {
+  Prod_g(iPoint) = val_ProdG;
+}
+
+void CTransENVariable::SetDestG(unsigned long iPoint, su2double val_DestG) {
+  Dest_g(iPoint) = val_DestG;
+}
+
+void CTransENVariable::SetGammaN(unsigned long iPoint, su2double val_GammaN) {
+  GammaN(iPoint) = val_GammaN;
 }
 
 void CTransENVariable::SetHL(unsigned long iPoint, su2double val_HL) {
@@ -100,12 +113,12 @@ void CTransENVariable::SetFC(unsigned long iPoint, su2double val_FC) {
   FC(iPoint) = val_FC;
 }
 
-void CTransENVariable::SetREY(unsigned long iPoint, su2double val_REY) {
-  REY(iPoint) = val_REY;
+void CTransENVariable::SetREV(unsigned long iPoint, su2double val_REV) {
+  REV(iPoint) = val_REV;
 }
 
-void CTransENVariable::SetREY0(unsigned long iPoint, su2double val_REY0) {
-  REY0(iPoint) = val_REY0;
+void CTransENVariable::SetREV0(unsigned long iPoint, su2double val_REV0) {
+  REV0(iPoint) = val_REV0;
 }
 
 void CTransENVariable::SetDist(unsigned long iPoint, su2double val_Dist) {
@@ -114,4 +127,16 @@ void CTransENVariable::SetDist(unsigned long iPoint, su2double val_Dist) {
 
 void CTransENVariable::SetStrain(unsigned long iPoint, su2double val_Strain) {
   Strain(iPoint) = val_Strain;
+}
+
+void CTransENVariable::SetFonset1(unsigned long iPoint, su2double val_Fonset1) {
+  Fonset1(iPoint) = val_Fonset1;
+}
+
+void CTransENVariable::SetFonset(unsigned long iPoint, su2double val_Fonset) {
+  Fonset(iPoint) = val_Fonset;
+}
+
+void CTransENVariable::SetFturb(unsigned long iPoint, su2double val_Fturb) {
+  Fturb(iPoint) = val_Fturb;
 }

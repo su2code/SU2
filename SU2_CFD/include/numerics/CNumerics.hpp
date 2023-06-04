@@ -739,16 +739,21 @@ public:
   };
 
   /*--- Debug terms ---*/
-  inline virtual su2double GetProd() {return 0.0;}
-  inline virtual su2double GetUedge() {return 0.0;}
+  inline virtual su2double GetProdN() {return 0.0;}
+  inline virtual su2double GetProdG() {return 0.0;}
+  inline virtual su2double GetDestG() {return 0.0;}
+  inline virtual su2double GetGammaN() {return 0.0;}
   inline virtual su2double GetHL() {return 0.0;}
   inline virtual su2double GetH12() {return 0.0;}
   inline virtual su2double GetFG() {return 0.0;}
   inline virtual su2double GetFC() {return 0.0;}
-  inline virtual su2double GetREY() {return 0.0;}
-  inline virtual su2double GetREY0() {return 0.0;}
+  inline virtual su2double GetREV() {return 0.0;}
+  inline virtual su2double GetREV0() {return 0.0;}
   inline virtual su2double GetDist() {return 0.0;}
   inline virtual su2double GetStrain() {return 0.0;}
+  inline virtual su2double GetFonset1() {return 0.0;}
+  inline virtual su2double GetFonset() {return 0.0;}
+  inline virtual su2double GetFturb() {return 0.0;}
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

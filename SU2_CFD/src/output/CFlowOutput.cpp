@@ -1199,19 +1199,24 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       break;
 	  
     case TURB_TRANS_MODEL::EN:
-	  AddVolumeOutput("AMPLIFICATION_FACTOR", "n", "SOLUTION", "e^N transition Amplification Factor");
-	  AddVolumeOutput("MODIFIED_INTERMITTENCY", "mod_intermit", "SOLUTION", "e^N transition Intermittency");
+	  AddVolumeOutput("AMPLIFICATION_FACTOR", "n", "SOLUTION", "e^N Amplification Factor");
+	  AddVolumeOutput("MODIFIED_INTERMITTENCY", "eN_gamma", "SOLUTION", "e^N Modified Intermittency");
 	  AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
-      AddVolumeOutput("PROD", "eN_Prod", "DEBUG", "eN production value");
-      AddVolumeOutput("U_EDGE", "U_e", "DEBUG", "BC Edge Velocity");
+      AddVolumeOutput("PROD_N", "eN_Prod_n", "DEBUG", "eN n production value");
+      AddVolumeOutput("PROD_G", "eN_Prod_g", "DEBUG", "eN g production value");
+      AddVolumeOutput("DESTR_G", "eN_Destr_g", "DEBUG", "eN g destruction value");
+      AddVolumeOutput("GAMMA_N", "eN_intermittency", "DEBUG", "eN intermittency value");
       AddVolumeOutput("H_L", "H_L", "DEBUG", "BC pressure-gradient parameter");
       AddVolumeOutput("H_12", "H_12", "DEBUG", "BC shape factor");
       AddVolumeOutput("F_G", "F_growth", "DEBUG", "Growth factor");
       AddVolumeOutput("F_C", "F_crit", "DEBUG", "Critical factor");
-      AddVolumeOutput("RE_Y", "RE_Y", "DEBUG", "Local Re number");
-      AddVolumeOutput("RE_Y0", "RE_Y0", "DEBUG", "Momemtum-Thickness Re");
-      AddVolumeOutput("Dist", "Dist", "DEBUG", "Distance to nearest wall");
-      AddVolumeOutput("Strain", "Strain", "DEBUG", "Strain vector");
+      AddVolumeOutput("RE_V", "RE_V", "DEBUG", "Local Re number");
+      AddVolumeOutput("RE_V0", "RE_V0", "DEBUG", "Momemtum-Thickness Re");
+      AddVolumeOutput("DIST", "Dist", "DEBUG", "Distance to nearest wall");
+      AddVolumeOutput("STRAIN", "Strain", "DEBUG", "Strain vector");
+      AddVolumeOutput("FONSET1", "Fonset_1", "DEBUG", "eN F onset1 value");
+      AddVolumeOutput("FONSET", "Fonset", "DEBUG", "eN F onset value");
+      AddVolumeOutput("FTURB", "Fturb", "DEBUG", "eN F turb value");
       AddVolumeOutput("NORMAL_X", "NORMAL_X", "DEBUG", "eN Normal_x");
       AddVolumeOutput("NORMAL_Y", "NORMAL_Y", "DEBUG", "eN Normal_y");
       AddVolumeOutput("NORMAL_Z", "NORMAL_Z", "DEBUG", "eN Normal_z");
@@ -1400,23 +1405,32 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 	  
 	case TURB_TRANS_MODEL::EN:
       SetVolumeOutputValue("AMPLIFICATION_FACTOR", iPoint, Node_Trans->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("MODIFIED_INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 1));
       SetVolumeOutputValue("RES_AMPLIFICATION_FACTOR", iPoint, trans_solver->LinSysRes(iPoint, 0));
+      SetVolumeOutputValue("MODIFIED_INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 1));
       SetVolumeOutputValue("RES_MODIFIED_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 1));
       SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
-      SetVolumeOutputValue("PROD", iPoint, Node_Trans->GetProd(iPoint));
-      SetVolumeOutputValue("U_EDGE", iPoint, Node_Trans->GetUedge(iPoint));
+      SetVolumeOutputValue("PROD_N", iPoint, Node_Trans->GetProdN(iPoint));
+      SetVolumeOutputValue("PROD_G", iPoint, Node_Trans->GetProdG(iPoint));
+      SetVolumeOutputValue("DESTR_G", iPoint, Node_Trans->GetDestG(iPoint));
+      SetVolumeOutputValue("GAMMA_N", iPoint, Node_Trans->GetGammaN(iPoint));
       SetVolumeOutputValue("H_L", iPoint, Node_Trans->GetHL(iPoint));
       SetVolumeOutputValue("H_12", iPoint, Node_Trans->GetH12(iPoint));
       SetVolumeOutputValue("F_G", iPoint, Node_Trans->GetFG(iPoint));
       SetVolumeOutputValue("F_C", iPoint, Node_Trans->GetFC(iPoint));
-      SetVolumeOutputValue("RE_Y", iPoint, Node_Trans->GetREY(iPoint));
-      SetVolumeOutputValue("RE_Y0", iPoint, Node_Trans->GetREY0(iPoint));
-      SetVolumeOutputValue("Dist", iPoint, Node_Trans->GetDist(iPoint));
-      SetVolumeOutputValue("Strain", iPoint, Node_Trans->GetStrain(iPoint));
+      SetVolumeOutputValue("RE_V", iPoint, Node_Trans->GetREV(iPoint));
+      SetVolumeOutputValue("RE_V0", iPoint, Node_Trans->GetREV0(iPoint));
+      SetVolumeOutputValue("DIST", iPoint, Node_Trans->GetDist(iPoint));
+      SetVolumeOutputValue("STRAIN", iPoint, Node_Trans->GetStrain(iPoint));
+      SetVolumeOutputValue("FONSET1", iPoint, Node_Trans->GetFonset1(iPoint));
+      SetVolumeOutputValue("FONSET", iPoint, Node_Trans->GetFonset(iPoint));
+      SetVolumeOutputValue("FTURB", iPoint, Node_Trans->GetFturb(iPoint));
       SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetNormal_x(iPoint));
       SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetNormal_y(iPoint));
       SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetNormal_z(iPoint));
+
+//      cout<<"Prod_n = "<<Node_Trans->GetProdN(iPoint)<<". Gamma_N = "<<Node_Trans->GetGammaN(iPoint)<<". Fturb = "<<Node_Trans->GetFturb(iPoint)<<endl;
+//      cout<<"Prod_G = "<<Node_Trans->GetProdG(iPoint)<<". Destr_G = "<<Node_Trans->GetDestG(iPoint)<<". H_L = "<<Node_Trans->GetHL(iPoint)<<endl;
+
 	  break;
 
     case TURB_TRANS_MODEL::NONE: break;

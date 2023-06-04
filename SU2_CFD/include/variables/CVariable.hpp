@@ -1172,16 +1172,21 @@ public:
   inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {};
 
   /*--- Debug terms ---*/
-  inline virtual void SetProd(unsigned long iPoint, su2double val_Prod) {};
-  inline virtual void SetUedge(unsigned long iPoint, su2double val_Uedge) {};
+  inline virtual void SetProdN(unsigned long iPoint, su2double val_ProdN) {};
+  inline virtual void SetProdG(unsigned long iPoint, su2double val_ProdG) {};
+  inline virtual void SetDestG(unsigned long iPoint, su2double val_DestG) {};
+  inline virtual void SetGammaN(unsigned long iPoint, su2double val_GammaN) {};
   inline virtual void SetHL(unsigned long iPoint, su2double val_HL) {};
   inline virtual void SetH12(unsigned long iPoint, su2double val_H12) {};
   inline virtual void SetFG(unsigned long iPoint, su2double val_FG) {};
   inline virtual void SetFC(unsigned long iPoint, su2double val_FC) {};
-  inline virtual void SetREY(unsigned long iPoint, su2double val_REY) {};
-  inline virtual void SetREY0(unsigned long iPoint, su2double val_REY0) {};
+  inline virtual void SetREV(unsigned long iPoint, su2double val_REV) {};
+  inline virtual void SetREV0(unsigned long iPoint, su2double val_REV0) {};
   inline virtual void SetDist(unsigned long iPoint, su2double val_Dist) {};
   inline virtual void SetStrain(unsigned long iPoint, su2double val_Strain) {};
+  inline virtual void SetFonset1(unsigned long iPoint, su2double val_Fonset1) {};
+  inline virtual void SetFonset(unsigned long iPoint, su2double val_Fonset) {};
+  inline virtual void SetFturb(unsigned long iPoint, su2double val_Fturb) {};
 
   /*!
    * \brief A virtual member.
@@ -1202,16 +1207,21 @@ public:
   inline virtual su2double GetNormal_z(unsigned long iPoint) const { return 0.0; }
 
   /*--- Debug terms ---*/
-  inline virtual su2double GetProd(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetUedge(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdN(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdG(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestG(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetGammaN(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetHL(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetH12(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetFG(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetFC(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetREY(unsigned long iPoint) const { return 0.0; }
-  inline virtual su2double GetREY0(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetREV(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetREV0(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetDist(unsigned long iPoint) const { return 0.0; }
   inline virtual su2double GetStrain(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFonset1(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFonset(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFturb(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
