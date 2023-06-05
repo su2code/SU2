@@ -30,6 +30,18 @@
 #include "../../Common/include/containers/CLookUpTable.hpp"
 #include "CFluidModel.hpp"
 
+
+enum LOOKUP_TD {
+  TEMPERATURE,
+  DENSITY,
+  HEATCAPACITY,
+  VISCOSITY,
+  CONDUCTIVITY,
+  DIFFUSIONCOEFFICIENT,
+  MOLARWEIGHT,
+  SIZE
+};
+
 class CFluidFlamelet final : public CFluidModel {
  protected:
   int rank;
@@ -49,6 +61,8 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<string> varnames_TD;    /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
+
+
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -99,25 +113,5 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() override { return Mu; };
-
- private:
-  /*!
-   * \brief Get the index of a string in a vector.
-   */
-  inline int GetIdx(const vector<string>& v, const string& s) const {
-    auto it = find(v.begin(), v.end(), s);
-
-    if (it != v.end())
-      return (it - v.begin());
-    else
-      return (-1);
-  }
-
-  /*!
-   * \brief Get the value of the LUT variable using the string name.
-   */
-  inline su2double GetLUTVal(const string& varname_TD) const {
-      return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
-    }
 
 };
