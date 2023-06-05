@@ -1436,7 +1436,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
 
 }
 
-
 void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
 
