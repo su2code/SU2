@@ -1404,8 +1404,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
   }
 }
 
-
-
 void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
   /*--- Only place outputs of the "PRIMITIVE" group for scalar transport here. ---*/
 
