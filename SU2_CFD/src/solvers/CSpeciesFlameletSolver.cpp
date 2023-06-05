@@ -81,8 +81,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned short n_user_scalars = config->GetNUserScalars();
-  unsigned short n_control_vars = config->GetNControlVars();
+  const auto n_user_scalars = config->GetNUserScalars();
+  const auto n_control_vars = config->GetNControlVars();
 
   vector<string> table_scalar_names(config->GetNScalars());
   table_scalar_names[I_ENTH] = "EnthalpyTot";
