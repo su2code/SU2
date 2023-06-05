@@ -348,8 +348,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
     if (implicit) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint * nVar + iVar;
-
         su2double scalar = nodes->GetSolution(iPoint, iVar);
 
         /*--- Compute the lag terms for the decoupled linear system from
@@ -359,7 +357,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
         su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
         su2double artcompc2 = SolT * dRhodT * scalar / (Density);
 
-        LinSysRes[total_index] += artcompc1 + artcompc2;
+        LinSysRes(iPoint, iVar) += artcompc1 + artcompc2;
 
         /*--- Add the extra Jacobian term to the scalar system. ---*/
 
@@ -375,34 +373,14 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  Res_Sour = new su2double [nVar]();
-
-  Jacobian_i = new su2double* [nVar];
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar]();
-  }
-
-  SU2_OMP_FOR_DYN(omp_chunk_size)
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
 
     /*--- Add source terms from the lookup table directly to the residual. ---*/
 
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      Res_Sour[i_var] = nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
-      for (auto j_var = 0; j_var < nVar; j_var++) {
-        Jacobian_i[i_var][j_var] = 0.0;
-      }
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
-
-    /*--- Add Residual. ---*/
-
-    LinSysRes.SubtractBlock(i_point, Res_Sour);
-
-    /*--- Implicit part. ---*/
-
-    if (implicit) Jacobian.SubtractBlock2Diag(i_point, Jacobian_i);
   }
   END_SU2_OMP_FOR
 
