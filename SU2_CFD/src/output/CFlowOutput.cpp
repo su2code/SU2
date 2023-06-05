@@ -1460,10 +1460,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
       break;
     case SPECIES_MODEL::FLAMELET:
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
-        if (config->GetLUTLookupName(i_lookup) != "NULL") {
-          string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
-          AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
-        }
+        string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
+        AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
       }
 
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");

@@ -68,7 +68,19 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   Pressure = value_pressure_operating;
 
-  PreprocessLookUp();
+  /*--- Thermodynamic state variables and names. ---*/
+  varnames_TD.resize(7);
+  val_vars_TD.resize(7);
+
+  /*--- The string in varnames_TD as it appears in the LUT file. ---*/
+  varnames_TD[0] = "Temperature";
+  varnames_TD[1] = "Density";
+  varnames_TD[2] = "Cp";
+  varnames_TD[3] = "ViscosityDyn";
+  varnames_TD[4] = "Conductivity";
+  varnames_TD[5] = "DiffusionCoefficient";
+  varnames_TD[6] = "MolarWeightMix";
+
 }
 
 CFluidFlamelet::~CFluidFlamelet() { delete look_up_table; }
@@ -125,21 +137,4 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2doub
   }
 
   return exit_code;
-}
-
-void CFluidFlamelet::PreprocessLookUp() {
-  /*--- Set lookup names for all relevant lookup processes in the fluid model. ---*/
-
-  /*--- Thermodynamic state variables and names. ---*/
-  varnames_TD.resize(7);
-  val_vars_TD.resize(7);
-
-  /*--- The string in varnames_TD as it appears in the LUT file. ---*/
-  varnames_TD[0] = "Temperature";
-  varnames_TD[1] = "Density";
-  varnames_TD[2] = "Cp";
-  varnames_TD[3] = "ViscosityDyn";
-  varnames_TD[4] = "Conductivity";
-  varnames_TD[5] = "DiffusionCoefficient";
-  varnames_TD[6] = "MolarWeightMix";
 }

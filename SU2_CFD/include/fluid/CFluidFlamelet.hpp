@@ -100,16 +100,11 @@ class CFluidFlamelet final : public CFluidModel {
    */
   inline su2double GetLaminarViscosity() override { return Mu; };
 
-  /*!
-   * \brief Get the value of the LUT variable using the string name.
-   */
-  inline su2double GetLUTVal(string varname_TD) { return val_vars_TD[GetIdx(varnames_TD, varname_TD)]; };
-
  private:
   /*!
    * \brief Get the index of a string in a vector.
    */
-  inline int GetIdx(const vector<string>& v, const string s) {
+  inline const int GetIdx(const vector<string>& v, const string& s) {
     auto it = find(v.begin(), v.end(), s);
 
     if (it != v.end())
@@ -119,7 +114,10 @@ class CFluidFlamelet final : public CFluidModel {
   }
 
   /*!
-   * \brief Define the list of mandatory variables that are retrieved from the lookup table.
+   * \brief Get the value of the LUT variable using the string name.
    */
-  void PreprocessLookUp();
+  inline const su2double GetLUTVal(const string& varname_TD) {
+      return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
+    }
+
 };

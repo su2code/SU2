@@ -297,19 +297,15 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       cout << " Number of points in unburnt region: " << n_points_unburnt_global << "." << endl;
       cout << " Number of points in burnt region  : " << n_points_burnt_global << "." << endl;
       cout << " Number of points in flame zone    : " << n_points_flame_global << "." << endl;
+
+      if (n_not_in_domain_global > 0)
+        cout << " Initial condition: Number of points outside of table domain: " << n_not_in_domain_global << " !!!"
+             << endl;
+
+      if (n_not_iterated_global > 0)
+        cout << " Initial condition: Number of points in which enthalpy could not be iterated: " << n_not_iterated_global
+             << " !!!" << endl;
     }
-
-    if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
-
-    if (rank == MASTER_NODE && n_not_in_domain_global > 0)
-      cout << " Initial condition: Number of points outside of table domain: " << n_not_in_domain_global << " !!!"
-           << endl;
-
-    if (rank == MASTER_NODE && n_not_iterated_global > 0)
-      cout << " Initial condition: Number of points in which enthalpy could not be iterated: " << n_not_iterated_global
-           << " !!!" << endl;
-
-    if (rank == MASTER_NODE && (n_not_in_domain_global > 0 || n_not_iterated_global > 0)) cout << endl;
   }
 }
 
@@ -431,8 +427,11 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   solver_container[FLOW_SOL]->GetFluidModel()->GetEnthFromTemp(enth_inlet, scalar_inlet[I_PROGVAR], temp_inlet,
                                                                scalar_inlet[I_ENTH]);
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
+  END_SU2_OMP_FOR
+
   }
 
   /*--- Call the general inlet boundary condition implementation. ---*/
@@ -451,7 +450,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
-
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -518,6 +517,8 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
       }
     }
   }
+  END_SU2_OMP_FOR
+
   if (rank == MASTER_NODE && n_not_iterated > 0) {
     cout << " !!! Wall bc (" << Marker_Tag
          << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
