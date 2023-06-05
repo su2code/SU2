@@ -56,6 +56,14 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
 
+  /*!
+   * \brief Generic implementation of the isothermal wall also covering CHT cases,
+   * for which the wall temperature is given by GetConjugateHeatVariable.
+   */
+  void BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                  CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                  bool cht_mode = false);
+
  public:
   /*!
    * \brief Constructor.
@@ -124,7 +132,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                 CConfig* config, unsigned short val_marker) override;
 
-   /*!
+  /*!
    * \brief Impose the (received) conjugate heat variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -159,17 +167,5 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
     conjugate_var[val_marker][val_vertex][pos_var] =
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
-
-  /*!
-   * \brief Generic implementation of the isothermal wall also covering CHT cases,
-   * for which the wall temperature is given by GetConjugateHeatVariable.
-   */
-  void BC_Isothermal_Wall_Generic(CGeometry *geometry,
-                                  CSolver **solver_container,
-                                  CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics,
-                                  CConfig *config,
-                                  unsigned short val_marker,
-                                  bool cht_mode = false);
 
 };

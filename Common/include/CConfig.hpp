@@ -2128,7 +2128,7 @@ public:
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
    * \return Flame initialization for the flamelet model.
    */
-  su2double *GetFlameInit() { return flame_init; }
+  const su2double *GetFlameInit() const { return flame_init; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.

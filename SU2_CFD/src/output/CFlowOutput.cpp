@@ -178,7 +178,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
   const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
   const CVariable* species_nodes = species ? solver[SPECIES_SOL]->GetNodes() : nullptr;
-  const CVariable* scalar_nodes  = flamelet ? solver[SPECIES_SOL]->GetNodes() : nullptr;
 
   vector<su2double> Surface_MassFlow          (nMarker,0.0);
   vector<su2double> Surface_Mach              (nMarker,0.0);

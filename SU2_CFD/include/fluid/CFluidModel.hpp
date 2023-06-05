@@ -32,13 +32,13 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/basic_types/datatype_structure.hpp"
-#include "../../../Common/include/containers/CLookUpTable.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
 #include "CDiffusivityModel.hpp"
 
 using namespace std;
 
+class CLookUpTable;
 /*!
  * \class CFluidModel
  * \brief Main class for defining the Thermo-Physical Model

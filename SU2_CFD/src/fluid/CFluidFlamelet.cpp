@@ -30,7 +30,7 @@
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(SU2_MPI::GetComm(),&rank);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
@@ -71,9 +71,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   PreprocessLookUp();
 }
 
-CFluidFlamelet::~CFluidFlamelet() {
-  delete look_up_table;
-}
+CFluidFlamelet::~CFluidFlamelet() { delete look_up_table; }
 
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   su2double val_enth = val_scalars[I_ENTH];
@@ -82,13 +80,13 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- Add all quantities and their names to the look up vectors. ---*/
   look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
 
-  Temperature = val_vars_TD[GetIdx(varnames_TD,"Temperature")];
-  Density = val_vars_TD[GetIdx(varnames_TD,"Density")];
-  Cp = val_vars_TD[GetIdx(varnames_TD,"Cp")];
-  Mu = val_vars_TD[GetIdx(varnames_TD,"ViscosityDyn")];
-  Kt = val_vars_TD[GetIdx(varnames_TD,"Conductivity")];
-  mass_diffusivity = val_vars_TD[GetIdx(varnames_TD,"DiffusionCoefficient")];
-  molar_weight = val_vars_TD[GetIdx(varnames_TD,"MolarWeightMix")];
+  Temperature = val_vars_TD[GetIdx(varnames_TD, "Temperature")];
+  Density = val_vars_TD[GetIdx(varnames_TD, "Density")];
+  Cp = val_vars_TD[GetIdx(varnames_TD, "Cp")];
+  Mu = val_vars_TD[GetIdx(varnames_TD, "ViscosityDyn")];
+  Kt = val_vars_TD[GetIdx(varnames_TD, "Conductivity")];
+  mass_diffusivity = val_vars_TD[GetIdx(varnames_TD, "DiffusionCoefficient")];
+  molar_weight = val_vars_TD[GetIdx(varnames_TD, "MolarWeightMix")];
 
   /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
@@ -98,7 +96,6 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
        so we do a reverse lookup */
 unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2double val_prog, const su2double val_temp,
                                               const su2double initial_value) {
-
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double delta_temp_final = 0.001;
   su2double enth_iter = initial_value;
@@ -111,8 +108,8 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2doub
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
     look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, enth_iter);
-    Temperature = val_vars_TD[GetIdx(varnames_TD,"Temperature")];
-    Cp = val_vars_TD[GetIdx(varnames_TD,"Cp")];
+    Temperature = val_vars_TD[GetIdx(varnames_TD, "Temperature")];
+    Cp = val_vars_TD[GetIdx(varnames_TD, "Cp")];
 
     delta_temp_iter = val_temp - Temperature;
 
@@ -145,5 +142,4 @@ void CFluidFlamelet::PreprocessLookUp() {
   varnames_TD[4] = "Conductivity";
   varnames_TD[5] = "DiffusionCoefficient";
   varnames_TD[6] = "MolarWeightMix";
-
 }

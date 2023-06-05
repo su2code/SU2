@@ -3010,6 +3010,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("DYN_TIME is deprecated. Use MAX_TIME instead.\n\n");
           else if (!option_name.compare("DYNAMIC_ANALYSIS"))
             newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
+          else if (!option_name.compare("SPECIES_USE_STRONG_BC"))
+            newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -5461,11 +5463,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
+    /*--- The controlling variables are progress variable and total enthalpy ---*/
     n_control_vars = 2;
+    /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
-
-    /*--- compute inlet enthalpy from progress variable and temperature ---*/
-
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {

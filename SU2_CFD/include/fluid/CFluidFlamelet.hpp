@@ -47,7 +47,7 @@ class CFluidFlamelet final : public CFluidModel {
 
   CLookUpTable* look_up_table;
 
-  vector<string> varnames_TD;     /*!< \brief Lookup names for thermodynamic state variables. */
+  vector<string> varnames_TD;    /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
 
  public:
@@ -56,7 +56,7 @@ class CFluidFlamelet final : public CFluidModel {
   ~CFluidFlamelet();
 
   /*!
-   * \brief Set the thermodynamioc state.
+   * \brief Set the thermodynamic state.
    * \param[in] val_temperature - temperature
    * \param[in] val_scalars - pointer to species mass fractions
    */
@@ -74,7 +74,7 @@ class CFluidFlamelet final : public CFluidModel {
                                 su2double initial_value = 0);
 
   /*!
-   * \brief Return a pointer to the lookup table
+   * \brief Return a pointer to the lookup table.
    * \param[out] look_up_table - pointer to lookup table
    */
   inline CLookUpTable* GetLookUpTable() override { return look_up_table; }
@@ -84,44 +84,42 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] iVar - index to the species
    * \param[out] mass_diffusivity - value of the mass diffusivity
    */
-  inline su2double GetMassDiffusivity(int iVar) final { return mass_diffusivity; }
+  inline su2double GetMassDiffusivity(int iVar) final { return mass_diffusivity; };
 
   /*!
    * \brief Get the thermal conductivity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Kt - value of the thermal conductivity
    */
-  inline su2double GetThermalConductivity() { return Kt; }
+  inline su2double GetThermalConductivity() override { return Kt; };
 
   /*!
    * \brief Get the laminar viscosity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Mu - value of the laminar viscosity
    */
-  inline su2double GetLaminarViscosity() { return Mu; }
-
-  /*!
-   * \brief Get the index of a string in a vector.
-   */
-  inline int GetIdx(vector<string> v,string s) {
-
-    auto it = find(v.begin(), v.end(), s);
-  
-    if (it != v.end()) 
-        return(it - v.begin());
-    else 
-        return(-1);
-  }
+  inline su2double GetLaminarViscosity() override { return Mu; };
 
   /*!
    * \brief Get the value of the LUT variable using the string name.
    */
-  inline su2double GetLUTVal(string varname_TD) {
-      return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
-    };
+  inline su2double GetLUTVal(string varname_TD) { return val_vars_TD[GetIdx(varnames_TD, varname_TD)]; };
 
  private:
+  /*!
+   * \brief Get the index of a string in a vector.
+   */
+  inline int GetIdx(const vector<string>& v, const string s) {
+    auto it = find(v.begin(), v.end(), s);
 
+    if (it != v.end())
+      return (it - v.begin());
+    else
+      return (-1);
+  }
+
+  /*!
+   * \brief Define the list of mandatory variables that are retrieved from the lookup table.
+   */
   void PreprocessLookUp();
-
 };
