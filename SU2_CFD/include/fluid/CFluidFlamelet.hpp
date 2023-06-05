@@ -77,7 +77,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Return a pointer to the lookup table
    * \param[out] look_up_table - pointer to lookup table
    */
-  inline CLookUpTable* GetLookUpTable() { return look_up_table; }
+  inline CLookUpTable* GetLookUpTable() override { return look_up_table; }
 
   /*!
    * \brief Get the mass diffusivity of the species.
