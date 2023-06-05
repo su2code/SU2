@@ -298,10 +298,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
               Surface_Species(iMarker, iVar) += species_nodes->GetSolution(iPoint, iVar)*Weight;
 
-          if (flamelet)
-            for (unsigned short iVar = 0; iVar < config->GetNScalars(); iVar++)
-              Surface_Scalars(iMarker, iVar) += scalar_nodes->GetSolution(iPoint, iVar)*Weight;
-
           /*--- For now, always used the area to weight the uniformities. ---*/
 
           Weight = abs(Area);
