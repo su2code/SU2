@@ -2120,7 +2120,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 #endif
 
       if (type == OperationType::FUNCTION) {
-        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
         break;
       }
 
@@ -2137,7 +2137,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
       /*--- Skip the terminating "]". ---*/
       if (it != last) ++it;
 
-      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
     }
   }
 
