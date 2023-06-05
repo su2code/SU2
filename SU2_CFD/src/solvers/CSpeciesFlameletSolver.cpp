@@ -400,7 +400,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   solver_container[FLOW_SOL]->GetFluidModel()->GetEnthFromTemp(enth_inlet, scalar_inlet[I_PROGVAR], temp_inlet,
                                                                scalar_inlet[I_ENTH]);
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
   END_SU2_OMP_FOR
@@ -423,7 +423,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
-  SU2_OMP_FOR_STAT(omp_chunk_size)
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 

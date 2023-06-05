@@ -74,10 +74,10 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
   AD::SetPreaccIn(Volume);
 
   if (incompressible) {
-    AD::SetPreaccIn(V_i, idx.EddyViscosity());
+    AD::SetPreaccIn(V_i, nDim+6);
   }
   else {
-    AD::SetPreaccIn(V_i, idx.EddyViscosity());
+    AD::SetPreaccIn(V_i, nDim+6);
   }
 
   /*--- Initialization. ---*/
