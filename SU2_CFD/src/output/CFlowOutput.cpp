@@ -1599,7 +1599,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint)[I_PROGVAR]);
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
-      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)Node_Species->GetTableMisses(iPoint));
+      SetVolumeOutputValue("TABLE_MISSES", iPoint, su2double(Node_Species->GetTableMisses(iPoint)));
 
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
