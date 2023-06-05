@@ -348,8 +348,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
     if (implicit) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint * nVar + iVar;
-
         su2double scalar = nodes->GetSolution(iPoint, iVar);
 
         /*--- Compute the lag terms for the decoupled linear system from
@@ -359,7 +357,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
         su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
         su2double artcompc2 = SolT * dRhodT * scalar / (Density);
 
-        LinSysRes[total_index] += artcompc1 + artcompc2;
+        LinSysRes(iPoint, iVar) += artcompc1 + artcompc2;
 
         /*--- Add the extra Jacobian term to the scalar system. ---*/
 
