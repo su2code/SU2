@@ -145,7 +145,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                 CConfig* config, unsigned short val_marker);
+                 CConfig* config, unsigned short val_marker) final;
 
   /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
    * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.
