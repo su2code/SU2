@@ -118,7 +118,7 @@ class CFluidFlamelet final : public CFluidModel {
    */
   inline su2double GetLUTVal(string varname_TD) {
       return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
-    };
+    }
 
  private:
 
