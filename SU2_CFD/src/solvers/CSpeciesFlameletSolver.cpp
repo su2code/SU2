@@ -373,8 +373,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
 
