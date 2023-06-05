@@ -377,15 +377,15 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  Res_Sour = new su2double [nVar]();
+
+  Jacobian_i = new su2double* [nVar];
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar]();
+  }
+
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-
-    Res_Sour = new su2double [nVar]();
-
-    Jacobian_i = new su2double* [nVar];
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar]();
-    }
 
     /*--- Add source terms from the lookup table directly to the residual. ---*/
 
