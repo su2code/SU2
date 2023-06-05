@@ -2128,22 +2128,22 @@ public:
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
    * \return Flame initialization for the flamelet model.
    */
-  su2double *GetFlameInit(void) { return flame_init; }
+  su2double *GetFlameInit() { return flame_init; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
    */
-  unsigned short GetNControlVars(void) const { return n_control_vars; }
+  unsigned short GetNControlVars() const { return n_control_vars; }
 
   /*!
    * \brief Get the number of total transported scalars for flamelet model.
    */
-  unsigned short GetNScalars(void) const { return n_scalars; }
+  unsigned short GetNScalars() const { return n_scalars; }
 
   /*!
    * \brief Get the number of user scalars for flamelet model.
    */
-  unsigned short GetNUserScalars(void) const { return n_user_scalars; }
+  unsigned short GetNUserScalars() const { return n_user_scalars; }
 
   /*!
    * \brief Get the name of the user scalar.
@@ -2162,7 +2162,7 @@ public:
   /*!
    * \brief Get the number of transported scalars for combustion.
    */
-  unsigned short GetNLookups(void) const { return n_lookups; }
+  unsigned short GetNLookups() const { return n_lookups; }
 
   /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table.
@@ -2173,7 +2173,7 @@ public:
    * \brief Get the file name of the look up table.
    * \return File name of the look up table.
    */
-  string GetFileNameLUT(void) const { return file_name_lut; };
+  const string& GetFileNameLUT() const { return file_name_lut; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.

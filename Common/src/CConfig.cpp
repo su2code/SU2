@@ -9573,10 +9573,8 @@ bool CConfig::GetMarker_StrongBC(const string& val_marker) const {
 
   unsigned short iMarker_StrongBC = 0;
 
-  if (nMarker_StrongBC > 0) {
-    for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++)
-      if (Marker_StrongBC[iMarker_StrongBC] == val_marker) return true;
-  }
+  for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++)
+    if (Marker_StrongBC[iMarker_StrongBC] == val_marker) return true;
 
   return false;
 }
