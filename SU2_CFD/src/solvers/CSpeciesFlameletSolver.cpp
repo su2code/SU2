@@ -364,7 +364,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
         su2double Jaccomp = scalar * dRhodC + Density;
         su2double JacTerm = Jaccomp * Delta;
 
-        Jacobian.AddVal2Diag(iPoint, JacTerm);
+        Jacobian.AddVal2Diag(iPoint, iVar, JacTerm);
       }
     }
   }
