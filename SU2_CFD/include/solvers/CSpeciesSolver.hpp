@@ -102,7 +102,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                CConfig* config, unsigned short val_marker);
+                CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
