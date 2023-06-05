@@ -2167,7 +2167,7 @@ public:
   /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table.
    */
-  string GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
+  const string& GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the file name of the look up table.
