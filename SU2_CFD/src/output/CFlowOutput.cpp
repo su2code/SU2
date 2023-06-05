@@ -87,15 +87,6 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     /// DESCRIPTION: Species Variance
     AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
-  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    /// DESCRIPTION: Average flamelet user scalars
-    for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
-      std::stringstream str_i_var;
-      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-      AddHistoryOutput("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF", "Average of scalar " + std::to_string(i_var) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-    }
-
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -138,15 +129,6 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
-  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    /// DESCRIPTION: Average flamelet user scalars
-    for (unsigned short i_var = 0; i_var < config->GetNScalars(); i_var++) {
-      std::stringstream str_i_var;
-      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-      AddHistoryOutputPerSurface("SURFACE_SCALAR_" + str_i_var.str(), "Avg_Scalar_" + str_i_var.str(), ScreenOutputFormat::FIXED, "FLAMELET_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-    }
-  }
-  /// END_GROUP
 }
 // clang-format on
 
@@ -169,7 +151,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
-  const bool flamelet       = config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET;
   const auto nSpecies       = config->GetnSpecies();
   const auto nScalars       = config->GetNScalars();
 
@@ -579,14 +560,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
     SetAnalyzeSurfaceSpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
-  }
-
-  if (flamelet) {
-    for (unsigned short i_var = 0; i_var < nScalars; i_var++){
-      std::stringstream str_i_var;
-      str_i_var  << std::setw(2) << std::setfill('0') << i_var;
-      SetHistoryOutputValue("SURFACE_SCALAR_" + str_i_var.str(), Tot_Surface_Scalar[i_var]);
-    }
   }
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {

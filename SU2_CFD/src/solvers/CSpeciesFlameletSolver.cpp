@@ -377,37 +377,32 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  auto* first_numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num() * MAX_TERMS];
-
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    /*--- Set primitive variables w/o reconstruction. ---*/
 
-    first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
+    Res_Sour = new su2double [nVar]();
 
-    /*--- Set scalar variables w/o reconstruction. ---*/
+    Jacobian_i = new su2double* [nVar];
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double [nVar]();
+    }
 
-    first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
+    /*--- Add source terms from the lookup table directly to the residual. ---*/
 
-    first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
-
-    /*--- Set volume of the dual cell. ---*/
-
-    first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
-
-    /*--- Retrieve scalar sources from CVariable class and update numerics class data. ---*/
-    first_numerics->SetScalarSources(nodes->GetScalarSources(i_point));
-
-    auto residual = first_numerics->ComputeResidual(config);
+    for (auto i_var = 0; i_var < nVar; i_var++) {
+      Res_Sour[i_var] = nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      for (auto j_var = 0; j_var < nVar; j_var++) {
+        Jacobian_i[i_var][j_var] = 0.0;
+      }
+    }
 
     /*--- Add Residual. ---*/
 
-    LinSysRes.SubtractBlock(i_point, residual);
+    LinSysRes.SubtractBlock(i_point, Res_Sour);
 
     /*--- Implicit part. ---*/
 
-    if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
+    if (implicit) Jacobian.SubtractBlock2Diag(i_point, Jacobian_i);
   }
   END_SU2_OMP_FOR
 

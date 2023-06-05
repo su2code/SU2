@@ -104,7 +104,7 @@ class CFluidFlamelet final : public CFluidModel {
   /*!
    * \brief Get the index of a string in a vector.
    */
-  inline const int GetIdx(const vector<string>& v, const string& s) {
+  inline int GetIdx(const vector<string>& v, const string& s) const {
     auto it = find(v.begin(), v.end(), s);
 
     if (it != v.end())
@@ -116,7 +116,7 @@ class CFluidFlamelet final : public CFluidModel {
   /*!
    * \brief Get the value of the LUT variable using the string name.
    */
-  inline const su2double GetLUTVal(const string& varname_TD) {
+  inline su2double GetLUTVal(const string& varname_TD) const {
       return val_vars_TD[GetIdx(varnames_TD,varname_TD)];
     }
 
