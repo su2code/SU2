@@ -1013,7 +1013,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        string scalar_name = config->GetUserScalarName(i_scalar);
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1065,7 +1065,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        string scalar_name = config->GetUserScalarName(i_scalar);
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1116,7 +1116,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        string scalar_name = config->GetUserScalarName(i_scalar);
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
         AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1219,7 +1219,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
       SetHistoryOutputValue("MAX_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_Max(I_ENTH)));
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
-        string species_name = config->GetUserScalarName(iReactant);
+        const auto& species_name = config->GetUserScalarName(iReactant);
         SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControlVars() + iReactant)));
         SetHistoryOutputValue("MAX_" + species_name, log10(solver[SPECIES_SOL]->GetRes_Max(config->GetNControlVars() + iReactant)));
         if (multiZone) {
@@ -1274,7 +1274,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
       /*--- auxiliary species ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-        string species_name = config->GetUserScalarName(iReactant);
+        const auto& species_name = config->GetUserScalarName(iReactant);
         AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
       }
 
@@ -1312,7 +1312,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
       AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "RESIDUAL", "Residual of total enthalpy");
       /*--- residuals for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
-        string species_name = config->GetUserScalarName(iReactant);
+        const auto& species_name = config->GetUserScalarName(iReactant);
         AddVolumeOutput("RES_" + species_name, "Residual_" + species_name, "RESIDUAL", "Residual of the " + species_name + " equation");
       }
       break;
@@ -1362,7 +1362,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
         AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "LIMITER", "Limiter of total enthalpy");
         /*--- limiter for auxiliary species transport ---*/
         for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
-          string species_name = config->GetUserScalarName(iReactant);
+          const auto& species_name = config->GetUserScalarName(iReactant);
           AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
         }
       break;
@@ -1415,7 +1415,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
       /*--- no source term for enthalpy ---*/
       /*--- auxiliary species source terms ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
-        string species_name = config->GetUserScalarName(iReactant);
+        const auto& species_name = config->GetUserScalarName(iReactant);
         AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
       }
       break;
@@ -1568,7 +1568,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-        string scalar_name = config->GetUserScalarName(i_scalar);
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
         SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
         SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint)[config->GetNControlVars() + i_scalar]);
         SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControlVars() + i_scalar));
@@ -1579,7 +1579,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, I_ENTH));
         /*--- limiter for auxiliary species transport equations ---*/
         for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-          string scalar_name = config->GetUserScalarName(i_scalar);
+          const auto& scalar_name = config->GetUserScalarName(i_scalar);
           SetVolumeOutputValue("LIMITER_" + scalar_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControlVars() + i_scalar));
         }
       }
