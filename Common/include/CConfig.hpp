@@ -2149,14 +2149,16 @@ public:
    * \brief Get the name of the user scalar.
    */
   const string& GetUserScalarName(unsigned short i_user_scalar) const {
-    if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE";
+    static const std::string none = "NONE";
+    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
   }
 
   /*!
    * \brief Get the name of the user scalar source term.
    */
   const string& GetUserSourceName(unsigned short i_user_source) const {
-    if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE";
+    static const std::string none = "NONE";
+    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
 
   /*!
