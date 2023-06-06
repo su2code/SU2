@@ -105,6 +105,8 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Normalized normal vector ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
+  //std::cout << "CAvgGrad" << std::endl;
+
   for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -158,9 +160,25 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
                      config);
 
 
+//  for (int iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//     std::cout << "PrimVar_i[" << iVar << "]=" << PrimVar_i[iVar] << std::endl; 
+//     std::cout << "PrimVar_j[" << iVar << "]=" << PrimVar_j[iVar] << std::endl; 
+//  }
+//  for (int iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    std::cout << "Mean_Diffusion_Coeff[" << iSpecies << "]=" << Mean_Diffusion_Coeff[iSpecies] << std::endl;
+//    std::cout << "Mean_Eve[" << iSpecies << "]=" << Mean_Eve[iSpecies]<< std::endl;  
+//  }
+//  std::cout << "Mean_Laminar_Viscosity=" << Mean_Laminar_Viscosity << std::endl;
+//  std::cout << "Mean_Eddy_Viscosity=" << Mean_Eddy_Viscosity << std::endl;
+//  std::cout << "Mean_Thermal_Conductivity=" << Mean_Thermal_Conductivity << std::endl;
+//  std::cout << "Mean_Thermal_Conductivity_ve=" << Mean_Thermal_Conductivity_ve << std::endl;
+
   /*--- Update viscous residual ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0; iVar < nVar; iVar++){
     Flux[iVar] = Proj_Flux_Tensor[iVar];
+//    std::cout << "Flux[" << iVar <<"]=" << Flux[iVar] << std::endl;
+  }
+//  exit(0);
 
   /*--- Compute the implicit part ---*/
   if (implicit) {

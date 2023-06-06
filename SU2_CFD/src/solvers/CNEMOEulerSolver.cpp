@@ -213,6 +213,134 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   node_infty->SetPrimVar(0, FluidModel);
 
+
+
+
+  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
+
+  unsigned long iPoint, jPoint, iEdge, counter_local, counter_global = 0;
+  unsigned short iDim, iSpecies, nLineLets;
+  su2double Soundspeed_Inf, sqvel;
+  string filename_ = "flow";
+  su2double Normal[MAXNDIM] = {0.0}, Tangent[MAXNDIM]  = {0.0};
+  su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
+  su2double Product, Area, tol = 1e-16;
+
+  bool nonPhys;
+
+
+  counter_local = 0;
+
+  /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
+
+    /*--- Set mixture state ---*/
+    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+
+    /*--- Compute other freestream quantities ---*/
+    Density_Inf    = FluidModel->GetDensity();
+    Soundspeed_Inf = FluidModel->GetSoundSpeed();
+
+    sqvel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
+    }
+    const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
+
+    /*--- Initialize Solution & Solution_Old vectors ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
+    }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
+    }
+    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
+    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
+    nodes->SetSolution(iPoint,Solution);
+    nodes->SetSolution_Old(iPoint,Solution);
+
+    if(nonPhys)
+      counter_local++;
+  }
+
+//  /*--- Count number of symmetry planes where each Vertex is inserted ---*/
+//  for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+//      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        nodes->SetSymmetry(iPoint);
+//      }
+//    }
+//  }
+//
+//  /*--- Correct normal directions of edges ---*/
+//  for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+//      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//
+//        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//
+//        geometry->vertex[iMarker][iVertex]->GetNormal(Normal_Sym);
+//
+//        Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+//
+//        for(iDim = 0; iDim<nDim; iDim++){
+//          UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+//        }
+//
+//        for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
+//          Product = 0.0;
+//
+//          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+//
+//          /*---Check if neighbour point is on the same plane as the Symmetry_Plane
+//               by computing the internal product and of the Normal Vertex vector and
+//               the vector connecting iPoint and jPoint. If the product is lower than
+//               estabilished tolerance (to account for Numerical errors) both points are
+//               in the same plane as SYMMETRY_PLANE---*/
+//
+//          for(iDim = 0; iDim<nDim; iDim++){
+//            Tangent[iDim] = geometry->nodes->GetCoord(jPoint,iDim) - geometry->nodes->GetCoord(iPoint,iDim);
+//            Product += Tangent[iDim] * Normal_Sym[iDim];
+//          }
+//
+//          if (abs(Product) < tol) {
+//            Product = 0.0;
+//
+//            iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+//
+//            geometry->edges->GetNormal(iEdge,Normal);
+//
+//            for(iDim = 0; iDim<nDim; iDim++)
+//              Product += Normal[iDim]*UnitNormal_Sym[iDim];
+//
+//            for(iDim = 0; iDim<nDim; iDim++)
+//              Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+//
+//            geometry->edges->SetNormal(iEdge,Normal);
+//          }
+//        }
+//      }
+//    }
+//  }
+
+  /*--- Warning message about non-physical points ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+    if ((rank == MASTER_NODE) && (counter_global != 0))
+      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+  }
+
+
+
+
+
+
   /*--- Initial comms. ---*/
 
   CommunicateInitialState(geometry, config);
@@ -490,6 +618,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   su2double  Project_Grad_i[MAXNVAR] = {0.0}, Project_Grad_j[MAXNVAR] = {0.0};
   su2double Gamma_i = 0.0, Gamma_j = 0.0;
 
+  numerics->SetNEMOGeometry(geometry);
+  numerics->SetNEMOSolution(nodes);
+
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -498,6 +629,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
     auto iPoint = geometry->edges->GetNode(iEdge, 0);
     auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    //std::cout << "iPoint=" << iPoint << std::endl;
+    //std::cout << "jPoint=" << jPoint << std::endl;
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
@@ -612,8 +746,12 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
       numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
 
+    numerics->SetPoint(iPoint,jPoint);
+
     /*--- Compute the residual ---*/
     auto residual = numerics->ComputeResidual(config);
+
+    //if (iPoint == 0 && jPoint==1) exit(0);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     bool err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
@@ -1518,6 +1656,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
   /*--- Allocate arrays ---*/
   su2double Normal[MAXNDIM] = {0.0};
 
+  conv_numerics->SetNEMOGeometry(geometry);
+  conv_numerics->SetNEMOSolution(nodes);  
+
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker];
        iVertex++) {
@@ -1549,8 +1690,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      conv_numerics->SetPoint(iPoint, iPoint);
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
-        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
+        conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in
@@ -1559,7 +1701,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
-
+//
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
@@ -1593,25 +1735,25 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         nodes->GetDiffusionCoeff(iPoint));
+                                         node_infty->GetDiffusionCoeff(0));
 
         /*--- Laminar viscosity ---*/
         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           nodes->GetLaminarViscosity(iPoint));
+                                           node_infty->GetLaminarViscosity(0));
 
         /*--- Eddy viscosity ---*/
         visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        nodes->GetEddyViscosity(iPoint));
+                                        node_infty->GetEddyViscosity(0));
 
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(
             nodes->GetThermalConductivity(iPoint),
-            nodes->GetThermalConductivity(iPoint));
+            node_infty->GetThermalConductivity(0));
 
         /*--- Vib-el. thermal conductivity ---*/
         visc_numerics->SetThermalConductivity_ve(
             nodes->GetThermalConductivity_ve(iPoint),
-            nodes->GetThermalConductivity_ve(iPoint));
+            node_infty->GetThermalConductivity_ve(0));
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);

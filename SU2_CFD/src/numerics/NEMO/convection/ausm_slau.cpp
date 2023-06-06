@@ -40,7 +40,8 @@ CUpwAUSM_SLAU_Base_NEMO::CUpwAUSM_SLAU_Base_NEMO(unsigned short val_nDim, unsign
 
   rhos_i = new su2double[nSpecies];
   rhos_j = new su2double[nSpecies];
-
+  FcL    = new su2double [nVar];
+  FcR    = new su2double [nVar];
   Fc_L = new su2double[nVar];
   Fc_R = new su2double[nVar];
   dM_LP = new su2double[nVar];
@@ -65,6 +66,8 @@ CUpwAUSM_SLAU_Base_NEMO::~CUpwAUSM_SLAU_Base_NEMO(void) {
 
   delete[] Fc_L;
   delete[] Fc_R;
+  delete[] FcL;
+  delete[] FcR;  
   delete[] dM_LP;
   delete[] dM_RM;
   delete[] dP_LP;
@@ -371,78 +374,366 @@ void CUpwAUSM_SLAU_Base_NEMO::ComputeJacobian(su2double** val_Jacobian_i, su2dou
   }
 }
 
-CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig* config) {
-  /*--- Compute geometric quantities ---*/
-  Area = GeometryToolbox::Norm(nDim, Normal);
+//CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig* config) {
+//  /*--- Compute geometric quantities ---*/
+//  Area = GeometryToolbox::Norm(nDim, Normal);
+//
+//  for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+//
+//  /*--- Pull stored primitive variables ---*/
+//  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
+//  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    rhos_i[iSpecies] = V_i[RHOS_INDEX + iSpecies];
+//    rhos_j[iSpecies] = V_j[RHOS_INDEX + iSpecies];
+//  }
+//  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+//    Velocity_i[iDim] = V_i[VEL_INDEX + iDim];
+//    Velocity_j[iDim] = V_j[VEL_INDEX + iDim];
+//  }
+//
+//  Pressure_i = V_i[P_INDEX];
+//  Enthalpy_i = V_i[H_INDEX];
+//  Density_i = V_i[RHO_INDEX];
+//  SoundSpeed_i = V_i[A_INDEX];
+//
+//  Pressure_j = V_j[P_INDEX];
+//  Enthalpy_j = V_j[H_INDEX];
+//  Density_j = V_j[RHO_INDEX];
+//  SoundSpeed_j = V_j[A_INDEX];
+//
+//  e_ve_i = 0;
+//  e_ve_j = 0;
+//  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    e_ve_i += (V_i[RHOS_INDEX + iSpecies] * eve_i[iSpecies]) / Density_i;
+//    e_ve_j += (V_j[RHOS_INDEX + iSpecies] * eve_j[iSpecies]) / Density_j;
+//  }
+//
+//  /*--- Projected velocities ---*/
+//  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
+//  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
+//
+//  for (int iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//    std::cout << "rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << std::endl;
+//    std::cout << "rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << std::endl;
+//  }
+//  for (int iDim = 0; iDim < nDim; iDim++) {
+//    std::cout << "u_i[" << iDim << "]=" << Velocity_i[iDim] << std::endl;
+//    std::cout << "u_j[" << iDim << "]=" << Velocity_j[iDim] << std::endl;  
+//  }
+//  std::cout << "Pressure_i=" << Pressure_i << std::endl;
+//  std::cout << "Pressure_j=" << Pressure_j << std::endl;
+//  std::cout << "SoundSpeed_i=" << SoundSpeed_i << std::endl;
+//  std::cout << "SoundSpeed_j=" << SoundSpeed_j << std::endl;
+//  std::cout << "Enthalpy_i=" << Enthalpy_i << std::endl;
+//  std::cout << "Enthalpy_j=" << Enthalpy_j << std::endl;
+//  std::cout << "rho_i=" << Density_i << std::endl;
+//  std::cout << "rho_j=" << Density_j << std::endl;
+//  for (int iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//    std::cout << "eve_i[" << iSpecies << "]=" << eve_i[iSpecies] << std::endl;
+//    std::cout << "eve_j[" << iSpecies << "]=" << eve_j[iSpecies] << std::endl;
+//  }
+//  
+//
+//  /*--- Compute mass and pressure fluxes of specific scheme ---*/
+//  ComputeInterfaceQuantities(config, PressureFlux, M_F, A_F);
+//
+//  su2double MassFlux_i = M_F * A_F[0];
+//  su2double MassFlux_j = M_F * A_F[1];
+//
+//  su2double DissFlux_i = fabs(MassFlux_i);
+//  su2double DissFlux_j = fabs(MassFlux_j);
+//
+//  /*--- Assign left & right convective flux vectors ---*/
+//  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    Fc_L[iSpecies] = rhos_i[iSpecies];
+//    Fc_R[iSpecies] = rhos_j[iSpecies];
+//  }
+//  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+//    Fc_L[nSpecies + iDim] = Density_i * Velocity_i[iDim];
+//    Fc_R[nSpecies + iDim] = Density_j * Velocity_j[iDim];
+//  }
+//  Fc_L[nSpecies + nDim] = Density_i * Enthalpy_i;
+//  Fc_R[nSpecies + nDim] = Density_j * Enthalpy_j;
+//  Fc_L[nSpecies + nDim + 1] = Density_i * e_ve_i;
+//  Fc_R[nSpecies + nDim + 1] = Density_j * e_ve_j;
+//
+//  /*--- Compute numerical flux ---*/
+//  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+//    Flux[iVar] = 0.5 * ((MassFlux_i + DissFlux_i) * Fc_L[iVar] + (MassFlux_j - DissFlux_j) * Fc_R[iVar]) * Area;
+//
+//  for (unsigned short iDim = 0; iDim < nDim; iDim++) Flux[nSpecies + iDim] += PressureFlux[iDim] * Area;
+//
+//  for (unsigned short iVar = 0; iVar < nVar; iVar++) {  
+//    std::cout << "Flux[" << iVar << "]=" << Flux[iVar] << std::endl;  
+//  }
+//  //exit(0);
+//
+//  /*--- If required, compute Jacobians (approximated using AUSM) ---*/
+//  if (implicit) ComputeJacobian(Jacobian_i, Jacobian_j);
+//
+//  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+//}
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig *config) {
 
-  /*--- Pull stored primitive variables ---*/
+  unsigned short iDim, iVar, iSpecies;
+  su2double rho_i, rho_j, pFi,
+  e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
+
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
+  su2double ProjVel_i, ProjVel_j;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
+  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+  su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+
+  su2double f, f0, g, h_k, P_k, Point_aux;
+  su2double sqVi, sqVj, gam, Hnorm, gtl_i, gtl_j, atl, aij;  
+
+  /*--- Face area ---*/
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
+
+  /*-- Unit Normal ---*/
+  for (iDim = 0; iDim < nDim; iDim++){
+    UnitNormal[iDim] = Normal[iDim]/Area;
+    //std::cout << "Normal[iDim]=" <<Normal[iDim]<< std::endl;
+  }
+
+  Minf  = config->GetMach();
+
+  /*--- Extracting primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhos_i[iSpecies] = V_i[RHOS_INDEX + iSpecies];
-    rhos_j[iSpecies] = V_j[RHOS_INDEX + iSpecies];
-  }
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[VEL_INDEX + iDim];
-    Velocity_j[iDim] = V_j[VEL_INDEX + iDim];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
+    rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
 
-  Pressure_i = V_i[P_INDEX];
-  Enthalpy_i = V_i[H_INDEX];
-  Density_i = V_i[RHO_INDEX];
-  SoundSpeed_i = V_i[A_INDEX];
+  sq_veli = 0.0; sq_velj = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim]  = V_i[VEL_INDEX+iDim];
+    Velocity_j[iDim]  = V_j[VEL_INDEX+iDim];
+    sq_veli   += Velocity_i[iDim]*Velocity_i[iDim];
+    sq_velj   += Velocity_j[iDim]*Velocity_j[iDim];
+  }
 
-  Pressure_j = V_j[P_INDEX];
-  Enthalpy_j = V_j[H_INDEX];
-  Density_j = V_j[RHO_INDEX];
-  SoundSpeed_j = V_j[A_INDEX];
+  Pressure_i   = V_i[P_INDEX];   Pressure_j   = V_j[P_INDEX];
+  Enthalpy_i   = V_i[H_INDEX];   Enthalpy_j   = V_j[H_INDEX];
+  SoundSpeed_i   = V_i[A_INDEX];   SoundSpeed_j   = V_j[A_INDEX];
+  Density_i = V_i[RHO_INDEX]; Density_j = V_j[RHO_INDEX];
 
-  e_ve_i = 0;
-  e_ve_j = 0;
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    e_ve_i += (V_i[RHOS_INDEX + iSpecies] * eve_i[iSpecies]) / Density_i;
-    e_ve_j += (V_j[RHOS_INDEX + iSpecies] * eve_j[iSpecies]) / Density_j;
+  rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  e_ve_i = 0.0; e_ve_j = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    e_ve_i += (rhos_i[iSpecies]*eve_i[iSpecies])/Density_i;
+    e_ve_j += (rhos_j[iSpecies]*eve_j[iSpecies])/Density_j;
   }
 
   /*--- Projected velocities ---*/
-  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
-  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
-
-  /*--- Compute mass and pressure fluxes of specific scheme ---*/
-  ComputeInterfaceQuantities(config, PressureFlux, M_F, A_F);
-
-  su2double MassFlux_i = M_F * A_F[0];
-  su2double MassFlux_j = M_F * A_F[1];
-
-  su2double DissFlux_i = fabs(MassFlux_i);
-  su2double DissFlux_j = fabs(MassFlux_j);
-
-  /*--- Assign left & right convective flux vectors ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Fc_L[iSpecies] = rhos_i[iSpecies];
-    Fc_R[iSpecies] = rhos_j[iSpecies];
+  ProjVel_i = 0.0; ProjVel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVel_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVel_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Fc_L[nSpecies + iDim] = Density_i * Velocity_i[iDim];
-    Fc_R[nSpecies + iDim] = Density_j * Velocity_j[iDim];
+
+  sqVi = 0.0;   sqVj = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sqVi += (Velocity_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
+            (Velocity_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+    sqVj += (Velocity_j[iDim]-ProjVel_j*UnitNormal[iDim]) *
+            (Velocity_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
-  Fc_L[nSpecies + nDim] = Density_i * Enthalpy_i;
-  Fc_R[nSpecies + nDim] = Density_j * Enthalpy_j;
-  Fc_L[nSpecies + nDim + 1] = Density_i * e_ve_i;
-  Fc_R[nSpecies + nDim + 1] = Density_j * e_ve_j;
+
+
+  /*--- Calculate interface numerical gammas and speed of sound ---*/
+  Hnorm = 0.5*(Enthalpy_i-0.5*sqVi + Enthalpy_j-0.5*sqVj);
+  gtl_i = Gamma_i;
+  gtl_j = Gamma_j;
+  gam   = 0.5*(gtl_i+gtl_j);
+  atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
+
+  // ATL has to account sound speed for reactive gases
+
+ /* if (fabs(rho_i-rho_j)/(0.5*(rho_i+rho_j)) < 1E-3)   // Why this If condition ?
+    atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
+  else {
+    //Is the bottom equation correct ??
+    atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i*rho_i) - (gtl_j-1.0)/(gtl_j*rho_j))/
+                            ((gtl_j+1.0)/(gtl_j*rho_i) - (gtl_i+1.0)/(gtl_i*rho_j))));
+
+
+    // Or should it be
+    atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i)*rho_i - (gtl_j-1.0)/(gtl_j)*rho_j)/
+                            ((gtl_j+1.0)/(gtl_j)*rho_i - (gtl_i+1.0)/(gtl_i)*rho_j)));
+  } */
+
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//    std::cout << "rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << std::endl;
+//    std::cout << "rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << std::endl;
+//  }
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    std::cout << "Velocity_i[" << iDim << "]=" << Velocity_i[iDim] << std::endl;
+//    std::cout << "Velocity_j[" << iDim << "]=" << Velocity_j[iDim] << std::endl;  
+//  }
+//  std::cout << "Pressure_i=" << Pressure_i << std::endl;
+//  std::cout << "Pressure_j=" << Pressure_j << std::endl;
+//  std::cout << "SoundSpeed_i=" << SoundSpeed_i << std::endl;
+//  std::cout << "SoundSpeed_j=" << SoundSpeed_j << std::endl;
+//  std::cout << "Enthalpy_i=" << Enthalpy_i << std::endl;
+//  std::cout << "Enthalpy_j=" << Enthalpy_j << std::endl;
+//  std::cout << "Density_i=" << Density_i << std::endl;
+//  std::cout << "Density_j=" << Density_j << std::endl;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//    std::cout << "eve_i[" << iSpecies << "]=" << eve_i[iSpecies] << std::endl;
+//    std::cout << "eve_j[" << iSpecies << "]=" << eve_j[iSpecies] << std::endl;
+//  }
+//  std::cout << "Gamma_i=" << Gamma_i << std::endl;
+//  std::cout << "Gamma_j=" << Gamma_j << std::endl; 
+  //exit(0);
+
+  if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
+  else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
+
+  aF=aij;
+
+  //std::cout << "ProjVel_i=" << ProjVel_i << std::endl;
+  //std::cout << "aF=" << aF << std::endl;
+
+  mL  = ProjVel_i/aF;
+  mR  = ProjVel_j/aF;
+
+  rhoF = 0.5*(Density_i+Density_j);
+  MFsq = 0.5*(sq_veli+sq_velj)/(aF*aF);
+
+  param1 = max(MFsq, Minf*Minf);
+  Mrefsq = (min(1.0, param1));
+  fa = 2.0*sqrt(Mrefsq)-Mrefsq;
+
+  alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
+  beta = 1.0/8.0;
+
+  
+
+  /*--- Pressure diffusion term ---*/
+
+  h_k=1.0;
+  for (auto Point_aux : nemo_geometry->nodes->GetPoints(jPoint)) {
+    P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(jPoint,P_INDEX);
+    h_k = min(h_k,P_k);
+    h_k = min(h_k,1/P_k);
+  }
+
+  for (auto Point_aux : nemo_geometry->nodes->GetPoints(iPoint)) {
+    P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(iPoint,P_INDEX);
+    h_k = min(h_k,P_k);
+    h_k = min(h_k,1/P_k);
+  }
+  
+
+  g=0.5*(1+cos(PI_NUMBER*h_k));
+  f=0.5*(1-cos(PI_NUMBER*min(1.0,max(abs(mL),abs(mR)))));
+
+  //std::cout << "f=" << f << std::endl;
+  //std::cout << "rhoF=" << rhoF << std::endl;
+  //std::cout << "aF=" << aF << std::endl;
+  //std::cout << "g=" << g << std::endl;
+
+  Mp = -0.5*(1-f)*(Pressure_j-Pressure_i)/(rhoF*aF*aF)*(1-g);
+
+  
+
+  if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0)+beta*(mL*mL-1.0)*(mL*mL-1.0);
+  else                 mLP = 0.5*(mL+fabs(mL));
+
+  if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0)-beta*(mR*mR-1.0)*(mR*mR-1.0);
+  else                 mRM = 0.5*(mR-fabs(mR)); 
+
+  //std::cout << "mLP=" << mLP << std::endl;
+  //std::cout << "mRM=" << mRM << std::endl;  
+  //std::cout << "Mp=" << Mp << std::endl;
+
+  mF = mLP + mRM + Mp;
+
+  if (fabs(mL) <= 1.0) pLP = (0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
+  else                 pLP = 0.5*(mL+fabs(mL))/mL;
+
+  if (fabs(mR) <= 1.0) pRM = (0.25*(mR-1.0)*(mR-1.0)*(2.0+mR)-alpha*mR*(mR*mR-1.0)*(mR*mR-1.0));
+  else                 pRM = 0.5*(mR-fabs(mR))/mR;
+
+
+  f0=min(1.0,max(f,Minf*Minf));
+
+  // This is an alternative formulation already used by AUSMPLUSUP2 (But multiplied by f0)
+  pFi = f0*sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;
+ // pFi = f0*(pLP+pRM-1.0)*0.5*(Pressure_i+Pressure_j);
+
+   pF  = 0.5*(Pressure_j+Pressure_i)+0.5*(pLP-pRM)*(Pressure_i-Pressure_j)+pFi;
+
+  Phi = fabs(mF);
+
+  mfP=0.5*(mF+Phi);
+  mfM=0.5*(mF-Phi);
+
+  /*--- Assign left & right covective fluxes ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    FcL[iSpecies] = rhos_i[iSpecies]*aF;
+    FcR[iSpecies] = rhos_j[iSpecies]*aF;
+  }
+  for (iDim = 0; iDim < nDim; iDim++) {
+    FcL[nSpecies+iDim] = Density_i*aF*Velocity_i[iDim];
+    FcR[nSpecies+iDim] = Density_j*aF*Velocity_j[iDim];
+  }
+  FcL[nSpecies+nDim]   = Density_i*aF*Enthalpy_i;
+  FcR[nSpecies+nDim]   = Density_j*aF*Enthalpy_j;
+  FcL[nSpecies+nDim+1] = Density_i*aF*e_ve_i;
+  FcR[nSpecies+nDim+1] = Density_j*aF*e_ve_j;
+
 
   /*--- Compute numerical flux ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Flux[iVar] = 0.5 * ((MassFlux_i + DissFlux_i) * Fc_L[iVar] + (MassFlux_j - DissFlux_j) * Fc_R[iVar]) * Area;
+  for (iVar = 0; iVar < nVar; iVar++){
+    //std::cout << "mfP=" << mfP << std::endl;
+    //std::cout << "FcL[" << iVar <<"]=" << FcL[iVar] << std::endl;
+    //std::cout << "mfM=" << mfM << std::endl;
+    //std::cout << "FcR[" << iVar << "]=" << FcR[iVar] << std::endl;
+    //std::cout << "Area=" << Area << std::endl; 
+    Flux[iVar] = (mfP*FcL[iVar]+mfM*FcR[iVar])*Area;
+  }  
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) Flux[nSpecies + iDim] += PressureFlux[iDim] * Area;
+  //for (iDim = 0; iDim < nDim; iDim++) {
+  //  std::cout << "Velocity_i[" << iDim << "]=" << Velocity_i[iDim] << std::endl;
+  //  std::cout << "Velocity_j[" << iDim << "]=" << Velocity_j[iDim] << std::endl;  
+  //}  
 
-  /*--- If required, compute Jacobians (approximated using AUSM) ---*/
-  if (implicit) ComputeJacobian(Jacobian_i, Jacobian_j);
+  for (iDim = 0; iDim < nDim; iDim++){
+    //std::cout << "pF=" << pF << std::endl;
+    //std::cout << "UnitNormal[iDim]=" << UnitNormal[iDim] << std::endl;
+    //std::cout << "g=" << g << std::endl;
+    //std::cout << "gam=" << gam << std::endl;
+    //std::cout << "P_i=" << Pressure_i << std::endl;
+    //std::cout << "P_j=" << Pressure_j << std::endl;
+    //std::cout << "aF=" << aF << std::endl;
+    //std::cout << "pLP=" << pLP << std::endl;
+    //std::cout << "pRM=" << pRM << std::endl;
+    //std::cout << "Velocity_j[" << iDim << "]=" << Velocity_j[iDim] << std::endl;
+    //std::cout << "ProjVel_j=" << ProjVel_j << std::endl;
+    //std::cout << "Velocity_i[" << iDim << "]=" << Velocity_i[iDim] << std::endl;
+    //std::cout << "ProjVel_i=" << ProjVel_i << std::endl;
+    //std::cout << "Area=" << Area << std::endl;    
+    Flux[nSpecies+iDim] += (pF*UnitNormal[iDim]-g*gam*0.5*(Pressure_i+Pressure_j)/aF*pLP*pRM*(Velocity_j[iDim]-ProjVel_j*UnitNormal[iDim]-Velocity_i[iDim]+ProjVel_i*UnitNormal[iDim]))*Area;
+  }
+//  for (unsigned short iVar = 0; iVar < nVar; iVar++) {  
+//    std::cout << "Flux[" << iVar << "]=" << Flux[iVar] << std::endl;  
+//  }
+  //exit(0);
 
-  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
+
 
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad, const CConfig* config)
@@ -572,6 +863,10 @@ void CUpwAUSMPLUSM_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2do
                                                     su2double& interface_mach, su2double* interface_soundspeed) {
   const su2double sq_veli = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
   const su2double sq_velj = GeometryToolbox::SquaredNorm(nDim, Velocity_j);
+
+  std::cout << "Gamma_i=" << Gamma_i << std::endl;
+  std::cout << "Gamma_j=" << Gamma_j << std::endl; 
+  //exit(0);  
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
   const su2double Enthalpy_norm = 0.5 * (Enthalpy_i + Enthalpy_j);

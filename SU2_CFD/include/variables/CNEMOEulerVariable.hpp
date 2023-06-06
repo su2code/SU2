@@ -272,6 +272,16 @@ class CNEMOEulerVariable : public CFlowVariable {
   }
 
   /*!
+   * \brief Set the Energy vector from the old solution.
+   * \param[in] val_energy - Pointer to energy.
+   */
+  inline void SetEnergy_Old(unsigned long iPoint, const vector<su2double>& val_energy)  {
+    for (unsigned long i = 0; i < 2; i++){
+      Solution_Old(iPoint,nSpecies+nDim+i) = val_energy[i]*Primitive(iPoint,RHO_INDEX);
+     }
+  }  
+
+  /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */

@@ -40,6 +40,7 @@ class CUpwAUSM_SLAU_Base_NEMO : public CNEMONumerics {
   su2double A_F[2] = {0.0}, PressureFlux[MAXNDIM] = {0.0};
   su2double M_L, M_R, M_F;
 
+  su2double *FcL, *FcR, *FcLR;
   su2double* Fc_L = nullptr;
   su2double* Fc_R = nullptr;
   su2double* Fc_LR = nullptr;
