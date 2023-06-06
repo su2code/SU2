@@ -4061,8 +4061,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
-  const su2double AoS = config->GetAoS()*PI_NUMBER/180.0;
-
   /* --- Initialize values at first iteration --- */
 
   if (InnerIter == 0) {
