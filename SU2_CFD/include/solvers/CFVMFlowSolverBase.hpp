@@ -2201,8 +2201,8 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Updates the components of the farfield velocity vector.
    */
-  inline void UpdateFarfield_Velocity(const CConfig* config) final {
-    // /*--- Retrieve the AoA and AoS (degrees) ---*/
+  inline void UpdateFarfieldVelocity(const CConfig* config) final {
+    /*--- Retrieve the AoA and AoS (degrees) ---*/
     const su2double AoA = config->GetAoA() * PI_NUMBER / 180.0;
     const su2double AoS = config->GetAoS() * PI_NUMBER / 180.0;
     /*--- Update the freestream velocity vector at the farfield

@@ -99,12 +99,12 @@ void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
 
 void CDriver::SetFarFieldAoA(const passivedouble AoA) {
   config_container[ZONE_0]->SetAoA(AoA);
-  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfield_Velocity(config_container[ZONE_0]);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
 }
 
 void CDriver::SetFarFieldAoS(const passivedouble AoS) {
   config_container[ZONE_0]->SetAoS(AoS);
-  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfield_Velocity(config_container[ZONE_0]);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////

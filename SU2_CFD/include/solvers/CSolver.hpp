@@ -2872,9 +2872,9 @@ public:
                                        su2double val_flowdir) { }
 
   /*!
-   * \brief A virtual member
+   * \brief Updates the components of the farfield velocity vector.
    */
-  inline virtual void UpdateFarfield_Velocity(const CConfig* config) {}
+  inline virtual void UpdateFarfieldVelocity(const CConfig* config) {}
 
   /*!
    * \brief A virtual member

@@ -4101,7 +4101,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA = AoA + AoA_inc;
       config->SetAoA(AoA);
     }
-    UpdateFarfield_Velocity(config);
+    UpdateFarfieldVelocity(config);
   }
 }
 
