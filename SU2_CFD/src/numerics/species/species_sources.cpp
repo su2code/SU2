@@ -77,7 +77,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
     AD::SetPreaccIn(V_i, nDim+6);
   }
   else {
-    AD::SetPreaccIn(V_i, nDim+6);
+    AD::SetPreaccIn(V_i, nDim+7);
   }
 
   /*--- Initialization. ---*/

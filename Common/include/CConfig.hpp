@@ -2128,7 +2128,7 @@ public:
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
    * \return Flame initialization for the flamelet model.
    */
-  const su2double *GetFlameInit() const { return flame_init; }
+  const su2double* GetFlameInit() const { return flame_init; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
@@ -2148,14 +2148,14 @@ public:
   /*!
    * \brief Get the name of the user scalar.
    */
-  string GetUserScalarName(unsigned short i_user_scalar) const {
+  const string& GetUserScalarName(unsigned short i_user_scalar) const {
     if(n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return "NONE";
   }
 
   /*!
    * \brief Get the name of the user scalar source term.
    */
-  string GetUserSourceName(unsigned short i_user_source) const {
+  const string& GetUserSourceName(unsigned short i_user_source) const {
     if(n_user_sources > 0) return user_source_names[i_user_source]; else return "NONE";
   }
 

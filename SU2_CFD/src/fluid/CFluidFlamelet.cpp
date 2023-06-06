@@ -29,7 +29,7 @@
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
-  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  rank = SU2_MPI::GetRank();
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();

@@ -67,7 +67,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
     AddHistoryOutput("RMS_ADJ_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
     
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -103,7 +103,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
     AddHistoryOutput("MAX_ADJ_TOTAL_ENTHALPY", "max[Enth]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
     
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("MAX_ADJ_" + scalar_name, "max[scalar_" + scalar_name + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -141,7 +141,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
     AddHistoryOutput("BGS_ADJ_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("BGS_ADJ_" + scalar_name, "bgs[" + scalar_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -223,7 +223,7 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
       }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       SetHistoryOutputValue("RMS_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_RMS(2 + i_scalar)));
       SetHistoryOutputValue("MAX_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_Max(2 + i_scalar)));
       if (multiZone) {
@@ -269,7 +269,7 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* confi
     AddVolumeOutput("ADJ_TOTAL_ENTHALPY", "Adjoint_Total_Enthalpy", "SOLUTION", "Adjoint of the total enthalphy.");
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddVolumeOutput("ADJ_" + scalar_name, "Adjoint_" + scalar_name, "SOLUTION", "Adjoint of " + scalar_name);
     }
   }
@@ -309,7 +309,7 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
     AddVolumeOutput("RES_ADJ_TOTAL_ENTHALPY", "Residual_Adjoint_Total_Enthalpy", "RESIDUAL", "Residual of the adjoint of the total enthalpy");
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddVolumeOutput("RES_ADJ_" + scalar_name, "Residual_Adjoint_" + scalar_name, "RESIDUAL", "Residual of the adjoint of " + scalar_name);
     }
   }
@@ -358,7 +358,7 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
       SetVolumeOutputValue("RES_ADJ_TOTAL_ENTHALPY", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_ENTH) - Node_AdjSpecies->GetSolution_Old(iPoint, I_ENTH));
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      string scalar_name = config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
       SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, 2 + i_scalar));
       SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, 2 + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, 2 + i_scalar));
     }

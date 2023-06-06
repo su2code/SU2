@@ -30,20 +30,19 @@
 #include "../../Common/include/containers/CLookUpTable.hpp"
 #include "CFluidModel.hpp"
 
-
-enum LOOKUP_TD {
-  TEMPERATURE,
-  DENSITY,
-  HEATCAPACITY,
-  VISCOSITY,
-  CONDUCTIVITY,
-  DIFFUSIONCOEFFICIENT,
-  MOLARWEIGHT,
-  SIZE
-};
-
 class CFluidFlamelet final : public CFluidModel {
- protected:
+ private:
+  enum LOOKUP_TD {
+    TEMPERATURE,
+    DENSITY,
+    HEATCAPACITY,
+    VISCOSITY,
+    CONDUCTIVITY,
+    DIFFUSIONCOEFFICIENT,
+    MOLARWEIGHT,
+    SIZE
+  };
+
   int rank;
 
   unsigned short n_scalars;
@@ -61,8 +60,6 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<string> varnames_TD;    /*!< \brief Lookup names for thermodynamic state variables. */
   vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
-
-
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -85,7 +82,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] exit_code = error code
    */
   unsigned long GetEnthFromTemp(su2double& enthalpy, const su2double val_prog, const su2double val_temp,
-                                su2double initial_value = 0);
+                                su2double initial_value = 0) override;
 
   /*!
    * \brief Return a pointer to the lookup table.
@@ -98,20 +95,20 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] iVar - index to the species
    * \param[out] mass_diffusivity - value of the mass diffusivity
    */
-  inline su2double GetMassDiffusivity(int iVar) final { return mass_diffusivity; };
+  inline su2double GetMassDiffusivity(int iVar) override { return mass_diffusivity; }
 
   /*!
    * \brief Get the thermal conductivity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Kt - value of the thermal conductivity
    */
-  inline su2double GetThermalConductivity() override { return Kt; };
+  inline su2double GetThermalConductivity() override { return Kt; }
 
   /*!
    * \brief Get the laminar viscosity of the species.
    * \param[in] iVar - index to the species
    * \param[out] Mu - value of the laminar viscosity
    */
-  inline su2double GetLaminarViscosity() override { return Mu; };
+  inline su2double GetLaminarViscosity() override { return Mu; }
 
 };

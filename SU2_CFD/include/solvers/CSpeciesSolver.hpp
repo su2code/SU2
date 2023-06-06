@@ -77,8 +77,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
+  void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
