@@ -4101,24 +4101,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA = AoA + AoA_inc;
       config->SetAoA(AoA);
     }
-
-    AoA *= PI_NUMBER/180.0;
-
-    /*--- Update the freestream velocity vector at the farfield
-     * Compute the new freestream velocity with the updated AoA,
-     * "Velocity_Inf" is shared with config. ---*/
-
-    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
-
-    if (nDim == 2) {
-      Velocity_Inf[0] = cos(AoA)*Vel_Infty_Mag;
-      Velocity_Inf[1] = sin(AoA)*Vel_Infty_Mag;
-    }
-    else {
-      Velocity_Inf[0] = cos(AoA)*cos(AoS)*Vel_Infty_Mag;
-      Velocity_Inf[1] = sin(AoS)*Vel_Infty_Mag;
-      Velocity_Inf[2] = sin(AoA)*cos(AoS)*Vel_Infty_Mag;
-    }
+    UpdateFarfield_Velocity(config);
   }
 }
 
