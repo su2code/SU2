@@ -381,6 +381,9 @@ FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getI
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 FORCEINLINE void SetDerivative(int index, const double val) {
+  if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+    return;
+
   using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
   AD::getTape().setGradient(index, val, BoundsChecking::False);
 }
