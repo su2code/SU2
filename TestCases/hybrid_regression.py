@@ -470,6 +470,24 @@ def main():
     sine_gust.test_vals = [-1.977520, 3.481804, -0.012402, -0.007454]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
+    
+    # Cosine gust in z-direction
+    cosine_gust           = TestCase('cosine_gust_zdir')
+    cosine_gust.cfg_dir   = "gust"
+    cosine_gust.cfg_file  = "cosine_gust_zdir.cfg"
+    cosine_gust.test_iter = 79
+    cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
+    cosine_gust.unsteady  = True
+    test_list.append(cosine_gust)
+    
+    # Gust with mesh deformation
+    gust_mesh_defo           = TestCase('gust_with_mesh_deformation')
+    gust_mesh_defo.cfg_dir   = "gust"
+    gust_mesh_defo.cfg_file  = "gust_with_mesh_deformation.cfg"
+    gust_mesh_defo.test_iter = 6
+    gust_mesh_defo.test_vals = [-1.844778, 0.000846, -0.000408]
+    gust_mesh_defo.unsteady  = True
+    test_list.append(gust_mesh_defo)
 
     # Aeroelastic
     aeroelastic           = TestCase('aeroelastic')
