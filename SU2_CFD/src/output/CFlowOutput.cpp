@@ -825,7 +825,6 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       const bool allowSkip = adjoint && (output.type == OperationType::FUNCTION);
 
       /*--- Setup indices for the symbols in the expression. ---*/
-
       const auto primIdx = CPrimitiveIndices<unsigned long>(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
           config->GetNEMOProblem(), nDim, config->GetnSpecies());
       ConvertVariableSymbolsToIndices(primIdx, allowSkip, output);
