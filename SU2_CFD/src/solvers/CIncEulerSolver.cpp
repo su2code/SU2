@@ -414,6 +414,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetEnergy_FreeStream(Energy_FreeStream);
 
+  /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
+  delete auxFluidModel;
+
   /*--- Compute Mach number ---*/
 
   if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {

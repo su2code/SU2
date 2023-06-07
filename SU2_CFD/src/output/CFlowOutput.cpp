@@ -176,8 +176,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
   su2activematrix Surface_Species(nMarker, nSpecies);
   Surface_Species = su2double(0.0);
-  su2activematrix Surface_Scalars(nMarker, nScalars);
-  Surface_Scalars = su2double(0.0);
 
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
@@ -193,7 +191,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   su2double  Tot_Momentum_Distortion       = 0.0;
   su2double  Tot_SecondOverUniformity      = 0.0;
   vector<su2double> Tot_Surface_Species(nSpecies,0.0);
-  vector<su2double> Tot_Surface_Scalar(nScalars,0.0);
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
 
@@ -307,8 +304,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
   su2activematrix Surface_Species_Local(nMarker_Analyze,nSpecies);
   Surface_Species_Local = su2double(0.0);
-  su2activematrix Surface_Scalars_Local(nMarker_Analyze,nScalars);
-  Surface_Scalars_Local = su2double(0.0);
 
   vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
   vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
@@ -325,8 +320,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
   su2activematrix Surface_Species_Total(nMarker_Analyze,nSpecies);
   Surface_Species_Total = su2double(0.0);
-  su2activematrix Surface_Scalars_Total(nMarker_Analyze,nScalars);
-  Surface_Scalars_Total = su2double(0.0);
 
   vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
@@ -356,8 +349,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
           for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
             Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
-          for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-            Surface_Scalars_Local(iMarker_Analyze, iVar) += Surface_Scalars(iMarker, iVar);
         }
 
       }
@@ -388,7 +379,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   Allreduce(Surface_Area_Local, Surface_Area_Total);
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
   Allreduce_su2activematrix(Surface_Species_Local, Surface_Species_Total);
-  Allreduce_su2activematrix(Surface_Scalars_Local, Surface_Scalars_Total);
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
@@ -410,8 +400,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
         Surface_Species_Total(iMarker_Analyze, iVar) /= Weight;
-      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-        Surface_Scalars_Total(iMarker_Analyze, iVar) /= Weight;
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -424,8 +412,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
         Surface_Species_Total(iMarker_Analyze, iVar) = 0.0;
-      for (unsigned short iVar = 0; iVar < nScalars; iVar++)
-        Surface_Scalars_Total(iMarker_Analyze, iVar) = 0.0;
     }
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
