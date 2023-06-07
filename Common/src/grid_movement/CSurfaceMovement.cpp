@@ -893,7 +893,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry* geometry, CConfig* config, 
     cout << "Computed parametric coord for FFD box '" << FFDBox->GetTag() << "'\n";
     cout << "  Number of vertices (Total, Inside FFD, Mapped to FFD): " << GlobalVertex;
     cout << ", " << GlobalVisited << ", " << GlobalMapped << "\n";
-    cout << "  Max coord differece: " << MaxDiff << "\n";
+    cout << "  Max coord difference: " << MaxDiff << "\n";
   }
 
   /*--- After the point inversion, copy the original information back. ---*/

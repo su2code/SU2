@@ -245,6 +245,14 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                               solver_container[iZone][INST_0],
                                                                               config_container[iZone], TimeIter);
     }
+    if (!fsi && (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)) {
+      /*--- Set the initial condition for SPECIES solver (species or flamelet) ----------------------*/
+      solver_container[iZone][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
+    }
+
+
   }
 
   /*--- Ramp turbo values for unsteady problems here, otherwise do it over outer iterations. ---*/

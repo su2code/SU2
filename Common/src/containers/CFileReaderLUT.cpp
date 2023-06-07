@@ -1,5 +1,5 @@
 /*!
- * \file CFileReaderLUT.hpp
+ * \file CFileReaderLUT.cpp
  * \brief reading lookup table for tabulated fluid properties
  * \author D. Mayer, T. Economon
  * \version 7.5.1 "Blackbird"
