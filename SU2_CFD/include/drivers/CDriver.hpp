@@ -508,6 +508,34 @@ class CDriver : public CDriverBase {
    */
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
+  /*!
+   * \brief Set the angle of attack of the farfield.
+   * \param[in] alpha - Angle (degree).
+   */
+  void SetFarFieldAoA(passivedouble alpha);
+
+  /*!
+   * \brief Set the angle of sideslip of the farfield.
+   * \param[in] beta - Angle (degree).
+   */
+  void SetFarFieldAoS(passivedouble beta);
+
+  /*!
+   * \brief Set the dynamic mesh translation rates.
+   * \param[in] xDot - Value of translational velocity in x-direction.
+   * \param[in] yDot - Value of translational velocity in y-direction.
+   * \param[in] zDot - Value of translational velocity in z-direction.
+   */
+  void SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot);
+
+  /*!
+   * \brief Set the dynamic mesh rotation rates.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
+   */
+  void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+
 /// \}
 };
 

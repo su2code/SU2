@@ -97,6 +97,16 @@ void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   }
 }
 
+void CDriver::SetFarFieldAoA(const passivedouble AoA) {
+  config_container[ZONE_0]->SetAoA(AoA);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
+}
+
+void CDriver::SetFarFieldAoS(const passivedouble AoS) {
+  config_container[ZONE_0]->SetAoS(AoS);
+  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,3 +146,24 @@ void CDriver::BoundaryConditionsUpdate() {
     geometry_container[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0],config_container[iZone]);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/* Functions related to dynamic mesh */
+////////////////////////////////////////////////////////////////////////////////
+
+void CDriver::SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot) {
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetTranslation_Rate(0, xDot);
+    config_container[iZone]->SetTranslation_Rate(1, yDot);
+    config_container[iZone]->SetTranslation_Rate(2, zDot);
+  }
+}
+
+void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetRotation_Rate(0, rot_x);
+    config_container[iZone]->SetRotation_Rate(1, rot_y);
+    config_container[iZone]->SetRotation_Rate(2, rot_z);
+  }
+}
+

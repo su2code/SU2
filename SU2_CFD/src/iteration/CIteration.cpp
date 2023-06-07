@@ -60,9 +60,33 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
       break;
 
-      /*--- Already initialized in the static mesh movement routine at driver level. ---*/
     case STEADY_TRANSLATION:
+      /*--- Set or update the translating frame mesh movement with the current translation rates,
+       * which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting translational grid velocities." << endl;
+
+      /*--- Set the translational velocity on all grid levels. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        geometry[iMGlevel]->SetTranslationalVelocity(config, iMGlevel == 0);
+
+      break;
+
     case ROTATING_FRAME:
+      /*--- Set or update the rotating frame mesh movement with the current translation and rotation
+       * rates, which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting rotating frame grid velocities." << endl;
+
+      /*--- Set the grid velocities on all multigrid levels for a steadily
+         rotating reference frame. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
+        geometry[iMGlevel]->SetRotationalVelocity(config, iMGlevel == 0);
+        geometry[iMGlevel]->SetShroudVelocity(config);
+      }
+
       break;
   }
 

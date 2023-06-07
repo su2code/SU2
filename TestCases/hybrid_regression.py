@@ -470,6 +470,24 @@ def main():
     sine_gust.test_vals = [-1.977520, 3.481804, -0.012402, -0.007454]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
+    
+    # Cosine gust in z-direction
+    cosine_gust           = TestCase('cosine_gust_zdir')
+    cosine_gust.cfg_dir   = "gust"
+    cosine_gust.cfg_file  = "cosine_gust_zdir.cfg"
+    cosine_gust.test_iter = 79
+    cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
+    cosine_gust.unsteady  = True
+    test_list.append(cosine_gust)
+    
+    # Gust with mesh deformation
+    gust_mesh_defo           = TestCase('gust_with_mesh_deformation')
+    gust_mesh_defo.cfg_dir   = "gust"
+    gust_mesh_defo.cfg_file  = "gust_with_mesh_deformation.cfg"
+    gust_mesh_defo.test_iter = 6
+    gust_mesh_defo.test_vals = [-1.844778, 0.000846, -0.000408]
+    gust_mesh_defo.unsteady  = True
+    test_list.append(gust_mesh_defo)
 
     # Aeroelastic
     aeroelastic           = TestCase('aeroelastic')
@@ -751,6 +769,18 @@ def main():
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     file_diff_list.append(pywrapper_translating_naca0012)
+    
+    # NACA0012 with updated moving frame
+    pywrapper_updated_moving_frame_naca0012 = TestCase('pywrapper_updated_moving_frame_naca0012')
+    pywrapper_updated_moving_frame_naca0012.cfg_dir = "py_wrapper/updated_moving_frame_NACA12"
+    pywrapper_updated_moving_frame_naca0012.cfg_file = "config.cfg"
+    pywrapper_updated_moving_frame_naca0012.command = TestCase.Command(exec = "python", param = "run_su2.py")
+    pywrapper_updated_moving_frame_naca0012.timeout = 60
+    pywrapper_updated_moving_frame_naca0012.reference_file = "forces_0.csv.ref"
+    pywrapper_updated_moving_frame_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
+    pywrapper_updated_moving_frame_naca0012.test_file = "forces_0.csv"
+    pywrapper_updated_moving_frame_naca0012.enabled_on_cpu_arch = ["x86_64"]
+    file_diff_list.append(pywrapper_updated_moving_frame_naca0012)
 
     ######################################
     ### RUN TESTS                      ###
