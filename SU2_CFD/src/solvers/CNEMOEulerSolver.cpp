@@ -1090,12 +1090,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   ////////// PLOT TH COND TBATH /////////////////
 
-  ofstream myfile1;
-  myfile1.open ("eve1.csv");
-  ofstream myfile2;
-  myfile2.open ("eve2.csv");  
+ // ofstream myfile1;
+ // myfile1.open ("eve1.csv");
+ // ofstream myfile2;
+ // myfile2.open ("eve2.csv");  
 
-  vector<su2double> rhos; rhos.resize(nSpecies);
+ // vector<su2double> rhos; rhos.resize(nSpecies);
  
 
 //  su2double T0 = 60;
