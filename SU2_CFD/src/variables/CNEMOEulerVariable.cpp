@@ -151,7 +151,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
   fluidmodel_transport = static_cast<CNEMOGas*>(FluidModel_transport);
 
-  std::cout << "iPoint=" << iPoint << std::endl;
+  //std::cout << "iPoint=" << iPoint << std::endl;
 
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
@@ -233,8 +233,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
-//  if (true){
-
     //std::cout << "rhoE=" << rhoE - 0.5*rho*sqvel << std::endl;
     //std::cout << "rhoEve=" << rhoEve << std::endl;
     //std::cout << std::endl << "0.5*rho*sqvel=" << 0.5*rho*sqvel << std::endl;
@@ -242,23 +240,29 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     //  std::cout << std::endl << "rhos["<< iSpecies << "]=" << rhos[iSpecies] << std::endl;
     //}
-//  }  
-
+    
   /*--- Assign temperatures ---*/
   const su2double T_old   = V[T_INDEX];
   const su2double Tve_old = V[TVE_INDEX];
+
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old, T_old);
 
-
+  //std::cout << "rhoEve=" << rhoEve << std::endl;
+  //std::cout << "Eve=" << rhoEve/V[RHO_INDEX] << std::endl;
+  //const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old, T_old);
+ // std::cout << "T[1]=" <<T[1] << std::endl;
 
   /*--- Temperatures ---*/
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
 
-  //if (rhoEve <= 0) rhoEve = 0.0001; V[TVE_INDEX] = 55.0; //nonPhys = true; return nonPhys;
-
   if (V[T_INDEX] < 50)   V[T_INDEX] = 50;
   if (V[TVE_INDEX] < 50) V[TVE_INDEX] = 50;
+  
+
+ // if (V[TVE_INDEX] < 250) V[TVE_INDEX] = 65;
+
+  //if (rhoEve <= 0) rhoEve = 0.0001; V[TVE_INDEX] = 55.0; //nonPhys = true; return nonPhys;
 
   //std::cout << std::endl << "V[T_INDEX]=" << V[T_INDEX] << std::endl;
   //std::cout << std::endl << "V[TVE_INDEX]=" << V[TVE_INDEX] << std::endl;
@@ -268,11 +272,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   if (V[T_INDEX] >= Tmax) {   nonPhys = true; return nonPhys;}
   else if (V[T_INDEX] != V[T_INDEX]){  nonPhys = true; return nonPhys;} 
   
-
   if (!monoatomic){
-    if (V[TVE_INDEX] <= Tvemin)      {  nonPhys = true; return nonPhys;}
-    if (V[TVE_INDEX] >= Tvemax) {  nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] != V[TVE_INDEX]){ std::cout << "Tve nan" << std::endl; nonPhys = true; return nonPhys;} 
+    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){   nonPhys = true; return nonPhys;} 
   }
   else {V[TVE_INDEX] = Tve_Freestream;}
 

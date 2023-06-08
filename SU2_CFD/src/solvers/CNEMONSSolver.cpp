@@ -135,7 +135,9 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel, FluidModel_transport);
 
+
     //if (nonphysical) std::cout << std::endl << "iPoint=" <<  geometry->nodes->GetGlobalIndex(iPoint) << std::endl;
+
 
     /* Check for non-realizable states for reporting. */
 
