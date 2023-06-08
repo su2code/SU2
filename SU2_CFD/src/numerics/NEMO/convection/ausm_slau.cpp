@@ -551,7 +551,7 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
 
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
-  Hnorm = 0.5*(Enthalpy_i-0.5*sqVi + Enthalpy_j-0.5*sqVj);
+  Hnorm = 0.5*(Enthalpy_i-0.5*Density_i*sqVi + Enthalpy_j-0.5*Density_j*sqVj);
   gtl_i = Gamma_i;
   gtl_j = Gamma_j;
   gam   = 0.5*(gtl_i+gtl_j);
