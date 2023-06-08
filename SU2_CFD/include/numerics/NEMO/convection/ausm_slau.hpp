@@ -49,6 +49,7 @@ class CUpwAUSM_SLAU_Base_NEMO : public CNEMONumerics {
   su2double* dP_RM = nullptr;
   su2double* da_L = nullptr;
   su2double* da_R = nullptr;
+  su2double *FcL, *FcR, *FcLR;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */

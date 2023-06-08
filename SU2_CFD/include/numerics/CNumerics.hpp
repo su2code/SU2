@@ -35,6 +35,8 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
 
 class CElement;
 class CFluidModel;
@@ -1611,6 +1613,13 @@ public:
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
   /*!
+   * \brief Set the points id.
+   * \param[in] Point_i - Point id at i.
+   * \param[in] Point_j - Point id at j.
+   */
+  virtual inline void SetPoint(unsigned long Point_i, unsigned long Point_j)       { }  
+
+  /*!
    * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
    * \param[in] SolverSPvals - Struct holding the values.
    */
@@ -1627,7 +1636,23 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  /*!
+   * \brief Set the geometry variable.
+   * \param[in] geometry - geometry of the simulation.
+   */
+  virtual inline void SetNEMOGeometry(CGeometry *geometry)                             { }
+
+  /*!
+   * \brief Set the solution variable.
+   * \param[in] solution - solution of the simulation.
+   */
+  // CHANGE THIS ?, Trying to only use CNEMONUMERICS
+  virtual inline void SetNEMOSolution(CNEMOEulerVariable *solution)                    { }  
+  
 };
+
+
 
 /*!
  * /brief Alias for a "do nothing" source term class

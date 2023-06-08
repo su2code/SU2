@@ -255,8 +255,6 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool center_jst_ke = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
 
-  //std::cout << std::endl << "CommonPreprocessing" << std::endl;
-
   /*--- Set the primitive variables ---*/
   ompMasterAssignBarrier(ErrorCounter,0);
   SU2_OMP_ATOMIC
@@ -501,6 +499,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   su2double  Project_Grad_i[MAXNVAR] = {0.0}, Project_Grad_j[MAXNVAR] = {0.0};
   su2double Gamma_i = 0.0, Gamma_j = 0.0;
 
+  numerics->SetNEMOGeometry(geometry);
+  numerics->SetNEMOSolution(nodes);
+
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -620,6 +621,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     }
     if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
       numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
+
+    numerics->SetPoint(iPoint,jPoint);
 
     /*--- Compute the residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -766,8 +769,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   const bool axisymm    = config->GetAxisymmetric();
   const bool viscous    = config->GetViscous();
   const bool rans       = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-
-  //std::cout << std::endl << "Source_Residual" << std::endl;
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -1622,6 +1623,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
   /*--- Allocate arrays ---*/
   su2double Normal[MAXNDIM] = {0.0};
 
+  conv_numerics->SetNEMOGeometry(geometry);
+  conv_numerics->SetNEMOSolution(nodes);    
+
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker];
        iVertex++) {
@@ -1655,8 +1659,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      conv_numerics->SetPoint(iPoint, iPoint);
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
-        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
+        conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in
@@ -1699,25 +1704,25 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         nodes->GetDiffusionCoeff(iPoint));
+                                         node_infty->GetDiffusionCoeff(0));
 
         /*--- Laminar viscosity ---*/
         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           nodes->GetLaminarViscosity(iPoint));
+                                           node_infty->GetLaminarViscosity(0));
 
         /*--- Eddy viscosity ---*/
         visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        nodes->GetEddyViscosity(iPoint));
+                                        node_infty->GetEddyViscosity(0));
 
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(
             nodes->GetThermalConductivity(iPoint),
-            nodes->GetThermalConductivity(iPoint));
+            node_infty->GetThermalConductivity(0));
 
         /*--- Vib-el. thermal conductivity ---*/
         visc_numerics->SetThermalConductivity_ve(
             nodes->GetThermalConductivity_ve(iPoint),
-            nodes->GetThermalConductivity_ve(iPoint));
+            node_infty->GetThermalConductivity_ve(0));
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
@@ -2033,6 +2038,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   const unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
+  conv_numerics->SetNEMOGeometry(geometry);
+  conv_numerics->SetNEMOSolution(nodes);  
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2195,6 +2203,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
+      conv_numerics->SetPoint(iPoint, iPoint);
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);

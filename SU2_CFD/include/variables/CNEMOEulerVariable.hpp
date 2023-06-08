@@ -192,7 +192,7 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \brief Set the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
    */
-  void SetVelocity2(unsigned long iPoint) final;
+  void SetVelocity2(unsigned long iPoint) final; 
 
   /*!
    * \brief Get the flow pressure.
