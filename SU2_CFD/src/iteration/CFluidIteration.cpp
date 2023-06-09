@@ -297,11 +297,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   // described in the NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational
   // Fluid Dynamics Code FUN3D the desired gust is prescribed as the negative of the grid velocity.
 
-  // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split
-  // Velocity Method in Simulation of Airfoil Gust Responses Using Prescribed Velocities. In this routine the gust
-  // derivatives needed for the source term are calculated when applicable. If the gust derivatives are zero the source
-  // term is also zero. The source term itself is implemented in the class CSourceWindGust
-
   unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();
 
   /*--- Gust Parameters from config ---*/
@@ -318,8 +313,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config->GetnMGLevels();
 
-  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dz, dgust_dt;
-  su2double *Gust, *GridVel, *NewGridVel, *GustDer;
+  su2double x, y, x_gust;
+  su2double *Gust, *GridVel, *NewGridVel;
 
   su2double Physical_dt = config->GetDelta_UnstTime();
   unsigned long TimeIter = config->GetTimeIter();
@@ -331,7 +326,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
   Gust       = new su2double[nDim]();
   NewGridVel = new su2double[nDim]();
-  GustDer    = new su2double[nDim+1]();
 
   // Print some information to check that we are doing the right thing. Not sure how to convert the index back to a string...
   if (rank == MASTER_NODE) {
@@ -370,10 +364,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       for (iDim = 0; iDim < nDim; iDim++) {
         Gust[iDim] = 0.0;
       }
-      dgust_dx = 0.0;
-      dgust_dy = 0.0;
-      dgust_dz = 0.0;
-      dgust_dt = 0.0;
 
       /*--- Begin applying the gust ---*/
 
@@ -398,11 +388,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
               Gust[GustDir] = gust_amp * (sin(2 * PI_NUMBER * x_gust));
-
-              // Gust derivatives
-              // dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              // dgust_dy = 0;
-              // dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
@@ -410,11 +395,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
               Gust[GustDir] = gust_amp * 0.5 * (1 - cos(2 * PI_NUMBER * x_gust));
-
-              // Gust derivatives
-              // dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-              // dgust_dy = 0;
-              // dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
@@ -449,22 +429,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
         }
       }
 
-      /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-      if (nDim == 2) {
-        GustDer[0] = dgust_dx;
-        GustDer[1] = dgust_dy;
-        GustDer[2] = dgust_dt;
-      }
-      else {
-        GustDer[0] = dgust_dx;
-        GustDer[1] = dgust_dy;
-        GustDer[2] = dgust_dz;
-        GustDer[3] = dgust_dt;
-      }
-      // I think we don't need to set any source terms because they depend on the derivatives, which are zero in all cases from above.
-      solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
-      solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGustDer(iPoint, GustDer);
-
       GridVel = geometry[iMGlevel]->nodes->GetGridVel(iPoint);
 
       /*--- Store new grid velocity ---*/
@@ -477,7 +441,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   }
 
   delete[] Gust;
-  delete[] GustDer;
   delete[] NewGridVel;
 }
 
