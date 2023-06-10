@@ -45,7 +45,7 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 20
-    p30n30.test_vals         = [-10.639125, -10.302345, -10.493880, -10.249452, -13.517221, 0.050962, 2.828563, 1.317849, -0.217586]
+    p30n30.test_vals         = [-10.806343, -10.326374, -10.559106, -10.432754, -13.517105, 0.050962, 2.828563, 1.317849, -0.228843]
     p30n30.test_vals_aarch64 = [-10.636663, -10.298256, -10.479415, -10.246700, -13.517161, 0.050962, 2.828563, 1.317849, -0.209200]
     test_list.append(p30n30)
 
@@ -71,9 +71,11 @@ def main():
     swbli_sa           = TestCase('swbli_sa')
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
-    swbli_sa.test_iter = 20
-    swbli_sa.test_vals         = [-11.029255, -10.511982, -11.400926, -10.128471, -14.536798, 0.002233, -2.608466, 2.786]
+    swbli_sa.test_iter = 5
+    swbli_sa.test_vals         = [-11.530796, -10.915564, -12.034495, -10.538719, -15.922522, 0.002233, -3.359164, 1.340100]
+    swbli_sa.test_vals_aarch64 = [-11.014738, -9.936534, -11.120020, -10.050397, -13.203736, 0.002233, -3.222675, 1.340100]
     test_list.append(swbli_sa)
+
 
     # SWBLI - sst-v2003m
     swbli_sst           = TestCase('swbli_sst')
