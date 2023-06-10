@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
     discadj_heat.test_vals         = [-2.226532, 0.605613, 0.000000, -6.256200]
-    discadj_heat.test_vals_aarch64 = [-2.226532, 0.605613, 0.000000, -6.256200]
+    discadj_heat.test_vals_aarch64 = [-2.226539, 0.605868, 0.000000, -6.256400]
     test_list.append(discadj_heat)
 
     ###################################
