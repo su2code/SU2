@@ -313,8 +313,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config->GetnMGLevels();
 
-  su2double x, y, x_gust;
-  su2double *Gust, *GridVel, *NewGridVel;
+  su2double x, y, x_gust, Gust[3] = {0.0}, NewGridVel[3] = {0.0};
+  const su2double* GridVel = nullptr;
 
   su2double Physical_dt = config->GetDelta_UnstTime();
   unsigned long TimeIter = config->GetTimeIter();
@@ -323,9 +323,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   su2double Physical_t = TimeIter * Physical_dt;
 
   su2double Uinf = solver[MESH_0][FLOW_SOL]->GetVelocity_Inf(0);  // Assumption gust moves at infinity velocity
-
-  Gust       = new su2double[nDim]();
-  NewGridVel = new su2double[nDim]();
 
   // Print some information to check that we are doing the right thing. Not sure how to convert the index back to a string...
   if (rank == MASTER_NODE) {
@@ -439,9 +436,6 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       }
     }
   }
-
-  delete[] Gust;
-  delete[] NewGridVel;
 }
 
 void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vector<su2double>& x0, vector<su2double>& y0,
