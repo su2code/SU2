@@ -837,6 +837,7 @@ void CConfig::SetPointersNull() {
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
   Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
+  Marker_StrongBC             = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1351,8 +1352,15 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPECIES_CLIPPING_MAX", nSpecies_Clipping_Max, Species_Clipping_Max);
   /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
-  /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
-  addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
+
+  /*!\brief FLAME_INIT \n DESCRIPTION: flame initialization using the flamelet model \ingroup Config*/
+  /*--- flame offset (x,y,z) ---*/
+  flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
+  /*--- flame normal (nx, ny, nz) ---*/
+  flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
+  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
+  flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1495,6 +1503,9 @@ void CConfig::SetConfig_Options() {
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
   addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions,
                         Kind_WallFunctions, IntInfo_WallFunctions, DoubleInfo_WallFunctions);
+
+  /*!\brief MARKER_STRONG_BC\n DESCRIPTION: Markers where a strong BC must be applied.*/
+  addStringListOption("MARKER_SPECIES_STRONG_BC", nMarker_StrongBC, Marker_StrongBC);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
@@ -2081,6 +2092,18 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
+
+  /*!\brief File name of the flamelet look up table.*/
+  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+
+  /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
+  addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
+
+  /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
+  addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
+
+  /* DESCRIPTION: Names of the user scalar source terms. */
+  addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -2987,6 +3010,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("DYN_TIME is deprecated. Use MAX_TIME instead.\n\n");
           else if (!option_name.compare("DYNAMIC_ANALYSIS"))
             newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
+          else if (!option_name.compare("SPECIES_USE_STRONG_BC"))
+            newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3297,6 +3322,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == FLUID_MIXTURE) ||
+                    (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
@@ -3644,9 +3670,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
-    SU2_MPI::Error("The expression for the custom objective function was not set.\n"
-                   "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
+  if (nObj > 0){
+    if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
+      SU2_MPI::Error("The expression for the custom objective function was not set.\n"
+                    "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Check for unsteady problem ---*/
@@ -3845,7 +3873,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           }
           break;
         default:
-          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Fluid mixture: viscosity model not available.", CURRENT_FUNCTION);
           break;
       }
 
@@ -3889,6 +3917,35 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         default:
           if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
           break;
+      }
+    }
+
+
+    if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
+
+      if (Kind_FluidModel != FLUID_FLAMELET) {
+        SU2_MPI::Error("The use of SCALAR_MODEL= FLAMELET requires the FLUID_MODEL option to be FLUID_FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the CONDUCTIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the DIFFUSIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
       }
     }
 
@@ -4869,9 +4926,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_FluidModel = CONSTANT_DENSITY;
   }
 
-  /*--- Energy equation must be active for any fluid models other than constant density. ---*/
-
   if ((Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) && (Kind_Species_Model==SPECIES_MODEL::NONE)) Energy_Equation = true;
+  /*--- For the flamelet combustion model, energy equation is a passive field, we lookup T and write it to the field ---*/
+  if (Kind_Species_Model == SPECIES_MODEL::FLAMELET ) Energy_Equation = false;
 
   if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;
@@ -4881,7 +4938,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -5323,7 +5380,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+  if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
@@ -5393,23 +5450,34 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nSpecies = nSpecies_Init;
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
-    su2double Species_Init_Sum = 0.0;
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
-      Species_Init_Sum += Species_Init[iSpecies];
-    }
-    checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
-
-    for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
-      su2double Inlet_SpeciesVal_Sum = 0.0;
+    /*--- Note, only for species transport, not for flamelet model ---*/
+    if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+      su2double Species_Init_Sum = 0.0;
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
-        Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+        checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
+        Species_Init_Sum += Species_Init[iSpecies];
       }
-      checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
+
+      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+        su2double Inlet_SpeciesVal_Sum = 0.0;
+        for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
+          Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+        }
+        checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      }
     }
 
   } // species transport checks
+
+  /*--- Define some variables for flamelet model. ---*/
+  if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
+    /*--- The controlling variables are progress variable and total enthalpy ---*/
+    n_control_vars = 2;
+    /*--- We can have additional user defined transported scalars ---*/
+    n_scalars = n_control_vars + n_user_scalars;
+  }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
     SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
@@ -5956,7 +6024,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
-  iMarker_Emissivity,
+  iMarker_Emissivity, iMarker_StrongBC,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
   iMarker_SobolevBC;
 
@@ -7466,6 +7534,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++) {
       BoundaryTable << Marker_Emissivity[iMarker_Emissivity]; // << "(" << Wall_Emissivity[iMarker_Emissivity] << ")";
       if (iMarker_Emissivity < nMarker_Emissivity-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_StrongBC != 0) {
+    BoundaryTable << "Strong boundary";
+    for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++) {
+      BoundaryTable << Marker_StrongBC[iMarker_StrongBC];
+      if (iMarker_StrongBC < nMarker_StrongBC-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -9505,6 +9582,15 @@ su2double CConfig::GetWall_Emissivity(const string& val_marker) const {
   return Wall_Emissivity[iMarker_Emissivity];
 }
 
+bool CConfig::GetMarker_StrongBC(const string& val_marker) const {
+
+  unsigned short iMarker_StrongBC = 0;
+
+  for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++)
+    if (Marker_StrongBC[iMarker_StrongBC] == val_marker) return true;
+
+  return false;
+}
 su2double CConfig::GetFlowLoad_Value(const string& val_marker) const {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)

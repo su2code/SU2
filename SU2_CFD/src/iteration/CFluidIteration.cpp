@@ -98,7 +98,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
   }
 
-  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
+  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
@@ -306,13 +306,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   // derivatives needed for the source term are calculated when applicable. If the gust derivatives are zero the source
   // term is also zero. The source term itself is implemented in the class CSourceWindGust
 
-  if (rank == MASTER_NODE) cout << endl << "Running simulation with a Wind Gust." << endl;
-  unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();  // We assume nDim = 2
-  if (nDim != 2) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
-    }
-  }
+  unsigned short iDim, nDim = geometry[MESH_0]->GetnDim();
 
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config->GetGust_Type();
@@ -328,7 +322,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config->GetnMGLevels();
 
-  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
+  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dz, dgust_dt;
   su2double *Gust, *GridVel, *NewGridVel, *GustDer;
 
   su2double Physical_dt = config->GetDelta_UnstTime();
@@ -339,16 +333,17 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
   su2double Uinf = solver[MESH_0][FLOW_SOL]->GetVelocity_Inf(0);  // Assumption gust moves at infinity velocity
 
-  Gust = new su2double[nDim];
-  NewGridVel = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Gust[iDim] = 0.0;
-    NewGridVel[iDim] = 0.0;
-  }
+  Gust       = new su2double[nDim]();
+  NewGridVel = new su2double[nDim]();
+  GustDer    = new su2double[nDim+1]();
 
-  GustDer = new su2double[3];
-  for (unsigned short i = 0; i < 3; i++) {
-    GustDer[i] = 0.0;
+  // Print some information to check that we are doing the right thing. Not sure how to convert the index back to a string...
+  if (rank == MASTER_NODE) {
+	  cout << endl << "Setting up a wind gust type " << Gust_Type << " with amplitude of " << gust_amp << " in direction " << GustDir << endl;
+	  cout << " U_inf      = " << Uinf << endl;
+	  cout << " Physical_t = " << Physical_t << endl;
+	  su2double loc_x = (xbegin + L + Uinf * (Physical_t - tbegin));
+	  cout << " Location_x = " << loc_x << endl;
   }
 
   // Vortex variables
@@ -370,7 +365,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
     for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
       /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation())) {
+      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation()) && !(config->GetDeform_Mesh())) {
         for (iDim = 0; iDim < nDim; iDim++) geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
       }
 
@@ -381,6 +376,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       }
       dgust_dx = 0.0;
       dgust_dy = 0.0;
+      dgust_dz = 0.0;
       dgust_dt = 0.0;
 
       /*--- Begin applying the gust ---*/
@@ -417,7 +413,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
           case ONE_M_COSINE:
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
-              Gust[GustDir] = gust_amp * (1 - cos(2 * PI_NUMBER * x_gust));
+              Gust[GustDir] = gust_amp * 0.5 * (1 - cos(2 * PI_NUMBER * x_gust));
 
               // Gust derivatives
               // dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
@@ -458,11 +454,18 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
       }
 
       /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-
-      GustDer[0] = dgust_dx;
-      GustDer[1] = dgust_dy;
-      GustDer[2] = dgust_dt;
-
+      if (nDim == 2) {
+        GustDer[0] = dgust_dx;
+        GustDer[1] = dgust_dy;
+        GustDer[2] = dgust_dt;
+      }
+      else {
+        GustDer[0] = dgust_dx;
+        GustDer[1] = dgust_dy;
+        GustDer[2] = dgust_dz;
+        GustDer[3] = dgust_dt;
+      }
+      // I think we don't need to set any source terms because they depend on the derivatives, which are zero in all cases from above.
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGustDer(iPoint, GustDer);
 

@@ -1453,6 +1453,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
@@ -3056,6 +3057,8 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
+            solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
         }
       }
     }

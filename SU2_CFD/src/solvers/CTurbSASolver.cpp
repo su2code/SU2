@@ -235,7 +235,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double muT = rho*fv1*nu_hat;
 
-    if (neg_spalart_allmaras) muT = max(muT,0.0);
+    if (neg_spalart_allmaras && nu_hat < 0) muT = 0.0;
 
     nodes->SetmuT(iPoint,muT);
 

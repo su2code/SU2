@@ -38,6 +38,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   heat = config->GetEnergy_Equation();
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
@@ -295,7 +296,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat)
+  if (heat || weakly_coupled_heat || flamelet)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
   SetVolumeOutputFieldsScalarSolution(config);
@@ -331,6 +332,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
@@ -352,9 +355,15 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3)
       AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
-    if (heat || weakly_coupled_heat)
+    if (heat || weakly_coupled_heat || flamelet)
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
+
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
 
   SetVolumeOutputFieldsScalarMisc(config);
 
@@ -391,7 +400,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
 
-  if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
+  if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver

@@ -697,6 +697,7 @@ private:
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_StrongBC,                   /*!< \brief Number of markers for which a strong BC must be applied. */
   nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
@@ -708,6 +709,7 @@ private:
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_StrongBC,                   /*!< \brief Markers for which a strong BC must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
@@ -1182,7 +1184,7 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies = 0;              /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
@@ -1212,6 +1214,23 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
+
+  /*--- Additional flamelet solver options ---*/
+  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+
+  /*--- lookup table ---*/
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+
+  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
+  string* table_lookup_names;         /*!< \brief Names of LUT variables. */
+  string file_name_lut;               /*!< \brief Filename of the LUT. */
+  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
+  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2109,6 +2128,63 @@ public:
    * \return Flag for strong BC's.
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
+
+  /*!
+   * \brief Get the flame initialization.
+   *        (x1,x2,x3) = flame offset.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
+   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
+   * \return Flame initialization for the flamelet model.
+   */
+  const su2double* GetFlameInit() const { return flame_init; }
+
+  /*!
+   * \brief Get the number of control variables for flamelet model.
+   */
+  unsigned short GetNControlVars() const { return n_control_vars; }
+
+  /*!
+   * \brief Get the number of total transported scalars for flamelet model.
+   */
+  unsigned short GetNScalars() const { return n_scalars; }
+
+  /*!
+   * \brief Get the number of user scalars for flamelet model.
+   */
+  unsigned short GetNUserScalars() const { return n_user_scalars; }
+
+  /*!
+   * \brief Get the name of the user scalar.
+   */
+  const string& GetUserScalarName(unsigned short i_user_scalar) const {
+    static const std::string none = "NONE";
+    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
+  }
+
+  /*!
+   * \brief Get the name of the user scalar source term.
+   */
+  const string& GetUserSourceName(unsigned short i_user_source) const {
+    static const std::string none = "NONE";
+    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
+  }
+
+  /*!
+   * \brief Get the number of transported scalars for combustion.
+   */
+  unsigned short GetNLookups() const { return n_lookups; }
+
+  /*!
+   * \brief Get the name of the variable that we want to retrieve from the lookup table.
+   */
+  const string& GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
+
+  /*!
+   * \brief Get the file name of the look up table.
+   * \return File name of the look up table.
+   */
+  const string& GetFileNameLUT() const { return file_name_lut; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -9313,6 +9389,13 @@ public:
    * \return The wall emissivity.
    */
   su2double GetWall_Emissivity(const string& val_index) const;
+
+  /*!
+   * \brief Get if boundary is strong or weak.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return true if strong BC.
+   */
+  bool GetMarker_StrongBC(const string& val_index) const;
 
   /*!
    * \brief Get the value of the CFL condition for radiation solvers.
