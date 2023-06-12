@@ -273,7 +273,7 @@ class CFluidModel {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  virtual void SetTDState_rhoe(su2double rho, su2double e) {}
+  virtual void SetTDState_rhoe(su2double rho, su2double e, const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -281,7 +281,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (T).
    */
-  virtual void SetTDState_PT(su2double P, su2double T) {}
+  virtual void SetTDState_PT(su2double P, su2double T,const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -289,7 +289,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (v).
    */
-  virtual void SetTDState_Prho(su2double P, su2double rho) {}
+  virtual void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -298,7 +298,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  virtual void SetEnergy_Prho(su2double P, su2double rho) {}
+  virtual void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -307,7 +307,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (s).
    *
    */
-  virtual void SetTDState_hs(su2double h, su2double s) {}
+  virtual void SetTDState_hs(su2double h, su2double s, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -316,7 +316,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  virtual void SetTDState_rhoT(su2double rho, su2double T) {}
+  virtual void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -324,7 +324,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (s).
    */
-  virtual void SetTDState_Ps(su2double P, su2double s) {}
+  virtual void SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -332,7 +332,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (v).
    */
-  virtual void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {}
+  virtual void ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief Virtual member.

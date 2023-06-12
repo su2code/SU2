@@ -232,3 +232,29 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Kt = WilkeConductivity(val_scalars);
   ComputeMassDiffusivity();
 }
+
+void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
+  Density = rho;
+  StaticEnergy = e;
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant; 
+  Pressure = (Cp/Cv - 1.0) * Density * StaticEnergy;
+  Temperature = (Cp/Cv) * StaticEnergy / Gas_Constant;
+  SoundSpeed2 = (Cp/Cv - 1.0) * Pressure / Density;
+  dPdrho_e = (Cp/Cv - 1.0) * StaticEnergy;
+  dPde_rho = (Cp/Cv - 1.0) * Density;
+  dTdrho_e = 0.0;
+  dTde_rho = (Cp/Cv - 1.0) / Gas_Constant;
+  if (wilke) {
+    Mu = WilkeViscosity(val_scalars);
+  } else if (davidson) {
+    Mu = DavidsonViscosity(val_scalars);
+  }
+
+  Kt = WilkeConductivity(val_scalars);
+  ComputeMassDiffusivity();
+
+  //if (ComputeEntropy) Entropy = (1.0 / (Cp/Cv - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
+}

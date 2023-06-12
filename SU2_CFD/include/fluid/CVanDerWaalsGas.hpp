@@ -51,28 +51,28 @@ class CVanDerWaalsGas final : public CIdealGas {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe(su2double rho, su2double e) override;
+  void SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT(su2double P, su2double T) override;
+  void SetTDState_PT(su2double P, su2double T, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetTDState_Prho(su2double P, su2double rho) override;
+  void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless Internal Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless state using Enthalpy and Entropy
@@ -80,7 +80,7 @@ class CVanDerWaalsGas final : public CIdealGas {
    * \param[in] s - second thermodynamic variable (s).
    *
    */
-  void SetTDState_hs(su2double h, su2double s) override;
+  void SetTDState_hs(su2double h, su2double s, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless state using Density and Temperature
@@ -88,14 +88,14 @@ class CVanDerWaalsGas final : public CIdealGas {
    * \param[in] T - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT(su2double rho, su2double T) override;
+  void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] P - first thermodynamic variable (P).
    * \param[in] s - second thermodynamic variable (s).
    */
-  void SetTDState_Ps(su2double P, su2double s) override;
+  void SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
@@ -104,5 +104,5 @@ class CVanDerWaalsGas final : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
+  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) override;
 };

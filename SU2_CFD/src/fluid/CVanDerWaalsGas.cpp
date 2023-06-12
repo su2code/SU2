@@ -33,7 +33,7 @@ CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, 
   Zed = 1.0;
 }
 
-void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e) {
+void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   Density = rho;
   StaticEnergy = e;
 
@@ -53,7 +53,7 @@ void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e) {
   Zed = Pressure / (Gas_Constant * Temperature * Density);
 }
 
-void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
+void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
   su2double toll = 1e-5;
   unsigned short nmax = 20, count = 0;
   su2double A, B, Z, DZ = 1.0, F, F1;
@@ -84,15 +84,15 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
   Density = P / (Zed * Gas_Constant * T);
 
   su2double e = T * Gas_Constant / Gamma_Minus_One - a * Density;
-  SetTDState_rhoe(Density, e);
+  SetTDState_rhoe(Density, e, val_scalars);
 }
 
-void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
-  SetTDState_rhoe(rho, StaticEnergy);
+void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) {
+  SetEnergy_Prho(P, rho, val_scalars);
+  SetTDState_rhoe(rho, StaticEnergy, val_scalars);
 }
 
-void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
+void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s, const su2double *val_scalars) {
   su2double v, T, rho, f, fmid, rtb;
   su2double x1, x2, xmid, dx, fx1, fx2;
   su2double toll = 1e-5, FACTOR = 0.2;
@@ -128,7 +128,7 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
   fmid = fx2;
   if (f * fmid >= 0.0) {
     cout << "Root must be bracketed for bisection in rtbis" << endl;
-    SetTDState_rhoT(Density, Temperature);
+    SetTDState_rhoT(Density, Temperature, val_scalars);
   }
   rtb = f < 0.0 ? (static_cast<void>(dx = x2 - x1), x1) : (static_cast<void>(dx = x1 - x2), x2);
   do {
@@ -146,7 +146,7 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
 
   rho = 1 / v;
   T = (h + 2 * a / v) / Gas_Constant / (1 / Gamma_Minus_One + v / (v - b));
-  SetTDState_rhoT(rho, T);
+  SetTDState_rhoT(rho, T, val_scalars);
 
   cons_h = abs(((StaticEnergy + Pressure / Density) - h) / h);
   cons_s = abs((Entropy - s) / s);
@@ -156,17 +156,17 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho) {
+void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double T = (P + rho * rho * a) * (1 - rho * b) / (rho * Gas_Constant);
   StaticEnergy = T * Gas_Constant / Gamma_Minus_One - rho * a;
 }
 
-void CVanDerWaalsGas::SetTDState_rhoT(su2double rho, su2double T) {
+void CVanDerWaalsGas::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   su2double e = T * Gas_Constant / Gamma_Minus_One - a * rho;
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {
+void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars) {
   su2double T, rho, cons_P, cons_s;
   su2double x1, x2, fx1, fx2, f, fmid, T1, T2, rtb, dx, xmid;
   su2double toll = 1e-5, FACTOR = 0.2;
@@ -208,7 +208,7 @@ void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {
   fmid = fx2;
   if (f * fmid >= 0.0) {
     cout << "Root must be bracketed for bisection in rtbis" << endl;
-    SetTDState_rhoT(Density, Temperature);
+    SetTDState_rhoT(Density, Temperature, val_scalars);
   }
   rtb = f < 0.0 ? (static_cast<void>(dx = x2 - x1), x1) : (static_cast<void>(dx = x1 - x2), x2);
   do {
@@ -235,10 +235,10 @@ void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {
   }
 }
 
-void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
+void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double dPdT_rho, dPdrho_T, dPds_rho;
 
-  SetTDState_Prho(P, rho);
+  SetTDState_Prho(P, rho, val_scalars);
 
   dPdT_rho = Gas_Constant * rho / (1.0 - rho * b);
   dPdrho_T = Gas_Constant * Temperature / (1.0 - rho * b) / (1.0 - rho * b) - 2.0 * rho * a;

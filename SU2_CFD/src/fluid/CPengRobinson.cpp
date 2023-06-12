@@ -79,7 +79,7 @@ su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
   return T;
 }
 
-void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
+void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   su2double DpDd_T, DpDT_d, DeDd_T, Cv;
   su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
 
@@ -143,7 +143,7 @@ void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
   AD::EndPreacc();
 }
 
-void CPengRobinson::SetTDState_PT(su2double P, su2double T) {
+void CPengRobinson::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
   su2double toll = 1e-6;
   su2double A, B, Z, DZ = 1.0, F, F1, atanh;
   su2double rho, fv, e;
@@ -188,16 +188,16 @@ void CPengRobinson::SetTDState_PT(su2double P, su2double T) {
   AD::SetPreaccOut(e);
   AD::EndPreacc();
 
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CPengRobinson::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
+void CPengRobinson::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars ) {
+  SetEnergy_Prho(P, rho, val_scalars);
 
-  SetTDState_rhoe(rho, StaticEnergy);
+  SetTDState_rhoe(rho, StaticEnergy, val_scalars);
 }
 
-void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
+void CPengRobinson::SetTDState_hs(su2double h, su2double s, const su2double *val_scalars) {
   su2double T, fv, sqrt2 = sqrt(2.0), A;
   su2double f, v, atanh;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
@@ -253,7 +253,7 @@ void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
   fmid = fx2;
   if (f * fmid >= 0.0) {
     cout << "Root must be bracketed for bisection in rtbis" << endl;
-    SetTDState_rhoT(Density, Temperature);
+    SetTDState_rhoT(Density, Temperature, val_scalars);
   }
   rtb = f < 0.0 ? (static_cast<void>(dx = x2 - x1), x1) : (static_cast<void>(dx = x1 - x2), x2);
   do {
@@ -275,11 +275,11 @@ void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
   }
   if (v != v) {
     cout << "not physical solution found, h and s input " << h << " " << s << endl;
-    SetTDState_rhoT(Density, Temperature);
+    SetTDState_rhoT(Density, Temperature, val_scalars);
   }
 
   T = T_v_h(v, h);
-  SetTDState_rhoT(1 / v, T);
+  SetTDState_rhoT(1 / v, T, val_scalars);
 
   // consistency check
   cons_h = abs(((StaticEnergy + Pressure / Density) - h) / h);
@@ -290,7 +290,7 @@ void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho) {
+void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double ad;
   su2double A, B, C, T, vb1, vb2, atanh;
 
@@ -319,16 +319,16 @@ void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho) {
   AD::EndPreacc();
 }
 
-void CPengRobinson::SetTDState_rhoT(su2double rho, su2double T) {
+void CPengRobinson::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   su2double fv, e, atanh;
 
   atanh = (log(1.0 + (rho * b * sqrt(2.0) / (1 + rho * b))) - log(1.0 - (rho * b * sqrt(2.0) / (1 + rho * b)))) / 2.0;
   fv = atanh;
   e = T * Gas_Constant / Gamma_Minus_One - a * (k + 1) * sqrt(alpha2(T)) / (b * sqrt(2.0)) * fv;
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CPengRobinson::SetTDState_Ps(su2double P, su2double s) {
+void CPengRobinson::SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars) {
   su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
   su2double x1, x2, fx1, fx2, f, fmid, rtb, dx, xmid, sqrt2 = sqrt(2.0);
   su2double toll = 1e-5, FACTOR = 0.2;
@@ -422,10 +422,10 @@ void CPengRobinson::SetTDState_Ps(su2double P, su2double s) {
   }
 }
 
-void CPengRobinson::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
+void CPengRobinson::ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double dPdT_rho, dPdrho_T, dPds_rho, der1_alpha;
 
-  SetTDState_Prho(P, rho);
+  SetTDState_Prho(P, rho, val_scalars);
 
   der1_alpha = -k / (2 * sqrt(TstarCrit * Temperature));
   dPdT_rho = Gas_Constant * rho / (1.0 - rho * b) -

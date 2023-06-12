@@ -143,4 +143,11 @@ class CFluidScalar final : public CFluidModel {
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Density and Internal Energy
+   * \param[in] rho - first thermodynamic variable.
+   * \param[in] e - second thermodynamic variable.
+   */
+  void SetTDState_rhoe(su2double rho, su2double e, const su2double* val_scalars) override;
 };
