@@ -241,8 +241,8 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant; 
   Pressure = (Cp/Cv - 1.0) * Density * StaticEnergy;
-  Temperature = (Cp/Cv) * StaticEnergy / Gas_Constant;
-  SoundSpeed2 = (Cp/Cv - 1.0) * Pressure / Density;
+  Temperature = (Cp/Cv - 1.0) * StaticEnergy / Gas_Constant;
+  SoundSpeed2 = (Cp/Cv) * Pressure / Density;
   dPdrho_e = (Cp/Cv - 1.0) * StaticEnergy;
   dPde_rho = (Cp/Cv - 1.0) * Density;
   dTdrho_e = 0.0;
