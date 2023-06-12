@@ -150,4 +150,57 @@ class CFluidScalar final : public CFluidModel {
    * \param[in] e - second thermodynamic variable.
    */
   void SetTDState_rhoe(su2double rho, su2double e, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure  and Temperature
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] T - second thermodynamic variable.
+   */
+  void SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Density
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] rho - second thermodynamic variable.
+   */
+  void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] rho - second thermodynamic variable.
+   */
+  void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy and Entropy
+   * \param[in] th1 - first thermodynamic variable (h).
+   * \param[in] th2 - second thermodynamic variable (s).
+   *
+   */
+  void SetTDState_hs(su2double h, su2double s, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Density and Temperature
+   * \param[in] th1 - first thermodynamic variable (rho).
+   * \param[in] th2 - second thermodynamic variable (T).
+   *
+   */
+  void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Entropy
+   * \param[in] th1 - first thermodynamic variable (P).
+   * \param[in] th2 - second thermodynamic variable (s).
+   */
+  void SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars) override;
+
+  /*!
+   * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+   * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+   * \param[in] th1 - first thermodynamic variable (P).
+   * \param[in] th2 - second thermodynamic variable (v).
+   *
+   */
+  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars) override;
 };

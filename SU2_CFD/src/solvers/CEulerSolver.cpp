@@ -33,6 +33,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -857,6 +858,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
       break;
 
+    case FLUID_MIXTURE:
+      
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+      auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), config->GetPressure_Thermodynamic(), config);
+      break;
+
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
       break;
@@ -1087,6 +1094,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       case COOLPROP:
         FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
+      
+      case FLUID_MIXTURE:
+      
+        config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+        FluidModel[thread] = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), config->GetPressure_Thermodynamic(), config);
+        break;
     }
 
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -1264,6 +1277,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case COOLPROP:
       ModelTable << "CoolProp library";
+      break;
+    case FLUID_MIXTURE:
+      ModelTable << "FLUID_MIXTURE";
       break;
     }
 

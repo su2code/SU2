@@ -258,3 +258,81 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
 
   //if (ComputeEntropy) Entropy = (1.0 / (Cp/Cv - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
 }
+
+void CFluidScalar::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant; 
+  su2double e = T * Gas_Constant / (Cp/Cv -1.0 );
+  su2double rho = P / (T * Gas_Constant);
+  SetTDState_rhoe(rho, e, val_scalars);
+}
+
+void CFluidScalar::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  su2double e = P / ((Cp/Cv -1.0 ) * rho);
+  SetTDState_rhoe(rho, e, val_scalars);
+}
+
+void CFluidScalar::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) { 
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  StaticEnergy = P / (rho * (Cp/Cv - 1.0)); }
+
+void CFluidScalar::SetTDState_hs(su2double h, su2double s, const su2double *val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  su2double T = h * (Cp/Cv - 1.0) / Gas_Constant / Gamma;
+  su2double e = h / Gamma;
+  su2double v = exp(-1 / (Cp/Cv - 1.0) * log(T) + s / Gas_Constant);
+
+  SetTDState_rhoe(1 / v, e, val_scalars);
+}
+
+void CFluidScalar::SetTDState_Ps(su2double P, su2double s, const su2double *val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  su2double T = exp((Cp/Cv - 1.0) / Gamma * (s / Gas_Constant + log(P) - log(Gas_Constant)));
+  su2double rho = P / (T * Gas_Constant);
+
+  SetTDState_Prho(P, rho, val_scalars);
+}
+
+void CFluidScalar::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  su2double e = T * Gas_Constant / (Cp/Cv - 1.0);
+  SetTDState_rhoe(rho, e, val_scalars);
+}
+
+void CFluidScalar::ComputeDerivativeNRBC_Prho(su2double P, su2double rho, const su2double *val_scalars) {
+  su2double dPdT_rho, dPdrho_T, dPds_rho;
+
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+
+  SetTDState_Prho(P, rho, val_scalars);
+
+  dPdT_rho = Gas_Constant * rho;
+  dPdrho_T = Gas_Constant * Temperature;
+
+  dhdrho_P = -dPdrho_e / dPde_rho - P / rho / rho;
+  dhdP_rho = 1.0 / dPde_rho + 1.0 / rho;
+  dPds_rho = rho * rho * (SoundSpeed2 - dPdrho_T) / dPdT_rho;
+  dsdP_rho = 1.0 / dPds_rho;
+  dsdrho_P = -SoundSpeed2 / dPds_rho;
+}
