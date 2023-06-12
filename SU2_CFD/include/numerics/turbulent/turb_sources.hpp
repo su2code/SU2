@@ -48,6 +48,8 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
+  const su2double CRot = 1.0;
+  const su2double c2 = 0.7, c3 = 0.9; 
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -122,7 +124,9 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
-      var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
+      var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
+      /*--- Do not allow negative production for SA-neg. ---*/
+      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
@@ -303,9 +307,19 @@ struct ModVort {
 struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
-    var.Shat = var.S + Sbar;
-    var.Shat = max(var.Shat, 1.0e-10);
-    if (var.Shat <= 1.0e-10) {
+    const su2double c2 = 0.7, c3 = 0.9;
+
+    /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
+     * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    if (Sbar >= - c2 * var.S) {
+      var.Shat = var.S + Sbar;
+    } else {
+      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
+      var.Shat = var.S + Num / Den;
+    }
+    if (var.Shat <= 1e-10) {
+      var.Shat = 1e-10;
       var.d_Shat = 0.0;
     } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
