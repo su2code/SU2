@@ -134,6 +134,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  const su2double* scalar = nullptr;
+  const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
   AD::StartNoSharedReading();
 
@@ -152,6 +154,11 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
+    }
+
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/

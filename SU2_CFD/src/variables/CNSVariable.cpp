@@ -133,7 +133,7 @@ void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall
   AD::EndPreacc();
 }
 
-bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool RightVol = true;
 
@@ -143,7 +143,7 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
 
-  FluidModel->SetTDState_rhoe(density, staticEnergy);
+  FluidModel->SetTDState_rhoe(density, staticEnergy, scalar);
 
   bool check_dens  = SetDensity(iPoint);
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
@@ -167,7 +167,7 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 
     /*--- Check will be moved inside fluid model plus error description strings ---*/
 
-    FluidModel->SetTDState_rhoe(density, staticEnergy);
+    FluidModel->SetTDState_rhoe(density, staticEnergy, scalar);
 
     SetDensity(iPoint);
     SetPressure(iPoint, FluidModel->GetPressure());
