@@ -72,7 +72,6 @@ class CEulerVariable : public CFlowVariable {
   MatrixType Secondary;
 
   MatrixType WindGust;      /*! < \brief Wind gust value */
-  MatrixType WindGustDer;   /*! < \brief Wind gust derivatives value */
 
  public:
   /*!
@@ -283,36 +282,6 @@ class CEulerVariable : public CFlowVariable {
    */
   inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
-  }
-
-  /*!
-   * \brief Get the value of the wind gust
-   * \return Value of the wind gust
-   */
-  inline su2double* GetWindGust(unsigned long iPoint) final { return WindGust[iPoint]; }
-
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] Value of the wind gust
-   */
-  inline void SetWindGust(unsigned long iPoint, const su2double* val_WindGust) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      WindGust(iPoint,iDim) = val_WindGust[iDim];
-  }
-
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \return Value of the derivatives of the wind gust
-   */
-  inline su2double* GetWindGustDer(unsigned long iPoint) final { return WindGustDer[iPoint]; }
-
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] Value of the derivatives of the wind gust
-   */
-  inline void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGustDer) final {
-    for (unsigned long iDim = 0; iDim < nDim+1; iDim++)
-      WindGustDer(iPoint,iDim) = val_WindGustDer[iDim];
   }
 
   /*!
