@@ -197,6 +197,7 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+  SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
   return RightVol;
 }

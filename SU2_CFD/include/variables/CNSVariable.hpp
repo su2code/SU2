@@ -80,6 +80,14 @@ public:
   }
 
   /*!
+   * \brief Set the specific heat Cp.
+   */
+  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) override {
+    Primitive(iPoint, indices.CvTotal()) = val_Cv;
+  }
+
+
+  /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */

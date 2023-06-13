@@ -58,6 +58,7 @@ class CEulerVariable : public CFlowVariable {
     inline IndexType EddyViscosity() const { return nDim+6; }
     inline IndexType ThermalConductivity() const { return nDim+7; }
     inline IndexType CpTotal() const { return nDim+8; }
+    inline IndexType CvTotal() const { return nDim+9;}
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
