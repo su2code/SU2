@@ -128,6 +128,14 @@ public:
   }
 
   /*!
+   * \brief Get the specific heat at constant V of the flow.
+   * \return Value of the specific heat at constant v  of the flow.
+   */
+  inline su2double GetSpecificHeatCv(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.CvTotal());
+  }
+
+  /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).
    */
   inline void SetdTdrho_e(unsigned long iPoint, su2double dTdrho_e) override { Secondary(iPoint,2) = dTdrho_e;}
