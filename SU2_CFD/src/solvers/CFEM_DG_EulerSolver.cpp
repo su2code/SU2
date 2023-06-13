@@ -1112,6 +1112,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   if (viscous) {
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
+    FluidModel->SetMassDiffusivityModel(config); // nijso: TODO, needs to be tested
   }
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);

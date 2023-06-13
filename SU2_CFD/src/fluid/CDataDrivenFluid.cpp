@@ -207,6 +207,8 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   MLP_inputs[idx_e] = e;
   exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
 #endif
+  dsdrho_e = -exp(dsdrho_e);
+  d2sdrho2 = exp(d2sdrho2);
   return exit_code;
 }
 

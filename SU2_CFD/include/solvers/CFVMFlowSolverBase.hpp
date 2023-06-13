@@ -2199,6 +2199,29 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline void UpdateFarfieldVelocity(const CConfig* config) final {
+    /*--- Retrieve the AoA and AoS (degrees) ---*/
+    const su2double AoA = config->GetAoA() * PI_NUMBER / 180.0;
+    const su2double AoS = config->GetAoS() * PI_NUMBER / 180.0;
+    /*--- Update the freestream velocity vector at the farfield
+     * Compute the new freestream velocity with the updated AoA,
+     * "Velocity_Inf" is shared with config. ---*/
+
+    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
+
+    if (nDim == 2) {
+      Velocity_Inf[0] = cos(AoA) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoA) * Vel_Infty_Mag;
+    } else {
+      Velocity_Inf[0] = cos(AoA) * cos(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[2] = sin(AoA) * cos(AoS) * Vel_Infty_Mag;
+    }
+  }
+
+  /*!
    * \brief Compute the global error measures (L2, Linf) for verification cases.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.

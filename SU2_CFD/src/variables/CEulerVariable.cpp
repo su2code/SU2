@@ -70,7 +70,6 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   if (config->GetWind_Gust()) {
     WindGust.resize(nPoint,nDim);
-    WindGustDer.resize(nPoint,nDim+1);
   }
 
   if (config->GetVorticityConfinement()) {

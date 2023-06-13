@@ -261,6 +261,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   //Residuals
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
@@ -283,11 +285,17 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   }
 
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
+
   SetVolumeOutputFieldsScalarMisc(config);
 
   AddCommonFVMOutputs(config);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
 }

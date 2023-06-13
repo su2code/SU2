@@ -1104,6 +1104,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
+      GetFluidModel()->SetMassDiffusivityModel(config);
     }
 
   }
@@ -2020,7 +2021,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
   const bool vorticity_confinement = config->GetVorticityConfinement();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -2186,37 +2186,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iVar = 0; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
-    }
-    END_SU2_OMP_FOR
-  }
-
-  if (windgust) {
-
-    /*--- Loop over all points ---*/
-    SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Load the wind gust ---*/
-      numerics->SetWindGust(nodes->GetWindGust(iPoint), nodes->GetWindGust(iPoint));
-
-      /*--- Load the wind gust derivatives ---*/
-      numerics->SetWindGustDer(nodes->GetWindGustDer(iPoint), nodes->GetWindGustDer(iPoint));
-
-      /*--- Load the primitive variables ---*/
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
-
-      /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-      /*--- Compute the rotating frame source residual ---*/
-      auto residual = numerics->ComputeResidual(config);
-
-      /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
     }
     END_SU2_OMP_FOR
   }
@@ -4072,8 +4041,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
-  const su2double AoS = config->GetAoS()*PI_NUMBER/180.0;
-
   /* --- Initialize values at first iteration --- */
 
   if (InnerIter == 0) {
@@ -4112,24 +4079,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA = AoA + AoA_inc;
       config->SetAoA(AoA);
     }
-
-    AoA *= PI_NUMBER/180.0;
-
-    /*--- Update the freestream velocity vector at the farfield
-     * Compute the new freestream velocity with the updated AoA,
-     * "Velocity_Inf" is shared with config. ---*/
-
-    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
-
-    if (nDim == 2) {
-      Velocity_Inf[0] = cos(AoA)*Vel_Infty_Mag;
-      Velocity_Inf[1] = sin(AoA)*Vel_Infty_Mag;
-    }
-    else {
-      Velocity_Inf[0] = cos(AoA)*cos(AoS)*Vel_Infty_Mag;
-      Velocity_Inf[1] = sin(AoS)*Vel_Infty_Mag;
-      Velocity_Inf[2] = sin(AoA)*cos(AoS)*Vel_Infty_Mag;
-    }
+    UpdateFarfieldVelocity(config);
   }
 }
 

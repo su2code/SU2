@@ -38,6 +38,7 @@
 
 using namespace std;
 
+class CLookUpTable;
 /*!
  * \class CFluidModel
  * \brief Main class for defining the Thermo-Physical Model
@@ -136,6 +137,24 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
+
+  /*!
+   * \brief Flamelet LUT - Get the number of transported scalars.
+   */
+  virtual inline unsigned short GetNScalars() const { return 0; }
+
+  /*!
+   * \brief Flamelet LUT - Get the lookup table.
+   */
+  virtual CLookUpTable* GetLookUpTable() { return nullptr; }
+
+  /*!
+   * \brief Flamelet LUT - Get the total enthalpy from the temperature (reverse lookup).
+   */
+  virtual inline unsigned long GetEnthFromTemp(su2double& enthalpy,
+                                               const su2double val_prog,
+                                               const su2double val_temp,
+                                               su2double initial_value) { return 0; }
 
   /*!
    * \brief Get fluid dynamic viscosity.
@@ -319,7 +338,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
