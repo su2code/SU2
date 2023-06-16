@@ -109,12 +109,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
       Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
 
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
-    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
-
-    /*--- Assign primitive variables ---*/
-    Primitive(iPoint,T_INDEX)   = val_temperature;
-    Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
-    Primitive(iPoint,P_INDEX)   = val_pressure;     
+    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);     
   }
 
   Solution_Old = Solution; 
