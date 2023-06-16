@@ -4022,7 +4022,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
         }
       }
-      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL) {
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL && Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT) {
         SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS",
                        CURRENT_FUNCTION);
       }

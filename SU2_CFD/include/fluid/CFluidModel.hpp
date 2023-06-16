@@ -230,22 +230,22 @@ class CFluidModel {
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double Getdmudrho_T() { return LaminarViscosity->Getdmudrho_T(); }
+  inline virtual su2double Getdmudrho_T() { return LaminarViscosity->Getdmudrho_T(); }
 
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double GetdmudT_rho() { return LaminarViscosity->GetdmudT_rho(); }
+  inline virtual su2double GetdmudT_rho() { return LaminarViscosity->GetdmudT_rho(); }
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double Getdktdrho_T() const { return dktdrho_T; }
+  inline virtual su2double Getdktdrho_T() const { return dktdrho_T; }
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double GetdktdT_rho() const { return dktdT_rho; }
+  inline virtual su2double GetdktdT_rho() const { return dktdT_rho; }
 
   /*!
    * \brief Set specific heat Cp model.

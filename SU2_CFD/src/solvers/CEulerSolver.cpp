@@ -110,13 +110,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Define geometry constants in the solver structure
-   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp).
+   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp, Cv).
    ---*/
 
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
@@ -294,7 +294,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
     StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
 
-    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy, config->GetSpecies_Init());
     Pressure= GetFluidModel()->GetPressure();
     Temperature= GetFluidModel()->GetTemperature();
 
@@ -817,6 +817,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
   config->SetConductivity_Ref(1.0);
+  config->SetGas_Constant_Ref(1.0);
 
   CFluidModel* auxFluidModel = nullptr;
 
@@ -870,12 +871,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   }
 
   if (free_stream_temp) {
-    auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+    auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream, config->GetSpecies_Init());
     Density_FreeStream = auxFluidModel->GetDensity();
     config->SetDensity_FreeStream(Density_FreeStream);
   }
   else {
-    auxFluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+    auxFluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream, config->GetSpecies_Init());
     Temperature_FreeStream = auxFluidModel->GetTemperature();
     config->SetTemperature_FreeStream(Temperature_FreeStream);
   }
@@ -927,7 +928,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
-      auxFluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream);
+      auxFluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream, config->GetSpecies_Init());
       Pressure_FreeStream = auxFluidModel->GetPressure();
       config->SetPressure_FreeStream(Pressure_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
@@ -1102,7 +1103,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
     }
 
-    GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+    GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, config->GetSpecies_Init());
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);

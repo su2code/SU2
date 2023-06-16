@@ -40,7 +40,7 @@
  */
 class CEulerVariable : public CFlowVariable {
  public:
-  static constexpr size_t MAXNVAR = 12;
+  static constexpr size_t MAXNVAR = 13;
 
   template <class IndexType>
   struct CIndices {

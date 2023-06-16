@@ -134,6 +134,26 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
 
   /*!
+   * \brief Get fluid dynamic viscosity partial derivative.
+   */
+  inline su2double Getdmudrho_T() override { return 0.0; }
+
+  /*!
+   * \brief Get fluid dynamic viscosity partial derivative.
+   */
+  inline su2double GetdmudT_rho() override { return 0.0; }
+
+  /*!
+   * \brief Get fluid thermal conductivity partial derivative.
+   */
+  inline su2double Getdktdrho_T() const override { return 0.0; }
+
+  /*!
+   * \brief Get fluid thermal conductivity partial derivative.
+   */
+  inline su2double GetdktdT_rho() const override { return 0.0; }
+
+  /*!
    * \brief Get fluid mass diffusivity.
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
