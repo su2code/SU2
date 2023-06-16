@@ -226,58 +226,17 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
 
-//  // Determine if the temperature lies within the acceptable range
-//  if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
-//  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
-//  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
-//
-//  if (!monoatomic){
-//    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
-//    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
-//    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
-//  }
-//  else {V[TVE_INDEX] = Tve_Freestream;}
-
   // Determine if the temperature lies within the acceptable range
-  //TODO: fIX THIS
-  if (V[T_INDEX] <= Tmin) {
-    nonPhys = true;
-  } else if (V[T_INDEX] >= Tmax){
-    nonPhys = true;
-  } else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
-    nonPhys = true;
-  }
-
-  /*--- Vibrational-Electronic Temperature ---*/
-  vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
-  vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
-
-  // Check for non-physical solutions
+  if (V[T_INDEX] <= Tmin)      {  nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] >= Tmax) {   nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] != V[T_INDEX]){  nonPhys = true; return nonPhys;} 
+  
   if (!monoatomic){
-    su2double rhoEve_min = 0.0;
-    su2double rhoEve_max = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
-    }
-
-    if (rhoEve < rhoEve_min) {
-
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemin;
-      U[nSpecies+nDim+1] = rhoEve_min;
-    } else if (rhoEve > rhoEve_max) {
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemax;
-      U[nSpecies+nDim+1] = rhoEve_max;
-    }
-  } else {
-    //TODO: can e-modes/vibe modes be active?
-    V[TVE_INDEX] = Tve_Freestream;
+    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){   nonPhys = true; return nonPhys;} 
   }
-
-
-    
+  else {V[TVE_INDEX] = Tve_Freestream;}
 
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
