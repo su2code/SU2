@@ -227,6 +227,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
 
+  if (V[T_INDEX] < 50)   V[T_INDEX] = 50;
+  if (V[TVE_INDEX] < 50) V[TVE_INDEX] = 50;  
+
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] <= Tmin)      {  nonPhys = true; return nonPhys;}
   if (V[T_INDEX] >= Tmax) {   nonPhys = true; return nonPhys;}
