@@ -2021,6 +2021,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
       } else {
 
+        for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = U_domain[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];        
+
         /*--- Subsonic exit flow: there is one incoming characteristic,
          therefore one variable can be specified (back pressure) and is used
          to update the conservative variables. Compute the entropy and the
@@ -2029,61 +2032,61 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
 
-        Entropy = Pressure*pow(1.0/Density,Gamma);
-        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-
-        /*--- Compute the new fictious state at the outlet ---*/
-        //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
-        //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-        Density    = pow(P_Exit/Entropy,1.0/Gamma);
-        Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
-          V_outlet[iSpecies] = Ys[iSpecies]*Density;
-          rhos[iSpecies]     = V_outlet[iSpecies];
-        }
-
-        V_outlet[T_INDEX]     = V_domain[T_INDEX];
-        V_outlet[TVE_INDEX]   = V_domain[TVE_INDEX];
-
-        for (iDim = 0; iDim < nDim; iDim++){
-          V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
-        }
-
-        V_outlet[P_INDEX]     = Pressure;
-        V_outlet[RHO_INDEX]   = Density;
-        V_outlet[A_INDEX]     = SoundSpeed;
-
-        /*--- Set mixture state and compute quantities ---*/
-        FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
-        V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
-        V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
-
-        const auto& energies = FluidModel->ComputeMixtureEnergies();
-
-        /*--- Conservative variables, using the derived quantities ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
-          U_outlet[iSpecies] = V_outlet[iSpecies];
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
-
-        U_outlet[nVar-2] = (energies[0] + 0.5*Velocity2) * Density;
-        U_outlet[nVar-1] = energies[1] * Density;
-
+//        Entropy = Pressure*pow(1.0/Density,Gamma);
+//        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+//
+//        /*--- Compute the new fictious state at the outlet ---*/
+//        //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+//        //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+//        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+//        Pressure   = P_Exit;
+//        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+//        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+//        Velocity2  = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+//          Velocity2 += Velocity[iDim]*Velocity[iDim];
+//        }
+//
+//        /*--- Primitive variables, using the derived quantities ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+//          V_outlet[iSpecies] = Ys[iSpecies]*Density;
+//          rhos[iSpecies]     = V_outlet[iSpecies];
+//        }
+//
+//        V_outlet[T_INDEX]     = V_domain[T_INDEX];
+//        V_outlet[TVE_INDEX]   = V_domain[TVE_INDEX];
+//
+//        for (iDim = 0; iDim < nDim; iDim++){
+//          V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
+//        }
+//
+//        V_outlet[P_INDEX]     = Pressure;
+//        V_outlet[RHO_INDEX]   = Density;
+//        V_outlet[A_INDEX]     = SoundSpeed;
+//
+//        /*--- Set mixture state and compute quantities ---*/
+//        FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
+//        V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
+//        V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
+//
+//        const auto& energies = FluidModel->ComputeMixtureEnergies();
+//
+//        /*--- Conservative variables, using the derived quantities ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+//          U_outlet[iSpecies] = V_outlet[iSpecies];
+//        }
+//
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
+//
+//        U_outlet[nVar-2] = (energies[0] + 0.5*Velocity2) * Density;
+//        U_outlet[nVar-1] = energies[1] * Density;
+//
       }
 
       /*--- Setting Last remaining variables ---*/
-      V_outlet[H_INDEX]= (U_outlet[nVar-2]+Pressure)/Density;
+//      V_outlet[H_INDEX]= (U_outlet[nVar-2]+Pressure)/Density;
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_outlet);
