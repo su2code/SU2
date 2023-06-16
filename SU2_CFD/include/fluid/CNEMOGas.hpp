@@ -179,7 +179,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel, su2double Tve_old) = 0;
+  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel, su2double Tve_old, su2double T_old) = 0;
 
   /*!
    * \brief Compute speed of sound.
