@@ -607,20 +607,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                  (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
     Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
 
-    for (unsigned short i = 0; i < nSpecies; i++) {
-      rhos[i]=nodes->GetDensity(iPoint,i);
-    }
-
-    FluidModel->SetTDStateRhosTTv(rhos, Twall, Twall);
-    energies = FluidModel->ComputeMixtureEnergies();
-
-    nodes->SetEnergy_Old(iPoint,energies);
-
-    for (unsigned short i = 0; i < 2; i++) {
-     LinSysRes(iPoint, nSpecies+nDim+i) = 0.0;
-     nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+nDim+i);
-    }    
-
     /*--- Calculate Jacobian for implicit time stepping ---*/
     if (implicit) {
 
@@ -642,7 +628,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     } // implicit
 
     /*--- Convective and viscous contributions to the residual at the wall ---*/
-   //LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
     /*--- Enforce the no-slip boundary condition in a strong way by
      modifying the velocity-rows of the Jacobian (1 on the diagonal).
