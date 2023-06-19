@@ -2205,8 +2205,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
       conv_numerics->SetPoint(iPoint, iPoint);
 
-      //std::cout << "out iPoint=" << iPoint << std::endl;
-
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);

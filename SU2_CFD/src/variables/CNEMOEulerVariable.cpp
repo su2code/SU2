@@ -256,11 +256,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
 
-  //if (V[T_INDEX] < 50)   V[T_INDEX] = 50;
-  //if (V[TVE_INDEX] < 50) V[TVE_INDEX] = 50;
+  if (V[T_INDEX] < 50)   V[T_INDEX] = 50;
+  if (V[TVE_INDEX] < 50) V[TVE_INDEX] = 50;
   
 
-  if (V[TVE_INDEX] < 250) V[TVE_INDEX] = 65;
+ // if (V[TVE_INDEX] < 250) V[TVE_INDEX] = 65;
 
   //if (rhoEve <= 0) rhoEve = 0.0001; V[TVE_INDEX] = 55.0; //nonPhys = true; return nonPhys;
 
