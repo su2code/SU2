@@ -543,19 +543,27 @@ CNumerics::ResidualType<> CUpwAUSM_SLAU_Base_NEMO::ComputeResidual(const CConfig
 
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
+    //std::cout << "u_i[" << iDim << "]=" << Velocity_i[iDim]<< std::endl;
+    //std::cout << "u_j[" << iDim << "]=" << Velocity_j[iDim]<< std::endl;
     sqVi += (Velocity_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
             (Velocity_i[iDim]-ProjVel_i*UnitNormal[iDim]);
     sqVj += (Velocity_j[iDim]-ProjVel_j*UnitNormal[iDim]) *
             (Velocity_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
 
+  //std::cout << "h_i=" << Enthalpy_i<< std::endl; //exit(0);
+  //std::cout << "h_j=" << Enthalpy_j<< std::endl; //exit(0);
+  //std::cout << "sqVi=" << sqVi<< std::endl; //exit(0);
+  //std::cout << "sqVj=" << sqVj<< std::endl; //exit(0);
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
   Hnorm = 0.5*(Enthalpy_i-0.5*Density_i*sqVi + Enthalpy_j-0.5*Density_j*sqVj);
+  //std::cout << "Hnorm=" << Hnorm << std::endl; 
   gtl_i = Gamma_i;
   gtl_j = Gamma_j;
   gam   = 0.5*(gtl_i+gtl_j);
   atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
+  //std::cout << "atl=" << atl<< std::endl;
 
   // ATL has to account sound speed for reactive gases
 
