@@ -1307,6 +1307,7 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
+  I_MIXFRAC,
 };
 
 /*!
@@ -1314,6 +1315,12 @@ enum FLAMELET_SCALAR_VARIABLES {
  */
 enum FLAMELET_SCALAR_SOURCES {
   I_SRC_TOT_PROGVAR
+};
+
+enum FLAMELET_LOOKUP_OPS {
+  TD,
+  SOURCES,
+  LOOKUP,
 };
 
 /*!

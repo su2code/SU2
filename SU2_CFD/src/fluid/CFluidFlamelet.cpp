@@ -1,7 +1,7 @@
 /*!
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
- * \author D. Mayer, T. Economon, N. Beishuizen
+ * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,12 +28,13 @@
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 
-CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
+CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool load_manifold) : CFluidModel(), generate_manifold(load_manifold) {
   rank = SU2_MPI::GetRank();
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
   n_control_vars = config->GetNControlVars();
+  include_mixture_fraction = (n_control_vars == 3);
   n_scalars = config->GetNScalars();
 
   if (rank == MASTER_NODE) {
@@ -48,91 +49,115 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     cout << "*****************************************" << endl;
   }
 
+  scalars_vector.resize(n_scalars);
+
   table_scalar_names.resize(n_scalars);
   table_scalar_names[I_ENTH] = "EnthalpyTot";
   table_scalar_names[I_PROGVAR] = "ProgressVariable";
+  if (include_mixture_fraction) table_scalar_names[I_MIXFRAC] = "MixtureFraction";
+
   /*--- auxiliary species transport equations---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
-
-  look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
-
-  n_lookups = config->GetNLookups();
-  table_lookup_names.resize(n_lookups);
-  for (int i_lookup = 0; i_lookup < n_lookups; ++i_lookup) {
-    table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
-  }
+  
+  if (generate_manifold)
+    look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
   Pressure = value_pressure_operating;
 
-  /*--- Thermodynamic state variables and names. ---*/
+  PreprocessLookUp(config);
+ 
+}
+
+CFluidFlamelet::~CFluidFlamelet() { if(generate_manifold) delete look_up_table; }
+
+void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
+  for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];
+
+  /*--- Add all quantities and their names to the look up vectors. ---*/
+  EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::TD, val_vars_TD);
+
+  Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
+  Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
+  Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
+  Kt = val_vars_TD[LOOKUP_TD::CONDUCTIVITY];
+  mass_diffusivity = val_vars_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT];
+  molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
+  Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
+
+  /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
+  Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
+}
+
+void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
+   /*--- Thermodynamic state variables and names. ---*/
   varnames_TD.resize(LOOKUP_TD::SIZE);
   val_vars_TD.resize(LOOKUP_TD::SIZE);
 
   /*--- The string in varnames_TD as it appears in the LUT file. ---*/
-  varnames_TD[LOOKUP_TD::TEMPERATURE] =  "Temperature";
-  varnames_TD[LOOKUP_TD::DENSITY] = "Density";
+  varnames_TD[LOOKUP_TD::TEMPERATURE] = "Temperature";
   varnames_TD[LOOKUP_TD::HEATCAPACITY] = "Cp";
   varnames_TD[LOOKUP_TD::VISCOSITY] = "ViscosityDyn";
   varnames_TD[LOOKUP_TD::CONDUCTIVITY] = "Conductivity";
   varnames_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT] = "DiffusionCoefficient";
   varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "MolarWeightMix";
 
+  /*--- Scalar source term variables and names. ---*/
+  size_t n_sources = 1 + 2*n_user_scalars;
+  varnames_Sources.resize(n_sources);
+  val_vars_Sources.resize(n_sources);
+  varnames_Sources[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
+  /*--- No source term for enthalpy ---*/
+
+  /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
+        S_tot = S_PROD + S_CONS * Y ---*/
+
+  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+    /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
+    varnames_Sources[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
+    varnames_Sources[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
+  }
+
+  /*--- Passive look-up terms ---*/
+  size_t n_lookups = config->GetNLookups();
+  varnames_LookUp.resize(n_lookups);
+  val_vars_LookUp.resize(n_lookups);
+  for (auto iLookup=0u; iLookup < n_lookups; iLookup++)
+    varnames_LookUp[iLookup] = config->GetLUTLookupName(iLookup);
+
 }
 
-CFluidFlamelet::~CFluidFlamelet() { delete look_up_table; }
-
-void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
-  su2double val_enth = val_scalars[I_ENTH];
-  su2double val_prog = val_scalars[I_PROGVAR];
+unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double> &input_scalar, FLAMELET_LOOKUP_OPS lookup_type, vector<su2double> &output_refs) {
+  su2double val_enth = input_scalar[I_ENTH];
+  su2double val_prog = input_scalar[I_PROGVAR];
+  su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
+  vector<string> varnames;
+  vector<su2double> val_vars;
+  switch (lookup_type)
+  {
+  case FLAMELET_LOOKUP_OPS::TD:
+    varnames = varnames_TD;
+    break;
+  case FLAMELET_LOOKUP_OPS::SOURCES:
+    varnames = varnames_Sources;
+    break;
+  case FLAMELET_LOOKUP_OPS::LOOKUP:
+    varnames = varnames_LookUp;
+    break;
+  
+  default:
+    break;
+  }
+  if (output_refs.size() != varnames.size())
+    SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, val_enth);
-
-  Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
-  Density = val_vars_TD[LOOKUP_TD::DENSITY];
-  Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
-  Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
-  Kt = val_vars_TD[LOOKUP_TD::CONDUCTIVITY];
-  mass_diffusivity = val_vars_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT];
-  molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-
-  /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
-  Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
-}
-
-/* --- Total enthalpy is the transported variable, but we usually have temperature as a boundary condition,
-       so we do a reverse lookup */
-unsigned long CFluidFlamelet::GetEnthFromTemp(su2double& val_enth, const su2double val_prog, const su2double val_temp,
-                                              const su2double initial_value) {
-  /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-  su2double delta_temp_final = 0.001;
-  su2double enth_iter = initial_value;
-  su2double delta_enth;
-  su2double delta_temp_iter = 1e10;
-  unsigned long exit_code = 0;
-  const int counter_limit = 1000;
-
-  int counter = 0;
-  while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
-    /*--- Add all quantities and their names to the look up vectors. ---*/
-    look_up_table->LookUp_XY(varnames_TD, val_vars_TD, val_prog, enth_iter);
-    Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
-    Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
-
-    delta_temp_iter = val_temp - Temperature;
-
-    delta_enth = Cp * delta_temp_iter;
-
-    enth_iter += delta_enth;
+  if (include_mixture_fraction) {
+    extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
+  } else {
+    extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
   }
 
-  val_enth = enth_iter;
-
-  if (counter >= counter_limit) {
-    exit_code = 1;
-  }
-
-  return exit_code;
+  return extrapolation;
 }

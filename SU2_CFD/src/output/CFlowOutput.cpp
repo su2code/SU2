@@ -958,6 +958,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 // The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
@@ -995,6 +997,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET: {
       AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
+      if (include_mixfrac)
+        AddHistoryOutput("RMS_MIXTURE_FRACTION", "rms[Mixfrac]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
+      
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1007,6 +1012,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
@@ -1047,6 +1054,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET: {
       AddHistoryOutput("MAX_PROGRESS_VARIABLE", "max[PV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
+      if (include_mixfrac) 
+        AddHistoryOutput("MAX_MIXTURE_FRACTION", "max[Mixfrac]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
+      
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1060,6 +1070,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   if (!multiZone) return;
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1098,6 +1109,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET: {
       AddHistoryOutput("BGS_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
       AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
+      if (include_mixfrac)
+        AddHistoryOutput("BGS_MIXTURE_FRACTION", "bgs[Mixfrac]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
+      
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1137,6 +1151,8 @@ void CFlowOutput::AddHistoryOutputFieldsScalarLinsol(const CConfig* config) {
 // clang-format on
 
 void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver) {
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
@@ -1201,6 +1217,10 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
       SetHistoryOutputValue("MAX_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_Max(I_PROGVAR)));
       SetHistoryOutputValue("RMS_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_RMS(I_ENTH)));
       SetHistoryOutputValue("MAX_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_Max(I_ENTH)));
+      if (include_mixfrac) {
+        SetHistoryOutputValue("RMS_MIXTURE_FRACTION", log10(solver[SPECIES_SOL]->GetRes_RMS(I_MIXFRAC)));
+        SetHistoryOutputValue("MAX_MIXTURE_FRACTION", log10(solver[SPECIES_SOL]->GetRes_Max(I_MIXFRAC)));
+      }
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         const auto& species_name = config->GetUserScalarName(iReactant);
@@ -1223,6 +1243,8 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
 void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   /*--- Only place outputs of the "SOLUTION" group here. ---*/
 
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
+  
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
@@ -1256,6 +1278,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case SPECIES_MODEL::FLAMELET:
       AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
+      if (include_mixfrac)
+        AddVolumeOutput("MIXTURE_FRACTION", "Mixture_Fraction", "SOLUTION", "Mixture fraction");
       /*--- auxiliary species ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
         const auto& species_name = config->GetUserScalarName(iReactant);
@@ -1271,6 +1295,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   /*--- Only place outputs of the "RESIDUAL" group here. ---*/
 
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
@@ -1294,6 +1319,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
     case SPECIES_MODEL::FLAMELET:
       AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "RESIDUAL", "Residual of progress variable");
       AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "RESIDUAL", "Residual of total enthalpy");
+      if (include_mixfrac) 
+        AddVolumeOutput("RES_MIXFRAC", "Residual_Mixture_Fraction", "RESIDUAL", "Residual of mixture fraction");
+
       /*--- residuals for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         const auto& species_name = config->GetUserScalarName(iReactant);
@@ -1318,6 +1346,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
 
 void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
   /*--- Only place outputs of the "SOLUTION" group for species transport here. ---*/
+
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
@@ -1344,6 +1374,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
       case SPECIES_MODEL::FLAMELET:
         AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "LIMITER", "Limiter of progress variable");
         AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "LIMITER", "Limiter of total enthalpy");
+        if (include_mixfrac)
+          AddVolumeOutput("LIMITER_MIXFRAC", "Limiter_Mixture_Fraction", "LIMITER", "Limiter of mixture fraction");
+
         /*--- limiter for auxiliary species transport ---*/
         for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
           const auto& species_name = config->GetUserScalarName(iReactant);
@@ -1461,7 +1494,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
-
+  const auto include_mixfrac = (config->GetNControlVars() == 3);
+  
   if (config->GetViscous()) {
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
@@ -1549,7 +1583,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
       SetVolumeOutputValue("TABLE_MISSES", iPoint, su2double(Node_Species->GetTableMisses(iPoint)));
-
+      if (include_mixfrac) {
+        SetVolumeOutputValue("MIXTURE_FRACTION", iPoint, Node_Species->GetSolution(iPoint, I_MIXFRAC));
+        SetVolumeOutputValue("RES_MIXFRAC", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_MIXFRAC));
+      }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1561,6 +1598,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
         SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, I_PROGVAR));
         SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, I_ENTH));
+        if (include_mixfrac) 
+          SetVolumeOutputValue("LIMITER_MIXFRAC", iPoint, Node_Species->GetLimiter(iPoint, I_MIXFRAC));
+          
         /*--- limiter for auxiliary species transport equations ---*/
         for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
           const auto& scalar_name = config->GetUserScalarName(i_scalar);

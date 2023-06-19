@@ -144,17 +144,12 @@ class CFluidModel {
   virtual inline unsigned short GetNScalars() const { return 0; }
 
   /*!
-   * \brief Flamelet LUT - Get the lookup table.
+   * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
+   * \param[in] input - input data for manifold regression.
    */
-  virtual CLookUpTable* GetLookUpTable() { return nullptr; }
+  virtual unsigned long EvaluateDataSet(vector<su2double> &input_scalar, FLAMELET_LOOKUP_OPS lookup_type, vector<su2double> &output_refs) { return 0; }
 
-  /*!
-   * \brief Flamelet LUT - Get the total enthalpy from the temperature (reverse lookup).
-   */
-  virtual inline unsigned long GetEnthFromTemp(su2double& enthalpy,
-                                               const su2double val_prog,
-                                               const su2double val_temp,
-                                               su2double initial_value) { return 0; }
+  virtual unsigned long GetExtrapolation() { return 0; }
 
   /*!
    * \brief Get fluid dynamic viscosity.

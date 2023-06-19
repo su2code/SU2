@@ -5463,8 +5463,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
-    /*--- The controlling variables are progress variable and total enthalpy ---*/
-    n_control_vars = 2;
+    /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
+    n_control_vars = nSpecies - n_user_scalars;
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }

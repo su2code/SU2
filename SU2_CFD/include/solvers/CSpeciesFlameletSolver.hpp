@@ -38,7 +38,7 @@
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
-
+  bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -63,6 +63,46 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
                                   bool cht_mode = false);
+
+  /*!
+   * \brief Reverse look-up to retrieve enthalpy value based on temperature and other controlling variables.
+   * \param[in] fluid_model - pointer to flamelet fluid model.
+   * \param[in] val_temp - temperature value used for reverse look-up.
+   * \param[in] val_enth - pointer to enthalpy value to be retrieved.
+   * \param[in] scalar_solution - local scalar solution.
+   * \param[out] Converged - 0 if Newton solver converged, 1 if not.
+   */
+  unsigned long GetEnthFromTemp(CFluidModel * fluid_model, su2double const val_temp, su2double * val_enth, const su2double * scalar_solution);
+
+  /*!
+   * \brief Find maximum progress variable value within the manifold for the current solution.
+   * \param[in] fluid_model - pointer to flamelet fluid model.
+   * \param[in] scalars - local scalar solution.
+   * \return - maximum progress variable value within manifold bounds.
+   */
+  su2double GetBurntProgressVariable(CFluidModel * fluid_model, const su2double * scalars);
+
+  /*!
+   * \brief Retrieve scalar source terms from manifold.
+   * \param[in] config - definition of particular problem.
+   * \param[in] fluid_model_local - pointer to flamelet fluid model.
+   * \param[in] iPoint - node ID.
+   * \param[in] scalars - local scalar solution.
+   * \param[in] table_source_names - variable names of scalar source terms.
+   * \return - within manifold bounds (0) or outside manifold bounds (1).
+   */
+  unsigned long SetScalarSources(CConfig *config, CFluidModel *fluid_model_local, unsigned long iPoint, vector<su2double> &scalars);
+
+  /*!
+   * \brief Retrieve passive look-up data from manifold.
+   * \param[in] config - definition of particular problem.
+   * \param[in] fluid_model_local - pointer to flamelet fluid model.
+   * \param[in] iPoint - node ID.
+   * \param[in] scalars - local scalar solution.
+   * \param[in] table_lookup_names - variable names of scalar source terms.
+   * \return - within manifold bounds (0) or outside manifold bounds (1).
+   */
+  unsigned long SetScalarLookUps(CConfig *config, CFluidModel *fluid_model_local, unsigned long iPoint, vector<su2double> &scalars);
 
  public:
   /*!
@@ -167,5 +207,4 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
     conjugate_var[val_marker][val_vertex][pos_var] =
         relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
   }
-
 };
