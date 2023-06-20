@@ -464,8 +464,8 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(CConfig* config, CFluidMo
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
     su2double y_aux = scalars[config->GetNControlVars() + i_aux];
-    su2double source_prod = table_sources[1 + 2 * i_aux];
-    su2double source_cons = table_sources[1 + 2 * i_aux + 1];
+    su2double source_prod = table_sources[config->GetNControlVars() + 2 * i_aux];
+    su2double source_cons = table_sources[config->GetNControlVars() + 2 * i_aux + 1];
     source_scalar[config->GetNControlVars() + i_aux] = source_prod + source_cons * y_aux;
   }
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)

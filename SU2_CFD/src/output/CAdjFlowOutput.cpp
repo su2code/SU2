@@ -355,7 +355,7 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
     for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
       const auto& cv_name = config->GetControllingVariableName(iCV);
       SetVolumeOutputValue("ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV));
-      SetVolumeOutputValue("RES_ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV) - Node_AdjSpecies->GetSolution_Old(iPoint, iCV))
+      SetVolumeOutputValue("RES_ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV) - Node_AdjSpecies->GetSolution_Old(iPoint, iCV));
     }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
