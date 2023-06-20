@@ -147,7 +147,7 @@ class CFluidModel {
    * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
    * \param[in] input - input data for manifold regression.
    */
-  virtual unsigned long EvaluateDataSet(vector<su2double> &input_scalar, FLAMELET_LOOKUP_OPS lookup_type, vector<su2double> &output_refs) { return 0; }
+  virtual unsigned long EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) { return 0; }
 
   virtual unsigned long GetExtrapolation() { return 0; }
 

@@ -97,6 +97,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     /*--- Compute total source terms from the production and consumption. ---*/
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
+    nodes->SetTableMisses(i_point, misses);
 
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
@@ -142,9 +143,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
-      cout << "initial condition: c = " << prog_inlet << endl;
-      cout << "initial condition: h = " << enth_inlet << endl;
-      if (include_mixture_fraction) cout << "initial condition: Z = " << mixfrac_inlet << endl;
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        cout << "initial condition: " << cv_name << " = " << config->GetSpecies_Init()[iCV] << endl;
+      }
     }
 
     CFluidModel* fluid_model_local;
@@ -447,16 +449,15 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(CConfig* config, CFluidMo
                                                        unsigned long iPoint, vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
-  vector<su2double> table_sources(1 + 2*config->GetNUserScalars());
+  vector<su2double> table_sources(config->GetNControlVars() + 2*config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
   vector<su2double> source_scalar(config->GetNScalars());
-  source_scalar[I_PROGVAR] = fmax(EPS, table_sources[I_SRC_TOT_PROGVAR]);
-  source_scalar[I_ENTH] = 0.0;
-  if (include_mixture_fraction) source_scalar[I_MIXFRAC] = 0.0;
+  for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++)
+    source_scalar[iCV] = table_sources[iCV];
 
   /*--- Source term for the auxiliary species transport equations. ---*/
   for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {

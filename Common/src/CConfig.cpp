@@ -2096,6 +2096,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief File name of the flamelet look up table.*/
   addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
 
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
+
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
   addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
@@ -3928,8 +3931,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+      if ((Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) && (Kind_DensityModel != INC_DENSITYMODEL::FLAMELET)) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE or FLAMELET",
                        CURRENT_FUNCTION);
       }
 
@@ -5464,7 +5467,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
-    n_control_vars = nSpecies - n_user_scalars;
+    //n_control_vars = nSpecies - n_user_scalars;
+    if (n_control_vars != (nSpecies - n_user_scalars))
+      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }

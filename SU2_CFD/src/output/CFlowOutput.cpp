@@ -995,11 +995,12 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
-      AddHistoryOutput("RMS_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
-      if (include_mixfrac)
-        AddHistoryOutput("RMS_MIXTURE_FRACTION", "rms[Mixfrac]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
-      
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& CV_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
+      }
+
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1052,11 +1053,12 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      AddHistoryOutput("MAX_PROGRESS_VARIABLE", "max[PV]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
-      AddHistoryOutput("MAX_TOTAL_ENTHALPY", "max[Enth]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
-      if (include_mixfrac) 
-        AddHistoryOutput("MAX_MIXTURE_FRACTION", "max[Mixfrac]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
-      
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("MAX_" + cv_name, "max[" + cv_name + "]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the " + cv_name + " equation.", HistoryFieldType::RESIDUAL);
+      }
+
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1107,11 +1109,12 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      AddHistoryOutput("BGS_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
-      AddHistoryOutput("BGS_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the total enthalpy equation.", HistoryFieldType::RESIDUAL);
-      if (include_mixfrac)
-        AddHistoryOutput("BGS_MIXTURE_FRACTION", "bgs[Mixfrac]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the mixture fraction equation.", HistoryFieldType::RESIDUAL);
-      
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("BGS_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the " + cv_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
+      }
+
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
         const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1213,13 +1216,11 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     }
 
     case SPECIES_MODEL::FLAMELET: {
-      SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_RMS(I_PROGVAR)));
-      SetHistoryOutputValue("MAX_PROGRESS_VARIABLE", log10(solver[SPECIES_SOL]->GetRes_Max(I_PROGVAR)));
-      SetHistoryOutputValue("RMS_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_RMS(I_ENTH)));
-      SetHistoryOutputValue("MAX_TOTAL_ENTHALPY", log10(solver[SPECIES_SOL]->GetRes_Max(I_ENTH)));
-      if (include_mixfrac) {
-        SetHistoryOutputValue("RMS_MIXTURE_FRACTION", log10(solver[SPECIES_SOL]->GetRes_RMS(I_MIXFRAC)));
-        SetHistoryOutputValue("MAX_MIXTURE_FRACTION", log10(solver[SPECIES_SOL]->GetRes_Max(I_MIXFRAC)));
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetHistoryOutputValue("RMS_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_RMS(iCV)));
+        SetHistoryOutputValue("MAX_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_Max(iCV)));
       }
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
@@ -1276,12 +1277,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       }
       break;
     case SPECIES_MODEL::FLAMELET:
-      AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
-      AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
-      if (include_mixfrac)
-        AddVolumeOutput("MIXTURE_FRACTION", "Mixture_Fraction", "SOLUTION", "Mixture fraction");
+      /*--- Controlling variables. ---*/
+      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddVolumeOutput(cv_name, cv_name, "SOLUTION", cv_name + " solution.");
+      }
       /*--- auxiliary species ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
+      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
         const auto& species_name = config->GetUserScalarName(iReactant);
         AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
       }
@@ -1317,11 +1319,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
       }
       break;
     case SPECIES_MODEL::FLAMELET:
-      AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "RESIDUAL", "Residual of progress variable");
-      AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "RESIDUAL", "Residual of total enthalpy");
-      if (include_mixfrac) 
-        AddVolumeOutput("RES_MIXFRAC", "Residual_Mixture_Fraction", "RESIDUAL", "Residual of mixture fraction");
-
+      /*--- Residuals for controlling variable transport equations. ---*/
+      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddVolumeOutput("RES_"+cv_name, "Residual_"+cv_name, "RESIDUAL", "Residual of " + cv_name + " controlling variable.");
+      }
       /*--- residuals for auxiliary species transport equations ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
         const auto& species_name = config->GetUserScalarName(iReactant);
@@ -1372,18 +1374,18 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
           AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
       break;
       case SPECIES_MODEL::FLAMELET:
-        AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "LIMITER", "Limiter of progress variable");
-        AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "LIMITER", "Limiter of total enthalpy");
-        if (include_mixfrac)
-          AddVolumeOutput("LIMITER_MIXFRAC", "Limiter_Mixture_Fraction", "LIMITER", "Limiter of mixture fraction");
-
+        /*--- Limiter for controlling variables transport. ---*/
+        for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+          const auto& cv_name = config->GetControllingVariableName(iCV);
+          AddVolumeOutput("LIMITER_" + cv_name, "Limiter_" + cv_name, "LIMITER", "Limiter of " + cv_name + " controlling variable.");
+        }
         /*--- limiter for auxiliary species transport ---*/
         for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
           const auto& species_name = config->GetUserScalarName(iReactant);
           AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
         }
       break;
-      case SPECIES_MODEL::NONE:
+      default:
         break;
     }
   }
@@ -1398,9 +1400,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
         AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
       }
       break;
-    case SPECIES_MODEL::FLAMELET:
-      break;
-    case SPECIES_MODEL::NONE:
+    default:
       break;
   }
 
@@ -1425,18 +1425,20 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
 
   switch (config->GetKind_Species_Model()) {
-    case SPECIES_MODEL::SPECIES_TRANSPORT:
-      break;
     case SPECIES_MODEL::FLAMELET:
-      AddVolumeOutput("SOURCE_PROGVAR", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        if (cv_name.compare("NULL") != 0)
+          AddVolumeOutput("SOURCE_"+cv_name, "Source_" + cv_name, "SOURCE", "Source " + cv_name);
+      }
       /*--- no source term for enthalpy ---*/
       /*--- auxiliary species source terms ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++) {
+      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
         const auto& species_name = config->GetUserScalarName(iReactant);
         AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
       }
       break;
-    case SPECIES_MODEL::NONE:
+    default:
       break;
   }
 }
@@ -1446,17 +1448,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
   /*--- Only place outputs of the "LOOKUP" group for scalar transport here. ---*/
 
   switch (config->GetKind_Species_Model()) {
-    case SPECIES_MODEL::SPECIES_TRANSPORT:
-      break;
     case SPECIES_MODEL::FLAMELET:
-      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
+      for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); ++i_lookup) {
         string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
         AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
       }
-
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
       break;
-    case SPECIES_MODEL::NONE:
+    default:
       break;
   }
 }
@@ -1577,15 +1576,14 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
 
-      SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, I_PROGVAR));
-      SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, I_ENTH));
-      SetVolumeOutputValue("SOURCE_PROGVAR", iPoint, Node_Species->GetScalarSources(iPoint)[I_PROGVAR]);
-      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_PROGVAR));
-      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_ENTH));
-      SetVolumeOutputValue("TABLE_MISSES", iPoint, su2double(Node_Species->GetTableMisses(iPoint)));
-      if (include_mixfrac) {
-        SetVolumeOutputValue("MIXTURE_FRACTION", iPoint, Node_Species->GetSolution(iPoint, I_MIXFRAC));
-        SetVolumeOutputValue("RES_MIXFRAC", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, I_MIXFRAC));
+      /*--- Controlling variables transport equations. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetVolumeOutputValue(cv_name, iPoint, Node_Species->GetSolution(iPoint, iCV));
+        SetVolumeOutputValue("RES_" + cv_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iCV));
+        const auto& source_name = config->GetControllingVariableSourceName(iCV);
+        if (source_name.compare("NULL") != 0)
+          SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
       }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
@@ -1596,11 +1594,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       }
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
-        SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, I_PROGVAR));
-        SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, I_ENTH));
-        if (include_mixfrac) 
-          SetVolumeOutputValue("LIMITER_MIXFRAC", iPoint, Node_Species->GetLimiter(iPoint, I_MIXFRAC));
-          
+        /*--- Limiter for controlling variable transport equations. ---*/
+        for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+          const auto& cv_name = config->GetControllingVariableName(iCV);
+          SetVolumeOutputValue("LIMITER_" + cv_name, iPoint, Node_Species->GetLimiter(iPoint, iCV));
+        }
         /*--- limiter for auxiliary species transport equations ---*/
         for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
           const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -1613,6 +1611,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         if (config->GetLUTLookupName(i_lookup)!="NULL")
           SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
       }
+
+      SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
 
       break;
     }

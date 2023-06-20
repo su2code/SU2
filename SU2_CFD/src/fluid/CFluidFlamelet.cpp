@@ -52,9 +52,12 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
-  table_scalar_names[I_ENTH] = "EnthalpyTot";
-  table_scalar_names[I_PROGVAR] = "ProgressVariable";
-  if (include_mixture_fraction) table_scalar_names[I_MIXFRAC] = "MixtureFraction";
+  for (auto iCV=0u; iCV<n_control_vars; iCV++)
+    table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
+  
+  // table_scalar_names[I_ENTH] = "EnthalpyTot";
+  // table_scalar_names[I_PROGVAR] = "ProgressVariable";
+  // if (include_mixture_fraction) table_scalar_names[I_MIXFRAC] = "MixtureFraction";
 
   /*--- auxiliary species transport equations---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
@@ -83,14 +86,26 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
   Kt = val_vars_TD[LOOKUP_TD::CONDUCTIVITY];
   mass_diffusivity = val_vars_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT];
-  molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-  Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
+  switch (density_model)
+  {
+  case INC_DENSITYMODEL::FLAMELET:
+    Density = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
+    molar_weight = Pressure / (Density * UNIVERSAL_GAS_CONSTANT * Temperature);
+    break;
+  case INC_DENSITYMODEL::VARIABLE:
+    molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
+    Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
+  default:
+    break;
+  }
 
   /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 
 void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
+
+  density_model = config->GetKind_DensityModel();
    /*--- Thermodynamic state variables and names. ---*/
   varnames_TD.resize(LOOKUP_TD::SIZE);
   val_vars_TD.resize(LOOKUP_TD::SIZE);
@@ -101,13 +116,25 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_TD[LOOKUP_TD::VISCOSITY] = "ViscosityDyn";
   varnames_TD[LOOKUP_TD::CONDUCTIVITY] = "Conductivity";
   varnames_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT] = "DiffusionCoefficient";
-  varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "MolarWeightMix";
 
+  /*--- In case of FLAMELET density model, the density is directly interpolated from the manifold.---*/
+  switch (density_model)
+  {
+  case INC_DENSITYMODEL::FLAMELET:
+    varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "Density";
+    break;
+  case INC_DENSITYMODEL::VARIABLE:
+    varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "MolarWeightMix";
+    break;
+  default:
+    break;
+  }
   /*--- Scalar source term variables and names. ---*/
-  size_t n_sources = 1 + 2*n_user_scalars;
+  size_t n_sources = n_control_vars + 2*n_user_scalars;
   varnames_Sources.resize(n_sources);
   val_vars_Sources.resize(n_sources);
-  varnames_Sources[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
+  for (auto iCV=0u; iCV<n_control_vars; iCV++)
+    varnames_Sources[iCV] = config->GetControllingVariableSourceName(iCV);
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -115,8 +142,8 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
 
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    varnames_Sources[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
-    varnames_Sources[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
+    varnames_Sources[n_control_vars + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
+    varnames_Sources[n_control_vars + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
   }
 
   /*--- Passive look-up terms ---*/
@@ -128,7 +155,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
 
 }
 
-unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double> &input_scalar, FLAMELET_LOOKUP_OPS lookup_type, vector<su2double> &output_refs) {
+unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) {
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
@@ -145,7 +172,6 @@ unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double> &input_scalar, F
   case FLAMELET_LOOKUP_OPS::LOOKUP:
     varnames = varnames_LookUp;
     break;
-  
   default:
     break;
   }

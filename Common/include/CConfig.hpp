@@ -1223,6 +1223,8 @@ private:
   unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
   unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
 
+  string* controlling_variable_names;
+  string* cv_source_names;
   vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
   string* table_lookup_names;         /*!< \brief Names of LUT variables. */
   string file_name_lut;               /*!< \brief Filename of the LUT. */
@@ -2145,6 +2147,13 @@ public:
    */
   unsigned short GetNUserScalars() const { return n_user_scalars; }
 
+  const string& GetControllingVariableName(unsigned short i_cv) const {
+    return controlling_variable_names[i_cv];
+  }
+
+  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
+    return cv_source_names[i_cv];
+  }
   /*!
    * \brief Get the name of the user scalar.
    */

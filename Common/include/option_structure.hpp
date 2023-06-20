@@ -613,11 +613,13 @@ enum class INC_DENSITYMODEL {
   CONSTANT,   /*!< \brief Constant density. */
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
+  FLAMELET,   /*!< \brief Density according to flamelet manifold. */
 };
 static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
+  MakePair("FLAMELET", INC_DENSITYMODEL::FLAMELET)
 };
 
 /*!

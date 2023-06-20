@@ -43,7 +43,8 @@ class CFluidFlamelet final : public CFluidModel {
       n_control_vars;                                  /*!< \brief number of controlling variables. */
 
   unsigned long extrapolation;
-
+  
+  INC_DENSITYMODEL density_model;
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
 
   su2double mass_diffusivity, /*!< \brief local mass diffusivity of the mixture */
@@ -82,7 +83,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] output_refs - output data.
    * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
    */
-  inline unsigned long EvaluateDataSet(vector<su2double> &input_scalar, FLAMELET_LOOKUP_OPS lookup_type, vector<su2double> &output_refs) override;
+  inline unsigned long EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
