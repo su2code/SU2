@@ -12,9 +12,6 @@
 [submodule "externals/meson"]
 	path = externals/meson
 	url = https://github.com/mesonbuild/meson
-[submodule "subprojects/Mutationpp"]
-        path = subprojects/Mutationpp
-        url = https://github.com/mutationpp/Mutationpp.git
 [submodule "subprojects/CoolProp"]
         path = subprojects/CoolProp
         url = https://github.com/CoolProp/CoolProp.git
@@ -24,3 +21,6 @@
 [submodule "externals/mel"]
 	path = externals/mel
 	url = https://github.com/pcarruscag/MEL.git
+[submodule "Mutationpp"]
+	path = Mutationpp
+	url = https://github.com/CatarinaGarbacz/Mutationpp.git
