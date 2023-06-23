@@ -520,7 +520,7 @@ def main():
 
     # Flow AD Mesh Displacement and Initial Coordinates Sensitivity
     pywrapper_wavy_wall_steady = TestCase('pywrapper_wavy_wall_steady')
-    pywrapper_wavy_wall_steady.cfg_dir = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_wavy_wall_steady.cfg_dir = "py_wrapper/wavy_wall"
     pywrapper_wavy_wall_steady.cfg_file = "run_steady.py"
     pywrapper_wavy_wall_steady.test_iter = 100
     pywrapper_wavy_wall_steady.test_vals = [-1.360044, 2.580709, -2.892473]
