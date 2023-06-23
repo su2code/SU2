@@ -300,10 +300,16 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
-    solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+      const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+      solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    } else {
+      const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      const su2double pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+      solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_Prho(pressure, density, scalar);
+    }
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
