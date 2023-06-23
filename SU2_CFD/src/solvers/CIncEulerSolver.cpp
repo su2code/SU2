@@ -1388,6 +1388,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool vol_heat       = config->GetHeatSource();
   const bool turbulent      = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool energy         = config->GetEnergy_Equation();
+  const bool fluid_mixture  = (config->GetKind_FluidModel() == FLUID_MIXTURE);
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
@@ -1573,6 +1574,108 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
       }
+
+      /*--- Compute Source term Residual ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+    END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
+  }
+
+  if (fluid_mixture) {
+
+    /*--- For viscous problems, we need an additional gradient. ---*/
+
+    // if (viscous) {
+
+    //   AD::StartNoSharedReading();
+
+    //   SU2_OMP_FOR_STAT(omp_chunk_size)
+    //   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    //     su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+    //     su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+    //     su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
+    //                                  nodes->GetEddyViscosity(iPoint));
+    //     su2double AuxVar = 0.0;
+    //     if (yCoord > EPS)
+    //       AuxVar = Total_Viscosity*yVelocity/yCoord;
+
+    //     /*--- Set the auxiliary variable for this node. ---*/
+
+    //     nodes->SetAuxVar(iPoint, 0, AuxVar);
+
+    //   }
+    //   END_SU2_OMP_FOR
+
+    //   AD::EndNoSharedReading();
+
+    //   /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+
+    //   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    //     SetAuxVar_Gradient_GG(geometry, config);
+    //   }
+    //   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    //     SetAuxVar_Gradient_LS(geometry, config);
+    //   }
+
+    // }
+
+    /*--- loop over points ---*/
+
+    AD::StartNoSharedReading();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set incompressible density  ---*/
+
+      numerics->SetDensity(nodes->GetDensity(iPoint),
+                           nodes->GetDensity(iPoint));
+      numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), nodes->GetSpecificHeatCp(iPoint));
+
+      /*--- Set control volume ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Set y coordinate ---*/
+
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                         geometry->nodes->GetCoord(iPoint));
+      
+      /*--- Gradient of the primitive variables ---*/
+
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+
+      // /*--- If viscous, we need gradients for extra terms. ---*/
+
+      // if (viscous) {
+
+      //   /*--- Gradient of the primitive variables ---*/
+
+      //   numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+
+      //   /*--- Load the aux variable gradient that we already computed. ---*/
+
+      //   numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+
+      // }
 
       /*--- Compute Source term Residual ---*/
 

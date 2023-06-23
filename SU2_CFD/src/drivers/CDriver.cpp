@@ -1870,6 +1870,12 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGeneralAxisymmetric_Flow(nDim, nVar_Flow, config);
       }
+      else if (config->GetKind_FluidModel()==FLUID_MIXTURE){
+        if (incompressible)
+          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncEnergy_Flow(nDim, nVar_Flow, config);
+        else
+          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
+      }
       else if (config->GetGravityForce() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGravity(nDim, nVar_Flow, config);
       }
