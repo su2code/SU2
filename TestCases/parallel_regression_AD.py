@@ -377,9 +377,9 @@ def main():
     ################################################
     ### Gradient check (dot) for flamelet solver ###
     ################################################
-    
+
     # 2D planar laminar premixed flame on isothermal burner (restart)
-    # This test restarts on the output of test discadj_flamelet_ch4_hx and 
+    # This test restarts on the output of test discadj_flamelet_ch4_hx and
     # will only pass if test discadj_flamelet_ch4_hx passes.
     dot_flamelet_ch4_hx                  = TestCase('dot_flamelet_ch4_hx')
     dot_flamelet_ch4_hx.cfg_dir          = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
@@ -395,7 +395,7 @@ def main():
     test_list.append(dot_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
-    # This test restarts on the output of test discadj_flamelet_ch4_cht and 
+    # This test restarts on the output of test discadj_flamelet_ch4_cht and
     # will only pass if test discadj_flamelet_ch4_cht passes.
     dot_flamelet_ch4_cht                  = TestCase('dot_flamelet_ch4_cht')
     dot_flamelet_ch4_cht.cfg_dir          = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
@@ -517,6 +517,19 @@ def main():
     pywrapper_CFD_AD_MeshDisp.new_output    = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
     pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+
+    # Flow AD Mesh Displacement and Initial Coordinates Sensitivity
+    pywrapper_wavy_wall_steady = TestCase('pywrapper_wavy_wall_steady')
+    pywrapper_wavy_wall_steady.cfg_dir = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_wavy_wall_steady.cfg_file = "run_steady.py"
+    pywrapper_wavy_wall_steady.test_iter = 100
+    pywrapper_wavy_wall_steady.test_vals = [-1.360044, 2.580709, -2.892473]
+    pywrapper_wavy_wall_steady.command = TestCase.Command("mpirun -n 2", "python", "run_steady.py")
+    pywrapper_wavy_wall_steady.timeout = 1600
+    pywrapper_wavy_wall_steady.tol = 0.00001
+    pywrapper_wavy_wall_steady.new_output = False
+    test_list.append(pywrapper_wavy_wall_steady)
+    pass_list.append(pywrapper_wavy_wall_steady.run_test())
 
     ####################################################################
     ###  Unsteady Disc. adj. compressible RANS restart optimization  ###
