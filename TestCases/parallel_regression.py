@@ -60,6 +60,15 @@ def main():
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
+    # 2D planar laminar partially premixed flame on isothermal burner and heat exchanger (restart)
+    cfd_flamelet_ch4_partial_premix = TestCase('cfd_flamelet_ch4_partial_premix')
+    cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
+    cfd_flamelet_ch4_partial_premix.test_iter = 10
+    cfd_flamelet_ch4_partial_premix.test_vals = [-8.557377, -9.715636, -9.436786, -9.813844, -2.684793]
+    cfd_flamelet_ch4_partial_premix.new_output = True
+    test_list.append(cfd_flamelet_ch4_partial_premix)
+
     #########################
     ## NEMO solver ###
     #########################
