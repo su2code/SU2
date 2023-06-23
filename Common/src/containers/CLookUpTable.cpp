@@ -73,12 +73,12 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;
-  bool display_map_info = (n_table_levels < 2); 
+  bool display_map_info = (n_table_levels < 2);
   double tmap_memory_footprint = 0;
   for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
-    trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level),
-                                            table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level],
-                                            display_map_info);
+    trap_map_x_y[i_level] =
+        CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level), table_data[i_level].cols(),
+                        edges[i_level], edge_to_triangle[i_level], display_map_info);
     tmap_memory_footprint += trap_map_x_y[i_level].GetMemoryFootprint();
     /* Display a progress bar to monitor table generation process */
     if (rank == MASTER_NODE) {

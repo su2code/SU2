@@ -958,7 +958,6 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 // The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1013,7 +1012,6 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1072,7 +1070,6 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   if (!multiZone) return;
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1154,7 +1151,6 @@ void CFlowOutput::AddHistoryOutputFieldsScalarLinsol(const CConfig* config) {
 // clang-format on
 
 void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver) {
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1243,8 +1239,6 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
 
 void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   /*--- Only place outputs of the "SOLUTION" group here. ---*/
-
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
   
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1297,7 +1291,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   /*--- Only place outputs of the "RESIDUAL" group here. ---*/
 
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
@@ -1349,7 +1342,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
 void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
   /*--- Only place outputs of the "SOLUTION" group for species transport here. ---*/
 
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
 
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
@@ -1427,8 +1419,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::FLAMELET:
       for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_source_name = config->GetControllingVariableSourceName(iCV);
         const auto& cv_name = config->GetControllingVariableName(iCV);
-        if (cv_name.compare("NULL") != 0)
+        if (cv_source_name.compare("NULL") != 0)
           AddVolumeOutput("SOURCE_"+cv_name, "Source_" + cv_name, "SOURCE", "Source " + cv_name);
       }
       /*--- no source term for enthalpy ---*/
@@ -1493,7 +1486,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
-  const auto include_mixfrac = (config->GetNControlVars() == 3);
   
   if (config->GetViscous()) {
     if (nDim == 3){
@@ -3054,6 +3046,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
       case INC_DENSITYMODEL::VARIABLE:
         if (energy) file << "Energy equation is active and coupled for variable density.\n";
+        break;
+
+      case INC_DENSITYMODEL::FLAMELET:
+        file << "Density is obtained through flamelet manifold.\n";
         break;
     }
 

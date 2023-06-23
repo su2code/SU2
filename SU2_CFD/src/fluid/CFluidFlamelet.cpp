@@ -28,7 +28,7 @@
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 
-CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool load_manifold) : CFluidModel(), generate_manifold(load_manifold) {
+CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
   rank = SU2_MPI::GetRank();
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
@@ -55,17 +55,12 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   for (auto iCV=0u; iCV<n_control_vars; iCV++)
     table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
   
-  // table_scalar_names[I_ENTH] = "EnthalpyTot";
-  // table_scalar_names[I_PROGVAR] = "ProgressVariable";
-  // if (include_mixture_fraction) table_scalar_names[I_MIXFRAC] = "MixtureFraction";
-
   /*--- auxiliary species transport equations---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
-  
-  if (generate_manifold)
-    look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+
+  look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
   Pressure = value_pressure_operating;
 
@@ -73,7 +68,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
  
 }
 
-CFluidFlamelet::~CFluidFlamelet() { if(generate_manifold) delete look_up_table; }
+CFluidFlamelet::~CFluidFlamelet() { delete look_up_table; }
 
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];

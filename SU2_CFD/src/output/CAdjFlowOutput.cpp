@@ -304,9 +304,9 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for(auto iCV=0u; iCV < config->GetNControlVars(); iCV) {
+    for(auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
       const auto& cv_name = config->GetControllingVariableName(iCV);
-      AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of the " + cv_name + " controlling variable.");
+      AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of " + cv_name);
     }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);

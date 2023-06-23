@@ -80,9 +80,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
-  const auto n_user_scalars = config->GetNUserScalars();
-  const auto n_control_vars = config->GetNControlVars();
-
+  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global=0;
   vector<su2double> scalars_vector(nVar);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -98,7 +96,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Compute total source terms from the production and consumption. ---*/
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
     nodes->SetTableMisses(i_point, misses);
-
+    n_not_in_domain_local += misses;
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
 
@@ -113,7 +111,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
   END_SU2_OMP_FOR
-
+  /* --- Sum up some global counters over processes. --- */
+  SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
+                  SU2_MPI::GetComm());
+  if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
+    cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
 }
@@ -135,11 +137,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     const su2double flamenorm = GeometryToolbox::Norm(nDim, flame_normal);
     const su2double temp_inlet = config->GetInc_Temperature_Init();
-    su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR];
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
-    su2double mixfrac_inlet = include_mixture_fraction ? config->GetSpecies_Init()[I_MIXFRAC] : 0.0;
 
-    su2double prog_burnt, prog_unburnt, point_loc, scalar_init[nVar];
+    su2double prog_burnt = 0, prog_unburnt, point_loc;
+    su2double *scalar_init = new su2double[nVar];
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
@@ -165,8 +166,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, &enth_inlet, config->GetSpecies_Init());
       scalar_init[I_ENTH] = enth_inlet;
 
+      prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
-      for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         /*--- Determine if point is above or below the plane, assuming the normal
@@ -220,6 +223,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      END_SU2_OMP_FOR
     }
 
     /* --- Sum up some global counters over processes. --- */
@@ -248,6 +252,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         cout << " Initial condition: Number of points in which enthalpy could not be iterated: "
              << n_not_iterated_global << " !!!" << endl;
     }
+
+    delete [] scalar_init;
   }
 }
 
@@ -498,7 +504,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
   int counter = 0;
 
-  su2double val_scalars[nVar];
+  su2double *val_scalars = new su2double[nVar];
   for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
 
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
@@ -515,6 +521,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     enth_iter += delta_enth;
   }
+  delete [] val_scalars;
 
   *val_enth = enth_iter;
 
@@ -526,14 +533,17 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 }
 
 su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
-  su2double scalars[nVar];
+  su2double *scalars = new su2double[nVar],
+            delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
 
   bool outside = false;
   while (!outside) {
     fluid_model->SetTDState_T(300, scalars);
     if (fluid_model->GetExtrapolation() == 1) outside = true;
-    scalars[I_PROGVAR] += 1e-3;
+    scalars[I_PROGVAR] += delta;
   }
-  return scalars[I_PROGVAR] - 1e-3;
+  su2double pv_burnt = scalars[I_PROGVAR] - delta;
+  delete [] scalars;
+  return pv_burnt;
 }

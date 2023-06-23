@@ -335,7 +335,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     default:
@@ -487,7 +487,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLUID_FLAMELET:
-        fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic, true);
+        fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
@@ -599,6 +599,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if (energy) cout << "Energy equation is active and coupled for variable density." << endl;
         break;
 
+      case INC_DENSITYMODEL::FLAMELET:
+        cout << "Energy equation is disabled and density is obtained through flamelet manifold." << endl;
+        break;
     }
 
     stringstream NonDimTableOut, ModelTableOut;

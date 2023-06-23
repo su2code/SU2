@@ -36,8 +36,7 @@ class CFluidFlamelet final : public CFluidModel {
 
   int rank;
 
-  bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */ 
-       generate_manifold = false;
+  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */ 
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
@@ -65,7 +64,7 @@ class CFluidFlamelet final : public CFluidModel {
   void PreprocessLookUp(CConfig* config);
 
  public:
-  CFluidFlamelet(CConfig* config, su2double value_pressure_operating, bool load_manifold = false);
+  CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 
   ~CFluidFlamelet();
 
