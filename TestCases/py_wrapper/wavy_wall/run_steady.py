@@ -143,7 +143,6 @@ def RunPrimal(channel_width, deform_amplitude):
     Returns the objective function.
     """
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
 
     with open('config.cfg', 'w') as f:
         f.write(common_settings.replace('__WIDTH__', str(channel_width)) + primal_settings)
@@ -175,7 +174,6 @@ def RunAdjoint(channel_width, deform_amplitude):
     Returns the sensitivity of the objective function to the amplitude and width.
     """
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
 
     with open('config_ad.cfg', 'w') as f:
         f.write(common_settings.replace('__WIDTH__', str(channel_width)) + adjoint_settings)
@@ -278,7 +276,7 @@ def Deformation(t, amplitude, marker_id, driver, check = False):
 def SumSensitivity(t, marker_id, driver):
     """Integrates the sensitivity with respect to the amplitude of the deformation."""
     if marker_id < 0:
-        return
+        return 0.0
     ini_coords = driver.MarkerInitialCoordinates(marker_id)
     phase = Phase(t)
     sens = 0
