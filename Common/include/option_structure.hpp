@@ -1033,16 +1033,11 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
-  } else if (sst_2003) {
-    SSTParsedOptions.version = SST_OPTIONS::V2003;
-  } else {
+  } else if (sst_1994) {
     SSTParsedOptions.version = SST_OPTIONS::V1994;
-
-    if (rank==MASTER_NODE) {
-      std::cout <<
-        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
-        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
-    }
+  } else {
+    /*--- Default version since v8. ---*/
+    SSTParsedOptions.version = SST_OPTIONS::V2003;
   }
 
   // Parse production modifications
