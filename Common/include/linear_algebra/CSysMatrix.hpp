@@ -152,6 +152,10 @@ class CSysMatrix {
   const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
+  /*!< \brief Level schedule for ILU OpenMP parallelization. */
+  std::vector<unsigned long> level_offsets;
+  std::vector<unsigned long> level_indices;
+
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/

@@ -149,6 +149,29 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     col_ind_ilu = csr_ilu.innerIdx();
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
+
+    /*--- Compute levels. ---*/
+    std::vector<unsigned> level(nPointDomain, 0);
+    unsigned long n_levels = 0;
+
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
+        const auto jPoint = col_ind_ilu[index];
+        level[iPoint] = std::max(level[iPoint], level[jPoint] + 1);
+      }
+      n_levels = std::max(n_levels, level[iPoint] + 1);
+    }
+    level_offsets.resize(n_levels + 1, 0);
+    for (const auto l : level) ++level_offsets[l + 1];
+    for (auto i_level = 2ul; i_level < n_levels; ++i_level) {
+      level_offsets[i_level] += level_offsets[i_level - 1];
+    }
+    level_indices.resize(nPointDomain);
+    auto insert_pos = level_offsets;
+
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      level_indices[insert_pos[level[iPoint]]++] = iPoint;
+    }
   }
 
   /*--- Allocate data. ---*/
@@ -650,7 +673,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   /*--- OpenMP Parallelization, a loop construct is used to ensure
    *    the preconditioner is computed correctly even if called
    *    outside of a parallel section. ---*/
-
+#if 0
   SU2_OMP_FOR_STAT(1)
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
     const auto begin = omp_partitions[thread];
@@ -713,6 +736,67 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     InverseDiagonalBlock_ILUMatrix(end - 1, &invM[(end - 1) * nVar * nVar]);
   }
   END_SU2_OMP_FOR
+#endif
+
+  const auto n_levels = level_offsets.size() - 1;
+  for (unsigned long i_level = 1; i_level < n_levels; ++i_level) {
+    /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
+    SU2_OMP_FOR_STAT(1024)
+    for (auto idx = level_offsets[i_level - 1]; idx < level_offsets[i_level]; ++idx) {
+      const auto iPoint = level_indices[idx];
+      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_FOR_STAT(1024)
+    for (auto idx = level_offsets[i_level]; idx < level_offsets[i_level + 1]; ++idx) {
+      /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
+      const auto iPoint = level_indices[idx];
+      ScalarType weight[MAXNVAR * MAXNVAR], aux_block[MAXNVAR * MAXNVAR];
+
+      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
+        /*--- jPoint is the column index (jPoint < iPoint). ---*/
+        const auto jPoint = col_ind_ilu[index];
+
+        /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
+
+        auto Block_ij = &ILU_matrix[index * nVar * nVar];
+        MatrixMatrixProduct(Block_ij, &invM[jPoint * nVar * nVar], weight);
+
+        /*--- "weight" holds Aij*inv(Ajj). Jump to the upper part of the jPoint row. ---*/
+
+        for (auto index_ = dia_ptr_ilu[jPoint] + 1; index_ < row_ptr_ilu[jPoint + 1]; index_++) {
+          /*--- Get the column index (kPoint > jPoint). ---*/
+
+          auto kPoint = col_ind_ilu[index_];
+
+          /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
+
+          auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
+
+          if (Block_ik != nullptr) {
+            auto Block_jk = &ILU_matrix[index_ * nVar * nVar];
+            MatrixMatrixProduct(weight, Block_jk, aux_block);
+            MatrixSubtraction(Block_ik, aux_block, Block_ik);
+          }
+        }
+
+        /*--- Lastly, store "weight" in the lower triangular part, which
+         will be reused during the forward solve in the precon/smoother. ---*/
+
+        for (auto iVar = 0ul; iVar < nVar * nVar; ++iVar) Block_ij[iVar] = weight[iVar];
+      }
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Invert the last level. ---*/
+    SU2_OMP_FOR_STAT(1024)
+    for (auto idx = level_offsets[n_levels - 1]; idx < level_offsets[n_levels]; ++idx) {
+      const auto iPoint = level_indices[idx];
+      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 template <class ScalarType>
@@ -721,6 +805,50 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
+  /*--- Copy vector to then work on prod in place ---*/
+  prod = vec;
+
+  const auto n_levels = level_offsets.size() - 1;
+
+  /*--- Forward solve the system using the lower matrix entries that
+      were computed and stored during the ILU preprocessing. Note
+      that we are overwriting the residual vector as we go. ---*/
+
+  for (unsigned long i_level = 0; i_level < n_levels; ++i_level) {
+    SU2_OMP_FOR_STAT(1024)
+    for (auto idx = level_offsets[i_level]; idx < level_offsets[i_level + 1]; ++idx) {
+      const auto iPoint = level_indices[idx];
+      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
+        auto jPoint = col_ind_ilu[index];
+        if (jPoint < begin) continue;
+        auto Block_ij = &ILU_matrix[index * nVar * nVar];
+        MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], &prod[iPoint * nVar]);
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
+  /*--- Backwards substitution (starts at the last level). ---*/
+
+  for (unsigned long i_level = n_levels; i_level > 0; --i_level) {
+    SU2_OMP_FOR_STAT(1024)
+    for (auto idx = level_offsets[i_level - 1]; idx < level_offsets[i_level]; ++idx) {
+      const auto iPoint = level_indices[idx];
+      ScalarType aux_vec[MAXNVAR];
+      for (auto iVar = 0ul; iVar < nVar; iVar++) aux_vec[iVar] = prod[iPoint * nVar + iVar];
+
+      for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; index++) {
+        auto jPoint = col_ind_ilu[index];
+        auto Block_ij = &ILU_matrix[index * nVar * nVar];
+        MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
+      }
+
+      MatrixVectorProduct(&invM[iPoint * nVar * nVar], aux_vec, &prod[iPoint * nVar]);
+    }
+    END_SU2_OMP_FOR
+  }
+
+#if 0
   /*--- OpenMP Parallelization ---*/
   SU2_OMP_FOR_STAT(1)
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
@@ -764,6 +892,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
     }
   }
   END_SU2_OMP_FOR
+#endif
 
   /*--- MPI Parallelization ---*/
 
