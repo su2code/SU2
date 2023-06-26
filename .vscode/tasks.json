@@ -11,7 +11,8 @@
                 "build",
                 "--prefix=/home/gomer/local/codes/su2_install/current_branch/serial/gnu/debug",
                 "-Dwith-mpi=disabled",
-                "--buildtype=debug"
+                "--buildtype=debug",
+                "--optimization=0"
             ]
         },
         {

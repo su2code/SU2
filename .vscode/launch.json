@@ -25,6 +25,10 @@
                 "description":  "Set Disassembly Flavor to Intel",
                 "text": "-gdb-set disassembly-flavor intel",
                 "ignoreFailures": true
+            },
+            {
+                "description": "Use .gdbinit from home directory",
+                "text": "source /home/gomer/.gdbinit"
             }
         ]
     }
