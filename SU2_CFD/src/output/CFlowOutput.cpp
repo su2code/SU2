@@ -232,7 +232,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
+            if (config->GetVariable_Density_Model()) {
               Mach = sqrt(flow_nodes->GetVelocity2(iPoint))/
               sqrt(flow_nodes->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(flow_nodes->GetSpecificHeatCv(iPoint)*flow_nodes->GetDensity(iPoint)));
             } else {

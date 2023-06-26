@@ -83,18 +83,18 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   mass_diffusivity = val_vars_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT];
   switch (density_model)
   {
-  case INC_DENSITYMODEL::FLAMELET:
-    Density = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-    molar_weight = Pressure / (Density * UNIVERSAL_GAS_CONSTANT * Temperature);
-    break;
-  case INC_DENSITYMODEL::VARIABLE:
-    molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-    Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
-  default:
-    break;
+    case INC_DENSITYMODEL::FLAMELET:
+      Density = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
+      molar_weight = Pressure / (Density * UNIVERSAL_GAS_CONSTANT * Temperature);
+      break;
+    case INC_DENSITYMODEL::VARIABLE:
+      molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
+      Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
+      break;
+    default:
+      break;
   }
-
-  /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
+    /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 

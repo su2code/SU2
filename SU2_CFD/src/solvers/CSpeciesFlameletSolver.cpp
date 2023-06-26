@@ -258,7 +258,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
-  const bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  const bool variable_density = (config->GetVariable_Density_Model());
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -464,6 +464,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(CConfig* config, CFluidMo
   vector<su2double> source_scalar(config->GetNScalars());
   for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++)
     source_scalar[iCV] = table_sources[iCV];
+  source_scalar[I_PROGVAR] = fmax(EPS, source_scalar[I_PROGVAR]);
 
   /*--- Source term for the auxiliary species transport equations. ---*/
   for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
