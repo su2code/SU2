@@ -344,7 +344,7 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2do
 
 void CDataDrivenFluid::ComputeIdealGasQuantities() {
   /*--- Compute approximate ideal gas properties from the middle of the reference data set. These properties are used to approximate the initial condition of the Newton solvers using the ideal gas law. ---*/
-  su2double rho_average, e_average;
+  su2double rho_average = 1.0, e_average = 1.0;
 
   /*--- Obtain minimum and maximum density and static energy from data set. ---*/
   switch (Kind_DataDriven_Method)
@@ -368,10 +368,6 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
 #endif
     break;
   default:
-    rho_average = 1.0;
-    e_average = 1.0;
-    rho_min = 1.0;
-    e_min = 1.0;
     break;
   }
 
