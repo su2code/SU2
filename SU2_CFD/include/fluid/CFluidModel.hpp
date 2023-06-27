@@ -346,18 +346,6 @@ class CFluidModel {
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
 
   /*!
-   * \brief Set the initial guess for the density in Newton solvers
-   * \param[in] rho - Initial value for density.
-   */
-  virtual void SetInitialDensity(su2double rho) {}
-
-  /*!
-   * \brief Set the initial guess for the static energy in Newton solvers
-   * \param[in] e - Initial value for static energy.
-   */
-  virtual void SetInitialEnergy(su2double e) {}
-
-  /*!
    * \brief Get fluid model extrapolation instance
    * \return Query point lies outside fluid model data range.
    */

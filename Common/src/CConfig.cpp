@@ -1176,10 +1176,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
   addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
-  /*!\brief DATADRIVEN_FLUID_INITIAL_DENSITY \n DESCRIPTION: Initial value for the density in the Newton solvers in the data-driven fluid model. \n \ingroup Config*/
-  addDoubleOption("DATADRIVEN_FLUID_INITIAL_DENSITY", DataDriven_initial_density, 1.225);
-  /*!\brief DATADRIVEN_FLUID_INITIAL_ENERGY \n DESCRIPTION: Initial value for the static energy in the Newton solvers in the data-driven fluid model. \n \ingroup Config*/
-  addDoubleOption("DATADRIVEN_FLUID_INITIAL_ENERGY", DataDriven_initial_energy, 1e5);
 
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);

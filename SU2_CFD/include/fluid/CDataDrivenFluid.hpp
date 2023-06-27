@@ -49,15 +49,18 @@ class CDataDrivenFluid final : public CFluidModel {
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
       ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
 
+  string varname_rho,  /*!< \brief Controlling variable name for density. */
+         varname_e;    /*!< \brief Controlling variable name for static energy. */
+         
   size_t idx_rho, /*!< \brief Interpolator index for density input. */
       idx_e;      /*!< \brief Interpolator index for energy input. */
 
   su2double Newton_Relaxation, /*!< \brief Relaxation factor for Newton solvers. */
       rho_start,               /*!< \brief Starting value for the density in Newton solver processes. */
       e_start,                 /*!< \brief Starting value for the energy in Newton solver processes. */
-      rho_init,                /*!< \brief Initial value for the density from config. */
-      e_init,                  /*!< \brief Initial value for the energy from config. */
-      Newton_Tolerance;        /*!< \brief Normalized tolerance for Newton solvers. */
+      Newton_Tolerance,        /*!< \brief Normalized tolerance for Newton solvers. */
+      rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
+      e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
 
   unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
@@ -66,6 +69,13 @@ class CDataDrivenFluid final : public CFluidModel {
       d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy. */
       d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy. */
       d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density. */
+
+  su2double R_idealgas,     /*!< \brief Approximated ideal gas constant. */
+            Cp_idealgas,    /*!< \brief Approximated ideal gas specific heat at constant pressure. */
+            gamma_idealgas, /*!< \brief Approximated ideal gas specific heat ratio. */
+            Cv_idealgas,    /*!< \brief Approximated ideal gas specific heat at constant volume. */
+            P_middle,       /*!< \brief Pressure computed from the centre of the data set. */
+            T_middle;       /*!< \brief Temperature computed from the centre of the data set. */
 
   su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
       dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
@@ -76,8 +86,6 @@ class CDataDrivenFluid final : public CFluidModel {
       output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
 
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
-
-  bool set_local_rhoe = false;
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
@@ -142,6 +150,7 @@ class CDataDrivenFluid final : public CFluidModel {
    */
   void Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX);
 
+  void ComputeIdealGasQuantities();
  public:
   /*!
    * \brief Constructor of the class.
@@ -196,18 +205,6 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_Ps(su2double P, su2double s) override;
-
-  /*!
-   * \brief Set the initial guess for the density in Newton solvers.
-   * \param[in] rho - Initial value for density.
-   */
-  void SetInitialDensity(su2double rho) override { rho_start = rho; }
-
-  /*!
-   * \brief Set the initial guess for the static energy in Newton solvers.
-   * \param[in] e - Initial value for static energy.
-   */
-  void SetInitialEnergy(su2double e) override { e_start = e; }
 
   /*!
    * \brief Get fluid model extrapolation instance.

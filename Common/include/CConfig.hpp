@@ -523,9 +523,7 @@ private:
   n_Datadriven_files;
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
-  su2double DataDriven_Relaxation_Factor, /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
-            DataDriven_initial_density,   /*!< \brief Initial density value for Newton solvers in data-driven fluid models. */
-            DataDriven_initial_energy;    /*!< \brief Initial static energy value for Newton solvers in data-driven fluid models. */
+  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -3874,17 +3872,6 @@ public:
    * \return Newton solver relaxation factor.
    */
   su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
-
-  /*!
-   * \brief Get initial value for the density in the Newton solvers in the data-driven fluid model.
-   * \return Initial density value.
-   */
-  su2double GetDensity_Init_DataDriven(void) const { return DataDriven_initial_density; }
-  /*!
-   * \brief Get initial value for the static energy in the Newton solvers in the data-driven fluid model.
-   * \return Initial dstatic energy value.
-   */
-  su2double GetEnergy_Init_DataDriven(void) const { return DataDriven_initial_energy; }
 
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.

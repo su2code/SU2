@@ -5018,6 +5018,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        nodes->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
 
     }
   }
@@ -5616,15 +5619,6 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 {
                   Velocity_i[iDim] = nodes->GetVelocity(iPoint,iDim);
                 }
-
-                /*--- Set Newton solver starting point in case of data-driven fluid model. ---*/
-                if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
-                  su2double Velocity2_i = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
-                  su2double Energy_i = nodes->GetEnergy(iPoint);
-                  su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-                  GetFluidModel()->SetInitialDensity(AverageDensity[iMarker][iSpan]);
-                  GetFluidModel()->SetInitialEnergy(StaticEnergy_i);
-                }
                 
                 ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
@@ -5841,12 +5835,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         relfacAvg = relfacAvgCfg;
         relfacFou = relfacFouCfg;
       }
-    }
-
-    /*--- Set Newton solver starting point in case of data-driven fluid model. ---*/
-    if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
-      GetFluidModel()->SetInitialDensity(AverageDensity[val_marker][iSpan]);
-      GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
     }
 
     GetFluidModel()->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
@@ -7861,11 +7849,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       /*--- Subsonic outlet ---*/
 
       else {
-        /* Set initial guesses for density and static energy in case of data-driven fluid model. */
-        if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-          GetFluidModel()->SetInitialDensity(config->GetDensity_Init_DataDriven());
-          GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
-        }
 
         GetFluidModel()->SetTDState_PT(P_static, T_static);
         SoS_outlet = GetFluidModel()->GetSoundSpeed();
@@ -8396,11 +8379,6 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 
   auto turboNormal = config->GetFreeStreamTurboNormal();
 
-  /* Set initial guess for static energy in case of data-driven fluid model. */
-  if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-    GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
-  }
-
   GetFluidModel()->SetTDState_Prho(Pressure_Inf, Density_Inf);
   SoundSpeed = GetFluidModel()->GetSoundSpeed();
 
@@ -8886,11 +8864,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,iSpan);
             nVert               = geometry->GetnTotVertexSpan(iMarker,iSpan);
 
-            /* Set initial guess for static energy in case of data-driven fluid model. */
-            if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-              GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
-            }
-
             /*--- compute normal Mach number as a check for massflow average and mixedout average ---*/
             GetFluidModel()->SetTDState_Prho(TotalAreaPressure/TotalArea, TotalAreaDensity / TotalArea);
             soundSpeed = GetFluidModel()->GetSoundSpeed();
@@ -9209,11 +9182,6 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
   vel = new su2double[nDim];
 
   pressure_mix = val_init_pressure;
-
-  /* Set initial guess for static energy in case of data-driven fluid model. */
-  if (config->GetKind_FluidModel() == DATADRIVEN_FLUID) {
-    GetFluidModel()->SetInitialEnergy(config->GetEnergy_Init_DataDriven());
-  }
 
   /*--- Newton-Raphson's method with central difference formula ---*/
 
