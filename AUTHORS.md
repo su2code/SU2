@@ -92,6 +92,7 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Joseph Signorelli
 Josy P. Pullockara
 Kedar Naik
 Kürşat Yurt
