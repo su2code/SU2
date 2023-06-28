@@ -296,7 +296,6 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 }
 
 void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHistoryOutput& output) const {
-
   std::vector<std::string> symbols;
   output.expression = mel::Parse<passivedouble>(expression, symbols);
 
@@ -369,13 +368,25 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
 
+  /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
-  /*--- if it is still present, strip the extension (suffix) from the filename ---*/
-  unsigned short lastindex = fileName.find_last_of('.');
+  /*--- If it is still present, strip the extension (suffix) from the filename ---*/
+  const auto lastindex = fileName.find_last_of('.');
   fileName = fileName.substr(0, lastindex);
 
+  /*--- If the filename with appended iteration is set (depending on the WRT_*_OVERWRITE options)
+   *    two files are writen, the normal one and a copy to avoid overwriting previous outputs. ---*/
   string filename_iter, extension;
+
+  /*--- Write output information to screen ---*/
+
+  auto LogOutputFiles = [&](const std::string& message) {
+    if (rank == MASTER_NODE) {
+      (*fileWritingTable) << message << fileName + extension;
+      if (!filename_iter.empty()) (*fileWritingTable) << message + " + iter" << filename_iter + extension;
+    }
+  };
 
   /*--- Write files depending on the format --- */
 
@@ -389,18 +400,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CSV file" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "CSV file + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("CSV file");
       fileWriter = new CSU2FileWriter(surfaceDataSorter);
 
       break;
@@ -413,16 +418,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
       if (!config->GetWrt_Restart_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 ASCII restart" << fileName + extension;
-
-        if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("SU2 ASCII restart");
       fileWriter = new CSU2FileWriter(volumeDataSorter);
 
       break;
@@ -435,19 +433,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
       if (!config->GetWrt_Restart_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 binary restart" << fileName + extension;
-
-        if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 binary restart + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("SU2 binary restart");
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
-
 
       break;
 
@@ -459,23 +448,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = volumeFilename;
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Set the mesh ASCII format ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 mesh" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "SU2 mesh + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CSU2MeshFileWriter(volumeDataSorter,
-                                          config->GetiZone(), config->GetnZone());
-
+      LogOutputFiles("SU2 mesh");
+      fileWriter = new CSU2MeshFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
 
       break;
 
@@ -487,22 +467,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, false);
 
-      /*--- Write tecplot binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot binary" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Tecplot binary + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter,
-                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot binary");
+      fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -514,22 +486,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write tecplot ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Tecplot ASCII + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CTecplotFileWriter(volumeDataSorter,
-                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot ASCII");
+      fileWriter = new CTecplotFileWriter(volumeDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -541,20 +505,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview");
       fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
 
       break;
@@ -567,64 +524,44 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview binary (legacy)" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview binary + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview binary (legacy)");
       fileWriter = new CParaviewBinaryFileWriter(volumeDataSorter);
 
       break;
 
     case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       {
-
         extension = CParaviewVTMFileWriter::fileExt;
 
         if (fileName.empty())
           fileName = config->GetUnsteady_FileName(volumeFilename, curTimeIter, "");
 
         if (!config->GetWrt_Volume_Overwrite())
-          filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+          filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
         /*--- Sort volume connectivity ---*/
 
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
-        if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview Multiblock" << fileName + extension;
-
-          if (!config->GetWrt_Volume_Overwrite())
-            (*fileWritingTable) << "Paraview Multiblock + iter" << filename_iter + extension;
-        }
-
-        /*--- Allocate the vtm file writer (using fileName as the folder name) ---*/
-
-        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"),
-                                                config->GetiZone(), config->GetnZone());
+        LogOutputFiles("Paraview Multiblock");
+        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
 
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-
         auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
 
         /*--- then we write the data into the folder---*/
-        vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
+        vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
 
         /*--- and we write the data into the folder with the iteration number ---*/
         if (!config->GetWrt_Volume_Overwrite())
-          vtmWriter->WriteFolderData(filename_iter, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
-
+          vtmWriter->WriteFolderData(filename_iter, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
       }
-
       break;
 
     case OUTPUT_TYPE::PARAVIEW_ASCII:
@@ -635,21 +572,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview ASCII");
       fileWriter = new CParaviewFileWriter(volumeDataSorter);
 
       break;
@@ -662,50 +591,34 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview ASCII surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview ASCII surface");
       fileWriter = new CParaviewFileWriter(surfaceDataSorter);
 
       break;
 
     case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
 
-        extension = CParaviewBinaryFileWriter::fileExt;
+      extension = CParaviewBinaryFileWriter::fileExt;
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview binary surface (legacy)" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview binary surface + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview binary surface (legacy)");
       fileWriter = new CParaviewBinaryFileWriter(surfaceDataSorter);
 
       break;
@@ -718,53 +631,35 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview surface + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview surface");
       fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
 
       break;
 
     case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
 
-        extension = CTecplotFileWriter::fileExt;
+      extension = CTecplotFileWriter::fileExt;
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot ASCII surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Tecplot ASCII surface + iter" << filename_iter + extension;
-
-      }
-
-      fileWriter = new CTecplotFileWriter(surfaceDataSorter,
-                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot ASCII surface");
+      fileWriter = new CTecplotFileWriter(surfaceDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -776,25 +671,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot binary surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Tecplot binary surface + iter" << filename_iter + extension;
-
-      }
-
-      fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter,
-                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot binary surface");
+      fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -806,23 +691,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
-
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write ASCII STL ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "STL ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "STL ASCII + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("STL ASCII");
       fileWriter = new CSTLFileWriter(surfaceDataSorter);
 
       break;
@@ -835,21 +710,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write CGNS ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CGNS" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "CGNS + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("CGNS");
       fileWriter = new CCGNSFileWriter(volumeDataSorter);
 
       break;
@@ -862,22 +728,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write SURFACE_CGNS ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CGNS surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "CGNS surface + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("CGNS surface");
       fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
 
       break;
@@ -886,7 +743,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       break;
   }
 
-  if (fileWriter != nullptr){
+  if (fileWriter != nullptr) {
 
     /*--- Write data to file ---*/
 
@@ -894,21 +751,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
     su2double BandWidth = fileWriter->GetBandwidth();
 
-    /*--- Write data with iteration number to file ---*/
+    /*--- Write data with iteration number to file if required ---*/
 
-    if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
+    if (!filename_iter.empty()) {
       fileWriter->WriteData(filename_iter);
 
-      /*--- overwrite bandwidth ---*/
-      BandWidth = fileWriter->GetBandwidth();
-
+      /*--- Average bandwidth ---*/
+      BandWidth = (BandWidth + fileWriter->GetBandwidth()) / 2;
     }
 
+    /*--- Compute and store the bandwidth ---*/
 
-  /*--- Compute and store the bandwidth ---*/
-
-    if (format == OUTPUT_TYPE::RESTART_BINARY){
-      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    if (format == OUTPUT_TYPE::RESTART_BINARY) {
+      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg() + BandWidth);
     }
 
     if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
@@ -2309,7 +2164,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 #endif
 
       if (type == OperationType::FUNCTION) {
-        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
         break;
       }
 
@@ -2326,7 +2181,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
       /*--- Skip the terminating "]". ---*/
       if (it != last) ++it;
 
-      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
     }
   }
 

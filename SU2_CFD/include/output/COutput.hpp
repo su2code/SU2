@@ -642,7 +642,7 @@ protected:
    */
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
-                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
     historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     historyOutput_List.push_back(name);
   }

@@ -1430,6 +1430,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
@@ -1871,9 +1872,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       }
       else if (config->GetGravityForce() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGravity(nDim, nVar_Flow, config);
-      }
-      else if (config->GetWind_Gust() == YES) {
-        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceWindGust(nDim, nVar_Flow, config);
       }
       else {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
@@ -2547,55 +2545,10 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
   unsigned short iMGlevel, iMGfine;
-  unsigned short Kind_Grid_Movement;
 
   unsigned short iZone = config->GetiZone();
 
-  Kind_Grid_Movement = config->GetKind_GridMovement();
-
   if (!fem_solver) {
-
-    switch (Kind_Grid_Movement) {
-
-      case ROTATING_FRAME:
-
-        /*--- Steadily rotating frame: set the grid velocities just once
-         before the first iteration flow solver. ---*/
-
-        if (rank == MASTER_NODE) {
-          cout << endl << " Setting rotating frame grid velocities";
-          cout << " for zone " << iZone << "." << endl;
-        }
-
-        /*--- Set the grid velocities on all multigrid levels for a steadily
-           rotating reference frame. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, true);
-          geometry[iMGlevel]->SetShroudVelocity(config);
-        }
-
-        break;
-
-      case STEADY_TRANSLATION:
-
-        /*--- Set the translational velocity and hold the grid fixed during
-         the calculation (similar to rotating frame, but there is no extra
-         source term for translation). ---*/
-
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting translational grid velocities." << endl;
-
-        /*--- Set the translational velocity on all grid levels. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
-
-        break;
-
-      default:
-        break;
-    }
 
     if (config->GetnMarker_Moving() > 0) {
 
@@ -3004,6 +2957,8 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
+            solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
         }
       }
     }
