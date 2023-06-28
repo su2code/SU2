@@ -2010,7 +2010,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
   const bool vorticity_confinement = config->GetVorticityConfinement();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -2176,37 +2175,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iVar = 0; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
-    }
-    END_SU2_OMP_FOR
-  }
-
-  if (windgust) {
-
-    /*--- Loop over all points ---*/
-    SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Load the wind gust ---*/
-      numerics->SetWindGust(nodes->GetWindGust(iPoint), nodes->GetWindGust(iPoint));
-
-      /*--- Load the wind gust derivatives ---*/
-      numerics->SetWindGustDer(nodes->GetWindGustDer(iPoint), nodes->GetWindGustDer(iPoint));
-
-      /*--- Load the primitive variables ---*/
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
-
-      /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-      /*--- Compute the rotating frame source residual ---*/
-      auto residual = numerics->ComputeResidual(config);
-
-      /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
     }
     END_SU2_OMP_FOR
   }
