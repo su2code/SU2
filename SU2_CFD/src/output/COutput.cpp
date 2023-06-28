@@ -1503,7 +1503,7 @@ void COutput::CheckHistoryOutput(unsigned short nZone) {
         char buffer [14]; //This makes the assumption the number of zones is 10 or lower
         std::string strZones = std::to_string(nZone-1);
         char const *valZones = strZones.c_str();
-        snprintf(buffer, 14, "TURBO_PERF[%s]", valZones);
+        auto snpCatch = snprintf(buffer, 14, "TURBO_PERF[%s]", valZones);
         requestedHistoryFields[iReqField] = buffer;
     }
   }
