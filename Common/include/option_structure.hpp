@@ -1020,8 +1020,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
 
-  const bool sst_1994 = found_1994 || found_1994m || default_version;
-  const bool sst_2003 = found_2003 || found_2003m;
+  const bool sst_1994 = found_1994 || found_1994m;
+  /*--- Default version since v8. ---*/
+  const bool sst_2003 = found_2003 || found_2003m || default_version;
 
   /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
   const bool sst_m = found_1994m || found_2003m || default_version;
@@ -1033,11 +1034,10 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
-  } else if (sst_1994) {
-    SSTParsedOptions.version = SST_OPTIONS::V1994;
-  } else {
-    /*--- Default version since v8. ---*/
+  } else if (sst_2003) {
     SSTParsedOptions.version = SST_OPTIONS::V2003;
+  } else {
+    SSTParsedOptions.version = SST_OPTIONS::V1994;
   }
 
   // Parse production modifications
