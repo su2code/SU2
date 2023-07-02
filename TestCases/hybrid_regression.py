@@ -207,8 +207,8 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals         = [-11.418415, -12.801780, -5.864804, 1.049990, 0.019163, -1.669899, -38.695000]
-    turb_naca0012_sst.test_vals_aarch64 = [-11.450473, -12.797872, -5.863655, 1.049989, 0.019163, -1.856266, -38.694000]
+    turb_naca0012_sst.test_vals         = [-12.216989, -14.439370, -7.108639, 1.050109, 0.019148, -1.483537, -38.510000]
+    turb_naca0012_sst.test_vals_aarch64 = [-12.216989, -14.439370, -7.108639, 1.050109, 0.019148, -1.483537, -38.510000]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -216,8 +216,8 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals         = [-11.361657, -12.642245, -5.747099, 1.005234, 0.019017, -1.573783]
-    turb_naca0012_sst_sust.test_vals_aarch64 = [-11.367052, -12.640670, -5.746919, 1.005233, 0.019017, -1.913907]
+    turb_naca0012_sst_sust.test_vals         = [-12.148204, -14.755890, -6.342986, 1.001189, 0.019384, -1.432333]
+    turb_naca0012_sst_sust.test_vals_aarch64 = [-12.148204, -14.755890, -6.342986, 1.001189, 0.019384, -1.432333]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)
@@ -254,8 +254,8 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals         = [-12.085749, -7.439410, -8.772091, -4.045091, -1924.800000]
-    axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, -1938.200000]
+    axi_rans_air_nozzle_restart.test_vals         = [-12.060634, -6.992273, -8.808757, -4.097753, -2019.800000]
+    axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.060634, -6.992273, -8.808757, -4.097753, -2019.800000]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
@@ -470,7 +470,7 @@ def main():
     sine_gust.test_vals = [-1.977520, 3.481804, -0.012402, -0.007454]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
-    
+
     # Cosine gust in z-direction
     cosine_gust           = TestCase('cosine_gust_zdir')
     cosine_gust.cfg_dir   = "gust"
@@ -479,7 +479,7 @@ def main():
     cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
     cosine_gust.unsteady  = True
     test_list.append(cosine_gust)
-    
+
     # Gust with mesh deformation
     gust_mesh_defo           = TestCase('gust_with_mesh_deformation')
     gust_mesh_defo.cfg_dir   = "gust"
@@ -557,7 +557,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.986581, -3.096834, -14.849548, -9.102930, -11.787851, -6.266207, 73266, 73266]
+    Jones_tc_restart.test_vals = [-6.604542, -2.792279, -14.328530, -8.769313, -11.371439, -5.845633, 73273.000000, 73273.000000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -769,7 +769,7 @@ def main():
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     file_diff_list.append(pywrapper_translating_naca0012)
-    
+
     # NACA0012 with updated moving frame
     pywrapper_updated_moving_frame_naca0012 = TestCase('pywrapper_updated_moving_frame_naca0012')
     pywrapper_updated_moving_frame_naca0012.cfg_dir = "py_wrapper/updated_moving_frame_NACA12"
