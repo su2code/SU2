@@ -264,7 +264,7 @@ def main():
     ea_naca64206.test_iter = 10
     ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.000000]
     test_list.append(ea_naca64206)
-    
+
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
     ramp = TestCase('ramp')
     ramp.cfg_dir = "euler/ramp"
@@ -459,7 +459,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.532289, -3.157766, 3.364024, 1.122901, 0.500798, -inf]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532289, -3.157766, 3.364024, 1.122901, 0.500798, -float("inf")]
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
 
