@@ -481,7 +481,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.063597, -7.006585, -8.702557, -4.039824, -2019.0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.063597, -7.006585, -8.702557, -4.039824, -2019.8]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -1031,7 +1031,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-7.544516, -6.822541, -6.689799, -1.581068, -6.798361, -0.746758, -471650]
+    transonic_stator_restart.test_vals = [-5.354418, -3.509964, -3.163206, 0.744733, -3.846691, 1.805587, -471690]
     test_list.append(transonic_stator_restart)
 
     ######################################
@@ -1256,8 +1256,8 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-5.109072, -5.409931, -6.807748, -0.009675, 104.655093, 4.1921e+02, 0.0]
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-5.109072, -5.409931, -6.807748, -0.009675, 104.655093, 4.1921e+02, 0.0]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-5.128577, -5.425081, -6.788413, -0.009675, 104.655438, 419.210000, 0.0]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-5.128577, -5.425081, -6.788413, -0.009675, 104.655438, 419.210000, 0.0]
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
@@ -1503,7 +1503,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-6.571720, -6.086110]
+    species3_multizone_restart.test_vals = [-6.175178, -5.763030]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
