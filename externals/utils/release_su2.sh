@@ -47,11 +47,8 @@ if [ ! -d ${RELEASEDIR} ]
 then
  mkdir ${RELEASEDIR}
  mkdir ${RELEASEDIR}/bin
- mkdir ${RELEASEDIR}/QuickStart
 fi
 cp -R ${SU2DIR}/bin/* ${RELEASEDIR}/bin/
-cp ${SU2DIR}/QuickStart/inv_NACA0012.cfg ${RELEASEDIR}/QuickStart/
-cp ${SU2DIR}/QuickStart/mesh_NACA0012_inv.su2 ${RELEASEDIR}/QuickStart/
 rm -fr ${SU2DIR}
 
 # Tar up the finished build directory and clean up
