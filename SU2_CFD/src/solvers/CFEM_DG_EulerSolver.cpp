@@ -7902,7 +7902,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
       P_static /= config->GetPressure_Ref();
       Rho_static /= config->GetDensity_Ref();
-      
+
       /* Compute the prescribed pressure, static energy per unit mass
          and speed of sound. */
       FluidModel->SetTDState_Prho(P_static, Rho_static);

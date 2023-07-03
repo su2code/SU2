@@ -4627,7 +4627,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
-      
+
       Pressure_i = GetFluidModel()->GetPressure();
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
 
