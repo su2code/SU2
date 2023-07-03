@@ -78,13 +78,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config_set: [BaseOMP, ReverseOMP, ForwardOMP]
+        config_set: [BaseOMP-tsan, ReverseOMP-tsan, ForwardOMP-tsan]
         include:
-          - config_set: BaseOMP
+          - config_set: BaseOMP-tsan
             flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
-          - config_set: ReverseOMP
+          - config_set: ReverseOMP-tsan
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
-          - config_set: ForwardOMP
+          - config_set: ForwardOMP-tsan
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
