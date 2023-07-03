@@ -74,6 +74,7 @@ jobs:
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_tsan:
     name: Build SU2 (tsan)
+    if: inputs.runner != 'ARM64'
     strategy:
       fail-fast: false
       matrix:
