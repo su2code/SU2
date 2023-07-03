@@ -766,12 +766,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
 
             /*--- Turbulent kinetic energy ---*/
-            /// TODO: This does not seem to be consistent with the primal treatment.
-            if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-              val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-            else
-              val_turb_ke = 0.0;
-
+            // turb_ke is not considered in the stress tensor, see #797
+            val_turb_ke = 0.0;
             CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
