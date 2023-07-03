@@ -72,6 +72,48 @@ jobs:
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+  build_tsan:
+    name: Build SU2 (tsan)
+    strategy:
+      fail-fast: false
+      matrix:
+        config_set: [BaseOMP, ReverseOMP, ForwardOMP]
+        include:
+          - config_set: BaseOMP
+            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          - config_set: ReverseOMP
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          - config_set: ForwardOMP
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
+    steps:
+      - name: Cache Object Files
+        uses: actions/cache@v3
+        with:
+          path: ccache
+          key: ${{ matrix.config_set }}-${{ github.sha }}
+          restore-keys: ${{ matrix.config_set }}
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230629-0917
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+      - name: Build
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230629-0917
+        with:
+          args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Compress binaries
+        run: tar -zcvf install_bin.tgz install/bin
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config_set }}
+          path: install_bin.tgz
+      - name: Post Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230629-0917
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   regression_tests:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Regression Tests
