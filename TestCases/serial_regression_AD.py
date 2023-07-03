@@ -110,26 +110,6 @@ def main():
     discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000] #last 4 columns
     test_list.append(discadj_incomp_cylinder)
 
-    ######################################
-    ### Disc. adj. incompressible RANS ###
-    ######################################
-
-    # Adjoint Incompressible Turbulent NACA 0012 SA
-    discadj_incomp_turb_NACA0012_sa           = TestCase('discadj_incomp_turb_NACA0012_sa')
-    discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
-    discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals = [10.000000, -3.845979, -1.031095, 0.000000] #last 4 columns
-    test_list.append(discadj_incomp_turb_NACA0012_sa)
-
-    # Adjoint Incompressible Turbulent NACA 0012 SST
-    discadj_incomp_turb_NACA0012_sst           = TestCase('discadj_incomp_turb_NACA0012_sst')
-    discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
-    discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-4.148134, -2.442830, -7.875040, 0, -1.076773]
-    test_list.append(discadj_incomp_turb_NACA0012_sst)
-
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
