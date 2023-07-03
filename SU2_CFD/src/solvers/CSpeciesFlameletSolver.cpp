@@ -427,7 +427,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (cht_mode) temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+    if (cht_mode) temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
