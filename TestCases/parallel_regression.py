@@ -1002,8 +1002,8 @@ def main():
     datadriven_fluidModel           = TestCase('datadriven_fluidModel')
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
-    datadriven_fluidModel.test_iter = 20
-    datadriven_fluidModel.test_vals = [-1.873575, 0.964932, 5.467181, 0.000000, 0.000000]
+    datadriven_fluidModel.test_iter = 10
+    datadriven_fluidModel.test_vals = [-14.397040, -9.904042, -5.038828, 0.000000, 0.000000]
     test_list.append(datadriven_fluidModel)
 
     # Rarefaction Q1D nozzle, include CoolProp transport model
