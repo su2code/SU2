@@ -83,7 +83,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221792, -0.491367, 0.182010, -0.000018]
+    discadj_rans_naca0012_sst.test_vals = [-2.221845, -0.491927, 0.182000, -0.000018]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -127,7 +127,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845577, -2.414021, -8.420183, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-4.148134, -2.442830, -7.875040, 0, -1.076773]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################

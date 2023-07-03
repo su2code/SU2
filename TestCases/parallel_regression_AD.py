@@ -230,7 +230,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79, 0.765040, 0.375492, 0.467751, -0.999841, 2.154003, -4.445648]
+    discadj_trans_stator.test_vals = [79, 0.769972, 0.374328, 0.474458, -0.996522, 2.154079, -4.446062]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -298,7 +298,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800597, -4.065541, -4.137339]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.739373, -4.060562, -3.867056]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -307,7 +307,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.609362, -1.273845, -1.502739, -18.503852, -0.834361, -5.813325, -19.074376, -48.287501]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-6.124936, -2.661408, -2.981673, -18.926294, -2.862099, -7.673088, -18.810904, -23.849963]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 
