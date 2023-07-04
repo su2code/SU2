@@ -65,13 +65,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i], P) = su2double(0.0);
   };
 
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell. ---*/
-  constexpr auto n_conjugate_var = 4u;
-
-  Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
-  for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
-
   /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
 }
