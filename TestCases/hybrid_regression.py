@@ -795,8 +795,8 @@ def main():
         test.tol = 1e-4
     #end
 
-    pass_list = [ test.run_test() for test in test_list ]
-    pass_list += [ test.run_filediff() for test in file_diff_list ]
+    pass_list = [ test.run_test(args.tsan) for test in test_list ]
+    pass_list += [ test.run_filediff(args.tsan) for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')

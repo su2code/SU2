@@ -223,7 +223,7 @@ def main():
         test.tol = 1e-4
     #end
 
-    pass_list = [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test(args.tsan) for test in test_list ]
 
     ###################################
     ### Python Wrapper              ###
@@ -240,7 +240,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.tol           = 1e-4
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
@@ -253,7 +253,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.tol           = 1e-4
     pywrapper_CFD_AD_MeshDisp.new_output    = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan))
 
 
     # Tests summary
