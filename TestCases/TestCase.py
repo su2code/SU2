@@ -28,6 +28,7 @@ from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
 import platform
+import argparse
 
 
 def print_vals(vals, name="Values"):
@@ -40,6 +41,11 @@ def is_float(test_string):
         return True
     except ValueError:
         return False
+
+def parse_args(description: str):
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('--tsan', action='store_true', help='Run thread sanitizer tests. Requires a tsan-enabled SU2 build.')
+    return parser.parse_args()
 
 class TestCase:
 
