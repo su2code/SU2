@@ -183,12 +183,13 @@ class TestCase:
                 timed_out = True
                 passed    = False
 
+        delta_vals = []
+        sim_vals = []
+
         if not running_with_tsan: # tsan findings result in non-zero return code, no need to examine the output
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
-            delta_vals = []
-            sim_vals = []
             if not timed_out and len(self.test_vals) != 0:
                 start_solver = False
                 for line in output:
