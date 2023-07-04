@@ -3947,6 +3947,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
                        CURRENT_FUNCTION);
       }
+
+      if (Weakly_Coupled_Heat) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET is incompatible with WEAKLY_COUPLED_HEAT in the same zone.",
+                       CURRENT_FUNCTION);
+      }
     }
 
     /*--- Check for Measurement System ---*/

@@ -58,13 +58,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
-    X.resize(M);
-    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i], P) = su2double(0.0);
-  };
-
   /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
 }
