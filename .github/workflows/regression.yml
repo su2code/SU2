@@ -180,7 +180,7 @@ jobs:
   thread_sanitizer_tests:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Thread Sanitizer Tests
-    needs: build
+    needs: build_tsan
     strategy:
       fail-fast: false
       matrix:
