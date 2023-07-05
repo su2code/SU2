@@ -146,6 +146,7 @@ def main():
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746907, -1.544882, -0.008321, 0.000014]
     discadj_cylinder.unsteady  = True
+    discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
 
     ##############################################################
@@ -159,6 +160,7 @@ def main():
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.004402]
     discadj_cylinder.unsteady  = True
+    discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
 
     ##########################################################################
@@ -172,6 +174,7 @@ def main():
     discadj_DT_1ST_cylinder.test_iter = 9
     discadj_DT_1ST_cylinder.test_vals = [3.698167, -1.607051, -0.002159, 0.000028]
     discadj_DT_1ST_cylinder.unsteady  = True
+    discadj_DT_1ST_cylinder.enabled_with_tsan = False
     test_list.append(discadj_DT_1ST_cylinder)
 
     ######################################################
@@ -185,6 +188,7 @@ def main():
     discadj_pitchingNACA0012.test_iter = 4
     discadj_pitchingNACA0012.test_vals = [-1.219713, -1.645717, -0.007513, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
+    discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
 
     #######################################################
