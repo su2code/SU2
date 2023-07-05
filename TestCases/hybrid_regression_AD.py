@@ -239,6 +239,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 1e-4
     pywrapper_FEA_AD_FlowLoad.new_output    = False
+    pywrapper_FEA_AD_FlowLoad.enabled_with_tsan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan))
 
@@ -252,6 +253,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 1e-4
     pywrapper_CFD_AD_MeshDisp.new_output    = False
+    pywrapper_CFD_AD_MeshDisp.enabled_with_tsan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
     pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan))
 
