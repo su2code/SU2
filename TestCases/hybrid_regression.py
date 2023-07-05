@@ -481,6 +481,7 @@ def main():
     cosine_gust.test_iter = 79
     cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
     cosine_gust.unsteady  = True
+    cosine_gust.enabled_with_tsan = False
     test_list.append(cosine_gust)
 
     # Gust with mesh deformation
@@ -490,6 +491,7 @@ def main():
     gust_mesh_defo.test_iter = 6
     gust_mesh_defo.test_vals = [-1.844778, 0.000846, -0.000408]
     gust_mesh_defo.unsteady  = True
+    gust_mesh_defo.enabled_with_tsan = False
     test_list.append(gust_mesh_defo)
 
     # Aeroelastic
@@ -501,6 +503,7 @@ def main():
     aeroelastic.test_vals_aarch64 = [0.074836, 0.033102, -0.001650, -0.000127]
     aeroelastic.unsteady  = True
     aeroelastic.enabled_on_cpu_arch = ["x86_64"] # Requires AVX-capable architecture
+    aeroelastic.enabled_with_tsan = False
     test_list.append(aeroelastic)
 
     # Delayed Detached Eddy Simulation
@@ -528,6 +531,7 @@ def main():
     unst_deforming_naca0012.test_iter = 5
     unst_deforming_naca0012.test_vals = [-3.665120, -3.793643, -3.716518, -3.148310]
     unst_deforming_naca0012.unsteady  = True
+    unst_deforming_naca0012.enabled_with_tsan = False
     test_list.append(unst_deforming_naca0012)
 
     ######################################
@@ -614,6 +618,7 @@ def main():
     channel_3D.test_vals_aarch64 = [2.000000, 0.000000, 0.620189, 0.505311, 0.415246]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
+    channel_3D.enabled_with_tsan = False
     test_list.append(channel_3D)
 
     # Pipe
@@ -695,6 +700,7 @@ def main():
     fsi2d.test_vals = [4.000000, 0.000000, -3.743227, -4.133479]
     fsi2d.multizone= True
     fsi2d.unsteady = True
+    fsi2d.enabled_with_tsan = False
     test_list.append(fsi2d)
 
     # FSI, Static, 2D, new mesh solver
