@@ -178,6 +178,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   thread_sanitizer_tests:
+    if: inputs.runner != 'ARM64'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Thread Sanitizer Tests
     needs: build_tsan
