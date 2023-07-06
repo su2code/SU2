@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
   {
     i = omp_get_thread_num();
   }
+  std::cout << i << std::endl;
 
   /*--- Create a pointer to the main SU2 Driver ---*/
 
