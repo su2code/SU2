@@ -30,6 +30,7 @@
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
   rank = SU2_MPI::GetRank();
+  Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = config->GetNUserScalars();
@@ -43,10 +44,18 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     cout << "Number of control variables: " << n_control_vars << endl;
   }
 
-  if (rank == MASTER_NODE) {
-    cout << "*****************************************" << endl;
-    cout << "***   initializing the lookup table   ***" << endl;
-    cout << "*****************************************" << endl;
+  switch (Kind_DataDriven_Method)
+  {
+  case ENUM_DATADRIVEN_METHOD::LUT:
+    if (rank == MASTER_NODE) {
+      cout << "*****************************************" << endl;
+      cout << "***   initializing the lookup table   ***" << endl;
+      cout << "*****************************************" << endl;
+    }
+    break;
+  default:
+    SU2_MPI::Error("Interpolation method not implemented for flamelet solver.", CURRENT_FUNCTION);
+    break;
   }
 
   scalars_vector.resize(n_scalars);
@@ -60,7 +69,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
-  look_up_table = new CLookUpTable(config->GetFileNameLUT(), table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
+  look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
 
   Pressure = value_pressure_operating;
 
@@ -146,7 +155,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_LookUp.resize(n_lookups);
   val_vars_LookUp.resize(n_lookups);
   for (auto iLookup=0u; iLookup < n_lookups; iLookup++)
-    varnames_LookUp[iLookup] = config->GetLUTLookupName(iLookup);
+    varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
 
 }
 

@@ -381,8 +381,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         enth_wall = nodes->GetSolution(iPoint, I_ENTH);
 
         /*--- Set enthalpy on the wall. ---*/
-        n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, &enth_wall,
-                                          solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
+        n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, &enth_wall, nodes->GetSolution(iPoint));
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any

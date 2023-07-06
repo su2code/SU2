@@ -1443,8 +1443,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::FLAMELET:
       for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); ++i_lookup) {
-        string strname1 = "lookup_" + config->GetLUTLookupName(i_lookup);
-        AddVolumeOutput(config->GetLUTLookupName(i_lookup), strname1,"LOOKUP", config->GetLUTLookupName(i_lookup));
+        string strname1 = "lookup_" + config->GetLookupName(i_lookup);
+        AddVolumeOutput(config->GetLookupName(i_lookup), strname1,"LOOKUP", config->GetLookupName(i_lookup));
       }
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
       break;
@@ -1614,8 +1614,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
       /*--- variables that we look up from the LUT ---*/
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
-        if (config->GetLUTLookupName(i_lookup)!="NULL")
-          SetVolumeOutputValue(config->GetLUTLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
+        if (config->GetLookupName(i_lookup)!="NULL")
+          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
       }
 
       SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));

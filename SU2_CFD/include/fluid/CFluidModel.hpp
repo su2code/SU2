@@ -149,8 +149,6 @@ class CFluidModel {
    */
   virtual unsigned long EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) { return 0; }
 
-  virtual unsigned long GetExtrapolation() { return 0; }
-
   /*!
    * \brief Get fluid dynamic viscosity.
    */

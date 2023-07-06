@@ -1233,8 +1233,7 @@ private:
   string* controlling_variable_names;
   string* cv_source_names;
   vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  string* table_lookup_names;         /*!< \brief Names of LUT variables. */
-  string file_name_lut;               /*!< \brief Filename of the LUT. */
+  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
@@ -2185,13 +2184,7 @@ public:
   /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table.
    */
-  const string& GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
-
-  /*!
-   * \brief Get the file name of the look up table.
-   * \return File name of the look up table.
-   */
-  const string& GetFileNameLUT() const { return file_name_lut; }
+  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.

@@ -32,6 +32,9 @@
 
 class CFluidFlamelet final : public CFluidModel {
  private:
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
+      ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
+
   enum LOOKUP_TD { TEMPERATURE, HEATCAPACITY, VISCOSITY, CONDUCTIVITY, DIFFUSIONCOEFFICIENT, MOLARWEIGHT, SIZE };
 
   int rank;
@@ -88,7 +91,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Check for out-of-bounds condition for data set interpolation.
    * \return - within bounds (0) or out of bounds (1).
    */
-  inline unsigned long GetExtrapolation() override { return extrapolation; }
+  unsigned long GetExtrapolation() override { return extrapolation; }
 
   /*!
    * \brief Get the mass diffusivity of the species.
