@@ -28,7 +28,7 @@
 #include "../../include/solvers/CRadSolver.hpp"
 #include "../../include/variables/CRadVariable.hpp"
 
-CRadSolver::CRadSolver(void) : CSolver() {
+CRadSolver::CRadSolver() : CSolver() {
 
 }
 

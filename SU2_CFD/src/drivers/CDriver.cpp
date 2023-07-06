@@ -38,8 +38,6 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
 
-#include "../../include/output/COutputLegacy.hpp"
-
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolatorFactory.hpp"
 
@@ -61,7 +59,6 @@
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
 #include "../../include/numerics/flow/convection/fvs.hpp"
-#include "../../include/numerics/flow/convection/cusp.hpp"
 #include "../../include/numerics/flow/convection/hllc.hpp"
 #include "../../include/numerics/flow/convection/ausm_slau.hpp"
 #include "../../include/numerics/flow/convection/centered.hpp"
@@ -104,23 +101,10 @@
 #ifdef VTUNEPROF
 #include <ittnotify.h>
 #endif
-#include <fenv.h>
+#include <cfenv>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
-  config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0),
-  TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
-
-  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
-#ifdef HAVE_MPI
-  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-    SU2_MPI::Init_AMPI();
-  #endif
-#endif
-
-  SU2_MPI::SetComm(MPICommunicator);
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
+CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
   /*--- Start timer to track preprocessing for benchmarking. ---*/
 
@@ -128,11 +112,11 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   /*--- Initialize containers with null --- */
 
-  SetContainers_Null();
+  InitializeContainers();
 
   /*--- Preprocessing of the config files. ---*/
 
-  Input_Preprocessing(config_container, driver_config);
+  PreprocessInput(config_container, driver_config);
 
   /*--- Retrieve dimension from mesh file ---*/
 
@@ -141,7 +125,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   /*--- Output preprocessing ---*/
 
-  Output_Preprocessing(config_container, driver_config, output_container, driver_output);
+  PreprocessOutput(config_container, driver_config, output_container, driver_output);
 
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -171,7 +155,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        identified and linked, face areas and volumes of the dual mesh cells are
        computed, and the multigrid levels are created using an agglomeration procedure. ---*/
 
-      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
+      InitializeGeometry(config_container[iZone], geometry_container[iZone][iInst], dry_run);
 
     }
   }
@@ -194,7 +178,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        fluxes, loops over the nodes to compute source terms, and routines for
        imposing various boundary condition type for the PDE. ---*/
 
-      Solver_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
+      InitializeSolver(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
 
       /*--- Definition of the numerical method class:
        numerics_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
@@ -203,7 +187,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        data structure (centered, upwind, galerkin), as well as any source terms
        (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
 
-      Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
+      InitializeNumerics(config_container[iZone], geometry_container[iZone][iInst],
                              solver_container[iZone][iInst], numerics_container[iZone][iInst]);
 
       /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
@@ -212,7 +196,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        the residual at each node, R(U) and then integrates the equations to a
        steady state or time-accurately. ---*/
 
-      Integration_Preprocessing(config_container[iZone], solver_container[iZone][iInst][MESH_0],
+      InitializeIntegration(config_container[iZone], solver_container[iZone][iInst][MESH_0],
                                 integration_container[iZone][iInst]);
 
       /*--- Instantiate the type of physics iteration to be executed within each zone. For
@@ -220,16 +204,16 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        different physics in different zones (fluid-structure interaction), or couple multiple
        systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
 
-      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
+      PreprocessIteration(config_container[iZone], iteration_container[iZone][iInst]);
 
       /*--- Dynamic mesh processing.  ---*/
 
-      DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
+      PreprocessDynamicMesh(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
 
       /*--- Static mesh processing.  ---*/
 
-      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
+      PreprocessStaticMesh(config_container[iZone], geometry_container[iZone][iInst]);
 
     }
 
@@ -246,14 +230,14 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
-    Interface_Preprocessing(config_container, solver_container, geometry_container,
+    InitializeInterface(config_container, solver_container, geometry_container,
                             interface_types, interface_container, interpolator_container);
   }
 
   if (fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
+        RestartSolver(solver_container[iZone][iInst], geometry_container[iZone][iInst],
                        config_container[iZone], true);
       }
     }
@@ -263,11 +247,11 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
-    Turbomachinery_Preprocessing(config_container, geometry_container, solver_container, interface_container);
+    PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container);
   }
 
 
-  PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
+  PreprocessPythonInterface(config_container, geometry_container, solver_container);
 
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
@@ -308,14 +292,13 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
 }
 
-void CDriver::SetContainers_Null(){
+void CDriver::InitializeContainers(){
 
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
    hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
-  ConvHist_file                  = nullptr;
   iteration_container            = nullptr;
   output_container               = nullptr;
   integration_container          = nullptr;
@@ -354,12 +337,10 @@ void CDriver::SetContainers_Null(){
     nInst[iZone] = 1;
   }
 
-  strcpy(runtime_file_name, "runtime.dat");
-
 }
 
 
-void CDriver::Postprocessing() {
+void CDriver::Finalize() {
 
   const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
@@ -376,11 +357,11 @@ void CDriver::Postprocessing() {
   }
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+    cout <<"\n--------------------------- Finalizing Solver ---------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone][iInst],
+      FinalizeNumerics(numerics_container[iZone], solver_container[iZone][iInst],
           geometry_container[iZone][iInst], config_container[iZone], iInst);
     }
     delete [] numerics_container[iZone];
@@ -390,7 +371,7 @@ void CDriver::Postprocessing() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      Integration_Postprocessing(integration_container[iZone],
+      FinalizeIntegration(integration_container[iZone],
           geometry_container[iZone][iInst],
           config_container[iZone],
           iInst);
@@ -402,7 +383,7 @@ void CDriver::Postprocessing() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      Solver_Postprocessing(solver_container[iZone],
+      FinalizeSolver(solver_container[iZone],
           geometry_container[iZone][iInst],
           config_container[iZone],
           iInst);
@@ -562,7 +543,7 @@ void CDriver::Postprocessing() {
 }
 
 
-void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
+void CDriver::PreprocessInput(CConfig **&config, CConfig *&driver_config) {
 
   char zone_file_name[MAX_STRING_SIZE];
 
@@ -602,6 +583,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     }
   }
 
+  /*--- Keep a reference to the main (ZONE 0) config. ---*/
+
+  main_config = config_container[ZONE_0];
+
   /*--- Determine whether or not the FEM solver is used, which decides the type of
    *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
 
@@ -610,7 +595,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
 }
 
-void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, bool dummy){
+void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool dummy){
 
   if (!dummy){
     if (rank == MASTER_NODE)
@@ -619,13 +604,13 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
     if( fem_solver ) {
       switch( config->GetKind_FEM_Flow() ) {
         case DG: {
-            Geometrical_Preprocessing_DGFEM(config, geometry);
+            InitializeGeometryDGFEM(config, geometry);
             break;
           }
       }
     }
     else {
-      Geometrical_Preprocessing_FVM(config, geometry);
+      InitializeGeometryFVM(config, geometry);
     }
   } else {
     if (rank == MASTER_NODE)
@@ -706,9 +691,12 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   }
 
+  /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry. ---*/
+
+  main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
-void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry) {
+void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
@@ -928,7 +916,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
 }
 
-void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geometry) {
+void CDriver::InitializeGeometryDGFEM(CConfig* config, CGeometry **&geometry) {
 
   /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
   /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
@@ -968,7 +956,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 
   /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
        define all virtual functions in the base class CGeometry. ---*/
-  CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
+  auto *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
 
   /*--- Determine the standard elements for the volume elements. ---*/
   if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
@@ -1014,13 +1002,13 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 
   for(unsigned short iMGlevel=1; iMGlevel<=config->GetnMGLevels(); iMGlevel++) {
 
-    SU2_MPI::Error("Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet.",
+    SU2_MPI::Error("InitializeGeometryDGFEM: Coarse grid levels not implemented yet.",
                    CURRENT_FUNCTION);
   }
 
 }
 
-void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
+void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
 
   MAIN_SOLVER kindSolver = config->GetKind_Solver();
 
@@ -1043,16 +1031,15 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   /*--- Restart solvers, for FSI the geometry cannot be updated because the interpolation classes
    * should always use the undeformed mesh (otherwise the results would not be repeatable). ---*/
 
-  if (!fsi) Solver_Restart(solver, geometry, config, true);
+  if (!fsi) RestartSolver(solver, geometry, config, true);
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config);
+  PreprocessInlet(solver, geometry, config);
 
 }
 
-void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                  CConfig *config) const {
+void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *config) const {
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1123,7 +1110,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
 
 }
 
-void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
+void CDriver::RestartSolver(CSolver ***solver, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
@@ -1178,7 +1165,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
 }
 
-void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
+void CDriver::FinalizeSolver(CSolver ****solver, CGeometry **geometry,
                                     CConfig *config, unsigned short val_iInst) {
 
   for (int iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1193,7 +1180,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
 
 }
 
-void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) const {
+void CDriver::InitializeIntegration(CConfig *config, CSolver **solver, CIntegration **&integration) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -1204,7 +1191,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CInte
 
 }
 
-void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
+void CDriver::FinalizeIntegration(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
     delete integration[val_iInst][iSol];
@@ -1443,6 +1430,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
@@ -1453,7 +1441,7 @@ template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<un
 template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
+void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
@@ -1789,13 +1777,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
-            case UPWIND::CUSP:
-              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-              }
-              break;
-
             default:
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
               break;
@@ -1891,9 +1872,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       }
       else if (config->GetGravityForce() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGravity(nDim, nVar_Flow, config);
-      }
-      else if (config->GetWind_Gust() == YES) {
-        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceWindGust(nDim, nVar_Flow, config);
       }
       else {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
@@ -2051,13 +2029,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
           numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
-        }
-        break;
-
-      case UPWIND::CUSP:
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
-          numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
         }
         break;
 
@@ -2376,7 +2347,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
 }
 
-void CDriver::Numerics_Postprocessing(CNumerics *****numerics, CSolver***, CGeometry**,
+void CDriver::FinalizeNumerics(CNumerics *****numerics, CSolver***, CGeometry**,
                                       CConfig *config, unsigned short val_iInst) {
 
   for (unsigned short iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2395,7 +2366,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics, CSolver***, CGeom
 
 }
 
-void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) const {
+void CDriver::PreprocessIteration(CConfig* config, CIteration *&iteration) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -2404,7 +2375,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
 
 }
 
-void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,
+void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,
                                         CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement) const{
 
   /*--- Instantiate the geometry movement classes for the solution of unsteady
@@ -2445,7 +2416,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
 }
 
-void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
+void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeometry**** geometry,
                                       unsigned short** interface_types, CInterface ***interface,
                                       vector<vector<unique_ptr<CInterpolator> > >& interpolation) {
 
@@ -2571,58 +2542,13 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
 }
 
-void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geometry){
+void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 
   unsigned short iMGlevel, iMGfine;
-  unsigned short Kind_Grid_Movement;
 
   unsigned short iZone = config->GetiZone();
 
-  Kind_Grid_Movement = config->GetKind_GridMovement();
-
   if (!fem_solver) {
-
-    switch (Kind_Grid_Movement) {
-
-      case ROTATING_FRAME:
-
-        /*--- Steadily rotating frame: set the grid velocities just once
-         before the first iteration flow solver. ---*/
-
-        if (rank == MASTER_NODE) {
-          cout << endl << " Setting rotating frame grid velocities";
-          cout << " for zone " << iZone << "." << endl;
-        }
-
-        /*--- Set the grid velocities on all multigrid levels for a steadily
-           rotating reference frame. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, true);
-          geometry[iMGlevel]->SetShroudVelocity(config);
-        }
-
-        break;
-
-      case STEADY_TRANSLATION:
-
-        /*--- Set the translational velocity and hold the grid fixed during
-         the calculation (similar to rotating frame, but there is no extra
-         source term for translation). ---*/
-
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting translational grid velocities." << endl;
-
-        /*--- Set the translational velocity on all grid levels. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
-
-        break;
-
-      default:
-        break;
-    }
 
     if (config->GetnMarker_Moving() > 0) {
 
@@ -2644,7 +2570,7 @@ void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geomet
 
     /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
          define all virtual functions in the base class CGeometry. ---*/
-    CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
+    auto *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
 
     /*--- Initialize the static mesh movement, if necessary. ---*/
     const unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
@@ -2661,7 +2587,7 @@ void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geomet
 
 }
 
-void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COutput **&output, COutput *&driver_output){
+void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput **&output, COutput *&driver_output){
 
   /*--- Definition of the output class (one for each zone). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -2700,7 +2626,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 }
 
 
-void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface){
 
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
@@ -2742,7 +2668,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config[iZone]);
   }
 
-//TODO(turbo) make it general for turbo HB
+  // TODO(turbo): make it general for turbo HB
   if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, INFLOW, true);
@@ -2830,11 +2756,11 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
 
 }
 
-CDriver::~CDriver(void) {}
+CDriver::~CDriver() = default;
 
-void CDriver::Print_DirectResidual(RECORDING kind_recording) {
+void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
-  if (!(rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES)) return;
+  if (rank != MASTER_NODE || kind_recording != RECORDING::SOLUTION_VARIABLES) return;
 
   const bool multizone = config_container[ZONE_0]->GetMultizone_Problem();
 
@@ -2842,8 +2768,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
   auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
     if (multizone)
       return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
-    else
-      return "[" + std::to_string(ivar) + "]";
+          return "[" + std::to_string(ivar) + "]";
   };
 
   /*--- Print residuals in the first iteration ---*/
@@ -2947,11 +2872,87 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
 
 }
 
+void CDriver::RampTurbomachineryValues(unsigned long iter) {
+  auto* config = config_container[ZONE_0];
+
+  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
+  if (config->GetGrid_Movement() && config->GetRampRotatingFrame()) {
+    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(1));
+    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(2));
+    const su2double rot_z_ini = config->GetRampRotatingFrame_Coeff(0);
+    const bool print = false;
+
+    if(iter % rampFreq == 0 && iter <= finalRamp_Iter){
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        const su2double rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
+
+        if (fabs(rot_z_final) > 0.0) {
+          const su2double rot_z = rot_z_ini + iter * ( rot_z_final - rot_z_ini) / finalRamp_Iter;
+          config_container[iZone]->SetRotation_Rate(2, rot_z);
+          if (rank == MASTER_NODE && print && iter > 0) {
+            cout << "\nUpdated rotating frame grid velocities for zone " << iZone << ".\n";
+          }
+          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
+          geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
+        }
+      }
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
+        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
+        geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
+      }
+
+      for (auto iZone = 1u; iZone < nZone; iZone++) {
+        interface_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(
+            geometry_container[iZone][INST_0][MESH_0], geometry_container[ZONE_0][INST_0][MESH_0], iZone);
+      }
+    }
+  }
+
+  /*--- Outlet Pressure Ramp: Compute the updated pressure. ---*/
+  if (config->GetRampOutletPressure()) {
+    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(1));
+    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(2));
+    const su2double outPres_ini = config->GetRampOutletPressure_Coeff(0);
+    const su2double outPres_final = config->GetFinalOutletPressure();
+
+    if (iter % rampFreq == 0 && iter <= finalRamp_Iter) {
+      const su2double outPres = outPres_ini + iter * (outPres_final - outPres_ini) / finalRamp_Iter;
+      if (rank == MASTER_NODE) config->SetMonitotOutletPressure(outPres);
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        for (auto iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
+          const auto KindBC = config_container[iZone]->GetMarker_All_KindBC(iMarker);
+          const auto Marker_Tag = config_container[iZone]->GetMarker_All_TagBound(iMarker);
+          unsigned short KindBCOption;
+          switch (KindBC) {
+            case RIEMANN_BOUNDARY:
+              KindBCOption = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
+              if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
+                SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
+              }
+              break;
+            case GILES_BOUNDARY:
+              KindBCOption = config_container[iZone]->GetKind_Data_Giles(Marker_Tag);
+              if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
+                  KindBCOption == RADIAL_EQUILIBRIUM ) {
+                config_container[iZone]->SetGiles_Var1(outPres, Marker_Tag);
+              }
+              break;
+          }
+        }
+      }
+    }
+  }
+}
+
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
   Max_Iter = config_container[ZONE_0]->GetnInner_Iter();
 }
 
-CFluidDriver::~CFluidDriver(void) { }
+CFluidDriver::~CFluidDriver() = default;
 
 void CFluidDriver::StartSolver(){
 
@@ -3031,6 +3032,8 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
+            solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
         }
       }
     }
@@ -3039,7 +3042,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
 void CFluidDriver::Run() {
 
-  unsigned short iZone, jZone, checkConvergence;
+  unsigned short iZone, jZone;
   unsigned long IntIter, nIntIter;
   bool unsteady;
 
@@ -3081,7 +3084,7 @@ void CFluidDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++)
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interface_container[iZone][jZone] != nullptr)
-          Transfer_Data(iZone, jZone);
+          TransferData(iZone, jZone);
 
     /*--- For each zone runs one single iteration ---*/
 
@@ -3091,20 +3094,12 @@ void CFluidDriver::Run() {
                                                   config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 
-    /*--- Check convergence in each zone --*/
-
-    checkConvergence = 0;
-    for (iZone = 0; iZone < nZone; iZone++)
-    checkConvergence += (int) integration_container[iZone][INST_0][FLOW_SOL]->GetConvergence();
-
-    /*--- If convergence was reached in every zone --*/
-
-  if (checkConvergence == nZone) break;
+    /// TODO: Check convergence in each zone.
   }
 
 }
 
-void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+void CFluidDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
   auto BroadcastData = [&](unsigned int solIdx) {
     interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
@@ -3143,6 +3138,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   }
 
 }
+
 bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Synchronization point after a single solver iteration. Compute the
@@ -3153,33 +3149,10 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   IterCount++;
   UsedTime = (StopTime - StartTime) + UsedTimeCompute;
 
-  /*--- Check if there is any change in the runtime parameters ---*/
-
-  CConfig *runtime = nullptr;
-  strcpy(runtime_file_name, "runtime.dat");
-  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-  runtime->SetTimeIter(ExtIter);
-  delete runtime;
-
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
 
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::HEAT_EQUATION:
-      StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::FEM_ELASTICITY:
-      StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
-    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
-    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-    case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-    case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-      StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
-    default:
-      break;
-  }
+  /// TODO: Get convergence from the output class
 
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
 
@@ -3188,7 +3161,6 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   return StopCalc;
 
 }
-
 
 void CFluidDriver::Output(unsigned long InnerIter) {
 
@@ -3197,256 +3169,13 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 
     for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
       config_container[iZone]->SetiInst(iInst);
-      output_container[iZone]->SetResult_Files(geometry_container[iZone][iInst][MESH_0],
+      output_container[iZone]->SetResultFiles(geometry_container[iZone][iInst][MESH_0],
                                                config_container[iZone],
                                                solver_container[iZone][iInst][MESH_0],
                                                InnerIter, StopCalc);
     }
     config_container[iZone]->SetiInst(inst);
   }
-
-}
-
-
-CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
-                                             SU2_Comm MPICommunicator):
-                                             CFluidDriver(confFile, val_nZone, MPICommunicator) {
-
-  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
-
-  /*--- LEGACY OUTPUT (going to be removed soon) --- */
-
-  /*--- Open the convergence history file ---*/
-  ConvHist_file = nullptr;
-  ConvHist_file = new ofstream*[nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = nullptr;
-    if (rank == MASTER_NODE){
-      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-      }
-    }
-  }
-
-  if (nZone > 1){
-    Max_Iter = config_container[ZONE_0]->GetnOuter_Iter();
-  }
-}
-
-CTurbomachineryDriver::~CTurbomachineryDriver(void) {
-  if (rank == MASTER_NODE){
-    /*--- Close the convergence history file. ---*/
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < 1; iInst++) {
-        ConvHist_file[iZone][iInst].close();
-      }
-      delete [] ConvHist_file[iZone];
-    }
-    delete [] ConvHist_file;
-  }
-}
-
-void CTurbomachineryDriver::Run() {
-
-  /*--- Run a single iteration of a multi-zone problem by looping over all
-   zones and executing the iterations. Note that data transers between zones
-   and other intermediate procedures may be required. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-  /* --- Update the mixing-plane interface ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if(mixingplane)SetMixingPlane(iZone);
-  }
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->Postprocess(output_container[iZone], integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-  if (rank == MASTER_NODE){
-    SetTurboPerformance(ZONE_0);
-  }
-
-
-}
-
-void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
-
-  unsigned short targetZone, nMarkerInt, iMarkerInt ;
-  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-
-  /* --- transfer the average value from the donorZone to the targetZone*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    for (targetZone = 0; targetZone < nZone; targetZone++) {
-      if (targetZone != donorZone){
-        interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone], iMarkerInt );
-      }
-    }
-  }
-}
-
-void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
-
-  unsigned short donorZone;
-  //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
-  /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
-  for (donorZone = 1; donorZone < nZone; donorZone++) {
-    interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-  }
-
-  /* --- compute turboperformance for each stage and the global machine ---*/
-
- output_legacy->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
-
-}
-
-
-bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
-
-  su2double rot_z_ini, rot_z_final ,rot_z;
-  su2double outPres_ini, outPres_final, outPres;
-  unsigned long rampFreq, finalRamp_Iter;
-  unsigned short iMarker, KindBC, KindBCOption;
-  string Marker_Tag;
-
-  bool print;
-
-  /*--- Synchronization point after a single solver iteration. Compute the
-   wall clock time required. ---*/
-
-  StopTime = SU2_MPI::Wtime();
-
-  IterCount++;
-  UsedTime = (StopTime - StartTime);
-
-
-  /*--- Check if there is any change in the runtime parameters ---*/
-  CConfig *runtime = nullptr;
-  strcpy(runtime_file_name, "runtime.dat");
-  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-  runtime->SetInnerIter(ExtIter);
-  delete runtime;
-
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-          config_container, integration_container, false, UsedTime, iZone, iInst);
-  }
-
-  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
-  if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {
-    rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
-    finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
-    rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-    print = false;
-    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
-        if(abs(rot_z_final) > 0.0){
-          rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate(2, rot_z);
-          if(rank == MASTER_NODE && print && ExtIter > 0) {
-            cout << endl << " Updated rotating frame grid velocities";
-            cout << " for zone " << iZone << "." << endl;
-          }
-          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
-          geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
-        }
-      }
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
-        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
-        geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
-
-      }
-
-      for (iZone = 1; iZone < nZone; iZone++) {
-        interface_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][INST_0][MESH_0],geometry_container[ZONE_0][INST_0][MESH_0], iZone);
-      }
-
-    }
-  }
-
-
-  /*--- Outlet Pressure Ramp: Compute the updated rotational velocity. ---*/
-  if (config_container[ZONE_0]->GetRampOutletPressure()) {
-    rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(1));
-    finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(2));
-    outPres_ini    = config_container[ZONE_0]->GetRampOutletPressure_Coeff(0);
-    outPres_final  = config_container[ZONE_0]->GetFinalOutletPressure();
-
-    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
-      outPres = outPres_ini + ExtIter*(outPres_final - outPres_ini)/finalRamp_Iter;
-      if(rank == MASTER_NODE) config_container[ZONE_0]->SetMonitotOutletPressure(outPres);
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-        for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
-          KindBC = config_container[iZone]->GetMarker_All_KindBC(iMarker);
-          switch (KindBC) {
-          case RIEMANN_BOUNDARY:
-            Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
-            KindBCOption       = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
-            if(KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM ){
-              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
-            }
-            break;
-          case GILES_BOUNDARY:
-            Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
-            KindBCOption       = config_container[iZone]->GetKind_Data_Giles(Marker_Tag);
-            if(KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
-              config_container[iZone]->SetGiles_Var1(outPres, Marker_Tag);
-            }
-            break;
-          }
-        }
-      }
-    }
-  }
-
-
-  /*--- Check whether the current simulation has reached the specified
-   convergence criteria, and set StopCalc to true, if so. ---*/
-
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-  case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-  case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
-  case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence();
-    break;
-  case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-  case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-  case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-    StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence();
-    break;
-  default:
-    break;
-
-  }
-
-  /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
-
-  StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
-
-  return StopCalc;
 
 }
 
@@ -3459,46 +3188,18 @@ CHBDriver::CHBDriver(char* confFile,
 
   nInstHB = nInst[ZONE_0];
 
-  D = nullptr;
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
-  D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
-
-  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
-
-  /*--- Open the convergence history file ---*/
-  ConvHist_file = nullptr;
-  ConvHist_file = new ofstream*[nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = nullptr;
-    if (rank == MASTER_NODE){
-      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-      }
-    }
-  }
-
-
+  D = new su2double*[nInstHB];
+  for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 }
 
-CHBDriver::~CHBDriver(void) {
+CHBDriver::~CHBDriver() {
 
   unsigned short kInst;
 
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
   for (kInst = 0; kInst < nInstHB; kInst++) delete [] D[kInst];
   delete [] D;
-
-  if (rank == MASTER_NODE){
-  /*--- Close the convergence history file. ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInstHB; iInst++) {
-      ConvHist_file[iZone][iInst].close();
-    }
-    delete [] ConvHist_file[iZone];
-  }
-  delete [] ConvHist_file;
-  }
 }
 
 
@@ -3517,13 +3218,10 @@ void CHBDriver::Run() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-          config_container, integration_container, false, UsedTime, iZone, iInst);
-  }
+  for (iInst = 0; iInst < nInstHB; iInst++)
+    iteration_container[ZONE_0][iInst]->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
 }
 
@@ -3552,34 +3250,6 @@ void CHBDriver::Update() {
 
 }
 
-void CHBDriver::ResetConvergence() {
-
-  for(iInst = 0; iInst < nZone; iInst++) {
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-
-    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
-      integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
-      break;
-
-    case MAIN_SOLVER::FEM_ELASTICITY:
-      integration_container[ZONE_0][iInst][FEA_SOL]->SetConvergence(false);
-      break;
-
-    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
-      integration_container[ZONE_0][iInst][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) )
-        integration_container[ZONE_0][iInst][ADJTURB_SOL]->SetConvergence(false);
-      break;
-
-    default:
-      SU2_MPI::Error("Harmonic Balance has not been set up for this solver.", CURRENT_FUNCTION);
-    }
-  }
-
-}
-
 void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 
   unsigned short iVar, jInst, iMGlevel;
@@ -3594,11 +3264,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
   /*--- Retrieve values from the config file ---*/
-  su2double *U = new su2double[nVar];
-  su2double *U_old = new su2double[nVar];
-  su2double *Psi = new su2double[nVar];
-  su2double *Psi_old = new su2double[nVar];
-  su2double *Source = new su2double[nVar];
+  auto *U = new su2double[nVar];
+  auto *U_old = new su2double[nVar];
+  auto *Psi = new su2double[nVar];
+  auto *Psi_old = new su2double[nVar];
+  auto *Source = new su2double[nVar];
   su2double deltaU, deltaPsi;
 
   /*--- Compute period of oscillation ---*/
@@ -3608,7 +3278,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   period /= config_container[ZONE_0]->GetTime_Ref();
 
   if (InnerIter == 0)
-    ComputeHB_Operator();
+    ComputeHBOperator();
 
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -3670,8 +3340,8 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->GetnVar();
-    su2double *U_Turb = new su2double[nVar_Turb];
-    su2double *Source_Turb = new su2double[nVar_Turb];
+    auto *U_Turb = new su2double[nVar_Turb];
+    auto *Source_Turb = new su2double[nVar_Turb];
 
     /*--- Loop over only the finest mesh level (turbulence is always solved
      on the original grid only). ---*/
@@ -3711,12 +3381,12 @@ void CHBDriver::StabilizeHarmonicBalance() {
   bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
-  su2double *Source     = new su2double[nInstHB];
-  su2double *Source_old = new su2double[nInstHB];
+  auto *Source     = new su2double[nInstHB];
+  auto *Source_old = new su2double[nInstHB];
   su2double Delta;
 
-  su2double **Pinv     = new su2double*[nInstHB];
-  su2double **P        = new su2double*[nInstHB];
+  auto **Pinv     = new su2double*[nInstHB];
+  auto **P        = new su2double*[nInstHB];
   for (iInst = 0; iInst < nInstHB; iInst++) {
     Pinv[iInst]       = new su2double[nInstHB];
     P[iInst]          = new su2double[nInstHB];
@@ -3746,7 +3416,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
       /*--- Invert stabilization matrix Pinv with Gauss elimination---*/
 
       /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
-      su2double **temp = new su2double*[nInstHB];
+      auto **temp = new su2double*[nInstHB];
       for (i = 0; i < nInstHB; i++) {
         temp[i] = new su2double[2 * nInstHB];
       }
@@ -3863,15 +3533,15 @@ void CHBDriver::StabilizeHarmonicBalance() {
 
 }
 
-void CHBDriver::ComputeHB_Operator() {
+void CHBDriver::ComputeHBOperator() {
 
   const   complex<su2double> J(0.0,1.0);
   unsigned short i, j, k, iInst;
 
-  su2double *Omega_HB       = new su2double[nInstHB];
-  complex<su2double> **E    = new complex<su2double>*[nInstHB];
-  complex<su2double> **Einv = new complex<su2double>*[nInstHB];
-  complex<su2double> **DD   = new complex<su2double>*[nInstHB];
+  auto *Omega_HB       = new su2double[nInstHB];
+  auto **E    = new complex<su2double>*[nInstHB];
+  auto **Einv = new complex<su2double>*[nInstHB];
+  auto **DD   = new complex<su2double>*[nInstHB];
   for (iInst = 0; iInst < nInstHB; iInst++) {
     E[iInst]    = new complex<su2double>[nInstHB];
     Einv[iInst] = new complex<su2double>[nInstHB];
@@ -3910,7 +3580,7 @@ void CHBDriver::ComputeHB_Operator() {
   /*---  Invert inverse harmonic balance Einv with Gauss elimination ---*/
 
   /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
-  complex<su2double> **temp = new complex<su2double>*[nInstHB];
+  auto **temp = new complex<su2double>*[nInstHB];
   for (i = 0; i < nInstHB; i++) {
     temp[i] = new complex<su2double>[2 * nInstHB];
   }
@@ -3984,10 +3654,10 @@ void CHBDriver::ComputeHB_Operator() {
 
 
   /*---  Temporary matrix for performing product  ---*/
-  complex<su2double> **Temp    = new complex<su2double>*[nInstHB];
+  auto **Temp    = new complex<su2double>*[nInstHB];
 
   /*---  Temporary complex HB operator  ---*/
-  complex<su2double> **Dcpx    = new complex<su2double>*[nInstHB];
+  auto **Dcpx    = new complex<su2double>*[nInstHB];
 
   for (iInst = 0; iInst < nInstHB; iInst++){
     Temp[iInst]    = new complex<su2double>[nInstHB];

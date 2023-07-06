@@ -165,6 +165,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINE
     }
     Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
+
+  SolverName = "MESH";
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -415,7 +417,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   END_SU2_OMP_PARALLEL
 }
 
-void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+void CMeshSolver::SetMesh_Stiffness(CNumerics **numerics, CConfig *config){
 
   if (stiffness_set) return;
 
@@ -753,7 +755,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config,
 
 }
 
-void CMeshSolver::SetDualTime_Mesh(void){
+void CMeshSolver::SetDualTime_Mesh(){
 
   nodes->Set_Solution_time_n1();
   nodes->Set_Solution_time_n();
