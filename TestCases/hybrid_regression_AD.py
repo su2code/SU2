@@ -202,6 +202,7 @@ def main():
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals         = [79, 0.770065, 0.383137, 0.472153, -0.996484, 2.153296, -4.444301]
     discadj_trans_stator.test_vals_aarch64 = [79, 0.770065, 0.383137, 0.472153, -0.996484, 2.153296, -4.444301]
+    discadj_trans_stator.enabled_with_tsan = False
     test_list.append(discadj_trans_stator)
 
     ###################################
