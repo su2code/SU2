@@ -83,10 +83,11 @@ int main(int argc, char *argv[]) {
 #endif
 
   int i = 0;
-  #pragma omp parallel
+  SU2_OMP_PARALLEL
   {
     i = omp_get_thread_num();
   }
+  END_SU2_OMP_PARALLEL
   std::cout << i << std::endl;
 
   /*--- Create a pointer to the main SU2 Driver ---*/
