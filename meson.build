@@ -259,6 +259,9 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-mlpcpp')
+  su2_cpp_args += '-DHAVE_MLPCPP'
+endif
 
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
@@ -325,7 +328,7 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
+           get_option('enable-mlpcpp'), meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:

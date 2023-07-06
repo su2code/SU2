@@ -26,13 +26,13 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-tests=true --warnlevel=2 --werror'
+            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2 --werror'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
