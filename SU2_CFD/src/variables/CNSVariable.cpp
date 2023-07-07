@@ -199,6 +199,12 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   //SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
+  /*--- Set look-up variables in case of data-driven fluid model ---*/
+  if (DataDrivenFluid) {
+    SetDataExtrapolation(iPoint, FluidModel->GetExtrapolation());
+    SetEntropy(iPoint, FluidModel->GetEntropy());
+  }
+
   return RightVol;
 }
 

@@ -548,6 +548,7 @@ enum ENUM_FLUIDMODEL {
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
+  DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -561,6 +562,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
   MakePair("COOLPROP", COOLPROP)
+  MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
   MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
 };
 
@@ -588,6 +590,19 @@ MakePair("N2", N2)
 MakePair("AIR-5", AIR5)
 MakePair("ARGON-SID",ARGON_SID)
 MakePair("ONESPECIES", ONESPECIES)
+};
+
+/*!
+* \brief Types of interpolation methods for data-driven fluid models.
+*/
+enum class ENUM_DATADRIVEN_METHOD {
+  LUT = 0,
+  MLP = 1
+};
+
+static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
+  MakePair("LUT", ENUM_DATADRIVEN_METHOD::LUT)
+  MakePair("MLP", ENUM_DATADRIVEN_METHOD::MLP)
 };
 
 /*!

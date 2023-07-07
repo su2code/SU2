@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
@@ -854,6 +855,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
+    
+    case DATADRIVEN_FLUID:
+
+      auxFluidModel = new CDataDrivenFluid(config);
+
+      break;
     case COOLPROP:
 
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
@@ -1090,6 +1097,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
+        break;
+
+      case DATADRIVEN_FLUID:
+        FluidModel[thread] = new CDataDrivenFluid(config, false);
         break;
 
       case COOLPROP:
@@ -4849,6 +4860,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       Energy_b = u_b[nVar-1]/Density_b;
       StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        nodes->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
+
       Pressure_b = GetFluidModel()->GetPressure();
       Temperature_b = GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
@@ -5019,6 +5035,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        nodes->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
 
     }
   }
@@ -5617,6 +5636,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 {
                   Velocity_i[iDim] = nodes->GetVelocity(iPoint,iDim);
                 }
+                
                 ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
                 if(nDim ==2){
@@ -6440,6 +6460,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
+      /*--- Store number of Newton iterations at BC ---*/
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        nodes->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_Newton());
 
     }
     END_SU2_OMP_FOR

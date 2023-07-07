@@ -74,6 +74,11 @@ class CEulerVariable : public CFlowVariable {
 
   MatrixType WindGust;      /*! < \brief Wind gust value */
 
+  bool DataDrivenFluid = false; /*!< \brief Usage of data-driven fluid model. DatasetExtrapolation and FluidEntropy will not be sized if disabled. */
+  su2vector<unsigned short> DatasetExtrapolation; /*!< \brief Stores instances of dataset bounds violation when using data-driven fluid models. */
+  su2vector<unsigned long> NIterNewtonsolver;    /*!< \brief Stores number of Newton solver iterations when using data-driven fluid models. */
+  VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the data-driven fluid model. */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -293,5 +298,49 @@ class CEulerVariable : public CFlowVariable {
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = GetDensity(iPoint) * val_vector[iDim];
   }
+
+  /*!
+   * \brief Set fluid entropy
+   * \param[in] iPoint - Node index
+   * \param[in] entropy - fluid entropy value.
+   */
+  inline void SetEntropy(unsigned long iPoint, su2double entropy) final { FluidEntropy[iPoint] = entropy; };
+
+  /*!
+   * \brief Get fluid entropy
+   * \param[in] iPoint - Node index
+   * \return Entropy - Fluid entropy value
+   */
+  inline su2double GetEntropy(unsigned long iPoint) const final { return FluidEntropy[iPoint]; }
+
+  /*!
+   * \brief Set dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \param[in] extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) final {
+    DatasetExtrapolation[iPoint] = extrapolation;
+  };
+
+  /*!
+   * \brief Get dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \return extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline unsigned short GetDataExtrapolation(unsigned long iPoint) const final { return DatasetExtrapolation[iPoint]; }
+
+  /*!
+   * \brief Set the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \param[in] nIter - Number of iterations evaluated by the Newton solver
+   */
+  inline void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) final { NIterNewtonsolver[iPoint] = nIter; }
+
+  /*!
+   * \brief Get the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \return Number of iterations evaluated by the Newton solver
+   */
+  inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
 
 };
