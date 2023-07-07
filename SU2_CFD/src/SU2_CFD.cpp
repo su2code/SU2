@@ -144,16 +144,6 @@ int main(int argc, char *argv[]) {
 
   }
 
-  {
-    int i = 0;
-    SU2_OMP_PARALLEL
-    {
-      i = omp_get_thread_num();
-    }
-    END_SU2_OMP_PARALLEL
-    std::cout << i << std::endl;
-  }
-
   /*--- Launch the main external loop of the solver. ---*/
 
   driver->StartSolver();
