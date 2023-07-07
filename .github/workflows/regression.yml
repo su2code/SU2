@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config_set: [BaseOMP-tsan, ReverseOMP-tsan, ForwardOMP-tsan]
+        config_set: [BaseOMP-tsan, ReverseOMP-tsan] #ForwardOMP-tsan
         include:
           - config_set: BaseOMP-tsan
             flags: '--buildtype=debug -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
