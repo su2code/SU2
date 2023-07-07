@@ -33,8 +33,8 @@ constexpr unsigned short CTriangleConnectivity::Faces[3][2];
 constexpr unsigned short CTriangleConnectivity::nNeighbor_Nodes[3];
 constexpr unsigned short CTriangleConnectivity::Neighbor_Nodes[3][2];
 
-CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2)
-    : CPrimalGridWithConnectivity<CTriangleConnectivity>(false) {
+CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2, bool useModCentroids)
+    : CPrimalGridWithConnectivity<CTriangleConnectivity>(false,useModCentroids) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

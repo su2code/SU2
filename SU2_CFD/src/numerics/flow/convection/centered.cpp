@@ -28,7 +28,8 @@
 #include "../../../../include/numerics/flow/convection/centered.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                   unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
@@ -248,7 +249,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 }
 
 
-CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);

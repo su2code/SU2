@@ -35,7 +35,7 @@
 #include "../../../include/variables/CNEMOEulerVariable.hpp"
 
 CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CNumerics(val_nDim, val_nVar, config) {
+    : CNumerics(val_nDim, val_nVar, 0, 0, config) {
   residual = new su2double[nVar]();
   jacobian = new su2double*[nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {

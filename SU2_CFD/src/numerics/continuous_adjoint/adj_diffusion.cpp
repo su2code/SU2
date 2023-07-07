@@ -27,7 +27,7 @@
 
 #include "../../../include/numerics/continuous_adjoint/adj_diffusion.hpp"
 
-CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
   unsigned short iDim;
 
   implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -139,7 +139,7 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
 }
 
 
-CAvgGradCorrected_AdjFlow::CAvgGradCorrected_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGradCorrected_AdjFlow::CAvgGradCorrected_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 
@@ -285,7 +285,7 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
 }
 
 
-CAvgGrad_AdjTurb::CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGrad_AdjTurb::CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -406,7 +406,7 @@ void CAvgGrad_AdjTurb::ComputeResidual(su2double *val_residual_i, su2double *val
 
 }
 
-CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;

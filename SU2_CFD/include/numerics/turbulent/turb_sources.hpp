@@ -85,7 +85,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, 1, config),
+      : CNumerics(nDim, 1, 0, 0, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -661,7 +661,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
    */
   CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short, const su2double* constants, su2double val_kine_Inf,
                            su2double val_omega_Inf, const CConfig* config)
-      : CNumerics(val_nDim, 2, config),
+      : CNumerics(val_nDim, 2, 0, 0, config),
         idx(val_nDim, config->GetnSpecies()),
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),

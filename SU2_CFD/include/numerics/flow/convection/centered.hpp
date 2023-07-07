@@ -74,7 +74,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                  unsigned short val_nPrimVarGrad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

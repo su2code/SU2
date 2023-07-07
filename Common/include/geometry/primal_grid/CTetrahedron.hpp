@@ -60,7 +60,7 @@ class CTetrahedron final : public CPrimalGridWithConnectivity<CTetrahedronConnec
    * \param[in] val_point_3 - Index of the 4th point read from the grid file.
    */
   CTetrahedron(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
-               unsigned long val_point_3);
+               unsigned long val_point_3, bool useModCentroids = false);
 
   /*!
    * \brief Change the orientation of an element.

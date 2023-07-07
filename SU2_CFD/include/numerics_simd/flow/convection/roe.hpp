@@ -60,6 +60,7 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
+  const bool correction;
   const LIMITER typeLimiter;
 
   /*!
@@ -73,6 +74,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
+    correction(muscl && config.GetFluxCorrection()),
     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
@@ -197,6 +199,15 @@ public:
 
     derived->finalizeFlux(flux, jac_i, jac_j, implicit, area, unitNormal, V,
                           U, roeAvg, lambda, pMat, iPoint, jPoint, solution);
+
+    /*--- Correct for second order on arbitrary grids ---*/
+    if (correction) {
+      const auto corrX = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_X());
+      const auto corrY = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Y());
+      const auto corrZ = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Z());
+      CorrectFlux(iPoint, jPoint, solution, V, flux, corrX, corrY, corrZ, gamma);
+//      reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+    }
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 

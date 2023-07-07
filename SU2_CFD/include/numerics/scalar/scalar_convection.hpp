@@ -80,7 +80,7 @@ class CUpwScalar : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CUpwScalar(unsigned short ndim, unsigned short nvar, const CConfig* config)
-    : CNumerics(ndim, nvar, config),
+    : CNumerics(ndim, nvar, 0, 0, config),
       idx(ndim, config->GetnSpecies()),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
       dynamic_grid(config->GetDynamic_Grid()) {

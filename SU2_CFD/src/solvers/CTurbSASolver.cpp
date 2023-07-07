@@ -502,6 +502,88 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   END_SU2_OMP_FOR
 }
 
+void CTurbSASolver::BC_HeatFlux_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                               unsigned long val_element, unsigned short iNode,
+                               su2double* residualBuffer) {
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+  if (config->GetWall_Functions()) {
+//    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTurbVars_WF(geometry, solver_container, config, val_marker);)
+    return;
+  }
+
+  unsigned short iDim;
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool rough_wall = false;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  WALL_TYPE WallType;
+  su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+
+  /*--- The dirichlet condition is used only without wall function, otherwise the
+   convergence is compromised as we are providing nu tilde values for the
+   first point of the wall  ---*/
+
+  /** Normal should already be pointing outward **/
+  const su2double* AreaVector = geometry->bound[val_marker][val_element]->getNormal();
+  const su2double Area = GeometryToolbox::Norm(nDim,AreaVector);
+  su2double UnitNormal[MAXNDIM] = {0.0};
+  su2double Normal[MAXNDIM] = {0.0};
+  for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = AreaVector[iDim] / Area;
+  for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = AreaVector[iDim] / 1.0;
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+
+  const auto iPoint = geometry->bound[val_marker][val_element]->GetNode(iNode);
+  const auto iVertex = geometry->nodes->GetVertex(iPoint,val_marker);
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (true/**geometry->nodes->GetDomain(iPoint)**/) {
+      if (!rough_wall) {
+
+      } else {
+         /*--- For rough walls, the boundary condition is given by
+          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+          * where \nu is the solution variable, $n$ is the wall normal direction
+          * and k_s is the equivalent sand grain roughness specified. ---*/
+
+         /*--- Get laminar_viscosity and density ---*/
+         su2double sigma = 2.0/3.0;
+         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+         su2double nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+
+         su2double coeff = (nu_total/sigma);
+         su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+
+         su2double Res_Wall;// = new su2double [nVar];
+         Res_Wall = coeff*RoughWallBC*Area;
+
+         su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+         Jacobian_i += 2.0*RoughWallBC*Area/sigma;
+
+         /*--- Add residuals and Jacobians ---*/
+         residualBuffer[0] = -Res_Wall;
+
+         /*--- Jacobian contribution for implicit integration. ---*/
+         if (implicit) {
+         for (short iVar = 0; iVar < nVar; ++iVar){
+           for (short jVar = 0; jVar < nVar; ++jVar) {
+            residualBuffer[MAXNVAR + iVar*nVar + jVar] = -Jacobian_i;
+           }
+         }
+         }
+
+      }
+    }
+
+}
+
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
@@ -1252,7 +1334,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
+void CTurbSASolver::SetTurbVars_WF(const CGeometry* geometry, CSolver **solver_container,
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1621,6 +1703,52 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
+  }
+  END_SU2_OMP_FOR
+
+}
+void CTurbSASolver::BC_Viscous_Wall_Strong(const CGeometry* geometry,
+                                           CSolver** solver_container,
+                                           const CConfig* config, unsigned short val_marker) {
+
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+  if (config->GetWall_Functions()) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTurbVars_WF(geometry, solver_container, config, val_marker);)
+    return;
+  }
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool rough_wall = false;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  WALL_TYPE WallType;
+  su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+
+  /*--- The dirichlet condition is used only without wall function, otherwise the
+   convergence is compromised as we are providing nu tilde values for the
+   first point of the wall  ---*/
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+      if (!rough_wall) {
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          nodes->SetSolution_Old(iPoint,iVar,0.0);
+
+        LinSysRes.SetBlock_Zero(iPoint);
+
+        /*--- Includes 1 in the diagonal ---*/
+
+        if (implicit) Jacobian.DeleteValsRowi(iPoint);
+      }
+    }
   }
   END_SU2_OMP_FOR
 

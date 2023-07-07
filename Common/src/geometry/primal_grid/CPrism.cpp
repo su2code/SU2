@@ -34,8 +34,8 @@ constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
 constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
 
 CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
-               unsigned long val_point_3, unsigned long val_point_4, unsigned long val_point_5)
-    : CPrimalGridWithConnectivity<CPrismConnectivity>(false) {
+               unsigned long val_point_3, unsigned long val_point_4, unsigned long val_point_5, bool useModCentroids)
+    : CPrimalGridWithConnectivity<CPrismConnectivity>(false,useModCentroids) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

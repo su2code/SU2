@@ -1609,6 +1609,10 @@ void CConfig::SetConfig_Options() {
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
+  /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
+  addBoolOption("FACETANGENT_VISCOUS_SCHEME", FaceTangentGradCorrection, false);
+  addBoolOption("FLUX_CORRECTION", FluxCorrection, false);
+  addBoolOption("MOD_CENTROIDS", ModCentroids, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -3568,6 +3572,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       MUSCL_Flow = false;
     }
   }
+
+  if (!MUSCL_Flow && FluxCorrection) {
+    if (OptionIsSet("FLUX_CORRECTION")) {
+      SU2_MPI::Error("Flux correction requires  MUSCL_FLOW= YES.", CURRENT_FUNCTION);
+    } else {
+      FluxCorrection = false;
+    }
+  }
+
   if (MUSCL_AdjFlow && (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) {
     if (OptionIsSet("MUSCL_ADJFLOW")) {
       SU2_MPI::Error("Centered schemes do not use MUSCL reconstruction (use MUSCL_ADJFLOW= NO).", CURRENT_FUNCTION);

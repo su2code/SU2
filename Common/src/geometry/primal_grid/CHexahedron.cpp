@@ -35,8 +35,8 @@ constexpr unsigned short CHexahedronConnectivity::Neighbor_Nodes[8][3];
 
 CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
                          unsigned long val_point_3, unsigned long val_point_4, unsigned long val_point_5,
-                         unsigned long val_point_6, unsigned long val_point_7)
-    : CPrimalGridWithConnectivity<CHexahedronConnectivity>(false) {
+                         unsigned long val_point_6, unsigned long val_point_7, bool useModCentroids)
+    : CPrimalGridWithConnectivity<CHexahedronConnectivity>(false,useModCentroids) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

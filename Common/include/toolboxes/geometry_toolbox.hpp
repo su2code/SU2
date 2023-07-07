@@ -79,6 +79,39 @@ inline T Norm(Int nDim, const T* a) {
   return sqrt(SquaredNorm(nDim, a));
 }
 
+template <class T, typename Int>
+inline void TangentVector(Int nDim, const T* unitNormal, T* tangent) {
+
+  switch (nDim) {
+    case 2: {
+      tangent[0] = -unitNormal[1];
+      tangent[1] = unitNormal[0];
+      break;
+    }
+    case 3: {
+      /*--- n = ai + bj + ck, if |b| > |c| ---*/
+      if (abs(unitNormal[1]) > abs(unitNormal[2])) {
+        /*--- t = bi + (c-a)j - bk  ---*/
+        tangent[0] = unitNormal[1];
+        tangent[1] = unitNormal[2] - unitNormal[0];
+        tangent[2] = -unitNormal[1];
+      } else {
+        /*--- t = ci - cj + (b-a)k  ---*/
+        tangent[0] = unitNormal[2];
+        tangent[1] = -unitNormal[2];
+        tangent[2] = unitNormal[1] - unitNormal[0];
+      }
+      /*--- Make it a unit vector. ---*/
+      const T TangentialNorm = Norm(nDim, tangent);
+      tangent[0] = tangent[0] / TangentialNorm;
+      tangent[1] = tangent[1] / TangentialNorm;
+      tangent[2] = tangent[2] / TangentialNorm;
+      break;
+    }
+  }
+
+}
+
 /*! \brief c = a x b */
 template <class T>
 inline void CrossProduct(const T* a, const T* b, T* c) {

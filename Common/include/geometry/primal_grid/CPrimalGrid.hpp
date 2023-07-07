@@ -30,12 +30,14 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 #include <limits>
 #include <cstdlib>
 #include <limits>
 #include <memory>
 
 #include "../../option_structure.hpp"
+#include "../../toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CPrimalGrid
@@ -54,6 +56,8 @@ class CPrimalGrid {
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
   su2double Volume;              /*!< \brief Volume of the element. */
   su2double LenScale;            /*!< \brief Length scale of the element. */
+  su2double BCCoeffs[4][4] = {0.0};      /** only on boundary **/
+  su2double Normal[3] = {0.0};           /** only on boundary **/
 
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
   /*!< \brief Vector to store the periodic index of a neighbor, -1 indicates no periodic transformation to the neighbor.
@@ -65,6 +69,7 @@ class CPrimalGrid {
   bool JacobianFaceIsConstant[N_FACES_MAXIMUM];
   bool ElementOwnsFace[N_FACES_MAXIMUM]; /*!< \brief Whether or not the element owns each face. */
   const bool FEM;                        /*!< \brief Whether this is a FEM element. */
+  const bool modCentroids;
 
  public:
   CPrimalGrid() = delete;
@@ -75,7 +80,7 @@ class CPrimalGrid {
    * \param[in] nNodes - Number of nodes.
    * \param[in] nNeighbor_Elements - Number of neighbor elements.
    */
-  CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements);
+  CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements, bool useModCentroids = false);
 
   /*!
    * \brief Destructor of the class.
@@ -194,14 +199,39 @@ class CPrimalGrid {
    * \param[in] val_coord - Coordinates of the element.
    */
   template <class T>
-  inline su2double* SetCoord_CG(unsigned short nDim, const T& val_coord) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Coord_CG[iDim] = 0.0;
-      for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
-        Coord_CG[iDim] += val_coord[iNode][iDim] / su2double(GetnNodes());
-    }
+   inline su2double* SetCoord_CG(unsigned short nDim, const T& val_coord) {
+      if (GetVTK_Type() == LINE) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Coord_CG[iDim] = 0.0;
+          for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
+            Coord_CG[iDim] += val_coord[iNode][iDim] / su2double(GetnNodes());
+        }
+      } else {
+        getElemCG(nDim,val_coord,&Coord_CG[0]);
+      }
     return Coord_CG;
   }
+
+
+//  template <class T>
+//  inline su2double* SetCoord_CG(unsigned short nDim, const T& val_coord) {
+//    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+//      Coord_CG[iDim] = 0.0;
+//      for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
+//        Coord_CG[iDim] += val_coord[iNode][iDim] / su2double(GetnNodes());
+//    }
+//    return Coord_CG;
+//  }
+
+  virtual su2double get3DFaceArea(unsigned short iFace, unsigned short nDim,
+                                const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, const su2double *CG) {};
+  virtual su2double get2DFaceArea(unsigned short iFace, unsigned short nDim,
+                                  const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, const su2double *CG) {};
+  virtual su2double getFaceAreaCG(unsigned short iFace, unsigned short nDim,
+                                  const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {};
+  virtual void getFaceCG(unsigned short iFace, unsigned short nDim,
+                                  const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {};
+  virtual void getElemCG(unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {};
 
   /*!
    * \brief Get the center of gravity of an element (including edges).
@@ -441,6 +471,10 @@ class CPrimalGrid {
    * \brief Virtual function to remove the multiple donors for the wall function treatment.
    */
   inline virtual void RemoveMultipleDonorsWallFunctions() {}
+
+  inline su2double* getNodeCoeffs(unsigned short iNode) {return BCCoeffs[iNode];};
+  inline su2double* getNormal() {return Normal;};
+
 };
 
 /*! \class CPrimalGridWithConnectivity
@@ -467,7 +501,7 @@ class CPrimalGrid {
 template <typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
  public:
-  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM, Connectivity::nNodes, Connectivity::nFaces) {}
+  CPrimalGridWithConnectivity(bool FEM, bool useModCentroids = false) : CPrimalGrid(FEM, Connectivity::nNodes, Connectivity::nFaces, useModCentroids) {}
 
   inline unsigned short GetnNodes() const final { return Connectivity::nNodes; }
 
@@ -496,4 +530,135 @@ class CPrimalGridWithConnectivity : public CPrimalGrid {
   }
 
   inline unsigned short GetVTK_Type() const final { return Connectivity::VTK_Type; }
+
+  su2double get3DFaceArea(unsigned short iFace, unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, const su2double *CG) {
+
+    constexpr short nMaxFacets = 4;
+    su2double facetCG[nMaxFacets*3];
+    int iFacet;
+
+    /** Compute Area **/
+    auto area = [&](const su2double *v0, const su2double *vM) {
+      su2double vec_a[3] = {0.0}, vec_b[3] = {0.0}, Dim_Normal[3];
+      GeometryToolbox::Distance(nDim, vM, v0, vec_a);
+      GeometryToolbox::Distance(nDim, CG, v0, vec_b);
+      GeometryToolbox::CrossProduct(vec_a,vec_b,Dim_Normal);
+      return 0.5 * GeometryToolbox::Norm(nDim,Dim_Normal);
+    };
+    su2double Area = 0.0;
+    for (iFacet = 0; iFacet < GetnNodesFace(iFace)-1; ++iFacet) {
+      const auto iCoord = val_coord[Connectivity::Faces[iFace][iFacet+1]];
+      const auto jCoord = val_coord[Connectivity::Faces[iFace][iFacet]];
+      for (int iDim = 0; iDim < nDim; ++iDim)
+        facetCG[iFacet*3+iDim] = 0.5 * (iCoord[iDim] + jCoord[iDim]);
+      const auto mCoord =  &facetCG[iFacet*3];
+      Area += area(iCoord,mCoord);
+      Area += area(mCoord,jCoord);
+    }
+    {
+      const auto iCoord = val_coord[Connectivity::Faces[iFace][0]];
+      const auto jCoord = val_coord[Connectivity::Faces[iFace][iFacet]];
+      for (int iDim = 0; iDim < nDim; ++iDim) facetCG[iFacet * 3 + iDim] = 0.5 * (iCoord[iDim] + jCoord[iDim]);
+      const auto mCoord =  &facetCG[iFacet*3];
+      Area += area(iCoord,mCoord);
+      Area += area(mCoord,jCoord);
+    }
+
+    return Area;
+  }
+
+  su2double get2DFaceArea(unsigned short iFace, unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, const su2double *CG) {
+
+    const auto iCoord = val_coord[Connectivity::Faces[iFace][1]];
+    const auto jCoord = val_coord[Connectivity::Faces[iFace][0]];
+    return GeometryToolbox::Distance(nDim,iCoord, jCoord);
+
+  }
+
+  su2double getFaceAreaCG(unsigned short iFace, unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {
+
+    getFaceCG(iFace,nDim,val_coord,CG);
+    const auto nNodes = GetnNodesFace(iFace);
+
+    if (nNodes == 2) return get2DFaceArea(iFace,nDim,val_coord,CG);
+    return get3DFaceArea(iFace,nDim,val_coord,CG);
+
+
+  }
+
+
+  void getFaceCG(unsigned short iFace, unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {
+
+    if (nDim == 2) {
+        const auto iCoord = val_coord[Connectivity::Faces[iFace][1]];
+        const auto jCoord = val_coord[Connectivity::Faces[iFace][0]];
+        for (int iDim = 0; iDim < nDim; ++iDim)
+        CG[iDim] = 0.5 * (iCoord[iDim] + jCoord[iDim]);
+        return;
+    }
+
+    constexpr short nMaxFacets = 4;
+    su2double facetArea[nMaxFacets];
+    su2double facetCG[nMaxFacets*3];
+
+    su2double maxArea = -100.0;
+    int iFacet;
+    for (iFacet = 0; iFacet < GetnNodesFace(iFace)-1; ++iFacet) {
+        const auto iCoord = val_coord[Connectivity::Faces[iFace][iFacet+1]];
+        const auto jCoord = val_coord[Connectivity::Faces[iFace][iFacet]];
+        facetArea[iFacet] = GeometryToolbox::Distance(nDim,iCoord, jCoord);
+        maxArea = std::max(facetArea[iFacet],maxArea);
+        for (int iDim = 0; iDim < nDim; ++iDim)
+        facetCG[iFacet*3+iDim] = 0.5 * (iCoord[iDim] + jCoord[iDim]);
+    }
+    {
+        const auto iCoord = val_coord[Connectivity::Faces[iFace][0]];
+        const auto jCoord = val_coord[Connectivity::Faces[iFace][iFacet]];
+        facetArea[iFacet] = GeometryToolbox::Distance(nDim, iCoord, jCoord);
+        maxArea = std::max(facetArea[iFacet], maxArea);
+        for (int iDim = 0; iDim < nDim; ++iDim) facetCG[iFacet * 3 + iDim] = 0.5 * (iCoord[iDim] + jCoord[iDim]);
+    }
+
+    const short exponent = (modCentroids) ? 2 : 0;
+
+    for (iFacet = 0; iFacet < GetnNodesFace(iFace); ++iFacet) facetArea[iFacet] /= maxArea;
+
+    for (int iDim = 0; iDim < nDim; ++iDim) {
+        CG[iDim] = 0;
+        su2double num = 0, den = 0;
+        for (iFacet = 0; iFacet < GetnNodesFace(iFace); ++iFacet) {
+        num += pow(facetArea[iFacet],exponent)*facetCG[iFacet*3+iDim];
+        den += pow(facetArea[iFacet],exponent);
+        }
+        CG[iDim] = num/den;
+    }
+  }
+
+  void getElemCG(unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {
+    constexpr short nMaxFaces = 8;
+    su2double faceArea[nMaxFaces];
+    su2double faceCG[nMaxFaces*3];
+
+    su2double maxArea = -100.0;
+    int iFace;
+    for (iFace = 0; iFace < GetnFaces(); ++iFace) {
+      faceArea[iFace] = getFaceAreaCG(iFace, nDim, val_coord, &faceCG[iFace * 3]);
+      maxArea = std::max(faceArea[iFace],maxArea);
+    }
+
+    const short exponent = (modCentroids) ? 2 : 0;
+
+    for (iFace = 0; iFace < GetnFaces(); ++iFace) faceArea[iFace] /= maxArea;
+
+    for (int iDim = 0; iDim < nDim; ++iDim) {
+      su2double num = 0, den = 0;
+      for (iFace = 0; iFace < GetnFaces(); ++iFace) {
+        num += pow(faceArea[iFace],exponent)*faceCG[iFace*3+iDim];
+        den += pow(faceArea[iFace],exponent);
+      }
+      CG[iDim] = num/den;
+    }
+
+  };
+
 };

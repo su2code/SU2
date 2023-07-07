@@ -96,6 +96,11 @@ private:
                                   unsigned short val_marker,
                                   bool cht_mode = false);
 
+  void BC_Isothermal_Wall_Generic_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                           unsigned long val_element, unsigned short iNode,
+                                           su2double* residualBuffer, bool cht_mode = false);
+
   /*!
    * \brief Generic implementation of the heatflux and heat-transfer/convection walls.
    */
@@ -103,6 +108,17 @@ private:
                                 const CConfig *config,
                                 unsigned short val_marker,
                                 unsigned short kind_boundary);
+
+  void BC_HeatFlux_Wall_Generic_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                         CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                         unsigned long val_element, unsigned short iNode,
+                                         su2double* residualBuffer, unsigned short kind_boundary);
+
+  void BC_Viscous_Wall_Strong(const CGeometry* geometry,
+                              CSolver**
+
+                                  solver_container,
+                              const CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.
@@ -194,6 +210,11 @@ public:
                         CConfig *config,
                         unsigned short val_marker) override;
 
+  void BC_HeatFlux_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                 CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                 unsigned long val_element, unsigned short iNode,
+                                 su2double* residualBuffer) override;
+
   /*!
    * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -203,6 +224,12 @@ public:
   void BC_HeatTransfer_Wall(const CGeometry *geometry,
                             const CConfig *config,
                             const unsigned short val_marker) override;
+
+  void BC_HeatTransfer_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                     unsigned long val_element, unsigned short iNode,
+                                     su2double* residualBuffer) override;
+
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -220,6 +247,11 @@ public:
                           CConfig *config,
                           unsigned short val_marker) override;
 
+  void BC_Isothermal_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                   unsigned long val_element, unsigned short iNode,
+                                   su2double* residualBuffer) override;
+
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong) with values from a CHT coupling.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -234,6 +266,11 @@ public:
                                   CNumerics *numerics,
                                   CConfig *config,
                                   unsigned short val_marker) override;
+
+  void BC_ConjugateHeat_Interface_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                           unsigned long val_element, unsigned short iNode,
+                                           su2double* residualBuffer) override;
 
   /*!
    * \brief Compute the buffet sensor.

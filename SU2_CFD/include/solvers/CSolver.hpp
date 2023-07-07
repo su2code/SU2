@@ -969,6 +969,15 @@ public:
                                          CConfig *config,
                                          unsigned short val_marker) { }
 
+  inline virtual void BC_Isothermal_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                  CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                                  unsigned long val_element, unsigned short iNode,
+                                                  su2double* residualBuffer) { }
+
+  inline virtual void BC_Viscous_Wall_Strong(const CGeometry* geometry,
+                                             CSolver** solver_container,
+                                             const CConfig* config, unsigned short val_marker) {}
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -985,6 +994,11 @@ public:
                                        CConfig *config,
                                        unsigned short val_marker) { }
 
+  inline virtual void BC_HeatFlux_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                                unsigned long val_element, unsigned short iNode,
+                                                su2double* residualBuffer) { }
+
   /*!
    * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -994,6 +1008,11 @@ public:
   inline virtual void BC_HeatTransfer_Wall(const CGeometry *geometry,
                                            const CConfig *config,
                                            const unsigned short val_marker) { }
+
+  inline virtual void BC_HeatTransfer_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                                    unsigned long val_element, unsigned short iNode,
+                                                    su2double* residualBuffer) { }
 
   /*!
    * \brief A virtual member.
@@ -1011,6 +1030,11 @@ public:
                                    CConfig *config,
                                    unsigned short val_marker) { }
 
+  inline virtual void BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                            unsigned long val_element, unsigned short iNode,
+                                            su2double* residualBuffer) { }
+
   /*!
    * \brief Impose via the residual the Euler boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1026,6 +1050,18 @@ public:
                                    CNumerics      *visc_numerics,
                                    CConfig        *config,
                                    unsigned short val_marker) { }
+
+  inline virtual void BC_Sym_Plane_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                            unsigned long val_element, unsigned short iNode,
+                                            su2double* residualBuffer) { }
+
+  inline void BC_Euler_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                            unsigned long val_element, unsigned short iNode,
+                                            su2double* residualBuffer) {
+    BC_Sym_Plane_Residual(geometry,solver_container,conv_numerics,visc_numerics,config,val_marker,val_element,iNode,residualBuffer);
+  }
 
   /*!
    * \brief A virtual member.
@@ -1182,6 +1218,18 @@ public:
                                 CConfig *config,
                                 unsigned short val_marker) { }
 
+  inline virtual void BC_Custom_Weak(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) { }
+
+  inline virtual void BC_Custom_Weak_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                              CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                              unsigned long val_element, unsigned short iNode,
+                                              su2double* residualBuffer) { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1197,6 +1245,16 @@ public:
                                 CNumerics *visc_numerics,
                                 CConfig *config,
                                 unsigned short val_marker) { }
+
+  inline virtual void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                         CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                         unsigned long val_element, unsigned short iNode,
+                                         su2double* residualBuffer) { }
+
+  inline virtual void BC_Inlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                         CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                         unsigned long val_element, unsigned short iNode,
+                                         su2double* residualBuffer) { }
 
   /*!
    * \brief A virtual member.
@@ -1243,6 +1301,12 @@ public:
                                                  CNumerics *numerics,
                                                  CConfig *config,
                                                  unsigned short val_marker) { }
+
+  inline virtual void BC_ConjugateHeat_Interface_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                 CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                                 unsigned long val_element, unsigned short iNode,
+                                                 su2double* residualBuffer) { }
+
 
   /*!
    * \brief A virtual member.
@@ -1564,6 +1628,14 @@ public:
                                       CNumerics **numerics_container,
                                       CConfig *config,
                                       unsigned short iMesh) { }
+
+  void Weak_BC_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics **numerics_container,
+                                      CConfig *config,
+                                      unsigned short iMesh);
+
+  void Strong_BC(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh);
 
   /*!
    * \brief A virtual member.

@@ -29,7 +29,7 @@
 
 #include <limits>
 
-CGradSmoothing::CGradSmoothing(unsigned short val_nDim, const CConfig* config) : CNumerics(val_nDim, val_nDim, config) {
+CGradSmoothing::CGradSmoothing(unsigned short val_nDim, const CConfig* config) : CNumerics(val_nDim, val_nDim, 0, 0, config) {
   val_DHiDHj.resize(nDim, nDim);
   val_DHiDHj.setConstant(0.0);
 

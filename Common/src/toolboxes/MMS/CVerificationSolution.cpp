@@ -30,6 +30,7 @@
 CVerificationSolution::CVerificationSolution() {
   /*--- Initialize the pointers to NULL. ---*/
   Error_RMS = nullptr;
+  Error_RMS_Monitor = nullptr;
   Error_Max = nullptr;
   Error_Point_Max = nullptr;
   Error_Point_Max_Coord = nullptr;
@@ -54,6 +55,7 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim, unsigned s
   /*--- Allocate space for global error metrics for verification. ---*/
   Error_RMS = new su2double[nVar];
   Error_Max = new su2double[nVar];
+  Error_RMS_Monitor = new su2double[nVar];
 
   Error_Point_Max = new unsigned long[nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) Error_Point_Max[iVar] = 0;
@@ -68,6 +70,7 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim, unsigned s
 CVerificationSolution::~CVerificationSolution() {
   /*--- Release the memory of the pointers, if allocated. ---*/
   delete[] Error_RMS;
+  delete[] Error_RMS_Monitor;
   delete[] Error_Max;
 
   delete[] Error_Point_Max;
@@ -128,10 +131,15 @@ void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal, CCon
 
     /*--- The local L2 norms must be added to obtain the global value. ---*/
     vector<su2double> rbufError(nVar, 0.0);
+    vector<su2double> rbufErrorMonitor(nVar, 0.0);
+    unsigned long nGLobalMonitorPoints = 0;
     SU2_MPI::Allreduce(Error_RMS, rbufError.data(), nVar, MPI_DOUBLE, MPI_SUM, comm);
+    SU2_MPI::Allreduce(Error_RMS_Monitor, rbufErrorMonitor.data(), nVar, MPI_DOUBLE, MPI_SUM, comm);
+    SU2_MPI::Allreduce(&nMonitorPoints, &nGLobalMonitorPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
       SetError_RMS(iVar, max(EPS * EPS, sqrt(rbufError[iVar] / nDOFsGlobal)));
+      SetError_RMS_Monitor(iVar, max(EPS * EPS, sqrt(rbufErrorMonitor[iVar] / nGLobalMonitorPoints)));
     }
 
     /*--- The global maximum norms must be obtained. ---*/

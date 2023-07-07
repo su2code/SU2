@@ -230,6 +230,43 @@ FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint,
 }
 
 /*!
+ * \brief Distance vector, from point i to point j.
+ */
+template<size_t nDim>
+FORCEINLINE VectorDbl<nDim> tangentVector(const VectorDbl<nDim>& unitNormal) { }
+
+template<>
+FORCEINLINE VectorDbl<2> tangentVector(const VectorDbl<2>& unitNormal) {
+  VectorDbl<2> tangent;
+  tangent[0] = -unitNormal[1];
+  tangent[1] = unitNormal[0];
+
+  return tangent;
+}
+
+template<>
+FORCEINLINE VectorDbl<3> tangentVector(const VectorDbl<3>& unitNormal) {
+
+  VectorDbl<3> tangent;
+
+  const Double mask = abs(unitNormal[1]) > abs(unitNormal[2]);
+  const Double one = 1.0;
+  const Double negMask = one - mask;
+
+  tangent[0] = mask*unitNormal[1] + negMask*unitNormal[2];
+  tangent[1] = mask*(unitNormal[2] - unitNormal[0]) -negMask*unitNormal[2];
+  tangent[2] = -mask*unitNormal[1] + negMask*(unitNormal[1] - unitNormal[0]);
+
+  /*--- Make it a unit vector. ---*/
+  const Double TangentialNorm = norm(tangent);
+  tangent[0] /= TangentialNorm;
+  tangent[1] /= TangentialNorm;
+  tangent[2] /= TangentialNorm;
+
+  return tangent;
+}
+
+/*!
  * \brief Update the matrix and right-hand-side of a linear system.
  */
 template<size_t nVar>

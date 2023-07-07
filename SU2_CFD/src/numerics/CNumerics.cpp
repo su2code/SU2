@@ -41,13 +41,15 @@ CNumerics::CNumerics() {
 
 }
 
-CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
-                     const CConfig* config) {
+CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad, const CConfig* config) {
 
-  unsigned short iDim;
+  unsigned short iDim, iVar;
 
-  nDim = val_nDim;
-  nVar = val_nVar;
+  nDim         = val_nDim;
+  nVar         = val_nVar;
+  nPrimVarGrad = val_nPrimVarGrad;
+  nPrimVar     = val_nPrimVar;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -58,6 +60,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     tau[iDim] = new su2double [nDim] ();
+
+  JacPrim = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    JacPrim[iVar] = new su2double [nVar] ();
 
   Proj_Flux_Tensor = new su2double [nVar] ();
 
@@ -85,6 +91,13 @@ CNumerics::~CNumerics() {
       delete [] tau[iDim];
     delete [] tau;
   }
+
+  if (JacPrim) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      delete [] JacPrim[iVar];
+    delete [] JacPrim;
+  }
+
 }
 
 void CNumerics::GetInviscidProjFlux(const su2double *val_density,
@@ -206,6 +219,39 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
+  AD::EndPassive(wasActive);
+}
+
+void CNumerics::GetInviscidProjJacPrim(const su2double* val_velocity, const su2double* val_density,
+                                       const su2double* val_spec_total_enthalpy, const su2double* val_normal,
+                                       su2double val_scale, su2double** val_Proj_Jac_Tensor) const {
+  const bool wasActive = AD::BeginPassive();
+  unsigned short iDim, jDim;
+  su2double sqvel, proj_vel;
+
+  sqvel = 0.0; proj_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sqvel    += val_velocity[iDim]*val_velocity[iDim];
+    proj_vel += val_velocity[iDim]*val_normal[iDim];
+  }
+
+  val_Proj_Jac_Tensor[0][0] = val_scale*proj_vel;
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_Proj_Jac_Tensor[0][iDim+1] = val_scale*(*val_density)*val_normal[iDim];
+  val_Proj_Jac_Tensor[0][nDim+1] = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    val_Proj_Jac_Tensor[iDim+1][0] = val_scale*(val_velocity[iDim]*proj_vel);
+    for (jDim = 0; jDim < nDim; jDim++)
+      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_scale*(*val_density)*(val_normal[jDim]*val_velocity[iDim]);
+    val_Proj_Jac_Tensor[iDim+1][iDim+1] += val_scale*(*val_density)*proj_vel;
+    val_Proj_Jac_Tensor[iDim+1][nDim+1] = val_scale*val_normal[iDim];
+  }
+
+  val_Proj_Jac_Tensor[nDim+1][0] = val_scale*0.5*proj_vel*(sqvel);
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(*val_density) * (val_normal[iDim]*(*val_spec_total_enthalpy) + val_velocity[iDim]*proj_vel);
+  val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*proj_vel*Gamma/Gamma_Minus_One;
   AD::EndPassive(wasActive);
 }
 
@@ -1726,4 +1772,34 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
 
   }
   return Dissipation_ij;
+}
+void CNumerics::CorrectResidual(su2double* ProjFlux) {
+
+  if (!fluxCorrection) return;
+
+  unsigned short iVar, iDim;
+
+  su2double avgPrim[12];
+  for (iVar = 0; iVar < nPrimVar; ++iVar) {
+    avgPrim[iVar] = 0.5 * (V_i[iVar] + V_j[iVar]);
+  }
+
+  unsigned short index[] = {static_cast<unsigned short>(nDim+2), 1, 2, 3, static_cast<unsigned short>(nDim+1)};
+  if (nDim == 2) index[3] = nDim+1;
+
+  const su2double *dirs[3] = {CorrDirX, CorrDirY, CorrDirZ};
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+
+    GetInviscidProjJacPrim(&avgPrim[1],&avgPrim[nDim+2],
+                           &avgPrim[nDim+3],dirs[iDim],0.5, JacPrim);
+
+    for (iVar = 0; iVar < nVar; ++iVar) {
+      for (int jVar = 0; jVar < nVar; ++jVar) {
+        ProjFlux[iVar] += JacPrim[iVar][jVar] * (PrimVar_Grad_i[index[jVar]][iDim] + PrimVar_Grad_j[index[jVar]][iDim]);
+      }
+    }
+
+  }
+
 }

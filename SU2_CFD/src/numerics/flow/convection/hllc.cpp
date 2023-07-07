@@ -28,7 +28,8 @@
 #include "../../../../include/numerics/flow/convection/hllc.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
@@ -554,7 +555,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
 }
 
-CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                           unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();

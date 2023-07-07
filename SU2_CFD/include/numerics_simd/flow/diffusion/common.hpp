@@ -65,6 +65,25 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
   }
 }
 
+template<size_t nVar, size_t nDim, class PrimitiveType>
+FORCEINLINE void correctGradient2(const PrimitiveType& V,
+                                 const VectorDbl<nDim>& vector_ij,
+                                 const VectorDbl<nDim>& faceTang,
+                                 const VectorDbl<nDim>& unitNormal,
+                                 MatrixDbl<nVar,nDim>& avgGrad) {
+
+  const Double f_e = dot(faceTang, vector_ij);
+  const Double n_e = dot(unitNormal, vector_ij);
+
+  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+    const auto projGrad = dot(avgGrad[iVar],faceTang);
+    Double corr = (V.j.all(iVar) - V.i.all(iVar) - f_e*projGrad) / n_e;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      avgGrad(iVar,iDim) = projGrad * faceTang(iDim) + corr * unitNormal(iDim);
+    }
+  }
+}
+
 /*!
  * \brief Compute the stress tensor.
  * \note Second viscosity term ignored.

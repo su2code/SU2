@@ -93,6 +93,7 @@ class CPhysicalGeometry final : public CGeometry {
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;
+  using CGeometry::SetBoundCVCoeffs;
   using CGeometry::SetControlVolume;
   using CGeometry::SetPoint_Connectivity;
   using CGeometry::SetVertex;
@@ -440,6 +441,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] action - Allocate or not the new elements.
    */
   void SetBoundControlVolume(const CConfig* config, unsigned short action) override;
+  void SetBoundCVCoeffs(const CConfig* config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.

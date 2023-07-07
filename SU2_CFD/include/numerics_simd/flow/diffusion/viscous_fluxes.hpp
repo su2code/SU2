@@ -79,6 +79,7 @@ protected:
   const su2double prandtlTurb;
   const su2double cp;
   const bool correct;
+  const bool correct_FT;
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
@@ -100,7 +101,8 @@ protected:
     prandtlLam(config.GetPrandtl_Lam()),
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
-    correct(iMesh == MESH_0),
+    correct(iMesh == MESH_0 && !config.GetFaceTangent_Correction()),
+    correct_FT(iMesh == MESH_0 && config.GetFaceTangent_Correction()),
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
@@ -146,10 +148,13 @@ protected:
     Double mask = dist2_ij < EPS*EPS;
     dist2_ij += mask / (EPS*EPS);
 
+    VectorDbl<nDim> faceTangent = tangentVector<nDim>(unitNormal);
+
     /*--- Compute the corrected mean gradient. ---*/
 
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
+    else if(correct_FT) correctGradient2(V, vector_ij, faceTangent, unitNormal, avgGrad);
 
     /*--- Stress and heat flux tensors. ---*/
 

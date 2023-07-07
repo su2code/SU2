@@ -34,8 +34,8 @@ constexpr unsigned short CPyramidConnectivity::nNeighbor_Nodes[5];
 constexpr unsigned short CPyramidConnectivity::Neighbor_Nodes[5][4];
 
 CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
-                   unsigned long val_point_3, unsigned long val_point_4)
-    : CPrimalGridWithConnectivity<CPyramidConnectivity>(false) {
+                   unsigned long val_point_3, unsigned long val_point_4, bool useModCentroids)
+    : CPrimalGridWithConnectivity<CPyramidConnectivity>(false,useModCentroids) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

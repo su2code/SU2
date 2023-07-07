@@ -73,7 +73,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-      : CNumerics(val_nDim, 2, config), idx(val_nDim, config->GetnSpecies()), options(config->GetLMParsedOptions()){
+      : CNumerics(val_nDim, 2, 0, 0, config), idx(val_nDim, config->GetnSpecies()), options(config->GetLMParsedOptions()){
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;

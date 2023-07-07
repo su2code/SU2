@@ -34,13 +34,15 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              unsigned short val_nPrimVar,
                              bool val_correct_grad,
                              const CConfig* config)
-    : CNumerics(val_nDim, val_nVar, config),
+    : CNumerics(val_nDim, val_nVar, 0, 0, config),
       nPrimVar(val_nPrimVar),
       correct_gradient(val_correct_grad) {
 
   unsigned short iVar, iDim;
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  faceTangentCorrection = config->GetFaceTangent_Correction();
 
   TauWall_i = 0; TauWall_j = 0;
 
@@ -106,6 +108,20 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_edge_vector,
                                     const su2double val_dist_ij_2,
                                     const unsigned short val_nPrimVar) {
+
+  if (faceTangentCorrection) FaceTangentGradientCorrection(GradPrimVar, val_PrimVar_i, val_PrimVar_j,
+                                  val_edge_vector,Face_Tangent, val_dist_ij_2, val_nPrimVar);
+  else EdgeNormalGradientCorrection(GradPrimVar, val_PrimVar_i, val_PrimVar_j, val_edge_vector,
+                                  val_dist_ij_2, val_nPrimVar);
+
+}
+
+void CAvgGrad_Base::EdgeNormalGradientCorrection(su2double** GradPrimVar,
+                                    const su2double* val_PrimVar_i,
+                                    const su2double* val_PrimVar_j,
+                                    const su2double* val_edge_vector,
+                                    const su2double val_dist_ij_2,
+                                    const unsigned short val_nPrimVar) {
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -113,7 +129,31 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_dist_ij_2;
+                                  (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_dist_ij_2;
+    }
+  }
+}
+
+void CAvgGrad_Base::FaceTangentGradientCorrection(su2double** GradPrimVar,
+                                    const su2double* val_PrimVar_i,
+                                    const su2double* val_PrimVar_j,
+                                    const su2double* val_edge_vector,
+                                     const su2double* val_face_tangent,
+                                    const su2double val_dist_ij_2,
+                                    const unsigned short val_nPrimVar) {
+
+  const su2double f_e = GeometryToolbox::DotProduct(nDim,val_face_tangent, val_edge_vector);
+  const su2double n_e = GeometryToolbox::DotProduct(nDim,UnitNormal, val_edge_vector);
+
+  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
+    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_face_tangent[iDim];
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      GradPrimVar[iVar][iDim] = Proj_Mean_GradPrimVar_Edge[iVar]*val_face_tangent[iDim] +
+                                (val_PrimVar_j[iVar] - val_PrimVar_i[iVar] - f_e*Proj_Mean_GradPrimVar_Edge[iVar])
+                                    * (UnitNormal[iDim] / n_e);
     }
   }
 }
@@ -392,6 +432,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
+  GeometryToolbox::TangentVector(nDim,UnitNormal,Face_Tangent);
 
   /*--- Laminar and Eddy viscosity ---*/
 

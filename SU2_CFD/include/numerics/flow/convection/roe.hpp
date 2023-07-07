@@ -68,7 +68,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
-  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+ CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                  unsigned short nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
 
   /*!
    * \brief Destructor of the class.
@@ -110,7 +111,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+ CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+              unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
 
 };
 
@@ -140,7 +142,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+ CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad, const CConfig* config);
 
 };
 
@@ -170,7 +173,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad, const CConfig* config);
 
 };
 
@@ -208,7 +212,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                 unsigned short val_nPrimVarGrad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -261,7 +266,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

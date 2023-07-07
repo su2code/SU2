@@ -27,8 +27,7 @@
 
 #include "../../include/numerics/template.hpp"
 
-CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                      CNumerics(val_nDim, val_nVar, config) {
+CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
 }
 
@@ -39,8 +38,7 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
 
 }
 
-CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                   CNumerics(val_nDim, val_nVar, config) {
+CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
 }
 
@@ -52,8 +50,7 @@ void CViscous_Template::ComputeResidual(su2double *val_residual, su2double **val
 }
 
 
-CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                  CNumerics(val_nDim, val_nVar, config) {
+CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
 }
 

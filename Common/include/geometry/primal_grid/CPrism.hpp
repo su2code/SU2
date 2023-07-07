@@ -63,7 +63,7 @@ class CPrism final : public CPrimalGridWithConnectivity<CPrismConnectivity> {
    * \param[in] val_point_5 - Index of the 6th point read from the grid file.
    */
   CPrism(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2, unsigned long val_point_3,
-         unsigned long val_point_4, unsigned long val_point_5);
+         unsigned long val_point_4, unsigned long val_point_5, bool useModCentroids = false);
 
   /*!
    * \brief Change the orientation of an element.

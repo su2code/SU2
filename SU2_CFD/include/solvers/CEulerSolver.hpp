@@ -279,6 +279,11 @@ protected:
    */
   void SetReferenceValues(const CConfig& config) final;
 
+  void GetInviscidProjJacPrim(const su2double* val_velocity, const su2double* val_density,
+                                            su2double* val_spec_total_enthalpy, const su2double* val_normal,
+                                            su2double val_scale, su2double** val_Proj_Jac_Tensor) const;
+
+
 public:
   CEulerSolver() = delete;
 
@@ -455,6 +460,11 @@ public:
                     CConfig *config,
                     unsigned short val_marker) final;
 
+  void BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                            unsigned long val_element, unsigned short iNode,
+                                            su2double* residualBuffer) final;
+
   /*!
    * \brief Impose the engine inflow boundary condition.
     * \param[in] geometry - Geometrical definition of the problem.
@@ -603,6 +613,11 @@ public:
                 CConfig *config,
                 unsigned short val_marker) final;
 
+  void BC_Inlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                          unsigned long val_element, unsigned short iNode,
+                          su2double* residualBuffer) final;
+
   /*!
    * \brief Impose a supersonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -650,6 +665,11 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
+
+void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                         CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                         unsigned long val_element, unsigned short iNode,
+                                         su2double* residualBuffer) final;
 
   /*!
    * \brief Impose the nacelle inflow boundary condition.

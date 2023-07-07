@@ -31,7 +31,7 @@
 CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
                          unsigned short val_nVar,
                          const CConfig *config)
-                         : CNumerics(val_nDim, val_nVar, config) {
+                         : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Radiation() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);

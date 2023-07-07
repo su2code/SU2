@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection/fds.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);

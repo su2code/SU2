@@ -27,7 +27,7 @@
 
 #include "../../../include/numerics/continuous_adjoint/adj_sources.hpp"
 
-CSourceAxisymmetric_AdjFlow::CSourceAxisymmetric_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
+CSourceAxisymmetric_AdjFlow::CSourceAxisymmetric_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) { }
 
 CSourceAxisymmetric_AdjFlow::~CSourceAxisymmetric_AdjFlow() = default;
 
@@ -73,7 +73,7 @@ void CSourceAxisymmetric_AdjFlow::ComputeResidual(su2double *val_residual, su2do
   }
 }
 
-CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -235,8 +235,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
 
 }
 
-CSourceRotatingFrame_AdjFlow::CSourceRotatingFrame_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                              CNumerics(val_nDim, val_nVar, config) { }
+CSourceRotatingFrame_AdjFlow::CSourceRotatingFrame_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) { }
 
 CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow() = default;
 
@@ -294,8 +293,7 @@ void CSourceRotatingFrame_AdjFlow::ComputeResidual(su2double *val_residual, su2d
 
 }
 
-CSourceViscous_AdjFlow::CSourceViscous_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                        CNumerics(val_nDim, val_nVar, config) {
+CSourceViscous_AdjFlow::CSourceViscous_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
   unsigned short iDim;
 
   Gamma = config->GetGamma();
@@ -608,7 +606,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 
 }
 
-CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -646,7 +644,7 @@ void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2do
 }
 
 
-CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;

@@ -48,7 +48,7 @@ class CNumerics {
 protected:
   enum : size_t {MAXNDIM = 3}; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
-  unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
+  unsigned short nDim, nVar, nPrimVar, nPrimVarGrad;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
@@ -162,6 +162,8 @@ protected:
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
   const su2double *Normal = nullptr;      /*!< \brief Normal vector, its norm is the area of the face. */
+  const su2double *CorrDirX, *CorrDirY, *CorrDirZ;
+  su2double **JacPrim;
   su2double UnitNormal[MAXNDIM] = {0.0};  /*!< \brief Unitary normal vector. */
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
@@ -191,6 +193,8 @@ protected:
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
+
+  bool fluxCorrection = false;
 
 public:
   /*!
@@ -231,7 +235,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNumerics(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+            unsigned short val_nPrimVarGrad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -976,6 +981,12 @@ public:
    */
   inline void SetNormal(const su2double *val_normal) { Normal = val_normal; }
 
+  inline void SetCorrection(const su2double *corrX, const su2double *corrY, const su2double *corrZ) {
+    CorrDirX = corrX;
+    CorrDirY = corrY;
+    CorrDirZ = corrZ;
+  }
+
   /*!
    * \brief Set the value of the volume of the control volume.
    * \param[in] val_volume Volume of the control volume.
@@ -1041,6 +1052,20 @@ public:
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                           const su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor) const;
+
+  /*!
+   * \brief Compute the projection of the inviscid Jacobian matrices.
+   * Jacobian of Euler's flux w.r.t primitive variables (rho, velocity, pressure)
+   * \param[in] val_velocity Pointer to the velocity.
+   * \param[in] val_density Value of the energy.
+   * \param[in] val_spec_total_enthalpy Value of the specific total enthalpy.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidProjJacPrim(const su2double* val_velocity, const su2double* val_density,
+                              const su2double* val_spec_total_enthalpy, const su2double* val_normal, su2double val_scale,
+                              su2double** val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -1627,6 +1652,11 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  void CorrectResidual(su2double* ProjFlux);
+
+  inline void SetCorrection() {fluxCorrection = true;}
+
 };
 
 /*!

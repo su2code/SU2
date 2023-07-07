@@ -424,6 +424,82 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                           unsigned long val_element, unsigned short iNode,
+                           su2double* residualBuffer) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  unsigned short iDim, iVar;
+
+  /** Normal should already be pointing outward **/
+  const su2double* AreaVector = geometry->bound[val_marker][val_element]->getNormal();
+  const su2double Area = GeometryToolbox::Norm(nDim,AreaVector);
+  su2double UnitNormal[MAXNDIM] = {0.0};
+  su2double Normal[MAXNDIM] = {0.0};
+  for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = AreaVector[iDim] / Area;
+  for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = AreaVector[iDim] / 1.0;
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+
+  const auto iPoint = geometry->bound[val_marker][val_element]->GetNode(iNode);
+  const auto iVertex = geometry->nodes->GetVertex(iPoint,val_marker);
+
+
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (true/**geometry->nodes->GetDomain(iPoint)**/) {
+
+      /*--- Allocate the value at the infinity ---*/
+
+      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Grid Movement ---*/
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
+
+      /*--- Set Normal ---*/
+      conv_numerics->SetNormal(Normal);
+
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_infty[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
+
+      /*--- Compute residuals and Jacobians ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Add residuals and Jacobians ---*/
+      for (iVar = 0; iVar < nVar; ++iVar) residualBuffer[iVar] = residual[iVar];
+
+      /*--- Jacobian contribution for implicit integration. ---*/
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; ++iVar){
+        for (short jVar = 0; jVar < nVar; ++jVar) {
+          residualBuffer[MAXNVAR + iVar*nVar + jVar] = residual.jacobian_i[iVar][jVar];
+        }
+        }
+      }
+    }
+
+
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                                unsigned short iMesh, unsigned long Iteration) {
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();

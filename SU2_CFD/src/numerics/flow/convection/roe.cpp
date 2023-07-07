@@ -28,8 +28,9 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                   unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation)
+    : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -250,8 +251,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
 }
 
-CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-              bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {}
+CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                           unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation)
+    : CUpwRoeBase_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, val_low_dissipation) {}
 
 void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j, const CConfig* config) {
@@ -290,10 +292,13 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     }
   }
 
+  CorrectResidual(val_residual);
+
 }
 
-CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
+CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                               unsigned short val_nPrimVarGrad, const CConfig* config)
+    : CUpwRoeBase_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, false) {}
 
 void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
@@ -365,8 +370,8 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
+CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                               unsigned short val_nPrimVarGrad, const CConfig* config) : CUpwRoeBase_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, false) {}
 
 void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
@@ -438,7 +443,8 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                 unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -678,7 +684,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
 
 }
 
-CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */

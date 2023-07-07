@@ -134,7 +134,10 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  FaceTangentGradCorrection,
+  FluxCorrection,
+  ModCentroids;
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -9181,6 +9184,13 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
+
+  bool GetFaceTangent_Correction() const { return FaceTangentGradCorrection; }
+
+  bool GetFluxCorrection() const { return FluxCorrection; }
+
+  bool GetModifiedCentroids() const { return ModCentroids; }
+
 
   /*!
    * \brief Get Compute Average.

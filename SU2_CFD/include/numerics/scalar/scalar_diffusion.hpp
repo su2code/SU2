@@ -93,7 +93,7 @@ class CAvgGrad_Scalar : public CNumerics {
    */
   CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad,
                   const CConfig* config)
-    : CNumerics(val_nDim, val_nVar, config),
+    : CNumerics(val_nDim, val_nVar, 0, 0, config),
       idx(val_nDim, config->GetnSpecies()),
       correct_gradient(correct_grad),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {

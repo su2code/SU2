@@ -2356,6 +2356,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  geometry_container[MESH_0]->SetBoundCVCoeffs(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
 
   for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {

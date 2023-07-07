@@ -161,6 +161,49 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   return V;
 }
 
+template<class ReconVarType, size_t nDim, class VariableType>
+FORCEINLINE void CorrectFlux(Int iPoint, Int jPoint,
+                 const VariableType& solution,
+                 const CPair<ReconVarType>& V,
+                 VectorDbl<nDim+2>& flux,
+                 const VectorDbl<nDim> dirX,
+                 const VectorDbl<nDim> dirY,
+                 const VectorDbl<nDim> dirZ,
+                 const Double gamma) {
+
+  /*--- Reconstructed primitives. ---*/
+
+  ReconVarType avgV;
+  for (size_t iVar = 0; iVar < ReconVarType::nVar; ++iVar) {
+    avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
+  }
+
+  constexpr unsigned short index[] = {static_cast<unsigned short>(nDim+2), 1, 2, 3, static_cast<unsigned short>(nDim+1)};
+
+  MatrixDbl<nDim+2> jac_x, jac_y, jac_z;
+
+  jac_x = inviscidProjJacPrim(gamma, avgV.density(),avgV.velocity(),
+                              avgV.enthalpy(),dirX,0.5);
+
+  jac_y = inviscidProjJacPrim(gamma, avgV.density(),avgV.velocity(),
+                              avgV.enthalpy(),dirY,0.5);
+
+  jac_z = inviscidProjJacPrim(gamma, avgV.density(),avgV.velocity(),
+                              avgV.enthalpy(),dirZ,0.5);
+
+  auto grad_i = gatherVariables<ReconVarType::nVar,nDim>(iPoint, solution.GetGradient_Reconstruction());
+  auto grad_j = gatherVariables<ReconVarType::nVar,nDim>(jPoint, solution.GetGradient_Reconstruction());
+
+  for (size_t iVar = 0; iVar < nDim+2; ++iVar) {
+    for (size_t jVar = 0; jVar < nDim+2; ++jVar) {
+      flux[iVar] += jac_x[iVar][jVar] * (grad_i[index[jVar]][0] + grad_j[index[jVar]][0]);
+      flux[iVar] += jac_y[iVar][jVar] * (grad_i[index[jVar]][1] + grad_j[index[jVar]][1]);
+      if (nDim == 3) flux[iVar] += jac_z[iVar][jVar] * (grad_i[index[jVar]][2] + grad_j[index[jVar]][2]);
+    }
+  }
+
+};
+
 /*!
  * \brief Compute and return the P tensor (compressible flow, ideal gas).
  */
@@ -338,6 +381,41 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomAccessIterator
     jac(nDim+1,iDim+1) = scale * (normal(iDim)*a1 - gamma_m_1*velocity[iDim]*projVel);
   }
   jac(nDim+1,nDim+1) = scale * gamma * projVel;
+
+  return jac;
+}
+
+template<size_t nDim, class RandomAccessIterator>
+FORCEINLINE MatrixDbl<nDim+2> inviscidProjJacPrim(Double gamma, Double density, RandomAccessIterator velocity,
+                                                Double enthalpy, const VectorDbl<nDim>& normal,
+                                                Double scale) {
+  MatrixDbl<nDim+2> jac;
+
+  Double projVel = dot(velocity, normal);
+  Double gamma_m_1 = gamma-1;
+  Double sqvel = squaredNorm<nDim>(velocity);
+
+
+  jac(0,0) = scale*projVel;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    jac(0,iDim+1) = scale * density * normal(iDim);
+  }
+  jac(0,nDim+1) = 0.0;
+
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    jac(iDim+1,0) = scale * velocity[iDim] * projVel;
+    for (size_t jDim = 0; jDim < nDim; ++jDim) {
+      jac(iDim+1,jDim+1) = scale * density * normal(jDim) * velocity[iDim];
+    }
+    jac(iDim+1,iDim+1) += scale * density * projVel;
+    jac(iDim+1,nDim+1) = scale * normal(iDim);
+  }
+
+  jac(nDim+1,0) = 0.5 * scale * projVel * sqvel;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    jac(nDim+1,iDim+1) = scale * density * (normal(iDim)*enthalpy + velocity[iDim]*projVel);
+  }
+  jac(nDim+1,nDim+1) = scale * gamma * projVel / (gamma_m_1);
 
   return jac;
 }

@@ -49,6 +49,8 @@ class CVerificationSolution {
 
  private:
   su2double* Error_RMS; /*!< \brief Vector with the global RMS error for each variable in a verification case. */
+  su2double* Error_RMS_Monitor; /*!< \brief Vector with the global RMS error for each variable in a verification case. */
+  unsigned long nMonitorPoints;
   su2double* Error_Max; /*!< \brief Vector with the global max error for each variable in a verification case. */
   unsigned long* Error_Point_Max;    /*!< \brief Global index for the node with the max error in a verification case. */
   su2double** Error_Point_Max_Coord; /*!< \brief Coordinates for the node with the max error in a verification case. */
@@ -133,6 +135,7 @@ class CVerificationSolution {
    * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
    */
   void SetError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] = val_error; }
+  void SetError_RMS_Monitor(unsigned short val_var, su2double val_error) { Error_RMS_Monitor[val_var] = val_error; nMonitorPoints = 0; }
 
   /*!
    * \brief Increments the global RMS error for verification cases.
@@ -140,6 +143,7 @@ class CVerificationSolution {
    * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
    */
   void AddError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] += val_error; }
+  void AddError_RMS_Monitor(unsigned short val_var, su2double val_error) { Error_RMS_Monitor[val_var] += val_error; if (val_var == 0) ++nMonitorPoints; }
 
   /*!
    * \brief Get the global RMS error for verification cases.
@@ -147,6 +151,8 @@ class CVerificationSolution {
    * \return Value of global RMS error for the variable in the position <i>val_var</i>.
    */
   su2double GetError_RMS(unsigned short val_var) const { return Error_RMS[val_var]; }
+  su2double GetError_RMS_Monitor(unsigned short val_var) const { return Error_RMS_Monitor[val_var]; }
+  su2double GetnPoints_RMS_Monitor(unsigned short val_var) const { return nMonitorPoints; }
 
   /*!
    * \brief Set the global maximum error for verification cases.

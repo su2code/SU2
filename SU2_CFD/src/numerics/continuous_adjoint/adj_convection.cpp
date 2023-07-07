@@ -28,7 +28,7 @@
 #include "../../../include/numerics/continuous_adjoint/adj_convection.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CCentLax_AdjFlow::CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentLax_AdjFlow::CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -235,7 +235,7 @@ void CCentLax_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
 
 }
 
-CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -455,7 +455,7 @@ void CCentJST_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
 }
 
 
-CUpwRoe_AdjFlow::CUpwRoe_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoe_AdjFlow::CUpwRoe_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -761,7 +761,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
   }
 }
 
-CUpwLin_AdjTurb::CUpwLin_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwLin_AdjTurb::CUpwLin_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -799,7 +799,7 @@ void CUpwLin_AdjTurb::ComputeResidual (su2double *val_residual, su2double **val_
   }
 }
 
-CUpwSca_AdjTurb::CUpwSca_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwSca_AdjTurb::CUpwSca_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, 0, 0, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;

@@ -936,6 +936,41 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       integral[0] /= integral[1];
     }
     SetHistoryOutputValue(output.name, integral[0]);
+
+
+
+    if (output.type == OperationType::L2_NORM || output.type == OperationType::L1_NORM) {
+
+      std::array<su2double, 2> volume_integral = {0.0, 0.0};
+
+      SU2_OMP_PARALLEL {
+        std::array<su2double, 2> local_integral = {0.0, 0.0};
+
+          SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
+          for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+            if (!geometry->nodes->GetDomain(iPoint)) continue;
+            if (output.type == OperationType::L2_NORM) local_integral[0] += pow(output.Eval(MakeFunctor(iPoint)),2);
+            else local_integral[0] += abs(output.Eval(MakeFunctor(iPoint)));
+//            local_integral[0] += pow(output.Eval(MakeFunctor(iPoint)),2) * geometry->nodes->GetVolume(iPoint);
+          }
+          END_SU2_OMP_FOR
+
+        SU2_OMP_CRITICAL {
+          volume_integral[0] += local_integral[0];
+        }
+        END_SU2_OMP_CRITICAL
+      }
+      END_SU2_OMP_PARALLEL
+
+      const auto volume_local = volume_integral;
+      SU2_MPI::Allreduce(volume_local.data(), volume_integral.data(), 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      if (output.type == OperationType::L2_NORM) volume_integral[0] = sqrt(volume_integral[0]/geometry->GetGlobal_nPointDomain());
+      else volume_integral[0] /=  geometry->GetGlobal_nPointDomain();
+//      volume_integral[0] = sqrt(volume_integral[0]);
+      SetHistoryOutputValue(output.name, volume_integral[0]);
+
+    }
+
   }
 }
 

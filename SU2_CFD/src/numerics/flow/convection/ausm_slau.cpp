@@ -28,8 +28,8 @@
 #include "../../../../include/numerics/flow/convection/ausm_slau.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                             CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                                         unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
@@ -387,8 +387,9 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
 
 }
 
-CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                     CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
+CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad, const CConfig* config) :
+                     CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   HasAnalyticalDerivatives = true;
   Minf = config->GetMach();
@@ -613,8 +614,9 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
   }
 }
 
-CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
+CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                                           unsigned short val_nPrimVarGrad, const CConfig* config) :
+                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   Minf = config->GetMach();
   Kp = 0.25;
@@ -701,15 +703,17 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
 
 }
 
-CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation) :
-               CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
+CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation) :
+               CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   slau_low_diss = val_low_dissipation;
   slau2 = false;
 }
 
-CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation) :
-                CUpwSLAU_Flow(val_nDim, val_nVar, config, val_low_dissipation) {
+CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                               unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation) :
+                CUpwSLAU_Flow(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config, val_low_dissipation) {
 
   /*--- The difference between SLAU and SLAU2 is minimal, so we derive from SLAU and set this flag
    so that the ComputeMassAndPressureFluxes function modifies the pressure according to SLAU2.
@@ -783,7 +787,8 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2doubl
 
 }
 
-CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad, const CConfig* config) : CNumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;

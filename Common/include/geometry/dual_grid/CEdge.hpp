@@ -44,6 +44,7 @@ class CEdge {
   using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
   NodeArray Nodes;        /*!< \brief Vector to store the node indices of the edge. */
   su2activematrix Normal; /*!< \brief Normal (area) of the edge. */
+  su2activematrix a,b,c; /*!< \brief Normal (area) of the edge. */
   const Index nEdge, nEdgeSIMD;
 
   friend class CPhysicalGeometry;
@@ -141,6 +142,8 @@ class CEdge {
    */
   void SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
                       const su2double* coord_Elem_CG);
+  void SetNodes_CoordCorrection(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
+                      const su2double* coord_Elem_CG, const su2double* quadraturePoint);
 
   /*!
    * \brief Set the face that corresponds to an edge (2D version).
@@ -151,6 +154,8 @@ class CEdge {
    * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
    */
   void SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_Elem_CG);
+  void SetNodes_CoordCorrection(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_Elem_CG,
+                                const su2double* quadraturePoint);
 
   /*!
    * \brief Copy the the normal vector of a face.
@@ -162,17 +167,44 @@ class CEdge {
     for (auto iDim = 0ul; iDim < Normal.cols(); iDim++) normal[iDim] = Normal(iEdge, iDim);
   }
 
+  template <class T>
+  inline void GetCorrection_X(unsigned long iEdge, T& normal) const {
+    for (auto iDim = 0ul; iDim < a.cols(); iDim++) normal[iDim] = a(iEdge, iDim);
+  }
+  template <class T>
+  inline void GetCorrection_Y(unsigned long iEdge, T& normal) const {
+    for (auto iDim = 0ul; iDim < b.cols(); iDim++) normal[iDim] = b(iEdge, iDim);
+  }
+  template <class T>
+  inline void GetCorrection_Z(unsigned long iEdge, T& normal) const {
+    for (auto iDim = 0ul; iDim < c.cols(); iDim++) normal[iDim] = c(iEdge, iDim);
+  }
+
   /*!
    * \brief Get the normal to a face of the control volume asociated with an edge.
    * \param[in] iEdge - Edge index.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
   inline const su2double* GetNormal(unsigned long iEdge) const { return Normal[iEdge]; }
+  inline const su2double* GetCorrection_X(unsigned long iEdge) const { return a[iEdge]; }
+  inline const su2double* GetCorrection_Y(unsigned long iEdge) const { return b[iEdge]; }
+  inline const su2double* GetCorrection_Z(unsigned long iEdge) const { return c[iEdge]; }
 
   /*!
    * \brief Get the entire matrix of edge normals.
    */
   inline const su2activematrix& GetNormal() const { return Normal; }
+  inline const su2activematrix& GetCorrection_X() const { return a; }
+  inline const su2activematrix& GetCorrection_Y() const { return b; }
+  inline const su2activematrix& GetCorrection_Z() const { return c; }
+
+  inline void NormalizeCorrection(unsigned long iEdge, const su2double& Area) {
+//    for (int iDim = 0; iDim < 3; ++iDim) {
+//      a(iEdge,iDim) /= Area;
+//      b(iEdge,iDim) /= Area;
+//      c(iEdge,iDim) /= Area;
+//    }
+  }
 
   /*!
    * \brief Initialize normal vector to 0.

@@ -46,6 +46,7 @@ protected:
   const unsigned short nPrimVar;          /*!< \brief The size of the primitive variable array used in the numerics class. */
   const bool correct_gradient;            /*!< \brief Apply a correction to the gradient term */
   bool implicit = false;                  /*!< \brief Implicit calculus. */
+  bool faceTangentCorrection = false;
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
   *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
@@ -62,6 +63,7 @@ protected:
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
   Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
+  Face_Tangent[MAXNDIM] = {0.0},           /*!< \brief Vector tangent to interface between i and j */
   *Proj_Mean_GradPrimVar_Edge = nullptr;  /*!< \brief Inner product of the Mean gradient and the edge vector. */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
@@ -161,6 +163,21 @@ protected:
                        const su2double* val_edge_vector,
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
+
+  void EdgeNormalGradientCorrection(su2double** GradPrimVar,
+                       const su2double* val_PrimVar_i,
+                       const su2double* val_PrimVar_j,
+                       const su2double* val_edge_vector,
+                       su2double val_dist_ij_2,
+                       const unsigned short val_nPrimVar);
+
+  void FaceTangentGradientCorrection(su2double** GradPrimVar,
+                        const su2double* val_PrimVar_i,
+                        const su2double* val_PrimVar_j,
+                        const su2double* val_edge_vector,
+                        const su2double* val_face_tangent,
+                        su2double val_dist_ij_2,
+                        const unsigned short val_nPrimVar);
 
 public:
 

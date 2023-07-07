@@ -60,7 +60,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void SetTurbVars_WF(CGeometry *geometry,
+  void SetTurbVars_WF(const CGeometry* geometry,
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
@@ -172,6 +172,15 @@ public:
                         CConfig *config,
                         unsigned short val_marker) override;
 
+  void BC_HeatFlux_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                 CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                 unsigned long val_element, unsigned short iNode,
+                                 su2double* residualBuffer) override;
+
+  void BC_Viscous_Wall_Strong(const CGeometry* geometry,
+                              CSolver** solver_container,
+                              const CConfig* config, unsigned short val_marker) override;
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -187,6 +196,16 @@ public:
                           CNumerics *visc_numerics,
                           CConfig *config,
                           unsigned short val_marker) override;
+
+  void BC_Isothermal_Wall_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                 CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                 unsigned long val_element, unsigned short iNode,
+                                 su2double* residualBuffer) {
+
+      BC_HeatFlux_Wall_Residual(geometry,solver_container,conv_numerics,visc_numerics,config,
+                              val_marker,val_element,iNode,residualBuffer);
+
+  };
 
   /*!
    * \brief Impose the inlet boundary condition.

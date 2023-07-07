@@ -2188,6 +2188,8 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
   nElem = Local_Elem;
   elem = new CPrimalGrid*[nElem]();
 
+  const auto modCentr = config->GetModifiedCentroids();
+
   /*--- Store the elements of each type in the proper containers. ---*/
 
   for (it = Tria_List.begin(); it != Tria_List.end(); it++) {
@@ -2205,7 +2207,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
 
     /*--- Create the element object. ---*/
 
-    elem[jElem] = new CTriangle(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2]);
+    elem[jElem] = new CTriangle(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2234,7 +2236,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
 
     /*--- Create the element object. ---*/
 
-    elem[jElem] = new CQuadrilateral(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3]);
+    elem[jElem] = new CQuadrilateral(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2263,7 +2265,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
 
     /*--- Create the element object. ---*/
 
-    elem[jElem] = new CTetrahedron(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3]);
+    elem[jElem] = new CTetrahedron(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2293,7 +2295,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
     /*--- Create the element object. ---*/
 
     elem[jElem] = new CHexahedron(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], Local_Nodes[4],
-                                  Local_Nodes[5], Local_Nodes[6], Local_Nodes[7]);
+                                  Local_Nodes[5], Local_Nodes[6], Local_Nodes[7], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2323,7 +2325,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
     /*--- Create the element object. ---*/
 
     elem[jElem] =
-        new CPrism(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], Local_Nodes[4], Local_Nodes[5]);
+        new CPrism(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], Local_Nodes[4], Local_Nodes[5], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2352,7 +2354,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig* config, CGeometry* geometry)
 
     /*--- Create the element object. ---*/
 
-    elem[jElem] = new CPyramid(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], Local_Nodes[4]);
+    elem[jElem] = new CPyramid(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], Local_Nodes[4], modCentr);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2441,6 +2443,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
   vector<vector<unsigned long> > BoundQuad_List;
 
   vector<unsigned long> Marker_Local;
+
+  const auto modCentr = config->GetModifiedCentroids();
 
   /*--- Compute how many markers we have local to this rank by looping
    through the global marker numbers of each local surface element and
@@ -2599,7 +2603,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
 
       /*--- Create the geometry object for this element. ---*/
 
-      bound[iMarker][nElemBound_Local[iMarker]] = new CTriangle(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2]);
+      bound[iMarker][nElemBound_Local[iMarker]] = new CTriangle(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], modCentr);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -2629,7 +2633,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
       /*--- Create the geometry object for this element. ---*/
 
       bound[iMarker][nElemBound_Local[iMarker]] =
-          new CQuadrilateral(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3]);
+          new CQuadrilateral(Local_Nodes[0], Local_Nodes[1], Local_Nodes[2], Local_Nodes[3], modCentr);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -3570,6 +3574,8 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig* config, C
 
   /*--- Loop over all of the internal, local volumetric elements. ---*/
 
+  const auto modCentr = config->GetModifiedCentroids();
+
   for (unsigned long iElem = 0; iElem < nElem; iElem++) {
     /*--- Get the global ID for this element. This is stored in
      the first entry of our connectivity stucture. ---*/
@@ -3590,34 +3596,34 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig* config, C
 
     switch (vtk_type) {
       case TRIANGLE:
-        elem[iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2]);
+        elem[iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2], modCentr);
         nelem_triangle++;
         break;
 
       case QUADRILATERAL:
-        elem[iElem] = new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+        elem[iElem] = new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3], modCentr);
         nelem_quad++;
         break;
 
       case TETRAHEDRON:
-        elem[iElem] = new CTetrahedron(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+        elem[iElem] = new CTetrahedron(connectivity[0], connectivity[1], connectivity[2], connectivity[3], modCentr);
         nelem_tetra++;
         break;
 
       case HEXAHEDRON:
         elem[iElem] = new CHexahedron(connectivity[0], connectivity[1], connectivity[2], connectivity[3],
-                                      connectivity[4], connectivity[5], connectivity[6], connectivity[7]);
+                                      connectivity[4], connectivity[5], connectivity[6], connectivity[7], modCentr);
         nelem_hexa++;
         break;
 
       case PRISM:
         elem[iElem] = new CPrism(connectivity[0], connectivity[1], connectivity[2], connectivity[3], connectivity[4],
-                                 connectivity[5]);
+                                 connectivity[5], modCentr);
         nelem_prism++;
         break;
 
       case PYRAMID:
-        elem[iElem] = new CPyramid(connectivity[0], connectivity[1], connectivity[2], connectivity[3], connectivity[4]);
+        elem[iElem] = new CPyramid(connectivity[0], connectivity[1], connectivity[2], connectivity[3], connectivity[4], modCentr);
         nelem_pyramid++;
         break;
 
@@ -3703,6 +3709,8 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
 
       bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
 
+      const auto modCentr = config->GetModifiedCentroids();
+
       for (unsigned long jElem = 0; jElem < nElem_Bound[iMarker]; jElem++) {
         /*--- Not a mixed section. We already know the element type,
          which is stored ---*/
@@ -3729,13 +3737,13 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
             nelem_edge_bound++;
             break;
           case TRIANGLE:
-            bound[iMarker][iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2]);
+            bound[iMarker][iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2], modCentr);
             iElem++;
             nelem_triangle_bound++;
             break;
           case QUADRILATERAL:
             bound[iMarker][iElem] =
-                new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+                new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3], modCentr);
             iElem++;
             nelem_quad_bound++;
             break;
@@ -7087,11 +7095,12 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
         if (nDim == 3) {
           nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
 
-          for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
-            auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
-            for (unsigned short iDim = 0; iDim < nDim; iDim++)
-              Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim] / nEdgesFace;
-          }
+//          for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
+//            auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
+//            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+//              Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim] / nEdgesFace;
+//          }
+          elem[iElem]->getFaceCG(iFace,nDim,Coord,Coord_FaceElem_CG);
         }
 
         /*-- Loop over the edges of a face ---*/
@@ -7110,7 +7119,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
           const auto face_iPoint = elem[iElem]->GetNode(face_iNode);
           const auto face_jPoint = elem[iElem]->GetNode(face_jNode);
 
-          /*--- We define a direction (from the smalest index to the greatest) --*/
+          /*--- We define a direction (from the smallest index to the greatest) --*/
           const bool change_face_orientation = (face_iPoint > face_jPoint);
           const auto iEdge = FindEdge(face_iPoint, face_jPoint);
 
@@ -7123,19 +7132,25 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
 
           if (nDim == 2) {
             /*--- Two dimensional problem ---*/
-            if (change_face_orientation)
+            if (change_face_orientation) {
               edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
-            else
+              edges->SetNodes_CoordCorrection(iEdge, Coord_Elem_CG, Coord_Edge_CG, Coord_Edge_CG);
+            } else {
               edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
+              edges->SetNodes_CoordCorrection(iEdge, Coord_Edge_CG, Coord_Elem_CG, Coord_Edge_CG);
+            }
 
             Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG, Coord_Elem_CG);
             Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG, Coord_Elem_CG);
           } else {
             /*--- Three dimensional problem ---*/
-            if (change_face_orientation)
+            if (change_face_orientation) {
               edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-            else
+              edges->SetNodes_CoordCorrection(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG, Coord_Edge_CG);
+            } else {
               edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+              edges->SetNodes_CoordCorrection(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG,Coord_Edge_CG);
+            }
 
             Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
@@ -7177,7 +7192,9 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
   SU2_OMP_FOR_STAT(1024)
   for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
     const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
+//    const auto Area = GeometryToolbox::Norm(nDim, edges->GetNormal(iEdge));
     su2double DefaultArea[MAXNDIM] = {EPS * EPS};
+//    edges->NormalizeCorrection(iEdge,Area);
     if (Area2 == 0.0) edges->SetNormal(iEdge, DefaultArea);
   }
   END_SU2_OMP_FOR
@@ -7268,6 +7285,478 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
+}
+
+void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short action) {
+  /*--- Loop over all the boundary elements ---*/
+
+  SU2_OMP_FOR_DYN(1)
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+      const auto nNodes = bound[iMarker][iElem]->GetnNodes();
+
+      /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+      if (omp_get_num_threads() == 1) AD::StartPreacc();
+
+      /*--- Get pointers to the coordinates of all the element nodes ---*/
+      array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+        Coord[iNode] = nodes->GetCoord(iPoint);
+      }
+      AD::SetPreaccIn(Coord, nNodes, nDim);
+
+      /*--- Compute the element CG coordinates ---*/
+      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(nDim, Coord);
+      AD::SetPreaccOut(Coord_Elem_CG, nDim);
+
+      if (nNodes == 2) {
+
+        su2double eleNormal[3] = {0, 0, 0};
+        su2double eleArea = 0;
+        GeometryToolbox::LineNormal(Coord, bound[iMarker][iElem]->getNormal());
+//        cout << bound[iMarker][iElem]->getNormal()[0] << " " << bound[iMarker][iElem]->getNormal()[1] << endl;
+//        cout << Coord_Elem_CG[0] << " " << Coord_Elem_CG[1] << endl << endl;
+//        eleArea = GeometryToolbox::Norm(nDim, bound[iMarker][iElem]->getNormal());
+
+        for (int iDim = 0; iDim < nDim; ++iDim)
+          bound[iMarker][iElem]->getNormal()[iDim] *= -1.0;
+
+
+      } else if (nNodes == 3) { /** triangular element **/
+
+        /** compute area **/
+        su2double eleNormal[3] = {0, 0, 0};
+        su2double eleArea = 0;
+        GeometryToolbox::TriangleNormal(Coord, bound[iMarker][iElem]->getNormal());
+        eleArea = GeometryToolbox::Norm(nDim, bound[iMarker][iElem]->getNormal());
+        for (int iDim = 0; iDim < nDim; ++iDim)
+          bound[iMarker][iElem]->getNormal()[iDim] *= -1.0;
+        for (int iDim = 0; iDim < nDim; ++iDim)
+          eleNormal[iDim] = bound[iMarker][iElem]->getNormal()[iDim] / eleArea;
+
+        /** node 0 contribution **/
+        {
+        su2double ml[3], mr[3];
+        for (int iDim = 0; iDim < nDim; ++iDim) {
+          ml[iDim] = 0.5 * (Coord[2][iDim] + Coord[0][iDim]);
+          mr[iDim] = 0.5 * (Coord[1][iDim] + Coord[0][iDim]);
+        }
+        su2double Al[3], Ar[3];
+        const array<const su2double*, 3> tria_l = {Coord[0], Coord_Elem_CG, ml};
+        GeometryToolbox::TriangleNormal(tria_l, Al);
+        const array<const su2double*, 3> tria_r = {Coord[0], mr, Coord_Elem_CG};
+        GeometryToolbox::TriangleNormal(tria_r, Ar);
+
+        const su2double Cl = GeometryToolbox::Norm(nDim, Al) / eleArea;
+        const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
+
+        bound[iMarker][iElem]->getNodeCoeffs(0)[0] = Cl + Cr;
+        bound[iMarker][iElem]->getNodeCoeffs(0)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(0)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        }
+
+        /** node 1 contribution **/
+        {
+        su2double ml[3], mr[3];
+        for (int iDim = 0; iDim < nDim; ++iDim) {
+          ml[iDim] = 0.5 * (Coord[0][iDim] + Coord[1][iDim]);
+          mr[iDim] = 0.5 * (Coord[2][iDim] + Coord[1][iDim]);
+        }
+        su2double Al[3], Ar[3];
+        const array<const su2double*, 3> tria_l = {Coord[1], Coord_Elem_CG, ml};
+        GeometryToolbox::TriangleNormal(tria_l, Al);
+        const array<const su2double*, 3> tria_r = {Coord[1], mr, Coord_Elem_CG};
+        GeometryToolbox::TriangleNormal(tria_r, Ar);
+
+        const su2double Cl = GeometryToolbox::Norm(nDim, Al) / eleArea;
+        const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
+
+        bound[iMarker][iElem]->getNodeCoeffs(1)[0] = Cl + Cr;
+        bound[iMarker][iElem]->getNodeCoeffs(1)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(1)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        }
+
+        /** node 2 contribution **/
+        {
+        su2double ml[3], mr[3];
+        for (int iDim = 0; iDim < nDim; ++iDim) {
+          ml[iDim] = 0.5 * (Coord[1][iDim] + Coord[2][iDim]);
+          mr[iDim] = 0.5 * (Coord[0][iDim] + Coord[2][iDim]);
+        }
+        su2double Al[3], Ar[3];
+        const array<const su2double*, 3> tria_l = {Coord[2], Coord_Elem_CG, ml};
+        GeometryToolbox::TriangleNormal(tria_l, Al);
+        const array<const su2double*, 3> tria_r = {Coord[2], mr, Coord_Elem_CG};
+        GeometryToolbox::TriangleNormal(tria_r, Ar);
+
+        const su2double Cl = GeometryToolbox::Norm(nDim, Al) / eleArea;
+        const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
+
+        bound[iMarker][iElem]->getNodeCoeffs(2)[0] = Cl + Cr;
+        bound[iMarker][iElem]->getNodeCoeffs(2)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(2)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        }
+
+      } else if (nNodes == 4) {
+
+        su2double CT[4][4];
+
+        {
+        unsigned short jNode = 0;
+        unsigned short lNode = 1;
+        unsigned short rNode = 3;
+        su2double jTria[3], lTria[3], rTria[3];
+
+        const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
+        GeometryToolbox::TriangleNormal(Tj,jTria);
+
+        const array<const su2double*, 3> Tl = {Coord_Elem_CG, Coord[lNode], Coord[jNode]};
+        GeometryToolbox::TriangleNormal(Tl,lTria);
+
+        const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
+        GeometryToolbox::TriangleNormal(Tr,rTria);
+
+        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        su2double CTl = GeometryToolbox::Norm(nDim, lTria);
+        su2double CTr = GeometryToolbox::Norm(nDim, rTria);
+        su2double CTT = CTj + CTl + CTr;
+
+        CT[0][0] = CTj / CTT;
+        CT[0][1] = CTr / CTT;
+        CT[0][2] = 0;
+        CT[0][3] = CTl / CTT;
+        }
+
+        {
+        unsigned short jNode = 1;
+        unsigned short lNode = 2;
+        unsigned short rNode = 0;
+        su2double jTria[3], lTria[3], rTria[3];
+
+        const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
+        GeometryToolbox::TriangleNormal(Tj,jTria);
+
+        const array<const su2double*, 3> Tl = {Coord_Elem_CG, Coord[lNode], Coord[jNode]};
+        GeometryToolbox::TriangleNormal(Tl,lTria);
+
+        const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
+        GeometryToolbox::TriangleNormal(Tr,rTria);
+
+        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        su2double CTl = GeometryToolbox::Norm(nDim, lTria);
+        su2double CTr = GeometryToolbox::Norm(nDim, rTria);
+        su2double CTT = CTj + CTl + CTr;
+
+        CT[1][0] = CTl / CTT;
+        CT[1][1] = CTj / CTT;
+        CT[1][2] = CTr / CTT;
+        CT[1][3] = 0;
+        }
+
+        {
+        unsigned short jNode = 2;
+        unsigned short lNode = 3;
+        unsigned short rNode = 1;
+        su2double jTria[3], lTria[3], rTria[3];
+
+        const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
+        GeometryToolbox::TriangleNormal(Tj,jTria);
+
+        const array<const su2double*, 3> Tl = {Coord_Elem_CG, Coord[lNode], Coord[jNode]};
+        GeometryToolbox::TriangleNormal(Tl,lTria);
+
+        const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
+        GeometryToolbox::TriangleNormal(Tr,rTria);
+
+        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        su2double CTl = GeometryToolbox::Norm(nDim, lTria);
+        su2double CTr = GeometryToolbox::Norm(nDim, rTria);
+        su2double CTT = CTj + CTl + CTr;
+
+        CT[2][0] = 0;
+        CT[2][1] = CTl / CTT;
+        CT[2][2] = CTj / CTT;
+        CT[2][3] = CTr / CTT;
+        }
+
+        {
+        unsigned short jNode = 3;
+        unsigned short lNode = 0;
+        unsigned short rNode = 2;
+        su2double jTria[3], lTria[3], rTria[3];
+
+        const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
+        GeometryToolbox::TriangleNormal(Tj,jTria);
+
+        const array<const su2double*, 3> Tl = {Coord_Elem_CG, Coord[lNode], Coord[jNode]};
+        GeometryToolbox::TriangleNormal(Tl,lTria);
+
+        const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
+        GeometryToolbox::TriangleNormal(Tr,rTria);
+
+        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        su2double CTl = GeometryToolbox::Norm(nDim, lTria);
+        su2double CTr = GeometryToolbox::Norm(nDim, rTria);
+        su2double CTT = CTj + CTl + CTr;
+
+        CT[3][0] = CTr / CTT;
+        CT[3][1] = 0;
+        CT[3][2] = CTl / CTT;
+        CT[3][3] = CTj / CTT;
+        }
+
+        su2double Cq[4] = {0,0,0,0};
+
+        for (int iNode = 0; iNode < 4; ++iNode)
+          for (int jNode = 0; jNode < 4; ++jNode)
+            Cq[iNode] += CT[iNode][jNode] / 4.0;
+
+        /** Compute quad area (consistently...) **/
+        su2double eleNormal[3] = {0, 0, 0};
+        su2double eleArea = 0;
+
+        /** node 0 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[0][iDim] + Coord[3][iDim]);
+            mr[iDim] = 0.5 * (Coord[0][iDim] + Coord[1][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[0], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[0], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          for (int iDim = 0; iDim < nDim; ++iDim)
+            eleNormal[iDim] -= (rTria[iDim] + lTria[iDim]);
+        }
+
+        /** node 1 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[1][iDim] + Coord[0][iDim]);
+            mr[iDim] = 0.5 * (Coord[1][iDim] + Coord[2][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[1], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[1], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          for (int iDim = 0; iDim < nDim; ++iDim)
+            eleNormal[iDim] -= (rTria[iDim] + lTria[iDim]);
+        }
+
+        /** node 2 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[2][iDim] + Coord[1][iDim]);
+            mr[iDim] = 0.5 * (Coord[2][iDim] + Coord[3][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[2], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[2], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          for (int iDim = 0; iDim < nDim; ++iDim)
+            eleNormal[iDim] -= (rTria[iDim] + lTria[iDim]);
+        }
+
+        /** node 3 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[3][iDim] + Coord[2][iDim]);
+            mr[iDim] = 0.5 * (Coord[3][iDim] + Coord[0][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[3], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[3], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          for (int iDim = 0; iDim < nDim; ++iDim)
+            eleNormal[iDim] -= (rTria[iDim] + lTria[iDim]);
+        }
+
+        for (int iDim = 0; iDim < nDim; ++iDim) bound[iMarker][iElem]->getNormal()[iDim] = eleNormal[iDim];
+        eleArea = GeometryToolbox::Norm(nDim,eleNormal);
+        for (int iDim = 0; iDim < nDim; ++iDim) eleNormal[iDim] /= eleArea;
+
+        /** Compute coefficients **/
+
+        /** node 0 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[0][iDim] + Coord[3][iDim]);
+            mr[iDim] = 0.5 * (Coord[0][iDim] + Coord[1][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[0], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[0], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          su2double Cl = GeometryToolbox::Norm(nDim, lTria) / eleArea;
+          su2double Cr = GeometryToolbox::Norm(nDim, rTria) / eleArea;
+
+          bound[iMarker][iElem]->getNodeCoeffs(0)[0] = Cl + Cr;
+          bound[iMarker][iElem]->getNodeCoeffs(0)[1] = Cl/(Cl+Cr)/6.0 + Cq[3]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(0)[2] = Cr/(Cl+Cr)/6.0 + Cq[1]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(0)[3] = Cq[2]/3.0;
+
+        }
+
+        /** node 1 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[1][iDim] + Coord[0][iDim]);
+            mr[iDim] = 0.5 * (Coord[1][iDim] + Coord[2][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[1], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[1], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          su2double Cl = GeometryToolbox::Norm(nDim, lTria) / eleArea;
+          su2double Cr = GeometryToolbox::Norm(nDim, rTria) / eleArea;
+
+          bound[iMarker][iElem]->getNodeCoeffs(1)[0] = Cl + Cr;
+          bound[iMarker][iElem]->getNodeCoeffs(1)[1] = Cl/(Cl+Cr)/6.0 + Cq[0]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(1)[2] = Cr/(Cl+Cr)/6.0 + Cq[2]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(1)[3] = Cq[3]/3.0;
+        }
+
+        /** node 2 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[2][iDim] + Coord[1][iDim]);
+            mr[iDim] = 0.5 * (Coord[2][iDim] + Coord[3][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[2], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[2], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          su2double Cl = GeometryToolbox::Norm(nDim, lTria) / eleArea;
+          su2double Cr = GeometryToolbox::Norm(nDim, rTria) / eleArea;
+
+          bound[iMarker][iElem]->getNodeCoeffs(2)[0] = Cl + Cr;
+          bound[iMarker][iElem]->getNodeCoeffs(2)[1] = Cl/(Cl+Cr)/6.0 + Cq[1]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(2)[2] = Cr/(Cl+Cr)/6.0 + Cq[3]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(2)[3] = Cq[0]/3.0;
+        }
+
+        /** node 3 **/
+        {
+          su2double ml[3], mr[3];
+          for (int iDim = 0; iDim < nDim; ++iDim) {
+            ml[iDim] = 0.5 * (Coord[3][iDim] + Coord[2][iDim]);
+            mr[iDim] = 0.5 * (Coord[3][iDim] + Coord[0][iDim]);
+          }
+
+          const array<const su2double*, 3> Tr = {Coord[3], mr, Coord_Elem_CG};
+          su2double rTria[3];
+          GeometryToolbox::TriangleNormal(Tr,rTria);
+
+          const array<const su2double*, 3> Tl = {Coord[3], Coord_Elem_CG, ml};
+          su2double lTria[3];
+          GeometryToolbox::TriangleNormal(Tl,lTria);
+
+          su2double Cl = GeometryToolbox::Norm(nDim, lTria) / eleArea;
+          su2double Cr = GeometryToolbox::Norm(nDim, rTria) / eleArea;
+
+          bound[iMarker][iElem]->getNodeCoeffs(3)[0] = Cl + Cr;
+          bound[iMarker][iElem]->getNodeCoeffs(3)[1] = Cl/(Cl+Cr)/6.0 + Cq[2]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(3)[2] = Cr/(Cl+Cr)/6.0 + Cq[0]/3.0;
+          bound[iMarker][iElem]->getNodeCoeffs(3)[3] = Cq[1]/3.0;
+        }
+
+      }
+
+//      /*--- Loop over all the nodes of the boundary element ---*/
+//
+//      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+//        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+//        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+//        auto Coord_Vertex = Coord[iNode];
+//
+//        /*--- Loop over the neighbor nodes, there is a face for each one ---*/
+//
+//        for (unsigned short iNeighbor = 0; iNeighbor < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+//          if (nDim == 2) {
+//            /*--- Store the 2D face ---*/
+//            if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
+//            if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
+//          } else {
+//            const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor);
+//            auto Neighbor_Coord = Coord[Neighbor_Node];
+//
+//            /*--- Store the 3D face ---*/
+//            su2double Coord_Edge_CG[MAXNDIM] = {0.0};
+//            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+//              Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + Neighbor_Coord[iDim]);
+//
+//            if (iNeighbor == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
+//            if (iNeighbor == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
+//          }
+//        }
+//      }
+//
+//      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+//        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+//        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+//        AD::SetPreaccOut(vertex[iMarker][iVertex]->GetNormal(), nDim);
+//      }
+      AD::EndPreacc();
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Check if there is a normal with null area ---*/
+
+//  SU2_OMP_FOR_DYN(1)
+//  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+//    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+//      auto Area2 = GeometryToolbox::SquaredNorm(nDim, vertex[iMarker][iVertex]->GetNormal());
+//      su2double DefaultArea[MAXNDIM] = {EPS * EPS};
+//      if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
+//    }
+//  }
+//  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {

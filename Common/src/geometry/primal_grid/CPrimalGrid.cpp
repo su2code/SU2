@@ -27,8 +27,8 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
-CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements)
-    : Nodes(new unsigned long[nNodes]), Neighbor_Elements(new long[nNeighbor_Elements]), FEM(FEM) {
+CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements, bool useModCentroids)
+    : Nodes(new unsigned long[nNodes]), Neighbor_Elements(new long[nNeighbor_Elements]), FEM(FEM), modCentroids(useModCentroids) {
   GlobalIndex_DomainElement = 0;
   for (unsigned short i = 0; i < nNeighbor_Elements; i++) Neighbor_Elements[i] = -1;
 }
