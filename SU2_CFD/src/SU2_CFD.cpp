@@ -82,14 +82,6 @@ int main(int argc, char *argv[]) {
   libxsmm_init();
 #endif
 
-  int i = 0;
-  SU2_OMP_PARALLEL
-  {
-    i = omp_get_thread_num();
-  }
-  END_SU2_OMP_PARALLEL
-  std::cout << i << std::endl;
-
   /*--- Create a pointer to the main SU2 Driver ---*/
 
   CDriver* driver = nullptr;
@@ -150,6 +142,16 @@ int main(int argc, char *argv[]) {
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
+  }
+
+  {
+    int i = 0;
+    SU2_OMP_PARALLEL
+    {
+      i = omp_get_thread_num();
+    }
+    END_SU2_OMP_PARALLEL
+    std::cout << i << std::endl;
   }
 
   /*--- Launch the main external loop of the solver. ---*/
