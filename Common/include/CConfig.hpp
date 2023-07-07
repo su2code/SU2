@@ -519,7 +519,12 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  n_Datadriven_files;
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
+
+  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
   unsigned short
@@ -800,7 +805,8 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -3843,6 +3849,29 @@ public:
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
+
+  /*!
+   * \brief Datadriven method for EoS evaluation.
+   */
+  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+
+  /*!
+   * \brief Get name of the input file for the data-driven fluid model interpolation method.
+   * \return Name of the input file for the interpolation method.
+   */
+  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
+
+  /*!
+   * \brief Get number of listed look-up table or multi-layer perceptron input files.
+   * \return Number of listed data-driven method input files.
+   */
+  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
+
+  /*!
+   * \brief Get Newton solver relaxation factor for data-driven fluid models.
+   * \return Newton solver relaxation factor.
+   */
+  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
 
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
