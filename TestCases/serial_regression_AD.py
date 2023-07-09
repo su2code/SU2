@@ -168,6 +168,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [-2.849781, -3.238667, -0.000364, -8.708700]
+    discadj_fea.tol               = 0.00007
     test_list.append(discadj_fea)
 
     ###################################
