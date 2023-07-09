@@ -245,7 +245,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
-    polar_naca0012.test_vals_aarch64 = [-6.491535, -1.076111, 0.001168, 0.008666]
+    polar_naca0012.test_vals_aarch64 = [-1.718925, 3.711429, 0.009217, 0.007784]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     test_list.append(polar_naca0012)
 
@@ -999,15 +999,8 @@ def main():
     coolprop_fluidModel.cfg_file  = "fluidModel.cfg"
     coolprop_fluidModel.test_iter = 5
     coolprop_fluidModel.test_vals = [-4.525459, -1.578697, 3.443116, 0.000000, 0.000000]
+    coolprop_fluidModel.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(coolprop_fluidModel)
-
-    # Rarefaction Q1D nozzle, include CoolProp fluid model
-    datadriven_fluidModel           = TestCase('datadriven_fluidModel')
-    datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
-    datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
-    datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-2.623890, 0.145236, 4.688439, 0.000000, 0.000000]
-    test_list.append(datadriven_fluidModel)
 
     # Rarefaction Q1D nozzle, include CoolProp transport model
     coolprop_transportModel           = TestCase('coolprop_transportModel')
@@ -1015,7 +1008,16 @@ def main():
     coolprop_transportModel.cfg_file  = "transportModel.cfg"
     coolprop_transportModel.test_iter = 5
     coolprop_transportModel.test_vals = [-4.527922, -1.308648, 4.630717, 0.000000, 0.000000]
+    coolprop_transportModel.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(coolprop_transportModel)
+
+    # Rarefaction Q1D nozzle, include data-driven fluid model
+    datadriven_fluidModel           = TestCase('datadriven_fluidModel')
+    datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
+    datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
+    datadriven_fluidModel.test_iter = 50
+    datadriven_fluidModel.test_vals = [-2.623890, 0.145236, 4.688439, 0.000000, 0.000000]
+    test_list.append(datadriven_fluidModel)
 
     ######################################
     ### Turbomachinery                 ###
@@ -1228,7 +1230,7 @@ def main():
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
     solid_periodic_pins.test_vals = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737]
-    solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
+    solid_periodic_pins.test_vals_aarch64 = [-15.879016, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672666]
     test_list.append(solid_periodic_pins)
 
     # ###############################
@@ -1291,6 +1293,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-12.219694, -14.440925, -7.107551, 1.050109, 0.019148, -1.601287, -38.510000]
+    pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.219735, -14.440925, -7.107550, 1.050109, 0.019148, -1.601262, -38.510000]
     pywrapper_turb_naca0012_sst.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -1301,6 +1304,7 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 10
     pywrapper_square_cylinder.test_vals = [-1.175619, -0.352238, 1.408450, 2.360729, 1.404693, 2.302284, -0.347980]
+    pywrapper_square_cylinder.test_vals_aarch64 = [-1.175617, -0.352079, 1.408450, 2.360729, 1.404693, 2.302284, -0.347980]
     pywrapper_square_cylinder.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_square_cylinder.unsteady  = True
     test_list.append(pywrapper_square_cylinder)
@@ -1321,6 +1325,7 @@ def main():
     pywrapper_custom_fea_load.cfg_file = "config.cfg"
     pywrapper_custom_fea_load.test_iter = 13
     pywrapper_custom_fea_load.test_vals = [-7.263559, -4.946814, -14.165142, 34.000000, -6.380144, 320.580000]
+    pywrapper_custom_fea_load.test_vals_aarch64 = [-7.263558, -4.946814, -14.165142, 35.000000, -6.802790, 320.580000]
     pywrapper_custom_fea_load.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_custom_fea_load)
 

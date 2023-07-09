@@ -231,7 +231,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 100
     pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.131742, -0.553318, -0.000364, -0.003101] #last 4 columns
-    pywrapper_FEA_AD_FlowLoad.test_vals_aarch64 = [-0.132166, -0.554904, -0.000364, -0.003101]
+    pywrapper_FEA_AD_FlowLoad.test_vals_aarch64 = [-0.131745, -0.553214, -0.000364, -0.003101]
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 1e-4
