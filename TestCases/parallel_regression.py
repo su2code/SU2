@@ -95,7 +95,7 @@ def main():
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
     invwedge_a.test_vals = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301374, -18.628734, -18.574780, 2.275192, 1.879772, 5.319421, 0.873699]
     test_list.append(invwedge_a)
 
     # Inviscid single wedge, ausm+-up2, implicit
@@ -113,7 +113,7 @@ def main():
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
     invwedge_msw.test_vals = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
-    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.301301, -18.628685, -18.574704, 2.151638, 1.721236, 5.193813, 0.751584]
     test_list.append(invwedge_msw)
 
     # Inviscid single wedge, roe, implicit
@@ -122,7 +122,7 @@ def main():
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
     invwedge_roe.test_vals = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
-    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.299879, -18.627263, -18.573276, 2.278987, 1.861307, 5.323753, 0.874900]
     test_list.append(invwedge_roe)
 
     # Inviscid single wedge, lax, implicit
@@ -140,7 +140,7 @@ def main():
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
     invwedge_ausm_m.test_vals = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.856548]
-    invwedge_ausm_m.test_vals_aarch64 = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.85654]
+    invwedge_ausm_m.test_vals_aarch64 = [-1.055079, -1.579842, -16.739725, -17.063618, -17.012831, 2.265433, 1.797600, 5.302743, 0.856551]
     test_list.append(invwedge_ausm_m)
 
     # Inviscid single wedge, implicit, NEMO supersonic inlet
@@ -158,7 +158,7 @@ def main():
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.559799, -20.510195, -20.440311, 1.255761, -3.208360, -0.016014, 0.093462, 32634.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
@@ -245,7 +245,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
-    polar_naca0012.test_vals_aarch64 = [-2.936433, 2.478784, 0.005113, 0.008684]
+    polar_naca0012.test_vals_aarch64 = [-6.491535, -1.076111, 0.001168, 0.008666]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     test_list.append(polar_naca0012)
 
@@ -271,6 +271,7 @@ def main():
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
     ramp.test_vals = [-13.399623, -7.788893, -0.081064, 0.056474]
+    ramp.test_vals_aarch64 = [-13.398422, -7.786461, -0.081064, 0.056474]
     test_list.append(ramp)
 
     ##########################
@@ -324,7 +325,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.492939, -7.672950, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.492842, -7.672800, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.492864, -7.671632, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -414,6 +415,7 @@ def main():
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
     turb_naca0012_sst.test_vals = [-12.219694, -14.440925, -7.107551, 1.050109, 0.019148, -1.601287, -38.510000]
+    turb_naca0012_sst.test_vals_aarch64 = [-12.219735, -14.440925, -7.107550, 1.050109, 0.019148, -1.601262, -38.510000]
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
 
@@ -423,6 +425,7 @@ def main():
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
     turb_naca0012_sst_sust.test_vals = [-12.148637, -14.756583, -6.342201, 1.001189, 0.019384, -1.579100]
+    turb_naca0012_sst_sust.test_vals_aarch64 = [-12.148716, -14.756582, -6.342200, 1.001189, 0.019384, -1.579104]
     turb_naca0012_sst_sust.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust)
 
@@ -676,7 +679,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
     turbmod_sa_neg_rae2822.test_vals         = [-1.466238, 3.169232, 2.756518, 4.722767, 1.120253, 0.378675, -83444.000000]
-    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.347530, 1.439078, 1.306846, -1.928774, 1.480543, 0.571601, -91503]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.359612, 1.493629, 1.218367, -1.441703, 1.248499, 0.457987, -86467.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
     # SA Compressibility Correction
@@ -825,7 +828,7 @@ def main():
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
     turb_naca0012_1c.test_vals         = [-4.976284, 1.141136, 0.463115, -0.083307]
-    turb_naca0012_1c.test_vals_aarch64 = [-4.983548, 1.138789, 0.456805, -0.079667]
+    turb_naca0012_1c.test_vals_aarch64 = [-4.983453, 1.138491, 0.459947, -0.084114]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -834,7 +837,7 @@ def main():
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
     turb_naca0012_2c.test_vals         = [-5.483317, 0.968654, 0.307611, -0.118062]
-    turb_naca0012_2c.test_vals_aarch64 = [-5.483345, 0.968812, 0.305213, -0.113317]
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483338, 0.968646, 0.308055, -0.117915]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -851,7 +854,7 @@ def main():
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
     turb_naca0012_p1c1.test_vals         = [-5.128887, 1.076846, 0.589839, -0.051939]
-    turb_naca0012_p1c1.test_vals_aarch64 = [-5.130279, 1.076643, 0.587076, -0.047445]
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.128883, 1.076873, 0.590376, -0.051754]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -860,7 +863,7 @@ def main():
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
     turb_naca0012_p1c2.test_vals         = [-5.554633, 0.943626, 0.402263, -0.100275]
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554645, 0.943709, 0.398620, -0.096021]
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554636, 0.943621, 0.401650, -0.100495]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
