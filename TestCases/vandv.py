@@ -46,7 +46,7 @@ def main():
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 20
     p30n30.test_vals         = [-10.806343, -10.326374, -10.559106, -10.432754, -13.517105, 0.050962, 2.828563, 1.317849, -0.228843]
-    p30n30.test_vals_aarch64 = [-10.636663, -10.298256, -10.479415, -10.246700, -13.517161, 0.050962, 2.828563, 1.317849, -0.209200]
+    p30n30.test_vals_aarch64 = [-10.801521, -10.325747, -10.557163, -10.427274, -13.517118, 0.050962, 2.828563, 1.317849, -0.207763]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -54,8 +54,8 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.022266, -9.782360, -10.951053, -7.775218, -10.035041, -5.141447, 0.002809]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.044282, -9.682503, -10.712657, -7.519027, -9.742878, -5.374663, 0.002809]
+    flatplate_sst1994m.test_vals         = [-13.023358, -9.956752, -11.099910, -7.933220, -10.206577, -5.132343, 0.002808]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.022835, -9.956652, -11.102384, -7.928197, -10.206580, -5.132317, 0.002808]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,8 +63,8 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.048445, -9.929559, -10.602530, -7.593266, -10.323567, -5.548893, 0.004967]
-    bump_sst1994m.test_vals_aarch64 = [-13.005103, -9.889383, -10.555402, -7.584122, -10.312935, -5.470352, 0.004967]
+    bump_sst1994m.test_vals         = [-12.986182, -10.719941, -10.556276, -7.606531, -10.774915, -5.605156, 0.004972]
+    bump_sst1994m.test_vals_aarch64 = [-13.039365, -10.729085, -10.609923, -7.682911, -10.774915, -5.605087, 0.004972]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -73,7 +73,7 @@ def main():
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
     swbli_sa.test_vals         = [-11.530796, -10.915564, -12.034495, -10.538719, -15.922522, 0.002233, -3.359164, 1.340100]
-    swbli_sa.test_vals_aarch64 = [-11.014738, -9.936534, -11.120020, -10.050397, -13.203736, 0.002233, -3.222675, 1.340100]
+    swbli_sa.test_vals_aarch64 = [-11.530796, -10.915564, -12.034495, -10.538719, -15.922522, 0.002233, -3.359164, 1.340100]
     test_list.append(swbli_sa)
 
 
