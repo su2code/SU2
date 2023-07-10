@@ -62,7 +62,7 @@ def main():
     invwedge.cfg_file = "invwedge_ausm.cfg"
     invwedge.test_iter = 10
     invwedge.test_vals = [-1.046323, -1.571086, -18.301251, -18.628639, -18.574676, 2.271778, 1.875687, 5.315769, 0.870008]
-    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271778, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.301361, -18.628744, -18.574788, 2.271778, 1.875687, 5.315769, 0.870008]
     test_list.append(invwedge)
 
     # Viscous single cone - axisymmetric
@@ -71,7 +71,7 @@ def main():
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals = [-5.215236, -5.739371, -20.556662, -20.517023, -20.436970, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
-    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.556662, -20.517023, -20.436970, 1.262783, -3.205463, -0.015695, 0.093205, 32656.000000]
+    visc_cone.test_vals_aarch64 = [-5.215229, -5.739368, -20.556662, -20.517022, -20.437459, 1.262784, -3.205455, -0.015696, 0.093207, 32656.000000]
     test_list.append(visc_cone)
 
     #########################
@@ -133,7 +133,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
-    polar_naca0012.test_vals_aarch64 = [-3.148445, 2.270143, 0.003666, 0.008682]
+    polar_naca0012.test_vals_aarch64 = [-1.811046, 3.612379, 0.012330, 0.009194]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     test_list.append(polar_naca0012)
 
@@ -194,7 +194,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.494681, -7.711642, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.494705, -7.711332, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals_aarch64 = [-12.494684, -7.711379, -0.000000, 2.085796] #last 4 columns
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -280,7 +280,7 @@ def main():
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
     turb_naca0012_sst.test_vals         = [-12.213755, -14.439873, -7.108062, 1.050109, 0.019148, -1.875539, -38.510000]
-    turb_naca0012_sst.test_vals_aarch64 = [-12.213755, -14.439873, -7.108062, 1.050109, 0.019148, -1.875539, -38.510000]
+    turb_naca0012_sst.test_vals_aarch64 = [-12.213728, -14.439873, -7.108062, 1.050109, 0.019148, -1.875538, -38.510000]
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
 
@@ -299,6 +299,7 @@ def main():
     turb_naca0012_sst_sust_restart.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust_restart.test_iter = 10
     turb_naca0012_sst_sust_restart.test_vals = [-12.153015, -14.756601, -6.342509, 1.001189, 0.019384, -1.820009]
+    turb_naca0012_sst_sust_restart.test_vals_aarch64 = [-12.153059, -14.756601, -6.342509, 1.001189, 0.019384, -1.819999]
     turb_naca0012_sst_sust_restart.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust_restart)
 
@@ -330,6 +331,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
     axi_rans_air_nozzle_restart.test_vals = [-12.063377, -7.005051, -8.705733, -4.036815, -2019.8]
+    axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.063354, -7.004772, -8.705740, -4.036824, -2019.800000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -671,7 +673,7 @@ def main():
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
     turb_naca0012_1c.test_vals         = [-4.986094, 1.137009, 0.378604, -0.083526]
-    turb_naca0012_1c.test_vals_aarch64 = [-4.985900, 1.137455, 0.376000, -0.078781]
+    turb_naca0012_1c.test_vals_aarch64 = [-4.986054, 1.137073, 0.378618, -0.083513]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -680,7 +682,7 @@ def main():
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
     turb_naca0012_2c.test_vals         = [-5.483291, 0.968701, 0.258168, -0.114217]
-    turb_naca0012_2c.test_vals_aarch64 = [-5.483310, 0.968862, 0.255650, -0.109464] #last 4 columns
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483307, 0.968694, 0.258049, -0.114260] #last 4 columns
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -697,7 +699,7 @@ def main():
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
     turb_naca0012_p1c1.test_vals         = [-5.127497, 1.077175, 0.546823, -0.023191]
-    turb_naca0012_p1c1.test_vals_aarch64 = [-5.127512, 1.077345, 0.544130, -0.018555] #last 4 columns
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.127510, 1.077107, 0.546893, -0.023166] #last 4 columns
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -706,7 +708,7 @@ def main():
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
     turb_naca0012_p1c2.test_vals         = [-5.554412, 0.943562, 0.322803, -0.095946]
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554391, 0.943687, 0.320285, -0.091188] #last 4 columns
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554381, 0.943577, 0.322676, -0.095989] #last 4 columns
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -1497,7 +1499,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals         = [-12.213755, -14.439873, -7.108062, 1.050109, 0.019148, -1.875539, -38.510000]
-    pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.213755, -14.439873, -7.108062, 1.050109, 0.019148, -1.875539, -38.510000]
+    pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.213728, -14.439873, -7.108062, 1.050109, 0.019148, -1.875538, -38.510000]
     pywrapper_turb_naca0012_sst.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
