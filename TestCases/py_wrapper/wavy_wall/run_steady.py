@@ -143,9 +143,12 @@ def RunPrimal(channel_width, deform_amplitude):
     Returns the objective function.
     """
     comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
-    with open('config.cfg', 'w') as f:
-        f.write(common_settings.replace('__WIDTH__', str(channel_width)) + primal_settings)
+    if rank == 0:
+        with open('config.cfg', 'w') as f:
+            f.write(common_settings.replace('__WIDTH__', str(channel_width)) + primal_settings)
+    comm.Barrier()
 
     # Initialize the corresponding driver of SU2, this includes solver preprocessing.
     try:
@@ -174,9 +177,12 @@ def RunAdjoint(channel_width, deform_amplitude):
     Returns the sensitivity of the objective function to the amplitude and width.
     """
     comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
-    with open('config_ad.cfg', 'w') as f:
-        f.write(common_settings.replace('__WIDTH__', str(channel_width)) + adjoint_settings)
+    if rank == 0:
+        with open('config_ad.cfg', 'w') as f:
+            f.write(common_settings.replace('__WIDTH__', str(channel_width)) + adjoint_settings)
+    comm.Barrier()
 
     # Initialize the corresponding driver of SU2, this includes solver preprocessing.
     try:
