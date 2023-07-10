@@ -231,6 +231,7 @@ def main():
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals = [79, 0.769972, 0.374328, 0.474458, -0.996522, 2.154079, -4.446062]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.769908, 0.374328, 0.474687, -0.996522, 2.154079, -4.446062]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -243,7 +244,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [-2.849453, -3.238429, -0.000364, -8.708700] #last 4 columns
-    discadj_fea.test_vals_aarch64 = [-2.849726, -3.238594, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals_aarch64 = [-2.849573, -3.238516, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
     ###################################
@@ -277,7 +278,7 @@ def main():
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
     discadj_fsi2.test_vals         = [-4.349377, 0.192713, -1.303589, 0.75407, 2.3244]
-    discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 0.75407, 2.3244]
+    discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
