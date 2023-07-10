@@ -152,7 +152,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
     /*--- Compute levels. ---*/
     std::vector<unsigned> level(nPointDomain, 0);
-    unsigned long n_levels = 0;
+    unsigned n_levels = 0;
 
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
@@ -673,7 +673,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   /*--- OpenMP Parallelization, a loop construct is used to ensure
    *    the preconditioner is computed correctly even if called
    *    outside of a parallel section. ---*/
-#if 0
+#define LVL_SCH 1
+#if !LVL_SCH
   SU2_OMP_FOR_STAT(1)
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
     const auto begin = omp_partitions[thread];
@@ -736,7 +737,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     InverseDiagonalBlock_ILUMatrix(end - 1, &invM[(end - 1) * nVar * nVar]);
   }
   END_SU2_OMP_FOR
-#endif
+#else
 
   const auto n_levels = level_offsets.size() - 1;
   for (unsigned long i_level = 1; i_level < n_levels; ++i_level) {
@@ -744,7 +745,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     SU2_OMP_FOR_STAT(1024)
     for (auto idx = level_offsets[i_level - 1]; idx < level_offsets[i_level]; ++idx) {
       const auto iPoint = level_indices[idx];
-      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+      InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint * nVar * nVar]);
     }
     END_SU2_OMP_FOR
 
@@ -769,6 +770,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
           /*--- Get the column index (kPoint > jPoint). ---*/
 
           auto kPoint = col_ind_ilu[index_];
+          if (kPoint >= nPointDomain) break;
 
           /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
 
@@ -793,10 +795,11 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     SU2_OMP_FOR_STAT(1024)
     for (auto idx = level_offsets[n_levels - 1]; idx < level_offsets[n_levels]; ++idx) {
       const auto iPoint = level_indices[idx];
-      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+      InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint * nVar * nVar]);
     }
     END_SU2_OMP_FOR
   }
+#endif
 }
 
 template <class ScalarType>
@@ -805,8 +808,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
+#if LVL_SCH
   /*--- Copy vector to then work on prod in place ---*/
   prod = vec;
+  SU2_OMP_BARRIER
 
   const auto n_levels = level_offsets.size() - 1;
 
@@ -820,7 +825,6 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       const auto iPoint = level_indices[idx];
       for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
         auto jPoint = col_ind_ilu[index];
-        if (jPoint < begin) continue;
         auto Block_ij = &ILU_matrix[index * nVar * nVar];
         MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], &prod[iPoint * nVar]);
       }
@@ -839,6 +843,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
       for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; index++) {
         auto jPoint = col_ind_ilu[index];
+        if (jPoint >= nPointDomain) break;
         auto Block_ij = &ILU_matrix[index * nVar * nVar];
         MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
       }
@@ -848,7 +853,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
     END_SU2_OMP_FOR
   }
 
-#if 0
+#else
   /*--- OpenMP Parallelization ---*/
   SU2_OMP_FOR_STAT(1)
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
