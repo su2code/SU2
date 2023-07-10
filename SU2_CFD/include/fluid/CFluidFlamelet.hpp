@@ -28,6 +28,11 @@
 #pragma once
 
 #include "../../Common/include/containers/CLookUpTable.hpp"
+#if defined(HAVE_MLPCPP)
+#define MLP_CUSTOM_TYPE su2double
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
 #include "CFluidModel.hpp"
 
 class CFluidFlamelet final : public CFluidModel {
@@ -47,12 +52,23 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned long extrapolation;
   
   INC_DENSITYMODEL density_model;
+  vector<string> controlling_variable_names,
+                 passive_specie_names;
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
 
   su2double mass_diffusivity, /*!< \brief local mass diffusivity of the mixture */
       molar_weight;           /*!< \brief local molar weight of the mixture */
 
   CLookUpTable* look_up_table;
+
+  /*--- Class variables for the multi-layer perceptron method ---*/
+#ifdef USE_MLPCPP
+  MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap* iomap_TD;      /*!< \brief Input-output map for thermochemical properties. */
+  MLPToolbox::CIOMap* iomap_Sources; /*!< \brief Input-output map for species source terms. */
+  MLPToolbox::CIOMap* iomap_LookUp;  /*!< \brief Input-output map for passive look-up terms. */
+  MLPToolbox::CIOMap* iomap_Current;
+#endif
 
   vector<su2double> scalars_vector;
 
