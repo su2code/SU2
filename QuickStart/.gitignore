@@ -1,0 +1,17 @@
+# In the QuickStart/ directory, we would like to
+# ignore any of the data needed to run the case
+# or their output data, i.e., meshes, solution
+# files, restart files, CSVs, etc.
+
+# Things appearing in QuickStart/ to ignore:
+*.dat
+*.csv
+*.plt
+*.szplt
+*.vtu
+*.log
+*.out
+*.aux
+*.pdf
+*.png
+config_*.cfg
