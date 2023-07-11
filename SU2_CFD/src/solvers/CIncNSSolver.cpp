@@ -852,7 +852,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         su2double vel_comp = 0.0;
         for (unsigned short iDim=0; iDim < nDim; iDim++){
             for (unsigned short jDim=0; jDim < nDim; jDim++) {
-                vel_comp += (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * (VelGrad[iDim][jDim] + VelGrad[jDim][iDim]) * nodes->GetLaminarViscosity(iPoint);
+                vel_comp += 0.5 * (VelGrad[iDim][jDim] * VelGrad[iDim][jDim]) * nodes->GetLaminarViscosity(iPoint);
             }
         }
 
@@ -863,6 +863,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
         porosity_comp = Vel2 * alpha;
 
+        // vel_comp = 0.0;
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
         vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
     }
@@ -878,17 +879,17 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         vFrac_global = vFrac_local;
     #endif
     
-    su2double cons = (vFrac_global - VFrac) * (vFrac_global - VFrac);
+    su2double cons = 1.0 * (vFrac_global - VFrac) * (vFrac_global - VFrac);
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
         file << setprecision(15);
         file << std::scientific;
-        file << power/baseline_power << "\t" << vFrac_global << "\t" << cons << endl;
+        file << (power)/baseline_power + cons * 1000 << "\t" << power << "\t" << cons << endl;
         file.close();
     }
     
-    Total_PowerDissipation = power_local/baseline_power + cons;
+    Total_PowerDissipation = (power)/baseline_power + cons * 1000;
 }
 
 void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -928,7 +929,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetAdjointPorosity(iPoint));
     total_index++;
     send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetPorosity(iPoint));
-  }
+    }
   }
 
 #ifdef HAVE_MPI
