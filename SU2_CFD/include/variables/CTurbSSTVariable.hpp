@@ -71,7 +71,7 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) override;
+  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) override;
 
   /*!
    * \brief Get the first blending function.
