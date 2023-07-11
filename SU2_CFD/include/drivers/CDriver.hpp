@@ -536,6 +536,7 @@ class CDriver : public CDriverBase {
    */
   void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
 
+  void SetMarkerRotationRate(short int iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
 /// \}
 };
 

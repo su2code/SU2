@@ -5946,6 +5946,13 @@ public:
    * \return Rotation velocity of the marker.
    */
   su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
+  /*!
+   * \brief Set the rotation rate of the marker.
+   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
+   * \param[in] iDim - spatial component
+   * \return Rotation velocity of the marker.
+   */
+  void SetMarkerRotation_Rate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) const { MarkerRotation_Rate[3*iMarkerMoving + iDim] = val;}
 
   /*!
    * \brief Get the pitching rate of the mesh.
