@@ -32,9 +32,7 @@ constexpr unsigned short CVertexMPIConnectivity::Faces[1][1];
 constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
 constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
 
-CVertexMPI::CVertexMPI(unsigned long val_point):
-  CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false)
-{
+CVertexMPI::CVertexMPI(unsigned long val_point) : CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point;
 

@@ -162,7 +162,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_ScalarLinsol(config);
+  AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -203,9 +203,9 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddRotatingFrameCoefficients();
 
-  Add_CpInverseDesignOutput();
+  AddCpInverseDesignOutput();
 
-  Add_NearfieldInverseDesignOutput();
+  AddNearfieldInverseDesignOutput();
 
 }
 
@@ -223,7 +223,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
 
-  SetVolumeOutputFields_ScalarSolution(config);
+  SetVolumeOutputFieldsScalarSolution(config);
 
   // Grid velocity
   if (gridMovement){
@@ -244,6 +244,13 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
 
+  // Datadriven fluid model
+  if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    AddVolumeOutput("EXTRAPOLATION", "Extrapolation", "PRIMITIVE", "Density, energy outside data range");
+    AddVolumeOutput("FLUIDMODEL_NEWTONITER", "nIter_Newton", "PRIMITIVE", "Number of iterations evaluated by the Newton solver");
+    AddVolumeOutput("ENTROPY", "Entropy", "PRIMITIVE", "Fluid entropy value");
+  }
+
   if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
@@ -256,6 +263,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   //Residuals
   AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
@@ -264,7 +273,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL", "Residual of the z-momentum component");
   AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
 
-  SetVolumeOutputFields_ScalarResidual(config);
+  SetVolumeOutputFieldsScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
@@ -277,7 +286,13 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
   }
 
-  SetVolumeOutputFields_ScalarLimiter(config);
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
+
+  SetVolumeOutputFieldsScalarMisc(config);
 
   // Roe Low Dissipation
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS) {
@@ -286,7 +301,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
 }
@@ -322,6 +337,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
 
+  if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    SetVolumeOutputValue("EXTRAPOLATION", iPoint, Node_Flow->GetDataExtrapolation(iPoint));
+    SetVolumeOutputValue("FLUIDMODEL_NEWTONITER", iPoint, Node_Flow->GetNewtonSolverIterations(iPoint));
+    SetVolumeOutputValue("ENTROPY", iPoint, Node_Flow->GetEntropy(iPoint));
+  }
+
   if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
@@ -351,11 +372,11 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
 
-  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
+  LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);
   }
 }
@@ -419,7 +440,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", flow_solver->GetAoA_inc());
   }
 
-  LoadHistoryData_Scalar(config, solver);
+  LoadHistoryDataScalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
 
@@ -441,11 +462,11 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set Cp diff fields ---*/
 
-  Set_CpInverseDesign(flow_solver, geometry, config);
+  SetCpInverseDesign(flow_solver, geometry, config);
 
   /*--- Set nearfield diff fields ---*/
 
-  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
+  if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
@@ -455,7 +476,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 }
 
-bool CFlowCompOutput::SetInit_Residuals(const CConfig *config){
+bool CFlowCompOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
@@ -469,6 +490,6 @@ void CFlowCompOutput::SetAdditionalScreenOutput(const CConfig *config){
   }
 }
 
-bool CFlowCompOutput::WriteHistoryFile_Output(const CConfig *config) {
-  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
+bool CFlowCompOutput::WriteHistoryFileOutput(const CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFileOutput(config);
 }

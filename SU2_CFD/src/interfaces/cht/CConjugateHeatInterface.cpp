@@ -70,7 +70,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   su2double conductivity_over_dist = 0.0;
 
   const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && 
+                                   (donor_config->GetEnergy_Equation() || (donor_config->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET));
 
   if (compressible_flow) {
 
@@ -104,6 +105,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       switch (donor_config->GetKind_ConductivityModel()) {
 
         case CONDUCTIVITYMODEL::CONSTANT:
+        case CONDUCTIVITYMODEL::FLAMELET:
         case CONDUCTIVITYMODEL::COOLPROP:
           thermal_conductivity = thermal_conductivityND*donor_config->GetThermal_Conductivity_Ref();
           break;

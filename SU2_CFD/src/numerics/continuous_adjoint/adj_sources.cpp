@@ -29,7 +29,7 @@
 
 CSourceAxisymmetric_AdjFlow::CSourceAxisymmetric_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
-CSourceAxisymmetric_AdjFlow::~CSourceAxisymmetric_AdjFlow(void) { }
+CSourceAxisymmetric_AdjFlow::~CSourceAxisymmetric_AdjFlow() = default;
 
 void CSourceAxisymmetric_AdjFlow::ComputeResidual(su2double *val_residual, su2double **Jacobian_ii, CConfig *config) {
 
@@ -88,7 +88,7 @@ CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim
     Mean_PrimVar_Grad[iVar] = new su2double [nDim];
 }
 
-CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow(void) {
+CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow() {
   delete [] Mean_Residual;
   delete [] Residual_j;
   delete [] Residual_i;
@@ -238,7 +238,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
 CSourceRotatingFrame_AdjFlow::CSourceRotatingFrame_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                               CNumerics(val_nDim, val_nVar, config) { }
 
-CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow(void) { }
+CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow() = default;
 
 void CSourceRotatingFrame_AdjFlow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
@@ -325,7 +325,7 @@ CSourceViscous_AdjFlow::CSourceViscous_AdjFlow(unsigned short val_nDim, unsigned
 
 }
 
-CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow(void) {
+CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow() {
   unsigned short iDim;
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -615,8 +615,7 @@ CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim
 
 }
 
-CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb(void) {
-}
+CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb() = default;
 
 void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
@@ -658,7 +657,7 @@ CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsi
     tau[iDim] = new su2double [nDim];
 }
 
-CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
+CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb() {
   delete [] Velocity;
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)

@@ -58,7 +58,7 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
 
 }
 
-CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
+CUpwFDSInc_Flow::~CUpwFDSInc_Flow() {
 
   delete [] Flux;
   delete [] Diff_V;

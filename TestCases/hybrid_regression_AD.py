@@ -75,8 +75,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals         = [-2.230631, 0.644953, 0.177890, -0.000016, 5.000000, -3.007652, 5.000000, -7.631910]
-    discadj_rans_naca0012_sa.test_vals_aarch64 = [-2.230631, 0.644954, 0.177890, -0.000016, 5.000000, -3.007651, 5.000000, -7.631909]
+    discadj_rans_naca0012_sa.test_vals = [-2.230621, 0.644162, 0.177890, -0.000016, 5.000000, -3.007652, 5.000000, -7.728093]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -84,7 +83,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221793, -0.491367, 0.182000, -0.000018]
+    discadj_rans_naca0012_sst.test_vals = [-2.221846, -0.491928, 0.182000, -0.000018]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -129,7 +128,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845593, -2.414026, -8.420194, 0.000000]
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-4.029282, -2.181911, -7.734686, 0.000000, -0.939944]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
@@ -193,8 +192,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals         = [79.000000, -1.938803, -1.981888]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, -1.938809, -1.995540]
+    discadj_trans_stator.test_vals         = [79, 0.770065, 0.383137, 0.472153, -0.996484, 2.153296, -4.444301]
+    discadj_trans_stator.test_vals_aarch64 = [79, 0.769987, 0.383135, 0.472391, -0.996504, 2.153296, -4.444301]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -207,7 +206,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
-    discadj_fea.test_vals_aarch64 = [2.216938, 2.129429, -0.000365, -8.782500]
+    discadj_fea.test_vals_aarch64 = [1.939275, 1.989717, -0.000364, -8.708200]
     test_list.append(discadj_fea)
 
     ######################################
@@ -221,6 +220,39 @@ def main():
     #end
 
     pass_list = [ test.run_test() for test in test_list ]
+
+    ###################################
+    ### Python Wrapper              ###
+    ###################################
+
+    # FEA AD Flow Load Sensitivity
+    pywrapper_FEA_AD_FlowLoad               = TestCase('pywrapper_FEA_AD_FlowLoad')
+    pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
+    pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
+    pywrapper_FEA_AD_FlowLoad.test_iter     = 100
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.131742, -0.553318, -0.000364, -0.003101] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals_aarch64 = [-0.131745, -0.553214, -0.000364, -0.003101]
+    pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
+    pywrapper_FEA_AD_FlowLoad.timeout       = 1600
+    pywrapper_FEA_AD_FlowLoad.tol           = 1e-4
+    pywrapper_FEA_AD_FlowLoad.new_output    = False
+    test_list.append(pywrapper_FEA_AD_FlowLoad)
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+    # Flow AD Mesh Displacement Sensitivity
+    pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
+    pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
+    pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
+    pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.520967, 1.375188, 0.000000] #last 4 columns
+    pywrapper_CFD_AD_MeshDisp.test_vals_aarch64 = [30.000000, -2.516536, 1.386443, 0.000000]
+    pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
+    pywrapper_CFD_AD_MeshDisp.timeout       = 1600
+    pywrapper_CFD_AD_MeshDisp.tol           = 1e-4
+    pywrapper_CFD_AD_MeshDisp.new_output    = False
+    test_list.append(pywrapper_CFD_AD_MeshDisp)
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+
 
     # Tests summary
     print('==================================================================')

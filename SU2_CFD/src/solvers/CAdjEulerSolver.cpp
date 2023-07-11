@@ -29,7 +29,7 @@
 #include "../../include/solvers/CAdjEulerSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
+CAdjEulerSolver::CAdjEulerSolver() : CSolver() {
 
   /*--- Array initialization ---*/
   Phi_Inf = nullptr;
@@ -271,8 +271,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Define solver parameters needed for execution of destructor ---*/
 
-  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
-  else space_centered = false;
+  space_centered = config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED;
 
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
@@ -345,9 +344,10 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
+  SolverName = "ADJ.FLOW";
 }
 
-CAdjEulerSolver::~CAdjEulerSolver(void) {
+CAdjEulerSolver::~CAdjEulerSolver() {
   unsigned short iVar, iMarker;
 
   delete [] Phi_Inf;
@@ -399,10 +399,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   /*--- Define buffer vector interior domain ---*/
 
   su2double        *Buffer_Send_AdjVar          = nullptr;
-  su2double        *iAdjVar          = new su2double [nVar];
+  auto        *iAdjVar          = new su2double [nVar];
 
-  unsigned long *nPointTotal_s = new unsigned long[size];
-  unsigned long *nPointTotal_r = new unsigned long[size];
+  auto *nPointTotal_s = new unsigned long[size];
+  auto *nPointTotal_r = new unsigned long[size];
 
   unsigned long Buffer_Size_AdjVar          = 0;
   unsigned long PointTotal_Counter = 0;

@@ -123,7 +123,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
     zoneIndex = "[" + PrintingToolbox::to_string(iZone) + "]";
 
     /*--- For all the variables per solver ---*/
-    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutput_List()) {
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputList()) {
 
       if (nameSinglezone != "TIME_ITER" && nameSinglezone != "OUTER_ITER") {
 
@@ -151,7 +151,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
     /*--- Add the PerSurface outputs. ---*/
     const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
 
-    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurfaceList()) {
 
       const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
 
@@ -173,7 +173,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
       auto* Marker = &Marker_Monitoring;
-      if ((group == "FLOW_COEFF_SURF") || (group == "SPECIES_COEFF_SURF"))
+      if ((group == "FLOW_COEFF_SURF") || (group == "SPECIES_COEFF_SURF") )
         Marker = &Marker_Analyze;
       else if (group != "AERO_COEFF_SURF" && group != "HEAT_SURF")
         SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
@@ -186,7 +186,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
-bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
+bool CMultizoneOutput::WriteScreenHeader(const CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
 
@@ -202,7 +202,7 @@ bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
   return false;
 }
 
-bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
+bool CMultizoneOutput::WriteScreenOutput(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
@@ -228,7 +228,7 @@ bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
   return true;
 }
 
-bool CMultizoneOutput::WriteHistoryFile_Output(const CConfig *config){
+bool CMultizoneOutput::WriteHistoryFileOutput(const CConfig *config){
 
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);

@@ -81,7 +81,7 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : C
 
 }
 
-CFlowCompFEMOutput::~CFlowCompFEMOutput(void) {}
+CFlowCompFEMOutput::~CFlowCompFEMOutput() = default;
 
 
 
@@ -165,7 +165,7 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
 
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
@@ -263,9 +263,10 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   SetAerodynamicCoefficients(config, flow_solver);
 
+  ComputeSimpleCustomOutputs(config);
 }
 
-bool CFlowCompFEMOutput::SetInit_Residuals(const CConfig *config){
+bool CFlowCompFEMOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));
