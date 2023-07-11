@@ -236,9 +236,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
           /*--- Compute wall heat flux (normal to the wall) based on computed temperature gradient ---*/
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          su2double GradT[MAXNDIM] = {0.0,0.0,0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            GradT[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+          const auto GradT = nodes->GetGradient_Primitive(iPoint)[prim_idx.Temperature()];
 
           dTdn_Local += nodes->GetThermalConductivity(iPoint) * GeometryToolbox::DotProduct(nDim, GradT, AreaNormal);
         } // loop Vertices
