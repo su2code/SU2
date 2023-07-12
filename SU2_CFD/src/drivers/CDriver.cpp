@@ -165,7 +165,8 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
   if (rank == MASTER_NODE)
     cout << "Computing wall distances." << endl;
 
-  CGeometry::ComputeWallDistance(config_container, geometry_container);
+  if (!dry_run)
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 

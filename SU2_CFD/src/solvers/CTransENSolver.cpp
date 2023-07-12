@@ -97,11 +97,11 @@ CTransENSolver::CTransENSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Initialize lower and upper limits ---*/
-  lowerlimit[0] = 1.0e-4;
+  lowerlimit[0] = 1.0e-30;
   upperlimit[0] = (-8.43 - 2.4*log(2.5*tanh(config->GetTurbulenceIntensity_FreeStream()/2.5)/100))*2;
 
   lowerlimit[1] = -5;
-  upperlimit[1] = 1.0e-4;
+  upperlimit[1] = 1.0e-30;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AmplificationFactor_Inf = 0;
@@ -161,8 +161,9 @@ void CTransENSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
     auto Normal = geometry->nodes->GetNormal(iPoint);
-    nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
+    const su2double rho = flowNodes->GetDensity(iPoint);
     nodes->SetNormal(iPoint, Normal[0], Normal[1], Normal[2]);
+    nodes->SetAuxVar(iPoint, 0, rho * flowNodes->GetProjVel(iPoint, Normal));
   }
   END_SU2_OMP_FOR
 
@@ -574,7 +575,7 @@ void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-  su2double allowableRatio = 0.5;
+  su2double allowableRatio = 0.2;
 
   unsigned long Inner_Iter = config->GetInnerIter();
 

@@ -4829,7 +4829,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     } else if (!saParsedOptions.ft2) {
       SU2_MPI::Error("Please select SA_OPTIONS = WITHFT2 when using SA-Ft2-eN transtion model.", CURRENT_FUNCTION);
     } else if ((Kind_Regime == ENUM_REGIME::COMPRESSIBLE) && (Ref_NonDim == 0)) {
-      SU2_MPI::Error("Please select a non-dimensionalization option other than 'REF_DIMENSIONALIZATION = DIMENSIONAL' when using SA-Ft2-eN for a compressible case.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Please select a non-dimensionalization option other than 'REF_DIMENSIONALIZATION = DIMENSIONAL' when using SA-Ft2-eN transition.", CURRENT_FUNCTION);
     }
   }
 
