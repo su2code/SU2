@@ -335,23 +335,6 @@ class CSourcePieceWise_TransEN final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
 
-  /*--- Debug terms ---*/
-  su2double Prod_n_Local = 0.0;
-  su2double Prod_g_Local = 0.0;
-  su2double Dest_g_Local = 0.0;
-  su2double GammaN_Local = 0.0;
-  su2double HL_Local = 0.0;
-  su2double H12_Local = 0.0;
-  su2double FG_Local = 0.0;
-  su2double FC_Local = 0.0;
-  su2double REV_Local = 0.0;
-  su2double REV0_Local = 0.0;
-  su2double Dist_Local = 0.0;
-  su2double Strain_Local = 0.0;
-  su2double Fonset1_Local = 0.0;
-  su2double Fonset_Local = 0.0;
-  su2double Fturb_Local = 0.0;
-
   /*--- eN Closure constants ---*/
   su2double c_1 = 100.0;
   su2double c_2 = 0.06;
@@ -424,18 +407,11 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
     if (dist_i > 1e-10) {
 
-      Dist_Local = dist_i;
-      Strain_Local = StrainMag_i;
-
       /*--- Local pressure-gradient parameter for the boundary layer shape factor. Minimum value of 0.328 for stability ---*/
       const su2double H_L 		= (pow(dist_i,2)/(muLam/rho))*AuxVar;
 
-      HL_Local = H_L;
-
       /*--- Integral shape factor ---*/
       const su2double H_12 		= min(max(0.26*H_L + 2.4, 2.2), 20.0);
-
-      H12_Local = H_12;
 
       /*--- F growth parameters ---*/
       const su2double DH_12		= 2.4*H_12 / (H_12 - 1.0);
@@ -444,16 +420,11 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
       const su2double F_growth 	= DH_12*( (1 + mH_12)/2 )* lH_12;
 
-      FG_Local = F_growth;
-
       /*--- F crit parameters ---*/
       const su2double Re_v 		= (rho*StrainMag_i*pow(dist_i,2))/(muLam + muEddy);
 	  const su2double k_v 		= 1/(0.4036*pow(H_12,2)-2.5394*H_12+4.3273);
 	  const su2double Re_d2_0 	= pow(10,(0.7*tanh((14/(H_12 - 1)) - 9.24) + 2.492/(pow((H_12 - 1),0.43)) + 0.62));
 	  const su2double Re_v_0	= k_v * Re_d2_0;
-
-      REV_Local = Re_v;
-	  REV0_Local = Re_v_0;
 
       short int F_crit;
       if (Re_v < Re_v_0){
@@ -462,16 +433,12 @@ class CSourcePieceWise_TransEN final : public CNumerics {
         F_crit = 1;
       }
 
-      FC_Local = F_crit;
-
       /*--- Source term expresses stream wise growth of Tollmien_schlichting instabilities ---*/
       const su2double dn_over_dRe_d2 = 0.028*(H_12 - 1) - 0.0345*exp( -(pow( (3.87/(H_12 - 1) - 2.52),2) ) );
 
       /*--- F onset parameters ---*/
       const su2double Ncrit 	= -8.43 - 2.4*log( 2.5*tanh(config->GetTurbulenceIntensity_FreeStream()/2.5) /100);
       const su2double F_onset1 	= TransVar_i[0]/(Ncrit);
-
-      Fonset1_Local = F_onset1;
 
       const su2double F_onset2	= min(F_onset1,2.0);
 
@@ -480,23 +447,13 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
       const su2double Fonset	= max((F_onset2 - F_onset3), 0.0);
 
-      Fonset_Local = Fonset;
-
       /*--- F turb parameters ---*/
       const su2double Fturb		= exp(- (pow((Rt/2),4)));
-
-      Fturb_Local = Fturb;
 
       /*--- Production terms ---*/
       const su2double P_amplification 	= rho*VorticityMag*F_crit*F_growth*dn_over_dRe_d2;
       const su2double P_gamma			= c_1*rho*StrainMag_i*Fonset*( 1-exp(TransVar_i[1]) );
       const su2double D_gamma 			= c_2*rho*VorticityMag*Fturb*( c_3*exp(TransVar_i[1]) -1 );
-
-      Prod_n_Local = P_amplification;
-      Prod_g_Local = P_gamma;
-      Dest_g_Local = D_gamma;
-
-      GammaN_Local = exp(TransVar_i[1]);
 
       /*--- Add Production to residual ---*/
       Residual[0] += P_amplification * Volume;
@@ -518,19 +475,4 @@ class CSourcePieceWise_TransEN final : public CNumerics {
 
   inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
 
-  inline su2double GetProdN() override {return Prod_n_Local;}
-  inline su2double GetProdG() override {return Prod_g_Local;}
-  inline su2double GetDestG() override {return Dest_g_Local;}
-  inline su2double GetGammaN() override {return GammaN_Local;}
-  inline su2double GetFonset1() override {return Fonset1_Local;}
-  inline su2double GetFonset() override {return Fonset_Local;}
-  inline su2double GetFturb() override {return Fturb_Local;}
-  inline su2double GetHL() override {return HL_Local;}
-  inline su2double GetH12() override {return H12_Local;}
-  inline su2double GetFG() override {return FG_Local;}
-  inline su2double GetFC() override {return FC_Local;}
-  inline su2double GetREV() override {return REV_Local;}
-  inline su2double GetREV0() override {return REV0_Local;}
-  inline su2double GetDist() override {return Dist_Local;}
-  inline su2double GetStrain() override {return Strain_Local;}
 };

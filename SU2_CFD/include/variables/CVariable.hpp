@@ -1143,23 +1143,6 @@ public:
 
   inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {};
 
-  /*--- Debug terms ---*/
-  inline virtual void SetProdN(unsigned long iPoint, su2double val_ProdN) {};
-  inline virtual void SetProdG(unsigned long iPoint, su2double val_ProdG) {};
-  inline virtual void SetDestG(unsigned long iPoint, su2double val_DestG) {};
-  inline virtual void SetGammaN(unsigned long iPoint, su2double val_GammaN) {};
-  inline virtual void SetHL(unsigned long iPoint, su2double val_HL) {};
-  inline virtual void SetH12(unsigned long iPoint, su2double val_H12) {};
-  inline virtual void SetFG(unsigned long iPoint, su2double val_FG) {};
-  inline virtual void SetFC(unsigned long iPoint, su2double val_FC) {};
-  inline virtual void SetREV(unsigned long iPoint, su2double val_REV) {};
-  inline virtual void SetREV0(unsigned long iPoint, su2double val_REV0) {};
-  inline virtual void SetDist(unsigned long iPoint, su2double val_Dist) {};
-  inline virtual void SetStrain(unsigned long iPoint, su2double val_Strain) {};
-  inline virtual void SetFonset1(unsigned long iPoint, su2double val_Fonset1) {};
-  inline virtual void SetFonset(unsigned long iPoint, su2double val_Fonset) {};
-  inline virtual void SetFturb(unsigned long iPoint, su2double val_Fturb) {};
-
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.

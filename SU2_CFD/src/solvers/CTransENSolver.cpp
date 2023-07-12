@@ -270,23 +270,6 @@ void CTransENSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Debug terms ---*/
-    nodes->SetProdN(iPoint, numerics->GetProdN());
-    nodes->SetProdG(iPoint, numerics->GetProdG());
-    nodes->SetDestG(iPoint, numerics->GetDestG());
-    nodes->SetGammaN(iPoint, numerics->GetGammaN());
-    nodes->SetHL(iPoint, numerics->GetHL());
-    nodes->SetH12(iPoint, numerics->GetH12());
-    nodes->SetFG(iPoint, numerics->GetFG());
-    nodes->SetFC(iPoint, numerics->GetFC());
-    nodes->SetREV(iPoint, numerics->GetREV());
-    nodes->SetREV0(iPoint, numerics->GetREV0());
-    nodes->SetDist(iPoint, numerics->GetDist());
-	nodes->SetStrain(iPoint, numerics->GetStrain());
-	nodes->SetFonset1(iPoint, numerics->GetFonset1());
-	nodes->SetFonset(iPoint, numerics->GetFonset());
-	nodes->SetFturb(iPoint, numerics->GetFturb());
-
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -563,49 +546,4 @@ void CTransENSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
   
-}
-
-void CTransENSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
-
-  const bool check = false;
-  if (check == true){
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  su2double localUnderRelaxation =  1.00;
-  su2double allowableRatio = 0.2;
-
-  unsigned long Inner_Iter = config->GetInnerIter();
-
-  //if (Inner_Iter < 100) allowableRatio =  1e-5;
-  //else allowableRatio =  0.99;
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    localUnderRelaxation = 1.0;
-    su2double ratio = fabs(LinSysSol[iPoint]) / (fabs(nodes->GetSolution(iPoint, 0)) + EPS);
-    /* We impose a limit on the maximum percentage that the
-      turbulence variables can change over a nonlinear iteration. */
-    if (ratio > allowableRatio) {
-      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      //cout<<"Ratio = "<<ratio<<". Old = "<<fabs(LinSysSol[iPoint])<<". New = "<<fabs(nodes->GetSolution(iPoint, 0));
-      //cout<<". Local ratio = "<<localUnderRelaxation<<endl;
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
-  }
-  END_SU2_OMP_FOR
-  }
-
 }
