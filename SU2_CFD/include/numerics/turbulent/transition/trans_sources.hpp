@@ -440,7 +440,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
       /*--- F growth parameters ---*/
       const su2double DH_12		= 2.4*H_12 / (H_12 - 1.0);
       const su2double lH_12 	= (6.54*H_12 - 14.07)/pow(H_12,2);
-      const su2double mH_12 	= (1/lH_12) * ( 0.058*(pow((H_12 - 4.0),2)/(H_12 - 1)) - 0.068 );
+      const su2double mH_12 	= (1/lH_12) * (0.058*( pow((H_12 - 4.0),2)/(H_12 - 1) ) - 0.068);
 
       const su2double F_growth 	= DH_12*( (1 + mH_12)/2 )* lH_12;
 
@@ -455,7 +455,7 @@ class CSourcePieceWise_TransEN final : public CNumerics {
       REV_Local = Re_v;
 	  REV0_Local = Re_v_0;
 
-      short int F_crit = 0;
+      short int F_crit;
       if (Re_v < Re_v_0){
         F_crit = 0;
       } else {

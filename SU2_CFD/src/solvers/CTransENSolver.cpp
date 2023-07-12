@@ -161,9 +161,8 @@ void CTransENSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
     auto Normal = geometry->nodes->GetNormal(iPoint);
-    const su2double rho = flowNodes->GetDensity(iPoint);
     nodes->SetNormal(iPoint, Normal[0], Normal[1], Normal[2]);
-    nodes->SetAuxVar(iPoint, 0, rho * flowNodes->GetProjVel(iPoint, Normal));
+    nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
   }
   END_SU2_OMP_FOR
 
