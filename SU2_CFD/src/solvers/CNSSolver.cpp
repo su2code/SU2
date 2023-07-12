@@ -710,7 +710,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
                                     thermal_conductivity, There, Temperature_Ref);
     }
     else if (config->GetMarker_All_PyCustom(val_marker)) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
     /*--- Compute the normal gradient in temperature using Twall ---*/

@@ -377,7 +377,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     if (IsPyCustom) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / config->GetTemperature_Ref();
     }
     IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
   }
