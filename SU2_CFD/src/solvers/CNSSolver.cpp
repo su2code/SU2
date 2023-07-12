@@ -472,7 +472,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
     if (config->GetMarker_All_PyCustom(val_marker))
-      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
     else if (kind_boundary == HEAT_TRANSFER) {
       const su2double Twall = nodes->GetTemperature(iPoint);
       Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
