@@ -10578,7 +10578,7 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
     SU2_OMP_PARALLEL {
       SU2_OMP_FOR_(
 #ifndef __SANITIZE_THREAD__
-        schedule(dynamic, roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+          schedule(dynamic, roundUpDiv(nPoint, 2 * omp_get_max_threads()))
 #endif
       )
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
