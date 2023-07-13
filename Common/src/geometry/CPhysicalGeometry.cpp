@@ -10575,13 +10575,12 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
 
-    SU2_OMP_PARALLEL
-    {
-      #ifdef __SANITIZE_THREAD__
+    SU2_OMP_PARALLEL {
+#ifdef __SANITIZE_THREAD__
       SU2_OMP_FOR_()
-      #else
+#else
       SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
-      #endif
+#endif
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
         unsigned short markerID;
         unsigned long elemID;
