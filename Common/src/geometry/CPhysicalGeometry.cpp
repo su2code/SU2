@@ -10571,25 +10571,27 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
 
-    SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
-      unsigned short markerID;
-      unsigned long elemID;
-      int rankID;
-      su2double dist;
+    SU2_OMP_PARALLEL
+    {
+      SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+      for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
+        unsigned short markerID;
+        unsigned long elemID;
+        int rankID;
+        su2double dist;
 
-      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+        WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
-      if (dist < nodes->GetWall_Distance(iPoint)) {
-        nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
+        if (dist < nodes->GetWall_Distance(iPoint)) {
+          nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
+        }
       }
+      END_SU2_OMP_FOR
     }
-    END_SU2_OMP_FOR
+    END_SU2_OMP_PARALLEL
   }
-  END_SU2_OMP_PARALLEL
 }
