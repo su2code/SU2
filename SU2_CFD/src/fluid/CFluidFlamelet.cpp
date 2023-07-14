@@ -136,7 +136,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
       break;
     case INC_DENSITYMODEL::VARIABLE:
       molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-      Density = Pressure / (molar_weight * UNIVERSAL_GAS_CONSTANT * Temperature);
+      Density = (molar_weight / 1000) *  Pressure / ( UNIVERSAL_GAS_CONSTANT * Temperature);
       break;
     default:
       break;
