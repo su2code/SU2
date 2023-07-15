@@ -59,20 +59,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
-    X.resize(M);
-    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i], P) = su2double(0.0);
-  };
-
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell. ---*/
-  constexpr auto n_conjugate_var = 4u;
-
-  Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
-  for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
-
   /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
 }
@@ -371,7 +357,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (cht_mode) temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+    if (cht_mode) temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 

@@ -190,6 +190,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
     tutorial_trans_flatplate_T3A.test_vals  = [-5.837186, -2.092246, -3.982633, -0.302219, -1.921235, 1.667190, -3.496277, 0.391605]
+    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837191, -2.092246, -3.982640, -0.302224, -1.922554, 1.667190, -3.496277, 0.391605]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
 
@@ -199,6 +200,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
     tutorial_trans_flatplate_T3Am.test_vals  = [-6.063600, -1.945057, -3.946760, -0.549063, -3.863792, 2.664453, -2.517606, 1.112979]
+    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063598, -1.945057, -3.946744, -0.549062, -3.863792, 2.664453, -2.517606, 1.112979]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
 
@@ -243,7 +245,7 @@ def main():
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
     tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.291711, 0.000000, 0.305248, 0.810326, 0.001814, 0.006573]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.296968, 0, 0.312131, 0.801193, 0.002868, 0.014303]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
