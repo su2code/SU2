@@ -8,5 +8,10 @@
 *.csv
 *.plt
 *.szplt
-*.vtk
+*.vtu
+*.log
+*.out
+*.aux
+*.pdf
+*.png
 config_*.cfg
