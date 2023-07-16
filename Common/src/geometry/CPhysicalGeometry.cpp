@@ -4530,6 +4530,48 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     if (!status) SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
   }
 
+  /*--- Sort the RCM result by levels. ---*/
+  {
+    std::vector<unsigned long> InvResult;
+    InvResult.reserve(nPoint);
+    InvResult.resize(nPointDomain);
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      InvResult[Result[iPoint]] = iPoint;
+    }
+
+    std::vector<unsigned> level(nPointDomain, 0);
+    unsigned n_levels = 0;
+
+    for (auto iPointRcm = 0ul; iPointRcm < nPointDomain; ++iPointRcm) {
+      const auto iPoint = Result[iPointRcm];
+
+      for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+        const auto jPoint = nodes->GetPoint(iPoint, iNode);
+        if (jPoint < nPointDomain) {
+          const auto jPointRcm = InvResult[jPoint];
+          if (jPointRcm < iPointRcm) {
+            level[iPointRcm] = std::max(level[iPointRcm], level[jPointRcm] + 1);
+          }
+        }
+      }
+      n_levels = std::max(n_levels, level[iPointRcm] + 1);
+    }
+    std::cout << "Rank " << rank << " has " << n_levels << " levels.\n";
+
+    std::vector<unsigned long> level_offsets(n_levels + 1, 0);
+    for (const auto l : level) ++level_offsets[l + 1];
+    for (auto i_level = 2ul; i_level <= n_levels; ++i_level) {
+      level_offsets[i_level] += level_offsets[i_level - 1];
+    }
+    assert(level_offsets.back() == nPointDomain);
+
+    for (auto iPointRcm = 0ul; iPointRcm < nPointDomain; ++iPointRcm) {
+      const auto iPoint = Result[iPointRcm];
+      InvResult[level_offsets[level[iPointRcm]]++] = iPoint;
+    }
+    Result = std::move(InvResult);
+  }
+
   /*--- Add the MPI points ---*/
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);

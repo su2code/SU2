@@ -154,7 +154,6 @@ class CSysMatrix {
 
   /*!< \brief Level schedule for ILU OpenMP parallelization. */
   std::vector<unsigned long> level_offsets;
-  std::vector<unsigned long> level_indices;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 

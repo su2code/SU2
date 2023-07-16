@@ -150,7 +150,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
 
-    /*--- Compute levels. ---*/
+    /*--- Deduce levels, this assumes the points were sorted by level. ---*/
     std::vector<unsigned> level(nPointDomain, 0);
     unsigned n_levels = 0;
 
@@ -161,17 +161,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       }
       n_levels = std::max(n_levels, level[iPoint] + 1);
     }
+
     level_offsets.resize(n_levels + 1, 0);
     for (const auto l : level) ++level_offsets[l + 1];
-    for (auto i_level = 2ul; i_level < n_levels; ++i_level) {
+    for (auto i_level = 2ul; i_level <= n_levels; ++i_level) {
       level_offsets[i_level] += level_offsets[i_level - 1];
     }
-    level_indices.resize(nPointDomain);
-    auto insert_pos = level_offsets;
-
-    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-      level_indices[insert_pos[level[iPoint]]++] = iPoint;
-    }
+    assert(level_offsets.back() == nPointDomain);
   }
 
   /*--- Allocate data. ---*/
@@ -742,17 +738,15 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   const auto n_levels = level_offsets.size() - 1;
   for (unsigned long i_level = 1; i_level < n_levels; ++i_level) {
     /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
-    SU2_OMP_FOR_STAT(1024)
-    for (auto idx = level_offsets[i_level - 1]; idx < level_offsets[i_level]; ++idx) {
-      const auto iPoint = level_indices[idx];
+    SU2_OMP_FOR_()
+    for (auto iPoint = level_offsets[i_level - 1]; iPoint < level_offsets[i_level]; ++iPoint) {
       InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint * nVar * nVar]);
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_FOR_STAT(1024)
-    for (auto idx = level_offsets[i_level]; idx < level_offsets[i_level + 1]; ++idx) {
+    SU2_OMP_FOR_()
+    for (auto iPoint = level_offsets[i_level]; iPoint < level_offsets[i_level + 1]; ++iPoint) {
       /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
-      const auto iPoint = level_indices[idx];
       ScalarType weight[MAXNVAR * MAXNVAR], aux_block[MAXNVAR * MAXNVAR];
 
       for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
@@ -792,9 +786,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     END_SU2_OMP_FOR
 
     /*--- Invert the last level. ---*/
-    SU2_OMP_FOR_STAT(1024)
-    for (auto idx = level_offsets[n_levels - 1]; idx < level_offsets[n_levels]; ++idx) {
-      const auto iPoint = level_indices[idx];
+    SU2_OMP_FOR_()
+    for (auto iPoint = level_offsets[n_levels - 1]; iPoint < level_offsets[n_levels]; ++iPoint) {
       InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint * nVar * nVar]);
     }
     END_SU2_OMP_FOR
@@ -820,9 +813,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       that we are overwriting the residual vector as we go. ---*/
 
   for (unsigned long i_level = 0; i_level < n_levels; ++i_level) {
-    SU2_OMP_FOR_STAT(1024)
-    for (auto idx = level_offsets[i_level]; idx < level_offsets[i_level + 1]; ++idx) {
-      const auto iPoint = level_indices[idx];
+    SU2_OMP_FOR_()
+    for (auto iPoint = level_offsets[i_level]; iPoint < level_offsets[i_level + 1]; ++iPoint) {
       for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
         auto jPoint = col_ind_ilu[index];
         auto Block_ij = &ILU_matrix[index * nVar * nVar];
@@ -835,9 +827,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   /*--- Backwards substitution (starts at the last level). ---*/
 
   for (unsigned long i_level = n_levels; i_level > 0; --i_level) {
-    SU2_OMP_FOR_STAT(1024)
-    for (auto idx = level_offsets[i_level - 1]; idx < level_offsets[i_level]; ++idx) {
-      const auto iPoint = level_indices[idx];
+    SU2_OMP_FOR_()
+    for (auto iPoint = level_offsets[i_level - 1]; iPoint < level_offsets[i_level]; ++iPoint) {
       ScalarType aux_vec[MAXNVAR];
       for (auto iVar = 0ul; iVar < nVar; iVar++) aux_vec[iVar] = prod[iPoint * nVar + iVar];
 
