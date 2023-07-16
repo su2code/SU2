@@ -426,10 +426,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST_2D) || (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-        (config->GetDesign_Variable(iDV) == FFD_NACELLE) || (config->GetDesign_Variable(iDV) == FFD_GULL) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST) || (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
-        (config->GetDesign_Variable(iDV) == FFD_CAMBER) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
+        (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) || (config->GetDesign_Variable(iDV) == FFD_NACELLE) ||
+        (config->GetDesign_Variable(iDV) == FFD_GULL) || (config->GetDesign_Variable(iDV) == FFD_TWIST) ||
+        (config->GetDesign_Variable(iDV) == FFD_ROTATION) || (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
         (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
       /*--- Read the FFD information in the first iteration. ---*/
 
@@ -481,9 +481,6 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
           case FFD_THICKNESS_2D:
             Local_MoveSurface =
                 surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
-            break;
-          case FFD_TWIST_2D:
-            Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
             break;
           case FFD_CONTROL_POINT:
             Local_MoveSurface = surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
