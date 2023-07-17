@@ -1,7 +1,7 @@
 /*!
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
- * \author D. Mayer, N. Beishuizen, T. Economon
+ * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -48,15 +48,6 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
 
   /*!
-   * \brief Compute the primitive variables (diffusivities).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - Boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
-
-  /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,
    * for which the wall temperature is given by GetConjugateHeatVariable.
    */
@@ -93,7 +84,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
   unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
-                                 vector<su2double>& scalars);
+                                 const vector<su2double>& scalars);
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
@@ -104,7 +95,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
   unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
-                                 vector<su2double>& scalars);
+                                 const vector<su2double>& scalars);
 
  public:
   /*!
@@ -184,29 +175,4 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void BC_ConjugateHeat_Interface(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config,
                                   unsigned short val_marker) override;
-
-  /*!
-   * \brief Get the conjugate heat variables.
-   * \param[in] val_marker - The marker index.
-   * \param[in] val_vertex - The vertex index.
-   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
-   */
-  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex,
-                                            unsigned short pos_var) const override {
-    return conjugate_var[val_marker][val_vertex][pos_var];
-  }
-
-  /*!
-   * \brief Set the conjugate heat variables.
-   * \param[in] val_marker - The marker index.
-   * \param[in] val_vertex - The vertex index.
-   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
-   * \param[in] relaxation_factor - The relaxation factor for the change of the variables.
-   * \param[in] val_var - The value of the variable.
-   */
-  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var,
-                                       su2double relaxation_factor, su2double val_var) override {
-    conjugate_var[val_marker][val_vertex][pos_var] =
-        relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
-  }
 };

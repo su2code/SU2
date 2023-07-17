@@ -98,7 +98,7 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] output_refs - output data.
    * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
    */
-  inline unsigned long EvaluateDataSet(vector<su2double>& input_scalar, unsigned short lookup_type,
+  inline unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                        vector<su2double>& output_refs) override;
 
   /*!

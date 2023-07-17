@@ -1,7 +1,7 @@
 /*!
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
- * \author D. Mayer, T. Economon, N. Beishuizen
+ * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -343,7 +343,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
+  su2double temp_wall;
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   su2double enth_wall;
@@ -354,7 +354,10 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (cht_mode) temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
+    if (cht_mode)
+      temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
+    else 
+      temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
@@ -434,7 +437,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 }
 
 unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
-                                                       unsigned long iPoint, vector<su2double>& scalars) {
+                                                       unsigned long iPoint, const vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
@@ -462,7 +465,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 }
 
 unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local,
-                                                       unsigned long iPoint, vector<su2double>& scalars) {
+                                                       unsigned long iPoint, const vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
   vector<su2double> lookup_scalar(config->GetNLookups());

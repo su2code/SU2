@@ -199,7 +199,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   }
 }
 
-unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double>& input_scalar, unsigned short lookup_type,
+unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                               vector<su2double>& output_refs) {
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
