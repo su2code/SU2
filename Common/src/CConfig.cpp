@@ -2302,7 +2302,6 @@ void CConfig::SetConfig_Options() {
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
    - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-   - FFD_TWIST_2D ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -6434,7 +6433,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-          case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
           case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
@@ -6484,7 +6482,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
-            (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
@@ -6504,7 +6501,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_TWIST_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_NACELLE) ||
                (Design_Variable[iDV] == FFD_GULL) ||
