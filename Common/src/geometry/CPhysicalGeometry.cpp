@@ -10565,6 +10565,15 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
   return WallADT;
 }
 
+/*--- Use a thread-sanitizer dependent loop schedule to work around suspected false positives ---*/
+#ifndef __SANITIZE_THREAD__
+#define CPHYSGEO_PARFOR SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+#else
+#define CPHYSGEO_PARFOR SU2_OMP_FOR_()
+#endif
+
+#define END_CPHYSGEO_PARFOR END_SU2_OMP_FOR
+
 void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) {
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
@@ -10576,11 +10585,7 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
      distance for all nodes. ---*/
 
     SU2_OMP_PARALLEL {
-#ifndef __SANITIZE_THREAD__
-      SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
-#else
-      SU2_OMP_FOR_()
-#endif
+      CPHYSGEO_PARFOR
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
         unsigned short markerID;
         unsigned long elemID;
@@ -10593,12 +10598,11 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
           nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
         }
       }
-#ifndef __SANITIZE_THREAD__
-      END_SU2_OMP_FOR
-#else
-      END_SU2_OMP_FOR
-#endif
+      END_CPHYSGEO_PARFOR
     }
     END_SU2_OMP_PARALLEL
   }
 }
+
+#undef CPHYSGEO_PARFOR
+#undef END_CPHYSGEO_PARFOR
