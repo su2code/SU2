@@ -452,7 +452,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
+    SU2_OMP_PARALLEL_(if (!omp_in_parallel()))
     ModGramSchmidt(i, H, W);
+    END_SU2_OMP_PARALLEL
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
      new Givens rotation matrix and apply it to the last two elements of H[:][i] and g ---*/
@@ -480,9 +482,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   const auto& basis = flexible ? Z : W;
 
+  SU2_OMP_PARALLEL_(if (!omp_in_parallel()))
   for (unsigned long k = 0; k < i; k++) {
     x += y[k] * basis[k];
   }
+  END_SU2_OMP_PARALLEL
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 
