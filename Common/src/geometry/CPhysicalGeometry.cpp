@@ -10576,11 +10576,11 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
      distance for all nodes. ---*/
 
     SU2_OMP_PARALLEL {
-      SU2_OMP_FOR_(
 #ifndef __SANITIZE_THREAD__
-          schedule(dynamic, roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+      SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+#else
+      SU2_OMP_FOR_()
 #endif
-      )
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
         unsigned short markerID;
         unsigned long elemID;
@@ -10593,7 +10593,11 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
           nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
         }
       }
+#ifndef __SANITIZE_THREAD__
       END_SU2_OMP_FOR
+#else
+      END_SU2_OMP_FOR
+#endif
     }
     END_SU2_OMP_PARALLEL
   }
