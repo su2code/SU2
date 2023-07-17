@@ -72,7 +72,8 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] scalar_solution - local scalar solution.
    * \param[out] Converged - 0 if Newton solver converged, 1 if not.
    */
-  unsigned long GetEnthFromTemp(CFluidModel * fluid_model, su2double const val_temp, su2double * val_enth, const su2double * scalar_solution);
+  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp, su2double* val_enth,
+                                const su2double* scalar_solution);
 
   /*!
    * \brief Find maximum progress variable value within the manifold for the current solution.
@@ -80,7 +81,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] scalars - local scalar solution.
    * \return - maximum progress variable value within manifold bounds.
    */
-  su2double GetBurntProgressVariable(CFluidModel * fluid_model, const su2double * scalars);
+  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars);
 
   /*!
    * \brief Retrieve scalar source terms from manifold.
@@ -91,7 +92,8 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] table_source_names - variable names of scalar source terms.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetScalarSources(CConfig *config, CFluidModel *fluid_model_local, unsigned long iPoint, vector<su2double> &scalars);
+  unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+                                 vector<su2double>& scalars);
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
@@ -99,10 +101,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
-   * \param[in] table_lookup_names - variable names of scalar source terms.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetScalarLookUps(CConfig *config, CFluidModel *fluid_model_local, unsigned long iPoint, vector<su2double> &scalars);
+  unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+                                 vector<su2double>& scalars);
 
  public:
   /*!

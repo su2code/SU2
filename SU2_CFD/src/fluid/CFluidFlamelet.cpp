@@ -51,69 +51,65 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
-  for (auto iCV=0u; iCV<n_control_vars; iCV++)
-    table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
-  
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
+
   /*--- auxiliary species transport equations---*/
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
   controlling_variable_names.resize(n_control_vars);
-  for (auto iCV=0u; iCV<n_control_vars; iCV++)
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++)
     controlling_variable_names[iCV] = config->GetControllingVariableName(iCV);
-  
+
   passive_specie_names.resize(n_user_scalars);
-  for (auto i_aux=0u; i_aux < n_user_scalars; i_aux++) 
-    passive_specie_names[i_aux] = config->GetUserScalarName(i_aux);
-  
-  switch (Kind_DataDriven_Method)
-  {
-  case ENUM_DATADRIVEN_METHOD::LUT:
-    if (rank == MASTER_NODE) {
-      cout << "*****************************************" << endl;
-      cout << "***   initializing the lookup table   ***" << endl;
-      cout << "*****************************************" << endl;
-    }
-    look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR], table_scalar_names[I_ENTH]);
-    break;
-  default:
-    if (rank == MASTER_NODE) {
-      cout << "***********************************************" << endl;
-      cout << "*** initializing the multi-layer perceptron ***" << endl;
-      cout << "***********************************************" << endl;
-    }
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = config->GetUserScalarName(i_aux);
+
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+      if (rank == MASTER_NODE) {
+        cout << "*****************************************" << endl;
+        cout << "***   initializing the lookup table   ***" << endl;
+        cout << "*****************************************" << endl;
+      }
+      look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR],
+                                       table_scalar_names[I_ENTH]);
+      break;
+    default:
+      if (rank == MASTER_NODE) {
+        cout << "***********************************************" << endl;
+        cout << "*** initializing the multi-layer perceptron ***" << endl;
+        cout << "***********************************************" << endl;
+      }
 #ifdef USE_MLPCPP
       lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
       if ((rank == MASTER_NODE)) lookup_mlp->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
 #endif
-    break;
+      break;
   }
-  
+
   Pressure = value_pressure_operating;
 
   PreprocessLookUp(config);
- 
 }
 
-CFluidFlamelet::~CFluidFlamelet() { 
-  switch (Kind_DataDriven_Method)
-  {
-  case ENUM_DATADRIVEN_METHOD::LUT:
-    delete look_up_table; 
-    break;
-  case ENUM_DATADRIVEN_METHOD::MLP:
+CFluidFlamelet::~CFluidFlamelet() {
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+      delete look_up_table;
+      break;
+    case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-    delete iomap_TD;
-    delete iomap_Sources;
-    delete iomap_LookUp;
-    delete lookup_mlp;
+      delete iomap_TD;
+      delete iomap_Sources;
+      delete iomap_LookUp;
+      delete lookup_mlp;
 #endif
-    break;
-  default:
-    break;
+      break;
+    default:
+      break;
   }
 }
 
@@ -128,27 +124,25 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
   Kt = val_vars_TD[LOOKUP_TD::CONDUCTIVITY];
   mass_diffusivity = val_vars_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT];
-  switch (density_model)
-  {
+  switch (density_model) {
     case INC_DENSITYMODEL::FLAMELET:
       Density = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
       molar_weight = Pressure / (Density * UNIVERSAL_GAS_CONSTANT * Temperature);
       break;
     case INC_DENSITYMODEL::VARIABLE:
       molar_weight = val_vars_TD[LOOKUP_TD::MOLARWEIGHT];
-      Density = (molar_weight / 1000) *  Pressure / ( UNIVERSAL_GAS_CONSTANT * Temperature);
+      Density = (molar_weight / 1000) * Pressure / (UNIVERSAL_GAS_CONSTANT * Temperature);
       break;
     default:
       break;
   }
-    /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
+  /*--- Compute Cv from Cp and molar weight of the mixture (ideal gas). ---*/
   Cv = Cp - UNIVERSAL_GAS_CONSTANT / molar_weight;
 }
 
 void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
-
   density_model = config->GetKind_DensityModel();
-   /*--- Thermodynamic state variables and names. ---*/
+  /*--- Thermodynamic state variables and names. ---*/
   varnames_TD.resize(LOOKUP_TD::SIZE);
   val_vars_TD.resize(LOOKUP_TD::SIZE);
 
@@ -160,22 +154,21 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_TD[LOOKUP_TD::DIFFUSIONCOEFFICIENT] = "DiffusionCoefficient";
 
   /*--- In case of FLAMELET density model, the density is directly interpolated from the manifold.---*/
-  switch (density_model)
-  {
-  case INC_DENSITYMODEL::FLAMELET:
-    varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "Density";
-    break;
-  case INC_DENSITYMODEL::VARIABLE:
-    varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "MolarWeightMix";
-    break;
-  default:
-    break;
+  switch (density_model) {
+    case INC_DENSITYMODEL::FLAMELET:
+      varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "Density";
+      break;
+    case INC_DENSITYMODEL::VARIABLE:
+      varnames_TD[LOOKUP_TD::MOLARWEIGHT] = "MolarWeightMix";
+      break;
+    default:
+      break;
   }
   /*--- Scalar source term variables and names. ---*/
-  size_t n_sources = n_control_vars + 2*n_user_scalars;
+  size_t n_sources = n_control_vars + 2 * n_user_scalars;
   varnames_Sources.resize(n_sources);
   val_vars_Sources.resize(n_sources);
-  for (auto iCV=0u; iCV<n_control_vars; iCV++)
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++)
     varnames_Sources[iCV] = config->GetControllingVariableSourceName(iCV);
   /*--- No source term for enthalpy ---*/
 
@@ -192,8 +185,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   size_t n_lookups = config->GetNLookups();
   varnames_LookUp.resize(n_lookups);
   val_vars_LookUp.resize(n_lookups);
-  for (auto iLookup=0u; iLookup < n_lookups; iLookup++)
-    varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
+  for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
 
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
 #ifdef USE_MLPCPP
@@ -207,61 +199,58 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   }
 }
 
-unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) {
+unsigned long CFluidFlamelet::EvaluateDataSet(vector<su2double>& input_scalar, unsigned short lookup_type,
+                                              vector<su2double>& output_refs) {
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
   vector<string> varnames;
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
-  switch (lookup_type)
-  {
-  case FLAMELET_LOOKUP_OPS::TD:
-    varnames = varnames_TD;
-  #ifdef USE_MLPCPP
-    iomap_Current = iomap_TD;
-  #endif
-    break;
-  case FLAMELET_LOOKUP_OPS::SOURCES:
-    varnames = varnames_Sources;
-  #ifdef USE_MLPCPP
-    iomap_Current = iomap_Sources;
-  #endif
-    break;
-  case FLAMELET_LOOKUP_OPS::LOOKUP:
-    varnames = varnames_LookUp;
-  #ifdef USE_MLPCPP
-    iomap_Current = iomap_LookUp;
-  #endif
-    break;
-  default:
-    break;
+  switch (lookup_type) {
+    case FLAMELET_LOOKUP_OPS::TD:
+      varnames = varnames_TD;
+#ifdef USE_MLPCPP
+      iomap_Current = iomap_TD;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::SOURCES:
+      varnames = varnames_Sources;
+#ifdef USE_MLPCPP
+      iomap_Current = iomap_Sources;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::LOOKUP:
+      varnames = varnames_LookUp;
+#ifdef USE_MLPCPP
+      iomap_Current = iomap_LookUp;
+#endif
+      break;
+    default:
+      break;
   }
   if (output_refs.size() != varnames.size())
     SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  switch (Kind_DataDriven_Method)
-  {
-  case ENUM_DATADRIVEN_METHOD::LUT:
-    if (include_mixture_fraction) {
-      extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
-    } else {
-      extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
-    }
-    break;
-  case ENUM_DATADRIVEN_METHOD::MLP:
-    refs_vars.resize(output_refs.size());
-    for (auto iVar=0u; iVar<output_refs.size(); iVar++)
-      refs_vars[iVar] = &output_refs[iVar];
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+      if (include_mixture_fraction) {
+        extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
+      } else {
+        extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
+      }
+      break;
+    case ENUM_DATADRIVEN_METHOD::MLP:
+      refs_vars.resize(output_refs.size());
+      for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
 #ifdef USE_MLPCPP
-    extrapolation = lookup_mlp->PredictANN(iomap_Current, input_scalar, refs_vars);
+      extrapolation = lookup_mlp->PredictANN(iomap_Current, input_scalar, refs_vars);
 #endif
-    break;
-  default:
-    break;
+      break;
+    default:
+      break;
   }
-  
 
   return extrapolation;
 }

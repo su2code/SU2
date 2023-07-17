@@ -342,7 +342,7 @@ class CFluidModel {
    * \brief Get fluid model extrapolation instance
    * \return Query point lies outside fluid model data range.
    */
-  virtual unsigned long GetExtrapolation() { return 0; }
+  virtual unsigned long GetExtrapolation() const { return 0; }
 
   /*!
    * \brief Get number of Newton solver iterations.

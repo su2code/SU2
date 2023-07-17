@@ -104,5 +104,5 @@ class CTrapezoidalMap {
    * \brief get memory footprint of trapezoidal map.
    * \return - memory footprint in mega bytes.
    */
-  double GetMemoryFootprint() { return memory_footprint; }
+  double GetMemoryFootprint() const { return memory_footprint; }
 };

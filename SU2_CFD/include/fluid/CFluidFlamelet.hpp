@@ -44,16 +44,15 @@ class CFluidFlamelet final : public CFluidModel {
 
   int rank;
 
-  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */ 
+  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
 
   unsigned long extrapolation;
-  
+
   INC_DENSITYMODEL density_model;
-  vector<string> controlling_variable_names,
-                 passive_specie_names;
+  vector<string> controlling_variable_names, passive_specie_names;
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
 
   su2double mass_diffusivity, /*!< \brief local mass diffusivity of the mixture */
@@ -64,22 +63,20 @@ class CFluidFlamelet final : public CFluidModel {
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
-  MLPToolbox::CIOMap* iomap_TD;      /*!< \brief Input-output map for thermochemical properties. */
-  MLPToolbox::CIOMap* iomap_Sources; /*!< \brief Input-output map for species source terms. */
-  MLPToolbox::CIOMap* iomap_LookUp;  /*!< \brief Input-output map for passive look-up terms. */
+  MLPToolbox::CIOMap* iomap_TD;        /*!< \brief Input-output map for thermochemical properties. */
+  MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
+  MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
   MLPToolbox::CIOMap* iomap_Current;
 #endif
 
   vector<su2double> scalars_vector;
 
   vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
-                 varnames_Sources,
-                 varnames_LookUp;
+      varnames_Sources, varnames_LookUp;
 
   vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
-                    val_vars_Sources,
-                    val_vars_LookUp;
-  
+      val_vars_Sources, val_vars_LookUp;
+
   void PreprocessLookUp(CConfig* config);
 
  public:
@@ -101,13 +98,14 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] output_refs - output data.
    * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
    */
-  inline unsigned long EvaluateDataSet(vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) override;
+  inline unsigned long EvaluateDataSet(vector<su2double>& input_scalar, unsigned short lookup_type,
+                                       vector<su2double>& output_refs) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
    * \return - within bounds (0) or out of bounds (1).
    */
-  unsigned long GetExtrapolation() override { return extrapolation; }
+  unsigned long GetExtrapolation() const override { return extrapolation; }
 
   /*!
    * \brief Get the mass diffusivity of the species.

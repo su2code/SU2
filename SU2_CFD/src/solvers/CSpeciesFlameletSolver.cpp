@@ -66,7 +66,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
-  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global=0;
+  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -126,11 +126,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
 
     su2double prog_burnt = 0, prog_unburnt, point_loc;
-    su2double *scalar_init = new su2double[nVar];
+    su2double scalar_init[MAXNVAR];
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) {
         const auto& cv_name = config->GetControllingVariableName(iCV);
         cout << "initial condition: " << cv_name << " = " << config->GetSpecies_Init()[iCV] << endl;
       }
@@ -145,8 +145,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        scalar_init[iVar] = config->GetSpecies_Init()[iVar];
+      for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, &enth_inlet, config->GetSpecies_Init());
@@ -238,8 +237,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         cout << " Initial condition: Number of points in which enthalpy could not be iterated: "
              << n_not_iterated_global << " !!!" << endl;
     }
-
-    delete [] scalar_init;
   }
 }
 
@@ -436,19 +433,18 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
-unsigned long CSpeciesFlameletSolver::SetScalarSources(CConfig* config, CFluidModel* fluid_model_local,
+unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
                                                        unsigned long iPoint, vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
-  vector<su2double> table_sources(config->GetNControlVars() + 2*config->GetNUserScalars());
+  vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
   vector<su2double> source_scalar(config->GetNScalars());
-  for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++)
-    source_scalar[iCV] = table_sources[iCV];
+  for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) source_scalar[iCV] = table_sources[iCV];
   source_scalar[I_PROGVAR] = fmax(EPS, source_scalar[I_PROGVAR]);
 
   /*--- Source term for the auxiliary species transport equations. ---*/
@@ -465,7 +461,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(CConfig* config, CFluidMo
   return misses;
 }
 
-unsigned long CSpeciesFlameletSolver::SetScalarLookUps(CConfig* config, CFluidModel* fluid_model_local,
+unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local,
                                                        unsigned long iPoint, vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
@@ -490,7 +486,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
   int counter = 0;
 
-  su2double *val_scalars = new su2double[nVar];
+  su2double val_scalars[MAXNVAR];
   for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
 
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
@@ -507,7 +503,6 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     enth_iter += delta_enth;
   }
-  delete [] val_scalars;
 
   *val_enth = enth_iter;
 
@@ -519,8 +514,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 }
 
 su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
-  su2double *scalars = new su2double[nVar],
-            delta = 1e-3;
+  su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
 
   bool outside = false;
@@ -530,6 +524,5 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
     scalars[I_PROGVAR] += delta;
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;
-  delete [] scalars;
   return pv_burnt;
 }

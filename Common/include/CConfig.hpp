@@ -2153,10 +2153,16 @@ public:
    */
   unsigned short GetNUserScalars() const { return n_user_scalars; }
 
+  /*!
+   * \brief Get the name of a specific controlling variable.
+   */
   const string& GetControllingVariableName(unsigned short i_cv) const {
     return controlling_variable_names[i_cv];
   }
 
+  /*!
+   * \brief Get the name of the source term variable for a specific controlling variable.
+   */
   const string& GetControllingVariableSourceName(unsigned short i_cv) const {
     return cv_source_names[i_cv];
   }

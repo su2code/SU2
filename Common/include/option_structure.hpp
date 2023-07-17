@@ -1329,10 +1329,13 @@ enum FLAMELET_SCALAR_SOURCES {
   I_SRC_TOT_PROGVAR
 };
 
+/*!
+ * \brief Look-up operations for the flamelet scalar solver.
+ */
 enum FLAMELET_LOOKUP_OPS {
-  TD,
-  SOURCES,
-  LOOKUP,
+  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
+  LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };
 
 /*!

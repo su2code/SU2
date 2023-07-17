@@ -172,7 +172,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   }
 
   if (table_dim == 3) {
-    limits_table_z = minmax_element(&z_values_levels[0], &z_values_levels[0] + z_values_levels.size());
+    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.size());
   }
 }
 
