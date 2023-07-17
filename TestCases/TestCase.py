@@ -852,9 +852,8 @@ class TestCase:
 
     def adjust_iter(self, running_with_tsan=False):
 
-        if not running_with_tsan:
-          new_iter = self.test_iter + 1
-        else:
+        new_iter = self.test_iter + 1
+        if running_with_tsan and new_iter > 2:
           new_iter = 2
 
         # Read the cfg file
