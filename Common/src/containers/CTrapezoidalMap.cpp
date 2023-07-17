@@ -198,9 +198,14 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
 
   /* The intersection of the faces to which upper or lower belongs is the face that both belong to. */
-  vector<unsigned long> triangle(1);
+  vector<unsigned long> triangle;
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
-                   triangles_edge_low.end(), triangle.begin());
+                   triangles_edge_low.end(), std::back_inserter(triangle));
+
+  /*--- We failed to find an intersection, so take the lower triangle inside the band enclosing the point---*/
+  if (triangle.size() < 1) {
+    triangle.resize(1, triangles_edge_low[0]);
+  }
 
   return triangle[0];
 }
