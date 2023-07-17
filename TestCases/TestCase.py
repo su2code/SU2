@@ -852,16 +852,26 @@ class TestCase:
 
     def adjust_iter(self, running_with_tsan=False):
 
-        new_iter = self.test_iter + 1
-        if running_with_tsan and new_iter > 2:
-          new_iter = 2
-
         # Read the cfg file
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         file_in = open(self.cfg_file, 'r')
         lines   = file_in.readlines()
         file_in.close()
+
+        new_iter = self.test_iter + 1
+
+        if running_with_tsan:
+
+          # detect restart
+          restart_iter = 0
+          for line in lines:
+              if line.strip().split("=")[0].strip() == "RESTART_ITER":
+                  restart_iter = int(line.strip().split("=")[1].strip())
+                  break
+
+          if  new_iter > restart_iter + 2:
+            new_iter = restart_iter + 2
 
         # Rewrite the file with a .autotest extension
         self.cfg_file = "%s.autotest"%self.cfg_file
