@@ -157,7 +157,7 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
 
   // Note: Electron energy not included properly.
 
-  if (val_dPdU == NULL) {
+  if (val_dPdU == nullptr) {
     SU2_MPI::Error("Array dPdU not allocated!", CURRENT_FUNCTION);
   }
 

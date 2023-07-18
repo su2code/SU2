@@ -52,7 +52,7 @@ public:
    * \brief Write sorted data to file in paraview file format
    * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
 };
 

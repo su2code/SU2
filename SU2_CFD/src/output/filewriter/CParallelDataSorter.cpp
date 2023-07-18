@@ -32,7 +32,7 @@
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
-  fieldNames(std::move(valFieldNames)) {
+  fieldNames(valFieldNames) {
 
   GlobalField_Counter = fieldNames.size();
 
@@ -330,7 +330,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
 
 }
 
-unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
+unsigned long CParallelDataSorter::GetElemConnectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
 
   switch (type) {
     case LINE:

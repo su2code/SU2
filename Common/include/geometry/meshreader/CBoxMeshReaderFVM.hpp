@@ -35,10 +35,8 @@
  * \brief Reads a 3D box grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CBoxMeshReaderFVM: public CMeshReaderFVM {
-
-private:
-
+class CBoxMeshReaderFVM : public CMeshReaderFVM {
+ private:
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
   unsigned long pNode; /*!< \brief Number of grid nodes in the z-direction. */
@@ -69,18 +67,14 @@ private:
    */
   void ComputeBoxSurfaceConnectivity();
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the CBoxMeshReaderFVM class.
    */
-  CBoxMeshReaderFVM(CConfig        *val_config,
-                    unsigned short val_iZone,
-                    unsigned short val_nZone);
+  CBoxMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CBoxMeshReaderFVM class.
    */
   ~CBoxMeshReaderFVM(void);
-
 };

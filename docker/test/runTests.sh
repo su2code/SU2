@@ -6,7 +6,7 @@
 # $4 : Path of the installation directory
 # $5 : Test script to execute
 
-usage="$(basename "$0") [-h] [-t tutorial_branch] [-b su2_branch] [-c testcases_branch] [-s test_script] 
+usage="$(basename "$0") [-h] [-t tutorial_branch] [-b su2_branch] [-c testcases_branch] [-s test_script]
 where:
     -h  show this help text
     -t  branch of su2code/Tutorials repo
@@ -19,7 +19,7 @@ where:
 
 Compiled binaries must be mounted at /install/ !
 
-Note: If you specify a working directory using the --workdir option for docker, 
+Note: If you specify a working directory using the --workdir option for docker,
       append this directory to all paths above (e.g. use --workdir=/tmp if running in user mode)."
 
 su2branch=""
@@ -122,4 +122,3 @@ else
     echo "Tests failed"
     exit 1
 fi
-
