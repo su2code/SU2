@@ -30,11 +30,14 @@ from __future__ import print_function
 
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Hybrid Regression Tests')
 
     test_list = []
     file_diff_list = []
@@ -475,6 +478,7 @@ def main():
     cosine_gust.test_iter = 79
     cosine_gust.test_vals = [-2.418813, 0.004650, -0.001878, -0.000637, -0.000271]
     cosine_gust.unsteady  = True
+    cosine_gust.enabled_with_tsan = False
     test_list.append(cosine_gust)
 
     # Gust with mesh deformation
@@ -484,6 +488,7 @@ def main():
     gust_mesh_defo.test_iter = 6
     gust_mesh_defo.test_vals = [-1.844778, 0.000846, -0.000408]
     gust_mesh_defo.unsteady  = True
+    gust_mesh_defo.enabled_with_tsan = False
     test_list.append(gust_mesh_defo)
 
     # Aeroelastic
@@ -495,6 +500,7 @@ def main():
     aeroelastic.test_vals_aarch64 = [0.074836, 0.033102, -0.001650, -0.000127]
     aeroelastic.unsteady  = True
     aeroelastic.enabled_on_cpu_arch = ["x86_64"] # Requires AVX-capable architecture
+    aeroelastic.enabled_with_tsan = False
     test_list.append(aeroelastic)
 
     # Delayed Detached Eddy Simulation
@@ -522,6 +528,7 @@ def main():
     unst_deforming_naca0012.test_iter = 5
     unst_deforming_naca0012.test_vals = [-3.665120, -3.793643, -3.716518, -3.148310]
     unst_deforming_naca0012.unsteady  = True
+    unst_deforming_naca0012.enabled_with_tsan = False
     test_list.append(unst_deforming_naca0012)
 
     ######################################
@@ -606,6 +613,7 @@ def main():
     channel_3D.test_vals_aarch64 = [2.000000, 0.000000, 0.620189, 0.505311, 0.415246]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
+    channel_3D.enabled_with_tsan = False
     test_list.append(channel_3D)
 
     # Pipe
@@ -687,6 +695,7 @@ def main():
     fsi2d.test_vals = [4.000000, 0.000000, -3.743227, -4.133479]
     fsi2d.multizone= True
     fsi2d.unsteady = True
+    fsi2d.enabled_with_tsan = False
     test_list.append(fsi2d)
 
     # FSI, Static, 2D, new mesh solver
@@ -763,6 +772,7 @@ def main():
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
+    pywrapper_translating_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_translating_naca0012)
 
     # NACA0012 with updated moving frame
@@ -775,6 +785,7 @@ def main():
     pywrapper_updated_moving_frame_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_updated_moving_frame_naca0012.test_file = "forces_0.csv"
     pywrapper_updated_moving_frame_naca0012.enabled_on_cpu_arch = ["x86_64"]
+    pywrapper_updated_moving_frame_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_updated_moving_frame_naca0012)
 
     ######################################
@@ -787,8 +798,8 @@ def main():
         test.tol = 1e-4
     #end
 
-    pass_list = [ test.run_test() for test in test_list ]
-    pass_list += [ test.run_filediff() for test in file_diff_list ]
+    pass_list = [ test.run_test(args.tsan) for test in test_list ]
+    pass_list += [ test.run_filediff(args.tsan) for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')
