@@ -626,10 +626,9 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
+  //const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  //const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -699,9 +698,11 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- Get transport coefficients ---*/
 
-    su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
-    su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
-    su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+    //su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+    //su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+    //su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+    //su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);
@@ -802,7 +803,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
@@ -883,6 +883,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
+      const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
 
       /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
 
