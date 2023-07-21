@@ -148,7 +148,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
-      n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, &enth_inlet, config->GetSpecies_Init());
+      n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
@@ -325,8 +325,8 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet;
-  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, &enth_inlet,
-                  config->GetInlet_SpeciesVal(Marker_Tag));
+  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
+                  &enth_inlet);
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -356,7 +356,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
 
     if (cht_mode)
       temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
-    else 
+    else
       temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
@@ -367,7 +367,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         enth_wall = nodes->GetSolution(iPoint, I_ENTH);
 
         /*--- Set enthalpy on the wall. ---*/
-        n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, &enth_wall, nodes->GetSolution(iPoint));
+        n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, nodes->GetSolution(iPoint), &enth_wall);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any
@@ -478,7 +478,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CF
 }
 
 unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
-                                                      su2double* val_enth, const su2double* scalar_solution) {
+                                                      const su2double* scalar_solution, su2double* val_enth) {
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double delta_temp_final = 0.001;
   su2double enth_iter = scalar_solution[I_ENTH];

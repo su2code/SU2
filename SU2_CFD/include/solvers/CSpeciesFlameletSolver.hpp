@@ -59,12 +59,12 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Reverse look-up to retrieve enthalpy value based on temperature and other controlling variables.
    * \param[in] fluid_model - pointer to flamelet fluid model.
    * \param[in] val_temp - temperature value used for reverse look-up.
-   * \param[in] val_enth - pointer to enthalpy value to be retrieved.
    * \param[in] scalar_solution - local scalar solution.
+   * \param[in] val_enth_out - pointer to output enthalpy variable.
    * \param[out] Converged - 0 if Newton solver converged, 1 if not.
    */
-  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp, su2double* val_enth,
-                                const su2double* scalar_solution);
+  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
+                                const su2double* scalar_solution, su2double* val_enth_out);
 
   /*!
    * \brief Find maximum progress variable value within the manifold for the current solution.
