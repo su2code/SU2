@@ -3855,7 +3855,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
        VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
        and it will remain constant through the complete domain. --- */
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE && Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) {
         SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
                        CURRENT_FUNCTION);
       }
