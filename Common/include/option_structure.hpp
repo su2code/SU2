@@ -628,11 +628,13 @@ enum class INC_DENSITYMODEL {
   CONSTANT,   /*!< \brief Constant density. */
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
+  FLAMELET,   /*!< \brief Density according to flamelet manifold. */
 };
 static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
+  MakePair("FLAMELET", INC_DENSITYMODEL::FLAMELET)
 };
 
 /*!
@@ -1317,6 +1319,7 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
+  I_MIXFRAC,
 };
 
 /*!
@@ -1324,6 +1327,15 @@ enum FLAMELET_SCALAR_VARIABLES {
  */
 enum FLAMELET_SCALAR_SOURCES {
   I_SRC_TOT_PROGVAR
+};
+
+/*!
+ * \brief Look-up operations for the flamelet scalar solver.
+ */
+enum FLAMELET_LOOKUP_OPS {
+  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
+  LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };
 
 /*!
