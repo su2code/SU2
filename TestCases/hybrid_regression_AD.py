@@ -30,11 +30,14 @@ from __future__ import print_function
 
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Hybrid Regression AD Tests')
 
     test_list = []
 
@@ -142,6 +145,7 @@ def main():
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.746907, -1.544882, -0.008321, 0.000014]
     discadj_cylinder.unsteady  = True
+    discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
 
     ##############################################################
@@ -155,6 +159,7 @@ def main():
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.004402]
     discadj_cylinder.unsteady  = True
+    discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
 
     ##########################################################################
@@ -168,6 +173,7 @@ def main():
     discadj_DT_1ST_cylinder.test_iter = 9
     discadj_DT_1ST_cylinder.test_vals = [3.698167, -1.607051, -0.002159, 0.000028]
     discadj_DT_1ST_cylinder.unsteady  = True
+    discadj_DT_1ST_cylinder.enabled_with_tsan = False
     test_list.append(discadj_DT_1ST_cylinder)
 
     ######################################################
@@ -181,6 +187,7 @@ def main():
     discadj_pitchingNACA0012.test_iter = 4
     discadj_pitchingNACA0012.test_vals = [-1.219713, -1.645717, -0.007513, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
+    discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
 
     #######################################################
@@ -194,6 +201,7 @@ def main():
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals         = [79, 0.770065, 0.383137, 0.472153, -0.996484, 2.153296, -4.444301]
     discadj_trans_stator.test_vals_aarch64 = [79, 0.769987, 0.383135, 0.472391, -0.996504, 2.153296, -4.444301]
+    discadj_trans_stator.enabled_with_tsan = False
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -219,7 +227,7 @@ def main():
         test.tol = 1e-4
     #end
 
-    pass_list = [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test(args.tsan) for test in test_list ]
 
     ###################################
     ### Python Wrapper              ###
@@ -236,8 +244,9 @@ def main():
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 1e-4
     pywrapper_FEA_AD_FlowLoad.new_output    = False
+    pywrapper_FEA_AD_FlowLoad.enabled_with_tsan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
@@ -250,8 +259,9 @@ def main():
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 1e-4
     pywrapper_CFD_AD_MeshDisp.new_output    = False
+    pywrapper_CFD_AD_MeshDisp.enabled_with_tsan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan))
 
 
     # Tests summary
