@@ -109,8 +109,19 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
+void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType> >& w) const {
+  const auto thread = omp_get_thread_num();
+
+  /*--- If Hsbg is shared by multiple threads calling this function, only one
+   * thread can write into it. If Hsbg is private, all threads need to write. ---*/
+
+  auto SetHsbg = [&](int row, int col, const ScalarType& value) {
+    if (!shared_hsbg || thread == 0) {
+      Hsbg(row, col) = value;
+    }
+  };
+
   /*--- Parameter for reorthonormalization ---*/
 
   const ScalarType reorth = 0.98;
@@ -132,20 +143,21 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 
   for (int k = 0; k < i + 1; k++) {
     ScalarType prod = w[i + 1].dot(w[k]);
-    Hsbg(k, i) = prod;
+    ScalarType h_ki = prod;
     w[i + 1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod * prod > thr) {
       prod = w[i + 1].dot(w[k]);
-      Hsbg(k, i) += prod;
+      h_ki += prod;
       w[i + 1] -= prod * w[k];
     }
+    SetHsbg(k, i, h_ki);
 
     /*--- Update the norm and check its size ---*/
 
-    nrm -= pow(Hsbg(k, i), 2);
+    nrm -= pow(h_ki, 2);
     nrm = max<ScalarType>(nrm, 0.0);
     thr = nrm * reorth;
   }
@@ -153,7 +165,7 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
   /*--- Test the resulting vector ---*/
 
   nrm = w[i + 1].norm();
-  Hsbg(i + 1, i) = nrm;
+  SetHsbg(i + 1, i, nrm);
 
   /*--- Scale the resulting vector ---*/
 
@@ -343,6 +355,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       const CConfig* config) const {
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
+  /*--- If we call the solver outside of a parallel region, but the number of threads allows,
+   * we still want to parallelize some of the expensive operations. ---*/
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
 
   /*---  Check the subspace size ---*/
 
@@ -452,8 +467,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
-    SU2_OMP_PARALLEL_(if (!omp_in_parallel()))
-    ModGramSchmidt(i, H, W);
+    SU2_OMP_PARALLEL_(if (nestedParallel))
+    ModGramSchmidt(nestedParallel, i, H, W);
     END_SU2_OMP_PARALLEL
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
@@ -482,7 +497,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   const auto& basis = flexible ? Z : W;
 
-  SU2_OMP_PARALLEL_(if (!omp_in_parallel()))
+  SU2_OMP_PARALLEL_(if (nestedParallel))
   for (unsigned long k = 0; k < i; k++) {
     x += y[k] * basis[k];
   }
