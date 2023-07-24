@@ -863,7 +863,7 @@ private:
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double TurbIntensityAndViscRatioFreeStream[2]; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
-  su2double Energy_ve_FreeStream,  /*!< \brief Free-stream vibe-el energy of the fluid.  */
+  Energy_ve_FreeStream,            /*!< \brief Free-stream vibe-el energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
