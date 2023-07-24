@@ -2101,11 +2101,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
-  /*!\brief File name of the flamelet look up table.*/
-  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+  /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+
+  /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
-  addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
+  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
 
   /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
   addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
@@ -3840,6 +3843,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
   SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
+  Variable_Density = ((Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) || (Kind_DensityModel == INC_DENSITYMODEL::FLAMELET));
+
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3935,8 +3940,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+      if (!Variable_Density) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE or FLAMELET",
                        CURRENT_FUNCTION);
       }
 
@@ -5480,8 +5485,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
-    /*--- The controlling variables are progress variable and total enthalpy ---*/
-    n_control_vars = 2;
+    /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
+    //n_control_vars = nSpecies - n_user_scalars;
+    if (n_control_vars != (nSpecies - n_user_scalars))
+      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }

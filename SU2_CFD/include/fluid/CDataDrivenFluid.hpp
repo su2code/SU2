@@ -210,7 +210,7 @@ class CDataDrivenFluid final : public CFluidModel {
    * \brief Get fluid model extrapolation instance.
    * \return Query point lies outside fluid model data range.
    */
-  unsigned long GetExtrapolation() override { return outside_dataset; }
+  unsigned long GetExtrapolation() const override { return outside_dataset; }
 
   /*!
    * \brief Get number of Newton solver iterations.
