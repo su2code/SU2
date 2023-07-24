@@ -373,4 +373,9 @@ class CLookUpTable {
   inline std::pair<su2double*, su2double*> GetTableLimitsX(unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
+
+  /*!
+   * \brief Check whether provided set of variables are included in the table.
+   */
+  bool CheckForVariables(const std::vector<std::string>& vars_to_check);
 };
