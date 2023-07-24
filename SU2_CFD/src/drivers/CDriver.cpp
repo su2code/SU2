@@ -1500,6 +1500,11 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       ns = compressible = turbulent = true;
       transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
+      
+     case MAIN_SOLVER::NEMO_RANS:
+      NEMO_ns = compressible = turbulent = true;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
