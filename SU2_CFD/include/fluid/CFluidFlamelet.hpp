@@ -1,7 +1,7 @@
 /*!
  * \file CFluidFlamelet.hpp
  * \brief  Defines the flamelet fluid model
- * \author D. Mayer, T. Economon, N. Beishuizen
+ * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
  * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,38 +28,56 @@
 #pragma once
 
 #include "../../Common/include/containers/CLookUpTable.hpp"
+#if defined(HAVE_MLPCPP)
+#define MLP_CUSTOM_TYPE su2double
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
 #include "CFluidModel.hpp"
 
 class CFluidFlamelet final : public CFluidModel {
  private:
-  enum LOOKUP_TD {
-    TEMPERATURE,
-    DENSITY,
-    HEATCAPACITY,
-    VISCOSITY,
-    CONDUCTIVITY,
-    DIFFUSIONCOEFFICIENT,
-    MOLARWEIGHT,
-    SIZE
-  };
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
+      ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
+
+  enum LOOKUP_TD { TEMPERATURE, HEATCAPACITY, VISCOSITY, CONDUCTIVITY, DIFFUSIONCOEFFICIENT, MOLARWEIGHT, SIZE };
 
   int rank;
 
-  unsigned short n_scalars;
-  unsigned short n_lookups;
-  unsigned short n_user_scalars; /*!< \brief number of passive reactant species. */
-  unsigned short n_control_vars; /*!< \brief number of controlling variables. */
+  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */
 
+  unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
+      n_control_vars;                                  /*!< \brief number of controlling variables. */
+
+  unsigned long extrapolation;
+
+  INC_DENSITYMODEL density_model;
+  vector<string> controlling_variable_names, passive_specie_names;
   vector<string> table_scalar_names; /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_lookup_names; /*!< \brief vector to store names of look up variables.   */
 
-  su2double mass_diffusivity; /*!< \brief local mass diffusivity of the mixture */
-  su2double molar_weight;     /*!< \brief local molar weight of the mixture */
+  su2double mass_diffusivity, /*!< \brief local mass diffusivity of the mixture */
+      molar_weight;           /*!< \brief local molar weight of the mixture */
 
   CLookUpTable* look_up_table;
 
-  vector<string> varnames_TD;    /*!< \brief Lookup names for thermodynamic state variables. */
-  vector<su2double> val_vars_TD; /*!< \brief References to thermodynamic state variables. */
+  /*--- Class variables for the multi-layer perceptron method ---*/
+#ifdef USE_MLPCPP
+  MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap* iomap_TD;        /*!< \brief Input-output map for thermochemical properties. */
+  MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
+  MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
+  MLPToolbox::CIOMap* iomap_Current;
+#endif
+
+  vector<su2double> scalars_vector;
+
+  vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
+      varnames_Sources, varnames_LookUp;
+
+  vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
+      val_vars_Sources, val_vars_LookUp;
+
+  void PreprocessLookUp(CConfig* config);
 
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
@@ -74,21 +92,20 @@ class CFluidFlamelet final : public CFluidModel {
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   /*!
-   * \brief Get the total enthalpy from the tabulated temperature and species (inverse lookup).
-   * \param[in/out] enthalpy - total enthalpy
-   * \param[in] val_prog - progress variable
-   * \param[in] val_temp - temperature
-   * \param[in] initial_value - initial value for the iterative lookup procedure.
-   * \param[out] exit_code = error code
+   * \brief Evaluate the flamelet manifold.
+   * \param[in] input_scalar - scalar solution.
+   * \param[in] input_varnames - names of variables to evaluate.
+   * \param[in] output_refs - output data.
+   * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
    */
-  unsigned long GetEnthFromTemp(su2double& enthalpy, const su2double val_prog, const su2double val_temp,
-                                su2double initial_value = 0) override;
+  inline unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
+                                       vector<su2double>& output_refs) override;
 
   /*!
-   * \brief Return a pointer to the lookup table.
-   * \param[out] look_up_table - pointer to lookup table
+   * \brief Check for out-of-bounds condition for data set interpolation.
+   * \return - within bounds (0) or out of bounds (1).
    */
-  inline CLookUpTable* GetLookUpTable() override { return look_up_table; }
+  unsigned long GetExtrapolation() const override { return extrapolation; }
 
   /*!
    * \brief Get the mass diffusivity of the species.
@@ -110,5 +127,4 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() override { return Mu; }
-
 };

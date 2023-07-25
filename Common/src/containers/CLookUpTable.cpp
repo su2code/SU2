@@ -73,9 +73,13 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;
+  bool display_map_info = (n_table_levels < 2);
+  double tmap_memory_footprint = 0;
   for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
-    trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level),
-                                            table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
+    trap_map_x_y[i_level] =
+        CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level), table_data[i_level].cols(),
+                        edges[i_level], edge_to_triangle[i_level], display_map_info);
+    tmap_memory_footprint += trap_map_x_y[i_level].GetMemoryFootprint();
     /* Display a progress bar to monitor table generation process */
     if (rank == MASTER_NODE) {
       su2double progress = su2double(i_level) / n_table_levels;
@@ -100,6 +104,8 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
       default:
         break;
     }
+    cout << "Trapezoidal map memory footprint: " << tmap_memory_footprint << " MB\n";
+    cout << "Table data memory footprint: " << memory_footprint_data << " MB\n" << endl;
   }
 
   ComputeInterpCoeffs();
@@ -133,7 +139,9 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
     table_data[i_level] = file_reader.GetTableData(i_level);
     triangles[i_level] = file_reader.GetTriangles(i_level);
     hull[i_level] = file_reader.GetHull(i_level);
+    memory_footprint_data += n_points[i_level] * sizeof(su2double);
   }
+  memory_footprint_data /= 1e6;
 
   n_variables = file_reader.GetNVariables();
   version_lut = file_reader.GetVersionLUT();
@@ -164,7 +172,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   }
 
   if (table_dim == 3) {
-    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.cols());
+    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.size());
   }
 }
 
@@ -451,7 +459,7 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
     return 1;
   }
 }
-unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
+unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
                                        su2double val_CV1, su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
@@ -509,7 +517,7 @@ void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned 
 
 void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, std::vector<su2double>& lower_values,
-                                        std::vector<su2double>& upper_values, std::vector<su2double*>& var_vals) const {
+                                        std::vector<su2double>& upper_values, std::vector<su2double>& var_vals) const {
   /* Perform linear interpolation along the z-direction of the table for multiple variables */
 
   /* Retrieve constant z-values of inclusion levels */
@@ -522,7 +530,7 @@ void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned 
 
   /* Perform linear interpolation */
   for (size_t iVar = 0; iVar < var_vals.size(); iVar++) {
-    *var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
+    var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
   }
 }
 
