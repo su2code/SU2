@@ -405,7 +405,7 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
   su2double Force_Ref    = config->GetForce_Ref();
-  bool variable_density  = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  bool variable_density  = (config->GetVariable_Density_Model());
 
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
