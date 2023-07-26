@@ -290,8 +290,8 @@ void CFluidScalar::SetTDState_hs(su2double h, su2double s, const su2double *val_
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double T = h * (Cp/Cv - 1.0) / Gas_Constant / Gamma;
-  su2double e = h / Gamma;
+  su2double T = h * (Cp/Cv - 1.0) / Gas_Constant / (Cp / Cv);
+  su2double e = h / (Cp / Cv);
   su2double v = exp(-1 / (Cp/Cv - 1.0) * log(T) + s / Gas_Constant);
 
   SetTDState_rhoe(1 / v, e, val_scalars);
@@ -302,7 +302,7 @@ void CFluidScalar::SetTDState_Ps(su2double P, su2double s, const su2double *val_
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double T = exp((Cp/Cv - 1.0) / Gamma * (s / Gas_Constant + log(P) - log(Gas_Constant)));
+  su2double T = exp((Cp/Cv - 1.0) / (Cp/Cv) * (s / Gas_Constant + log(P) - log(Gas_Constant)));
   su2double rho = P / (T * Gas_Constant);
 
   SetTDState_Prho(P, rho, val_scalars);
@@ -313,7 +313,7 @@ void CFluidScalar::SetTDState_rhoT(su2double rho, su2double T, const su2double *
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double e = T * Gas_Constant / (Cp/Cv - 1.0);
+  su2double e = T * Gas_Constant / ((Cp/Cv) - 1.0);
   SetTDState_rhoe(rho, e, val_scalars);
 }
 
