@@ -261,6 +261,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+   if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) {
+     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+   }
   SetVolumeOutputFieldsScalarPrimitive(config);
 
   //Residuals
@@ -344,6 +347,9 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
     SetVolumeOutputValue("THERMAL_CONDUCTIVITY_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
     SetVolumeOutputValue("THERMAL_CONDUCTIVITY_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
+  }
+  if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) {
+     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)

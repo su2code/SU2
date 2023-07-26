@@ -92,7 +92,6 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     }
 
     /*--- Solve the turbulence model ---*/
-
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
@@ -178,6 +177,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
     /*--- Update dual time solver for the turbulence model ---*/
 
     if ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) ||
         (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
         (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
