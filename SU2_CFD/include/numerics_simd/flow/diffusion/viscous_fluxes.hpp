@@ -315,7 +315,7 @@ public:
 template<size_t NDIM>
 class CGeneralCompressibleViscousFlux : public CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> > {
 public:
-  static constexpr size_t nPrimVar = NDIM+9;
+  static constexpr size_t nPrimVar = NDIM+10;
   static constexpr size_t nSecVar = 4;
   using Base = CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> >;
   using Base::prandtlTurb;

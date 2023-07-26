@@ -80,7 +80,7 @@ public:
   }
 
   /*!
-   * \brief Set the specific heat Cp.
+   * \brief Set the specific heat Cv.
    */
   inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) override {
     Primitive(iPoint, indices.CvTotal()) = val_Cv;
