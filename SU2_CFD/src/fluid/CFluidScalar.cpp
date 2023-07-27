@@ -239,14 +239,15 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
-  Cv = Cp - Gas_Constant; 
-  Pressure = (Cp/Cv - 1.0) * Density * StaticEnergy;
-  Temperature = (Cp/Cv - 1.0) * StaticEnergy / Gas_Constant;
-  SoundSpeed2 = (Cp/Cv) * Pressure / Density;
-  dPdrho_e = (Cp/Cv - 1.0) * StaticEnergy;
-  dPde_rho = (Cp/Cv - 1.0) * Density;
+  Cv = Cp - Gas_Constant;
+  Gamma = Cp / Cv;
+  Pressure = (Gamma - 1.0) * Density * StaticEnergy;
+  Temperature = (Gamma - 1.0) * StaticEnergy / Gas_Constant;
+  SoundSpeed2 = Gamma * Pressure / Density;
+  dPdrho_e = (Gamma - 1.0) * StaticEnergy;
+  dPde_rho = (Gamma - 1.0) * Density;
   dTdrho_e = 0.0;
-  dTde_rho = (Cp/Cv - 1.0) / Gas_Constant;
+  dTde_rho = (Gamma - 1.0) / Gas_Constant;
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);
   } else if (davidson) {
@@ -263,8 +264,9 @@ void CFluidScalar::SetTDState_PT(su2double P, su2double T, const su2double *val_
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
-  Cv = Cp - Gas_Constant; 
-  su2double e = T * Gas_Constant / (Cp/Cv -1.0 );
+  Cv = Cp - Gas_Constant;
+  Gamma = Cp / Cv;
+  su2double e = T * Gas_Constant / (Gamma -1.0 );
   su2double rho = P / (T * Gas_Constant);
   SetTDState_rhoe(rho, e, val_scalars);
 }
@@ -274,7 +276,8 @@ void CFluidScalar::SetTDState_Prho(su2double P, su2double rho, const su2double *
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double e = P / ((Cp/Cv -1.0 ) * rho);
+  Gamma = Cp / Cv;
+  su2double e = P / ((Gamma -1.0 ) * rho);
   SetTDState_rhoe(rho, e, val_scalars);
 }
 
@@ -283,16 +286,18 @@ void CFluidScalar::SetEnergy_Prho(su2double P, su2double rho, const su2double *v
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  StaticEnergy = P / (rho * (Cp/Cv - 1.0)); }
+  Gamma = Cp / Cv;
+  StaticEnergy = P / (rho * (Gamma - 1.0)); }
 
 void CFluidScalar::SetTDState_hs(su2double h, su2double s, const su2double *val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double T = h * (Cp/Cv - 1.0) / Gas_Constant / (Cp / Cv);
-  su2double e = h / (Cp / Cv);
-  su2double v = exp(-1 / (Cp/Cv - 1.0) * log(T) + s / Gas_Constant);
+  Gamma = Cp / Cv;
+  su2double T = h * (Gamma - 1.0) / Gas_Constant / Gamma;
+  su2double e = h / Gamma;
+  su2double v = exp(-1 / (Gamma - 1.0) * log(T) + s / Gas_Constant);
 
   SetTDState_rhoe(1 / v, e, val_scalars);
 }
@@ -302,7 +307,8 @@ void CFluidScalar::SetTDState_Ps(su2double P, su2double s, const su2double *val_
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double T = exp((Cp/Cv - 1.0) / (Cp/Cv) * (s / Gas_Constant + log(P) - log(Gas_Constant)));
+  Gamma = Cp / Cv;
+  su2double T = exp((Gamma - 1.0) / Gamma * (s / Gas_Constant + log(P) - log(Gas_Constant)));
   su2double rho = P / (T * Gas_Constant);
 
   SetTDState_Prho(P, rho, val_scalars);
@@ -313,7 +319,8 @@ void CFluidScalar::SetTDState_rhoT(su2double rho, su2double T, const su2double *
   ComputeGasConstant();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
-  su2double e = T * Gas_Constant / ((Cp/Cv) - 1.0);
+  Gamma = Cp / Cv;
+  su2double e = T * Gas_Constant / (Gamma - 1.0);
   SetTDState_rhoe(rho, e, val_scalars);
 }
 

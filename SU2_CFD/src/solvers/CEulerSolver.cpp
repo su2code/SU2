@@ -6505,14 +6505,14 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann,
-  Pressure, Density, Energy, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-  alpha, aa, bb, cc, dd, Area, UnitNormal[MAXNDIM], Normal[MAXNDIM];
+  su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann, Pressure, Density, Energy,
+      Cp, Cv, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, Area,
+      UnitNormal[MAXNDIM], Normal[MAXNDIM];
   su2double *V_inlet, *V_domain;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
-  const su2double Gas_Constant = config->GetGas_ConstantND();
+  //const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
+  //const su2double Gas_Constant = config->GetGas_ConstantND();
   const auto Kind_Inlet = config->GetKind_Inlet();
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
@@ -6587,6 +6587,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           }
           Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
           Pressure    = V_domain[nDim+1];
+          Cp          = V_domain[nDim+8];
+          Cv          = V_domain[nDim+9];
+          Gamma       = Cp / Cv;
+          Gamma_Minus_One = Gamma -1.0;
+          const su2double Gas_Constant = Cp - Cv;
           H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
           SoundSpeed2 = Gamma*Pressure/Density;
 
@@ -6693,7 +6698,13 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
           Pressure    = nodes->GetPressure(iPoint);
-          SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+          Cp = nodes->GetSpecificHeatCp(iPoint);
+          Cv = nodes->GetSpecificHeatCv(iPoint);
+          Gamma = Cp / Cv;
+          Gamma_Minus_One = Gamma - 1.0;
+          const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
+          const su2double Gas_Constant = Cp - Cv;
+          SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];  
 
           /*--- Compute the acoustic Riemann invariant that is extrapolated
              from the domain interior. ---*/
