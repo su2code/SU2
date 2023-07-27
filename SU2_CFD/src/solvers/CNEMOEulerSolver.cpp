@@ -146,6 +146,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Velocity_Inf        = config->GetVelocity_FreeStreamND();
   Temperature_Inf     = config->GetTemperature_FreeStreamND();
   Temperature_ve_Inf  = config->GetTemperature_ve_FreeStreamND();
+  Energy_Inf          = config->GetEnergy_FreeStreamND();
+  Energy_ve_Inf       = config->GetEnergy_ve_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {

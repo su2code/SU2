@@ -3434,12 +3434,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
   }
+   if (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
+     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NEMO_NAVIER_STOKES", CURRENT_FUNCTION);
+   }
   if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
   }
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
+   if (Kind_Solver == MAIN_SOLVER::NEMO_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
+     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= NEMO_RANS", CURRENT_FUNCTION);
+   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
@@ -3478,8 +3484,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
       if (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::STANDARD_FUNCTION) {
-        if ((Kind_Solver != MAIN_SOLVER::RANS) && (Kind_Solver != MAIN_SOLVER::INC_RANS))
-          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS or INC_RANS.\n"), CURRENT_FUNCTION);
+        if (!((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS)))
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS/INC_RANS/NEMO_RANS.\n"), CURRENT_FUNCTION);
         if (nRough_Wall != 0)
           SU2_MPI::Error(string("Wall model STANDARD_FUNCTION and WALL_ROUGHNESS migh not be compatible. Checking required!\n"), CURRENT_FUNCTION);
       }
@@ -3760,6 +3766,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_Solver == MAIN_SOLVER::RANS ||
       Kind_Solver == MAIN_SOLVER::NEMO_EULER ||
       Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES ||
+      Kind_Solver == MAIN_SOLVER::NEMO_RANS ||
       Kind_Solver == MAIN_SOLVER::FEM_EULER ||
       Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES ||
       Kind_Solver == MAIN_SOLVER::FEM_RANS ||
@@ -4434,6 +4441,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       (Kind_Turb_Model != TURB_MODEL::NONE))
     Kind_Solver = MAIN_SOLVER::INC_RANS;
 
+ if ((Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) &&
+       (Kind_Turb_Model != TURB_MODEL::NONE))
+     Kind_Solver = MAIN_SOLVER::NEMO_RANS;
+
   if (Kind_Solver == MAIN_SOLVER::EULER ||
       Kind_Solver == MAIN_SOLVER::INC_EULER ||
       Kind_Solver == MAIN_SOLVER::NEMO_EULER ||
@@ -4759,6 +4770,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
              ( Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == MAIN_SOLVER::RANS                   ) ||
              ( Kind_Solver == MAIN_SOLVER::ADJ_RANS               ) ||
+             ( Kind_Solver == MAIN_SOLVER::NEMO_RANS               ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_RANS               ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_LES                ) ||
@@ -4827,6 +4839,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
+  if ((Kind_Turb_Model != TURB_MODEL::SST) && Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+     SU2_MPI::Error("LM transition model currently only available in combination with SST turbulence model!", CURRENT_FUNCTION);
+   }
   if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
@@ -5179,7 +5194,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       (Kind_Solver != MAIN_SOLVER::ADJ_RANS) &&
       (Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS) &&
       (Kind_Solver != MAIN_SOLVER::INC_RANS) &&
-      (Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS)){
+      (Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS) && 
+      (Kind_Solver != MAIN_SOLVER::NEMO_RANS)){ 
     Kind_ConductivityModel_Turb = CONDUCTIVITYMODEL_TURB::NONE;
   }
 
@@ -6174,6 +6190,70 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           SU2_MPI::Error("The GAS_MODEL given is unavailable using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
+
+          case MAIN_SOLVER::NEMO_RANS:
+         cout << "Compressible two-temperature thermochemical non-equilibrium RANS equations." << endl;
+         if (Kind_FluidModel == SU2_NONEQ){
+           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+         }
+         cout << "Turbulence model: ";
+         switch (Kind_Turb_Model) {
+           case TURB_MODEL::NONE: break;
+           case TURB_MODEL::SA:
+             switch (saParsedOptions.version) {
+               case SA_OPTIONS::NEG:
+                 cout << "Negative-";
+                 break;
+               case SA_OPTIONS::EDW:
+                 cout << "Edwards-";
+                 break;
+               default:
+                 break;
+             }
+             cout << "Spalart-Allmaras";
+
+             if (!saParsedOptions.ft2) cout << "-noft2";
+             if (saParsedOptions.rot) cout << "-R";
+             if (saParsedOptions.comp) cout << "-comp";
+             if (saParsedOptions.qcr2000) cout << "-QCR2000";
+             if (saParsedOptions.bc) cout << "-BCM";
+             cout << endl;
+             break;
+           case TURB_MODEL::SST:
+             cout << "Menter's k-omega SST";
+             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
+             else cout << "-2003";
+             if (sstParsedOptions.modified) cout << "m";
+             if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+
+             switch (sstParsedOptions.production) {
+               case SST_OPTIONS::KL:
+                 cout << " with Kato-Launder production";
+                 break;
+               case SST_OPTIONS::V:
+                 cout << " with Vorticity production";
+                 break;
+               case SST_OPTIONS::UQ:
+                 cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
+                 if (uq_permute) cout << " (permuting eigenvectors)";
+                 break;
+               default:
+                 cout << " with no production modification";
+                 break;
+             }
+             cout << "." << endl;
+             break;
+         }
+         cout << "Hybrid RANS/LES: ";
+         switch (Kind_HybridRANSLES) {
+           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
+           case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
+           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+         }
+         break;
       case MAIN_SOLVER::FEM_LES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
         if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
@@ -6226,7 +6306,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) ||
           (Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS) ||
-          (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES))
+          (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES)  || (Kind_Solver == MAIN_SOLVER::NEMO_RANS))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6690,7 +6770,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::EULER)          || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES)          || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER)      || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES)      || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_EULER)     || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES)     ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_EULER)     || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES)     || (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || 
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
@@ -6797,14 +6877,16 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || 
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
-    if ((Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS)) {
-      cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
+    if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_RANS)) {
+        cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) || (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ) {
@@ -6904,7 +6986,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::EULER) || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER) || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) || 
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_NS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_RANS)) {
@@ -8461,6 +8543,9 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       SetHeatParam();
       break;
     case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+      SetFlowParam();
+      SetTurbParam();
+      SetSpeciesParam();
     case MAIN_SOLVER::DISC_ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       SetFlowParam();
       SetTurbParam();
@@ -8512,7 +8597,6 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
       if (val_system == RUNTIME_FEA_SYS) {
