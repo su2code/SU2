@@ -1000,7 +1000,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
-  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0;
+  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0, Energy_ve_FreeStream        = 0.0,
+  Energy_ve_Ref             = 0.0, Energy_ve_FreeStreamND      = 0.0; 
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1012,7 +1013,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   const bool unsteady = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   const bool viscous  = config->GetViscous();
   const bool gravity  = config->GetGravityForce();
-  const bool turbulent = false;
+  const bool turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool tkeNeeded = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
   const bool reynolds_init = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -1097,6 +1098,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       /*--- Thermodynamics quantities based initialization ---*/
       Viscosity_FreeStream = FluidModel->GetViscosity();
       Energy_FreeStream    = energies[0] + 0.5*sqvel;
+      Energy_ve_FreeStream = energies[1];
 
     } else {
 
@@ -1117,14 +1119,17 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream = energies[0] + 0.5*sqvel;
+    Energy_FreeStream    = energies[0] + 0.5*sqvel;
+    Energy_ve_FreeStream = energies[1]; 
 
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);
 
   /*-- Compute the freestream energy. ---*/
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+   config->SetEnergy_FreeStream(Energy_FreeStream);
+   config->SetEnergy_ve_FreeStream(Energy_ve_FreeStream);
 
   /*--- Compute non dimensional quantities. By definition,
      Lref is one because we have converted the grid to meters. ---*/
@@ -1189,9 +1194,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  if (!tkeNeeded) Tke_FreeStream = 0.0;
   config->SetTke_FreeStream(Tke_FreeStream);
 
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  if (!tkeNeeded) Tke_FreeStream = 0.0;
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
@@ -1201,12 +1208,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
+  Energy_FreeStreamND = energies[0] + 0.5 * ModVel_FreeStreamND *ModVel_FreeStreamND;
+  Energy_ve_FreeStreamND = energies[1];
 
-  Energy_FreeStreamND = energies[0] + 0.5 * ModVel_FreeStreamND * ModVel_FreeStreamND;
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };
+  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
+  config->SetEnergy_ve_FreeStreamND(Energy_ve_FreeStreamND);
 
-  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
-
-  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  Energy_Ref    = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  Energy_ve_Ref = Energy_ve_FreeStream/Energy_ve_FreeStreamND; config->SetEnergy_ve_Ref(Energy_ve_Ref );
 
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
@@ -1333,6 +1343,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
     NonDimTable << "Total Energy" << config->GetEnergy_FreeStream() << config->GetEnergy_Ref() << Unit.str() << config->GetEnergy_FreeStreamND();
     Unit.str("");
+     if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+     else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+     NonDimTable << "Vibe-el Energy" << config->GetEnergy_ve_FreeStream() << config->GetEnergy_ve_Ref() << Unit.str() << config->GetEnergy_ve_FreeStreamND();
+     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
     else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
     NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
@@ -1500,8 +1514,24 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
 
+
+   su2double *V_infty, *V_domain, *V_temp;
+   su2double *U_infty, *U_domain;
+
   /*--- Allocate arrays ---*/
   su2double Normal[MAXNDIM] = {0.0};
+
+ /* -- Turbulent Nemo --- */
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  unsigned short T_INDEX       = nodes->GetTIndex();
+  unsigned short TVE_INDEX     = nodes->GetTveIndex();
+  unsigned short VEL_INDEX     = nodes->GetVelIndex();
+  unsigned short P_INDEX       = nodes->GetPIndex();
+  unsigned short RHO_INDEX     = nodes->GetRhoIndex();
+  unsigned short H_INDEX       = nodes->GetHIndex();
+  unsigned short A_INDEX       = nodes->GetAIndex();
+  unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+  unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker];
@@ -1515,13 +1545,36 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       const auto Point_Normal = geometry->vertex[val_marker][iVertex]
               ->GetNormal_Neighbor(); // only used for implicit
 
+      /*--- Retrieve solution at the boundary node & free-stream ---*/
+       V_temp = node_infty->GetPrimitive(0);
+
       /*--- Pass boundary node normal to CNumerics ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (auto iDim = 0ul; iDim < nDim; iDim++)
         Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
+        conv_numerics->SetNormal(Normal);
 
-      /*--- Pass conserved & primitive variables to CNumerics ---*/
+        vector<su2double> rhos;
+        rhos.resize(nSpecies,0.0);
+
+       for (auto iSpecies = 0; iSpecies<nSpecies; iSpecies++)
+         V_infty[iSpecies] = V_temp[iSpecies];
+       V_infty[T_INDEX]=V_temp[T_INDEX];
+       V_infty[TVE_INDEX]=V_temp[TVE_INDEX];
+
+       for (auto iDim = 0; iDim < nDim; iDim++)
+         V_infty[VEL_INDEX+iDim]=V_temp[VEL_INDEX+iDim];
+
+       su2double enthalpy = V_temp[H_INDEX];
+       //if (tkeNeeded) enthalpy += GetTke_Inf();
+       V_infty[P_INDEX]=V_temp[P_INDEX];
+       V_infty[RHO_INDEX]=V_temp[RHO_INDEX];
+       V_infty[H_INDEX]=enthalpy;
+       V_infty[A_INDEX]=V_temp[A_INDEX];
+       V_infty[RHOCVTR_INDEX]=V_temp[RHOCVTR_INDEX];
+       V_infty[RHOCVVE_INDEX]=V_temp[RHOCVVE_INDEX];
+
+      /*---  Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(nodes->GetSolution(iPoint),
                                      node_infty->GetSolution(0));
       conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
@@ -1548,6 +1601,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
 
       /*--- Viscous contribution ---*/
       const bool viscous = config->GetViscous();
@@ -1597,6 +1651,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
         visc_numerics->SetThermalConductivity_ve(
             nodes->GetThermalConductivity_ve(iPoint),
             nodes->GetThermalConductivity_ve(iPoint));
+
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+            visc_numerics->SetTurbKineticEnergy(
+            solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+            solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
