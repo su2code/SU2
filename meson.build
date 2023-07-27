@@ -46,7 +46,7 @@ if build_machine.system() != 'windows'
 endif
 
 # meson script path
-script_path = meson.source_root() / 'meson_scripts'
+script_path = meson.project_source_root() / 'meson_scripts'
 
 # mpi flag
 mpi = false
@@ -325,10 +325,10 @@ message('''---------------------------------------------------------------------
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
          Use './ninja -C @13@ install' to compile and install SU2
-'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
+'''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
+           get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
