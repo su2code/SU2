@@ -96,10 +96,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
     /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
     
     if (IntIter == 0) {
-      cout << "TESTING:\n";
-      
-      cout << config->GetSurface_Movement(MOVING_WALL);
-      cout << "\n";
+
       if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
         if (rank == MASTER_NODE) cout << endl << " Performing rigid mesh transformation." << endl;
 

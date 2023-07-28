@@ -535,8 +535,23 @@ class CDriver : public CDriverBase {
    * \param[in] rot_z - Value of Angular velocity about z-axes.
    */
   void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
-
+  /*!
+   * \brief Set the moving wall marker rotation rates.
+   * \param[in] iMaker - Index of moving wall marker.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
+   */
   void SetMarkerRotationRate(short int iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+    /*!
+   * \brief Set the moving wall marker rotation rates.
+   * \param[in] iMaker - Index of moving wall marker.
+   * \param[in] vel_x - Value of velocity about x-axes.
+   * \param[in] vel_y - Value of velocity about y-axes.
+   * \param[in] vel_z - Value of velocity about z-axes.
+   */
+  void SetMarkerTranslationRate(short int iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
+  
 /// \}
 };
 

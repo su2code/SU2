@@ -5925,6 +5925,14 @@ public:
   su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
 
   /*!
+   * \brief Set the translation rate of the marker.
+   * \param[in] iDim - spatial component
+   * \param[in] val - translational velocity
+   * \return Translational velocity of the mesh.
+   */
+  void SetMarkerTranslation_Rate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) const { MarkerTranslation_Rate[3*iMarkerMoving + iDim] = val;}
+
+  /*!
    * \brief Get the rotation rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
@@ -5950,7 +5958,8 @@ public:
    * \brief Set the rotation rate of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    * \param[in] iDim - spatial component
-   * \return Rotation velocity of the marker.
+   * \param[in] val - Rotational velocity 
+ 
    */
   void SetMarkerRotation_Rate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) const { MarkerRotation_Rate[3*iMarkerMoving + iDim] = val;}
 
