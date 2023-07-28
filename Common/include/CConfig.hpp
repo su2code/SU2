@@ -909,6 +909,7 @@ private:
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
+  bool Variable_Density;      /*!< \brief Variable density for incompressible flow. */
   unsigned short nElectric_Constant;    /*!< \brief Number of different electric constants. */
   su2double *Electric_Constant;         /*!< \brief Dielectric constant modulus. */
   su2double Knowles_B,                  /*!< \brief Knowles material model constant B. */
@@ -1229,9 +1230,10 @@ private:
   unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
   unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
 
+  string* controlling_variable_names;
+  string* cv_source_names;
   vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  string* table_lookup_names;         /*!< \brief Names of LUT variables. */
-  string file_name_lut;               /*!< \brief Filename of the LUT. */
+  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
@@ -2152,6 +2154,19 @@ public:
   unsigned short GetNUserScalars() const { return n_user_scalars; }
 
   /*!
+   * \brief Get the name of a specific controlling variable.
+   */
+  const string& GetControllingVariableName(unsigned short i_cv) const {
+    return controlling_variable_names[i_cv];
+  }
+
+  /*!
+   * \brief Get the name of the source term variable for a specific controlling variable.
+   */
+  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
+    return cv_source_names[i_cv];
+  }
+  /*!
    * \brief Get the name of the user scalar.
    */
   const string& GetUserScalarName(unsigned short i_user_scalar) const {
@@ -2175,13 +2190,7 @@ public:
   /*!
    * \brief Get the name of the variable that we want to retrieve from the lookup table.
    */
-  const string& GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
-
-  /*!
-   * \brief Get the file name of the look up table.
-   * \return File name of the look up table.
-   */
-  const string& GetFileNameLUT() const { return file_name_lut; }
+  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -3883,6 +3892,12 @@ public:
    * \return Density model option
    */
   INC_DENSITYMODEL GetKind_DensityModel() const { return Kind_DensityModel; }
+
+  /*!
+   * \brief Selection of variable density option for incompressible flows.
+   * \return Flag for variable density for incompressible flows.
+   */
+  bool GetVariable_Density_Model() const { return Variable_Density; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.

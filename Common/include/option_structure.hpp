@@ -628,11 +628,13 @@ enum class INC_DENSITYMODEL {
   CONSTANT,   /*!< \brief Constant density. */
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
+  FLAMELET,   /*!< \brief Density according to flamelet manifold. */
 };
 static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
+  MakePair("FLAMELET", INC_DENSITYMODEL::FLAMELET)
 };
 
 /*!
@@ -1317,6 +1319,7 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 enum FLAMELET_SCALAR_VARIABLES {
   I_PROGVAR,
   I_ENTH,
+  I_MIXFRAC,
 };
 
 /*!
@@ -1324,6 +1327,15 @@ enum FLAMELET_SCALAR_VARIABLES {
  */
 enum FLAMELET_SCALAR_SOURCES {
   I_SRC_TOT_PROGVAR
+};
+
+/*!
+ * \brief Look-up operations for the flamelet scalar solver.
+ */
+enum FLAMELET_LOOKUP_OPS {
+  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
+  LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };
 
 /*!
@@ -2124,7 +2136,6 @@ enum ENUM_PARAM {
   FFD_CONTROL_POINT_2D = 19,  /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS_2D = 21,      /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 22,          /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_CONTROL_SURFACE = 23,   /*!< \brief Free form deformation for 3D design (control surface). */
   FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
   HICKS_HENNE = 30,           /*!< \brief Hicks-Henne bump function for airfoil deformation. */
@@ -2147,7 +2158,6 @@ enum ENUM_PARAM {
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
   MakePair("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
-  MakePair("FFD_TWIST_2D", FFD_TWIST_2D)
   MakePair("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
   MakePair("FFD_CAMBER_2D", FFD_CAMBER_2D)
   MakePair("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
