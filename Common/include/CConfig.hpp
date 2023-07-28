@@ -895,7 +895,7 @@ private:
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
-  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+  Energy_Ref,                 /*!< \brief Reference energy for non-dimensionalization. */
   Energy_ve_Ref,              /*!< \brief Reference vibe-el energy for non-dimensionalization.*/
   Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */

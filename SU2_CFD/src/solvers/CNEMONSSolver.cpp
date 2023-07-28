@@ -536,6 +536,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
 
+ /*--- Extract required indices ---*/
+   const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+   const unsigned short RHO_INDEX = nodes->GetRhoIndex();
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;
 
@@ -855,9 +858,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION", CURRENT_FUNCTION);
   }
 
- /*--- Extract required indices ---*/
-   const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-   const unsigned short RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 1;

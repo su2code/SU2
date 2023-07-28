@@ -1001,7 +1001,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
   Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0, Energy_ve_FreeStream        = 0.0,
-  Energy_ve_Ref             = 0.0, Energy_ve_FreeStreamND      = 0.0; 
+  Energy_ve_Ref          = 0.0, Energy_ve_FreeStreamND      = 0.0; 
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1198,7 +1198,7 @@ if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetTke_FreeStream(Tke_FreeStream);
 
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  if (!tkeNeeded) Tke_FreeStream = 0.0;
+  if (!tkeNeeded) Tke_FreeStreamND = 0.0;
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
@@ -1208,7 +1208,7 @@ if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
-  Energy_FreeStreamND = energies[0] + 0.5 * ModVel_FreeStreamND *ModVel_FreeStreamND;
+  Energy_FreeStreamND    = energies[0] + 0.5 * ModVel_FreeStreamND * ModVel_FreeStreamND;
   Energy_ve_FreeStreamND = energies[1];
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };
@@ -1514,15 +1514,14 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
 
-
    su2double *V_infty, *V_domain, *V_temp;
    su2double *U_infty, *U_domain;
 
-  /*--- Allocate arrays ---*/
-  su2double Normal[MAXNDIM] = {0.0};
+  /*--- Set booleans from configuration parameters ---*/
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool viscous  = config->GetViscous();
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
- /* -- Turbulent Nemo --- */
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   unsigned short T_INDEX       = nodes->GetTIndex();
   unsigned short TVE_INDEX     = nodes->GetTveIndex();
   unsigned short VEL_INDEX     = nodes->GetVelIndex();
@@ -1533,10 +1532,14 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
+  /*--- Allocate arrays ---*/
+  su2double Normal[MAXNDIM] = {0.0};
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker];
        iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Allocate the value at the infinity ---*/
+    V_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
@@ -1545,8 +1548,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       const auto Point_Normal = geometry->vertex[val_marker][iVertex]
               ->GetNormal_Neighbor(); // only used for implicit
 
-      /*--- Retrieve solution at the boundary node & free-stream ---*/
-       V_temp = node_infty->GetPrimitive(0);
 
       /*--- Pass boundary node normal to CNumerics ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -1554,16 +1555,21 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
         Normal[iDim] = -Normal[iDim];
         conv_numerics->SetNormal(Normal);
 
-        vector<su2double> rhos;
-        rhos.resize(nSpecies,0.0);
+      /*--- Retrieve solution at the boundary node & free-stream ---*/
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
+      V_temp   = node_infty->GetPrimitive(0);
+      U_infty  = node_infty->GetSolution(0);
+      vector<su2double> rhos;
+      rhos.resize(nSpecies,0.0);
 
        for (auto iSpecies = 0; iSpecies<nSpecies; iSpecies++)
-         V_infty[iSpecies] = V_temp[iSpecies];
-       V_infty[T_INDEX]=V_temp[T_INDEX];
-       V_infty[TVE_INDEX]=V_temp[TVE_INDEX];
+         V_infty[iSpecies]  = V_temp[iSpecies];
+         V_infty[T_INDEX]   = V_temp[T_INDEX];
+         V_infty[TVE_INDEX] = V_temp[TVE_INDEX];
 
        for (auto iDim = 0; iDim < nDim; iDim++)
-         V_infty[VEL_INDEX+iDim]=V_temp[VEL_INDEX+iDim];
+         V_infty[VEL_INDEX+iDim] = V_temp[VEL_INDEX+iDim];
 
        su2double enthalpy = V_temp[H_INDEX];
        //if (tkeNeeded) enthalpy += GetTke_Inf();
@@ -1575,10 +1581,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
        V_infty[RHOCVVE_INDEX]=V_temp[RHOCVVE_INDEX];
 
       /*---  Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(nodes->GetSolution(iPoint),
-                                     node_infty->GetSolution(0));
-      conv_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                                  node_infty->GetPrimitive(0));
+      conv_numerics->SetConservative(U_domain, U_infty);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
@@ -1601,7 +1605,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
 
       /*--- Viscous contribution ---*/
       const bool viscous = config->GetViscous();
