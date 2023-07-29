@@ -5973,8 +5973,8 @@ public:
    * \brief Set the rotation rate of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    * \param[in] iDim - spatial component
-   * \param[in] val - Rotational velocity 
- 
+   * \param[in] val - Rotational velocity
+
    */
   void SetMarkerRotation_Rate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) const { MarkerRotation_Rate[3*iMarkerMoving + iDim] = val;}
 
