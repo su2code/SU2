@@ -1,12 +1,8 @@
-import sys
-from optparse import OptionParser	# use a parser for configuration
 import pysu2			            # imports the SU2 wrapped module
 from math import *
-import os
-import pysu2ad
 from mpi4py import MPI
 import numpy as np
-import shutil
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 ad_com = MPI.COMM_WORLD
