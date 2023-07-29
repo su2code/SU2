@@ -332,11 +332,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case FLUID_FLAMELET:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     default:
@@ -600,6 +599,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if (energy) cout << "Energy equation is active and coupled for variable density." << endl;
         break;
 
+      case INC_DENSITYMODEL::FLAMELET:
+        cout << "Energy equation is disabled and density is obtained through flamelet manifold." << endl;
+        break;
     }
 
     stringstream NonDimTableOut, ModelTableOut;
@@ -1974,7 +1976,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
   su2double  Velocity[MAXNDIM] = {0.0};
 
-  bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  bool variable_density = (config->GetVariable_Density_Model());
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
 
