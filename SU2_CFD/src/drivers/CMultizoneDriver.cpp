@@ -579,8 +579,8 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
       /*--- Additional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
-          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS || 
-          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS) {
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS ||
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS){
         BroadcastData(TURB_SOL, TURB_SOL);
       }
 

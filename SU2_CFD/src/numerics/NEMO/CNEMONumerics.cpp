@@ -246,6 +246,7 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   const su2double mu  = val_lam_viscosity + val_eddy_viscosity;
   su2double ktr = val_therm_conductivity;
   su2double kve = val_therm_conductivity_ve;
+   su2double Mass=0.0, Cpve=0.0;
   const su2double rho = val_primvar[RHO_INDEX];
   const su2double T = val_primvar[T_INDEX];
   const su2double Tve = val_primvar[TVE_INDEX];
@@ -258,7 +259,6 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
    // TODO: Need to determine proper way to incorporate eddy viscosity
    // This is only scaling Kve by same factor as ktr
    // NOTE: V[iSpecies] is == Ys.
-   su2double Mass=0.0, Cpve=0.0;
    for (auto iSpecies = 0;iSpecies<nSpecies;iSpecies++)
      Mass += V[iSpecies]*Ms[iSpecies];
 
