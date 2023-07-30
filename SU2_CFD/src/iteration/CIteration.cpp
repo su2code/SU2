@@ -88,8 +88,6 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       }
 
       break;
-
-   
   }
 
   if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) || config->GetSurface_Movement(MOVING_WALL)) {
@@ -114,9 +112,10 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
         grid_movement->UpdateMultiGrid(geometry, config);
       }
-      if(config->GetSurface_Movement(MOVING_WALL)){
-        geometry[MESH_0]->SetWallVelocity(config, true);
-    
+      if (config->GetSurface_Movement(MOVING_WALL)) {
+        for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          geometry[iMGlevel]->SetWallVelocity(config, iMGlevel == 0u);
+        }
       }
 
     }

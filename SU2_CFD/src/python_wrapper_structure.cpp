@@ -166,14 +166,16 @@ void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passived
     config_container[iZone]->SetRotation_Rate(2, rot_z);
   }
 }
-void CDriver::SetMarkerRotationRate(short int iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z){
+
+void CDriver::SetMarkerRotationRate(unsigned short iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetMarkerRotation_Rate(iMarker, 0, rot_x);
     config_container[iZone]->SetMarkerRotation_Rate(iMarker, 1, rot_y);
     config_container[iZone]->SetMarkerRotation_Rate(iMarker, 2, rot_z);
   }
 }
-void CDriver::SetMarkerTranslationRate(short int iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z){
+
+void CDriver::SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z) {
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetMarkerTranslation_Rate(iMarker, 0, vel_x);
     config_container[iZone]->SetMarkerTranslation_Rate(iMarker, 1, vel_y);
