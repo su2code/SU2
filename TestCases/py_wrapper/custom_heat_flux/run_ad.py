@@ -92,7 +92,7 @@ def ApplyHeatFlux(time, driver, marker_ids):
   for marker_id in marker_ids:
     if marker_id < 0:
       continue
-    hf = (-1, 0)[time > 0.2]
+    hf = (-1 * 2700 * 870, 0)[time > 0.2]
     for i_vertex in range(driver.GetNumberMarkerNodes(marker_id)):
       driver.SetMarkerCustomNormalHeatFlux(marker_id, i_vertex, hf)
 
@@ -228,9 +228,9 @@ def main():
   comm = MPI.COMM_WORLD
   rank = comm.Get_rank()
 
-  obj_pert_size = RunPrimal(0.10002)
+  obj_pert_size = RunPrimal(0.100005)
   obj = RunPrimal(0.1)
-  sens_size_fd = (obj_pert_size - obj) / 0.00002
+  sens_size_fd = (obj_pert_size - obj) / 0.000005
 
   sens_size, sens_temp = RunAdjoint(0.1)
 
@@ -238,7 +238,7 @@ def main():
     print("     Finite Differences\tDiscrete Adjoint")
     print(f"Size {sens_size_fd}\t{sens_size}")
 
-  assert abs(sens_size / sens_size_fd - 1) < 1e-3, "Error in geometric derivatives."
+  assert abs(sens_size / sens_size_fd - 1) < 1e-4, "Error in geometric derivatives."
   # We expect the final average temperature to be directly proportional to the initial
   # temperature since the applied heat flux is not a function of temperature.
   assert abs(sens_temp - 1) < 1e-5, "Error in initial condition derivatives."

@@ -219,7 +219,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
-          HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
+          HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();
         } // loop Vertices
       } // loop Heatflux marker
     } // loop AllMarker
