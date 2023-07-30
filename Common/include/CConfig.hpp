@@ -5977,7 +5977,7 @@ public:
    * \param[in] iDim - spatial component
    * \param[in] val - Rotational velocity
    */
-  void SetMarkerRotation_Rate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+  void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
     MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
   }
 
