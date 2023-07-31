@@ -472,7 +472,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
     if (config->GetMarker_All_PyCustom(val_marker))
-      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
     else if (kind_boundary == HEAT_TRANSFER) {
       const su2double Twall = nodes->GetTemperature(iPoint);
       Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
@@ -710,7 +710,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
                                     thermal_conductivity, There, Temperature_Ref);
     }
     else if (config->GetMarker_All_PyCustom(val_marker)) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
     /*--- Compute the normal gradient in temperature using Twall ---*/
