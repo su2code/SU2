@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
@@ -37,7 +36,7 @@
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
 
-
-void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput* output, unsigned long TimeIter);
+void WriteFiles(CConfig* config, CGeometry* geometry, CSolver** solver_container, COutput* output,
+                unsigned long TimeIter);
 
 using namespace std;

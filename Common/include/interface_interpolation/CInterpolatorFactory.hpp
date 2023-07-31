@@ -41,9 +41,7 @@ namespace CInterpolatorFactory {
  * \param[in] verbose - If true, print information to screen.
  * \return Pointer to interpolator on the heap, caller is responsible for deletion.
  */
-CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
-                                  const CConfig* const* config,
-                                  const CInterpolator* transpInterpolator,
-                                  unsigned iZone, unsigned jZone,
+CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfig* const* config,
+                                  const CInterpolator* transpInterpolator, unsigned iZone, unsigned jZone,
                                   bool verbose = true);
-}
+}  // namespace CInterpolatorFactory

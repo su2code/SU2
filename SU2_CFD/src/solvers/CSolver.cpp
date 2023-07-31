@@ -121,7 +121,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
 
 }
 
-CSolver::~CSolver(void) {
+CSolver::~CSolver() {
 
   unsigned short iVar;
 
@@ -362,12 +362,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   unsigned long iPoint, msg_offset, buf_offset, iPeriodic;
 
-  su2double *Diff      = new su2double[nVar];
-  su2double *Und_Lapl  = new su2double[nVar];
-  su2double *Sol_Min   = new su2double[nPrimVarGrad];
-  su2double *Sol_Max   = new su2double[nPrimVarGrad];
-  su2double *rotPrim_i = new su2double[nPrimVar];
-  su2double *rotPrim_j = new su2double[nPrimVar];
+  auto *Diff      = new su2double[nVar];
+  auto *Und_Lapl  = new su2double[nVar];
+  auto *Sol_Min   = new su2double[nPrimVarGrad];
+  auto *Sol_Max   = new su2double[nPrimVarGrad];
+  auto *rotPrim_i = new su2double[nPrimVar];
+  auto *rotPrim_j = new su2double[nPrimVar];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
@@ -638,7 +638,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Both points inside the domain, or both in the boundary ---*/
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if (!(boundary_i && !boundary_j)) {
+                if (!boundary_i || boundary_j) {
                   if (geometry->nodes->GetDomain(iPoint)){
                     for (iVar = 0; iVar< nVar; iVar++)
                     Und_Lapl[iVar] -= Diff[iVar];
@@ -698,7 +698,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Both points inside domain, or both on boundary ---*/
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if (!(boundary_i && !boundary_j)) {
+                if (!boundary_i || boundary_j) {
                   if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
@@ -1020,7 +1020,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   /*--- Status is global so all threads can see the result of Waitany. ---*/
   static SU2_MPI::Status status;
 
-  su2double *Diff = new su2double[nVar];
+  auto *Diff = new su2double[nVar];
 
   su2double Time_Step, Volume;
 
@@ -1802,7 +1802,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         unsigned long signChanges = 0;
         su2double totalChange = 0.0;
         auto prev = NonLinRes_Series.front();
-        for (auto val : NonLinRes_Series) {
+        for (const auto& val : NonLinRes_Series) {
           totalChange += val;
           signChanges += (prev > 0) ^ (val > 0);
           prev = val;
@@ -2231,7 +2231,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
   }
 }
 
-void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const {
 
   /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
@@ -2570,7 +2570,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 }
 
-void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
+void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
@@ -3026,7 +3026,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
 
-  fields.push_back("Point_ID");
+  fields.emplace_back("Point_ID");
   for (auto iVar = 0u; iVar < nFields; iVar++) {
     const auto index = iVar*CGNS_STRING_SIZE;
     string field_buf("\"");
@@ -3035,7 +3035,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
-    fields.push_back(field_buf.c_str());
+    fields.emplace_back(field_buf.c_str());
   }
 
   /*--- Free string buffer memory. ---*/
@@ -3321,7 +3321,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   }
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, const string& val_filename) const {
 
   su2double AoA_ = config->GetAoA();
   su2double AoS_ = config->GetAoS();
@@ -3430,7 +3430,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- Angle of attack ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
@@ -3446,7 +3446,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- Sideslip angle ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
@@ -3461,7 +3461,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- BCThrust ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
     config->SetInitial_BCThrust(BCThrust_);
@@ -3472,7 +3472,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   }
 
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
 
     if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
@@ -3508,7 +3508,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   }
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
     config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
@@ -3520,7 +3520,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- External iteration ---*/
 
-  if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
+  if ((!config->GetDiscard_InFiles()) && (!adjoint || (adjoint && config->GetRestart())))
     config->SetExtIter_OffSet(InnerIter_);
 
 }
@@ -3657,6 +3657,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
+        }
+        break;
+      case SPECIES_MODEL::FLAMELET:
+        /*--- 2-equation flamelet model ---*/
+        columnName << "PROGRESSVAR" << setw(24) << "ENTHALPYTOT" << setw(24);
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        /*--- auxiliary species transport equations ---*/
+        for (unsigned short iReactant = 0; iReactant < config->GetNUserScalars(); iReactant++) {
+          columnName << config->GetUserScalarName(iReactant) << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[config->GetNControlVars() + iReactant] << "\t";
         }
         break;
     }
@@ -4045,6 +4055,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
+  int index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4064,8 +4075,8 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
       /*--- Set the adjoint of the vertex traction from the value received ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+        AD::SetIndex(index, VertexTraction[iMarker][iVertex][iDim]);
+        AD::SetDerivative(index, SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
     END_SU2_OMP_FOR

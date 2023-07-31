@@ -31,9 +31,7 @@
 
 #include "../../Common/include/basic_types/datatype_structure.hpp"
 
-su2double func(const su2double& x) {
-  return x * x * x;
-}
+su2double func(const su2double& x) { return x * x * x; }
 
 /*---
  * This test case is based off of Tutorial 2 in the CoDiPack
@@ -42,7 +40,6 @@ su2double func(const su2double& x) {
  * SU2 wrapper functions have been substituted for the CoDiPack calls.
  * ---*/
 TEST_CASE("Simple AD Test", "[AD tests]") {
-
   su2double x = 4.0;
 
   AD::StartRecording();

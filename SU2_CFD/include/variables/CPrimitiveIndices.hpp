@@ -28,6 +28,9 @@
 
 #include <cstdint>
 #include <cstring>
+#include <map>
+#include <string>
+
 #include "CEulerVariable.hpp"
 #include "CIncEulerVariable.hpp"
 #include "CNEMOEulerVariable.hpp"
@@ -67,6 +70,9 @@ struct CPrimitiveIndices {
       return reinterpret_cast<const CEulerVariable::template CIndices<IndexType>*>(data_)->NAME();      \
     }                                                                                                   \
   }
+  GET_INDEX_IMPL(NDim)
+  GET_INDEX_IMPL(NSpecies)
+  GET_INDEX_IMPL(SpeciesDensities)
   GET_INDEX_IMPL(Temperature)
   GET_INDEX_IMPL(Velocity)
   GET_INDEX_IMPL(Pressure)
@@ -78,6 +84,7 @@ struct CPrimitiveIndices {
   GET_INDEX_IMPL(ThermalConductivity)
   GET_INDEX_IMPL(CpTotal)
   GET_INDEX_IMPL(Temperature_ve)
+#undef GET_INDEX_IMPL
 
  private:
   template <class ConcreteIndices>
@@ -90,3 +97,36 @@ struct CPrimitiveIndices {
   alignas(sizeof(IndexType)) char data_[2 * sizeof(IndexType)]{};  /*!< \brief Space for the largest CIndices class. */
   uint8_t type_;
 };
+
+/*!
+ * \brief Maps primitive variable names to their indices based on a CPrimitiveIndices object.
+ * \note The variables names we try to map here must be kept in sync with CPrimitiveIndices.
+ * All index classes should use numeric_limits::max for variables that are not available.
+ */
+template <class IndexType>
+std::map<std::string, IndexType> PrimitiveNameToIndexMap(const CPrimitiveIndices<IndexType>& idx) {
+  std::map<std::string, IndexType> nameToIndex;
+  const auto notAvailable = std::numeric_limits<IndexType>::max();
+#define INSERT_VAR_INDEX_PAIR(STRING, FUNCTION) \
+  if (idx.FUNCTION() != notAvailable) nameToIndex[STRING] = idx.FUNCTION();
+  INSERT_VAR_INDEX_PAIR("TEMPERATURE", Temperature)
+  INSERT_VAR_INDEX_PAIR("TEMPERATURE_VE", Temperature_ve)
+  INSERT_VAR_INDEX_PAIR("PRESSURE", Pressure)
+  INSERT_VAR_INDEX_PAIR("DENSITY", Density)
+  INSERT_VAR_INDEX_PAIR("ENTHALPY", Enthalpy)
+  INSERT_VAR_INDEX_PAIR("SOUND_SPEED", SoundSpeed)
+  INSERT_VAR_INDEX_PAIR("LAMINAR_VISCOSITY", LaminarViscosity)
+  INSERT_VAR_INDEX_PAIR("EDDY_VISCOSITY", EddyViscosity)
+  INSERT_VAR_INDEX_PAIR("THERMAL_CONDUCTIVITY", ThermalConductivity)
+  INSERT_VAR_INDEX_PAIR("CP_TOTAL", CpTotal)
+#undef INSERT_VAR_INDEX_PAIR
+  nameToIndex["VELOCITY_X"] = idx.Velocity();
+  nameToIndex["VELOCITY_Y"] = idx.Velocity() + 1;
+  if (idx.NDim() == 3) {
+    nameToIndex["VELOCITY_Z"] = idx.Velocity() + 2;
+  }
+  for (IndexType iSpecies = 0; iSpecies < idx.NSpecies(); ++iSpecies) {
+    nameToIndex["DENSITY_" + std::to_string(iSpecies)] = idx.SpeciesDensities() + iSpecies;
+  }
+  return nameToIndex;
+}

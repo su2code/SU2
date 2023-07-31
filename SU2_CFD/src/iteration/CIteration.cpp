@@ -60,9 +60,33 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
       break;
 
-      /*--- Already initialized in the static mesh movement routine at driver level. ---*/
     case STEADY_TRANSLATION:
+      /*--- Set or update the translating frame mesh movement with the current translation rates,
+       * which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting translational grid velocities." << endl;
+
+      /*--- Set the translational velocity on all grid levels. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        geometry[iMGlevel]->SetTranslationalVelocity(config, iMGlevel == 0);
+
+      break;
+
     case ROTATING_FRAME:
+      /*--- Set or update the rotating frame mesh movement with the current translation and rotation
+       * rates, which might be altered via the python interface. ---*/
+
+      if (rank == MASTER_NODE) cout << "\n Setting rotating frame grid velocities." << endl;
+
+      /*--- Set the grid velocities on all multigrid levels for a steadily
+         rotating reference frame. ---*/
+
+      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
+        geometry[iMGlevel]->SetRotationalVelocity(config, iMGlevel == 0);
+        geometry[iMGlevel]->SetShroudVelocity(config);
+      }
+
       break;
   }
 
@@ -163,7 +187,7 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
   /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
 
-  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+  solver[MESH_SOL]->SetMesh_Stiffness(numerics[MESH_SOL], config);
 
   /*--- Deform the volume grid around the new boundary locations ---*/
 
@@ -175,6 +199,6 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
 void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
                         unsigned long InnerIter, bool StopCalc, unsigned short val_iZone, unsigned short val_iInst) {
-  output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
+  output->SetResultFiles(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }
