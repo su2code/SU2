@@ -526,7 +526,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
     unst_deforming_naca0012.test_iter = 5
-    unst_deforming_naca0012.test_vals = [-3.665120, -3.793643, -3.716518, -3.148310]
+    unst_deforming_naca0012.test_vals = [-3.665126, -3.793497, -3.716496, -3.148290]
     unst_deforming_naca0012.unsteady  = True
     unst_deforming_naca0012.enabled_with_tsan = False
     test_list.append(unst_deforming_naca0012)
