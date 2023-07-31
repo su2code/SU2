@@ -328,6 +328,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array ---*/
+  if (config->GetBounded_Scalar())
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
@@ -1719,7 +1723,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     LambdaVisc(su2double g, su2double pl, su2double pt) : gamma(g), prandtlLam(pl), prandtlTurb(pt) {}
 
-    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density) const {
+    FORCEINLINE su2double lambda(su2double gamma, su2double laminarVisc, su2double eddyVisc, su2double density) const {
       su2double Lambda_1 = (4.0/3.0)*(laminarVisc + eddyVisc);
       /// TODO: (REAL_GAS) removing gamma as it cannot work with FLUIDPROP
       su2double Lambda_2 = (1.0 + (prandtlLam/prandtlTurb)*(eddyVisc/laminarVisc))*(gamma*laminarVisc/prandtlLam);
@@ -1730,14 +1734,20 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double Cp = 0.5*(nodes.GetSpecificHeatCp(iPoint)+ nodes.GetSpecificHeatCp(jPoint));
+      su2double Cv = 0.5*(nodes.GetSpecificHeatCv(iPoint)+ nodes.GetSpecificHeatCv(jPoint));
+      su2double Gamma = Cp / Cv;
+      return lambda(Gamma, laminarVisc, eddyVisc, density);
     }
 
     FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double Cp = nodes.GetSpecificHeatCp(iPoint);
+      su2double Cv = nodes.GetSpecificHeatCv(iPoint);
+      su2double Gamma = Cp / Cv;
+      return lambda(Gamma, laminarVisc, eddyVisc, density);
     }
 
   } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
@@ -1775,6 +1785,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -1939,6 +1950,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
