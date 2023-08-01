@@ -29,3 +29,6 @@ config_*.cfg
 *.tgz
 COPYING
 *.eqn
+
+# dragon files for flamelet models
+*.drg

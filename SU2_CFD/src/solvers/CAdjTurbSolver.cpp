@@ -28,7 +28,7 @@
 
 #include "../../include/solvers/CAdjTurbSolver.hpp"
 
-CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
+CAdjTurbSolver::CAdjTurbSolver() : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
@@ -163,7 +163,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 }
 
-CAdjTurbSolver::~CAdjTurbSolver(void) {
+CAdjTurbSolver::~CAdjTurbSolver() {
   delete nodes;
 }
 

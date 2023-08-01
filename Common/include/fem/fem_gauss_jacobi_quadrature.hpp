@@ -98,7 +98,7 @@ using namespace std;
  * \version 7.5.1 "Blackbird"
  */
 class CGaussJacobiQuadrature {
-public:
+ public:
   /*!
    * \brief Function, which serves as the API to compute the integration points
             and weights.
@@ -111,30 +111,29 @@ public:
    * \param[in,out] GJPoints  Location of the Gauss-Jacobi integration points.
    * \param[in,out] GJWeights Weights of the Gauss-Jacobi integration points.
    */
-  void GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
-                           const passivedouble   a,         const passivedouble   b,
-                           vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights);
-private:
+  void GetQuadraturePoints(const passivedouble alpha, const passivedouble beta, const passivedouble a,
+                           const passivedouble b, vector<passivedouble>& GJPoints, vector<passivedouble>& GJWeights);
+
+ private:
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble t[],
-             passivedouble wts[]);
+  void cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble t[], passivedouble wts[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void cgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble a,
-            passivedouble b, passivedouble t[], passivedouble wts[]);
+  void cgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble a, passivedouble b,
+            passivedouble t[], passivedouble wts[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  passivedouble class_matrix(int kind, int m, passivedouble alpha, passivedouble beta,
-                             passivedouble aj[], passivedouble bj[]);
+  passivedouble class_matrix(int kind, int m, passivedouble alpha, passivedouble beta, passivedouble aj[],
+                             passivedouble bj[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
@@ -165,8 +164,8 @@ private:
             the integration points of the Gauss-Jacobi quadrature rule.
    */
   void scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[], int nwts, int ndx[],
-            passivedouble swts[], passivedouble st[], int kind, passivedouble alpha,
-            passivedouble beta, passivedouble a, passivedouble b);
+            passivedouble swts[], passivedouble st[], int kind, passivedouble alpha, passivedouble beta,
+            passivedouble a, passivedouble b);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
