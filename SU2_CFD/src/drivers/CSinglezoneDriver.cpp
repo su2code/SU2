@@ -266,7 +266,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   if (TimeDomain == NO){
 
-    InnerConvergence = output_container[ZONE_0]->GetConvergence();
+    InnerConvergence     = output_container[ZONE_0]->GetConvergence();
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
