@@ -368,7 +368,7 @@ CSourceIncEnergy_Flow::CSourceIncEnergy_Flow(unsigned short val_nDim, unsigned s
 
 CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* config) {
   su2double Velocity_i[3], GradCp_i[3];
-  unsigned short iDim, iVar, jVar;
+  unsigned short iDim, iVar;
 
   // if (Coord_i[1] > EPS) {
 
@@ -402,6 +402,61 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
     residual[3] = 0.0;
     residual[4] = - DensityInc_i * Temp_i *
                   (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1] + Velocity_i[2] * GradCp_i[2]) * Volume;
+  }
+
+  if (implicit) {
+    if (nDim == 2) {
+      jacobian[0][0] = 0.0;
+      jacobian[0][1] = 0.0;
+      jacobian[0][2] = 0.0;
+      jacobian[0][3] = 0.0;
+
+      jacobian[1][0] = 0.0;
+      jacobian[1][1] = 0.0;
+      jacobian[1][2] = 0.0;
+      jacobian[1][3] = 0.0;
+
+      jacobian[2][0] = 0.0;
+      jacobian[2][1] = 0.0;
+      jacobian[2][2] = 0.0;
+      jacobian[2][3] = 0.0;
+
+      jacobian[3][0] = 0.0;
+      jacobian[3][1] = DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[3][2] = DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[3][3] = DensityInc_i * (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1]) * Volume;
+
+    } else {
+      jacobian[0][0] = 0.0;
+      jacobian[0][1] = 0.0;
+      jacobian[0][2] = 0.0;
+      jacobian[0][3] = 0.0;
+      jacobian[0][4] = 0.0;
+
+      jacobian[1][0] = 0.0;
+      jacobian[1][1] = 0.0;
+      jacobian[1][2] = 0.0;
+      jacobian[1][3] = 0.0;
+      jacobian[1][4] = 0.0;
+
+      jacobian[2][0] = 0.0;
+      jacobian[2][1] = 0.0;
+      jacobian[2][2] = 0.0;
+      jacobian[2][3] = 0.0;
+      jacobian[2][4] = 0.0;
+
+      jacobian[3][0] = 0.0;
+      jacobian[3][1] = 0.0;
+      jacobian[3][2] = 0.0;
+      jacobian[3][3] = 0.0;
+      jacobian[3][4] = 0.0;
+
+      jacobian[4][0] = 0.0;
+      jacobian[4][1] = DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[4][2] = DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[4][3] = DensityInc_i * Temp_i * GradCp_i[2] * Volume;
+      jacobian[4][3] = DensityInc_i * (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1] + Velocity_i[2] * GradCp_i[2]) * Volume;
+    }
   }
 
   // residual[0] = yinv*Volume*DensityInc_i*Velocity_i[1];
