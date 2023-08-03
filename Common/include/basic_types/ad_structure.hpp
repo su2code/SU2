@@ -384,16 +384,14 @@ FORCEINLINE void SetDerivative(int index, const double val) {
   if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
     return;
 
-  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
-  AD::getTape().setGradient(index, val, BoundsChecking::False);
+  AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
 }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // If called after tape evaluations, the adjoints should exist.
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 FORCEINLINE double GetDerivative(int index) {
-  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
-  return AD::getTape().getGradient(index, BoundsChecking::False);
+  return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }
 
 FORCEINLINE bool IsIdentifierActive(su2double const& value) {

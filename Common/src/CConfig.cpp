@@ -1169,6 +1169,14 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
+  /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
+  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
+  /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
+  addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
+  /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
@@ -2096,11 +2104,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
-  /*!\brief File name of the flamelet look up table.*/
-  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+  /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+
+  /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
-  addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
+  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
 
   /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
   addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
@@ -2297,7 +2308,6 @@ void CConfig::SetConfig_Options() {
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
    - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-   - FFD_TWIST_2D ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -3836,6 +3846,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
   SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
+  Variable_Density = ((Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) || (Kind_DensityModel == INC_DENSITYMODEL::FLAMELET));
+
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3931,8 +3943,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+      if (!Variable_Density) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE or FLAMELET",
                        CURRENT_FUNCTION);
       }
 
@@ -3948,6 +3960,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
       if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
         SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Weakly_Coupled_Heat) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET is incompatible with WEAKLY_COUPLED_HEAT in the same zone.",
                        CURRENT_FUNCTION);
       }
     }
@@ -4970,6 +4987,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Data-driven fluid model is currently only supported for compressible flow problems. ---*/
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == DATADRIVEN_FLUID)) {
+    SU2_MPI::Error("Data-driven fluid model can only be used for compressible flows.", CURRENT_FUNCTION);
+  }
+
   if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
@@ -5466,8 +5488,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
-    /*--- The controlling variables are progress variable and total enthalpy ---*/
-    n_control_vars = 2;
+    /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
+    //n_control_vars = nSpecies - n_user_scalars;
+    if (n_control_vars != (nSpecies - n_user_scalars))
+      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }
@@ -6419,7 +6443,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-          case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
           case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
@@ -6469,7 +6492,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
-            (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
@@ -6489,7 +6511,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_TWIST_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_NACELLE) ||
                (Design_Variable[iDV] == FFD_GULL) ||
