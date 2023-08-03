@@ -399,7 +399,6 @@ public:
   /*!
    *  Collects history data from the individual output per zone,
    *  monitors the convergence and writes to screen and history file.
-
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
@@ -601,7 +600,6 @@ public:
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
   void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
-
 
 protected:
 
@@ -937,7 +935,6 @@ protected:
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
 
-
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
@@ -954,36 +951,30 @@ protected:
   inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
-   * \brief Writes turboperformance to screen
-   * \param[in] TurboPerf - Turboperformance definition
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class 
    * \param[in] config - Definition of the particular problem
-   * \param[in] TimeIter - Value of the time iteration index
-   * \param[in] OuterIter - Value of outer iteration index
-   * \param[in] InnerIter - Value of the inner iteration index
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
    */
-  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config,
-                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {};
+  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
   
   /*!
-   * \brief Writes turboperformance to history file
-   * \param[in] TurboStagePerf - Stage turboperformance definition
-   * \param[in] TurboPerf - Turboperformance definition
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config) {};
+  inline virtual void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
 
   /*!
-   * \brief Writes turboperformance to screen
-   * \param[in] TurboStagePerf - Stage turboperformance definition
-   * \param[in] TurboPerf - Turboperformance definition
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
-   * \param[in] iZone - Current zone 
    */
-  inline virtual void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config) {};
+  inline virtual void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
                                   
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
