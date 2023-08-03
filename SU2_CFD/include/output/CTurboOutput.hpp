@@ -36,6 +36,11 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../fluid/CFluidModel.hpp"
 
+/*!
+ * \brief Class containing the required primitive variables for initiating a turboperformance calculation
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurbomachineryPrimitiveState {
  private:
   su2double Density, Pressure, TangVelocity;
@@ -46,15 +51,20 @@ class CTurbomachineryPrimitiveState {
 
   CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitives, unsigned short nDim, su2double tangVel);
 
-  su2double GetDensity() const& { return Density; }
+  const su2double& GetDensity() const { return Density; }
 
-  su2double GetPressure() const& { return Pressure; }
+  const su2double& GetPressure() const { return Pressure; }
 
-  su2double GetTangVelocity() const& { return TangVelocity; }
+  const su2double& GetTangVelocity() const { return TangVelocity; }
 
-  const std::vector<su2double>& GetVelocity() const& { return Velocity; }
+  const std::vector<su2double>& GetVelocity() const { return Velocity; }
 };
 
+/*!
+ * \brief Class containing the combined primitive inlet and outlet states for a given blade
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurbomachineryCombinedPrimitiveStates {
  private:
   CTurbomachineryPrimitiveState InletPrimitiveState;
@@ -69,6 +79,11 @@ class CTurbomachineryCombinedPrimitiveStates {
   CTurbomachineryPrimitiveState GetOutletPrimitiveState() const& { return OutletPrimitiveState; }
 };
 
+/*!
+ * \brief Class containing state information for a turbomachine
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurbomachineryState {
  private:
   su2double Density, Pressure, Entropy, Enthalpy, Temperature, TotalTemperature, TotalPressure, TotalEnthalpy;
@@ -83,45 +98,45 @@ class CTurbomachineryState {
 
   void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState& primitiveState);
 
-  su2double GetDensity() const { return Density; }
+  const su2double GetDensity() const { return Density; }
 
-  su2double GetPressure() const { return Pressure; }
+  const su2double GetPressure() const { return Pressure; }
 
-  su2double GetEntropy() const { return Entropy; }
+  const su2double GetEntropy() const { return Entropy; }
 
-  su2double GetEnthalpy() const { return Enthalpy; }
+  const su2double GetEnthalpy() const { return Enthalpy; }
 
-  su2double GetTemperature() const { return Temperature; }
+  const su2double GetTemperature() const { return Temperature; }
 
-  su2double GetTotalTemperature() const { return TotalTemperature; }
+  const su2double GetTotalTemperature() const { return TotalTemperature; }
 
-  su2double GetTotalPressure() const { return TotalPressure; }
+  const su2double GetTotalPressure() const { return TotalPressure; }
 
-  su2double GetTotalRelPressure() const { return TotalRelPressure; }
+  const su2double GetTotalRelPressure() const { return TotalRelPressure; }
 
-  su2double GetTotalEnthalpy() const { return TotalEnthalpy; }
+  const su2double GetTotalEnthalpy() const { return TotalEnthalpy; }
 
-  su2double GetAbsFlowAngle() const { return AbsFlowAngle; }
+  const su2double GetAbsFlowAngle() const { return AbsFlowAngle; }
 
-  su2double GetFlowAngle() const { return FlowAngle; }
+  const su2double GetFlowAngle() const { return FlowAngle; }
 
-  su2double GetMassFlow() const { return MassFlow; }
+  const su2double GetMassFlow() const { return MassFlow; }
 
-  su2double GetRothalpy() const { return Rothalpy; }
+  const su2double GetRothalpy() const { return Rothalpy; }
 
-  vector<su2double> GetVelocity() const { return Velocity; }
+  const vector<su2double> GetVelocity() const { return Velocity; }
 
-  vector<su2double> GetMach() const { return Mach; }
+  const vector<su2double> GetMach() const { return Mach; }
 
-  su2double GetVelocityValue() const { return Norm(Velocity); }
+  const su2double GetVelocityValue() const { return Norm(Velocity); }
 
-  su2double GetMachValue() const { return Norm(Mach); }
+  const su2double GetMachValue() const { return Norm(Mach); }
 
-  su2double GetRelVelocityValue() const { return Norm(RelVelocity); }
+  const su2double GetRelVelocityValue() const { return Norm(RelVelocity); }
 
-  su2double GetRelMachValue() const { return Norm(RelMach); }
+  const su2double GetRelMachValue() const { return Norm(RelMach); }
 
-  su2double Norm(vector<su2double> const& u) const {
+ const  su2double Norm(vector<su2double> const& u) const {
     su2double accum = 0.;
     for (auto i = 0u; i < u.size(); ++i) {
       accum += u[i] * u[i];
@@ -130,6 +145,11 @@ class CTurbomachineryState {
   }
 };
 
+/*!
+ * \brief Class containing additional states and performance calculation routines for blades in different turbomachines
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurbomachineryBladePerformance {
  protected:
   CTurbomachineryState InletState;
@@ -138,8 +158,7 @@ class CTurbomachineryBladePerformance {
   CFluidModel& FluidModel;
 
  public:
-  CTurbomachineryBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                                  su2double areaOut, su2double radiusOut);
+  CTurbomachineryBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
 
   virtual ~CTurbomachineryBladePerformance() = default;
 
@@ -149,83 +168,91 @@ class CTurbomachineryBladePerformance {
 
   const CTurbomachineryState& GetOutletState() { return OutletState; }
 
-  su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
+  const su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 
-  su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
+  const su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
 
-  su2double GetEntropyGen() const { return EntropyGen; }
+  const su2double GetEntropyGen() const { return EntropyGen; }
 
-  su2double GetPressureRatio() const { return PressureRatio; }
+  const su2double GetPressureRatio() const { return PressureRatio; }
 
-  su2double GetEulerianWork() const { return EulerianWork; }
+  const su2double GetEulerianWork() const { return EulerianWork; }
 };
 
 class CTurbineBladePerformance : public CTurbomachineryBladePerformance {
  public:
-  CTurbineBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                           su2double areaOut, su2double radiusOut);
+  CTurbineBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
 
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives) override;
 };
 
 class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
  public:
-  CCompressorBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                              su2double areaOut, su2double radiusOut);
+  CCompressorBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
 
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives) override;
 };
 
 class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
  public:
-  CPropellorBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                             su2double areaOut, su2double radiusOut);
+  CPropellorBladePerformance(CFluidModel& fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
 
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives) override;
 };
 
+/*!
+ * \brief Class for computng full stage performance
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurbomachineryStagePerformance {
  protected:
-  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio,
-      TotalTotalPressureRatio, EulerianWork;
+  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork;
   CFluidModel& fluidModel;
 
  public:
   CTurbomachineryStagePerformance(CFluidModel& fluid);
+
   virtual ~CTurbomachineryStagePerformance() = default;
-  virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState,
-                                       const CConfig* config);
+
+  virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, const CConfig* config);
+
   virtual void ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
+
   virtual void ComputeCompressorStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
-  su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
-  su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
-  su2double GetEulerianWork() const { return EulerianWork; }
-  su2double GetNormEntropyGen() const { return NormEntropyGen; }
-  su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
-  su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
+
+  const su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
+
+  const su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
+
+  const su2double GetEulerianWork() const { return EulerianWork; }
+
+  const su2double GetNormEntropyGen() const { return NormEntropyGen; }
+
+  const su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
+
+  const su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
 };
 
+/*!
+ * \brief Class for handling the calculation of turboperformance variables across a blade, span and full machine
+ * \author S. Vitale, N. Anand, J. Kelly
+ * \ingroup Output
+ */
 class CTurboOutput {
  private:
   vector<vector<shared_ptr<CTurbomachineryBladePerformance>>> BladesPerformances;
 
-  static void ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances,
-                              vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
+  static void ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances, vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
 
-  static void ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const spanPerformances,
-                             const CTurbomachineryCombinedPrimitiveStates& spanPrimitives);
-  // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
-  // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
+  static void ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const spanPerformances, const CTurbomachineryCombinedPrimitiveStates& spanPrimitives);
+  
  public:
   CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel);
 
   vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>
 
-  GetBladesPerformances() const {
-    return BladesPerformances;
-  }
+  const GetBladesPerformances() const { return BladesPerformances; }
 
-  // vector<shared_ptr<CTurbomachineryStagePerformance>> GetStagePerformances() const { return StagePerformances; }
-  // shared_ptr<CTurbomachineryStagePerformance> GetMachinePerformances() const { return MachinePerformances; }
   void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
 };

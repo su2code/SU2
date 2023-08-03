@@ -29,7 +29,7 @@
 
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
-#include "../output/CTurboOutput.hpp"
+
 /*!
  * \class CEulerSolver
  * \ingroup Euler_Equations
@@ -108,7 +108,7 @@ protected:
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
 
-  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+  vector<su2double> TurboPrimitive; /*!< \breif Primtive turbo variables vector */
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
@@ -1027,13 +1027,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Initilize turbomachinery performance shared_ptr.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void InitTurboPerformance(CGeometry *geometry, CConfig** config) final;
   
   /*!
    * \brief Get Primal variables for turbo performance computation
@@ -1043,14 +1036,18 @@ public:
   inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) override {
     TurboPrimitive.clear();
     if (INLET) {
-      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]); TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
-      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
+      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
       if (nDim==3)
-      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
+        TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
     }
     else {
-      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
-      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); 
+      TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
       if (nDim==3)
         TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
     }

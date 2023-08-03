@@ -91,7 +91,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   if (config->GetBoolTurbomachinery()){
       /*--- Average quantities at the inflow and outflow boundaries ---*/ 
-
     solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
     solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
   }

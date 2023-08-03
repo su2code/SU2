@@ -30,7 +30,6 @@
 #include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
-
 /*--- Forward declare to avoid including here. ---*/
 template <class>
 struct CPrimitiveIndices;
@@ -45,7 +44,7 @@ protected:
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
-    /*
+  /*
    * \brief Add turboperformance outputs as history field
    * \param[in] nZone - Number of zones in problem
   */

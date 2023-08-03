@@ -465,7 +465,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
 
-
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
   SetCustomOutputs(solver, geometry, config);
@@ -519,29 +518,28 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> T
 
     for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
       auto nSpan = config->GetnSpan_iZones(iZone);
+      const auto& BladePerf = BladePerformance.at(iZone).at(nSpan); 
 
       TurboInOut<<" BLADE ROW INDEX "<<iZone <<"";
       TurboInOut.PrintFooter();
       // TODO: Blade Wise Printing
-      TurboInOut << "Entropy "              << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetEntropy();
-      TurboInOut << "Total Enthalpy "       << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalEnthalpy();
-      TurboInOut << "Total Pressure "       << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalPressure();
-      TurboInOut << "Pressure "             << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetPressure()                    << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetPressure();
-      TurboInOut << "Density "              << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetDensity()                     << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetDensity();
-      TurboInOut << "Normal Velocity "      << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetVelocity()[0]                 << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetVelocity()[0];
-      TurboInOut << "Tangential Velocity "  << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetVelocity()[1]                 << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetVelocity()[1];
-      TurboInOut << "Mass Flow "            << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow();
-      TurboInOut << "Mach "                 << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue();
-      TurboInOut << "Abs Flow Angle "       << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+      TurboInOut << "Entropy " << BladePerf->GetInletState().GetEntropy() << BladePerf->GetOutletState().GetEntropy();
+      TurboInOut << "Total Enthalpy " << BladePerf->GetInletState().GetTotalEnthalpy() << BladePerf->GetOutletState().GetTotalEnthalpy();
+      TurboInOut << "Total Pressure " << BladePerf->GetInletState().GetTotalPressure() << BladePerf->GetOutletState().GetTotalPressure();
+      TurboInOut << "Pressure " << BladePerf->GetInletState().GetPressure() << BladePerf->GetOutletState().GetPressure();
+      TurboInOut << "Density " << BladePerf->GetInletState().GetDensity() << BladePerf->GetOutletState().GetDensity();
+      TurboInOut << "Normal Velocity " << BladePerf->GetInletState().GetVelocity()[0] << BladePerf->GetOutletState().GetVelocity()[0];
+      TurboInOut << "Tangential Velocity " << BladePerf->GetInletState().GetVelocity()[1] << BladePerf->GetOutletState().GetVelocity()[1];
+      TurboInOut << "Mass Flow " << BladePerf->GetInletState().GetMassFlow() << BladePerf->GetOutletState().GetMassFlow();
+      TurboInOut << "Mach " << BladePerf->GetInletState().GetMachValue() << BladePerf->GetOutletState().GetMachValue();
+      TurboInOut << "Abs Flow Angle " << BladePerf->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER << BladePerf->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
       TurboInOut.PrintFooter();
     }
     cout<<TurboInOutTable.str();
   }
 }
 
-void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config) {
+void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
 
   stringstream TurboMZPerf;
 
@@ -571,37 +569,37 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePe
 
 }
 
-void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf,
-                                  std::shared_ptr<CTurboOutput> TurboPerf,
-                                  CConfig *config) {
+void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
     
     if (rank == MASTER_NODE){
       auto BladePerformance = TurboPerf->GetBladesPerformances();
       for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
         auto nSpan = config->GetnSpan_iZones(iZone);
+        const auto& BladePerf = BladePerformance.at(iZone).at(nSpan);
+
         stringstream tag;
         tag << iZone + 1;
 
-        SetHistoryOutputValue("EntropyIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetEntropy());
-        SetHistoryOutputValue("EntropyOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetEntropy());
-        SetHistoryOutputValue("TotalEntahalpyIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalEnthalpy());
-        SetHistoryOutputValue("TotalEnthalpyOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalEnthalpy());
-        SetHistoryOutputValue("TotalPressureIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalPressure());
-        SetHistoryOutputValue("TotalPressureOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalPressure());
-        SetHistoryOutputValue("PressureIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetPressure());
-        SetHistoryOutputValue("PressureOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetPressure());
-        SetHistoryOutputValue("DensityIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetDensity());
-        SetHistoryOutputValue("DensityOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetDensity());
-        SetHistoryOutputValue("NormalVelocityIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetVelocity()[0]);
-        SetHistoryOutputValue("NormalVelocityOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetVelocity()[0]);
-        SetHistoryOutputValue("TangentialVelocityIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetVelocity()[1]);
-        SetHistoryOutputValue("TangentialVelocityOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetVelocity()[1]);
-        SetHistoryOutputValue("MassFlowIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMassFlow());
-        SetHistoryOutputValue("MassFlowOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow());
-        SetHistoryOutputValue("MachIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue());
-        SetHistoryOutputValue("MachOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue());
-        SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
-        SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
+        SetHistoryOutputValue("EntropyIn_" + tag.str(), BladePerf->GetInletState().GetEntropy());
+        SetHistoryOutputValue("EntropyOut_" + tag.str(), BladePerf->GetOutletState().GetEntropy());
+        SetHistoryOutputValue("TotalEntahalpyIn_" + tag.str(), BladePerf->GetInletState().GetTotalEnthalpy());
+        SetHistoryOutputValue("TotalEnthalpyOut_" + tag.str(), BladePerf->GetOutletState().GetTotalEnthalpy());
+        SetHistoryOutputValue("TotalPressureIn_" + tag.str(), BladePerf->GetInletState().GetTotalPressure());
+        SetHistoryOutputValue("TotalPressureOut_" + tag.str(), BladePerf->GetOutletState().GetTotalPressure());
+        SetHistoryOutputValue("PressureIn_" + tag.str(), BladePerf->GetInletState().GetPressure());
+        SetHistoryOutputValue("PressureOut_" + tag.str(), BladePerf->GetOutletState().GetPressure());
+        SetHistoryOutputValue("DensityIn_" + tag.str(), BladePerf->GetInletState().GetDensity());
+        SetHistoryOutputValue("DensityOut_" + tag.str(), BladePerf->GetOutletState().GetDensity());
+        SetHistoryOutputValue("NormalVelocityIn_" + tag.str(), BladePerf->GetInletState().GetVelocity()[0]);
+        SetHistoryOutputValue("NormalVelocityOut_" + tag.str(), BladePerf->GetOutletState().GetVelocity()[0]);
+        SetHistoryOutputValue("TangentialVelocityIn_" + tag.str(), BladePerf->GetInletState().GetVelocity()[1]);
+        SetHistoryOutputValue("TangentialVelocityOut_" + tag.str(), BladePerf->GetOutletState().GetVelocity()[1]);
+        SetHistoryOutputValue("MassFlowIn_" + tag.str(), BladePerf->GetInletState().GetMassFlow());
+        SetHistoryOutputValue("MassFlowOut_" + tag.str(), BladePerf->GetOutletState().GetMassFlow());
+        SetHistoryOutputValue("MachIn_" + tag.str(), BladePerf->GetInletState().GetMachValue());
+        SetHistoryOutputValue("MachOut_" + tag.str(), BladePerf->GetOutletState().GetMachValue());
+        SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), BladePerf->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
+        SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), BladePerf->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
       }
       SetHistoryOutputValue("EntropyGeneration", TurboStagePerf->GetNormEntropyGen()*100);
       SetHistoryOutputValue("EulerianWork", TurboStagePerf->GetEulerianWork());
@@ -612,8 +610,7 @@ void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* Turb
     }
 }
 
-void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
-                                       unsigned short val_iZone) {
+void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config, unsigned short val_iZone) {
 
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config[val_iZone]->GetnZone();
@@ -633,8 +630,6 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
   if (rank == MASTER_NODE){
     SpanWiseValuesIn = geometry->GetSpanWiseValue(1);
     SpanWiseValuesOut = geometry->GetSpanWiseValue(2);
-
-
 
     /*--- Writing Span wise inflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
@@ -671,17 +666,18 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     file << endl;
 
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
 
       file.width(30); file << SpanWiseValuesIn[iSpan];
       file.width(15); file << iSpan;
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
+      file.width(30); file << BladePerf->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
       // TODO: Add the variables back into CTurboOutput
       // if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
       //   file.width(30); file << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
@@ -728,17 +724,18 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
 
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
 
       file.width(30); file << SpanWiseValuesOut[iSpan];
       file.width(15); file << iSpan;
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
-      file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
+      file.width(30); file << BladePerf->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
       // if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
       //   file.width(30); file << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
       // }else{
@@ -783,27 +780,28 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
 
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
 
       file.width(30); file << SpanWiseValuesIn[iSpan];
       file.width(15); file << iSpan;
       for (iDim = 0; iDim < 4; iDim++){
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetMach()[iDim];
+        file.width(30); file << BladePerf->GetInletState().GetMach()[iDim];
       }
       for (iDim = 0; iDim < 4; iDim++){
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
+        file.width(30); file << BladePerf->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
       }
       // This captures NaNs 
-      if(isnan(BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetAbsFlowAngle())){
+      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
         file.width(30); file << "0.0000";
       }
       else {
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
+        file.width(30); file << BladePerf->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
       }
-      if(isnan(BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetFlowAngle())){
+      if(isnan(BladePerf->GetInletState().GetFlowAngle())){
         file.width(30); file << "0.0000";
       }
       else{
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetFlowAngle()*180.0/PI_NUMBER;
+        file.width(30); file << BladePerf->GetInletState().GetFlowAngle()*180.0/PI_NUMBER;
       }
       file << endl;
     }
@@ -842,26 +840,27 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
 
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
 
       file.width(30); file << SpanWiseValuesIn[iSpan];
       file.width(15); file << iSpan;
       for (iDim = 0; iDim < 4; iDim++){
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetMach()[iDim];
+        file.width(30); file << BladePerf->GetOutletState().GetMach()[iDim];
       }
       for (iDim = 0; iDim < 4; iDim++){
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
+        file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
       }
-      if(isnan(BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetAbsFlowAngle())){
+      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
         file.width(30); file << "0.0000";
       }
       else {
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
+        file.width(30); file << BladePerf->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
       }
-      if(isnan(BladePerformance.at(val_iZone).at(iSpan)->GetInletState().GetAbsFlowAngle())){
+      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
         file.width(30); file << "0.0000";
       }
       else{
-        file.width(30); file << BladePerformance.at(val_iZone).at(iSpan)->GetOutletState().GetFlowAngle()*180.0/PI_NUMBER;
+        file.width(30); file << BladePerf->GetOutletState().GetFlowAngle()*180.0/PI_NUMBER;
       }
       file << endl;
     }

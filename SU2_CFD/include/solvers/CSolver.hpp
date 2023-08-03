@@ -133,8 +133,6 @@ protected:
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
-  vector<su2double> TurboPrimitive;
-
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
@@ -3755,19 +3753,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config) { }
 
    /*!
    * \brief Get Primal variables for turbo performance computation
    *        iteration can be executed by multiple threads.
    * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
    */
-  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) { return TurboPrimitive; }
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) { return vector<su2double>(5, 0.0); }
 
   /*!
    * \brief virtual member.
