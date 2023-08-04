@@ -1355,11 +1355,10 @@ void COutput::CheckHistoryOutput(unsigned short nZone) {
 
   for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
     if (requestedHistoryFields[iReqField] == "TURBO_PERF"){
-        char buffer [14]; //This makes the assumption the number of zones is 10 or lower
-        std::string strZones = std::to_string(nZone-1);
-        char const *valZones = strZones.c_str();
-        auto snpCatch = snprintf(buffer, 14, "TURBO_PERF[%s]", valZones);
-        requestedHistoryFields[iReqField] = buffer;
+      std::stringstream reqField;
+      std::string strZones = std::to_string(nZone-1);
+      reqField << "TURBO_PERF[" << strZones << "]";
+      reqField >> requestedHistoryFields[iReqField];
     }
   }
 
