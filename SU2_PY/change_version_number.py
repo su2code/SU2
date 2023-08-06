@@ -110,7 +110,8 @@ while not yorn.lower() == "y" and not options.yes:
 
 # Loop through and correct all files
 for fname in filelist:
-    lines = open(fname, "r").readlines()
+    with open(fname, "r") as f:
+        lines = f.readlines()
     for i, line in enumerate(lines):
         for old, new in zip((oldvers, oldvers_q), (newvers, newvers_q)):
             # Avoid breaking the formating of some headers
@@ -119,8 +120,7 @@ for fname in filelist:
                 lines[i] = line.replace(old + " " * max(0, n), new + " " * max(0, -n))
             elif old in line:
                 lines[i] = line.replace(old, new)
-    f = open(fname, "w")
-    f.writelines(lines)
-    f.close()
+    with open(fname, "w") as f:
+        f.writelines(lines)
 
 os.system("rm -rf version.txt")
