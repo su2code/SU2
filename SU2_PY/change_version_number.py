@@ -112,16 +112,13 @@ while not yorn.lower() == "y" and not options.yes:
 for fname in filelist:
     lines = open(fname, "r").readlines()
     for i, line in enumerate(lines):
-        if oldvers in line:
-            # Avoid breaking the formating of some testcase headers
-            if line.endswith("%\n"):
-                n = len(newvers) - len(oldvers)
-                lines[i] = line.replace(
-                    oldvers + " " * max(0, n), newvers + " " * max(0, -n)
-                )
-            else:
-                lines[i] = line.replace(oldvers, newvers)
-        lines[i] = line.replace(oldvers_q, newvers_q)
+        for old, new in zip((oldvers, oldvers_q), (newvers, newvers_q)):
+            # Avoid breaking the formating of some headers
+            if old + "  " in line:
+                n = len(new) - len(old)
+                lines[i] = line.replace(old + " " * max(0, n), new + " " * max(0, -n))
+            if old in line:
+                lines[i] = line.replace(old, new)
     f = open(fname, "w")
     f.writelines(lines)
     f.close()

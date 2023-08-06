@@ -1239,7 +1239,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
 
 void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   /*--- Only place outputs of the "SOLUTION" group here. ---*/
-  
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
@@ -2594,13 +2594,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   ofstream file;
   file.open(fileName);
 
-  file << "\n-------------------------------------------------------------------------\n";
+  file << "\n";
+  file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
   file << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
-  // file << "|   Local date and time: " << dt << "                      |\n";
   file << "-------------------------------------------------------------------------\n";
   file << "| SU2 Project Website: https://su2code.github.io                        |\n";
   file << "|                                                                       |\n";
