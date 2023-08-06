@@ -117,7 +117,7 @@ for fname in filelist:
             if old + "  " in line:
                 n = len(new) - len(old)
                 lines[i] = line.replace(old + " " * max(0, n), new + " " * max(0, -n))
-            if old in line:
+            elif old in line:
                 lines[i] = line.replace(old, new)
     f = open(fname, "w")
     f.writelines(lines)
