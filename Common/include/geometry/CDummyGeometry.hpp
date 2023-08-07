@@ -36,14 +36,11 @@
  *        going through the time-consuming mesh initialization and paritioning.
  * \author T. Albring
  */
-class CDummyGeometry final : public CGeometry{
-
-public:
+class CDummyGeometry final : public CGeometry {
+ public:
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDummyGeometry(CConfig *config);
-
+  CDummyGeometry(CConfig* config);
 };
-

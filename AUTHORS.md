@@ -71,6 +71,7 @@ Eduardo Molina
 Edwin van der Weide
 Ethan Alan Hereth
 Florian Dittmann
+Francesco Poli
 Francisco D. Palacios
 Gaurav Bansal
 Giacomo Baldan
@@ -91,8 +92,10 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Joseph Signorelli
 Josy P. Pullockara
 Kedar Naik
+Kürşat Yurt
 LaSerpe
 Lennaert Tol
 Lisa Kusch
@@ -129,6 +132,7 @@ Thomas D. Economon
 Tim Albring
 TobiKattmann
 Trent Lukaczyk
+Vinzenz Götz
 VivaanKhatri
 Wally Maier
 Y. Chandukrishna
@@ -157,4 +161,3 @@ srcopela
 tobadavid
 vfrancesmolla
 ```
-

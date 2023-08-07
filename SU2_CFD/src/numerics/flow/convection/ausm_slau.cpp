@@ -60,7 +60,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   }
 }
 
-CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
+CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow() {
 
   delete [] psi_i;
   delete [] psi_j;
@@ -812,7 +812,7 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, c
   }
 }
 
-CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
+CUpwAUSM_Flow::~CUpwAUSM_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;

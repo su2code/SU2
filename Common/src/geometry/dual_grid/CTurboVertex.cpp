@@ -27,20 +27,15 @@
 
 #include "../../../include/geometry/dual_grid/CTurboVertex.hpp"
 
-CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim) {
   unsigned short iDim;
- /*--- Pointers initialization ---*/
+  /*--- Pointers initialization ---*/
   TurboNormal = nullptr;
   /*--- Allocate node, and face normal ---*/
-  TurboNormal = new su2double [nDim];
+  TurboNormal = new su2double[nDim];
 
   /*--- Initializate the structure ---*/
-  for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
-
+  for (iDim = 0; iDim < nDim; iDim++) TurboNormal[iDim] = 0.0;
 }
 
-CTurboVertex::~CTurboVertex() {
-
-  delete [] TurboNormal;
-
-}
+CTurboVertex::~CTurboVertex() { delete[] TurboNormal; }

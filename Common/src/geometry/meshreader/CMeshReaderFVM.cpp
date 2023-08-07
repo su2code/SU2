@@ -28,10 +28,5 @@
 
 #include "../../../include/geometry/meshreader/CMeshReaderFVM.hpp"
 
-CMeshReaderFVM::CMeshReaderFVM(const CConfig *val_config,
-                               unsigned short val_iZone,
-                               unsigned short val_nZone) :
-  rank(SU2_MPI::GetRank()),
-  size(SU2_MPI::GetSize()),
-  config(val_config) {
-}
+CMeshReaderFVM::CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+    : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()), config(val_config) {}

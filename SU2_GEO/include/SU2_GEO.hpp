@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
@@ -38,7 +37,7 @@
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
-#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
-#include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
+#include "../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 
 using namespace std;

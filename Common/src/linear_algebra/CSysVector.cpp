@@ -50,7 +50,7 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType,true>(64, nElm*sizeof(ScalarType));
+  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
   if (val != nullptr) {
     if (!valIsArray) {
