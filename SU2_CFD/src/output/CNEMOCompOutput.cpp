@@ -242,6 +242,10 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE",       "Pressure",       "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE_TR", "Temperature_tr", "PRIMITIVE", "Temperature_tr");
   AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve", "PRIMITIVE", "Temperature_ve");
+  AddVolumeOutput("VELOCITY-X", "Velocity_x", "PRIMITIVE", "x-component of the velocity vector");
+  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "PRIMITIVE", "y-component of the velocity vector");
+  if (nDim == 3)
+    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
 
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
@@ -338,6 +342,11 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE_TR", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("TEMPERATURE_VE", iPoint, Node_Flow->GetTemperature_ve(iPoint));
+  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint, 0));
+  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
+
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
