@@ -92,7 +92,7 @@ def ApplyHeatFlux(time, driver, marker_ids):
   for marker_id in marker_ids:
     if marker_id < 0:
       continue
-    hf = (-1, 0)[time > 0.2]
+    hf = (-1 * 2700 * 870, 0)[time > 0.2]
     for i_vertex in range(driver.GetNumberMarkerNodes(marker_id)):
       driver.SetMarkerCustomNormalHeatFlux(marker_id, i_vertex, hf)
 
