@@ -1,5 +1,5 @@
 /*!
- * \file CDiscAdjDeformationDriver.cpp
+ * \file CDiscAdjDeformationDriver.hpp
  * \brief Headers of the main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez, A. Gastaldi, H. Patel
  * \version 7.5.1 "Blackbird"
