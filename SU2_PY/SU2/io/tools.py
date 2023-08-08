@@ -591,7 +591,6 @@ def get_dvMap():
         19: "FFD_CONTROL_POINT_2D",
         20: "FFD_CAMBER_2D",
         21: "FFD_THICKNESS_2D",
-        22: "FFD_TWIST_2D",
         23: "FFD_CONTROL_SURFACE",
         24: "FFD_ANGLE_OF_ATTACK",
         30: "HICKS_HENNE",

@@ -567,9 +567,6 @@ class COptionDVParam : public COptionBase {
         case FFD_THICKNESS_2D:
           nParamDV[iDV] = 2;
           break;
-        case FFD_TWIST_2D:
-          nParamDV[iDV] = 3;
-          break;
         case HICKS_HENNE:
           nParamDV[iDV] = 2;
           break;
@@ -676,11 +673,11 @@ class COptionDVParam : public COptionBase {
             ((this->design_variable[iDV] == NO_DEFORMATION) || (this->design_variable[iDV] == FFD_SETTING) ||
              (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) || (this->design_variable[iDV] == FFD_CAMBER_2D) ||
-             (this->design_variable[iDV] == FFD_TWIST_2D) || (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
-             (this->design_variable[iDV] == FFD_CONTROL_POINT) || (this->design_variable[iDV] == FFD_NACELLE) ||
-             (this->design_variable[iDV] == FFD_GULL) || (this->design_variable[iDV] == FFD_TWIST) ||
-             (this->design_variable[iDV] == FFD_ROTATION) || (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
-             (this->design_variable[iDV] == FFD_CAMBER) || (this->design_variable[iDV] == FFD_THICKNESS))) {
+             (this->design_variable[iDV] == FFD_THICKNESS_2D) || (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
+             (this->design_variable[iDV] == FFD_NACELLE) || (this->design_variable[iDV] == FFD_GULL) ||
+             (this->design_variable[iDV] == FFD_TWIST) || (this->design_variable[iDV] == FFD_ROTATION) ||
+             (this->design_variable[iDV] == FFD_CONTROL_SURFACE) || (this->design_variable[iDV] == FFD_CAMBER) ||
+             (this->design_variable[iDV] == FFD_THICKNESS))) {
           ss >> this->FFDTag[iDV];
           this->paramDV[iDV][iParamDV] = 0;
         } else

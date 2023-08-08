@@ -2872,6 +2872,11 @@ public:
                                        su2double val_flowdir) { }
 
   /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline virtual void UpdateFarfieldVelocity(const CConfig* config) {}
+
+  /*!
    * \brief A virtual member
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.

@@ -160,12 +160,11 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
   /*--- Free Form deformation based ---*/
 
   if ((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) || (config->GetDesign_Variable(0) == FFD_CAMBER_2D) ||
-      (config->GetDesign_Variable(0) == FFD_THICKNESS_2D) || (config->GetDesign_Variable(0) == FFD_TWIST_2D) ||
-      (config->GetDesign_Variable(0) == FFD_CONTROL_POINT) || (config->GetDesign_Variable(0) == FFD_NACELLE) ||
-      (config->GetDesign_Variable(0) == FFD_GULL) || (config->GetDesign_Variable(0) == FFD_TWIST) ||
-      (config->GetDesign_Variable(0) == FFD_ROTATION) || (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
-      (config->GetDesign_Variable(0) == FFD_CAMBER) || (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
-      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
+      (config->GetDesign_Variable(0) == FFD_THICKNESS_2D) || (config->GetDesign_Variable(0) == FFD_CONTROL_POINT) ||
+      (config->GetDesign_Variable(0) == FFD_NACELLE) || (config->GetDesign_Variable(0) == FFD_GULL) ||
+      (config->GetDesign_Variable(0) == FFD_TWIST) || (config->GetDesign_Variable(0) == FFD_ROTATION) ||
+      (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) || (config->GetDesign_Variable(0) == FFD_CAMBER) ||
+      (config->GetDesign_Variable(0) == FFD_THICKNESS) || (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
     /*--- Definition of the FFD deformation class ---*/
 
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -893,7 +892,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry* geometry, CConfig* config, 
     cout << "Computed parametric coord for FFD box '" << FFDBox->GetTag() << "'\n";
     cout << "  Number of vertices (Total, Inside FFD, Mapped to FFD): " << GlobalVertex;
     cout << ", " << GlobalVisited << ", " << GlobalMapped << "\n";
-    cout << "  Max coord differece: " << MaxDiff << "\n";
+    cout << "  Max coord difference: " << MaxDiff << "\n";
   }
 
   /*--- After the point inversion, copy the original information back. ---*/
@@ -1557,9 +1556,6 @@ void CSurfaceMovement::ApplyDesignVariables(CGeometry* geometry, CConfig* config
         break;
       case FFD_THICKNESS_2D:
         SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
-        break;
-      case FFD_TWIST_2D:
-        SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
         break;
       case FFD_CONTROL_POINT:
         SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
@@ -2244,11 +2240,6 @@ bool CSurfaceMovement::SetFFDThickness_2D(CGeometry* geometry, CConfig* config, 
     return false;
   }
 
-  return true;
-}
-
-bool CSurfaceMovement::SetFFDTwist_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                      CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) {
   return true;
 }
 

@@ -472,28 +472,24 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
-const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
-const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-
-const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
-const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
-const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
-const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
-
-const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
-const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
-
-const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
-const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
-
-const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
+ enum SOLVER_TYPE : const int {
+   FLOW_SOL=0,       /*!< \brief Position of the mean flow solution in the solver container array. */
+   ADJFLOW_SOL=1,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+   TURB_SOL=2,       /*!< \brief Position of the turbulence model solution in the solver container array. */
+   ADJTURB_SOL=3,    /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   TRANS_SOL=4,      /*!< \brief Position of the transition model solution in the solver container array. */
+   HEAT_SOL=5,       /*!< \brief Position of the heat equation in the solution solver array. */
+   ADJHEAT_SOL=6,    /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+   RAD_SOL=7,        /*!< \brief Position of the radiation equation in the solution solver array. */
+   ADJRAD_SOL=8,     /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   MESH_SOL=9,       /*!< \brief Position of the mesh solver. */
+   ADJMESH_SOL=10,    /*!< \brief Position of the adjoint of the mesh solver. */
+   SPECIES_SOL=11,    /*!< \brief Position of the species solver. */
+   ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
+   FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
+   ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
+ };
 
 const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */
 const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */
@@ -551,6 +547,8 @@ enum ENUM_FLUIDMODEL {
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
+  FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
+  DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -564,6 +562,8 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
   MakePair("COOLPROP", COOLPROP)
+  MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
+  MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
 };
 
 /*!
@@ -593,6 +593,19 @@ MakePair("ONESPECIES", ONESPECIES)
 };
 
 /*!
+* \brief Types of interpolation methods for data-driven fluid models.
+*/
+enum class ENUM_DATADRIVEN_METHOD {
+  LUT = 0,
+  MLP = 1
+};
+
+static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
+  MakePair("LUT", ENUM_DATADRIVEN_METHOD::LUT)
+  MakePair("MLP", ENUM_DATADRIVEN_METHOD::MLP)
+};
+
+/*!
  * \brief types of coefficient transport model
  */
 enum class TRANSCOEFFMODEL {
@@ -615,11 +628,13 @@ enum class INC_DENSITYMODEL {
   CONSTANT,   /*!< \brief Constant density. */
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
+  FLAMELET,   /*!< \brief Density according to flamelet manifold. */
 };
 static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
+  MakePair("FLAMELET", INC_DENSITYMODEL::FLAMELET)
 };
 
 /*!
@@ -653,12 +668,14 @@ enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
+  FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief CoolProp viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
   MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
 };
 
@@ -681,12 +698,14 @@ enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
+  FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
   MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
 };
 
@@ -710,6 +729,7 @@ enum class DIFFUSIVITYMODEL {
   CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
   UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
   CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
+  FLAMELET,            /*!< \brief flamelet model for tabulated chemistry, diffusivity from lookup table */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
@@ -717,6 +737,7 @@ static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
   MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
+  MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
 };
 
 /*!
@@ -779,11 +800,13 @@ static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,  /*!< \brief Gust direction-X. */
-  Y_DIR = 1   /*!< \brief Gust direction-Y. */
+  Y_DIR = 1,  /*!< \brief Gust direction-Y. */
+  Z_DIR = 2   /*!< \brief Gust direction-Z. */
 };
 static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
   MakePair("X_DIR", X_DIR)
   MakePair("Y_DIR", Y_DIR)
+  MakePair("Z_DIR", Z_DIR)
 };
 
 // If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
@@ -1014,8 +1037,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
 
-  const bool sst_1994 = found_1994 || found_1994m || default_version;
-  const bool sst_2003 = found_2003 || found_2003m;
+  const bool sst_1994 = found_1994 || found_1994m;
+  /*--- Default version since v8. ---*/
+  const bool sst_2003 = found_2003 || found_2003m || default_version;
 
   /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
   const bool sst_m = found_1994m || found_2003m || default_version;
@@ -1031,12 +1055,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.version = SST_OPTIONS::V2003;
   } else {
     SSTParsedOptions.version = SST_OPTIONS::V1994;
-
-    if (rank==MASTER_NODE) {
-      std::cout <<
-        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
-        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
-    }
   }
 
   // Parse production modifications
@@ -1285,11 +1303,39 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  */
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
-  SPECIES_TRANSPORT,    /*!< \brief Passive scalar transport model. */
+  SPECIES_TRANSPORT,    /*!< \brief species transport model. */
+  FLAMELET,          /*!< \brief flamelet model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
+  MakePair("FLAMELET", SPECIES_MODEL::FLAMELET)
+};
+
+/*!
+ * \brief Progress variable and enthalpy are the first and second entries in the lookup table.
+ * \note The order matters.
+ */
+enum FLAMELET_SCALAR_VARIABLES {
+  I_PROGVAR,
+  I_ENTH,
+  I_MIXFRAC,
+};
+
+/*!
+ * \brief the source terms for the flamelet method. At the moment only progress variable
+ */
+enum FLAMELET_SCALAR_SOURCES {
+  I_SRC_TOT_PROGVAR
+};
+
+/*!
+ * \brief Look-up operations for the flamelet scalar solver.
+ */
+enum FLAMELET_LOOKUP_OPS {
+  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
+  LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };
 
 /*!
@@ -2090,7 +2136,6 @@ enum ENUM_PARAM {
   FFD_CONTROL_POINT_2D = 19,  /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS_2D = 21,      /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 22,          /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_CONTROL_SURFACE = 23,   /*!< \brief Free form deformation for 3D design (control surface). */
   FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
   HICKS_HENNE = 30,           /*!< \brief Hicks-Henne bump function for airfoil deformation. */
@@ -2113,7 +2158,6 @@ enum ENUM_PARAM {
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
   MakePair("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
-  MakePair("FFD_TWIST_2D", FFD_TWIST_2D)
   MakePair("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
   MakePair("FFD_CAMBER_2D", FFD_CAMBER_2D)
   MakePair("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
