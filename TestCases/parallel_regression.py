@@ -29,9 +29,13 @@
 from __future__ import print_function
 
 import sys
+import os
 from TestCase import TestCase
 
 def main():
+    os.environ['MPP_DATA_DIRECTORY'] = os.environ['SU2_RUN'] + "../mpp-data"
+    os.environ['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH'] + ":" + os.environ['SU2_RUN'] + "../lib"
+
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''

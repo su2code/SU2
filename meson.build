@@ -238,14 +238,20 @@ if get_option('enable-mpp')
     cmake_opts = cmake.subproject_options()
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
-    'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
-    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
+    cmake_opts.set_install(get_option('install-mpp'))
   endif
   mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+
+  if get_option('install-mpp')
+    run_command('cp', '-r', join_paths(meson.source_root(), '/subprojects/Mutationpp/data'),
+        join_paths(get_option('prefix'), '/mpp-data'), check: true)
+  endif
 endif
 
 if get_option('enable-coolprop')
@@ -340,12 +346,21 @@ message('''---------------------------------------------------------------------
            get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
-  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+  if get_option('install-mpp')
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+            export MPP_DATA_DIRECTORY=$SU2_RUN/../mpp-data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
 
-          ''')
+            ''')
+  else
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+            ''')
+  endif
 endif
 
 if get_option('enable-librom')
