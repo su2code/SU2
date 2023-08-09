@@ -267,10 +267,12 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       Volume_Temp_Local += volume * Temp * nodes->GetThermalConductivity(iPoint);
 
       // coeff_b1 for turbulence
-      if (turbulent && (config->GetnMarker_Isothermal() != 0))
-        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 0) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+      if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
+        // su2doule dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, nodes->GetAuxVarGradient(iPoint, 0));
+        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 2) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+      }
 
-      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 0) * nodes->GetDensity(iPoint);
+      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 2) * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
 
     } // points
 
@@ -294,7 +296,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
       const su2double b0_coeff =  Volume_Temp_Global; 
-      const su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp() + turb_b1_coeff_Global;
+      const su2double b1_coeff = Volume_VTemp_Global  + turb_b1_coeff_Global;
       const su2double b2_coeff = -dTdn_Global;
 
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
@@ -337,12 +339,12 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
     nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
 
     /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/
-    if (energy && InnerIter > 0) {
-      su2double Temperature_Recovered = nodes->GetTemperature(iPoint);
-      Temperature_Recovered += SPvals.Streamwise_Periodic_IntegratedHeatFlow /
-                              (SPvals.Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
-      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
-    }
+    // if (energy && InnerIter > 0) {
+    //   su2double Temperature_Recovered = nodes->GetTemperature(iPoint);
+    //   Temperature_Recovered += SPvals.Streamwise_Periodic_IntegratedHeatFlow /
+    //                           (SPvals.Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
+    //   nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
+    // }
   } // for iPoint
   END_SU2_OMP_FOR
 
@@ -559,8 +561,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       /*--- Apply a weak boundary condition for the energy equation.
       Compute the residual due to the prescribed heat flux. ---*/
-
-      LinSysRes(iPoint, nDim+1) -= thermal_conductivity*dTdn*Area;
+      // Test with relaxation factor with a factor of 0.5
+      LinSysRes(iPoint, nDim+1) -= 0.5*thermal_conductivity*dTdn*Area;
 
       /*--- Jacobian contribution for temperature equation. ---*/
 

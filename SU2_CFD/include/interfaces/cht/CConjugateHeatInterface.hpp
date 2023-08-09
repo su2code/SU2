@@ -70,4 +70,7 @@ public:
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target) override;
+
+  void SetLambdaL(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
+                          unsigned long Marker_Target) override;
 };

@@ -818,6 +818,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
   /* Value of prescribed pressure drop which results in an artificial body force vector. */
   const su2double delta_p = SPvals.Streamwise_Periodic_PressureDrop;
+  auto implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
@@ -844,8 +845,10 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       /*--- Compute three terms associated with the source terms for iso-thermal BCs ---*/
       // Reference Eq(20) Stalio et. al, doi:10.1115/1.2717235
 
-      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[3]);
-      su2double u_i = V_i[1], temp_i = V_i[nDim + 1];
+      // Displacement with temperature
+      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[nDim+1]);
+      
+      su2double u_i = V_i[3], temp_i = V_i[nDim+1];
       su2double term1 = 2 * Thermal_Conductivity_i * dot_product;
       su2double term2 = - SPvals.Streamwise_Periodic_LambdaL * Thermal_Conductivity_i * temp_i;
       su2double term3 = - temp_i * u_i * DensityInc_i *  config->GetSpecific_Heat_Cp();
@@ -855,6 +858,14 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
+  // if (implicit) {
+
+  //   /*--- Jacobian is set to zero on initialization. ---*/
+
+  //   jacobian[nDim+1][nDim+1] = Volume * scalar_factor * dot_product;
+
+  // }
+
     /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
       if (bool_heat_flux_bc) {
@@ -863,13 +874,21 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       }
       
       if (bool_isotherml_bc) {
-        scalar_factor = (-V_i[3] * SPvals.Streamwise_Periodic_LambdaL) * config->GetSpecific_Heat_Cp() / Prandtl_Turb;
+        scalar_factor = (-V_i[nDim + 1] * SPvals.Streamwise_Periodic_LambdaL) * config->GetSpecific_Heat_Cp() / Prandtl_Turb;
       }
       
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
       dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, AuxVar_Grad_i[0]);
 
       residual[nDim+1] -= Volume * scalar_factor * dot_product;
+
+        // if (implicit) {
+
+        // /*--- Jacobian is set to zero on initialization. ---*/
+
+        // jacobian[nDim+1][nDim+1] -= Volume * scalar_factor * dot_product;
+
+        // }
     } // if turbulent
   } // if energy
 
@@ -886,7 +905,7 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
   /*--- m_dot_local = rho * dot_prod(n_A*v), with n_A beeing the area-normal ---*/
-  const su2double local_Massflow = DensityInc_i * GeometryToolbox::DotProduct(nDim, Normal, &V_i[1]);
+  const su2double local_Massflow = DensityInc_i * GeometryToolbox::DotProduct(nDim, Normal, &V_i[3]);
 
   // Massflow weighted heat sink, which takes out
   // a) the integrated amount over the Heatflux marker

@@ -318,6 +318,20 @@ public:
                    CSolver **solver_container,
                    CConfig *config) override;
 
+/*!
+   * \brief Compute the viscous residuals for the turbulent equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Source_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics **numerics_container,
+                        CConfig *config,
+                        unsigned short iMesh) override;
   /*!
    * \brief Get value of the heat load (integrated heat flux).
    * \return Value of the heat load (integrated heat flux).
@@ -402,4 +416,6 @@ public:
    * \return Value of the heat flux.
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
+
+//   su2double GetLambdaL(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 };

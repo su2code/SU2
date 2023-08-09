@@ -169,3 +169,47 @@ void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeom
                                               target_config->GetRelaxation_Factor_CHT(), Target_Variable[3]);
   }
 }
+
+void CConjugateHeatInterface::SetLambdaL(CSolver *target_solution, CGeometry *target_geometry,
+                                                 const CConfig *target_config, unsigned long Marker_Target) {
+  unsigned short iPoint, iMarker, iVertex;
+  su2double term1=0.0, term2=0.0, term3=0.0;
+  auto nDim = target_geometry->GetnDim();
+
+    /*--- Loop over all heatflux Markers ---*/
+  for (iMarker = 0; iMarker < target_config->GetnMarker_All(); iMarker++) {
+
+    if (target_config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+
+    /*--- Identify the boundary by string name and retrive heatflux from config ---*/
+    const auto Marker_StringTag = target_config->GetMarker_All_TagBound(iMarker);
+    const su2double Wall_HeatFlux = target_config->GetWall_HeatFlux(Marker_StringTag);
+
+      for (iVertex = 0ul; iVertex < target_geometry->nVertex[iMarker]; iVertex++) {
+
+      auto iPoint = target_geometry->vertex[iMarker][iVertex]->GetNode();
+
+      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
+
+      const auto AreaNormal = target_geometry->vertex[iMarker][iVertex]->GetNormal();
+
+      const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+
+      // compute the constant
+      const auto GradT = target_solution->GetNodes()->GetGradient_Primitive(iPoint)[0]; //TODO: check index
+       
+      term1 += GeometryToolbox::DotProduct(nDim, GradT, AreaNormal);
+
+      // compute coefficient of lambda
+      term2 += target_solution->GetNodes()->GetTemperature(iPoint) * FaceArea;
+      }
+    } // loop Vertices
+  }
+
+  // compute coefficient of lambda^2
+for (iPoint = 0; iPoint<=target_geometry->GetnPointDomain(); iPoint++) {
+  term3 += target_solution->GetNodes()->GetTemperature(iPoint) * target_geometry->nodes->GetVolume(iPoint);
+}
+
+  // Compute LambdaL using the quadratic equation
+}

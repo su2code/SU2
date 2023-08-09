@@ -1621,6 +1621,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
+    // if ((config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker))) {
 
       su2double *Coord_0 = nullptr;
 

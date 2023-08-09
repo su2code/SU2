@@ -704,6 +704,42 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   Total_HeatFlux = AllBound_HeatFlux;
 }
 
+void CHeatSolver::Source_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics **numerics_container,
+                      CConfig *config,
+                      unsigned short iMesh) {
+auto HeatGen = 0.0; //config->GetSolid_Heat_Generation();
+auto streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
+unsigned long nPointDomain = geometry->GetnPointDomain(), iPoint;
+unsigned short iVar;
+
+if (HeatGen != 0.0) {
+    /*--- loop over points ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Get control volume ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Get volumetric heat generation term and add to residual ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) -= Volume * HeatGen;
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+if (streamwise_periodic) {
+    su2double lambda_l = 0.0, term1= 0.0, term2=0.0, grad_T=0.0, Volume=0.0, T = 0.0;
+    term1 = lambda_l * 2 * grad_T;
+    term2 = lambda_l * lambda_l * T;
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      LinSysRes(iPoint,iVar) -= Volume * (term1 - term2);
+    }
+  }
+}
+
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
@@ -729,7 +765,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Loop domain points. ---*/
-
+ 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
@@ -1021,3 +1057,28 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
   AD::EndNoSharedReading();
 }
+// su2double CHeatSolver::GetLambdaL(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+
+//       /*--- Loop over all heatflux Markers ---*/
+//     for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+//       const su2double volume = geometry->nodes->GetVolume(iPoint);
+
+//       const su2double Temp = nodes->GetTemperature(iPoint);
+
+//       Volume_Local += volume;
+
+//       Volume_TempS_Local += volume * Temp;
+
+//       Volume_Temp_Local += volume * Temp * nodes->GetThermalConductivity(iPoint);
+
+//       // coeff_b1 for turbulence
+//       if (turbulent && (config->GetnMarker_Isothermal() != 0))
+//         turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 0) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+
+//       Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 2) * nodes->GetDensity(iPoint);
+
+//     } // points
+
+// }

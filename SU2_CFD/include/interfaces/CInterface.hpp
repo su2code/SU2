@@ -228,4 +228,7 @@ public:
    */
   void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
+  inline virtual void SetLambdaL(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
+                          unsigned long Marker_Target) {};
+
 };
