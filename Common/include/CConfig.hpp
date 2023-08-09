@@ -262,7 +262,6 @@ private:
   *Marker_Load_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Disp_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
-  *Marker_FlowLoad,               /*!< \brief Flow Load markers. */
   *Marker_Internal,               /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;           /*!< \brief Global index for markers using grid information. */
 

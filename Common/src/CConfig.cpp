@@ -1920,8 +1920,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
-  /* DESCRIPTION: Flow load boundary marker(s) */
-  // addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
@@ -3062,12 +3060,6 @@ void CConfig::SetConfig_Options() {
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
-
-  /* DESCRIPTION: Direct differentiation mode (forward) */
-  addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
-
-  /* DESCRIPTION: Automatic differentiation mode (reverse) */
-  addBoolOption("AUTO_DIFF", AD_Mode, NO);
 
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
@@ -8006,15 +7998,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
     BoundaryTable.PrintFooter();
   }
-
-  // if (nMarker_FlowLoad != 0) {
-  //   BoundaryTable << "Flow load boundary";
-  //   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-  //     BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
-  //     if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
-  //   }
-  //   BoundaryTable.PrintFooter();
-  // }
 
   if (nMarker_Internal != 0) {
     BoundaryTable << "Internal boundary";
