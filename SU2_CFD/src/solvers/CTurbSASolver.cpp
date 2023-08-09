@@ -289,6 +289,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   }
 
   AD::EndNoSharedReading();
+
 }
 
 void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
@@ -303,6 +304,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Now instantiate the generic implementation with the functor above. ---*/
 
   Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -376,9 +378,16 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-    /*--- Effective Intermittency ---*/
+    /*--- Amplification factor ---*/
 
-    if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::EN) {
+	  numerics-> SetAmplificationFactor(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,0));
+	  numerics-> SetModifiedIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint,1));
+	}
+
+    /*--- Effective Intermittency ---*/
+    
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {      
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
       numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
     }
@@ -389,7 +398,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Store the intermittency ---*/
 
-    if (transition_BC || config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
+    if (transition_BC || config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
 

@@ -1130,6 +1130,55 @@ public:
   inline virtual void SetGammaEff(unsigned long iPoint) {}
 
   /*!
+   * \brief Set the amplification factor for the eN transition model.
+   * \param[in] val_dist - Value of the amplification factor.
+   */
+  inline virtual void SetAmplificationFactor(unsigned long iPoint, su2double val_AmplificationFactor) {}
+
+  /*!
+   * \brief Set the modified intermittency for the eN transition model.
+   * \param[in] val_dist - Value of the amplification factor.
+   */
+  inline virtual void SetModifiedIntermittency(unsigned long iPoint, su2double val_Gamma) {}
+
+  inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {};
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Returns Amplification factor for the eN transition model
+   */
+  inline virtual su2double GetAmplificationFactor(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Returns Modified Intermittency for the eN transition model
+   */
+  inline virtual su2double GetModifiedIntermittency(unsigned long iPoint) const { return 0.0; }
+
+  inline virtual su2double GetNormal_x(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_y(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_z(unsigned long iPoint) const { return 0.0; }
+
+  /*--- Debug terms ---*/
+  inline virtual su2double GetProdN(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdG(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestG(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetGammaN(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetHL(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetH12(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFG(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFC(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetREV(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetREV0(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDist(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetStrain(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFonset1(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFonset(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetFturb(unsigned long iPoint) const { return 0.0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \return Value of the vorticity.

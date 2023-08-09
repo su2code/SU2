@@ -165,7 +165,8 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
   if (rank == MASTER_NODE)
     cout << "Computing wall distances." << endl;
 
-  CGeometry::ComputeWallDistance(config_container, geometry_container);
+  if (!dry_run)
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -1330,7 +1331,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int conv_bound_term = CONV_BOUND_TERM + offset;
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
+  /*--- Assign transition model booleans ---*/
+  
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
+  const bool EN = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::EN;
 
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -1340,7 +1344,12 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+        if (LM) {
+		  numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+		}	
+		else if (EN) {
+		  numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+		}
       }
       break;
     default:
@@ -1351,15 +1360,25 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+    if (LM) {
+	  numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+	}
+	else if (EN) {
+      numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, true, config);
+	}
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
-
-    if (LM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+	
+    if (LM) {
+	  trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+	}
+	else if (EN) {
+      trans_source_first_term = new CSourcePieceWise_TransEN<Indices>(nDim, nVar_Trans, config);
+    }
 
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
@@ -1371,8 +1390,13 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
       numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
     }
+	else if (EN) {
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransEN<Indices>(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransEN<Indices>(nDim, nVar_Trans, false, config);
+    }
   }
 }
+
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
@@ -1498,7 +1522,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
@@ -1515,7 +1539,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::FEM_EULER:
@@ -2067,7 +2091,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   }
 
   /*--- Solver definition for the species transport problem ---*/
-
   if (species) {
     if (incompressible)
       InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,

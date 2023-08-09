@@ -323,3 +323,156 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
+
+/*!
+ * \class CSourcePieceWise_TranEN
+ * \brief Class for integrating the source terms of the e^N transition model equations.
+ * \ingroup SourceDiscr
+ * \author R. Roos
+ */
+template <class FlowIndices>
+class CSourcePieceWise_TransEN final : public CNumerics {
+ private:
+  const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+
+  /*--- eN Closure constants ---*/
+  su2double c_1 = 100.0;
+  su2double c_2 = 0.06;
+  su2double c_3 = 50.0;
+
+  su2double AuxVar;
+
+  su2double Residual[2];
+  su2double* Jacobian_i[2];
+  su2double Jacobian_Buffer[4];  // Static storage for the Jacobian (which needs to be pointer for return type).
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TransEN(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+      : CNumerics(val_nDim, 1, config),
+        idx(val_nDim, config->GetnSpecies()) {
+    
+    /*--- "Allocate" the Jacobian using the static buffer. ---*/
+	Jacobian_i[0] = Jacobian_Buffer;
+	Jacobian_i[1] = Jacobian_Buffer + 2;
+  }
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override {
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.Pressure()], V_i[idx.LaminarViscosity()], StrainMag_i, ScalarVar_i[0], Volume, dist_i);
+    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+    AD::SetPreaccIn(Vorticity_i, 3);
+    AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+
+    su2double rho 			= V_i[idx.Density()];
+    su2double p 			= V_i[idx.Pressure()];
+    su2double muLam 		= V_i[idx.LaminarViscosity()];
+    su2double muEddy		= V_i[idx.EddyViscosity()];
+
+    const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+
+    const su2double vel_u 	= V_i[idx.Velocity()];
+    const su2double vel_v 	= V_i[1+idx.Velocity()];
+    const su2double vel_w 	= (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
+
+    const su2double vel_mag = max(sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w), 1e-20);
+
+    su2double rhoInf		= config->GetDensity_FreeStreamND();
+    su2double pInf 			= config->GetPressure_FreeStreamND();
+    const su2double *velInf = config->GetVelocity_FreeStreamND();
+
+    su2double velInf2 = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    	velInf2 += velInf[iDim]*velInf[iDim];
+    }
+
+    Residual[0] = 0.0;
+    Residual[1] = 0.0;
+    Jacobian_i[0][0] = 0.0;
+    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;
+    Jacobian_i[1][1] = 0.0;
+
+    if (dist_i > 1e-10) {
+
+      /*--- Local pressure-gradient parameter for the boundary layer shape factor. Minimum value of 0.328 for stability ---*/
+      const su2double H_L 		= (pow(dist_i,2)/(muLam/rho))*AuxVar;
+
+      /*--- Integral shape factor ---*/
+      const su2double H_12 		= min(max(0.26*H_L + 2.4, 2.2), 20.0);
+
+      /*--- F growth parameters ---*/
+      const su2double DH_12		= 2.4*H_12 / (H_12 - 1.0);
+      const su2double lH_12 	= (6.54*H_12 - 14.07)/pow(H_12,2);
+      const su2double mH_12 	= (1/lH_12) * (0.058*( pow((H_12 - 4.0),2)/(H_12 - 1) ) - 0.068);
+
+      const su2double F_growth 	= DH_12*( (1 + mH_12)/2 )* lH_12;
+
+      /*--- F crit parameters ---*/
+      const su2double Re_v 		= (rho*StrainMag_i*pow(dist_i,2))/(muLam + muEddy);
+	  const su2double k_v 		= 1/(0.4036*pow(H_12,2)-2.5394*H_12+4.3273);
+	  const su2double Re_d2_0 	= pow(10,(0.7*tanh((14/(H_12 - 1)) - 9.24) + 2.492/(pow((H_12 - 1),0.43)) + 0.62));
+	  const su2double Re_v_0	= k_v * Re_d2_0;
+
+      short int F_crit;
+      if (Re_v < Re_v_0){
+        F_crit = 0;
+      } else {
+        F_crit = 1;
+      }
+
+      /*--- Source term expresses stream wise growth of Tollmien_schlichting instabilities ---*/
+      const su2double dn_over_dRe_d2 = 0.028*(H_12 - 1) - 0.0345*exp( -(pow( (3.87/(H_12 - 1) - 2.52),2) ) );
+
+      /*--- F onset parameters ---*/
+      const su2double Ncrit 	= -8.43 - 2.4*log( 2.5*tanh(config->GetTurbulenceIntensity_FreeStream()/2.5) /100);
+      const su2double F_onset1 	= TransVar_i[0]/(Ncrit);
+
+      const su2double F_onset2	= min(F_onset1,2.0);
+
+      const su2double Rt 		= muEddy/muLam;
+      const su2double F_onset3 	= max(1-( pow((Rt/3.5),3) ),0.0);
+
+      const su2double Fonset	= max((F_onset2 - F_onset3), 0.0);
+
+      /*--- F turb parameters ---*/
+      const su2double Fturb		= exp(- (pow((Rt/2),4)));
+
+      /*--- Production terms ---*/
+      const su2double P_amplification 	= rho*VorticityMag*F_crit*F_growth*dn_over_dRe_d2;
+      const su2double P_gamma			= c_1*rho*StrainMag_i*Fonset*( 1-exp(TransVar_i[1]) );
+      const su2double D_gamma 			= c_2*rho*VorticityMag*Fturb*( c_3*exp(TransVar_i[1]) -1 );
+
+      /*--- Add Production to residual ---*/
+      Residual[0] += P_amplification * Volume;
+      Residual[1] += (P_gamma - D_gamma) * Volume;
+
+      /*--- Implicit part ---*/
+      Jacobian_i[0][0] = (rho*VorticityMag*F_crit*F_growth) * Volume;
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;
+      Jacobian_i[1][1] = ( -c_1*rho*StrainMag_i*Fonset*exp(TransVar_i[1]) - c_2*rho*VorticityMag*Fturb* c_3*exp(TransVar_i[1]) ) * Volume;
+
+    }
+
+    AD::SetPreaccOut(Residual, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
+  }
+
+  inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
+
+};

@@ -870,6 +870,9 @@ private:
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
+  TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
+  AmplificationFactor_FreeStream,  /*!< \brief Freestream amplifictation factor for the eN 1 equation transition model.  */
+  Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
@@ -1981,6 +1984,12 @@ public:
    * \return Freestream momentum thickness Reynolds number.
    */
   su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream amplification factor.
+   * \return Non-dimensionalized freestream amplification factor.
+   */
+  su2double GetAmplificationFactor_FreeStream(void) const { return AmplificationFactor_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.

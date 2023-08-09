@@ -105,15 +105,15 @@ private:
 
   /*!
    * \brief Create a transition solver
-   * \param[in] kindTransModel - Kind of transition solver
+   * \param[in] kindTransModel- Kind of transition solver
    * \param[in] solver        - The solver container (used to call preprocessing of the flow solver)
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
-   * \return                  - A pointer to the allocated transition solver
+   * \return                  - A pointer to the allocated turbulent solver
    */
-  static CSolver* CreateTransSolver(TURB_TRANS_MODEL kindTransModel , CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+  static CSolver* CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
 
   /*!
    * \brief Create a species solver

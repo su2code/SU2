@@ -4827,7 +4827,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::EN) {
+    if (saParsedOptions.bc){
+      SU2_MPI::Error("Please select only one transition model for the SA turbulence model (Choose either eN or BCM).", CURRENT_FUNCTION);
+    } else if (!saParsedOptions.ft2) {
+      SU2_MPI::Error("Please select SA_OPTIONS = WITHFT2 when using SA-Ft2-eN transtion model.", CURRENT_FUNCTION);
+    } else if ((Kind_Regime == ENUM_REGIME::COMPRESSIBLE) && (Ref_NonDim == 0)) {
+      SU2_MPI::Error("Please select a non-dimensionalization option other than 'REF_DIMENSIONALIZATION = DIMENSIONAL' when using SA-Ft2-eN transition.", CURRENT_FUNCTION);
+    }
+  }
+
+  if (Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
 
@@ -6121,6 +6131,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
+          case TURB_TRANS_MODEL::EN:    cout << "Low-turbulence Transition model: eN 1 equation model (2014)" << endl; break;
           case TURB_TRANS_MODEL::LM: {
             cout << "Transition model: Langtry and Menter's 4 equation model";
             if (lmParsedOptions.LM2015) {
@@ -6151,6 +6162,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               break;
           }
         }
+
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;

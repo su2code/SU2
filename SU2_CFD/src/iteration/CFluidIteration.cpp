@@ -85,14 +85,14 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
     /*--- Solve transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
 
-    /*--- Solve the turbulence model ---*/
-
+    /*--- Solve the turbulence model ---*/	
+	
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
@@ -187,7 +187,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
     /*--- Update dual time solver for the transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);
@@ -283,8 +283,12 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
       Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
     }
 
+//    if (Inner_Iter == 9)
+//      SU2_MPI::Error("10 Iterations done", CURRENT_FUNCTION);
+
     /*--- If the iteration has converged, break the loop ---*/
     if (StopCalc) break;
+
   }
 
   if (multizone && steady) {
