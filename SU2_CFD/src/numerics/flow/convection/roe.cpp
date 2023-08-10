@@ -124,6 +124,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
 
   /*--- Primitive variables at point j ---*/
 
@@ -133,6 +134,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9]; 
 
   /*--- Compute variables that are common to the derived schemes ---*/
 
@@ -222,8 +224,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 
   if (implicit) {
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i, &Gamma_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j, &Gamma_j);
   }
 
   /*--- Finalize in children class ---*/
@@ -531,6 +533,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
+  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
 
   /*--- Primitive variables at point j ---*/
 
@@ -541,6 +544,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
 
   /*--- Recompute conservative variables ---*/
 
@@ -627,8 +631,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i, &Gamma_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j, &Gamma_j);
   }
 
   for (iVar = 0; iVar < nVar; iVar ++) {

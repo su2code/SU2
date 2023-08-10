@@ -1018,7 +1018,7 @@ public:
    */
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                           const su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor) const;
+                          su2double **val_Proj_Jac_tensor, const su2double *val_gamma) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).

@@ -69,6 +69,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
   unsigned short iDim;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
+  const su2double *scalar = nullptr;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
   dynamic_grid = config->GetDynamic_Grid();
@@ -295,7 +296,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
     StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
 
-    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy, config->GetSpecies_Init());
+    if (config->GetKind_Species_Model()!=SPECIES_MODEL::NONE){
+      scalar = config->GetSpecies_Init();
+    }
+
+    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy, scalar);
     Pressure= GetFluidModel()->GetPressure();
     Temperature= GetFluidModel()->GetTemperature();
 
@@ -1736,8 +1741,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
       su2double Cp = 0.5*(nodes.GetSpecificHeatCp(iPoint)+ nodes.GetSpecificHeatCp(jPoint));
       su2double Cv = 0.5*(nodes.GetSpecificHeatCv(iPoint)+ nodes.GetSpecificHeatCv(jPoint));
-      su2double Gamma = Cp / Cv;
-      return lambda(Gamma, laminarVisc, eddyVisc, density);
+      su2double gamma = Cp / Cv;
+      return lambda(gamma, laminarVisc, eddyVisc, density);
     }
 
     FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
@@ -1746,8 +1751,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double density = nodes.GetDensity(iPoint);
       su2double Cp = nodes.GetSpecificHeatCp(iPoint);
       su2double Cv = nodes.GetSpecificHeatCv(iPoint);
-      su2double Gamma = Cp / Cv;
-      return lambda(Gamma, laminarVisc, eddyVisc, density);
+      su2double gamma = Cp / Cv;
+      return lambda(gamma, laminarVisc, eddyVisc, density);
     }
 
   } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
@@ -6684,6 +6689,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+1] = Pressure;
           V_inlet[nDim+2] = Density;
           V_inlet[nDim+3] = Energy + Pressure/Density;
+          V_inlet[nDim+8] = Cp;
+          V_inlet[nDim+9] = Cv;
 
           break;
         }
@@ -6752,6 +6759,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+1] = Pressure;
           V_inlet[nDim+2] = Density;
           V_inlet[nDim+3] = Energy + Pressure/Density;
+          V_inlet[nDim+8] = Cp;
+          V_inlet[nDim+9] = Cv;
 
           break;
         }
