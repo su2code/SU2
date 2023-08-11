@@ -1099,7 +1099,6 @@ private:
   distortion[2],         /*!< \brief SU2_GEO section locations array for the COption class. */
   ea_lim[3],             /*!< \brief equivalent area limit array for the COption class. */
   grid_fix[6],           /*!< \brief fixed grid (non-deforming region) array for the COption class. */
-  //htp_axis[2],           /*!< \brief HTP axis for the COption class. */
   ffd_axis[3],           /*!< \brief FFD axis for the COption class. */
   inc_crit[3],           /*!< \brief incremental criteria array for the COption class. */
   extrarelfac[2],        /*!< \brief extra relaxation factor for Giles BC in the COption class. */
