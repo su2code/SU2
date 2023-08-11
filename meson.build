@@ -1,13 +1,15 @@
 project('SU2', 'c', 'cpp',
         version: '7.5.1 "Blackbird"',
+        meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
 
-if meson.version() != '0.61.1'
-  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+fsmod = import('fs')
+if not fsmod.exists('su2preconfig.timestamp')
+  error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
 endif
 
 pymod = import('python')
@@ -44,7 +46,7 @@ if build_machine.system() != 'windows'
 endif
 
 # meson script path
-script_path = meson.source_root() / 'meson_scripts'
+script_path = meson.project_source_root() / 'meson_scripts'
 
 # mpi flag
 mpi = false
@@ -136,6 +138,8 @@ if omp
   # add opdi dependency
   if get_option('enable-autodiff')
     codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+    codi_rev_args += '-DCODI_EnableOpenMP'
+    codi_rev_args += '-DCODI_EnableOpDiLib'
 
     if get_option('opdi-backend') == 'macro'
       su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
@@ -255,6 +259,9 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-mlpcpp')
+  su2_cpp_args += '-DHAVE_MLPCPP'
+endif
 
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
@@ -306,6 +313,7 @@ message('''---------------------------------------------------------------------
          Mixed Float:    @10@
          libROM:         @11@
          CoolProp:       @12@
+         MLPCpp:         @13@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -317,11 +325,11 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @13@ install' to compile and install SU2
-'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
+         Use './ninja -C @14@ install' to compile and install SU2
+'''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
+           get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:

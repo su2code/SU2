@@ -169,7 +169,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_ScalarLinsol(config);
+  AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
@@ -202,7 +202,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddRotatingFrameCoefficients();
 
-  Add_CpInverseDesignOutput();
+  AddCpInverseDesignOutput();
 
 }
 
@@ -224,7 +224,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ENERGY",       "Energy",     "SOLUTION", "Energy");
   AddVolumeOutput("ENERGY_VE",    "Energy_ve",  "SOLUTION", "Energy_ve");
 
-  SetVolumeOutputFields_ScalarSolution(config);
+  SetVolumeOutputFieldsScalarSolution(config);
 
   //Auxiliary variables for post-processment
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -242,6 +242,10 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE",       "Pressure",       "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE_TR", "Temperature_tr", "PRIMITIVE", "Temperature_tr");
   AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve", "PRIMITIVE", "Temperature_ve");
+  AddVolumeOutput("VELOCITY-X", "Velocity_x", "PRIMITIVE", "x-component of the velocity vector");
+  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "PRIMITIVE", "y-component of the velocity vector");
+  if (nDim == 3)
+    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
 
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
@@ -261,6 +265,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   //Residuals
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
@@ -271,7 +277,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ENERGY",    "Residual_Energy",    "RESIDUAL", "Residual of the energy");
   AddVolumeOutput("RES_ENERGY_VE", "Residual_Energy_ve", "RESIDUAL", "Residual of the energy_ve");
 
-  SetVolumeOutputFields_ScalarResidual(config);
+  SetVolumeOutputFieldsScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     // Limiter values
@@ -283,11 +289,17 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   }
 
-  SetVolumeOutputFields_ScalarLimiter(config);
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
+
+  SetVolumeOutputFieldsScalarMisc(config);
 
   AddCommonFVMOutputs(config);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
 }
@@ -327,6 +339,11 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE_TR", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("TEMPERATURE_VE", iPoint, Node_Flow->GetTemperature_ve(iPoint));
+  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint, 0));
+  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
+
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
@@ -364,7 +381,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
   }
 
-  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
+  LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
@@ -434,7 +451,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", NEMO_solver->GetAoA_inc());
   }
 
-  LoadHistoryData_Scalar(config, solver);
+  LoadHistoryDataScalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
 
@@ -450,7 +467,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set Cp diff fields ---*/
 
-  Set_CpInverseDesign(NEMO_solver, geometry, config);
+  SetCpInverseDesign(NEMO_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
@@ -460,7 +477,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 }
 
-bool CNEMOCompOutput::SetInit_Residuals(const CConfig *config){
+bool CNEMOCompOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
@@ -474,6 +491,6 @@ void CNEMOCompOutput::SetAdditionalScreenOutput(const CConfig *config){
   }
 }
 
-bool CNEMOCompOutput::WriteHistoryFile_Output(const CConfig *config) {
-  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
+bool CNEMOCompOutput::WriteHistoryFileOutput(const CConfig *config) {
+  return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFileOutput(config);
 }

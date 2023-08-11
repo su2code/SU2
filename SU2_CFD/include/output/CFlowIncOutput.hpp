@@ -41,6 +41,7 @@ private:
   TURB_MODEL turb_model;     /*!< \brief The kind of turbulence model*/
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+  bool flamelet;  /*!< \brief Boolean indicating whether we solve the flamelet equations */
   unsigned short streamwisePeriodic;   /*!< \brief Boolean indicating whether it is a streamwise periodic simulation. */
   bool streamwisePeriodic_temperature; /*!< \brief Boolean indicating streamwise periodic temperature is used. */
 
@@ -83,6 +84,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(const CConfig *config) override;
+  bool SetInitResiduals(const CConfig *config) override ;
 
 };

@@ -41,79 +41,86 @@
  * decide if the linear system is already solved.
  */
 namespace {
-  template<class T>
-  constexpr T linSolEpsilon() { return numeric_limits<passivedouble>::epsilon(); }
-  template<>
-  constexpr float linSolEpsilon<float>() { return 1e-12; }
+template <class T>
+constexpr T linSolEpsilon() {
+  return numeric_limits<passivedouble>::epsilon();
 }
-
-template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode) :
-  eps(linSolEpsilon<ScalarType>()),
-  lin_sol_mode(linear_solver_mode),
-  cg_ready(false),
-  bcg_ready(false),
-  smooth_ready(false),
-  LinSysSol_ptr(nullptr),
-  LinSysRes_ptr(nullptr) {
+template <>
+constexpr float linSolEpsilon<float>() {
+  return 1e-12;
 }
+}  // namespace
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::ApplyGivens(ScalarType s, ScalarType c, ScalarType & h1, ScalarType & h2) const {
+template <class ScalarType>
+CSysSolve<ScalarType>::CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode)
+    : eps(linSolEpsilon<ScalarType>()),
+      lin_sol_mode(linear_solver_mode),
+      cg_ready(false),
+      bcg_ready(false),
+      smooth_ready(false),
+      LinSysSol_ptr(nullptr),
+      LinSysRes_ptr(nullptr) {}
 
-  ScalarType temp = c*h1 + s*h2;
-  h2 = c*h2 - s*h1;
+template <class ScalarType>
+void CSysSolve<ScalarType>::ApplyGivens(ScalarType s, ScalarType c, ScalarType& h1, ScalarType& h2) const {
+  ScalarType temp = c * h1 + s * h2;
+  h2 = c * h2 - s * h1;
   h1 = temp;
 }
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c) const {
-
-  if ( (dx == 0.0) && (dy == 0.0) ) {
+template <class ScalarType>
+void CSysSolve<ScalarType>::GenerateGivens(ScalarType& dx, ScalarType& dy, ScalarType& s, ScalarType& c) const {
+  if ((dx == 0.0) && (dy == 0.0)) {
     c = 1.0;
     s = 0.0;
-  }
-  else if ( fabs(dy) > fabs(dx) ) {
-    ScalarType tmp = dx/dy;
-    dx = sqrt(1.0 + tmp*tmp);
-    s = Sign(1.0/dx, dy);
-    c = tmp*s;
-  }
-  else if ( fabs(dy) <= fabs(dx) ) {
-    ScalarType tmp = dy/dx;
-    dy = sqrt(1.0 + tmp*tmp);
-    c = Sign(1.0/dy, dx);
-    s = tmp*c;
-  }
-  else {
+  } else if (fabs(dy) > fabs(dx)) {
+    ScalarType tmp = dx / dy;
+    dx = sqrt(1.0 + tmp * tmp);
+    s = Sign(1.0 / dx, dy);
+    c = tmp * s;
+  } else if (fabs(dy) <= fabs(dx)) {
+    ScalarType tmp = dy / dx;
+    dy = sqrt(1.0 + tmp * tmp);
+    c = Sign(1.0 / dy, dx);
+    s = tmp * c;
+  } else {
     // dx and/or dy must be invalid
     dx = 0.0;
     dy = 0.0;
     c = 1.0;
     s = 0.0;
   }
-  dx = fabs(dx*dy);
+  dx = fabs(dx * dy);
   dy = 0.0;
 }
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsbg,
-                                         const su2vector<ScalarType>& rhs, su2vector<ScalarType>& x) const {
+template <class ScalarType>
+void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsbg, const su2vector<ScalarType>& rhs,
+                                         su2vector<ScalarType>& x) const {
   // initialize...
-  for (int i = 0; i < n; i++)
-    x[i] = rhs[i];
+  for (int i = 0; i < n; i++) x[i] = rhs[i];
   // ... and backsolve
-  for (int i = n-1; i >= 0; i--) {
-    x[i] /= Hsbg(i,i);
-    for (int j = i-1; j >= 0; j--) {
-      x[j] -= Hsbg(j,i)*x[i];
+  for (int i = n - 1; i >= 0; i--) {
+    x[i] /= Hsbg(i, i);
+    for (int j = i - 1; j >= 0; j--) {
+      x[j] -= Hsbg(j, i) * x[i];
     }
   }
 }
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
+template <class ScalarType>
+void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType> >& w) const {
+  const auto thread = omp_get_thread_num();
+
+  /*--- If Hsbg is shared by multiple threads calling this function, only one
+   * thread can write into it. If Hsbg is private, all threads need to write. ---*/
+
+  auto SetHsbg = [&](int row, int col, const ScalarType& value) {
+    if (!shared_hsbg || thread == 0) {
+      Hsbg(row, col) = value;
+    }
+  };
 
   /*--- Parameter for reorthonormalization ---*/
 
@@ -122,8 +129,8 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
   /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
 
-  ScalarType nrm = w[i+1].squaredNorm();
-  ScalarType thr = nrm*reorth;
+  ScalarType nrm = w[i + 1].squaredNorm();
+  ScalarType thr = nrm * reorth;
 
   /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
 
@@ -134,73 +141,70 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 
   /*--- Begin main Gram-Schmidt loop ---*/
 
-  for (int k = 0; k < i+1; k++) {
-    ScalarType prod = w[i+1].dot(w[k]);
-    Hsbg(k,i) = prod;
-    w[i+1] -= prod * w[k];
+  for (int k = 0; k < i + 1; k++) {
+    ScalarType prod = w[i + 1].dot(w[k]);
+    ScalarType h_ki = prod;
+    w[i + 1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
-    if (prod*prod > thr) {
-      prod = w[i+1].dot(w[k]);
-      Hsbg(k,i) += prod;
-      w[i+1] -= prod * w[k];
+    if (prod * prod > thr) {
+      prod = w[i + 1].dot(w[k]);
+      h_ki += prod;
+      w[i + 1] -= prod * w[k];
     }
+    SetHsbg(k, i, h_ki);
 
     /*--- Update the norm and check its size ---*/
 
-    nrm -= pow(Hsbg(k,i),2);
+    nrm -= pow(h_ki, 2);
     nrm = max<ScalarType>(nrm, 0.0);
-    thr = nrm*reorth;
+    thr = nrm * reorth;
   }
 
   /*--- Test the resulting vector ---*/
 
-  nrm = w[i+1].norm();
-  Hsbg(i+1,i) = nrm;
+  nrm = w[i + 1].norm();
+  SetHsbg(i + 1, i, nrm);
 
   /*--- Scale the resulting vector ---*/
 
-  w[i+1] /= nrm;
-
+  w[i + 1] /= nrm;
 }
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::WriteHeader(string solver, ScalarType restol, ScalarType resinit) const {
-
+template <class ScalarType>
+void CSysSolve<ScalarType>::WriteHeader(const string& solver, ScalarType restol, ScalarType resinit) const {
   cout << "\n# " << solver << " residual history\n";
   cout << "# Residual tolerance target = " << restol << "\n";
   cout << "# Initial residual norm     = " << resinit << endl;
 }
 
-template<class ScalarType>
+template <class ScalarType>
 void CSysSolve<ScalarType>::WriteHistory(unsigned long iter, ScalarType res) const {
-
   cout << "     " << iter << "     " << res << endl;
 }
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::WriteFinalResidual(string solver, unsigned long iter, ScalarType res) const {
-
+template <class ScalarType>
+void CSysSolve<ScalarType>::WriteFinalResidual(const string& solver, unsigned long iter, ScalarType res) const {
   cout << "# " << solver << " final (true) residual:\n";
   cout << "# Iteration = " << iter << ": |res|/|res0| = " << res << ".\n" << endl;
 }
 
-template<class ScalarType>
+template <class ScalarType>
 void CSysSolve<ScalarType>::WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const {
-
   cout << "# WARNING:\n";
   cout << "# true residual norm and calculated residual norm do not agree.\n";
-  cout << "# true_res = " << res_true << ", calc_res = " << res_calc << ", tol = " << tol*10 << ".\n";
+  cout << "# true_res = " << res_true << ", calc_res = " << res_calc << ", tol = " << tol * 10 << ".\n";
   cout << "# true_res - calc_res = " << res_true - res_calc << endl;
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
-                                                  const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                  ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
-
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                  const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                  const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                  unsigned long m, ScalarType& residual, bool monitoring,
+                                                  const CConfig* config) const {
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
@@ -214,8 +218,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -242,26 +245,31 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
     norm_r = r.norm();
-    norm0  = b.norm();
+    norm0 = b.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
-    if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master && (lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM)) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+    if ((norm_r < tol * norm0) || (norm_r < eps)) {
+      if (masterRank && (lin_sol_mode != LINEAR_SOLVER_MODE::MESH_DEFORM)) {
+        SU2_OMP_MASTER
+        cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual ---*/
 
-    if (monitoring && master) {
-      WriteHeader("CG", tol, norm_r);
-      WriteHistory(i, norm_r/norm0);
+    if (monitoring && masterRank) {
+      SU2_OMP_MASTER {
+        WriteHeader("CG", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
-
   }
 
   precond(r, z);
@@ -271,7 +279,6 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   /*---  Loop over all search directions ---*/
 
   for (i = 0; i < m; i++) {
-
     /*--- Apply matrix to p to build Krylov subspace ---*/
 
     mat_vec(p, A_x);
@@ -288,14 +295,15 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     /*--- Only compute the residuals in full communication mode. ---*/
 
     if (config->GetComm_Level() == COMM_FULL) {
-
       /*--- Check if solution has converged, else output the relative residual if necessary ---*/
 
       norm_r = r.norm();
-      if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
-        WriteHistory(i+1, norm_r/norm0);
-
+      if (norm_r < tol * norm0) break;
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
 
     precond(r, z);
@@ -308,41 +316,48 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Gram-Schmidt orthogonalization. ---*/
 
-    p = beta*p + z;
-
+    p = beta * p + z;
   }
 
   /*--- Recalculate final residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-
-    if (master) WriteFinalResidual("CG", i, norm_r/norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("CG", i, norm_r / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, A_x);
       r = b - A_x;
       ScalarType true_res = r.norm();
 
-      if (fabs(true_res - norm_r) > tol*10.0) {
-        if (master) {
+      if (fabs(true_res - norm_r) > tol * 10.0) {
+        if (masterRank) {
+          SU2_OMP_MASTER
           WriteWarning(norm_r, true_res, tol);
+          END_SU2_OMP_MASTER
         }
       }
     }
   }
 
-  residual = norm_r/norm0;
+  residual = norm_r / norm0;
   return i;
-
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
-                                                      const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
-
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                      const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                      const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                      unsigned long m, ScalarType& residual, bool monitoring,
+                                                      const CConfig* config) const {
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
+  /*--- If we call the solver outside of a parallel region, but the number of threads allows,
+   * we still want to parallelize some of the expensive operations. ---*/
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
 
   /*---  Check the subspace size ---*/
 
@@ -357,12 +372,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Allocate if not allocated yet ---*/
 
   if (W.size() <= m || (flexible && Z.size() <= m)) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      W.resize(m+1);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      W.resize(m + 1);
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       if (flexible) {
-        Z.resize(m+1);
+        Z.resize(m + 1);
         for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       }
     }
@@ -373,12 +387,12 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    on its own thread, since calculations on these arrays are based on dot products
    (reduced across all threads and ranks) all threads do the same computations. ---*/
 
-  su2vector<ScalarType> g(m+1), sn(m+1), cs(m+1), y(m);
+  su2vector<ScalarType> g(m + 1), sn(m + 1), cs(m + 1), y(m);
   g = ScalarType(0);
   sn = ScalarType(0);
   cs = ScalarType(0);
   y = ScalarType(0);
-  su2matrix<ScalarType> H(m+1, m);
+  su2matrix<ScalarType> H(m + 1, m);
   H = ScalarType(0);
 
   /*--- Calculate the norm of the rhs vector. ---*/
@@ -390,8 +404,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   if (!xIsZero) {
     mat_vec(x, W[0]);
     W[0] -= b;
-  }
-  else {
+  } else {
     W[0] = -b;
   }
 
@@ -401,11 +414,14 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   if (tol_type == LinearToleranceType::RELATIVE) norm0 = beta;
 
-  if ((beta < tol*norm0) || (beta < eps)) {
-
+  if ((beta < tol * norm0) || (beta < eps)) {
     /*--- System is already solved ---*/
 
-    if (master) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (masterRank) {
+      SU2_OMP_MASTER
+      cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+      END_SU2_OMP_MASTER
+    }
     residual = beta;
     return 0;
   }
@@ -422,18 +438,20 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Output header information including initial residual ---*/
 
   unsigned long i = 0;
-  if ((monitoring) && (master)) {
-    WriteHeader("FGMRES", tol, beta);
-    WriteHistory(i, beta/norm0);
+  if ((monitoring) && (masterRank)) {
+    SU2_OMP_MASTER {
+      WriteHeader("FGMRES", tol, beta);
+      WriteHistory(i, beta / norm0);
+    }
+    END_SU2_OMP_MASTER
   }
 
   /*---  Loop over all search directions ---*/
 
   for (i = 0; i < m; i++) {
-
     /*---  Check if solution has converged ---*/
 
-    if (beta < tol*norm0) break;
+    if (beta < tol * norm0) break;
 
     if (flexible) {
       /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
@@ -442,73 +460,90 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
       /*---  Add to Krylov subspace ---*/
 
-      mat_vec(Z[i], W[i+1]);
-    }
-    else {
-      mat_vec(W[i], W[i+1]);
+      mat_vec(Z[i], W[i + 1]);
+    } else {
+      mat_vec(W[i], W[i + 1]);
     }
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
-    ModGramSchmidt(i, H, W);
+    if (nestedParallel) {
+      /*--- "omp parallel if" does not work well here ---*/
+      SU2_OMP_PARALLEL
+      ModGramSchmidt(true, i, H, W);
+      END_SU2_OMP_PARALLEL
+    } else {
+      ModGramSchmidt(false, i, H, W);
+    }
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
      new Givens rotation matrix and apply it to the last two elements of H[:][i] and g ---*/
 
-    for (unsigned long k = 0; k < i; k++)
-      ApplyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
-    GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
-    ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
+    for (unsigned long k = 0; k < i; k++) ApplyGivens(sn[k], cs[k], H[k][i], H[k + 1][i]);
+    GenerateGivens(H[i][i], H[i + 1][i], sn[i], cs[i]);
+    ApplyGivens(sn[i], cs[i], g[i], g[i + 1]);
 
     /*---  Set L2 norm of residual and check if solution has converged ---*/
 
-    beta = fabs(g[i+1]);
+    beta = fabs(g[i + 1]);
 
     /*---  Output the relative residual if necessary ---*/
 
-    if ((((monitoring) && (master)) && ((i+1) % monitorFreq == 0)) && (master))
-      WriteHistory(i+1, beta/norm0);
+    if ((((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0))) {
+      SU2_OMP_MASTER
+      WriteHistory(i + 1, beta / norm0);
+      END_SU2_OMP_MASTER
+    }
   }
 
   /*---  Solve the least-squares system and update solution ---*/
 
   SolveReduced(i, H, g, y);
 
-  const auto& basis = flexible? Z : W;
+  const auto& basis = flexible ? Z : W;
 
-  for (unsigned long k = 0; k < i; k++) {
-    x += y[k] * basis[k];
+  if (nestedParallel) {
+    SU2_OMP_PARALLEL
+    for (unsigned long k = 0; k < i; k++) x += y[k] * basis[k];
+    END_SU2_OMP_PARALLEL
+  } else {
+    for (unsigned long k = 0; k < i; k++) x += y[k] * basis[k];
   }
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-
-    if (master) WriteFinalResidual("FGMRES", i, beta/norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("FGMRES", i, beta / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, W[0]);
       W[0] -= b;
       ScalarType res = W[0].norm();
 
-      if (fabs(res - beta) > tol*10) {
-        if (master) {
+      if (fabs(res - beta) > tol * 10) {
+        if (masterRank) {
+          SU2_OMP_MASTER
           WriteWarning(beta, res, tol);
+          END_SU2_OMP_MASTER
         }
       }
     }
   }
 
-  residual = beta/norm0;
+  residual = beta / norm0;
   return i;
-
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
-                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long MaxIter, ScalarType & residual, bool monitoring, const CConfig *config) {
-
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                       const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                       unsigned long MaxIter, ScalarType& residual, bool monitoring,
+                                                       const CConfig* config) {
   const auto restartIter = config->GetLinear_Solver_Restart_Frequency();
 
   SU2_OMP_MASTER {
@@ -517,24 +552,25 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
   }
   END_SU2_OMP_MASTER
 
-  const ScalarType norm0 = b.norm(); // <- Has a barrier
+  const ScalarType norm0 = b.norm();  // <- Has a barrier
 
   for (auto totalIter = 0ul; totalIter < MaxIter;) {
     /*--- Enforce a hard limit on total number of iterations ---*/
-    auto iterLimit = min(restartIter, MaxIter-totalIter);
+    auto iterLimit = min(restartIter, MaxIter - totalIter);
     auto iter = FGMRES_LinSolver(b, x, mat_vec, precond, tol, iterLimit, residual, monitoring, config);
     totalIter += iter;
-    if (residual <= tol*norm0 || iter < iterLimit) return totalIter;
+    if (residual <= tol * norm0 || iter < iterLimit) return totalIter;
   }
   return 0;
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
-                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
-
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                       const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                       unsigned long m, ScalarType& residual, bool monitoring,
+                                                       const CConfig* config) const {
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
@@ -547,8 +583,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -577,37 +612,43 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
     norm_r = r.norm();
-    norm0  = b.norm();
+    norm0 = b.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
-    if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+    if ((norm_r < tol * norm0) || (norm_r < eps)) {
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual ---*/
 
-    if ((monitoring) && (master)) {
-      WriteHeader("BCGSTAB", tol, norm_r);
-      WriteHistory(i, norm_r/norm0);
+    if ((monitoring) && (masterRank)) {
+      SU2_OMP_MASTER {
+        WriteHeader("BCGSTAB", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
-
   }
 
   /*--- Initialization ---*/
 
   ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-  p = ScalarType(0.0); v = ScalarType(0.0); r_0 = r;
+  p = ScalarType(0.0);
+  v = ScalarType(0.0);
+  r_0 = r;
 
   /*--- Loop over all search directions ---*/
 
   for (i = 0; i < m; i++) {
-
     /*--- Compute rho_prime ---*/
 
     rho_prime = rho;
@@ -618,11 +659,11 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Compute beta ---*/
 
-    ScalarType beta = (rho / rho_prime) * (alpha /omega);
+    ScalarType beta = (rho / rho_prime) * (alpha / omega);
 
     /*--- Update p ---*/
 
-    p = beta * (p - omega*v) + r;
+    p = beta * (p - omega * v) + r;
 
     /*--- Preconditioning step ---*/
 
@@ -658,45 +699,51 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     /*--- Only compute the residuals in full communication mode. ---*/
 
     if (config->GetComm_Level() == COMM_FULL) {
-
       /*--- Check if solution has converged, else output the relative residual if necessary ---*/
 
       norm_r = r.norm();
-      if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0) && (master))
-        WriteHistory(i+1, norm_r/norm0);
-
+      if (norm_r < tol * norm0) break;
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
-
   }
 
   /*--- Recalculate final residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-
-    if (master) WriteFinalResidual("BCGSTAB", i, norm_r/norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("BCGSTAB", i, norm_r / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, A_x);
       r = b - A_x;
       ScalarType true_res = r.norm();
 
-      if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
+      if ((fabs(true_res - norm_r) > tol * 10.0) && (masterRank)) {
+        SU2_OMP_MASTER
         WriteWarning(norm_r, true_res, tol);
+        END_SU2_OMP_MASTER
       }
     }
   }
 
-  residual = norm_r/norm0;
+  residual = norm_r / norm0;
   return i;
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
-                                                        const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
-
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                        unsigned long m, ScalarType& residual, bool monitoring,
+                                                        const CConfig* config) const {
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool fix_iter_mode = tol < eps;
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -712,8 +759,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -739,32 +785,36 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
     norm_r = r.norm();
-    norm0  = b.norm();
+    norm0 = b.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
-    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-      if (master) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
+    if ((norm_r < tol * norm0) || (norm_r < eps)) {
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual. ---*/
 
-    if ((monitoring) && (master)) {
-      WriteHeader("Smoother", tol, norm_r);
-      WriteHistory(i, norm_r/norm0);
+    if ((monitoring) && (masterRank)) {
+      SU2_OMP_MASTER {
+        WriteHeader("Smoother", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
-
   }
 
   /*--- Smoothing Iterations ---*/
 
-  for (i=0; i<m; i++) {
-
+  for (i = 0; i < m; i++) {
     /*--- Compute the solution increment (z), or "search" direction, by applying
      the preconditioner to the residual, i.e. z = M^{-1} * r. ---*/
 
@@ -791,25 +841,31 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
     if (!fix_iter_mode && config->GetComm_Level() == COMM_FULL) {
       norm_r = r.norm();
-      if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
-        WriteHistory(i+1, norm_r/norm0);
+      if (norm_r < tol * norm0) break;
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
   }
 
   if (fix_iter_mode) norm_r = r.norm();
 
-  if ((monitoring) && (master) && (config->GetComm_Level() == COMM_FULL)) {
-    WriteFinalResidual("Smoother", i, norm_r/norm0);
+  if ((monitoring) && (masterRank) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_MASTER
+    WriteFinalResidual("Smoother", i, norm_r / norm0);
+    END_SU2_OMP_MASTER
   }
 
-  residual = norm_r/norm0;
+  residual = norm_r / norm0;
   return i;
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                           CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
+                                           CSysVector<su2double>& LinSysSol, CGeometry* geometry,
+                                           const CConfig* config) {
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
    meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
@@ -828,31 +884,32 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   switch (lin_sol_mode) {
     /*--- Mesh Deformation mode ---*/
     case LINEAR_SOLVER_MODE::MESH_DEFORM: {
-      KindSolver   = config->GetKind_Deform_Linear_Solver();
-      KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
-      MaxIter      = config->GetDeform_Linear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
+      KindSolver = config->GetKind_Deform_Linear_Solver();
+      KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+      MaxIter = config->GetDeform_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
       ScreenOutput = config->GetDeform_Output();
       break;
     }
 
     /*--- Gradient Smoothing mode ---*/
     case LINEAR_SOLVER_MODE::GRADIENT_MODE: {
-      KindSolver   = config->GetKind_Grad_Linear_Solver();
-      KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
-      MaxIter      = config->GetGrad_Linear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+      KindSolver = config->GetKind_Grad_Linear_Solver();
+      KindPrecond = config->GetKind_Grad_Linear_Solver_Prec();
+      MaxIter = config->GetGrad_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
       ScreenOutput = true;
       break;
     }
 
     /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning. ---*/
+     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
+     * ---*/
     default: {
-      KindSolver   = config->GetKind_Linear_Solver();
-      KindPrecond  = config->GetKind_Linear_Solver_Prec();
-      MaxIter      = config->GetLinear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+      KindSolver = config->GetKind_Linear_Solver();
+      KindPrecond = config->GetKind_Linear_Solver_Prec();
+      MaxIter = config->GetLinear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
       ScreenOutput = false;
       break;
     }
@@ -864,136 +921,144 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
-    TapeActive = AD::getGlobalTape().isActive();
+    TapeActive = AD::TapeActive();
 
+    /*--- Declare external function inputs, outputs, and data ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      AD::StartExtFunc(false, false);
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
+      AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+      AD::FuncHelper.addUserData(&LinSysRes);
+      AD::FuncHelper.addUserData(&LinSysSol);
+      AD::FuncHelper.addUserData(&Jacobian);
+      AD::FuncHelper.addUserData(geometry);
+      AD::FuncHelper.addUserData(config);
+      AD::FuncHelper.addUserData(this);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    AD::StopRecording();
 #endif
   }
-
-  /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
-
-  HandleTemporariesIn(LinSysRes, LinSysSol);
-
-  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-
-  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-
-  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-
-  /*--- Build preconditioner. ---*/
-
-  precond->Build();
-
-  /*--- Solve system. ---*/
 
   unsigned long IterLinSol = 0;
-  ScalarType residual = 0.0;
 
-  switch (KindSolver) {
-    case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case PASTIX_LDLT : case PASTIX_LU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
-      IterLinSol = 1;
-      residual = 1e-20;
-      break;
-    default:
-      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
-  }
+  /*--- Declaration of the external function ---*/
+  auto externalFunction = [&]() {
+    /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-  SU2_OMP_MASTER
-  {
-    Residual = residual;
-    Iterations = IterLinSol;
-  }
-  END_SU2_OMP_MASTER
+    HandleTemporariesIn(LinSysRes, LinSysSol);
 
-  HandleTemporariesOut(LinSysSol);
+    auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-  delete precond;
+    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
 
-  if(TapeActive) {
+    auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
-    /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
+    /*--- Build preconditioner. ---*/
 
-    if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
-    else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
-    else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+    precond->Build();
 
-    /*--- Build preconditioner for the transposed Jacobian ---*/
+    /*--- Solve system. ---*/
 
-    if (RequiresTranspose) Jacobian.TransposeInPlace();
+    ScalarType residual = 0.0;
 
-    switch(KindPrecond) {
-      case ILU:
-        if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
+    switch (KindSolver) {
+      case BCGSTAB:
+        IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                       ScreenOutput, config);
         break;
-      case JACOBI:
-      case LINELET:
-        if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
+      case FGMRES:
+        IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                      ScreenOutput, config);
         break;
-      case LU_SGS:
-        /*--- Nothing to build. ---*/
+      case RESTARTED_FGMRES:
+        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                       ScreenOutput, config);
         break;
-      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        /*--- It was already built. ---*/
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                  ScreenOutput, config);
+        break;
+      case SMOOTHER:
+        IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                        ScreenOutput, config);
+        break;
+      case PASTIX_LDLT:
+      case PASTIX_LU:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+        Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+        IterLinSol = 1;
+        residual = 1e-20;
         break;
       default:
-        SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-        break;
+        SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
     }
 
-    /*--- Start recording if it was stopped for the linear solver ---*/
+    SU2_OMP_MASTER {
+      Residual = residual;
+      Iterations = IterLinSol;
+    }
+    END_SU2_OMP_MASTER
+
+    HandleTemporariesOut(LinSysSol);
+
+    delete precond;
+
+    if (TapeActive) {
+      /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
+      const bool RequiresTranspose =
+          ((lin_sol_mode != LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
+
+      if (lin_sol_mode == LINEAR_SOLVER_MODE::MESH_DEFORM)
+        KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+      else if (lin_sol_mode == LINEAR_SOLVER_MODE::GRADIENT_MODE)
+        KindPrecond = config->GetKind_Grad_Linear_Solver_Prec();
+      else
+        KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+
+      /*--- Build preconditioner for the transposed Jacobian ---*/
+
+      if (RequiresTranspose) Jacobian.TransposeInPlace();
+
+      switch (KindPrecond) {
+        case ILU:
+          if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
+          break;
+        case JACOBI:
+        case LINELET:
+          if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
+          break;
+        case LU_SGS:
+          /*--- Nothing to build. ---*/
+          break;
+        case PASTIX_ILU:
+        case PASTIX_LU_P:
+        case PASTIX_LDLT_P:
+          /*--- It was already built. ---*/
+          break;
+        default:
+          SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+    }
+  }; /*--- Finish declaration of the external function ---*/
+
 #ifdef CODI_REVERSE_TYPE
-    AD::StartRecording();
+  /*--- Call the external function with appropriate AD handling ---*/
+  AD::FuncHelper.callPrimalFuncWithADType(externalFunction);
 
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-      AD::FuncHelper->addUserData(&LinSysRes);
-      AD::FuncHelper->addUserData(&LinSysSol);
-      AD::FuncHelper->addUserData(&Jacobian);
-      AD::FuncHelper->addUserData(geometry);
-      AD::FuncHelper->addUserData(config);
-      AD::FuncHelper->addUserData(this);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
-
-    SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
+  AD::FuncHelper.addToTape(CSysSolve_b<ScalarType>::Solve_b);
+#else
+  /*--- Without reverse AD, call the external function directly ---*/
+  externalFunction();
 #endif
-  }
 
   return IterLinSol;
 }
 
-template<class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config,
-                                             const bool directCall) {
-
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
+                                             CSysVector<su2double>& LinSysSol, CGeometry* geometry,
+                                             const CConfig* config, const bool directCall) {
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, IterLinSol = 0;
   ScalarType SolverTol;
@@ -1002,31 +1067,32 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   switch (lin_sol_mode) {
     /*--- Mesh Deformation mode ---*/
     case LINEAR_SOLVER_MODE::MESH_DEFORM: {
-      KindSolver   = config->GetKind_Deform_Linear_Solver();
-      KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
-      MaxIter      = config->GetDeform_Linear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
+      KindSolver = config->GetKind_Deform_Linear_Solver();
+      KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+      MaxIter = config->GetDeform_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
       ScreenOutput = config->GetDeform_Output();
       break;
     }
 
     /*--- Gradient Smoothing mode ---*/
     case LINEAR_SOLVER_MODE::GRADIENT_MODE: {
-      KindSolver   = config->GetKind_Grad_Linear_Solver();
-      KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
-      MaxIter      = config->GetGrad_Linear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+      KindSolver = config->GetKind_Grad_Linear_Solver();
+      KindPrecond = config->GetKind_Grad_Linear_Solver_Prec();
+      MaxIter = config->GetGrad_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
       ScreenOutput = true;
       break;
     }
 
     /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning. ---*/
+     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
+     * ---*/
     default: {
-      KindSolver   = config->GetKind_Linear_Solver();
-      KindPrecond  = config->GetKind_Linear_Solver_Prec();
-      MaxIter      = config->GetLinear_Solver_Iter();
-      SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+      KindSolver = config->GetKind_Linear_Solver();
+      KindPrecond = config->GetKind_Linear_Solver_Prec();
+      MaxIter = config->GetLinear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
       ScreenOutput = false;
       break;
     }
@@ -1053,30 +1119,36 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
-  switch(KindSolver) {
+  switch (KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                    ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
+      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                     ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                     ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                ScreenOutput, config);
       break;
     case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                      ScreenOutput, config);
       break;
-    case PASTIX_LDLT : case PASTIX_LU:
+    case PASTIX_LDLT:
+    case PASTIX_LU:
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
       residual = 1e-20;
       break;
     default:
-      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
+      SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
       break;
   }
 
@@ -1084,14 +1156,13 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
-  SU2_OMP_MASTER
-  {
+  SU2_OMP_MASTER {
     Residual = residual;
     Iterations = IterLinSol;
-  } END_SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
 
   return IterLinSol;
-
 }
 
 /*--- Explicit instantiations ---*/

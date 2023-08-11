@@ -32,36 +32,44 @@ import SU2
 #  Main
 # -------------------------------------------------------------------
 
+
 def main():
 
     parser = OptionParser()
-    parser.add_option("-f", "--file", dest="filename",
-                      help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--partitions", dest="partitions", default=-1,
-                      help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option(
+        "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
+    )
+    parser.add_option(
+        "-n",
+        "--partitions",
+        dest="partitions",
+        default=-1,
+        help="number of PARTITIONS",
+        metavar="PARTITIONS",
+    )
 
-    (options, args)=parser.parse_args()
+    (options, args) = parser.parse_args()
     options.partitions = int(options.partitions)
 
-    merge_solution( options.filename   ,
-                    options.partitions  )
+    merge_solution(options.filename, options.partitions)
 
 
 # -------------------------------------------------------------------
 #  MERGE SOLUTION
 # -------------------------------------------------------------------
 
-def merge_solution( filename        ,
-                    partitions = -1  ):
+
+def merge_solution(filename, partitions=-1):
 
     config = SU2.io.Config(filename)
 
-    if partitions > -1 :
+    if partitions > -1:
         config.NUMBER_PART = partitions
 
     SU2.run.merge(config)
 
+
 #: def merge_solution()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
