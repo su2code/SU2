@@ -7300,15 +7300,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  // if (nMarker_FlowLoad != 0) {
-  //   BoundaryTable << "Flow load boundary";
-  //   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-  //     BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
-  //     if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
-  //   }
-  //   BoundaryTable.PrintFooter();
-  // }
-
   if (nMarker_Internal != 0) {
     BoundaryTable << "Internal boundary";
     for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
