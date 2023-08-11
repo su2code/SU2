@@ -6526,7 +6526,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann, Pressure, Density, Energy,
       Cp, Cv, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, Area,
       UnitNormal[MAXNDIM], Normal[MAXNDIM];
-  su2double *V_inlet, *V_domain;
+  su2double *V_inlet, *V_domain, *S_inlet, *S_domain;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   //const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
@@ -6563,6 +6563,17 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Retrieve solution at this boundary node ---*/
 
       V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+      CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+      const su2double* Scalar_Inlet = nullptr;
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+      }
+      FluidModel->SetTDState_Prho(V_domain[nDim + 1], V_domain[nDim + 2], Scalar_Inlet);
+      nodes->SetSecondaryVar(iVertex, GetFluidModel());
+      S_domain = nodes->GetSecondary(iVertex);
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -6691,6 +6702,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
           V_inlet[nDim+9] = Cv;
+          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
+          nodes->SetSecondaryVar(iVertex, GetFluidModel());
+          S_inlet = nodes->GetSecondary(iVertex);
 
           break;
         }
@@ -6761,6 +6775,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
           V_inlet[nDim+9] = Cv;
+          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
+          nodes->SetSecondaryVar(iVertex, GetFluidModel());
+          S_inlet = nodes->GetSecondary(iVertex);
 
           break;
         }
@@ -6770,6 +6787,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- Set various quantities in the solver class ---*/
+      conv_numerics->SetSecondary(S_domain,S_inlet);
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
