@@ -238,7 +238,7 @@ if get_option('enable-mpp')
     cmake_opts = cmake.subproject_options()
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     cmake_opts.set_install(get_option('install-mpp'))
@@ -249,8 +249,11 @@ if get_option('enable-mpp')
   su2_cpp_args += '-DHAVE_MPP'
 
   if get_option('install-mpp')
-    run_command('cp', '-r', join_paths(meson.source_root(), '/subprojects/Mutationpp/data'),
-        join_paths(get_option('prefix'), '/mpp-data'), check: true)
+    py = find_program('python3', 'python')
+    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/Mutationpp/data', join_paths(get_option('prefix'), 'mpp-data'))
+    if p.returncode() != 0
+      error(p.stderr())
+    endif
   endif
 endif
 
@@ -261,7 +264,7 @@ if get_option('enable-coolprop')
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
