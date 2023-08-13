@@ -61,7 +61,7 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin install/lib install/mpp-data
+        run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -104,7 +104,7 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin install/lib install/mpp-data
+        run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
