@@ -61,7 +61,7 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin
+        run: tar -zcvf install_bin.tgz install/bin install/lib install/mpp-data
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -104,7 +104,7 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin
+        run: tar -zcvf install_bin.tgz install/bin install/lib install/mpp-data
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -161,7 +161,7 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             fi
           done
@@ -207,7 +207,7 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             fi
           done
@@ -273,7 +273,7 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -laH install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             else
               echo "$TYPE_FOLDER does not exist!"
