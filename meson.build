@@ -78,12 +78,20 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
 endif
 
 if get_option('enable-autodiff')
-  if get_option('codi-tape') == 'JacobianIndex'
-    codi_rev_args += '-DCODI_INDEX_TAPE'
-  #elif get_option('codi-tape') == 'PrimalLinear'
-  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
-  #elif get_option('codi-tape') == 'PrimalIndex'
-  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+  if get_option('codi-tape') == 'JacobianLinear'
+    codi_rev_args += '-DCODI_JACOBIAN_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'JacobianReuse'
+    codi_rev_args += '-DCODI_JACOBIAN_REUSE_TAPE'
+  elif get_option('codi-tape') == 'JacobianMultiUse'
+    codi_rev_args += '-DCODI_JACOBIAN_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalLinear'
+    codi_rev_args += '-DCODI_PRIMAL_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'PrimalReuse'
+    codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalMultiUse'
+    codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  else
+    message('Invalid CoDiPack tape choice @1@'.format(get_option('codi-tape')))
   endif
 endif
 
