@@ -2430,7 +2430,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   const su2double RefLength = config->GetRefLength();
-  const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
 
@@ -2587,7 +2586,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           if (!energy) dTdn = 0.0;
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn;
 
       } else {
 
@@ -2658,8 +2657,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         MomentZ_Force[0] += (-Force[0] * Coord[1]);
         MomentZ_Force[1] += (Force[1] * Coord[0]);
 
-        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex] * Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+        /*--- Note that Screen Outputs are re-dimensionalzed but volume outputs are not.
+         *    Since the HeatFlux-container is used for volume output as well, introduce the re-dim here. ---*/
+        const su2double dimensional_HeatFlux = HeatFlux[iMarker][iVertex] * config->GetHeat_Flux_Ref();
+        HF_Visc[iMarker] += dimensional_HeatFlux * Area;
+        MaxHF_Visc[iMarker] += pow(dimensional_HeatFlux, MaxNorm);
       }
     }
 
