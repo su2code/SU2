@@ -30,6 +30,8 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
 
+
+
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
@@ -45,6 +47,7 @@ CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
 
+ 
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
@@ -66,8 +69,8 @@ void CSinglezoneDriver::StartSolver() {
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
-  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
-
+  /*--- or until a SIGTERM signal stops the loop. We catch SIGTERM and exit gracefully ---*/
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 
     Preprocess(TimeIter);
