@@ -61,7 +61,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
+CUpwRoeBase_Flow::~CUpwRoeBase_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;
@@ -477,7 +477,7 @@ CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVa
   }
 }
 
-CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
+CUpwTurkel_Flow::~CUpwTurkel_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;
@@ -709,7 +709,7 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
   }
 }
 
-CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
+CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;

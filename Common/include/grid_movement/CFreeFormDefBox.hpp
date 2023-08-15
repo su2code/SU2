@@ -642,12 +642,10 @@ class CFreeFormDefBox : public CGridMovement {
   }
 
   /*!
-   * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iFFDBox - Index of the FFDBox.
+   * \brief Returns true if the point is inside the FFD.
+   * \param[in] coord - Coordinate of the point to check.
    */
-  bool GetPointFFD(CGeometry* geometry, CConfig* config, unsigned long iPoint) const;
+  bool CheckPointInsideFFD(const su2double* coord) const;
 
   /*!
    * \brief Set the zone of the computational domain that is going to be deformed.
@@ -710,7 +708,7 @@ class CFreeFormDefBox : public CGridMovement {
    *        which? diff_thiss will tell us ; E.G.: dim=2, diff_this=1 => we use the third coordinate of the control
    *        points, and derivate de v-Bersntein polynomial (use m-1 when summing!!).
    */
-  su2double GetDerivative3(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short* lmn);
+  su2double GetDerivative3(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short* lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -742,7 +740,7 @@ class CFreeFormDefBox : public CGridMovement {
    * \return __________.
    */
   su2double GetDerivative5(su2double* uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
-                           unsigned short* lmn);
+                           unsigned short* lmn) const;
 
   /*!
    * \brief Euclidean norm of a vector.

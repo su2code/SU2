@@ -155,7 +155,7 @@ void CFaceOfElement::Copy(const CFaceOfElement& other) {
   elem0IsOwner = other.elem0IsOwner;
 }
 
-void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
+void CFaceOfElement::CreateUniqueNumberingWithOrientation() {
   /*--- Determine the element type and create the unique numbering accordingly. ---*/
   bool swapElements = false;
   switch (nCornerPoints) {
@@ -300,7 +300,7 @@ bool CMatchingFace::operator<(const CMatchingFace& other) const {
   return false;
 }
 
-void CMatchingFace::SortFaceCoordinates(void) {
+void CMatchingFace::SortFaceCoordinates() {
   /*--- Determine the tolerance for a matching point for this face. This is
         accomplished by computing the minimum distance between the points of
         the face, multiplied by a relative tolerance.        ---*/
@@ -363,7 +363,7 @@ void CMatchingFace::Copy(const CMatchingFace& other) {
   tolForMatching = other.tolForMatching;
 }
 
-void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, string val_mesh_filename,
+void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename,
                                                      unsigned short val_iZone, unsigned short val_nZone) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -437,7 +437,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, string val
 
     position = text_line.find("NDIME=", 0);
     if (position != string::npos) {
-      if (domain_flag == false) {
+      if (!domain_flag) {
         text_line.erase(0, 6);
         nDim = atoi(text_line.c_str());
         if (rank == MASTER_NODE) {
@@ -682,7 +682,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, string val
         text_line.erase(remove(text_line.begin(), text_line.end(), '\r'), text_line.end());
         text_line.erase(remove(text_line.begin(), text_line.end(), '\n'), text_line.end());
 
-        Marker_Tag = text_line.c_str();
+        Marker_Tag = text_line;
 
         /*--- Read the number of elements for this marker. ---*/
         getline(mesh_file, text_line);
@@ -802,7 +802,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, string val
   mesh_file.close();
 }
 
-void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string val_mesh_filename,
+void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename,
                                                       unsigned short val_iZone, unsigned short val_nZone) {
 #ifdef HAVE_CGNS
 
@@ -1147,7 +1147,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
   for (int i = 0; i < size; ++i) {
     startingIndRanksInNode[i + 1] = startingIndRanksInNode[i] + nodeBuf[i].size();
 
-    if (nodeBuf[i].size()) {
+    if (!nodeBuf[i].empty()) {
       ++nRankSend;
       sendToRank[i] = 1;
     }
@@ -1162,7 +1162,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
   vector<SU2_MPI::Request> sendReqs(nRankSend);
   nRankSend = 0;
   for (int i = 0; i < size; ++i) {
-    if (nodeBuf[i].size()) {
+    if (!nodeBuf[i].empty()) {
       SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(),
                      &sendReqs[nRankSend]);
       ++nRankSend;
@@ -1324,7 +1324,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
   /*--- Determine the number of messages this rank will send and receive. ---*/
   nRankSend = 0;
   for (int i = 0; i < size; ++i) {
-    if (faceBuf[i].size()) {
+    if (!faceBuf[i].empty()) {
       ++nRankSend;
       sendToRank[i] = 1;
     } else {
@@ -1338,7 +1338,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
   sendReqs.resize(nRankSend);
   nRankSend = 0;
   for (int i = 0; i < size; ++i) {
-    if (faceBuf[i].size()) {
+    if (!faceBuf[i].empty()) {
       SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 4, SU2_MPI::GetComm(),
                      &sendReqs[nRankSend]);
       ++nRankSend;
@@ -1618,7 +1618,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
     /*--- Determine the number of messages this rank will send and receive. ---*/
     nRankSend = 0;
     for (int i = 0; i < size; ++i) {
-      if (faceBuf[i].size()) {
+      if (!faceBuf[i].empty()) {
         ++nRankSend;
         sendToRank[i] = 1;
       } else {
@@ -1632,7 +1632,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
     sendReqs.resize(nRankSend);
     nRankSend = 0;
     for (int i = 0; i < size; ++i) {
-      if (faceBuf[i].size()) {
+      if (!faceBuf[i].empty()) {
         SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 5, SU2_MPI::GetComm(),
                        &sendReqs[nRankSend]);
         ++nRankSend;
@@ -1665,9 +1665,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
       int ii = 0;
       while (ii < sizeMess) {
         /* Store the data for this boundary element. */
-        const unsigned short VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
-        const unsigned short nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
-        const unsigned short nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
+        const auto VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
+        const auto nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
+        const auto nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
 
         const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
         const unsigned long* Nodes = boundElemRecvBuf.data() + ii;
@@ -1714,7 +1714,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
     /*--- Determine the number of messages this rank will send and receive. ---*/
     nRankSend = 0;
     for (int i = 0; i < size; ++i) {
-      if (nodeBuf[i].size()) {
+      if (!nodeBuf[i].empty()) {
         ++nRankSend;
         sendToRank[i] = 1;
       } else {
@@ -1728,7 +1728,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
     sendReqs.resize(nRankSend);
     nRankSend = 0;
     for (int i = 0; i < size; ++i) {
-      if (nodeBuf[i].size()) {
+      if (!nodeBuf[i].empty()) {
         SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 6, SU2_MPI::GetComm(),
                        &sendReqs[nRankSend]);
         ++nRankSend;
@@ -1757,9 +1757,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, string va
       int ii = 0;
       while (ii < sizeMess) {
         /* Store the data for this boundary element. */
-        const unsigned short VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
-        const unsigned short nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
-        const unsigned short nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
+        const auto VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
+        const auto nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
+        const auto nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
 
         const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
         const unsigned long domainElementID = boundElemRecvBuf[ii++];
@@ -2518,7 +2518,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
     idx_t numflag = 0;              // C-numbering.
     idx_t ncon = 2;                 // Number of constraints.
     real_t ubvec[] = {1.05, 1.05};  // Tolerances for the vertex weights, recommended value is 1.05.
-    idx_t nparts = (idx_t)size;     // Number of subdomains. Must be number of MPI ranks.
+    auto nparts = (idx_t)size;      // Number of subdomains. Must be number of MPI ranks.
     idx_t options[METIS_NOPTIONS];  // Just use the default options.
     METIS_SetDefaultOptions(options);
     options[1] = 0;
@@ -2781,7 +2781,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         facesDonor.resize(sizeGlobal);
         cS = cL = cD = 0;
 
-        for (vector<CMatchingFace>::iterator fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
+        for (auto fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
           fIt->nCornerPoints = shortGlobBuf[cS++];
           fIt->nDim = shortGlobBuf[cS++];
           fIt->nPoly = shortGlobBuf[cS++];
@@ -2928,8 +2928,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config
       if (standardVolumeElements[ii].SameStandardElement(VTK_Type, nPolyGrid, true)) break;
     }
 
-    if (ii == standardVolumeElements.size())
-      standardVolumeElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid, true, config));
+    if (ii == standardVolumeElements.size()) standardVolumeElements.emplace_back(VTK_Type, nPolyGrid, true, config);
 
     /*--- Allocate the memory for some help vectors to carry out the matrix
           product to determine the derivatives of the coordinates w.r.t.
@@ -3060,8 +3059,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config
         if (standardFaceElements[jj].SameStandardElement(VTK_Type, nPolyGrid, true)) break;
       }
 
-      if (jj == standardFaceElements.size())
-        standardFaceElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid, true, config));
+      if (jj == standardFaceElements.size()) standardFaceElements.emplace_back(VTK_Type, nPolyGrid, true, config);
 
       /*--- Set the pointer to store the face connectivity of this face. ---*/
       unsigned short* connFace = nullptr;
@@ -3264,8 +3262,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
       if (standardVolumeElements[ii].SameStandardElement(VTK_Parent, nPolyGrid, true)) break;
     }
 
-    if (ii == standardVolumeElements.size())
-      standardVolumeElements.push_back(CFEMStandardElement(VTK_Parent, nPolyGrid, true, config));
+    if (ii == standardVolumeElements.size()) standardVolumeElements.emplace_back(VTK_Parent, nPolyGrid, true, config);
 
     /* Determine the necessary data for splitting the element in its linear
        sub-elements. */
@@ -3434,11 +3431,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             }
 
             if (ii == standardBoundaryFacesSol.size()) {
-              standardBoundaryFacesSol.push_back(
-                  CFEMStandardBoundaryFace(VTK_Type, VTK_Elem, nPolySol, constJac, false, config));
-              standardBoundaryFacesGrid.push_back(
-                  CFEMStandardBoundaryFace(VTK_Type, VTK_Elem, nPolyGrid, constJac, false, config,
-                                           standardBoundaryFacesSol[ii].GetOrderExact()));
+              standardBoundaryFacesSol.emplace_back(VTK_Type, VTK_Elem, nPolySol, constJac, false, config);
+              standardBoundaryFacesGrid.emplace_back(VTK_Type, VTK_Elem, nPolyGrid, constJac, false, config,
+                                                     standardBoundaryFacesSol[ii].GetOrderExact());
             }
 
             /* Get the required information from the standard element. */
@@ -3798,7 +3793,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
 
   /*--- Initialize the time level of external elements to zero.
         First the externals from the faces. ---*/
-  for (vector<CFaceOfElement>::const_iterator FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
+  for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
     if (FI->elemID1 < Global_nElem) {  // Safeguard against non-matching faces.
 
       if (FI->elemID1 < beg_node[rank] || FI->elemID1 >= beg_node[rank] + nElem) {
@@ -3878,7 +3873,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   for (int i = 0; i < size; ++i) {
     if (recvFromRank[i]) {
       sort(sendBufAddExternals[i].begin(), sendBufAddExternals[i].end());
-      vector<unsigned long>::iterator lastElem = unique(sendBufAddExternals[i].begin(), sendBufAddExternals[i].end());
+      auto lastElem = unique(sendBufAddExternals[i].begin(), sendBufAddExternals[i].end());
       sendBufAddExternals[i].erase(lastElem, sendBufAddExternals[i].end());
 
       SU2_MPI::Isend(sendBufAddExternals[i].data(), sendBufAddExternals[i].size(), MPI_UNSIGNED_LONG, i, i,
@@ -4070,7 +4065,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
 
   for (int i = 0; i < nRankRecv; ++i, ++MRI) {
     sort(recvElem[i].begin(), recvElem[i].end());
-    vector<unsigned long>::iterator lastElem = unique(recvElem[i].begin(), recvElem[i].end());
+    auto lastElem = unique(recvElem[i].begin(), recvElem[i].end());
     recvElem[i].erase(lastElem, recvElem[i].end());
 
     SU2_MPI::Isend(recvElem[i].data(), recvElem[i].size(), MPI_UNSIGNED_LONG, MRI->first, MRI->first,
@@ -4244,7 +4239,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
 
       /*--- Loop over the matching faces and update the time levels of the
             adjacent elements, if needed. ---*/
-      for (vector<CFaceOfElement>::const_iterator FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
+      for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
         /* Safeguard against non-matching faces. */
         if (FI->elemID1 < Global_nElem) {
           /* Local element ID of the first element. Per definition this is
@@ -4454,8 +4449,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
       if (standardElements[ii].SameStandardElement(VTK_Type, nPolySol, JacIsConstant)) break;
     }
 
-    if (ii == standardElements.size())
-      standardElements.push_back(CFEMStandardElement(VTK_Type, nPolySol, JacIsConstant, config));
+    if (ii == standardElements.size()) standardElements.emplace_back(VTK_Type, nPolySol, JacIsConstant, config);
 
     /* Initialize the computational work for this element, which is stored
        in the 1st vertex weight. */
@@ -4528,9 +4522,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
           }
 
           if (ii == standardMatchingFaces.size())
-            standardMatchingFaces.push_back(CFEMStandardInternalFace(VTK_Type_Face, low->elemType0, low->nPolySol0,
-                                                                     low->elemType1, low->nPolySol1, JacIsConstant,
-                                                                     false, false, config));
+            standardMatchingFaces.emplace_back(VTK_Type_Face, low->elemType0, low->nPolySol0, low->elemType1,
+                                               low->nPolySol1, JacIsConstant, false, false, config);
 
           /* Update the computational work for this element, i.e. the 1st
              vertex weight. */
@@ -4547,8 +4540,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
         }
 
         if (ii == standardBoundaryFaces.size())
-          standardBoundaryFaces.push_back(
-              CFEMStandardBoundaryFace(VTK_Type_Face, VTK_Type, nPolySol, JacIsConstant, false, config));
+          standardBoundaryFaces.emplace_back(VTK_Type_Face, VTK_Type, nPolySol, JacIsConstant, false, config);
 
         /* Update the computational work for this element, i.e. the 1st
            vertex weight. */

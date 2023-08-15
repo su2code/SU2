@@ -612,7 +612,7 @@ int main(int argc, char* argv[]) {
 
     /*--- Write the objective function in a external file ---*/
     string filename = config_container[ZONE_0]->GetObjFunc_Value_FileName();
-    unsigned short lastindex = filename.find_last_of(".");
+    unsigned short lastindex = filename.find_last_of('.');
     filename = filename.substr(0, lastindex);
     if (tabTecplot)
       filename += ".dat";
@@ -730,7 +730,7 @@ int main(int argc, char* argv[]) {
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
       string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
-      unsigned short lastindex = filename.find_last_of(".");
+      unsigned short lastindex = filename.find_last_of('.');
       filename = filename.substr(0, lastindex);
       if (tabTecplot)
         filename += ".dat";
@@ -745,7 +745,6 @@ int main(int argc, char* argv[]) {
       if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
-          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_TWIST_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_NACELLE) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_GULL) ||
@@ -823,10 +822,6 @@ int main(int argc, char* argv[]) {
             case FFD_THICKNESS_2D:
               Local_MoveSurface = surface_movement->SetFFDThickness_2D(
                   geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true);
-              break;
-            case FFD_TWIST_2D:
-              Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry_container[ZONE_0], config_container[ZONE_0],
-                                                                   FFDBox[iFFDBox], FFDBox, iDV, true);
               break;
             case FFD_CONTROL_POINT:
               Local_MoveSurface = surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0],

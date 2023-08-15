@@ -1,5 +1,5 @@
 /*!
- * \file CFileReaderLUT.hpp
+ * \file CFileReaderLUT.cpp
  * \brief reading lookup table for tabulated fluid properties
  * \author D. Mayer, T. Economon
  * \version 7.5.1 "Blackbird"
@@ -150,7 +150,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
       for (unsigned long i = 0; i < n_variables; i++) {
         /*--- grab a single line ---*/
         GetNextNonEmptyLine(file_stream, line);
-        names_var[i] = line.substr(line.find(":") + 1);
+        names_var[i] = line.substr(line.find(':') + 1);
       }
     }
 
@@ -325,7 +325,7 @@ void CFileReaderLUT::ReadRawLUT(const string& file_name) {
 }
 
 void CFileReaderLUT::SkipToFlag(ifstream& file_stream, const string& current_line, const string& flag) const {
-  string next_line = "";
+  string next_line;
 
   /*--- compare current line to flag and return if equal ---*/
   if (current_line.compare(flag) == 0) return;

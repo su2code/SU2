@@ -220,7 +220,7 @@ void CADTPointsOnlyClass::DetermineNearestNode_impl(vector<unsigned long>& front
           is empty the entire tree has been traversed and a break can be made
           from the infinite loop. ---*/
     frontLeaves = frontLeavesNew;
-    if (frontLeaves.size() == 0) break;
+    if (frontLeaves.empty()) break;
   }
 
   AD::EndPassive(wasActive);

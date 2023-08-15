@@ -62,9 +62,9 @@ CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPIC
   AD::Initialize();
 }
 
-CDriverBase::~CDriverBase(void) {}
+CDriverBase::~CDriverBase() = default;
 
-void CDriverBase::SetContainers_Null() {
+void CDriverBase::InitializeContainers() {
   /*--- Create pointers to all the classes that may be used by drivers. In general, the pointers are instantiated
    * down a hierarchy over all zones, multi-grid levels, equation sets, and equation terms as described in the comments
    * below. ---*/
@@ -303,6 +303,36 @@ vector<string> CDriverBase::GetDeformableMarkerTags() const {
   return tags;
 }
 
+vector<string> CDriverBase::GetCHTMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  // The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    if ((main_config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
+         main_config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) &&
+        main_config->GetMarker_All_PyCustom(iMarker)) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
+vector<string> CDriverBase::GetInletMarkerTags() const {
+  vector<string> tags;
+  const auto nMarker = main_config->GetnMarker_All();
+
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = main_config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (main_config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+
+    if (isCustomizable && isInlet) {
+      tags.push_back(main_config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  return tags;
+}
+
 unsigned long CDriverBase::GetNumberMarkerElements(unsigned short iMarker) const {
   if (iMarker >= GetNumberMarkers()) {
     SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
@@ -360,69 +390,15 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
   return values;
 }
 
-vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Disp(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint, iDim, values[iDim]);
-  }
-}
-
-vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
-  vector<passivedouble> values(nDim, 0.0);
-
-  if (main_config->GetDeform_Mesh()) {
-    const auto iPoint = GetMarkerNode(iMarker, iVertex);
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Vel(iPoint, iDim);
-      values[iDim] = SU2_TYPE::GetValue(value);
-    }
-  }
-  return values;
-}
-
-void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetDeform_Mesh()) {
-    SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Vel(iPoint, iDim, values[iDim]);
-  }
-}
-
-void CDriverBase::CommunicateMeshDisplacements(void) {
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
+void CDriverBase::CommunicateMeshDisplacements() {
+  solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
+  solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
 }
 
 map<string, unsigned short> CDriverBase::GetSolverIndices() const {
   map<string, unsigned short> indexMap;
   for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-    const auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    const auto* solver = solver_container[selected_iZone][INST_0][MESH_0][iSol];
     if (solver != nullptr) {
       if (solver->GetSolverName().empty()) SU2_MPI::Error("Solver name was not defined.", CURRENT_FUNCTION);
       indexMap[solver->GetSolverName()] = iSol;
@@ -432,7 +408,7 @@ map<string, unsigned short> CDriverBase::GetSolverIndices() const {
 }
 
 std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
-  if (solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL] == nullptr) {
+  if (solver_container[selected_iZone][INST_0][MESH_0][FEA_SOL] == nullptr) {
     SU2_MPI::Error("The FEA solver does not exist.", CURRENT_FUNCTION);
   }
   const auto nDim = main_geometry->GetnDim();
@@ -453,7 +429,7 @@ std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
 }
 
 map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
-  if (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL] == nullptr) {
+  if (solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL] == nullptr) {
     SU2_MPI::Error("The flow solver does not exist.", CURRENT_FUNCTION);
   }
   return PrimitiveNameToIndexMap(CPrimitiveIndices<unsigned short>(

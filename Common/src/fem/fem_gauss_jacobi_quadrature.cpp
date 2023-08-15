@@ -83,7 +83,7 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble alpha, cons
                                                  const passivedouble a, const passivedouble b,
                                                  vector<passivedouble>& GJPoints, vector<passivedouble>& GJWeights) {
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
-  unsigned int nIntPoints = (unsigned int)GJPoints.size();
+  auto nIntPoints = (unsigned int)GJPoints.size();
   if (nIntPoints < 1 || nIntPoints > 100)
     SU2_MPI::Error("Invalid number of Gauss Jacobi integration points", CURRENT_FUNCTION);
 
@@ -176,8 +176,6 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passiv
 
   delete[] aj;
   delete[] bj;
-
-  return;
 }
 //****************************************************************************80
 
@@ -269,8 +267,6 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 
   delete[] mlt;
   delete[] ndx;
-
-  return;
 }
 //****************************************************************************80
 
@@ -650,7 +646,6 @@ void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[],
       z[k - 1] = p;
     }
   }
-  return;
 }
 //****************************************************************************80
 
@@ -740,7 +735,6 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, passivedouble alpha, passiv
       exit(1);
     }
   }
-  return;
 }
 //****************************************************************************80
 
@@ -1027,7 +1021,6 @@ void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt
       }
     }
   }
-  return;
 }
 //****************************************************************************80
 
@@ -1111,6 +1104,4 @@ void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedoubl
   for (i = 0; i < nt; i++) {
     wts[i] = wts[i] * wts[i];
   }
-
-  return;
 }

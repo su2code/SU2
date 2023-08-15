@@ -2048,13 +2048,15 @@ class Interface:
                 FluidSolver.GetMarkerNode(self.fluidInterfaceIdentifier, iVertex)
             )
             if GlobalIndex not in self.FluidHaloNodeList[myid].keys():
-                loadX, loadY, loadZ = FluidSolver.GetFlowLoad(
+                load = FluidSolver.GetMarkerFlowLoad(
                     self.fluidInterfaceIdentifier, iVertex
                 )
                 iGlobalVertex = self.__getGlobalIndex("fluid", myid, localIndex)
-                self.fluidLoads_array_X.setValues([iGlobalVertex], loadX)
-                self.fluidLoads_array_Y.setValues([iGlobalVertex], loadY)
-                self.fluidLoads_array_Z.setValues([iGlobalVertex], loadZ)
+                self.fluidLoads_array_X.setValues([iGlobalVertex], load[0])
+                self.fluidLoads_array_Y.setValues([iGlobalVertex], load[1])
+                self.fluidLoads_array_Z.setValues(
+                    [iGlobalVertex], load[2] if len(load) == 3 else 0.0
+                )
                 localIndex += 1
 
         self.fluidLoads_array_X.assemblyBegin()
@@ -2082,7 +2084,7 @@ class Interface:
             )
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 DispX, DispY, DispZ = self.haloNodesDisplacements[GlobalIndex]
-                FluidSolver.SetMarkerDisplacements(
+                FluidSolver.SetMarkerCustomDisplacement(
                     self.fluidInterfaceIdentifier,
                     int(iVertex),
                     np.array([DispX, DispY, DispZ]),
@@ -2091,7 +2093,7 @@ class Interface:
                 DispX = self.localFluidInterface_array_DispX[localIndex]
                 DispY = self.localFluidInterface_array_DispY[localIndex]
                 DispZ = self.localFluidInterface_array_DispZ[localIndex]
-                FluidSolver.SetMarkerDisplacements(
+                FluidSolver.SetMarkerCustomDisplacement(
                     self.fluidInterfaceIdentifier,
                     int(iVertex),
                     np.array([DispX, DispY, DispZ]),
@@ -2658,7 +2660,6 @@ class Interface:
                 )
                 self.MPIBarrier()
                 if myid in self.fluidSolverProcessors:
-                    FluidSolver.ResetConvergence()
                     FluidSolver.Run()
                     self.MPIBarrier()
                     FluidSolver.Postprocess()
@@ -2775,7 +2776,6 @@ class Interface:
             # --- Fluid solver call for FSI subiteration ---#
 
             if myid in self.fluidSolverProcessors:
-                FluidSolver.ResetConvergence()  # This is setting to zero the convergence in the integrator, important to reset it.
                 # The mesh will be deformed in the context of the preprocessor, there is no need to set the initial
                 # mesh pushing back the solution to avoid spurious velocities, as the velocity is not computed at all
                 self.MPIPrint("\nPerforming static mesh deformation...\n")

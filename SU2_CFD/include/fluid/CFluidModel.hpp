@@ -38,6 +38,7 @@
 
 using namespace std;
 
+class CLookUpTable;
 /*!
  * \class CFluidModel
  * \brief Main class for defining the Thermo-Physical Model
@@ -136,6 +137,17 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
+
+  /*!
+   * \brief Flamelet LUT - Get the number of transported scalars.
+   */
+  virtual inline unsigned short GetNScalars() const { return 0; }
+
+  /*!
+   * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
+   * \param[in] input - input data for manifold regression.
+   */
+  virtual unsigned long EvaluateDataSet(const vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) { return 0; }
 
   /*!
    * \brief Get fluid dynamic viscosity.
@@ -319,10 +331,22 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+  /*!
+   * \brief Get fluid model extrapolation instance
+   * \return Query point lies outside fluid model data range.
+   */
+  virtual unsigned long GetExtrapolation() const { return 0; }
+
+  /*!
+   * \brief Get number of Newton solver iterations.
+   * \return Newton solver iteration count at termination.
+   */
+  virtual unsigned long GetnIter_Newton() { return 0; }
 };

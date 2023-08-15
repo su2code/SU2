@@ -45,9 +45,9 @@ extern "C" {
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <climits>
 #include <memory>
 #include <unordered_map>
@@ -594,17 +594,6 @@ class CGeometry {
   inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
     return FindEdge(first_point, second_point, false) >= 0;
   }
-
-  /*!
-   * \brief Get the distance between a plane (defined by three point) and a point.
-   * \param[in] Coord - Coordinates of the point.
-   * \param[in] iCoord - Coordinates of the first point that defines the plane.
-   * \param[in] jCoord - Coordinates of the second point that defines the plane.
-   * \param[in] kCoord - Coordinates of the third point that defines the plane.
-   * \return Signed distance.
-   */
-  su2double Point2Plane_Distance(const su2double* Coord, const su2double* iCoord, const su2double* jCoord,
-                                 const su2double* kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.

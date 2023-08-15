@@ -94,7 +94,7 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
 
   /*--- Initialize containers. --- */
 
-  SetContainers_Null();
+  InitializeContainers();
 
   /*--- Loop over all zones to initialize the various classes. In most
    * cases, nZone is equal to one. This represents the solution of a partial
@@ -213,7 +213,7 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
          * define all virtual functions in the base class CGeometry. ---*/
 
-        CMeshFEM_DG* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
+        auto* DGMesh = dynamic_cast<CMeshFEM_DG*>(geometry_container[iZone][iInst][MESH_0]);
 
         /*--- Determine the standard elements for the volume elements. ---*/
 
@@ -302,17 +302,16 @@ void CDiscAdjDeformationDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
     if (!config_container[iZone]->GetDiscrete_Adjoint()) {
       continue;
+    }
+    if (rank == MASTER_NODE)
+      cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
+    if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
+        config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
+      DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
+                                          grid_movement[iZone][INST_0]);
     } else {
-      if (rank == MASTER_NODE)
-        cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
-      if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
-          config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
-        DerivativeTreatment_MeshSensitivity(geometry_container[iZone][INST_0][MESH_0], config_container[iZone],
-                                            grid_movement[iZone][INST_0]);
-      } else {
-        grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
-                                                            config_container[iZone], false, true);
-      }
+      grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],
+                                                          config_container[iZone], false, true);
     }
   }
 
@@ -427,10 +426,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST_2D) || (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-        (config->GetDesign_Variable(iDV) == FFD_NACELLE) || (config->GetDesign_Variable(iDV) == FFD_GULL) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST) || (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
-        (config->GetDesign_Variable(iDV) == FFD_CAMBER) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
+        (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) || (config->GetDesign_Variable(iDV) == FFD_NACELLE) ||
+        (config->GetDesign_Variable(iDV) == FFD_GULL) || (config->GetDesign_Variable(iDV) == FFD_TWIST) ||
+        (config->GetDesign_Variable(iDV) == FFD_ROTATION) || (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
         (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
       /*--- Read the FFD information in the first iteration. ---*/
 
@@ -482,9 +481,6 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
           case FFD_THICKNESS_2D:
             Local_MoveSurface =
                 surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
-            break;
-          case FFD_TWIST_2D:
-            Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
             break;
           case FFD_CONTROL_POINT:
             Local_MoveSurface = surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
@@ -767,7 +763,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
       /*--- Print the kind of design variable on screen. ---*/
 
       cout << endl << "Design variable (";
-      for (std::map<string, ENUM_PARAM>::const_iterator it = Param_Map.begin(); it != Param_Map.end(); ++it) {
+      for (auto it = Param_Map.begin(); it != Param_Map.end(); ++it) {
         if (it->second == config->GetDesign_Variable(iDV)) {
           cout << it->first << ") number " << iDV << "." << endl;
         }
@@ -775,8 +771,7 @@ void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* co
 
       /*--- Print the kind of objective function to screen. ---*/
 
-      for (std::map<string, ENUM_OBJECTIVE>::const_iterator it = Objective_Map.begin(); it != Objective_Map.end();
-           ++it) {
+      for (auto it = Objective_Map.begin(); it != Objective_Map.end(); ++it) {
         if (it->second == config->GetKind_ObjFunc()) {
           cout << it->first << " gradient : ";
           if (iDV == 0) Gradient_file << it->first << " gradient " << endl;
@@ -818,18 +813,18 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
     /*--- We create a baseline solver to easily merge the sensitivity information. ---*/
 
     vector<string> fieldnames;
-    fieldnames.push_back("\"Point\"");
-    fieldnames.push_back("\"x\"");
-    fieldnames.push_back("\"y\"");
+    fieldnames.emplace_back("\"Point\"");
+    fieldnames.emplace_back("\"x\"");
+    fieldnames.emplace_back("\"y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"z\"");
+      fieldnames.emplace_back("\"z\"");
     }
-    fieldnames.push_back("\"Sensitivity_x\"");
-    fieldnames.push_back("\"Sensitivity_y\"");
+    fieldnames.emplace_back("\"Sensitivity_x\"");
+    fieldnames.emplace_back("\"Sensitivity_y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\"");
+      fieldnames.emplace_back("\"Sensitivity_z\"");
     }
-    fieldnames.push_back("\"Surface_Sensitivity\"");
+    fieldnames.emplace_back("\"Surface_Sensitivity\"");
 
     solver = new CBaselineSolver(geometry[iZone][INST_0][MESH_0], config[iZone], nVar + nDim, fieldnames);
 
@@ -881,15 +876,15 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry**** geometry, CCo
 
     /*--- Load the data. --- */
 
-    output->Load_Data(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
+    output->LoadData(geometry[iZone][INST_0][MESH_0], config[iZone], &solver);
 
     /*--- Set the surface filename. ---*/
 
-    output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
+    output->SetSurfaceFilename(config[iZone]->GetSurfSens_FileName());
 
     /*--- Set the volume filename. ---*/
 
-    output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
+    output->SetVolumeFilename(config[iZone]->GetVolSens_FileName());
 
     /*--- Write to file. ---*/
 

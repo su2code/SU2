@@ -29,7 +29,7 @@
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {}
+CVolumetricMovement::CVolumetricMovement() : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {}
 
 CVolumetricMovement::CVolumetricMovement(CGeometry* geometry, CConfig* config)
     : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {
@@ -54,7 +54,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry* geometry, CConfig* config)
   }
 }
 
-CVolumetricMovement::~CVolumetricMovement(void) {}
+CVolumetricMovement::~CVolumetricMovement() = default;
 
 void CVolumetricMovement::UpdateGridCoord(CGeometry* geometry, CConfig* config) {
   unsigned short iDim;
@@ -1824,7 +1824,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry* geometry, CConf
                                                       bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
-  su2double* new_coord = new su2double[3];
+  auto* new_coord = new su2double[3];
 
   SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 

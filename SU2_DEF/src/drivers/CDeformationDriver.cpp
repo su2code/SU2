@@ -38,7 +38,7 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     : CDriverBase(confFile, 1, MPICommunicator) {
   /*--- Preprocessing of the config files. ---*/
 
-  Input_Preprocessing();
+  PreprocessInput();
 
   /*--- Set up a timer for performance benchmarking. ---*/
 
@@ -46,20 +46,20 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
 
   /*--- Preprocessing of the geometry for all zones. ---*/
 
-  Geometrical_Preprocessing();
+  InitializeGeometry();
 
   /*--- Preprocessing of the output for all zones. ---*/
 
-  Output_Preprocessing();
+  PreprocessOutput();
 
   if (driver_config->GetDeform_Mesh()) {
     /*--- Preprocessing of the mesh solver for all zones. ---*/
 
-    Solver_Preprocessing();
+    InitializeSolver();
 
     /*--- Preprocessing of the mesh solver for all zones. ---*/
 
-    Numerics_Preprocessing();
+    InitializeNumerics();
   }
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
@@ -73,7 +73,7 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
   UsedTimeCompute = 0.0;
 }
 
-void CDeformationDriver::Input_Preprocessing() {
+void CDeformationDriver::PreprocessInput() {
   /*--- Initialize a char to store the zone filename. ---*/
 
   char zone_file_name[MAX_STRING_SIZE];
@@ -86,7 +86,7 @@ void CDeformationDriver::Input_Preprocessing() {
 
   /*--- Initialize containers. --- */
 
-  SetContainers_Null();
+  InitializeContainers();
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -123,7 +123,7 @@ void CDeformationDriver::Input_Preprocessing() {
   main_config = config_container[ZONE_0];
 }
 
-void CDeformationDriver::Geometrical_Preprocessing() {
+void CDeformationDriver::InitializeGeometry() {
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
@@ -161,7 +161,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
     /*--- Computational grid preprocessing. ---*/
 
     if (rank == MASTER_NODE)
-      cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
+      cout << "\n----------------------- Preprocessing computations ----------------------" << endl;
 
     /*--- Compute elements surrounding points, points surrounding points. ---*/
 
@@ -206,7 +206,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
   main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
-void CDeformationDriver::Output_Preprocessing() {
+void CDeformationDriver::PreprocessOutput() {
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Allocate the mesh output. ---*/
 
@@ -223,7 +223,7 @@ void CDeformationDriver::Output_Preprocessing() {
   }
 }
 
-void CDeformationDriver::Solver_Preprocessing() {
+void CDeformationDriver::InitializeSolver() {
   for (iZone = 0; iZone < nZone; iZone++) {
     unsigned short nInst_Zone = nInst[iZone];
     unsigned short nMesh = 1;
@@ -237,7 +237,7 @@ void CDeformationDriver::Solver_Preprocessing() {
   }
 }
 
-void CDeformationDriver::Numerics_Preprocessing() {
+void CDeformationDriver::InitializeNumerics() {
   for (iZone = 0; iZone < nZone; iZone++) {
     unsigned short nInst_Zone = nInst[iZone];
     unsigned short nMesh = 1;
@@ -259,8 +259,6 @@ void CDeformationDriver::Numerics_Preprocessing() {
   }
 }
 
-void CDeformationDriver::Preprocess() {}
-
 void CDeformationDriver::Run() {
   /* --- Start measuring computation time. ---*/
 
@@ -268,11 +266,7 @@ void CDeformationDriver::Run() {
 
   /*--- Surface grid deformation using design variables. ---*/
 
-  if (driver_config->GetDeform_Mesh()) {
-    Update();
-  } else {
-    Update_Legacy();
-  }
+  DeformMesh();
 
   /*--- Synchronization point after a single solver iteration. Compute the wall clock time required. ---*/
 
@@ -290,10 +284,12 @@ void CDeformationDriver::Run() {
 
   /*--- Output the deformed mesh. ---*/
 
-  Output();
+  OutputFiles();
 }
 
-void CDeformationDriver::Update() {
+void CDeformationDriver::DeformMesh() {
+  if (!driver_config->GetDeform_Mesh()) return DeformLegacy();
+
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Set the stiffness of each element mesh into the mesh numerics. ---*/
 
@@ -311,7 +307,7 @@ void CDeformationDriver::Update() {
   }
 }
 
-void CDeformationDriver::Update_Legacy() {
+void CDeformationDriver::DeformLegacy() {
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
       unsigned short nInst_Zone = nInst[iZone];
@@ -473,7 +469,7 @@ void CDeformationDriver::Update_Legacy() {
   }
 }
 
-void CDeformationDriver::Output() {
+void CDeformationDriver::OutputFiles() {
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node. ---*/
 
@@ -499,15 +495,15 @@ void CDeformationDriver::Output() {
 
     /*--- Load the data. --- */
 
-    output_container[iZone]->Load_Data(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
+    output_container[iZone]->LoadData(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
 
     output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0],
                                          OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
 
     /*--- Set the file names for the visualization files. ---*/
 
-    output_container[iZone]->SetVolume_Filename("volume_deformed");
-    output_container[iZone]->SetSurface_Filename("surface_deformed");
+    output_container[iZone]->SetVolumeFilename("volume_deformed");
+    output_container[iZone]->SetSurfaceFilename("surface_deformed");
 
     for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++) {
       auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
@@ -568,11 +564,4 @@ void CDeformationDriver::Finalize() {
 
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
-}
-
-void CDeformationDriver::CommunicateMeshDisplacements(void) {
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                    config_container[ZONE_0], MESH_DISPLACEMENTS);
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                    config_container[ZONE_0], MESH_DISPLACEMENTS);
 }
