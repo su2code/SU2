@@ -6,3 +6,4 @@
 3. A laminar premixed flame including a heat exchanger (Conjugate Heat Transfer).
 4. A laminar premixed flame including a heat exchanger (Conjugate Heat Transfer), AD test.
 5. An axisymmetric laminar premixed flame.
+6. A laminar, partially premixed flame including a heat exchanger.

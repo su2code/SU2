@@ -308,6 +308,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   const bool time_domain = driver_config->GetTime_Domain();
+  driver_config->Set_StartTime(SU2_MPI::Wtime());
 
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
    * Unless in unsteady problems where there are other contributions to the RHS. ---*/
