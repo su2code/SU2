@@ -77,7 +77,7 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_for_args = ['-DCODI_FORWARD_TYPE']
 endif
 
-if get_option('enable-autodiff')
+if get_option('enable-autodiff') and not omp
   if get_option('codi-tape') == 'JacobianLinear'
     codi_rev_args += '-DCODI_JACOBIAN_LINEAR_TAPE'
   elif get_option('codi-tape') == 'JacobianReuse'
@@ -92,6 +92,10 @@ if get_option('enable-autodiff')
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
   else
     message('Invalid CoDiPack tape choice @1@'.format(get_option('codi-tape')))
+  endif
+
+  if get_option('codi-tape') != 'JacobianLinear'
+    warning('The tape choice @1@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
 
