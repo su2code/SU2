@@ -25,21 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <csignal>
-
 #include "../../include/iteration/CFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
 
-volatile sig_atomic_t stop;
-
-void signalHandler( int signum ) {
-   cout << "NIJSO: Interrupt signal (" << signum << ") received.\n";
-   // cleanup and close up stuff here
-   stop = 1;
-   // terminate program  
-   //exit(signum);
-}
 void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
@@ -266,7 +254,6 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   unsigned long Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
 
-  signal(SIGTERM, signalHandler);
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
 
@@ -295,9 +282,6 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     if (singlezone && steady) {
       Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
     }
-
-    /*--- If signal was sent, we set stopcalc to force writing the files ---*/
-    if (stop == 1) StopCalc = true;
 
     /*--- If the iteration has converged, break the loop ---*/
     if (StopCalc) break;
