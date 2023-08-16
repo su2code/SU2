@@ -55,11 +55,11 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "4237fe38c90b83541f699bd84e00c656099b7d18"
+    sha_version_codi = "17232fed05245dbb8f04a31e274a02d53458c75c"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "aafc2d1966ba1233640af737e71c77c1a86183fd"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "913535c490989ea9aa654e8c7df41c7e3718a5a2"
+    sha_version_opdi = "c42cca71a3d0b44fb482e268ecd40b623e71776b"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
@@ -71,7 +71,7 @@ def init_submodules(
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_mlpcpp = "a80115c6f4779cc168d1464cf32aead61559c9ea"
+    sha_version_mlpcpp = "665c45b7d3533c977eb1f637918d5b8b75c07d3b"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"

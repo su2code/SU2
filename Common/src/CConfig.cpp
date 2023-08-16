@@ -2101,11 +2101,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
-  /*!\brief File name of the flamelet look up table.*/
-  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+  /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+
+  /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
-  addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
+  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
 
   /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
   addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
@@ -3223,41 +3226,41 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetHeader(SU2_COMPONENT val_software) const{
 
-  if ((iZone == 0) && (rank == MASTER_NODE)){
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |" << endl;
-    cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
+  if ((iZone == 0) && (rank == MASTER_NODE)) {
+    cout << "\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "|    ___ _   _ ___                                                      |\n";
+    cout << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |\n";
+    cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
-    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
+    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |\n"; break;
+    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |\n"; break;
     }
-
-    cout << "|                                                                       |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
-    cout << "| (http://su2foundation.org)                                            |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
-    cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
-    cout << "| License as published by the Free Software Foundation; either          |" << endl;
-    cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
-    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-    cout << "| Lesser General Public License for more details.                       |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
-    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "|                                                                       |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| SU2 Project Website: https://su2code.github.io                        |\n";
+    cout << "|                                                                       |\n";
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
+    cout << "| (http://su2foundation.org)                                            |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is free software; you can redistribute it and/or                  |\n";
+    cout << "| modify it under the terms of the GNU Lesser General Public            |\n";
+    cout << "| License as published by the Free Software Foundation; either          |\n";
+    cout << "| version 2.1 of the License, or (at your option) any later version.    |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is distributed in the hope that it will be useful,                |\n";
+    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n";
+    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n";
+    cout << "| Lesser General Public License for more details.                       |\n";
+    cout << "|                                                                       |\n";
+    cout << "| You should have received a copy of the GNU Lesser General Public      |\n";
+    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n";
+    cout << "-------------------------------------------------------------------------" << endl;
   }
 
 }
@@ -3840,6 +3843,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
   SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
+  Variable_Density = ((Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) || (Kind_DensityModel == INC_DENSITYMODEL::FLAMELET));
+
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3935,8 +3940,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE",
+      if (!Variable_Density) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE or FLAMELET",
                        CURRENT_FUNCTION);
       }
 
@@ -5480,8 +5485,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
-    /*--- The controlling variables are progress variable and total enthalpy ---*/
-    n_control_vars = 2;
+    /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
+    //n_control_vars = nSpecies - n_user_scalars;
+    if (n_control_vars != (nSpecies - n_user_scalars))
+      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }
