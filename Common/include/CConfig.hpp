@@ -519,7 +519,12 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  n_Datadriven_files;
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
+
+  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
   unsigned short
@@ -697,6 +702,7 @@ private:
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_StrongBC,                   /*!< \brief Number of markers for which a strong BC must be applied. */
   nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
@@ -708,6 +714,7 @@ private:
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_StrongBC,                   /*!< \brief Markers for which a strong BC must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
@@ -798,7 +805,8 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -901,6 +909,7 @@ private:
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
+  bool Variable_Density;      /*!< \brief Variable density for incompressible flow. */
   unsigned short nElectric_Constant;    /*!< \brief Number of different electric constants. */
   su2double *Electric_Constant;         /*!< \brief Dielectric constant modulus. */
   su2double Knowles_B,                  /*!< \brief Knowles material model constant B. */
@@ -1179,7 +1188,7 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies = 0;              /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
@@ -1209,6 +1218,24 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
+
+  /*--- Additional flamelet solver options ---*/
+  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+
+  /*--- lookup table ---*/
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+
+  string* controlling_variable_names;
+  string* cv_source_names;
+  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
+  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
+  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
+  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2100,6 +2127,70 @@ public:
    * \return Flag for strong BC's.
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
+
+  /*!
+   * \brief Get the flame initialization.
+   *        (x1,x2,x3) = flame offset.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
+   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
+   * \return Flame initialization for the flamelet model.
+   */
+  const su2double* GetFlameInit() const { return flame_init; }
+
+  /*!
+   * \brief Get the number of control variables for flamelet model.
+   */
+  unsigned short GetNControlVars() const { return n_control_vars; }
+
+  /*!
+   * \brief Get the number of total transported scalars for flamelet model.
+   */
+  unsigned short GetNScalars() const { return n_scalars; }
+
+  /*!
+   * \brief Get the number of user scalars for flamelet model.
+   */
+  unsigned short GetNUserScalars() const { return n_user_scalars; }
+
+  /*!
+   * \brief Get the name of a specific controlling variable.
+   */
+  const string& GetControllingVariableName(unsigned short i_cv) const {
+    return controlling_variable_names[i_cv];
+  }
+
+  /*!
+   * \brief Get the name of the source term variable for a specific controlling variable.
+   */
+  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
+    return cv_source_names[i_cv];
+  }
+  /*!
+   * \brief Get the name of the user scalar.
+   */
+  const string& GetUserScalarName(unsigned short i_user_scalar) const {
+    static const std::string none = "NONE";
+    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
+  }
+
+  /*!
+   * \brief Get the name of the user scalar source term.
+   */
+  const string& GetUserSourceName(unsigned short i_user_source) const {
+    static const std::string none = "NONE";
+    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
+  }
+
+  /*!
+   * \brief Get the number of transported scalars for combustion.
+   */
+  unsigned short GetNLookups() const { return n_lookups; }
+
+  /*!
+   * \brief Get the name of the variable that we want to retrieve from the lookup table.
+   */
+  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -3769,6 +3860,29 @@ public:
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
+   * \brief Datadriven method for EoS evaluation.
+   */
+  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+
+  /*!
+   * \brief Get name of the input file for the data-driven fluid model interpolation method.
+   * \return Name of the input file for the interpolation method.
+   */
+  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
+
+  /*!
+   * \brief Get number of listed look-up table or multi-layer perceptron input files.
+   * \return Number of listed data-driven method input files.
+   */
+  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
+
+  /*!
+   * \brief Get Newton solver relaxation factor for data-driven fluid models.
+   * \return Newton solver relaxation factor.
+   */
+  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
+
+  /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
@@ -3778,6 +3892,12 @@ public:
    * \return Density model option
    */
   INC_DENSITYMODEL GetKind_DensityModel() const { return Kind_DensityModel; }
+
+  /*!
+   * \brief Selection of variable density option for incompressible flows.
+   * \return Flag for variable density for incompressible flows.
+   */
+  bool GetVariable_Density_Model() const { return Variable_Density; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
@@ -9304,6 +9424,13 @@ public:
    * \return The wall emissivity.
    */
   su2double GetWall_Emissivity(const string& val_index) const;
+
+  /*!
+   * \brief Get if boundary is strong or weak.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return true if strong BC.
+   */
+  bool GetMarker_StrongBC(const string& val_index) const;
 
   /*!
    * \brief Get the value of the CFL condition for radiation solvers.

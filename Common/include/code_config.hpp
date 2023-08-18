@@ -98,20 +98,30 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #if defined(HAVE_OMP)
 using su2double = codi::RealReverseIndexOpenMPGen<double, double>;
 #else
-#if defined(CODI_INDEX_TAPE)
-using su2double = codi::RealReverseIndex;
-// #elif defined(CODI_PRIMAL_TAPE)
-// using su2double = codi::RealReversePrimal;
-// #elif defined(CODI_PRIMAL_INDEX_TAPE)
-// using su2double = codi::RealReversePrimalIndex;
-#else
+#if defined(CODI_JACOBIAN_LINEAR_TAPE)
 using su2double = codi::RealReverse;
+#elif defined(CODI_JACOBIAN_REUSE_TAPE)
+using su2double = codi::RealReverseIndexGen<double, double, codi::ReuseIndexManager<int> >;
+#elif defined(CODI_JACOBIAN_MULTIUSE_TAPE)
+using su2double = codi::RealReverseIndex;
+#elif defined(CODI_PRIMAL_LINEAR_TAPE)
+using su2double = codi::RealReversePrimal;
+#elif defined(CODI_PRIMAL_REUSE_TAPE)
+using su2double = codi::RealReversePrimalIndexGen<double, double, codi::ReuseIndexManager<int> >;
+#elif defined(CODI_PRIMAL_MULTIUSE_TAPE)
+using su2double = codi::RealReversePrimalIndex;
+#else
+#error "Please define a CoDiPack tape."
 #endif
+#endif
+
+#if defined(HAVE_OMP) || defined(CODI_JACOBIAN_REUSE_TAPE) || defined(CODI_JACOBIAN_MULTIUSE_TAPE) || \
+    defined(CODI_PRIMAL_REUSE_TAPE) || defined(CODI_PRIMAL_MULTIUSE_TAPE)
+#define CODI_INDEX_REUSE
 #endif
 #elif defined(CODI_FORWARD_TYPE)  // forward mode AD
 #include "codi.hpp"
 using su2double = codi::RealForward;
-
 #else  // primal / direct / no AD
 using su2double = double;
 #endif

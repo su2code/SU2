@@ -27,6 +27,8 @@
 
 #include <sstream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 #include "../../include/output/CFlowOutput.hpp"
 
@@ -77,7 +79,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   } else if (rank == MASTER_NODE) {
     cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for at least 2 surfaces (outlet, inlet, ...)\n" << endl;
   }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
@@ -119,7 +121,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
   AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
@@ -127,7 +129,6 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
-  /// END_GROUP
 }
 // clang-format on
 
@@ -149,7 +150,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
-  const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const auto nSpecies       = config->GetnSpecies();
 
   const bool axisymmetric               = config->GetAxisymmetric();
@@ -231,7 +232,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
+            if (config->GetVariable_Density_Model()) {
               Mach = sqrt(flow_nodes->GetVelocity2(iPoint))/
               sqrt(flow_nodes->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(flow_nodes->GetSpecificHeatCv(iPoint)*flow_nodes->GetDensity(iPoint)));
             } else {
@@ -377,7 +378,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   Allreduce(Surface_Area_Local, Surface_Area_Total);
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
   Allreduce_su2activematrix(Surface_Species_Local, Surface_Species_Total);
-
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
@@ -639,7 +639,7 @@ void CFlowOutput::SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, 
   const unsigned short nMarker      = config->GetnMarker_All();
   const unsigned short Kind_Average = config->GetKind_Average();
 
-  const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const auto nSpecies       = config->GetnSpecies();
 
   const bool axisymmetric               = config->GetAxisymmetric();
@@ -753,7 +753,7 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
   for (const auto& items : nameToIndex) {
     knownVariables << items.first + '\n';
   }
-  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\n";
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\nSCALAR[0,1,...]\n";
 
   auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
     /*--- Primitives of the flow solver. ---*/
@@ -766,10 +766,11 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
       /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
       return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
     };
+
     if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+    if (var.rfind("SCALAR", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 6);
     if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
     if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
-
     return CustomOutput::NOT_A_VARIABLE;
   };
 
@@ -957,6 +958,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 // The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
@@ -984,14 +986,33 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case TURB_TRANS_MODEL::NONE: break;
   }
 
-   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET: {
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& CV_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
+      }
+
+      /*--- auxiliary species transport ---*/
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
@@ -1022,10 +1043,28 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET: {
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("MAX_" + cv_name, "max[" + cv_name + "]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the " + cv_name + " equation.", HistoryFieldType::RESIDUAL);
+      }
+
+      /*--- auxiliary species transport ---*/
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -1059,10 +1098,28 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_TRANS_MODEL::NONE: break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET: {
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddHistoryOutput("BGS_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the " + cv_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
+      }
+
+      /*--- auxiliary species transport ---*/
+      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+        AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -1077,14 +1134,24 @@ void CFlowOutput::AddHistoryOutputFieldsScalarLinsol(const CConfig* config) {
     AddHistoryOutput("LINSOL_RESIDUAL_TRANS", "LinSolResTrans", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for transition solver.");
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
+      AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+      break;
+    }
+    case SPECIES_MODEL::FLAMELET: {
+      AddHistoryOutput("LINSOL_ITER_FLAMELET", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for flamelet solver.");
+      AddHistoryOutput("LINSOL_RESIDUAL_FLAMELET", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for flamelet solver.");
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 // clang-format on
 
 void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver) {
+
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
@@ -1130,17 +1197,43 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_TRANS_MODEL::NONE: break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
-      if (multiZone) {
-        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+  switch(config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+        SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+        }
       }
+      SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+      break;
     }
 
-    SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+    case SPECIES_MODEL::FLAMELET: {
+      /*--- Controlling variable transport. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetHistoryOutputValue("RMS_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_RMS(iCV)));
+        SetHistoryOutputValue("MAX_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_Max(iCV)));
+      }
+      /*--- auxiliary species transport ---*/
+      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
+        const auto& species_name = config->GetUserScalarName(iReactant);
+        SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControlVars() + iReactant)));
+        SetHistoryOutputValue("MAX_" + species_name, log10(solver[SPECIES_SOL]->GetRes_Max(config->GetNControlVars() + iReactant)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_BGS(config->GetNControlVars() + iReactant)));
+        }
+      }
+
+      SetHistoryOutputValue("LINSOL_ITER_FLAMELET", solver[SPECIES_SOL]->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+      break;
+    }
+
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -1171,10 +1264,27 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
-    }
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+        AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+      }
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      /*--- Controlling variables. ---*/
+      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddVolumeOutput(cv_name, cv_name, "SOLUTION", cv_name + " solution.");
+      }
+      /*--- auxiliary species ---*/
+      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
+        const auto& species_name = config->GetUserScalarName(iReactant);
+        AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
+      }
+
+      break;
+    case SPECIES_MODEL::NONE:
+      break;
   }
 }
 
@@ -1195,6 +1305,28 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
       break;
   }
 
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+        AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+      }
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      /*--- Residuals for controlling variable transport equations. ---*/
+      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        AddVolumeOutput("RES_"+cv_name, "Residual_"+cv_name, "RESIDUAL", "Residual of " + cv_name + " controlling variable.");
+      }
+      /*--- residuals for auxiliary species transport equations ---*/
+      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
+        const auto& species_name = config->GetUserScalarName(iReactant);
+        AddVolumeOutput("RES_" + species_name, "Residual_" + species_name, "RESIDUAL", "Residual of the " + species_name + " equation");
+      }
+      break;
+    case SPECIES_MODEL::NONE:
+      break;
+  }
+
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
@@ -1204,16 +1336,12 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
     case TURB_TRANS_MODEL::NONE:
       break;
   }
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-    }
-  }
 }
 
-void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
-  /*--- Place "PRIMITIVE", "LIMITER", and other groups here. ---*/
+
+void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
+  /*--- Only place outputs of the "SOLUTION" group for species transport here. ---*/
+
 
   if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
@@ -1231,14 +1359,41 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+  if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
+    switch (config->GetKind_Species_Model()) {
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
+        for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+          AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+      break;
+      case SPECIES_MODEL::FLAMELET:
+        /*--- Limiter for controlling variables transport. ---*/
+        for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+          const auto& cv_name = config->GetControllingVariableName(iCV);
+          AddVolumeOutput("LIMITER_" + cv_name, "Limiter_" + cv_name, "LIMITER", "Limiter of " + cv_name + " controlling variable.");
+        }
+        /*--- limiter for auxiliary species transport ---*/
+        for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
+          const auto& species_name = config->GetUserScalarName(iReactant);
+          AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
+        }
+      break;
+      default:
+        break;
     }
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
-    }
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
+  /*--- Only place outputs of the "PRIMITIVE" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+        AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+      }
+      break;
+    default:
+      break;
   }
 
   switch (config->GetKind_Trans_Model()) {
@@ -1255,6 +1410,51 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
+
+}
+
+void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
+  /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::FLAMELET:
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_source_name = config->GetControllingVariableSourceName(iCV);
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        if (cv_source_name.compare("NULL") != 0)
+          AddVolumeOutput("SOURCE_"+cv_name, "Source_" + cv_name, "SOURCE", "Source " + cv_name);
+      }
+      /*--- no source term for enthalpy ---*/
+      /*--- auxiliary species source terms ---*/
+      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
+        const auto& species_name = config->GetUserScalarName(iReactant);
+        AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+
+void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
+  /*--- Only place outputs of the "LOOKUP" group for scalar transport here. ---*/
+
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::FLAMELET:
+      for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); ++i_lookup) {
+        string strname1 = "lookup_" + config->GetLookupName(i_lookup);
+        AddVolumeOutput(config->GetLookupName(i_lookup), strname1,"LOOKUP", config->GetLookupName(i_lookup));
+      }
+      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
+      break;
+    default:
+      break;
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
+  /*--- Only place outputs of the group for scalar transport here that do not fit in other categories. ---*/
 
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
@@ -1276,6 +1476,15 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
+
+  // Timestep info
+  AddVolumeOutput("DELTA_TIME", "Delta_Time", "TIMESTEP", "Value of the local timestep for the flow variables");
+  AddVolumeOutput("CFL", "CFL", "TIMESTEP", "Value of the local CFL for the flow variables");
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+  {
+    AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
+    AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
+  }
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1286,6 +1495,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
+
+  SetVolumeOutputValue("DELTA_TIME", iPoint, Node_Flow->GetDelta_Time(iPoint));
+  SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
 
   if (config->GetViscous()) {
     if (nDim == 3){
@@ -1326,6 +1538,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+    SetVolumeOutputValue("TURB_DELTA_TIME", iPoint, Node_Turb->GetDelta_Time(iPoint));
+    SetVolumeOutputValue("TURB_CFL", iPoint, Node_Turb->GetLocalCFL(iPoint));
   }
 
   if (config->GetSAParsedOptions().bc) {
@@ -1351,16 +1565,64 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+  switch (config->GetKind_Species_Model()) {
 
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
-      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
-        SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+    case SPECIES_MODEL::SPECIES_TRANSPORT: {
+      const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+        SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+        SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
+        if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+          SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      }
+      break;
     }
+
+    case SPECIES_MODEL::FLAMELET: {
+      const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+
+      /*--- Controlling variables transport equations. ---*/
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetVolumeOutputValue(cv_name, iPoint, Node_Species->GetSolution(iPoint, iCV));
+        SetVolumeOutputValue("RES_" + cv_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iCV));
+        const auto& source_name = config->GetControllingVariableSourceName(iCV);
+        if (source_name.compare("NULL") != 0)
+          SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
+      }
+      /*--- auxiliary species transport equations ---*/
+      for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
+        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+        SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
+        SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint)[config->GetNControlVars() + i_scalar]);
+        SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControlVars() + i_scalar));
+      }
+
+      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
+        /*--- Limiter for controlling variable transport equations. ---*/
+        for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
+          const auto& cv_name = config->GetControllingVariableName(iCV);
+          SetVolumeOutputValue("LIMITER_" + cv_name, iPoint, Node_Species->GetLimiter(iPoint, iCV));
+        }
+        /*--- limiter for auxiliary species transport equations ---*/
+        for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
+          const auto& scalar_name = config->GetUserScalarName(i_scalar);
+          SetVolumeOutputValue("LIMITER_" + scalar_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControlVars() + i_scalar));
+        }
+      }
+
+      /*--- variables that we look up from the LUT ---*/
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
+        if (config->GetLookupName(i_lookup)!="NULL")
+          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
+      }
+
+      SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
+
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 
@@ -2332,13 +2594,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   ofstream file;
   file.open(fileName);
 
-  file << "\n-------------------------------------------------------------------------\n";
+  file << "\n";
+  file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
   file << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
-  // file << "|   Local date and time: " << dt << "                      |\n";
   file << "-------------------------------------------------------------------------\n";
   file << "| SU2 Project Website: https://su2code.github.io                        |\n";
   file << "|                                                                       |\n";
@@ -2512,6 +2774,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
              << "\n";
         file << "Critical Temperature (non-dim) :  "
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
+        break;
+
+     case FLUID_FLAMELET:
+        file << "Fluid Model: FLAMELET \n";
         break;
 
       case COOLPROP: {
@@ -2795,6 +3061,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       case INC_DENSITYMODEL::VARIABLE:
         if (energy) file << "Energy equation is active and coupled for variable density.\n";
         break;
+
+      case INC_DENSITYMODEL::FLAMELET:
+        file << "Density is obtained through flamelet manifold.\n";
+        break;
     }
 
     file << "-- Input conditions:\n";
@@ -2833,6 +3103,12 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         else file << " psf.\n";
         break;
 
+      case FLUID_FLAMELET:
+        file << "Fluid model: FLUID_FLAMELET \n";
+        if (si_units) file << " Pa.\n";
+        else file << " psf.\n";
+        break;
+
       case INC_IDEAL_GAS_POLY:
         file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
@@ -2862,6 +3138,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case VISCOSITYMODEL::CONSTANT:
           file << "Viscosity Model: CONSTANT_VISCOSITY  \n";
           file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
+          if (si_units) file << " N.s/m^2.\n";
+          else file << " lbf.s/ft^2.\n";
+          file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
+          break;
+
+        case VISCOSITYMODEL::FLAMELET:
+          file << "Viscosity Model: FLAMELET  \n";
           if (si_units) file << " N.s/m^2.\n";
           else file << " lbf.s/ft^2.\n";
           file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
@@ -2918,6 +3201,12 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             break;
           case CONDUCTIVITYMODEL::COOLPROP:
             file << "Conductivity Model: COOLPROP \n";
+            break;
+
+          case CONDUCTIVITYMODEL::FLAMELET:
+            file << "Conductivity Model: FLAMELET \n";
+            file << "Molecular Conductivity units: "  << " W/m^2.K.\n";
+            file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:
@@ -3653,7 +3942,7 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
   return force_writing;
 }
 
-void CFlowOutput::SetTimeAveragedFields(){
+void CFlowOutput::SetTimeAveragedFields() {
   AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TIME_AVERAGE", "Mean density");
   AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
   AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");

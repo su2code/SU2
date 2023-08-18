@@ -92,6 +92,7 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Joseph Signorelli
 Josy P. Pullockara
 Kedar Naik
 Kürşat Yurt
@@ -131,6 +132,7 @@ Thomas D. Economon
 Tim Albring
 TobiKattmann
 Trent Lukaczyk
+Vinzenz Götz
 VivaanKhatri
 Wally Maier
 Y. Chandukrishna

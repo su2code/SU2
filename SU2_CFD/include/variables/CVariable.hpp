@@ -795,34 +795,6 @@ public:
   inline const MatrixType& GetSolution_Min() const { return Solution_Min; }
 
   /*!
-   * \brief Get the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the wind gust
-   */
-  inline virtual su2double* GetWindGust(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the wind gust
-   */
-  inline virtual void SetWindGust(unsigned long iPoint, const su2double* val_WindGust) {}
-
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the derivatives of the wind gust
-   */
-  inline virtual su2double* GetWindGustDer(unsigned long iPoint) { return nullptr;}
-
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the derivatives of the wind gust
-   */
-  inline virtual void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGust) {}
-
-  /*!
    * \brief Set the value of the time step.
    * \param[in] iPoint - Point index.
    * \param[in] val_delta_time - Value of the time step.
@@ -2312,4 +2284,59 @@ public:
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+  /*!
+   * \brief Set fluid entropy
+   * \param[in] iPoint - Node index
+   * \param[in] entropy - fluid entropy value.
+   */
+  inline virtual void SetEntropy(unsigned long iPoint, su2double entropy) { };
+
+  /*!
+   * \brief Get fluid entropy
+   * \param[in] iPoint - Node index
+   * \return Entropy - Fluid entropy value
+   */
+  inline virtual su2double GetEntropy(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \param[in] extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) { };
+
+  /*!
+   * \brief Get dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \return extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual unsigned short GetDataExtrapolation(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \param[in] nIter - Number of iterations evaluated by the Newton solver
+   */
+  inline virtual void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) { }
+
+  /*!
+   * \brief Get the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \return Number of iterations evaluated by the Newton solver
+   */
+  inline virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
+   */
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) { }
+
+  inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
+
+  inline virtual void SetTableMisses(unsigned long iPoint, unsigned short misses) { }
+
+  inline virtual unsigned short GetTableMisses(unsigned long iPoint) const { return 0; }
+
+  inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
+  inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
 };

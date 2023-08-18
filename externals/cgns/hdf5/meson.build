@@ -1,6 +1,8 @@
 hdf5_default_warnings = []
 
-if target_machine.system() != 'windows' and meson.get_compiler('c').get_id() != 'intel'
+cc = meson.get_compiler('c')
+
+if target_machine.system() != 'windows' and cc.get_id() != 'intel'
   desired_warnings = ['-Wno-unused-result',
                       '-Wno-unused-parameter',
                       '-Wno-unused-variable',
@@ -16,14 +18,13 @@ if target_machine.system() != 'windows' and meson.get_compiler('c').get_id() != 
                       '-Wno-error=cast-function-type',
                       '-Wno-stringop-truncation']
   foreach flag : desired_warnings
-    if meson.get_compiler('cpp').has_argument(flag)
+    if cc.has_argument(flag)
       hdf5_default_warnings += flag
     endif
   endforeach
 endif
 
-cc = meson.get_compiler('c')
-# Check if can run tests
+# Check if we can run tests
 cc_can_run = not meson.is_cross_build() or meson.has_exe_wrapper()
 
 
@@ -331,33 +332,33 @@ endif
 hdf5_conf_data.set('H5_SIZEOF_FLOAT',            cc.sizeof('float'))
 hdf5_conf_data.set('H5_SIZEOF_DOUBLE',           cc.sizeof('double'))
 hdf5_conf_data.set('H5_SIZEOF_LONG_DOUBLE',      cc.sizeof('long double'))
-                                                 
+
 hdf5_conf_data.set('H5_SIZEOF_INT8_T',           cc.sizeof ('int8_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT8_T',          cc.sizeof ('uint8_t', prefix:'#include <stdint.h>'))
-hdf5_conf_data.set('H5_SIZEOF_INT_LEAST8_T',     cc.sizeof ('int_least8_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST8_T',    cc.sizeof ('uint_least8_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_INT_FAST8_T',      cc.sizeof ('int_fast8_t', prefix:'#include <stdint.h>'))   
+hdf5_conf_data.set('H5_SIZEOF_INT_LEAST8_T',     cc.sizeof ('int_least8_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST8_T',    cc.sizeof ('uint_least8_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_INT_FAST8_T',      cc.sizeof ('int_fast8_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT_FAST8_T',     cc.sizeof ('uint_fast8_t', prefix:'#include <stdint.h>'))
 
-hdf5_conf_data.set('H5_SIZEOF_INT16_T',          cc.sizeof ('int16_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_UINT16_T',         cc.sizeof ('uint16_t', prefix:'#include <stdint.h>')) 
+hdf5_conf_data.set('H5_SIZEOF_INT16_T',          cc.sizeof ('int16_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT16_T',         cc.sizeof ('uint16_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_INT_LEAST16_T',    cc.sizeof ('int_least16_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST16_T',   cc.sizeof ('uint_least16_t', prefix:'#include <stdint.h>'))
-hdf5_conf_data.set('H5_SIZEOF_INT_FAST16_T',     cc.sizeof ('int_fast16_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_UINT_FAST16_T',    cc.sizeof ('uint_fast16_t', prefix:'#include <stdint.h>')) 
+hdf5_conf_data.set('H5_SIZEOF_INT_FAST16_T',     cc.sizeof ('int_fast16_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT_FAST16_T',    cc.sizeof ('uint_fast16_t', prefix:'#include <stdint.h>'))
 
-hdf5_conf_data.set('H5_SIZEOF_INT32_T',          cc.sizeof ('int32_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_UINT32_T',         cc.sizeof ('uint32_t', prefix:'#include <stdint.h>'))      
+hdf5_conf_data.set('H5_SIZEOF_INT32_T',          cc.sizeof ('int32_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT32_T',         cc.sizeof ('uint32_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_INT_LEAST32_T',    cc.sizeof ('int_least32_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST32_T',   cc.sizeof ('uint_least32_t', prefix:'#include <stdint.h>'))
-hdf5_conf_data.set('H5_SIZEOF_INT_FAST32_T',     cc.sizeof ('int_fast32_t', prefix:'#include <stdint.h>'))  
-hdf5_conf_data.set('H5_SIZEOF_UINT_FAST32_T',    cc.sizeof ('uint_fast32_t', prefix:'#include <stdint.h>')) 
-                                                
-hdf5_conf_data.set('H5_SIZEOF_INT64_T',          cc.sizeof ('int64_t', prefix:'#include <stdint.h>'))   
-hdf5_conf_data.set('H5_SIZEOF_UINT64_T',         cc.sizeof ('uint64_t', prefix:'#include <stdint.h>')) 
-hdf5_conf_data.set('H5_SIZEOF_INT_LEAST64_T',    cc.sizeof ('int_least64_t', prefix:'#include <stdint.h>')) 
+hdf5_conf_data.set('H5_SIZEOF_INT_FAST32_T',     cc.sizeof ('int_fast32_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT_FAST32_T',    cc.sizeof ('uint_fast32_t', prefix:'#include <stdint.h>'))
+
+hdf5_conf_data.set('H5_SIZEOF_INT64_T',          cc.sizeof ('int64_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_UINT64_T',         cc.sizeof ('uint64_t', prefix:'#include <stdint.h>'))
+hdf5_conf_data.set('H5_SIZEOF_INT_LEAST64_T',    cc.sizeof ('int_least64_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST64_T',   cc.sizeof ('uint_least64_t', prefix:'#include <stdint.h>'))
-hdf5_conf_data.set('H5_SIZEOF_INT_FAST64_T',     cc.sizeof ('int_fast64_t', prefix:'#include <stdint.h>'))  
+hdf5_conf_data.set('H5_SIZEOF_INT_FAST64_T',     cc.sizeof ('int_fast64_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_UINT_FAST64_T',    cc.sizeof ('uint_fast64_t', prefix:'#include <stdint.h>'))
 if target_machine.system() != 'darwin'
   hdf5_conf_data.set('H5_SIZEOF_SIZE_T', cc.sizeof('size_t'))
@@ -376,7 +377,7 @@ endif
 
 hdf5_conf_data.set('H5_SIZEOF_TIME_T', cc.sizeof('time_t', prefix: '#include <sys/time.h>'))
 
-if hdf5_conf_data.get('H5_HAVE_STDBOOL_H') == 1 
+if hdf5_conf_data.get('H5_HAVE_STDBOOL_H') == 1
   hdf5_conf_data.set('H5_SIZEOF_BOOL', cc.sizeof('bool', prefix: '#include <stdbool.h>'))
 else
   hdf5_conf_data.set('H5_SIZEOF_BOOL', cc.sizeof('_Bool'))
@@ -507,49 +508,49 @@ endif
 #-----------------------------------------------------------------------------
 # Check for some functions that are used
 #
-hdf5_conf_data.set('H5_HAVE_ALARM',           cc.has_function ('alarm') )   
-hdf5_conf_data.set('H5_HAVE_FCNTL',           cc.has_function ('fcntl')          )  
-hdf5_conf_data.set('H5_HAVE_FLOCK',           cc.has_function ('flock')         )   
-hdf5_conf_data.set('H5_HAVE_FORK',            cc.has_function ('fork')            )   
-hdf5_conf_data.set('H5_HAVE_FREXPF',          cc.has_function ('frexpf')        )   
-hdf5_conf_data.set('H5_HAVE_FREXPL',          cc.has_function ('frexpl')        )   
-                                             
+hdf5_conf_data.set('H5_HAVE_ALARM',           cc.has_function ('alarm') )
+hdf5_conf_data.set('H5_HAVE_FCNTL',           cc.has_function ('fcntl')          )
+hdf5_conf_data.set('H5_HAVE_FLOCK',           cc.has_function ('flock')         )
+hdf5_conf_data.set('H5_HAVE_FORK',            cc.has_function ('fork')            )
+hdf5_conf_data.set('H5_HAVE_FREXPF',          cc.has_function ('frexpf')        )
+hdf5_conf_data.set('H5_HAVE_FREXPL',          cc.has_function ('frexpl')        )
+
 hdf5_conf_data.set('H5_HAVE_GETHOSTNAME',     cc.has_function ('gethostname') )
-hdf5_conf_data.set('H5_HAVE_GETRUSAGE',       cc.has_function ('getrusage') )   
-hdf5_conf_data.set('H5_HAVE_LLROUND',         cc.has_function ('llround') )   
-hdf5_conf_data.set('H5_HAVE_LLROUNDF',        cc.has_function ('llroundf') )   
-hdf5_conf_data.set('H5_HAVE_LROUND',          cc.has_function ('lround') )   
+hdf5_conf_data.set('H5_HAVE_GETRUSAGE',       cc.has_function ('getrusage') )
+hdf5_conf_data.set('H5_HAVE_LLROUND',         cc.has_function ('llround') )
+hdf5_conf_data.set('H5_HAVE_LLROUNDF',        cc.has_function ('llroundf') )
+hdf5_conf_data.set('H5_HAVE_LROUND',          cc.has_function ('lround') )
 hdf5_conf_data.set('H5_HAVE_LROUNDF',         cc.has_function ('lroundf'))
-hdf5_conf_data.set('H5_HAVE_LSTAT',           cc.has_function ('lstat'))   
-                                             
-hdf5_conf_data.set('H5_HAVE_PREAD',           cc.has_function ('pread') )   
-hdf5_conf_data.set('H5_HAVE_PWRITE',          cc.has_function ('pwrite'))   
-hdf5_conf_data.set('H5_HAVE_RAND_R',          cc.has_function ('rand_r'))  
+hdf5_conf_data.set('H5_HAVE_LSTAT',           cc.has_function ('lstat'))
+
+hdf5_conf_data.set('H5_HAVE_PREAD',           cc.has_function ('pread') )
+hdf5_conf_data.set('H5_HAVE_PWRITE',          cc.has_function ('pwrite'))
+hdf5_conf_data.set('H5_HAVE_RAND_R',          cc.has_function ('rand_r'))
 hdf5_conf_data.set('H5_HAVE_RANDOM',          cc.has_function ('random'))
-hdf5_conf_data.set('H5_HAVE_ROUND',           cc.has_function ('round') )  
-hdf5_conf_data.set('H5_HAVE_ROUNDF',          cc.has_function ('roundf'))   
+hdf5_conf_data.set('H5_HAVE_ROUND',           cc.has_function ('round') )
+hdf5_conf_data.set('H5_HAVE_ROUNDF',          cc.has_function ('roundf'))
 hdf5_conf_data.set('H5_HAVE_SETSYSINFO',      cc.has_function ('setsysinfo'))
-                                             
+
 hdf5_conf_data.set('H5_HAVE_SIGNAL',          cc.has_function ('signal')         )
-hdf5_conf_data.set('H5_HAVE_LONGJMP',         cc.has_function ('longjmp')        )   
-hdf5_conf_data.set('H5_HAVE_SETJMP',          cc.has_function ('setjmp')         ) 
+hdf5_conf_data.set('H5_HAVE_LONGJMP',         cc.has_function ('longjmp')        )
+hdf5_conf_data.set('H5_HAVE_SETJMP',          cc.has_function ('setjmp')         )
 hdf5_conf_data.set('H5_HAVE_SIGLONGJMP',      cc.has_function ('siglongjmp')     )
-hdf5_conf_data.set('H5_HAVE_SIGSETJMP',       cc.has_function ('sigsetjmp')      ) 
+hdf5_conf_data.set('H5_HAVE_SIGSETJMP',       cc.has_function ('sigsetjmp')      )
 hdf5_conf_data.set('H5_HAVE_SIGPROCMASK',     cc.has_function ('sigprocmask')    )
-                                             
-hdf5_conf_data.set('H5_HAVE_SNPRINTF',        cc.has_function ('snprintf')       )  
-hdf5_conf_data.set('H5_HAVE_SRANDOM',         cc.has_function ('srandom')        ) 
-hdf5_conf_data.set('H5_HAVE_STRDUP',          cc.has_function ('strdup')         ) 
+
+hdf5_conf_data.set('H5_HAVE_SNPRINTF',        cc.has_function ('snprintf')       )
+hdf5_conf_data.set('H5_HAVE_SRANDOM',         cc.has_function ('srandom')        )
+hdf5_conf_data.set('H5_HAVE_STRDUP',          cc.has_function ('strdup')         )
 hdf5_conf_data.set('H5_HAVE_STRTOLL',         cc.has_function ('strtoll')        )
-hdf5_conf_data.set('H5_HAVE_STRTOULL',        cc.has_function ('strtoull')      )   
-hdf5_conf_data.set('H5_HAVE_SYMLINK',         cc.has_function ('symlink')        ) 
-hdf5_conf_data.set('H5_HAVE_SYSTEM',          cc.has_function ('system')         ) 
-                                             
+hdf5_conf_data.set('H5_HAVE_STRTOULL',        cc.has_function ('strtoull')      )
+hdf5_conf_data.set('H5_HAVE_SYMLINK',         cc.has_function ('symlink')        )
+hdf5_conf_data.set('H5_HAVE_SYSTEM',          cc.has_function ('system')         )
+
 hdf5_conf_data.set('H5_HAVE_TMPFILE',         cc.has_function ('tmpfile')        )
-hdf5_conf_data.set('H5_HAVE_ASPRINTF',        cc.has_function ('asprintf')       )   
-hdf5_conf_data.set('H5_HAVE_VASPRINTF',       cc.has_function ('vasprintf')      )   
+hdf5_conf_data.set('H5_HAVE_ASPRINTF',        cc.has_function ('asprintf')       )
+hdf5_conf_data.set('H5_HAVE_VASPRINTF',       cc.has_function ('vasprintf')      )
 hdf5_conf_data.set('H5_HAVE_WAITPID',         cc.has_function ('waitpid')        )
-                                             
+
 hdf5_conf_data.set('H5_HAVE_VSNPRINTF',       cc.has_function ('vsnprintf')      )
 
 if cc.has_header_symbol('setjmp.h', 'sigsetjmp')
@@ -870,7 +871,7 @@ H5G_SOURCES =[
     'H5Gtraverse.c']
 
 H5HF_SOURCES = [
-    'H5HF.c', 
+    'H5HF.c',
     'H5HFbtree2.c',
     'H5HFcache.c',
     'H5HFdbg.c',
@@ -1150,7 +1151,7 @@ H5_GENERATED_HEADERS = [
    'H5overflow.h',
     ]
 
-    
+
 # Generate 'H5detect to generate H5Tinit.c
 if cc_can_run
   H5detect = executable('H5detect', 'H5detect.c',
@@ -1189,6 +1190,6 @@ lib_hdf5_embedded = static_library('su2hdf5',
                           c_args: hdf5_default_warnings + defs,
                           dependencies : ext_deps)
 
-hdf5_dep = declare_dependency(link_with: lib_hdf5_embedded, 
+hdf5_dep = declare_dependency(link_with: lib_hdf5_embedded,
                               dependencies: ext_deps,
                               include_directories: hdf5_include)
