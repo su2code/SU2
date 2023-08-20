@@ -1349,6 +1349,17 @@ def main():
     pywrapper_fsi2d.multizone = True
     test_list.append(pywrapper_fsi2d)
 
+    # Unsteady FSI with custom load
+    pywrapper_unsteadyFSI = TestCase('pywrapper_unsteadyFSI')
+    pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
+    pywrapper_unsteadyFSI.cfg_file = "config.cfg"
+    pywrapper_unsteadyFSI.test_iter = 5
+    pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 53, -1.756732, -2.828262, -7.639751, -6.863861, 1.5617e-04]
+    pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    pywrapper_unsteadyFSI.unsteady  = True
+    pywrapper_unsteadyFSI.multizone = True
+    test_list.append(pywrapper_unsteadyFSI)
+
     # Unsteady CHT
     pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')
     pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
