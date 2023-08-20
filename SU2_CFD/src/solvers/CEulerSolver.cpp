@@ -333,10 +333,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
-  /*--- Sizing edge mass flux array ---*/
-  if (config->GetBounded_Scalar())
-    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
-
   /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
@@ -1790,7 +1786,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
-  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -1955,8 +1950,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);
-
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
@@ -6529,8 +6522,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *V_inlet, *V_domain, *S_inlet, *S_domain;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  //const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
-  //const su2double Gas_Constant = config->GetGas_ConstantND();
   const auto Kind_Inlet = config->GetKind_Inlet();
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);

@@ -129,7 +129,7 @@ public:
 
   /*!
    * \brief Get the specific heat at constant V of the flow.
-   * \return Value of the specific heat at constant v  of the flow.
+   * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(unsigned long iPoint) const override {
     return Primitive(iPoint, indices.CvTotal());
