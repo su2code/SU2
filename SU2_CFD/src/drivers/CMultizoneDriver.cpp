@@ -685,7 +685,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
     cout << "-------------------------------------------------------------------------" << endl;
   }
 
-  if (rank == MASTER_NODE) SetTurboPerformance();
+  if (rank == MASTER_NODE && driver_config->GetBoolTurbomachinery()) SetTurboPerformance();
 
   return (FinalTimeReached || MaxIterationsReached);
 }

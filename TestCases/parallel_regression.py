@@ -1353,8 +1353,8 @@ def main():
     pywrapper_unsteadyFSI = TestCase('pywrapper_unsteadyFSI')
     pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
     pywrapper_unsteadyFSI.cfg_file = "config.cfg"
-    pywrapper_unsteadyFSI.test_iter = 5
-    pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 53, -1.756732, -2.828262, -7.639751, -6.863861, 1.5617e-04]
+    pywrapper_unsteadyFSI.test_iter = 4
+    pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 58, -1.756780, -2.828276, -7.652558, -6.863929, 1.5618e-04]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     pywrapper_unsteadyFSI.unsteady  = True
     pywrapper_unsteadyFSI.multizone = True
