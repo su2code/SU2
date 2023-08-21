@@ -96,6 +96,7 @@ private:
   *TemperatureLimits;             /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
+  bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
   unsigned short nFFD_Iter;       /*!< \brief Iteration for the point inversion problem. */
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
