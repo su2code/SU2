@@ -1650,7 +1650,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   // /* DESCRIPTION: Actuator disk double surface */
-  // addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
+  addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
   distortion[0] =  5.0; distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, distortion);
