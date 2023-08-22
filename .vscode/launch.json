@@ -9,7 +9,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/build/current_branch/serial/gnu/debug/bin/SU2_CFD",
-        "args": ["debug_wmles.cfg"],
+        "args": ["debug_wmles_7.4.cfg"],
         "stopAtEntry": true,
         "cwd": "${workspaceFolder}/TestCases/les_debug/channel",
         "environment": [],
