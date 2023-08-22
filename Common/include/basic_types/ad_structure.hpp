@@ -62,9 +62,8 @@ inline bool TapeActive() { return false; }
 inline void PrintStatistics() {}
 
 /*!
- * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational
- * graph. \param[in] data - The variable to be registered as input. \param[in] push_index - boolean whether we also want
- * to push the index.
+ * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+ * \param[in] data - The variable to be registered as input.
  */
 inline void RegisterInput(su2double& data) {}
 
