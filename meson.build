@@ -95,7 +95,7 @@ if get_option('enable-autodiff') and not omp
   endif
 
   if get_option('codi-tape') != 'JacobianLinear'
-    warning('The tape choice @1@ is not tested regularly in SU2'.format(get_option('codi-tape')))
+    warning('The tape choice @0@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
 
