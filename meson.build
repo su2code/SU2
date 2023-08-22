@@ -77,13 +77,25 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_for_args = ['-DCODI_FORWARD_TYPE']
 endif
 
-if get_option('enable-autodiff')
-  if get_option('codi-tape') == 'JacobianIndex'
-    codi_rev_args += '-DCODI_INDEX_TAPE'
-  #elif get_option('codi-tape') == 'PrimalLinear'
-  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
-  #elif get_option('codi-tape') == 'PrimalIndex'
-  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+if get_option('enable-autodiff') and not omp
+  if get_option('codi-tape') == 'JacobianLinear'
+    codi_rev_args += '-DCODI_JACOBIAN_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'JacobianReuse'
+    codi_rev_args += '-DCODI_JACOBIAN_REUSE_TAPE'
+  elif get_option('codi-tape') == 'JacobianMultiUse'
+    codi_rev_args += '-DCODI_JACOBIAN_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalLinear'
+    codi_rev_args += '-DCODI_PRIMAL_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'PrimalReuse'
+    codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalMultiUse'
+    codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  else
+    message('Invalid CoDiPack tape choice @1@'.format(get_option('codi-tape')))
+  endif
+
+  if get_option('codi-tape') != 'JacobianLinear'
+    warning('The tape choice @1@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
 
@@ -233,11 +245,28 @@ endforeach
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
-  cmake = import('cmake')
-  mpp_subproj = cmake.subproject('Mutationpp')
+  if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
+    cmake = import('cmake')
+    cmake_opts = cmake.subproject_options()
+    cmake_opts.set_override_option('warning_level', '0')
+    cmake_opts.add_cmake_defines({
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+      'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+    })
+    cmake_opts.set_install(get_option('install-mpp'))
+  endif
+  mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+
+  if get_option('install-mpp')
+    py = find_program('python3', 'python')
+    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/Mutationpp/data', join_paths(get_option('prefix'), 'mpp-data'))
+    if p.returncode() != 0
+      error(p.stderr())
+    endif
+  endif
 endif
 
 if get_option('enable-coolprop')
@@ -247,7 +276,7 @@ if get_option('enable-coolprop')
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
@@ -332,12 +361,21 @@ message('''---------------------------------------------------------------------
            get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
-  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+  if get_option('install-mpp')
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+            export MPP_DATA_DIRECTORY=$SU2_RUN/../mpp-data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
 
-          ''')
+            ''')
+  else
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+            ''')
+  endif
 endif
 
 if get_option('enable-librom')
