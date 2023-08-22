@@ -66,7 +66,7 @@ inline void PrintStatistics() {}
  * graph. \param[in] data - The variable to be registered as input. \param[in] push_index - boolean whether we also want
  * to push the index.
  */
-inline void RegisterInput(su2double& data, bool push_index = true) {}
+inline void RegisterInput(su2double& data) {}
 
 /*!
  * \brief Registers the variable as an output. I.e. as the root of the computational graph.
