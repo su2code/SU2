@@ -1769,7 +1769,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config->GetKind_FluidModel() == IDEAL_GAS);
+                         (config->GetKind_FluidModel() == IDEAL_GAS) || (config->GetKind_FluidModel() == FLUID_MIXTURE);
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
@@ -6850,12 +6850,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   su2double Pressure, P_Exit, Velocity[3],
-  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
+  Velocity2, Entropy, Density, Energy, Gas_Constant, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
   Area, UnitNormal[3];
   su2double *V_outlet, *V_domain;
 
   bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  su2double Gas_Constant     = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
@@ -6905,6 +6904,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Velocity2 += Velocity[iDim]*Velocity[iDim];
         Vn += Velocity[iDim]*UnitNormal[iDim];
       }
+      Gamma = V_domain[nDim +8] / V_domain[nDim+9];
+      Gamma_Minus_One = Gamma - 1.0;
+      Gas_Constant = V_domain[nDim + 8] - V_domain[nDim + 9];
       Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
       Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
