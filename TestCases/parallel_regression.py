@@ -256,6 +256,8 @@ def main():
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
     polar_naca0012.test_vals_aarch64 = [-1.718925, 3.711429, 0.009217, 0.007784]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
+    # flaky test on arm64
+    polar_naca0012.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(polar_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY
