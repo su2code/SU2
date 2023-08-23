@@ -89,11 +89,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
-  if (config->GetBoolTurbomachinery()){
-      /*--- Average quantities at the inflow and outflow boundaries ---*/ 
-    solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
-    solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (config->GetBoolTurbomachinery()){
+        /*--- Average quantities at the inflow and outflow boundaries ---*/ 
+      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
+      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
+    }
   }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Weak boundary conditions ---*/
 
