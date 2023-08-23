@@ -42,9 +42,11 @@ class CFluidFlamelet final : public CFluidModel {
 
   enum LOOKUP_TD { TEMPERATURE, HEATCAPACITY, VISCOSITY, CONDUCTIVITY, DIFFUSIONCOEFFICIENT, MOLARWEIGHT, SIZE };
 
+  su2double beta_progvar, beta_enth_thermal, beta_enth, beta_mixfrac;
   int rank;
 
-  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */
+  bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */
+      PreferentialDiffusion = false;     /*!< \brief use preferential diffusion physics. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
@@ -64,6 +66,7 @@ class CFluidFlamelet final : public CFluidModel {
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
   MLPToolbox::CIOMap* iomap_TD;        /*!< \brief Input-output map for thermochemical properties. */
+  MLPToolbox::CIOMap* iomap_PD;        /*!< \brief Input-output map for the preferential diffusion scalars. */
   MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
   MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
   MLPToolbox::CIOMap* iomap_Current;
@@ -72,10 +75,10 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> scalars_vector;
 
   vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
-      varnames_Sources, varnames_LookUp;
+      varnames_Sources, varnames_LookUp, varnames_PD;
 
   vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
-      val_vars_Sources, val_vars_LookUp;
+      val_vars_Sources, val_vars_LookUp, val_vars_PD;
 
   void PreprocessLookUp(CConfig* config);
 
@@ -127,4 +130,10 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() override { return Mu; }
+
+  /*!
+   * \brief Preferential diffusion as relevant phenomenon in flamelet simulations.
+   * \return Inclusion of preferential diffusion model.
+   */
+  inline bool GetPreferentialDiffusion() const override { return PreferentialDiffusion; };
 };
