@@ -245,16 +245,14 @@ endforeach
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
-  if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
-    cmake = import('cmake')
-    cmake_opts = cmake.subproject_options()
-    cmake_opts.set_override_option('warning_level', '0')
-    cmake_opts.add_cmake_defines({
-      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
-      'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-    })
-    cmake_opts.set_install(get_option('install-mpp'))
-  endif
+  cmake = import('cmake')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  cmake_opts.set_install(get_option('install-mpp'))
   mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
