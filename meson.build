@@ -75,6 +75,11 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = ['-DCODI_REVERSE_TYPE']
   codi_for_args = ['-DCODI_FORWARD_TYPE']
+
+  if get_option('debug')
+    codi_rev_args += '-DCODI_EnableAssert'
+    codi_for_args += '-DCODI_EnableAssert'
+  endif
 endif
 
 if get_option('enable-autodiff') and not omp
