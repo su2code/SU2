@@ -112,7 +112,6 @@ CFluidFlamelet::~CFluidFlamelet() {
       delete iomap_LookUp;
       delete lookup_mlp;
       if (PreferentialDiffusion) delete iomap_PD;
-      s
 #endif
           break;
     default:
