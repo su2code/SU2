@@ -5762,6 +5762,12 @@ public:
   bool GetEngine_HalfModel(void) const { return Engine_HalfModel; }
 
   /*!
+   * \brief Actuator disk defined with a double surface.
+   * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
+   */
+  bool GetActDisk_SU2_DEF(void) const { return ActDisk_SU2_DEF; }
+
+  /*!
    * \brief Value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
    * \param[in] val_val - Value of the design variable that we want to read.
