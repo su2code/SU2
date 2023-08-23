@@ -123,38 +123,37 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   /*--- Compute thermodynamic state based on density and energy. ---*/
-  Density = rho;
-  StaticEnergy = e;
 
   /*--- Clip density and energy values to prevent extrapolation. ---*/
-  Density = min(rho_max, max(rho_min, Density));
-  StaticEnergy = min(e_max, max(e_min, StaticEnergy));
+  outside_dataset = ((rho > rho_max) || (rho < rho_min)) || ((e > e_max) || (e < e_min));
+  Density = min(rho_max, max(rho_min, rho));
+  StaticEnergy = min(e_max, max(e_min, e));
 
   Evaluate_Dataset(Density, StaticEnergy);
 
   /*--- Compute speed of sound. ---*/
-  auto blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
+  auto blue_term = (dsdrho_e * (2 - Density * pow(dsde_rho, -1) * d2sdedrho) + Density * d2sdrho2);
   auto green_term = (-pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
 
-  SoundSpeed2 = -rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
+  SoundSpeed2 = -Density * pow(dsde_rho, -1) * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
 
   /*--- Compute primary flow variables. ---*/
   Temperature = 1.0 / dsde_rho;
-  Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
-  Density = rho;
+  Pressure = -pow(Density, 2) * Temperature * dsdrho_e;
+  Density = Density;
   StaticEnergy = e;
-  Enthalpy = e + Pressure / rho;
+  Enthalpy = e + Pressure / Density;
 
   /*--- Compute secondary flow variables ---*/
   dTde_rho = -pow(dsde_rho, -2) * d2sde2;
   dTdrho_e = -pow(dsde_rho, -2) * d2sdedrho;
 
-  dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
-  dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+  dPde_rho = -pow(Density, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
+  dPdrho_e = -2 * Density * Temperature * dsdrho_e - pow(Density, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
 
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
-  dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
-  dhde_rho = 1 + dPde_rho / rho;
+  dhdrho_e = -Pressure * pow(Density, -2) + dPdrho_e / Density;
+  dhde_rho = 1 + dPde_rho / Density;
 
   dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
   dhdP_rho = dhde_rho * (1 / dPde_rho);
@@ -281,7 +280,9 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy. ---*/
     SetTDState_rhoe(rho, e);
-
+    rho = Density;
+    e = StaticEnergy;
+    
     /*--- Determine residuals. ---*/
     delta_Y1 = *Y1 - Y1_target;
     delta_Y2 = *Y2 - Y2_target;

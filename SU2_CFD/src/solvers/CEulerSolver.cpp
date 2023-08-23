@@ -4753,18 +4753,21 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Retrieve the static pressure for this boundary. ---*/
-        Pressure_e = config->GetRiemann_Var1(Marker_Tag);
-        Pressure_e /= config->GetPressure_Ref();
-        Density_e = Density_i;
-
-        /* --- Compute the boundary state u_e --- */
-        GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
         Velocity2_e = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity_e[iDim] = Velocity_i[iDim];
           Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
         }
+
+        GetFluidModel()->SetTDState_rhoe(Density_i, Energy_i - 0.5*Velocity2_e);
+        Entropy_e = GetFluidModel()->GetEntropy();
+        /*--- Retrieve the static pressure for this boundary. ---*/
+        Pressure_e = config->GetRiemann_Var1(Marker_Tag);
+        Pressure_e /= config->GetPressure_Ref();
+
+        GetFluidModel()->SetTDState_Ps(Pressure_e, Entropy_e);
+        Density_e = GetFluidModel()->GetDensity();
+
         Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
         break;
 
