@@ -246,10 +246,25 @@ catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
   cmake = import('cmake')
-  mpp_subproj = cmake.subproject('Mutationpp')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  cmake_opts.set_install(get_option('install-mpp'))
+  mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+
+  if get_option('install-mpp')
+    py = find_program('python3', 'python')
+    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/Mutationpp/data', join_paths(get_option('prefix'), 'mpp-data'))
+    if p.returncode() != 0
+      error(p.stderr())
+    endif
+  endif
 endif
 
 if get_option('enable-coolprop')
@@ -259,7 +274,7 @@ if get_option('enable-coolprop')
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
@@ -344,12 +359,21 @@ message('''---------------------------------------------------------------------
            get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
-  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+  if get_option('install-mpp')
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+            export MPP_DATA_DIRECTORY=$SU2_RUN/../mpp-data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
 
-          ''')
+            ''')
+  else
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+            ''')
+  endif
 endif
 
 if get_option('enable-librom')

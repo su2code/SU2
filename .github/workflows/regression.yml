@@ -26,7 +26,7 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2 --werror'
+            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
@@ -52,23 +52,23 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin
+        run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -95,23 +95,23 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin
+        run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -142,7 +142,7 @@ jobs:
             tag: OMP
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -161,19 +161,19 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             fi
           done
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -188,7 +188,7 @@ jobs:
         testscript: ['hybrid_regression.py', 'hybrid_regression_AD.py']
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -207,19 +207,19 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             fi
           done
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -240,7 +240,7 @@ jobs:
             tag: MPI
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -273,7 +273,7 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -laH install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             else
               echo "$TYPE_FOLDER does not exist!"
@@ -301,11 +301,11 @@ jobs:
           echo $PWD
           ls -lahR
       - name: Run Unit Tests
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:230704-1323
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
