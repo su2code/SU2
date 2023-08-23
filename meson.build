@@ -96,7 +96,7 @@ if get_option('enable-autodiff') and not omp
   elif get_option('codi-tape') == 'PrimalMultiUse'
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
   else
-    message('Invalid CoDiPack tape choice @1@'.format(get_option('codi-tape')))
+    error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
   endif
 
   if get_option('codi-tape') != 'JacobianLinear'
