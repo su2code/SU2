@@ -1511,11 +1511,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_FlowTraction() {}
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void Set_isVertex(unsigned long iPoint, bool isVertex) {}
 
   /*!
