@@ -54,7 +54,7 @@ class CDriverBase {
       UsedTime;        /*!< \brief Elapsed time between Start and Stop point of the timer. */
 
   unsigned long TimeIter;
-  unsigned short selected_iZone = ZONE_0; /*!< \brief Selected zone for the driver. Defaults to ZONE_0 */
+  unsigned short selected_zone = ZONE_0; /*!< \brief Selected zone for the driver. Defaults to ZONE_0 */
   unsigned short iMesh,  /*!< \brief Iterator on mesh levels. */
       iZone,             /*!< \brief Iterator on zones. */
       nZone,             /*!< \brief Total number of zones in the problem. */
@@ -227,7 +227,7 @@ class CDriverBase {
       SU2_MPI::Error("Initial coordinates are only available with DEFORM_MESH= YES", CURRENT_FUNCTION);
     }
     auto* coords =
-        const_cast<su2activematrix*>(solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+        const_cast<su2activematrix*>(solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
     return CPyWrapperMatrixView(*coords, "InitialCoordinates", true);
   }
 
@@ -241,7 +241,7 @@ class CDriverBase {
     if (iMarker >= GetNumberMarkers()) SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
 
     auto* coords =
-        const_cast<su2activematrix*>(solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+        const_cast<su2activematrix*>(solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
     return CPyWrapperMarkerMatrixView(*coords, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
                                       "MarkerInitialCoordinates", true);
   }
@@ -550,15 +550,20 @@ class CDriverBase {
   }
 
   /*!
-   * \brief Selects zone to be used for Driver operation
+   * \brief Selects zone to be used for python driver operations.
    * \param[in] iZone - Zone identifier.
    */
   inline void SelectZone(unsigned short iZone) {
     if (iZone >= nZone) SU2_MPI::Error("Zone index out of range", CURRENT_FUNCTION);
-    selected_iZone = iZone;
-    main_geometry = geometry_container[selected_iZone][INST_0][MESH_0];
-    main_config = config_container[selected_iZone];
+    selected_zone = iZone;
+    main_geometry = geometry_container[selected_zone][INST_0][MESH_0];
+    main_config = config_container[selected_zone];
   }
+
+  /*!
+   * \brief Returns the index of the zone selected for python driver operations.
+   */
+  inline unsigned short SelectedZone() const { return selected_zone; }
 
   /*!
    * \brief Get the wall normal heat flux at a vertex on a specified marker of the flow or heat solver.
@@ -707,7 +712,7 @@ class CDriverBase {
     if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
       SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
     }
-    auto* solver = solver_container[selected_iZone][INST_0][MESH_0][iSolver];
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
     return solver;
   }
