@@ -150,11 +150,6 @@ public:
   }
 
   /*!
-   * \brief Clear the flow traction residual
-   */
-  void Clear_FlowTraction() override;
-
-  /*!
    * \brief Register the flow tractions as input variable.
    */
   void RegisterFlowTraction(bool reset) override;
