@@ -122,7 +122,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultizoneDriver(void) override;
+  ~CMultizoneDriver() override;
 
   /*!
    * \brief [Overload] Launch the computation for multizone problems.
@@ -130,9 +130,25 @@ public:
   void StartSolver() override;
 
   /*!
-   * \brief Preprocess the multizone iteration
+   * \brief Preprocess the multizone iteration.
    */
   void Preprocess(unsigned long TimeIter) override;
+
+  /*!
+   * \brief Solves one time iteration.
+   */
+  void Run() override {
+    switch (driver_config->GetKind_MZSolver()){
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
+    }
+  }
+
+  /*!
+   * \brief Placeholder for post processing operations to make the interface
+   * of this driver identical to CSinglezoneDriver.
+   */
+  void Postprocess() {}
 
   /*!
    * \brief Update the dual-time solution within multiple zones.

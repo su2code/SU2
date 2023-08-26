@@ -65,8 +65,6 @@ void CFEABoundVariable::Set_FlowTraction_n() { FlowTraction_n = FlowTraction; }
 
 void CFEABoundVariable::Set_SurfaceLoad_Res_n() { Residual_Ext_Surf_n = Residual_Ext_Surf; }
 
-void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
-
 void CFEABoundVariable::Clear_SurfaceLoad_Res() { Residual_Ext_Surf.setConstant(0.0); }
 
 void CFEABoundVariable::RegisterFlowTraction(bool reset) {
