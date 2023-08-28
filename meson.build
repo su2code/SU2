@@ -75,6 +75,11 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = ['-DCODI_REVERSE_TYPE']
   codi_for_args = ['-DCODI_FORWARD_TYPE']
+
+  if get_option('debug')
+    codi_rev_args += '-DCODI_EnableAssert'
+    codi_for_args += '-DCODI_EnableAssert'
+  endif
 endif
 
 if get_option('enable-autodiff') and not omp
@@ -91,11 +96,11 @@ if get_option('enable-autodiff') and not omp
   elif get_option('codi-tape') == 'PrimalMultiUse'
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
   else
-    message('Invalid CoDiPack tape choice @1@'.format(get_option('codi-tape')))
+    error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
   endif
 
   if get_option('codi-tape') != 'JacobianLinear'
-    warning('The tape choice @1@ is not tested regularly in SU2'.format(get_option('codi-tape')))
+    warning('The tape choice @0@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
 
