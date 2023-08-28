@@ -6852,7 +6852,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double Pressure, P_Exit, Velocity[3],
   Velocity2, Entropy, Density, Energy, Gas_Constant, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
   Area, UnitNormal[3];
-  su2double *V_outlet, *V_domain;
+  su2double *V_outlet, *V_domain, *S_domain, *S_outlet;
 
   bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
@@ -6885,6 +6885,17 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+      CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+      const su2double* Scalar_Outlet = nullptr;
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        Scalar_Outlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+      }
+      FluidModel->SetTDState_Prho(V_domain[nDim + 1], V_domain[nDim + 2], Scalar_Outlet);
+      nodes->SetSecondaryVar(iVertex, GetFluidModel());
+      S_domain = nodes->GetSecondary(iVertex);
 
       /*--- Build the fictitious inlet state based on characteristics ---*/
 
@@ -6952,11 +6963,15 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         V_outlet[nDim+1] = Pressure;
         V_outlet[nDim+2] = Density;
         V_outlet[nDim+3] = Energy + Pressure/Density;
+        FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Outlet);
+        nodes->SetSecondaryVar(iVertex, GetFluidModel());
+        S_outlet = nodes->GetSecondary(iVertex);
 
       }
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetSecondary(S_domain, S_outlet);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
