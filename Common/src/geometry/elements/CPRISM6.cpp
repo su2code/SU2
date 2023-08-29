@@ -2,7 +2,7 @@
  * \file CPRISM6.cpp
  * \brief Definition of the 6-node triangular prism element with 6 Gauss points.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

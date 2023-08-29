@@ -2,7 +2,7 @@
  * \file CFreeFormDefBox.hpp
  * \brief Headers of the CFreeFormDefBox class.
  * \author F. Palacios & A. Galdran.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CConstantDiffusivity.hpp
  * \brief Defines constant mass diffusivity.
  * \author T. Economon, Cristopher Morales Ubal
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
