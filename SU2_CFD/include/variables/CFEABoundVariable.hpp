@@ -2,7 +2,7 @@
  * \file CFEABoundVariable.hpp
  * \brief Class for defining the variables on the FEA boundaries for FSI applications.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  * A map is constructed so that variables can be referenced by iPoint instead of iVertex.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CFEABoundVariable final : public CFEAVariable {
 protected:
@@ -150,19 +150,14 @@ public:
   }
 
   /*!
-   * \brief Clear the flow traction residual
-   */
-  void Clear_FlowTraction() override;
-
-  /*!
    * \brief Register the flow tractions as input variable.
    */
-  void RegisterFlowTraction() override;
+  void RegisterFlowTraction(bool reset) override;
 
   /*!
    * \brief Extract the flow traction derivatives.
    */
-  inline su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const override {
+  inline su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const override {
     if (!fsi_analysis) return 0.0;
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SU2_TYPE::GetDerivative(FlowTraction(iPoint,iDim));

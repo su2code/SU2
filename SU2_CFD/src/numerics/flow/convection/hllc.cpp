@@ -2,7 +2,7 @@
  * \file hllc.cpp
  * \brief Implementations of HLLC schemes.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, c
   }
 }
 
-CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
+CUpwHLLC_Flow::~CUpwHLLC_Flow() {
 
   delete [] IntermediateState;
   delete [] dSm_dU;
@@ -583,7 +583,7 @@ CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned sho
   }
 }
 
-CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow(void) {
+CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow() {
 
   delete [] IntermediateState;
   delete [] dSm_dU;

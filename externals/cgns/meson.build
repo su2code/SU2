@@ -1,6 +1,6 @@
 cgns_default_warnings = []
 
-if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() != 'intel'
+if build_machine.system() != 'windows' and meson.get_compiler('c').get_id() != 'intel'
   desired_warnings = ['-Wno-unused-result',
                       '-Wno-unused-parameter',
                       '-Wno-unused-variable',
@@ -13,7 +13,7 @@ if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() !=
                       '-Wno-error=absolute-value',
                       '-Wno-error=class-memaccess']
   foreach flag : desired_warnings
-    if meson.get_compiler('cpp').has_argument(flag)
+    if meson.get_compiler('c').has_argument(flag)
       cgns_default_warnings += flag
     endif
   endforeach

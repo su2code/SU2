@@ -2,7 +2,7 @@
  * \file CScalarVariable.hpp
  * \brief Base class for defining the shared variables of scalar solvers.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,4 +87,12 @@ class CScalarVariable : public CVariable {
   inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final {
     return HB_Source(iPoint, iVar);
   }
+
+  /*!
+   * \brief Get the value of the mass diffusivity
+   * \param[in] iPoint - Point index.
+   * \param[in] val_ivar - eqn. index to the mass diffusivity.
+   * \return Value of the mass diffusivity
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 };

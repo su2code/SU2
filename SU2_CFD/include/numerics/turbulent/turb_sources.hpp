@@ -1,7 +1,7 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,8 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
+  const su2double CRot = 1.0;
+  const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -122,7 +124,9 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
-      var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
+      var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
+      /*--- Do not allow negative production for SA-neg. ---*/
+      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
@@ -303,9 +307,19 @@ struct ModVort {
 struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
-    var.Shat = var.S + Sbar;
-    var.Shat = max(var.Shat, 1.0e-10);
-    if (var.Shat <= 1.0e-10) {
+    const su2double c2 = 0.7, c3 = 0.9;
+
+    /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
+     * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    if (Sbar >= - c2 * var.S) {
+      var.Shat = var.S + Sbar;
+    } else {
+      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
+      var.Shat = var.S + Num / Den;
+    }
+    if (var.Shat <= 1e-10) {
+      var.Shat = 1e-10;
       var.d_Shat = 0.0;
     } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
@@ -791,11 +805,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
-
-      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
-        P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      }
       su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -804,8 +813,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
-        pw = alfa_blended * Density_i * max(pow(P_Base, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+        pw = alfa_blended * Density_i * pow(P_Base, 2);
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }

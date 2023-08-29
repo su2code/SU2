@@ -3,7 +3,7 @@
  * \brief Header file for the class CRectangularMeshReaderFVM.
  *        The implementations are in the <i>CRectangularMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,10 +35,8 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CRectangularMeshReaderFVM: public CMeshReaderFVM {
-
-private:
-
+class CRectangularMeshReaderFVM : public CMeshReaderFVM {
+ private:
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
 
@@ -66,13 +64,9 @@ private:
    */
   void ComputeRectangularSurfaceConnectivity();
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the CRectangularMeshReaderFVM class.
    */
-  CRectangularMeshReaderFVM(const CConfig *val_config,
-                            unsigned short val_iZone,
-                            unsigned short val_nZone);
-
+  CRectangularMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 };

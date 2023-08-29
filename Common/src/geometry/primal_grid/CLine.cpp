@@ -2,7 +2,7 @@
  * \file CLine.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,10 +33,8 @@ constexpr unsigned short CLineConnectivity::Faces[1][2];
 constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
 constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
 
-
-CLine::CLine(unsigned long val_point_0, unsigned long val_point_1):
-  CPrimalGridWithConnectivity<CLineConnectivity>(false)
-{
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1)
+    : CPrimalGridWithConnectivity<CLineConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

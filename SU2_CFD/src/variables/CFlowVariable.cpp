@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.cpp
  * \brief Definition of common solution fields for flow solvers.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
 
-  if (config->GetMUSCL_Flow() || config->GetViscous()) {
+  if (config->GetMUSCL_Flow() || config->GetViscous() || config->GetContinuous_Adjoint()) {
     Gradient_Primitive.resize(nPoint, nPrimVarGrad, nDim, 0.0);
   }
 

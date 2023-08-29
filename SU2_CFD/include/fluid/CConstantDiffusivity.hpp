@@ -2,7 +2,7 @@
  * \file CConstantDiffusivity.hpp
  * \brief Defines constant mass diffusivity.
  * \author T. Economon, Cristopher Morales Ubal
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,6 +44,5 @@ class CConstantDiffusivity final : public CDiffusivityModel {
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                      su2double kt) override {}
+  void SetDiffusivity(su2double rho, su2double mu_lam, su2double cp, su2double kt) override {}
 };

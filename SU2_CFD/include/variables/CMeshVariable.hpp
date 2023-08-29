@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,6 +62,11 @@ public:
    * \return Pointer to the reference coordinates.
    */
   inline const su2double *GetMesh_Coord(unsigned long iPoint) const final { return Mesh_Coord[iPoint]; }
+
+  /*!
+   * \brief Get the undeformed coordinates for the entire domain.
+   */
+  inline const MatrixType* GetMesh_Coord() const final { return &Mesh_Coord; }
 
   /*!
    * \brief Set the value of the undeformed coordinates.

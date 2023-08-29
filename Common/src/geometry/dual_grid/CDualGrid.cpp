@@ -2,7 +2,7 @@
  * \file CDualGrid.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,6 @@
 
 unsigned short CDualGrid::nDim = 0;
 
-CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
+CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim; }
 
-CDualGrid::~CDualGrid() {}
+CDualGrid::~CDualGrid() = default;

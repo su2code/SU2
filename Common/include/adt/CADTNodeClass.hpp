@@ -2,7 +2,7 @@
  * \file CADTNodeClass.hpp
  * \brief Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,15 +35,14 @@
  * \author E. van der Weide
  */
 struct CADTNodeClass {
+  bool childrenAreTerminal[2]; /*!< \brief Whether or not the child leaves are terminal. */
+  unsigned long children[2];   /*!< \brief Child leaves. If childrenAreTerminal is true the children
+                                           contain the point ID's or bounding box ID's. Note that it
+                                           is allowed that one child is termimal and the other is not. */
+  unsigned long centralNodeID; /*!< \brief ID of a node, which is near the center of the leaf. */
 
-  bool          childrenAreTerminal[2];  /*!< \brief Whether or not the child leaves are terminal. */
-  unsigned long children[2];             /*!< \brief Child leaves. If childrenAreTerminal is true the children
-                                                     contain the point ID's or bounding box ID's. Note that it
-                                                     is allowed that one child is termimal and the other is not. */
-  unsigned long centralNodeID;           /*!< \brief ID of a node, which is near the center of the leaf. */
-
-  su2double *xMin;  /*!< \brief The minimum coordinates of this leaf. It points to a position in the large
-                                vector, which contains the coordinates of all leaves. */
-  su2double *xMax;  /*!< \brief The maximum coordinates of this leaf. It points to a position in the large
-                                vector, which contains the coordinates of all leaves. */
+  su2double* xMin; /*!< \brief The minimum coordinates of this leaf. It points to a position in the large
+                               vector, which contains the coordinates of all leaves. */
+  su2double* xMax; /*!< \brief The maximum coordinates of this leaf. It points to a position in the large
+                               vector, which contains the coordinates of all leaves. */
 };

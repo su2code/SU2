@@ -2,7 +2,7 @@
  * \file CBaselineOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,7 +67,7 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
 
 }
 
-CBaselineOutput::~CBaselineOutput(void) {}
+CBaselineOutput::~CBaselineOutput() = default;
 
 void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 

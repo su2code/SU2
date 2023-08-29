@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in species problems.
  * \author T. Kattmann
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,8 +71,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
 
-      /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
       const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+
       su2double Diffusivity_Turb = 0.0;
 
       if (turbulence) {

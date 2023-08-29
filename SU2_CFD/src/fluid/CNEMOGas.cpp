@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -157,7 +157,7 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
 
   // Note: Electron energy not included properly.
 
-  if (val_dPdU == NULL) {
+  if (val_dPdU == nullptr) {
     SU2_MPI::Error("Array dPdU not allocated!", CURRENT_FUNCTION);
   }
 

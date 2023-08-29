@@ -2,7 +2,7 @@
  * \file CEdge.cpp
  * \brief Implementation of the edge class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,39 +32,31 @@
 using namespace GeometryToolbox;
 
 CEdge::CEdge(unsigned long nEdge_, unsigned long nDim)
-  : nEdge(nEdge_),
-    nEdgeSIMD(nextMultiple(nEdge_, simd::preferredLen<su2double>())) {
+    : nEdge(nEdge_), nEdgeSIMD(nextMultiple(nEdge_, simd::preferredLen<su2double>())) {
   /*--- Allocate with padding. ---*/
-  Nodes.resize(nEdgeSIMD,2) = 0;
-  Normal.resize(nEdgeSIMD,nDim) = su2double(0.0);
+  Nodes.resize(nEdgeSIMD, 2) = 0;
+  Normal.resize(nEdgeSIMD, nDim) = su2double(0.0);
 }
 
-void CEdge::SetZeroValues(void) {
-  Normal = su2double(0.0);
-}
+void CEdge::SetZeroValues() { Normal = su2double(0.0); }
 
-su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
-                           const su2double *coord_FaceElem_CG,
-                           const su2double *coord_Elem_CG,
-                           const su2double *coord_Point) {
-
+su2double CEdge::GetVolume(const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
+                           const su2double* coord_Elem_CG, const su2double* coord_Point) {
   constexpr unsigned long nDim = 3;
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, vec_c[nDim] = {0.0}, vec_d[nDim] = {0.0};
 
-  Distance(nDim, coord_Edge_CG,     coord_Point, vec_a);
+  Distance(nDim, coord_Edge_CG, coord_Point, vec_a);
   Distance(nDim, coord_FaceElem_CG, coord_Point, vec_b);
-  Distance(nDim, coord_Elem_CG,     coord_Point, vec_c);
+  Distance(nDim, coord_Elem_CG, coord_Point, vec_c);
 
   CrossProduct(vec_a, vec_b, vec_d);
 
   return fabs(DotProduct(nDim, vec_c, vec_d)) / 6.0;
 }
 
-su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
-                           const su2double *coord_Elem_CG,
-                           const su2double *coord_Point) {
-
+su2double CEdge::GetVolume(const su2double* coord_Edge_CG, const su2double* coord_Elem_CG,
+                           const su2double* coord_Point) {
   constexpr unsigned long nDim = 2;
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0};
@@ -72,14 +64,11 @@ su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
   Distance(nDim, coord_Elem_CG, coord_Point, vec_a);
   Distance(nDim, coord_Edge_CG, coord_Point, vec_b);
 
-  return 0.5 * fabs(vec_a[0]*vec_b[1] - vec_a[1]*vec_b[0]);
+  return 0.5 * fabs(vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
 }
 
-void CEdge::SetNodes_Coord(unsigned long iEdge,
-                           const su2double *coord_Edge_CG,
-                           const su2double *coord_FaceElem_CG,
-                           const su2double *coord_Elem_CG) {
-
+void CEdge::SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_FaceElem_CG,
+                           const su2double* coord_Elem_CG) {
   constexpr unsigned long nDim = 3;
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, Dim_Normal[nDim];
@@ -89,14 +78,10 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
 
   CrossProduct(vec_a, vec_b, Dim_Normal);
 
-  for (auto iDim = 0ul; iDim < nDim; ++iDim)
-    Normal(iEdge,iDim) += 0.5 * Dim_Normal[iDim];
+  for (auto iDim = 0ul; iDim < nDim; ++iDim) Normal(iEdge, iDim) += 0.5 * Dim_Normal[iDim];
 }
 
-void CEdge::SetNodes_Coord(unsigned long iEdge,
-                           const su2double *coord_Edge_CG,
-                           const su2double *coord_Elem_CG) {
-
-  Normal(iEdge,0) += coord_Elem_CG[1] - coord_Edge_CG[1];
-  Normal(iEdge,1) -= coord_Elem_CG[0] - coord_Edge_CG[0];
+void CEdge::SetNodes_Coord(unsigned long iEdge, const su2double* coord_Edge_CG, const su2double* coord_Elem_CG) {
+  Normal(iEdge, 0) += coord_Elem_CG[1] - coord_Edge_CG[1];
+  Normal(iEdge, 1) -= coord_Elem_CG[0] - coord_Edge_CG[0];
 }

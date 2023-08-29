@@ -2,7 +2,7 @@
  * \file CConstantSchmidt.hpp
  * \brief Defines a mass diffusivity model with constant Schmidt numbers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,8 +45,7 @@ class CConstantSchmidt final : public CDiffusivityModel {
   /*!
    * \brief Set diffusivity.
    */
-  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                      su2double kt) override {
+  void SetDiffusivity(su2double rho, su2double mu_lam, su2double cp, su2double kt) override {
     diff_ = mu_lam / (rho * sc_lam_);
   }
 

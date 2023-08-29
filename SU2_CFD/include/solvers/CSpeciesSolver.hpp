@@ -2,7 +2,7 @@
  * \file CSpeciesSolver.hpp
  * \brief Headers of the CSpeciesSolver class
  * \author T. Kattmann.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,6 +65,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
+  void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar);
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -76,7 +78,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -100,7 +102,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                CConfig* config, unsigned short val_marker) final;
+                CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

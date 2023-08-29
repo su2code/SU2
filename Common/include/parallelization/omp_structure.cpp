@@ -3,7 +3,7 @@
  * \brief Source file counterpart for omp_structure.hpp.
  * \note Contains OpDiLib initialization, finalization and includes the OpDiLib source file.
  * \author J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,8 +36,7 @@ void omp_initialize() {
 #endif
   opdi::logic = new opdi::OmpLogic;
   opdi::logic->init();
-  su2double::getGlobalTape().initialize();
-  opdi::tool = new CoDiOpDiTool<su2double>;
+  opdi::tool = new CoDiOpDiLibTool<su2double>;
   opdi::tool->init();
 #endif
 }
@@ -45,7 +44,6 @@ void omp_initialize() {
 void omp_finalize() {
 #ifdef HAVE_OPDI
   opdi::tool->finalize();
-  su2double::getGlobalTape().finalize();
   opdi::logic->finalize();
   opdi::backend->finalize();
   delete opdi::tool;

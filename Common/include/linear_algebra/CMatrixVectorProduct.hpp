@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,7 +25,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #pragma once
 
@@ -52,40 +51,37 @@
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CMatrixVectorProduct {
-public:
+ public:
   virtual ~CMatrixVectorProduct() = 0;
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const = 0;
+  virtual void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const = 0;
 };
-template<class ScalarType>
+template <class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
-
 
 /*!
  * \class CSysMatrixVectorProduct
  * \ingroup SpLinSys
  * \brief Specialization of matrix-vector product that uses CSysMatrix class
  */
-template<class ScalarType>
+template <class ScalarType>
 class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
-private:
-  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief config of the problem. */
+ private:
+  const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
+  CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
+  const CConfig* config;                /*!< \brief config of the problem. */
 
-public:
+ public:
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the products
    * \param[in] geometry_ref - geometry associated with the problem
    * \param[in] config_ref - config of the problem
    */
-  inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType> & matrix_ref,
-                                 CGeometry *geometry_ref, const CConfig *config_ref) :
-    matrix(matrix_ref),
-    geometry(geometry_ref),
-    config(config_ref) {}
+  inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
+                                 const CConfig* config_ref)
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -97,7 +93,7 @@ public:
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
    * \param[out] v - CSysVector that is the result of the product
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     matrix.MatrixVectorProduct(u, v, geometry, config);
   }
 };

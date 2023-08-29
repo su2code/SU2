@@ -3,7 +3,7 @@
  * \brief Header of the multigrid queue class for the FVM solver.
  *        The subroutines and functions are in the <i>CMultiGridQueue.cpp</i> file.
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,19 +40,21 @@ using namespace std;
  * \author F. Palacios
  */
 class CMultiGridQueue {
-private:
+ private:
   using QueueType = CFastFindAndEraseQueue<>;
-  vector<QueueType> QueueCV;        /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
-  vector<short> Priority;           /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
-  vector<char> RightCV;             /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
-  const unsigned long nPoint = 0;   /*!< \brief Total number of points. */
+  vector<QueueType>
+      QueueCV;            /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
+  vector<short> Priority; /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
+  vector<char> RightCV;   /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the
+                             way to identify them. */
+  const unsigned long nPoint = 0; /*!< \brief Total number of points. */
 
   /*!
    * \brief Throw error with error message that the point is not in the priority list.
    */
   void ThrowPointNotInListError(unsigned long iPoint) const;
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of control volumes.
@@ -111,8 +113,10 @@ public:
    * \return Index of the new control volume.
    */
   inline long NextCV(void) const {
-    if (!QueueCV.empty()) return QueueCV.back().front();
-    else return -1;
+    if (!QueueCV.empty())
+      return QueueCV.back().front();
+    else
+      return -1;
   }
 
   /*!
@@ -133,6 +137,5 @@ public:
    * \param[in] updatePoint - Index of the new point.
    * \param[in] fineGrid - Fine grid geometry.
    */
-  void Update(unsigned long updatePoint, CGeometry *fineGrid);
-
+  void Update(unsigned long updatePoint, CGeometry* fineGrid);
 };
