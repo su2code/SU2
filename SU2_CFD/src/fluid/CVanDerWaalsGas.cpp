@@ -2,7 +2,7 @@
  * \file CVanDerWaalsGas.cpp
  * \brief Source of the Polytropic Van der Waals model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration of
  *        species transport source-terms.
  * \author T. Kattmann
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
