@@ -2,7 +2,7 @@
  * \file CAdjNSVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

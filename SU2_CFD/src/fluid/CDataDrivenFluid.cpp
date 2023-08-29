@@ -2,7 +2,7 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.C.Bunschoten M.Mayer A.Capiello
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
