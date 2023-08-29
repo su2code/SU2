@@ -2,7 +2,7 @@
  * \file CLookupTable_tests.cpp
  * \brief Unit tests for the lookup table.
  * \author N. Beishuizen
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

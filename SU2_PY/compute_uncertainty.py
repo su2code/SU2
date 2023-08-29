@@ -3,7 +3,7 @@
 ## \file compute_uncertainty.py
 #  \brief Python script for performing model-form UQ for SST turbulence model
 #  \author J. Mukhopadhaya
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
