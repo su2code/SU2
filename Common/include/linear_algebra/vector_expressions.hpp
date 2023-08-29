@@ -2,7 +2,7 @@
  * \file vector_expressions.hpp
  * \brief Expression templates for vector types with coefficient-wise operations.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

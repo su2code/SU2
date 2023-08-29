@@ -3,7 +3,7 @@
 ## \file meson.py
 #  \brief An extended meson script for setting up the environment and running meson
 #  \author T. Albring and F. Poli
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
