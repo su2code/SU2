@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.hpp
  * \brief Headers of the CVolumetricMovement class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

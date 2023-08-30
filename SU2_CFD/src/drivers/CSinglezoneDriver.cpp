@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -91,12 +91,6 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Output the solution in files. ---*/
 
     Output(TimeIter);
-
-    /*--- Save iteration solution for libROM ---*/
-    if (config_container[MESH_0]->GetSave_libROM()) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                     config_container[ZONE_0], StopCalc);
-    }
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -206,7 +200,14 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
                                                                solver_container[ZONE_0][INST_0][MESH_0],
                                                                TimeIter, StopCalc);
 
-  if (wrote_files){
+  /*--- Save iteration solution for libROM ---*/
+  if (config_container[MESH_0]->GetSave_libROM()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                   config_container[ZONE_0], StopCalc);
+    wrote_files = true;
+  }
+
+  if (wrote_files) {
 
     StopTime = SU2_MPI::Wtime();
 
