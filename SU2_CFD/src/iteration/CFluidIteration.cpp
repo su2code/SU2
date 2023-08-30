@@ -220,9 +220,9 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
 
-      output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+      output->SetHistoryOutput(geometry, solver,
                            config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                           config[val_iZone]->GetInnerIter());
+                           config[val_iZone]->GetInnerIter(), val_iInst);
     }
 
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter());

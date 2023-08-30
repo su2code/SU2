@@ -390,11 +390,12 @@ public:
    * \param[in] TimeIter - Value of the time iteration index
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
+   * \param[in] val_iInst - Index of the instance layer
    */
-  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig **config,
+  void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                          CTurbomachineryStagePerformance* TurboStagePerf,
                          std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
-                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
 
   /*!
    *  Collects history data from the individual output per zone,

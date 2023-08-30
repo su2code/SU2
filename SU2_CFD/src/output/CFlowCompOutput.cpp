@@ -639,8 +639,8 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Start of write file turboperformance spanwise ---*/
   if (rank == MASTER_NODE){
-    SpanWiseValuesIn = geometry->GetSpanWiseValue(1);
-    SpanWiseValuesOut = geometry->GetSpanWiseValue(2);
+    SpanWiseValuesIn = geometry->GetSpanWiseValue(INFLOW);
+    SpanWiseValuesOut = geometry->GetSpanWiseValue(OUTFLOW);
 
     /*--- Writing Span wise inflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
@@ -779,11 +779,15 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     file.width(15); file << "\"iSpan\"";
     file.width(30); file << "\"Normal Mach[-]\"";
     file.width(30); file << "\"Tangential Mach[-]\"";
-    file.width(30); file << "\"3rd Component Mach[-]\"";
+    if (geometry->GetnDim() == 3) {
+      file.width(30); file << "\"3rd Component Mach[-]\"";
+    };
     file.width(30); file << "\"Mach Module[-]\"";
     file.width(30); file << "\"Normal Velocity[m/s]\"";
     file.width(30); file << "\"Tangential Velocity[m/s]\"";
-    file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+    if (geometry->GetnDim() == 3) {
+      file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+    };
     file.width(30); file << "\"Velocity Module[m/s]\"";
     file.width(30); file << "\"Absolute Flow Angle[deg]\"";
     file.width(30); file << "\"Relative Flow Angle[deg]\"";
@@ -795,12 +799,14 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
       file.width(30); file << SpanWiseValuesIn[iSpan];
       file.width(15); file << iSpan;
-      for (iDim = 0; iDim < 4; iDim++){
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
         file.width(30); file << BladePerf->GetInletState().GetMach()[iDim];
       }
-      for (iDim = 0; iDim < 4; iDim++){
+      file.width(30); file << BladePerf->GetInletState().GetMachValue();
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
         file.width(30); file << BladePerf->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
       }
+      file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
       // This captures NaNs 
       if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
         file.width(30); file << "0.0000";
@@ -839,11 +845,15 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     file.width(15); file << "\"iSpan\"";
     file.width(30); file << "\"Normal Mach[-]\"";
     file.width(30); file << "\"Tangential Mach[-]\"";
-    file.width(30); file << "\"3rd Component Mach[-]\"";
+    if (geometry->GetnDim() == 3) {
+      file.width(30); file << "\"3rd Component Mach[-]\"";
+    };
     file.width(30); file << "\"Mach Module[-]\"";
     file.width(30); file << "\"Normal Velocity[m/s]\"";
     file.width(30); file << "\"Tangential Velocity[m/s]\"";
-    file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+    if (geometry->GetnDim() == 3) {
+      file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+    };
     file.width(30); file << "\"Velocity Module[m/s]\"";
     file.width(30); file << "\"Absolute Flow Angle[deg]\"";
     file.width(30); file << "\"Relative Flow Angle[deg]\"";
@@ -853,14 +863,16 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
       const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
 
-      file.width(30); file << SpanWiseValuesIn[iSpan];
+      file.width(30); file << SpanWiseValuesOut[iSpan];
       file.width(15); file << iSpan;
-      for (iDim = 0; iDim < 4; iDim++){
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
         file.width(30); file << BladePerf->GetOutletState().GetMach()[iDim];
       }
-      for (iDim = 0; iDim < 4; iDim++){
+      file.width(30); file << BladePerf->GetInletState().GetMachValue();
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
         file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
       }
+      file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
       if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
         file.width(30); file << "0.0000";
       }
