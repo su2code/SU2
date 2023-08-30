@@ -4,7 +4,7 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

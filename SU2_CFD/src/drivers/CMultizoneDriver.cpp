@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -182,10 +182,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Run a block iteration of the multizone problem. ---*/
 
-    switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
-    }
+    Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -646,11 +643,11 @@ void CMultizoneDriver::SetTurboPerformance() {
   }
 }
 
-bool CMultizoneDriver::Monitor(unsigned long TimeIter){
+bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
 
   /*--- Check whether the inner solver has converged --- */
 
-  if (driver_config->GetTime_Domain() == NO){
+  if (driver_config->GetTime_Domain() == NO) {
 
     const auto OuterIter  = driver_config->GetOuterIter();
     const auto nOuterIter = driver_config->GetnOuter_Iter();
@@ -670,29 +667,27 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
   }
   // i.e. unsteady simulation
 
-    /*--- Check whether the outer time integration has reached the final time ---*/
-    const auto TimeConvergence = GetTimeConvergence();
+  /*--- Check whether the outer time integration has reached the final time. ---*/
+  const auto TimeConvergence = GetTimeConvergence();
 
-    const auto nTimeIter = driver_config->GetnTime_Iter();
-    const auto MaxTime   = driver_config->GetMax_Time();
-    const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
+  const auto nTimeIter = driver_config->GetnTime_Iter();
+  const auto MaxTime   = driver_config->GetMax_Time();
+  const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
 
-    const bool FinalTimeReached = (CurTime >= MaxTime);
-    const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
+  const bool FinalTimeReached = (CurTime >= MaxTime);
+  const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
 
-    if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
-      cout << "\n----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)  cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
-      if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
-      cout << "-------------------------------------------------------------------------" << endl;
-    }
+  if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    cout << "\n----------------------------- Solver Exit -------------------------------";
+    if (TimeConvergence)  cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
+    if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+    else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+  }
 
-    return (FinalTimeReached || MaxIterationsReached);
- 
+  if (rank == MASTER_NODE && driver_config->GetBoolTurbomachinery()) SetTurboPerformance();
 
-  if (rank == MASTER_NODE) SetTurboPerformance();
-
+  return (FinalTimeReached || MaxIterationsReached);
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{

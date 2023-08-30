@@ -2,7 +2,7 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

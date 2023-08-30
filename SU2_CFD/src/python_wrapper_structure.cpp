@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,15 +62,15 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_iZone]->GetnTime_Iter(); }
+unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
 passivedouble CDriver::GetUnsteadyTimeStep() const {
-  return SU2_TYPE::GetValue(config_container[selected_iZone]->GetTime_Step());
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetTime_Step());
 }
 
-string CDriver::GetSurfaceFileName() const { return config_container[selected_iZone]->GetSurfCoeff_FileName(); }
+string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }
 
 ////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the management of markers                             */
@@ -78,12 +78,12 @@ string CDriver::GetSurfaceFileName() const { return config_container[selected_iZ
 
 void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                      passivedouble pos_z) {
-  CSolver* solver = solver_container[selected_iZone][INST_0][MESH_0][RAD_SOL];
+  CSolver* solver = solver_container[selected_zone][INST_0][MESH_0][RAD_SOL];
 
-  config_container[selected_iZone]->SetHeatSource_Rot_Z(alpha);
-  config_container[selected_iZone]->SetHeatSource_Center(pos_x, pos_y, pos_z);
+  config_container[selected_zone]->SetHeatSource_Rot_Z(alpha);
+  config_container[selected_zone]->SetHeatSource_Center(pos_x, pos_y, pos_z);
 
-  solver->SetVolumetricHeatSource(geometry_container[selected_iZone][INST_0][MESH_0], config_container[selected_iZone]);
+  solver->SetVolumetricHeatSource(geometry_container[selected_zone][INST_0][MESH_0], config_container[selected_zone]);
 }
 
 void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
@@ -91,20 +91,20 @@ void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
 
   unsigned long iVertex;
 
-  for (iVertex = 0; iVertex < geometry_container[selected_iZone][INST_0][MESH_0]->nVertex[iMarker]; iVertex++) {
-    solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
-    solver_container[selected_iZone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+  for (iVertex = 0; iVertex < geometry_container[selected_zone][INST_0][MESH_0]->nVertex[iMarker]; iVertex++) {
+    solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
+    solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
   }
 }
 
 void CDriver::SetFarFieldAoA(const passivedouble AoA) {
-  config_container[ZONE_0]->SetAoA(AoA);
-  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
+  config_container[selected_zone]->SetAoA(AoA);
+  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
 }
 
 void CDriver::SetFarFieldAoS(const passivedouble AoS) {
-  config_container[ZONE_0]->SetAoS(AoS);
-  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[ZONE_0]);
+  config_container[selected_zone]->SetAoS(AoS);
+  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,22 +116,22 @@ void CSinglezoneDriver::SetInitialMesh() {
 
   SU2_OMP_PARALLEL {
     for (iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
-      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[selected_iZone][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
-      for (auto iPoint = 0ul; iPoint < geometry_container[selected_iZone][INST_0][iMesh]->GetnPoint(); iPoint++) {
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
+      for (auto iPoint = 0ul; iPoint < geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(); iPoint++) {
         /*--- Overwrite fictitious velocities. ---*/
         su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
 
         /*--- Set the grid velocity for this coarse node. ---*/
-        geometry_container[selected_iZone][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
+        geometry_container[selected_zone][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
       }
       END_SU2_OMP_FOR
       /*--- Push back the volume. ---*/
-      geometry_container[selected_iZone][INST_0][iMesh]->nodes->SetVolume_n();
-      geometry_container[selected_iZone][INST_0][iMesh]->nodes->SetVolume_nM1();
+      geometry_container[selected_zone][INST_0][iMesh]->nodes->SetVolume_n();
+      geometry_container[selected_zone][INST_0][iMesh]->nodes->SetVolume_nM1();
     }
     /*--- Push back the solution so that there is no fictitious velocity at the next step. ---*/
-    solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
-    solver_container[selected_iZone][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
+    solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
+    solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
   END_SU2_OMP_PARALLEL
 }
@@ -143,7 +143,7 @@ void CDriver::BoundaryConditionsUpdate() {
 
   if (rank == MASTER_NODE) cout << "Updating boundary conditions." << endl;
   for (auto iZone = 0u; iZone < nZone; iZone++) {
-    geometry_container[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0],config_container[iZone]);
+    geometry_container[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0], config_container[iZone]);
   }
 }
 
@@ -152,18 +152,14 @@ void CDriver::BoundaryConditionsUpdate() {
 ////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot) {
-  for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]->SetTranslation_Rate(0, xDot);
-    config_container[iZone]->SetTranslation_Rate(1, yDot);
-    config_container[iZone]->SetTranslation_Rate(2, zDot);
-  }
+  main_config->SetTranslation_Rate(0, xDot);
+  main_config->SetTranslation_Rate(1, yDot);
+  main_config->SetTranslation_Rate(2, zDot);
 }
 
 void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
-  for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]->SetRotation_Rate(0, rot_x);
-    config_container[iZone]->SetRotation_Rate(1, rot_y);
-    config_container[iZone]->SetRotation_Rate(2, rot_z);
-  }
+  main_config->SetRotation_Rate(0, rot_x);
+  main_config->SetRotation_Rate(1, rot_y);
+  main_config->SetRotation_Rate(2, rot_z);
 }
 
