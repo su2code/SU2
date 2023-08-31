@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,11 +40,7 @@ void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution
                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                           const CConfig *flow_config, const CConfig *struct_config){
 
-  /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-
-  struct_solution->GetNodes()->Clear_FlowTraction();
-
-  Preprocess(flow_config);
+  Preprocess(flow_config, struct_config, struct_geometry, struct_solution);
 
   if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 

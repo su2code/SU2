@@ -2,7 +2,7 @@
  * \file flow_sources.hpp
  * \brief Declarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -200,7 +200,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
@@ -227,7 +227,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];
