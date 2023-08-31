@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in transition problems.
  * \author S. Kang
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
