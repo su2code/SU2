@@ -48,6 +48,7 @@ class CFluidScalar final : public CFluidModel {
 
   const bool wilke;
   const bool davidson;
+  bool ComputeEntropy{true};
 
   static constexpr int ARRAYSIZE = 16;
 

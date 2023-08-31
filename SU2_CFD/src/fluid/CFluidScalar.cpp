@@ -51,7 +51,8 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
-      davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
+      davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON),
+      ComputeEntropy(config->GetCompute_Entropy()) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -257,7 +258,7 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   Kt = WilkeConductivity(val_scalars);
   ComputeMassDiffusivity();
 
-  //if (ComputeEntropy) Entropy = (1.0 / (Cp/Cv - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
+  if (ComputeEntropy) Entropy = (1.0 / (Gamma - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
 }
 
 void CFluidScalar::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
