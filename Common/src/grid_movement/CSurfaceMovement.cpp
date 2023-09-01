@@ -556,7 +556,8 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
 
   else if ((config->GetDesign_Variable(0) == ROTATION) || (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) || (config->GetDesign_Variable(0) == HICKS_HENNE) ||
-           (config->GetDesign_Variable(0) == SURFACE_BUMP) || (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK)) {
+           (config->GetDesign_Variable(0) == SURFACE_BUMP) || (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK) ||
+           (config->GetDesign_Variable(0) == CST)) {
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
 
@@ -580,6 +581,16 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
       switch (config->GetDesign_Variable(iDV)) {
         case HICKS_HENNE:
           SetHicksHenne(geometry, config, iDV, false);
+          break;
+      }
+    }
+
+     /*--- Apply the design variables to the control point position ---*/
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+      switch (config->GetDesign_Variable(iDV)) {
+        case CST:
+          SetCST(geometry, config, iDV, false);
           break;
       }
     }
