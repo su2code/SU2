@@ -367,7 +367,7 @@ CSourceIncEnergy_Flow::CSourceIncEnergy_Flow(unsigned short val_nDim, unsigned s
 }
 
 CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* config) {
-  su2double Velocity_i[3], GradCp_i[3];
+  su2double Velocity_i[3], Diverg; //GradCp_i[3];
   unsigned short iDim, iVar;
 
   // if (Coord_i[1] > EPS) {
@@ -383,25 +383,26 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
   Cp_i = V_i[nDim + 7];
   Enthalpy_i = Cp_i * Temp_i;
 
+  Diverg = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim + 1];
-    GradCp_i[iDim] = PrimVar_Grad_i[nDim + 7][iDim];
+    Diverg += PrimVar_Grad_i[iDim + 1][iDim];
+    //GradVelocity_i[iDim] = PrimVar_Grad_i[iDim + 1][iDim];
   }
-  //std::cout<< GradCp_i[0] <<std::endl; 
+  std::cout<< Diverg <<std::endl; 
 
   /*--- Inviscid component of the source term. ---*/
   if (nDim == 2) {
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
-    residual[3] = - DensityInc_i * Temp_i * (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1])* Volume;
+    residual[3] = DensityInc_i * Temp_i * Cp_i* Diverg * Volume;
   } else {
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
     residual[3] = 0.0;
-    residual[4] = - DensityInc_i * Temp_i *
-                  (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1] + Velocity_i[2] * GradCp_i[2]) * Volume;
+    residual[4] = DensityInc_i * Temp_i * Cp_i * Diverg * Volume;
   }
 
   if (implicit) {
@@ -422,9 +423,9 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
       jacobian[2][3] = 0.0;
 
       jacobian[3][0] = 0.0;
-      jacobian[3][1] = DensityInc_i * Temp_i * GradCp_i[0] * Volume;
-      jacobian[3][2] = DensityInc_i * Temp_i * GradCp_i[1] * Volume;
-      jacobian[3][3] = DensityInc_i * (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1]) * Volume;
+      jacobian[3][1] = 0.0; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[3][2] = 0.0; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[3][3] = DensityInc_i * Cp_i * Diverg * Volume;
 
     } else {
       jacobian[0][0] = 0.0;
@@ -452,10 +453,10 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
       jacobian[3][4] = 0.0;
 
       jacobian[4][0] = 0.0;
-      jacobian[4][1] = DensityInc_i * Temp_i * GradCp_i[0] * Volume;
-      jacobian[4][2] = DensityInc_i * Temp_i * GradCp_i[1] * Volume;
-      jacobian[4][3] = DensityInc_i * Temp_i * GradCp_i[2] * Volume;
-      jacobian[4][3] = DensityInc_i * (Velocity_i[0] * GradCp_i[0] + Velocity_i[1] * GradCp_i[1] + Velocity_i[2] * GradCp_i[2]) * Volume;
+      jacobian[4][1] = 0.0; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[4][2] = 0.0; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[4][3] = 0.0; //DensityInc_i * Temp_i * GradCp_i[2] * Volume;
+      jacobian[4][3] = DensityInc_i * Cp_i* Diverg * Volume;
     }
   }
 
