@@ -82,7 +82,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
+    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
   }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -403,8 +403,8 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
-    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_FOR
 
   /*--- Call the general inlet boundary condition implementation. ---*/
   CSpeciesSolver::BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
@@ -514,13 +514,13 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
+  table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
   vector<su2double> source_scalar(config->GetNScalars());
   for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) source_scalar[iCV] = table_sources[iCV];
-  source_scalar[I_PROGVAR] = fmax(EPS, source_scalar[I_PROGVAR]);
 
   /*--- Source term for the auxiliary species transport equations. ---*/
   for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
@@ -748,19 +748,19 @@ void CSpeciesFlameletSolver::Viscous_Residual(unsigned long iEdge, CGeometry* ge
 unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
                                                       const su2double* scalar_solution, su2double* val_enth) {
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-  su2double delta_temp_final = 0.001;
+  su2double delta_temp_final = 1e-10;
   su2double enth_iter = scalar_solution[I_ENTH];
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
-  const int counter_limit = 1000;
+  const int counter_limit = 5000;
 
   int counter = 0;
 
   su2double val_scalars[MAXNVAR];
   for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
 
-  while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
+  while ((abs(delta_temp_iter / val_temp) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
     val_scalars[I_ENTH] = enth_iter;
     fluid_model->SetTDState_T(val_temp, val_scalars);
@@ -772,7 +772,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     delta_enth = Cp * delta_temp_iter;
 
-    enth_iter += delta_enth;
+    enth_iter += 0.5 * delta_enth;
   }
 
   *val_enth = enth_iter;
