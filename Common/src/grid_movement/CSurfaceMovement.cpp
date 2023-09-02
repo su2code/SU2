@@ -588,10 +588,8 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
     /*--- Apply the design variables to the control point position ---*/
 
     for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-      switch (config->GetDesign_Variable(iDV)) {
-        case CST:
-          SetCST(geometry, config, iDV, false);
-          break;
+      if (config->GetDesign_Variable(iDV) == CST) {
+        SetCST(geometry, config, iDV, false);
       }
     }
 
