@@ -1784,8 +1784,6 @@ def main():
     pass_list.append(naca0012_cst.run_def())
     test_list.append(naca0012_cst)
 
-
-
     # 2D FD streamwise periodic cht, avg temp obj func
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
     fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
