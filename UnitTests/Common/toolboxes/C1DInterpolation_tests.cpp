@@ -2,7 +2,7 @@
  * \file C1DInterpolation_tests.cpp
  * \brief Unit tests for splines and what not.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

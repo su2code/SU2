@@ -2,7 +2,7 @@
  * \file CEdge.hpp
  * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file fem_wall_distance.cpp
  * \brief Main subroutines for computing the wall distance for the FEM solver.
  * \author E. van der Weide
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
