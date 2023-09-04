@@ -1776,7 +1776,7 @@ def main():
     naca0012_cst.cfg_dir   = "deformation/cst"
     naca0012_cst.cfg_file  = "naca0012.cfg"
     naca0012_cst.test_iter = 10
-    naca0012_cst.test_vals = [0.00352488] #residual
+    naca0012_cst.test_vals = [0.000386] #residual
     naca0012_cst.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
     naca0012_cst.timeout   = 1600
     naca0012_cst.tol       = 1e-8
