@@ -1560,6 +1560,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
   }
 
+  // /*--- Sizing edge mass flux array ---*/
+  // if (config->GetBounded_Scalar())
+  // auto massflux = GetEdgeMassFluxes();
+  //massflux.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Non-physical counter. ---*/
   unsigned long counterLocal = 0;
   SU2_OMP_MASTER
@@ -1594,6 +1599,7 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
         for (auto j = 0ul; j < Double::Size; ++j)
           counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
       }
+      //if (config->GetBounded_Scalar()) massflux[iEdge[j]] = LinSysRes[0]; 
     }
     END_SU2_OMP_FOR
   }

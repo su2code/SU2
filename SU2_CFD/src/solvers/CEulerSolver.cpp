@@ -333,6 +333,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array ---*/
+  if (config->GetBounded_Scalar())
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
   /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
@@ -1769,12 +1773,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config->GetKind_FluidModel() == IDEAL_GAS) || (config->GetKind_FluidModel() == FLUID_MIXTURE);
+                         (config->GetKind_FluidModel() == IDEAL_GAS);// || (config->GetKind_FluidModel() == FLUID_MIXTURE);
   const bool low_mach_corr = config->Low_Mach_Correction();
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- Use vectorization if the scheme supports it. ---*/
   if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
+    //auto residual = numerics->ComputeResidual(config);
+    //auto residual = solver_container[FLOW_SOL]->GetResLinSolver();
+    //if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
     return;
   }
 
@@ -1950,6 +1958,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);
+    
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
@@ -6927,7 +6937,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Supersonic exit flow: there are no incoming characteristics,
            so no boundary condition is necessary. Set outlet state to current
            state so that upwinding handles the direction of propagation. ---*/
+        //cout<<"over mach 1.0"<<endl;
         for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
+        S_outlet = S_domain;
 
       } else {
 

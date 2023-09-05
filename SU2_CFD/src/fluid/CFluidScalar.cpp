@@ -258,7 +258,7 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   Kt = WilkeConductivity(val_scalars);
   ComputeMassDiffusivity();
 
-  if (ComputeEntropy) Entropy = (1.0 / (Gamma - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
+  //if (ComputeEntropy) Entropy = (1.0 / (Gamma - 1.0) * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
 }
 
 void CFluidScalar::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {

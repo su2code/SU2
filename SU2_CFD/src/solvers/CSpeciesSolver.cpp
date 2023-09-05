@@ -394,7 +394,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_inlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double density = config->GetKind_Regime()==ENUM_REGIME::INCOMPRESSIBLE ? solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint): V_inlet[prim_idx.Density()];
         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
@@ -552,7 +552,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       if (conv_numerics->GetBoundedScalar()) {
         const su2double* velocity = &V_outlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double density = config->GetKind_Regime()==ENUM_REGIME::INCOMPRESSIBLE ? solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint): V_outlet[prim_idx.Density()];
         conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
       }
 
