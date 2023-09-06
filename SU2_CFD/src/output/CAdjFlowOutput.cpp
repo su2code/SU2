@@ -2,7 +2,7 @@
  * \file CAdjFlowOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author T. Kattmann
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,10 +62,10 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    AddHistoryOutput("RMS_ADJ_PROGRESS_VARIABLE", "rms[PV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
-    AddHistoryOutput("RMS_ADJ_TOTAL_ENTHALPY", "rms[Enth]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
-    
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("RMS_ADJ_"+cv_name, "rms[" + cv_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
@@ -98,10 +98,10 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    AddHistoryOutput("MAX_ADJ_PROGRESS_VARIABLE", "max[PV]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
-    AddHistoryOutput("MAX_ADJ_TOTAL_ENTHALPY", "max[Enth]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
-    
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("MAX_ADJ_" + cv_name, "max["+cv_name +"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddHistoryOutput("MAX_ADJ_" + scalar_name, "max[scalar_" + scalar_name + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
@@ -136,9 +136,10 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    AddHistoryOutput("BGS_ADJ_PROGRESS_VARIABLE", "bgs[PV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint progress variable.", HistoryFieldType::RESIDUAL);
-    AddHistoryOutput("BGS_ADJ_TOTAL_ENTHALPY", "bgs[Enth]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint total enthalpy.", HistoryFieldType::RESIDUAL);
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("BGS_ADJ_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -212,14 +213,12 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-      SetHistoryOutputValue("RMS_ADJ_PROGRESS_VARIABLE", log10(adjspecies_solver->GetRes_RMS(I_PROGVAR)));
-      SetHistoryOutputValue("MAX_ADJ_PROGRESS_VARIABLE", log10(adjspecies_solver->GetRes_Max(I_PROGVAR)));
-      SetHistoryOutputValue("RMS_ADJ_TOTAL_ENTHALPY", log10(adjspecies_solver->GetRes_RMS(I_ENTH)));
-      SetHistoryOutputValue("MAX_ADJ_TOTAL_ENTHALPY", log10(adjspecies_solver->GetRes_Max(I_ENTH)));
-      if (multiZone) {
-        SetHistoryOutputValue("BGS_ADJ_PROGRESS_VARIABLE", log10(adjspecies_solver->GetRes_BGS(I_PROGVAR)));
-        SetHistoryOutputValue("BGS_ADJ_TOTAL_ENTHALPY", log10(adjspecies_solver->GetRes_BGS(I_ENTH)));
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetHistoryOutputValue("RMS_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_RMS(iCV)));
+        SetHistoryOutputValue("MAX_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_Max(iCV)));
+        if (multiZone)
+          SetHistoryOutputValue("BGS_ADJ_" + cv_name, log10(adjspecies_solver->GetRes_BGS(iCV)));
       }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
@@ -264,9 +263,10 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    AddVolumeOutput("ADJ_PROGRESS_VARIABLE", "Adjoint_Progress_Variable", "SOLUTION", "Adjoint of the progress variable.");
-    AddVolumeOutput("ADJ_TOTAL_ENTHALPY", "Adjoint_Total_Enthalpy", "SOLUTION", "Adjoint of the total enthalphy.");
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddVolumeOutput("ADJ_" + cv_name, "Adjoint_" + cv_name, "SOLUTION", "Adjoint of the " + cv_name + " controlling variable.");
+    }
 
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
@@ -304,10 +304,10 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    AddVolumeOutput("RES_ADJ_PROGRESS_VARIABLE", "Residual_Adjoint_Progress_Variable", "RESIDUAL", "Residual of the adjoint of the progress variable");
-    AddVolumeOutput("RES_ADJ_TOTAL_ENTHALPY", "Residual_Adjoint_Total_Enthalpy", "RESIDUAL", "Residual of the adjoint of the total enthalpy");
-
+    for(auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of " + cv_name);
+    }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
       AddVolumeOutput("RES_ADJ_" + scalar_name, "Residual_Adjoint_" + scalar_name, "RESIDUAL", "Residual of the adjoint of " + scalar_name);
@@ -352,15 +352,15 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
 
-      SetVolumeOutputValue("ADJ_PROGRESS_VARIABLE", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_PROGVAR));
-      SetVolumeOutputValue("RES_ADJ_PROGRESS_VARIABLE", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_PROGVAR) - Node_AdjSpecies->GetSolution_Old(iPoint, I_PROGVAR));
-      SetVolumeOutputValue("ADJ_TOTAL_ENTHALPY", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_ENTH));
-      SetVolumeOutputValue("RES_ADJ_TOTAL_ENTHALPY", iPoint, Node_AdjSpecies->GetSolution(iPoint, I_ENTH) - Node_AdjSpecies->GetSolution_Old(iPoint, I_ENTH));
-
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      SetVolumeOutputValue("ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV));
+      SetVolumeOutputValue("RES_ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV) - Node_AdjSpecies->GetSolution_Old(iPoint, iCV));
+    }
     for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
       const auto& scalar_name = config->GetUserScalarName(i_scalar);
-      SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, 2 + i_scalar));
-      SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, 2 + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, 2 + i_scalar));
+      SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
+      SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, config->GetNControlVars() + i_scalar));
     }
   }
 

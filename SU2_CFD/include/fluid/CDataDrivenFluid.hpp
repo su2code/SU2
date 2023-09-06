@@ -3,7 +3,7 @@
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.C.Bunschoten
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -210,7 +210,7 @@ class CDataDrivenFluid final : public CFluidModel {
    * \brief Get fluid model extrapolation instance.
    * \return Query point lies outside fluid model data range.
    */
-  unsigned long GetExtrapolation() override { return outside_dataset; }
+  unsigned long GetExtrapolation() const override { return outside_dataset; }
 
   /*!
    * \brief Get number of Newton solver iterations.

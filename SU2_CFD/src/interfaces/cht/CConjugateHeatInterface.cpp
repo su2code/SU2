@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,7 +70,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   su2double conductivity_over_dist = 0.0;
 
   const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && 
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
                                    (donor_config->GetEnergy_Equation() || (donor_config->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET));
 
   if (compressible_flow) {

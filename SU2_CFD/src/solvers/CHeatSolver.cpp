@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -377,7 +377,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     if (IsPyCustom) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / config->GetTemperature_Ref();
     }
     IsothermalBoundaryCondition(geometry, solver_container[FLOW_SOL], config, val_marker, iVertex, Twall);
   }
@@ -400,7 +400,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_contain
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     if (IsPyCustom) {
-      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
     }
     /*--- Viscous contribution to the residual at the wall. ---*/
     const auto* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();

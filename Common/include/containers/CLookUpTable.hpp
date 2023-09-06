@@ -2,7 +2,7 @@
  * \file CLookupTable.hpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -75,6 +75,8 @@ class CLookUpTable {
    * while second index addresses the point.
    */
   su2vector<su2activematrix> table_data;
+
+  double memory_footprint_data = 0; /*!< \brief Memory footprint of the loaded table data. */
 
   /*! \brief
    * Holds all connectivity data stored in the table for each level. First index
@@ -216,7 +218,7 @@ class CLookUpTable {
    */
   void Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level, const unsigned long upper_level,
                             std::vector<su2double>& lower_values, std::vector<su2double>& upper_values,
-                            std::vector<su2double*>& var_vals) const;
+                            std::vector<su2double>& var_vals) const;
 
   /*!
    * \brief Find the point on the hull (boundary of the table) that is closest to the point P(val_CV1,val_CV2).
@@ -345,7 +347,7 @@ class CLookUpTable {
    * \param[in] val_CV3 - Value of controlling variable 3.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
+  unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
                            su2double val_CV1, su2double val_CV2, su2double val_CV3 = 0);
 
   /*!

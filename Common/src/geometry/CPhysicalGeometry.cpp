@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -10607,31 +10607,44 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
   return WallADT;
 }
 
+/*--- Use a thread-sanitizer dependent loop schedule to work around suspected false positives ---*/
+#ifndef __SANITIZE_THREAD__
+#define CPHYSGEO_PARFOR SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
+#else
+#define CPHYSGEO_PARFOR SU2_OMP_FOR_()
+#endif
+
+#define END_CPHYSGEO_PARFOR END_SU2_OMP_FOR
+
 void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) {
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
 
-    SU2_OMP_FOR_DYN(roundUpDiv(nPoint, 2 * omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
-      unsigned short markerID;
-      unsigned long elemID;
-      int rankID;
-      su2double dist;
+    SU2_OMP_PARALLEL {
+      CPHYSGEO_PARFOR
+      for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
+        unsigned short markerID;
+        unsigned long elemID;
+        int rankID;
+        su2double dist;
 
-      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+        WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
-      if (dist < nodes->GetWall_Distance(iPoint)) {
-        nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
+        if (dist < nodes->GetWall_Distance(iPoint)) {
+          nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
+        }
       }
+      END_CPHYSGEO_PARFOR
     }
-    END_SU2_OMP_FOR
+    END_SU2_OMP_PARALLEL
   }
-  END_SU2_OMP_PARALLEL
 }
+
+#undef CPHYSGEO_PARFOR
+#undef END_CPHYSGEO_PARFOR

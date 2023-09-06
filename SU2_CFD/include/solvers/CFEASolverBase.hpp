@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Base class template for all FEA solvers using the SU2 internal finite elements.
  * \author T. Dick
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

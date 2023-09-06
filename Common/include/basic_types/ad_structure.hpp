@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,11 +62,10 @@ inline bool TapeActive() { return false; }
 inline void PrintStatistics() {}
 
 /*!
- * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational
- * graph. \param[in] data - The variable to be registered as input. \param[in] push_index - boolean whether we also want
- * to push the index.
+ * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+ * \param[in] data - The variable to be registered as input.
  */
-inline void RegisterInput(su2double& data, bool push_index = true) {}
+inline void RegisterInput(su2double& data) {}
 
 /*!
  * \brief Registers the variable as an output. I.e. as the root of the computational graph.
@@ -384,16 +383,14 @@ FORCEINLINE void SetDerivative(int index, const double val) {
   if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
     return;
 
-  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
-  AD::getTape().setGradient(index, val, BoundsChecking::False);
+  AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
 }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // If called after tape evaluations, the adjoints should exist.
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 FORCEINLINE double GetDerivative(int index) {
-  using BoundsChecking = codi::GradientAccessTapeInterface<su2double::Gradient, su2double::Identifier>::BoundsChecking;
-  return AD::getTape().getGradient(index, BoundsChecking::False);
+  return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }
 
 FORCEINLINE bool IsIdentifierActive(su2double const& value) {

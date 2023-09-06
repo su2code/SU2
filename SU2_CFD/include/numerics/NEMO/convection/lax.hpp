@@ -2,7 +2,7 @@
  * \file lax.hpp
  * \brief Declaration of numerics classes for Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

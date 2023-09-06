@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -350,7 +350,7 @@ def main():
     discadj_flamelet_ch4_hx.command          = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     discadj_flamelet_ch4_hx.cfg_dir          = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
-    discadj_flamelet_ch4_hx.multizone        = True
+    discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
     discadj_flamelet_ch4_hx.timeout          = 20000
     discadj_flamelet_ch4_hx.reference_file   = "restart_adj_custom.csv.ref"

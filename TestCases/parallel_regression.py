@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -59,6 +59,15 @@ def main():
     cfd_flamelet_ch4_axi.test_vals = [-11.054149, -12.276393, -11.299388, -13.877670, -6.291548]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
+
+    # 2D planar laminar partially premixed flame on isothermal burner and heat exchanger (restart)
+    cfd_flamelet_ch4_partial_premix = TestCase('cfd_flamelet_ch4_partial_premix')
+    cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
+    cfd_flamelet_ch4_partial_premix.test_iter = 10
+    cfd_flamelet_ch4_partial_premix.test_vals = [-10.072805, -11.301138, -4.658971, -13.158224, -11.087511]
+    cfd_flamelet_ch4_partial_premix.new_output = True
+    test_list.append(cfd_flamelet_ch4_partial_premix)
 
     #########################
     ## NEMO solver ###
@@ -247,6 +256,8 @@ def main():
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
     polar_naca0012.test_vals_aarch64 = [-1.718925, 3.711429, 0.009217, 0.007784]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
+    # flaky test on arm64
+    polar_naca0012.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(polar_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY
@@ -1339,6 +1350,17 @@ def main():
     pywrapper_fsi2d.unsteady  = True
     pywrapper_fsi2d.multizone = True
     test_list.append(pywrapper_fsi2d)
+
+    # Unsteady FSI with custom load
+    pywrapper_unsteadyFSI = TestCase('pywrapper_unsteadyFSI')
+    pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
+    pywrapper_unsteadyFSI.cfg_file = "config.cfg"
+    pywrapper_unsteadyFSI.test_iter = 4
+    pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 58, -1.756780, -2.828276, -7.652558, -6.863929, 1.5618e-04]
+    pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    pywrapper_unsteadyFSI.unsteady  = True
+    pywrapper_unsteadyFSI.multizone = True
+    test_list.append(pywrapper_unsteadyFSI)
 
     # Unsteady CHT
     pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')

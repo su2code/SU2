@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -219,7 +219,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
-          HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
+          HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();
         } // loop Vertices
       } // loop Heatflux marker
     } // loop AllMarker
@@ -336,12 +336,12 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
   su2double Cp, thermal_conductivity, dot_product, scalar_factor;
-
 
   /*--- Identify the boundary by string name ---*/
 
@@ -426,6 +426,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- Apply a weak boundary condition for the energy equation.
       Compute the residual due to the prescribed heat flux. ---*/
 
+      if (py_custom) {
+        Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
+      }
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
 
       /*--- With streamwise periodic flow and heatflux walls an additional term is introduced in the boundary formulation ---*/
@@ -460,7 +463,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       break;
 
     case ISOTHERMAL:
-
+      if (py_custom) {
+        Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / config->GetTemperature_Ref();
+      }
       const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/

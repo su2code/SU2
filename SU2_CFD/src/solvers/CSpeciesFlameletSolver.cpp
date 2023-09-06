@@ -1,8 +1,8 @@
 /*!
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
- * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 7.5.1 "Blackbird"
+ * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     : CSpeciesSolver(geometry, config, true) {
   /*--- Dimension of the problem. ---*/
   nVar = config->GetNScalars();
+  include_mixture_fraction = (config->GetNControlVars() == 3);
 
   Initialize(geometry, config, iMesh, nVar);
 
@@ -65,82 +66,27 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
-  const auto n_user_scalars = config->GetNUserScalars();
-  const auto n_control_vars = config->GetNControlVars();
-
-  vector<string> table_scalar_names(config->GetNScalars());
-  table_scalar_names[I_ENTH] = "EnthalpyTot";
-  table_scalar_names[I_PROGVAR] = "ProgressVariable";
-
-  /*--- auxiliary species transport equations---*/
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
-  }
-
-  /*--- we currently only need 1 source term from the LUT for the progress variable
-        and each auxiliary equations needs 2 source terms ---*/
-  unsigned short n_table_sources = 1 + 2 * n_user_scalars;
-
-  vector<string> table_source_names(n_table_sources);
-  table_source_names[I_SRC_TOT_PROGVAR] = "ProdRateTot_PV";
-  /*--- No source term for enthalpy ---*/
-
-  /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
-        S_tot = S_PROD + S_CONS * Y ---*/
-
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    table_source_names[1 + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
-    table_source_names[1 + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
-  }
+  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
+  vector<su2double> scalars_vector(nVar);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
-  vector<string> table_lookup_names(config->GetNLookups());
-  for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
-    table_lookup_names[i_lookup] = config->GetLUTLookupName(i_lookup);
-  }
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
+    for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
     /*--- Compute total source terms from the production and consumption. ---*/
-
-    vector<su2double> table_sources(n_table_sources);
-    unsigned long misses = fluid_model_local->GetLookUpTable()->LookUp_XY(table_source_names, table_sources,
-                                                                          scalars[I_PROGVAR], scalars[I_ENTH]);
+    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
     nodes->SetTableMisses(i_point, misses);
+    n_not_in_domain_local += misses;
+    /*--- Obtain passive look-up scalars. ---*/
+    SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
 
-    /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
-
-    vector<su2double> source_scalar(config->GetNScalars());
-    source_scalar[I_PROGVAR] = fmax(EPS, table_sources[I_SRC_TOT_PROGVAR]);
-    source_scalar[I_ENTH] = 0.0;
-
-    /*--- Source term for the auxiliary species transport equations. ---*/
-    for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
-      /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
-            S_TOT = S_PROD + S_CONS * Y ---*/
-      su2double y_aux = scalars[n_control_vars + i_aux];
-      su2double source_prod = table_sources[1 + 2 * i_aux];
-      su2double source_cons = table_sources[1 + 2 * i_aux + 1];
-      source_scalar[n_control_vars + i_aux] = source_prod + source_cons * y_aux;
-    }
-    for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-      nodes->SetScalarSource(i_point, i_scalar, source_scalar[i_scalar]);
-
-    vector<su2double> lookup_scalar(config->GetNLookups());
-    misses = fluid_model_local->GetLookUpTable()->LookUp_XY(table_lookup_names, lookup_scalar, scalars[I_PROGVAR],
-                                                            scalars[I_ENTH]);
-
-    for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
-      nodes->SetLookupScalar(i_point, lookup_scalar[i_lookup], i_lookup);
-    }
-
+    /*--- Set mass diffusivity based on thermodynamic state. ---*/
     su2double T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
@@ -151,7 +97,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
   END_SU2_OMP_FOR
-
+  /* --- Sum up some global counters over processes. --- */
+  SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
+                  SU2_MPI::GetComm());
+  if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
+    cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
 }
@@ -165,7 +115,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
-    vector<su2double> scalar_init(nVar, 0.0);
     const su2double* flame_init = config->GetFlameInit();
     const su2double flame_offset[3] = {flame_init[0], flame_init[1], flame_init[2]};
     const su2double flame_normal[3] = {flame_init[3], flame_init[4], flame_init[5]};
@@ -174,41 +123,38 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     const su2double flamenorm = GeometryToolbox::Norm(nDim, flame_normal);
     const su2double temp_inlet = config->GetInc_Temperature_Init();
-    su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR];
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
 
-    su2double prog_burnt;
-    su2double prog_unburnt = 0.0;
+    su2double prog_burnt = 0, prog_unburnt, point_loc;
+    su2double scalar_init[MAXNVAR];
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
-      cout << "initial condition: c = " << prog_inlet << endl;
-      cout << "initial condition: h = " << enth_inlet << endl;
+      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        cout << "initial condition: " << cv_name << " = " << config->GetSpecies_Init()[iCV] << endl;
+      }
     }
-
-    su2double point_loc;
 
     CFluidModel* fluid_model_local;
 
-    vector<string> look_up_tags;
-    vector<su2double*> look_up_data;
-
-    unsigned long n_not_iterated_local = 0;
-    unsigned long n_not_in_domain_local = 0;
-    unsigned long n_points_unburnt_local = 0;
-    unsigned long n_points_burnt_local = 0;
-    unsigned long n_points_flame_local = 0;
-    unsigned long n_not_iterated_global;
-    unsigned long n_not_in_domain_global;
-    unsigned long n_points_burnt_global;
-    unsigned long n_points_flame_global;
-    unsigned long n_points_unburnt_global;
+    unsigned long n_not_iterated_local = 0, n_not_in_domain_local = 0, n_points_unburnt_local = 0,
+                  n_points_burnt_local = 0, n_points_flame_local = 0, n_not_iterated_global, n_not_in_domain_global,
+                  n_points_burnt_global, n_points_flame_global, n_points_unburnt_global;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
-      prog_burnt = *fluid_model_local->GetLookUpTable()->GetTableLimitsX().second;
-      for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
+
+      /*--- Set enthalpy based on initial temperature and scalars. ---*/
+      n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
+      scalar_init[I_ENTH] = enth_inlet;
+
+      prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
+      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         /*--- Determine if point is above or below the plane, assuming the normal
@@ -242,18 +188,16 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           n_points_unburnt_local++;
         }
 
-        n_not_iterated_local += fluid_model_local->GetEnthFromTemp(enth_inlet, prog_inlet, temp_inlet, enth_inlet);
-        scalar_init[I_ENTH] = enth_inlet;
-
-        n_not_in_domain_local += fluid_model_local->GetLookUpTable()->LookUp_XY(
-            look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH]);
+        /* --- Perform manifold evaluation to check whether initial scalar is out-of-bounds. --- */
+        fluid_model_local->SetTDState_T(temp_inlet, scalar_init);
+        n_not_in_domain_local += fluid_model_local->GetExtrapolation();
 
         /* --- Initialize the auxiliary transported scalars  (not controlling variables). --- */
         for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
 
-        solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init.data());
+        solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
       }
 
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, SOLUTION);
@@ -264,6 +208,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      END_SU2_OMP_FOR
     }
 
     /* --- Sum up some global counters over processes. --- */
@@ -289,14 +234,14 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
              << endl;
 
       if (n_not_iterated_global > 0)
-        cout << " Initial condition: Number of points in which enthalpy could not be iterated: " << n_not_iterated_global
-             << " !!!" << endl;
+        cout << " Initial condition: Number of points in which enthalpy could not be iterated: "
+             << n_not_iterated_global << " !!!" << endl;
     }
   }
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
-  const bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  const bool variable_density = (config->GetVariable_Density_Model());
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -361,9 +306,7 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-
     /*--- Add source terms from the lookup table directly to the residual. ---*/
-
     for (auto i_var = 0; i_var < nVar; i_var++) {
       LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
@@ -379,18 +322,16 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
-  const su2double* scalar_inlet = config->GetInlet_SpeciesVal(Marker_Tag);
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
-  su2double enth_inlet = scalar_inlet[I_ENTH];
-  solver_container[FLOW_SOL]->GetFluidModel()->GetEnthFromTemp(enth_inlet, scalar_inlet[I_PROGVAR], temp_inlet,
-                                                               scalar_inlet[I_ENTH]);
+  su2double enth_inlet;
+  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
+                  &enth_inlet);
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
-  END_SU2_OMP_FOR
-
+    END_SU2_OMP_FOR
   }
 
   /*--- Call the general inlet boundary condition implementation. ---*/
@@ -402,10 +343,10 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
+  su2double temp_wall;
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  su2double enth_init, enth_wall, prog_wall;
+  su2double enth_wall;
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
@@ -413,21 +354,20 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (cht_mode) temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
+    if (cht_mode)
+      temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
+    else
+      temp_wall = config->GetIsothermal_Temperature(Marker_Tag);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
       if (config->GetMarker_StrongBC(Marker_Tag) == true) {
         /*--- Initial guess for enthalpy value. ---*/
-
-        enth_init = nodes->GetSolution(iPoint, I_ENTH);
-        enth_wall = enth_init;
+        enth_wall = nodes->GetSolution(iPoint, I_ENTH);
 
         /*--- Set enthalpy on the wall. ---*/
-
-        prog_wall = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint)[I_PROGVAR];
-        n_not_iterated += fluid_model_local->GetEnthFromTemp(enth_wall, prog_wall, temp_wall, enth_init);
+        n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, nodes->GetSolution(iPoint), &enth_wall);
 
         /*--- Impose the value of the enthalpy as a strong boundary
         condition (Dirichlet) and remove any
@@ -494,4 +434,98 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
                                                         CNumerics* conv_numerics, CConfig* config,
                                                         unsigned short val_marker) {
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
+}
+
+unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
+                                                       unsigned long iPoint, const vector<su2double>& scalars) {
+  /*--- Compute total source terms from the production and consumption. ---*/
+
+  vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
+  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
+  nodes->SetTableMisses(iPoint, misses);
+
+  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
+
+  vector<su2double> source_scalar(config->GetNScalars());
+  for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) source_scalar[iCV] = table_sources[iCV];
+  source_scalar[I_PROGVAR] = fmax(EPS, source_scalar[I_PROGVAR]);
+
+  /*--- Source term for the auxiliary species transport equations. ---*/
+  for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
+    /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
+          S_TOT = S_PROD + S_CONS * Y ---*/
+    su2double y_aux = scalars[config->GetNControlVars() + i_aux];
+    su2double source_prod = table_sources[config->GetNControlVars() + 2 * i_aux];
+    su2double source_cons = table_sources[config->GetNControlVars() + 2 * i_aux + 1];
+    source_scalar[config->GetNControlVars() + i_aux] = source_prod + source_cons * y_aux;
+  }
+  for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
+    nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);
+  return misses;
+}
+
+unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local,
+                                                       unsigned long iPoint, const vector<su2double>& scalars) {
+  /*--- Compute total source terms from the production and consumption. ---*/
+
+  vector<su2double> lookup_scalar(config->GetNLookups());
+  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::LOOKUP, lookup_scalar);
+
+  for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
+    nodes->SetLookupScalar(iPoint, lookup_scalar[i_lookup], i_lookup);
+  }
+  return misses;
+}
+
+unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
+                                                      const su2double* scalar_solution, su2double* val_enth) {
+  /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
+  su2double delta_temp_final = 0.001;
+  su2double enth_iter = scalar_solution[I_ENTH];
+  su2double delta_enth;
+  su2double delta_temp_iter = 1e10;
+  unsigned long exit_code = 0;
+  const int counter_limit = 1000;
+
+  int counter = 0;
+
+  su2double val_scalars[MAXNVAR];
+  for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
+
+  while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
+    /*--- Add all quantities and their names to the look up vectors. ---*/
+    val_scalars[I_ENTH] = enth_iter;
+    fluid_model->SetTDState_T(val_temp, val_scalars);
+
+    su2double Temperature = fluid_model->GetTemperature();
+    su2double Cp = fluid_model->GetCp();
+
+    delta_temp_iter = val_temp - Temperature;
+
+    delta_enth = Cp * delta_temp_iter;
+
+    enth_iter += delta_enth;
+  }
+
+  *val_enth = enth_iter;
+
+  if (counter >= counter_limit) {
+    exit_code = 1;
+  }
+
+  return exit_code;
+}
+
+su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
+  su2double scalars[MAXNVAR], delta = 1e-3;
+  for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
+
+  bool outside = false;
+  while (!outside) {
+    fluid_model->SetTDState_T(300, scalars);
+    if (fluid_model->GetExtrapolation() == 1) outside = true;
+    scalars[I_PROGVAR] += delta;
+  }
+  su2double pv_burnt = scalars[I_PROGVAR] - delta;
+  return pv_burnt;
 }

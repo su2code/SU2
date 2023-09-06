@@ -1,8 +1,8 @@
 /*!
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
- * \author D. Mayer, N. Beishuizen, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
-
+  bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -48,21 +48,54 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
 
   /*!
-   * \brief Compute the primitive variables (diffusivities).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - Boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver** solver_container, CConfig* config, bool Output);
-
-  /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,
    * for which the wall temperature is given by GetConjugateHeatVariable.
    */
   void BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
                                   bool cht_mode = false);
+
+  /*!
+   * \brief Reverse look-up to retrieve enthalpy value based on temperature and other controlling variables.
+   * \param[in] fluid_model - pointer to flamelet fluid model.
+   * \param[in] val_temp - temperature value used for reverse look-up.
+   * \param[in] scalar_solution - local scalar solution.
+   * \param[in] val_enth_out - pointer to output enthalpy variable.
+   * \param[out] Converged - 0 if Newton solver converged, 1 if not.
+   */
+  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
+                                const su2double* scalar_solution, su2double* val_enth_out);
+
+  /*!
+   * \brief Find maximum progress variable value within the manifold for the current solution.
+   * \param[in] fluid_model - pointer to flamelet fluid model.
+   * \param[in] scalars - local scalar solution.
+   * \return - maximum progress variable value within manifold bounds.
+   */
+  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars);
+
+  /*!
+   * \brief Retrieve scalar source terms from manifold.
+   * \param[in] config - definition of particular problem.
+   * \param[in] fluid_model_local - pointer to flamelet fluid model.
+   * \param[in] iPoint - node ID.
+   * \param[in] scalars - local scalar solution.
+   * \param[in] table_source_names - variable names of scalar source terms.
+   * \return - within manifold bounds (0) or outside manifold bounds (1).
+   */
+  unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+                                 const vector<su2double>& scalars);
+
+  /*!
+   * \brief Retrieve passive look-up data from manifold.
+   * \param[in] config - definition of particular problem.
+   * \param[in] fluid_model_local - pointer to flamelet fluid model.
+   * \param[in] iPoint - node ID.
+   * \param[in] scalars - local scalar solution.
+   * \return - within manifold bounds (0) or outside manifold bounds (1).
+   */
+  unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+                                 const vector<su2double>& scalars);
 
  public:
   /*!
@@ -142,30 +175,4 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void BC_ConjugateHeat_Interface(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config,
                                   unsigned short val_marker) override;
-
-  /*!
-   * \brief Get the conjugate heat variables.
-   * \param[in] val_marker - The marker index.
-   * \param[in] val_vertex - The vertex index.
-   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
-   */
-  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex,
-                                            unsigned short pos_var) const override {
-    return conjugate_var[val_marker][val_vertex][pos_var];
-  }
-
-  /*!
-   * \brief Set the conjugate heat variables.
-   * \param[in] val_marker - The marker index.
-   * \param[in] val_vertex - The vertex index.
-   * \param[in] pos_var - The variable position (in vector of all conjugate heat variables).
-   * \param[in] relaxation_factor - The relaxation factor for the change of the variables.
-   * \param[in] val_var - The value of the variable.
-   */
-  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var,
-                                       su2double relaxation_factor, su2double val_var) override {
-    conjugate_var[val_marker][val_vertex][pos_var] =
-        relaxation_factor * val_var + (1.0 - relaxation_factor) * conjugate_var[val_marker][val_vertex][pos_var];
-  }
-
 };

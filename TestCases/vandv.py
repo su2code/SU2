@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -84,6 +84,19 @@ def main():
     swbli_sst.test_iter = 5
     swbli_sst.test_vals = [-11.527743, -11.150388, -11.944923, -10.750834, -11.116769, -4.030059, 0.002339, -2.730391, -4.067274, 1.276300]
     test_list.append(swbli_sst)
+
+    ##########################
+    ### Incompressible RANS ###
+    ##########################
+
+    # Sandia jet - sst-v2003m
+    sandiajet_sst           = TestCase('sandiajet_sst')
+    sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
+    sandiajet_sst.cfg_file  = "validation.cfg"
+    sandiajet_sst.test_iter = 5
+    sandiajet_sst.test_vals = [-16.249917, -13.835991, -14.303372, -13.276035, -10.074262, -14.027223, 5, -1.672359, 5, -4.938477, 5, -3.462217, 2.5859e-04, 2.8215e-32, 4.5010e-68, 2.5859e-04, 4.0474e+03, 3.9468e+03, 4.9170e+01, 5.1441e+01]
+    sandiajet_sst.test_vals_aarch64 = [-16.249289, -13.833785, -14.303058, -13.276559, -10.267928, -14.027240, 5, -1.676412, 5, -4.815216, 5, -3.462247, 0.000259, 0, 0, 0.000259, 4047.4, 3946.8, 49.17, 51.441]
+    test_list.append(sandiajet_sst)
 
     #################
     ### RUN TESTS ###

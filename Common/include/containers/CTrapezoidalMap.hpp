@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.hpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  * \ingroup LookUpInterp
  * \brief Construction of trapezoidal map for tabulated lookup
  * \author: D. Mayer, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CTrapezoidalMap {
  protected:
@@ -54,12 +54,14 @@ class CTrapezoidalMap {
    * same band. Used to sort the edges */
   su2vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
+  double memory_footprint = 0;
+
  public:
   CTrapezoidalMap() = default;
 
   CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                   const std::vector<std::array<unsigned long, 2> >& edges,
-                  const su2vector<std::vector<unsigned long> >& edge_to_triangle);
+                  const su2vector<std::vector<unsigned long> >& edge_to_triangle, bool display = false);
 
   /*!
    * \brief return the index to the triangle that contains the coordinates (val_x,val_y)
@@ -97,4 +99,10 @@ class CTrapezoidalMap {
   inline bool IsInsideHullX(su2double val_x) {
     return (val_x >= unique_bands_x.front()) && (val_x <= unique_bands_x.back());
   }
+
+  /*!
+   * \brief get memory footprint of trapezoidal map.
+   * \return - memory footprint in mega bytes.
+   */
+  double GetMemoryFootprint() const { return memory_footprint; }
 };
