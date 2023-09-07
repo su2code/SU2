@@ -269,10 +269,10 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       // coeff_b1 for turbulence
       if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
         // su2doule dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, nodes->GetAuxVarGradient(iPoint, 0));
-        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 2) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, nDim==2? 0:2) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
       }
 
-      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 2) * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
+      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, nDim==2? 0:2) * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
 
     } // points
 
