@@ -500,6 +500,16 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       }
       break;
     } // switch
+    // if (config->GetEnergy_Equation()) {
+    //   su2double *V_outlet;
+    //   V_outlet = GetCharacPrimVar(val_marker, iVertex);
+    //   const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+    //   const su2double density = nodes->GetDensity(iPoint);
+    //   const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, Normal);
+    //   LinSysRes(iPoint, nDim+1) -= nodes->GetSpecificHeatCp(iPoint)* nodes->GetSolution(iPoint)[nDim +1] * edgeMassFlux * Area;
+    //   //LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -edgeMassFlux);
+    //   if (implicit) Jacobian.AddVal2Diag(iPoint, nDim+1, nodes->GetSpecificHeatCp(iPoint) * edgeMassFlux * Area);
+    // }
   }
   END_SU2_OMP_FOR
 }

@@ -1088,6 +1088,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
       su2double cv = 0.5*(nodes.GetSpecificHeatCv(iPoint) + nodes.GetSpecificHeatCv(jPoint));
+      //if (energy) cv = nodes.GetSpecificHeatCv(iPoint);
       return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
     }
 
@@ -1652,6 +1653,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
                            nodes->GetDensity(iPoint));
       numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), nodes->GetSpecificHeatCp(iPoint));
 
+      numerics->SetDiffusionCoeff(solver_container[SPECIES_SOL]->GetNodes()->GetDiffusivity(iPoint), solver_container[SPECIES_SOL]->GetNodes()->GetDiffusivity(iPoint));
+
       /*--- Set control volume ---*/
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -1664,6 +1667,28 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Gradient of the primitive variables ---*/
 
       numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+
+      /*--- Wall shear stress values (wall functions) ---*/
+
+      numerics->SetTau_Wall(nodes->GetTau_Wall(iPoint), nodes->GetTau_Wall(iPoint));
+
+      /*----Gradient of the scalar variable ----*/
+
+      su2double *mass_fractions = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+
+      CMatrixView<su2double> gradient_mass_fractions = solver_container[SPECIES_SOL]->GetNodes()->GetGradient(iPoint);
+
+      numerics->SetAuxVarGrad(gradient_mass_fractions, nullptr);
+
+      // /*--- Include the temperature equation Jacobian. ---*/
+      // su2double proj_vector_ij = 0.0;
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
+      // }
+      // proj_vector_ij = proj_vector_ij/dist_ij_2;
+      // Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
+
+      //nodes->SetAuxVar(iPoint, config->GetnSpecies(), mass_fractions);
 
       // /*--- If viscous, we need gradients for extra terms. ---*/
 
@@ -2313,6 +2338,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *V_inlet, *V_domain;
   su2double UnitFlowDir[MAXNDIM] = {0.0}, dV[MAXNDIM] = {0.0};
   su2double Damping = config->GetInc_Inlet_Damping();
+  const bool energy = config->GetEnergy_Equation();
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
@@ -2493,6 +2519,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     V_inlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
+    // if (energy) {
+    //   const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+    //   const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    //   conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+    // }
+
     /*--- Set various quantities in the solver class ---*/
 
     conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2508,6 +2540,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Update residual value ---*/
 
     LinSysRes.AddBlock(iPoint, residual);
+
+    // if (energy) {
+    //   const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+    //   const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    //   conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+    // }
 
     /*--- Jacobian contribution for implicit integration ---*/
 
@@ -2698,6 +2736,12 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
+    // if (config->GetEnergy_Equation()) {
+    //   const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+    //   const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    //   conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+    // }
+
     /*--- Compute the residual using an upwind scheme ---*/
 
     auto residual = conv_numerics->ComputeResidual(config);
@@ -2705,6 +2749,27 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Update residual value ---*/
 
     LinSysRes.AddBlock(iPoint, residual);
+
+    // su2double test_1 = LinSysRes(iPoint, nDim+1);
+
+    // if (config->GetEnergy_Equation()) {
+    //   const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+    //   const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    //   const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, Normal);
+    //   const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    //   const su2double temperature =  nodes->GetSolution(iPoint)[nDim +1];
+    //   const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+    //   LinSysRes(iPoint, nDim+1) = LinSysRes(iPoint, nDim+1) - nodes->GetSpecificHeatCp(iPoint)* nodes->GetSolution(iPoint)[nDim +1] * edgeMassFlux;
+    //   su2double test_3 = LinSysRes(iPoint, nDim+1);
+    //   //cout<<test_3<<endl;
+    //   //conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+    // }
+
+    // /*--- Update residual value ---*/
+
+    // //LinSysRes.AddBlock(iPoint, residual);
+
+    // su2double test_2 = LinSysRes(iPoint, nDim+1);
 
     /*--- Jacobian contribution for implicit integration ---*/
 

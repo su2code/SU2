@@ -118,6 +118,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
   Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
+  //if (fluid_mixture) Cp_j = Cp_i;
   Enthalpy_i    = Cp_i*Temperature_i; Enthalpy_j    = Cp_j*Temperature_j;
 
   ProjVelocity = 0.0;
@@ -231,6 +232,15 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
       }
     }
   }
+  // if (fluid_mixture) {
+  //   su2double a0 = fmax(0.0, Flux[0]) / DensityInc_i;
+  //   su2double a1 = fmin(0.0, Flux[0]) / DensityInc_j;
+  //   Flux[nDim + 1] += a0 * (DensityInc_i) * (Enthalpy_i) + a1 * (DensityInc_j) * (Enthalpy_j);
+  //   if (implicit){
+  //     Jacobian_i[nDim + 1][nDim + 1] += a0 * DensityInc_i * Cp_i;
+  //     Jacobian_j[nDim + 1][nDim + 1] += a1 * DensityInc_j * Cp_j;
+  //   }
+  // }
 
   /*--- Corrections due to grid motion ---*/
   if (dynamic_grid) {

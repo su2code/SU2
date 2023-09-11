@@ -190,6 +190,8 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
+  bool fluid_mixture = false;      /*!< \brief Flag for energy problems using fluid mixture model */
+
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a

@@ -421,4 +421,22 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
+//   /*!
+//    * \brief Applies a convective flux correction to negate the effects of flow divergence at a BC node.
+//    * \note This function should be used for nodes that are part of a boundary marker, it computes a mass flux
+//    * from density and velocity at the node, and the outward-pointing normal (-1 * normal of vertex).
+//    * \return The mass flux.
+//    */
+// inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,
+//                                      const su2double* velocity, const su2double* normal) {
+//   const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, normal);
+//   const su2double Area = GeometryToolbox::Norm(nDim, normal);
+//   const su2double temperature =  nodes->GetSolution(iPoint)[nDim +1];
+//   const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+//   LinSysRes(iPoint, nDim+1) -= nodes->GetSpecificHeatCp(iPoint)* nodes->GetSolution(iPoint)[nDim +1] * edgeMassFlux;
+//   //LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -edgeMassFlux);
+//   if (implicit) Jacobian.AddVal2Diag(iPoint, nDim+1, nodes->GetSpecificHeatCp(iPoint) * edgeMassFlux);
+//   return edgeMassFlux;
+// }
 };

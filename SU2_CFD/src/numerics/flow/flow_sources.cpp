@@ -367,8 +367,9 @@ CSourceIncEnergy_Flow::CSourceIncEnergy_Flow(unsigned short val_nDim, unsigned s
 }
 
 CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* config) {
-  su2double Velocity_i[3], Diverg; //GradCp_i[3];
+  su2double Velocity_i[3], Diverg, GradTemperature_i[3], GradCp_i[3], Heat_diffusivity[3];
   unsigned short iDim, iVar;
+  int n_species = config->GetnSpecies()+1;
 
   // if (Coord_i[1] > EPS) {
 
@@ -377,32 +378,56 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
   /*--- Set primitive variables at points iPoint. ---*/
 
   const su2double Temp_i = V_i[nDim + 1];
-  Pressure_i = V_i[0];
   DensityInc_i = V_i[nDim + 2];
-  BetaInc2_i = V_i[nDim + 3];
   Cp_i = V_i[nDim + 7];
-  Enthalpy_i = Cp_i * Temp_i;
 
   Diverg = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim + 1];
-    Diverg += PrimVar_Grad_i[iDim + 1][iDim];
-    //GradVelocity_i[iDim] = PrimVar_Grad_i[iDim + 1][iDim];
+    GradTemperature_i[iDim] = PrimVar_Grad_i[nDim + 1][iDim];
+    GradCp_i[iDim]=PrimVar_Grad_i[nDim+7][iDim];
+    Velocity_i[iDim] = V_i[iDim +1];
+    Heat_diffusivity[iDim] = 0.0;
+    for (int iSpecies = 0; iSpecies < n_species - 1; iSpecies++) {
+      su2double Cp_k = config->GetSpecific_Heat_Cp(iSpecies);
+      su2double Cp_N = config->GetSpecific_Heat_Cp(n_species - 1);
+      su2double D_K = Diffusion_Coeff_i[iSpecies];
+      su2double D_N = Diffusion_Coeff_i[n_species - 1];
+      Heat_diffusivity[iDim] += (Cp_k * D_K - Cp_N * D_N) * AuxVar_Grad_i[iSpecies][iDim];
+    }
   }
-  std::cout<< Diverg <<std::endl; 
+
+  Laminar_Viscosity_i    = V_i[nDim+4];
+  Eddy_Viscosity_i       = V_i[nDim+5];
+  Thermal_Conductivity_i = V_i[nDim+6];
+
+  su2double total_viscosity;
+
+  total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
+
+  /*--- The full stress tensor is needed for variable density ---*/
+  ComputeStressTensor(nDim, tau, PrimVar_Grad_i+1, total_viscosity);
+
+  // double sum = 0.0;
+  // for (int iSpecies = 0; iSpecies < n_species; iSpecies++){
+  //   su2double Cp_k = config->GetSpecific_Heat_Cp(iSpecies);
+  //   su2double Cp_N = config->GetSpecific_Heat_Cp(n_species-1);
+  //   su2double D_K = Diffusion_Coeff_i[iSpecies];
+  //   su2double D_N = Diffusion_Coeff_i[n_species-1];
+  //   sum += (Cp_k * D_K - Cp_N*D_N)
+  // } 
 
   /*--- Inviscid component of the source term. ---*/
   if (nDim == 2) {
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
-    residual[3] = DensityInc_i * Temp_i * Cp_i* Diverg * Volume;
+    residual[3] = -DensityInc_i * ((Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1]) + Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1])) * Volume;
   } else {
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
     residual[3] = 0.0;
-    residual[4] = DensityInc_i * Temp_i * Cp_i * Diverg * Volume;
+    residual[4] = -DensityInc_i * (Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1] + Heat_diffusivity[2]*GradTemperature_i[2]) * Volume;
   }
 
   if (implicit) {
@@ -423,9 +448,9 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
       jacobian[2][3] = 0.0;
 
       jacobian[3][0] = 0.0;
-      jacobian[3][1] = 0.0; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
-      jacobian[3][2] = 0.0; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
-      jacobian[3][3] = DensityInc_i * Cp_i * Diverg * Volume;
+      jacobian[3][1] = DensityInc_i * Temp_i *GradCp_i[0] * Volume; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[3][2] = DensityInc_i * Temp_i *GradCp_i[1] * Volume; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[3][3] = DensityInc_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1])* Volume;
 
     } else {
       jacobian[0][0] = 0.0;
@@ -456,7 +481,7 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
       jacobian[4][1] = 0.0; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
       jacobian[4][2] = 0.0; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
       jacobian[4][3] = 0.0; //DensityInc_i * Temp_i * GradCp_i[2] * Volume;
-      jacobian[4][3] = DensityInc_i * Cp_i* Diverg * Volume;
+      jacobian[4][3] = 0.0;
     }
   }
 

@@ -54,6 +54,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
+  fluid_mixture = config->GetKind_FluidModel() == FLUID_MIXTURE;
 
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -157,6 +158,11 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
     val_Proj_Flux[1] = (rhou*val_velocity[0]+(*val_pressure))*val_normal[0] + rhou*val_velocity[1]*val_normal[1];
     val_Proj_Flux[2] = rhov*val_velocity[0]*val_normal[0] + (rhov*val_velocity[1]+(*val_pressure))*val_normal[1];
     val_Proj_Flux[3] = (rhou*val_normal[0] + rhov*val_normal[1])*(*val_enthalpy);
+    // if(fluid_mixture){
+    //   su2double a0 = fmax(0.0, val_Proj_Flux[0]) / *val_density;
+    //   su2double a1 = fmin(0.0, val_Proj_Flux[0]) / *val_density;
+    //   val_Proj_Flux[3]-= a0 * (*val_density) *( *val_enthalpy) + a1 *(*val_density) *( *val_enthalpy);
+    // }
   }
   else {
     rhou = (*val_density)*val_velocity[0];
@@ -168,6 +174,11 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
     val_Proj_Flux[2] = rhov*val_velocity[0]*val_normal[0] + (rhov*val_velocity[1]+(*val_pressure))*val_normal[1] + rhov*val_velocity[2]*val_normal[2];
     val_Proj_Flux[3] = rhow*val_velocity[0]*val_normal[0] + rhow*val_velocity[1]*val_normal[1] + (rhow*val_velocity[2]+(*val_pressure))*val_normal[2];
     val_Proj_Flux[4] = (rhou*val_normal[0] + rhov*val_normal[1] + rhow*val_normal[2])*(*val_enthalpy);
+    // if(fluid_mixture){
+    //   su2double a0 = fmax(0.0, val_Proj_Flux[0]) / *val_density;
+    //   su2double a1 = fmin(0.0, val_Proj_Flux[0]) / *val_density;
+    //   val_Proj_Flux[4]-= a0 * (*val_density) *( *val_enthalpy) + a1 *(*val_density) *( *val_enthalpy);
+    // }
   }
 
 }
