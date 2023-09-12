@@ -418,16 +418,22 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
 
   /*--- Inviscid component of the source term. ---*/
   if (nDim == 2) {
+    su2double term_1= DensityInc_i *(Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1]);
+    su2double term_2= tau[0][0]*PrimVar_Grad_i[1][0]+tau[0][1]*PrimVar_Grad_i[1][1]+tau[1][0]*PrimVar_Grad_i[2][0]+tau[1][1]*PrimVar_Grad_i[2][1];
+    su2double term_3= DensityInc_i *Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1]);
+    su2double term_4 = Velocity_i[0]* PrimVar_Grad_i[0][0]+Velocity_i[1]* PrimVar_Grad_i[0][1];
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
-    residual[3] = -DensityInc_i * ((Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1]) + Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1])) * Volume;
+    residual[3] = -(term_1 + term_2 + term_3 + term_4) * Volume;
   } else {
+    su2double term_1 = Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1] + Heat_diffusivity[2]*GradTemperature_i[2];
+    su2double term_3 = Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1]+Velocity_i[2]*GradCp_i[2]); 
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
     residual[3] = 0.0;
-    residual[4] = -DensityInc_i * (Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1] + Heat_diffusivity[2]*GradTemperature_i[2]) * Volume;
+    residual[4] = -DensityInc_i * (term_1+term_3) * Volume;
   }
 
   if (implicit) {
@@ -448,9 +454,9 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
       jacobian[2][3] = 0.0;
 
       jacobian[3][0] = 0.0;
-      jacobian[3][1] = DensityInc_i * Temp_i *GradCp_i[0] * Volume; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
-      jacobian[3][2] = DensityInc_i * Temp_i *GradCp_i[1] * Volume; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
-      jacobian[3][3] = DensityInc_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1])* Volume;
+      jacobian[3][1] = 0.0; //DensityInc_i * Temp_i *GradCp_i[0] * Volume; //DensityInc_i * Temp_i * GradCp_i[0] * Volume;
+      jacobian[3][2] = 0.0; //DensityInc_i * Temp_i *GradCp_i[1] * Volume; //DensityInc_i * Temp_i * GradCp_i[1] * Volume;
+      jacobian[3][3] = 0.0; //DensityInc_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1])* Volume;
 
     } else {
       jacobian[0][0] = 0.0;
