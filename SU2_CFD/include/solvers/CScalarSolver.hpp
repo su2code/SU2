@@ -218,7 +218,7 @@ class CScalarSolver : public CSolver {
 
           if (conv_numerics->GetBoundedScalar()) {
             const su2double* velocity = &PrimVar_j[prim_idx.Velocity()];
-            const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+            const su2double density = config->GetKind_Regime()==ENUM_REGIME::INCOMPRESSIBLE ? solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint): PrimVar_j[prim_idx.Density()];
             conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, true, density, velocity, Normal));
           }
 

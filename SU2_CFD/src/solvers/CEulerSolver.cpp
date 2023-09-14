@@ -6565,7 +6565,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+      /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
       CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
       const su2double* Scalar_Inlet = nullptr;
@@ -6896,7 +6896,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+      /*--- Obtain fluid model for computing the computing fluid properties at the inlet boundary. ---*/
       CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
       const su2double* Scalar_Outlet = nullptr;
@@ -7050,7 +7050,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                        CNumerics *conv_numerics, CNumerics *visc_numerics,
                                        CConfig *config, unsigned short val_marker) {
-  const su2double Gas_Constant = config->GetGas_ConstantND();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
@@ -7067,6 +7066,19 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
 
+  /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
+  CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+  const su2double* Scalar_Inlet = nullptr;
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+  }
+  FluidModel->SetTDState_Prho(Pressure, Temperature, Scalar_Inlet);
+  const su2double Cp = FluidModel->GetCp();
+  const su2double Cv = FluidModel->GetCv();
+  const su2double Gas_Constant = Cp - Cv;
+  const su2double Gamma_Minus_One = Gas_Constant / Cv;
+
   /*--- Density at the inlet from the gas law ---*/
 
   const su2double Density = Pressure / (Gas_Constant * Temperature);
@@ -7075,7 +7087,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
   const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
   su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-  if (tkeNeeded) Energy += GetTke_Inf();
+  if (tkeNeeded) {
+    const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+    const su2double Intensity = Turb_Properties[0];
+    const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity);
+    const su2double Tke = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+    Energy += Tke;
+  }
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -7095,6 +7113,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[prim_idx.Pressure()] = Pressure;
     V_inlet[prim_idx.Density()] = Density;
     V_inlet[prim_idx.Enthalpy()] = Energy + Pressure / Density;
+    V_inlet[prim_idx.CpTotal()] = Cp ;
+    V_inlet[prim_idx.CvTotal()] = Cv ;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
 
