@@ -190,6 +190,8 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
+  su2double FTrans;   /*!< \brief SAS function */
+
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -706,6 +708,11 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetFTrans() const { return 0.0; }
 
   /*!
    * \brief Set the value of the effective intermittency for the LM model.

@@ -236,6 +236,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     nodes->SetmuT(iPoint, muT);
 
+    // Now compute desired cell size for Scale Resolving Simulations
+    const su2double RANSLength = sqrt(nodes->GetSolution(iPoint, 0)) / max(1e-20, (constants[6] * nodes->GetSolution(iPoint, 1)));
+    const su2double RatioL = 0.1;  // it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
+    const su2double SRSGridSize = RANSLength * RatioL;
+    nodes->SetSRSGridSize(iPoint, SRSGridSize);
+
   }
   END_SU2_OMP_FOR
 
@@ -361,6 +367,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    /*--- Store the SAS function ---*/
+    if (sstParsedOptions.sas) {
+      nodes->SetFTrans(iPoint, numerics->GetFTrans());
+    }
 
     /*--- Store the intermittency ---*/
 
