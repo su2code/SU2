@@ -298,17 +298,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case INC_IDEAL_GAS:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case INC_IDEAL_GAS_POLY:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
@@ -317,8 +315,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         auxFluidModel->SetCpModel(config);
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case FLUID_MIXTURE:
@@ -334,7 +330,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
