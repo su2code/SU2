@@ -276,6 +276,11 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nVar;
       break;
+    case PERIODIC_VEL_LAPLACIAN:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nDim;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -987,7 +992,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Solution differences ---*/
-                const su2double distance = GeometryToolbox::Distance(nDim, base_nodes->GetMesh_Coord(iPoint), base_nodes->GetMesh_Coord(jPoint));
+                const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
                 for (iDim = 0; iDim < nDim; iDim++)
                 Diff[iDim] = (base_nodes->GetVelocity(iPoint, iDim) -
@@ -1440,6 +1445,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case VELOCITY_LAPLACIAN:
+      COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:

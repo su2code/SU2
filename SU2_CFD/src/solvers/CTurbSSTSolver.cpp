@@ -28,6 +28,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CMeshVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -214,7 +215,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         if (boundary_i && !boundary_j) continue;
 
         /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
-        const su2double distance = GeometryToolbox::Distance(nDim, nodes->GetMesh_Coord(iPoint), nodes->GetMesh_Coord(jPoint));
+        const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
         const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
         const su2double delta_y = (flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))/distance;
