@@ -1658,6 +1658,36 @@ public:
   inline virtual void SetFTrans(unsigned long iPoint, su2double val_FTrans) {}
 
   /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_X(unsigned long iPoint) const { return 0.0; }
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_Y(unsigned long iPoint) const { return 0.0; }
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_Z(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void AddVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
