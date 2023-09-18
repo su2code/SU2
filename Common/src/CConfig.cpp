@@ -1246,6 +1246,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: default value for AIR */
   addDoubleListOption("MU_CONSTANT", nMu_Constant, Mu_Constant);
 
+  /*!\brief CONSTANT_DENSITY \n DESCRIPTION: Constant density for incompressible flows (1.2886 kg/m^3 by default) \ingroup Config*/
+  addDoubleOption("DENSITY_CONSTANT", Density_Constant, 1.2886);
+
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
@@ -1334,8 +1337,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_VELOCITY_REF", Inc_Velocity_Ref, 1.0);
   /*!\brief INC_TEMPERATURE_REF \n DESCRIPTION: Reference temperature for incompressible flows with the energy equation (1.0 by default) \ingroup Config*/
   addDoubleOption("INC_TEMPERATURE_REF", Inc_Temperature_Ref, 1.0);
-  /*!\brief INC_DENSITY_INIT \n DESCRIPTION: Initial density for incompressible flows (1.2886 kg/m^3 by default) \ingroup Config*/
-  addDoubleOption("INC_DENSITY_INIT", Inc_Density_Init, 1.2886);
   /*!\brief INC_VELOCITY_INIT \n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \ingroup Config*/
   vel_init[0] = 1.0; vel_init[1] = 0.0; vel_init[2] = 0.0;
   addDoubleArrayOption("INC_VELOCITY_INIT", 3, vel_init);
@@ -3022,6 +3023,11 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
           else if (!option_name.compare("SPECIES_USE_STRONG_BC"))
             newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
+          else if (!option_name.compare("INC_DENSITY_INIT"))
+            newString.append(
+                "INC_DENSITY_INIT is deprecated. The initial density is computed using the ideal gas law based on the "
+                "THERMODYNAMICS_PRESSURE and INC_TEMPERATURE_INIT. For Using the FLUID_MODEL=CONSTANT_DENSITY, the "
+                "constant density must be given using the following option DENSITY_CONSTANT.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/

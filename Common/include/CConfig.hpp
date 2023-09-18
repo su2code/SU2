@@ -832,7 +832,7 @@ private:
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
   Inc_Velocity_Ref,      /*!< \brief Reference velocity for custom incompressible non-dim. */
   Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */
-  Inc_Density_Init,      /*!< \brief Initial density for incompressible flows. */
+  Density_Constant,      /*!< \brief Initial density for incompressible flows. */
   Inc_Temperature_Init,  /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
   Heat_Flux_Ref,         /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref,      /*!< \brief Reference specific gas constant. */
@@ -2081,10 +2081,10 @@ public:
   su2double GetInc_Temperature_Ref(void) const { return Inc_Temperature_Ref; }
 
   /*!
-   * \brief Get the value of the initial density for incompressible flows.
-   * \return Initial density for incompressible flows.
+   * \brief Get the value of the constant density for incompressible flows.
+   * \return Constant density for incompressible flows when CONSTANT_DENSITY fluid model is used.
    */
-  su2double GetInc_Density_Init(void) const { return Inc_Density_Init; }
+  su2double GetInc_Constant_Density(void) const { return Density_Constant; }
 
   /*!
    * \brief Get the value of the initial velocity for incompressible flows.
