@@ -6691,7 +6691,13 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Using pressure, density, & velocity, compute the energy ---*/
 
           Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-          if (tkeNeeded) Energy += GetTke_Inf();
+          if (tkeNeeded) {
+            const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+            const su2double Intensity = Turb_Properties[0];
+            const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity);
+            const su2double Tke = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+            Energy += Tke;
+          }
 
           /*--- Primitive variables, using the derived quantities ---*/
 
@@ -6764,7 +6770,13 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Energy for the fictitious inlet state ---*/
 
           Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-          if (tkeNeeded) Energy += GetTke_Inf();
+          if (tkeNeeded) {
+            const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+            const su2double Intensity = Turb_Properties[0];
+            const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity);
+            const su2double Tke = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+            Energy += Tke;
+          }
 
           /*--- Primitive variables, using the derived quantities ---*/
 
@@ -6966,7 +6978,10 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) {
+          const su2double Tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+          Energy += Tke;
+        }
 
         /*--- Conservative variables, using the derived quantities ---*/
         V_outlet[0] = Pressure / ( Gas_Constant * Density);

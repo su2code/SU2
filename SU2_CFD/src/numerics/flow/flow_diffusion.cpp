@@ -801,7 +801,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradpri
                                              const su2double val_thermal_conductivity,
                                              const su2double val_heat_capacity_cp) {
 
-  const su2double heat_flux_factor = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
+  const su2double heat_flux_factor = fluid_mixture ? val_thermal_conductivity: val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -861,6 +861,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
 CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  fluid_mixture = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
