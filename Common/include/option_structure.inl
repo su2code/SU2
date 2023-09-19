@@ -433,15 +433,18 @@ class COptionMathProblem : public COptionBase {
   bool disc_adjoint_def;
   bool& restart;
   bool restart_def;
+  bool& oneshot;
+  bool oneshot_def; 
 
  public:
   COptionMathProblem(string option_field_name, bool& cont_adjoint_field, bool cont_adjoint_default,
-                     bool& disc_adjoint_field, bool disc_adjoint_default, bool& restart_field, bool restart_default)
-      : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
+                     bool& disc_adjoint_field, bool disc_adjoint_default, bool& restart_field, bool restart_default, bool& oneshot_field, bool oneshot_default)
+      : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field), oneshot(oneshot_field) {
     name = option_field_name;
     cont_adjoint_def = cont_adjoint_default;
     disc_adjoint_def = disc_adjoint_default;
     restart_def = restart_default;
+    oneshot_def = oneshot_default;
   }
 
   ~COptionMathProblem() override{};
@@ -466,6 +469,11 @@ class COptionMathProblem : public COptionBase {
       disc_adjoint = true;
       cont_adjoint = false;
       restart = true;
+      return "";
+    } else if (option_value[0] == "ONE_SHOT") {
+      oneshot = true;
+      disc_adjoint=false;
+      restart=true;
       return "";
     }
     return badValue("math problem", name);

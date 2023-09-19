@@ -431,10 +431,10 @@ void CConfig::addConvectFEMOption(const string& name, unsigned short & space_fie
 
 void CConfig::addMathProblemOption(const string& name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                           bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                          bool & Restart_Flow, const bool & Restart_Flow_default) {
+                          bool & Restart_Flow, const bool & Restart_Flow_default, bool & OneShot, const bool & OneShot_Default) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
+  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default, OneShot, OneShot_Default);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1094,7 +1094,7 @@ void CConfig::SetConfig_Options() {
   const bool discAdjDefault = false;
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault, OneShot, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -3747,7 +3747,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
 
-  if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
+  if ((ContinuousAdjoint || DiscreteAdjoint || OneShot) && Fixed_CL_Mode && !Eval_dOF_dCX)
     Discard_InFiles = false;
 
   /*--- Deactivate the multigrid in the adjoint problem ---*/
@@ -4605,7 +4605,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
 
-  if ((DiscreteAdjoint) && (Inconsistent_Disc)) {
+  if ((DiscreteAdjoint || OneShot) && (Inconsistent_Disc)) {
     Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
     Kind_Centered_Flow = Kind_Centered_AdjFlow;
     Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
@@ -4900,7 +4900,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- If it is a fixed mode problem, then we will add Iter_dCL_dAlpha iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
-  if (!ContinuousAdjoint & !DiscreteAdjoint) {
+  if (!ContinuousAdjoint & !DiscreteAdjoint & !OneShot) {
     if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
   }
 

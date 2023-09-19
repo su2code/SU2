@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
   const bool disc_adj = config.GetDiscrete_Adjoint();
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
+  const bool oneshot = config.GetOneShot();
 
   if (dry_run) {
 
@@ -120,7 +121,9 @@ int main(int argc, char *argv[]) {
     if (disc_adj) {
       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     }
-    else {
+    else if (oneshot) {
+      driver = new COneShotSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+    } else {
       driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     }
 

@@ -36,6 +36,7 @@
 #include "drivers/CMultizoneDriver.hpp"
 #include "drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "drivers/CDiscAdjMultizoneDriver.hpp"
+#include "drivers/COneShotSinglezoneDriver.hpp"
 #include "drivers/CDummyDriver.hpp"
 #include "output/COutput.hpp"
 #include "../../Common/include/fem/fem_geometry_structure.hpp"

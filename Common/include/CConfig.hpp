@@ -691,7 +691,8 @@ private:
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
-  Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  Restart_Flow,                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  OneShot;                            /*!< \brief Definition of One Shot problem. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
@@ -1319,7 +1320,8 @@ private:
 
   void addMathProblemOption(const string& name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default);
+                            bool & Restart_Flow, const bool & Restart_Flow_default, 
+                            bool & OneShot, const bool & OneShot_default);
 
   void addDVParamOption(const string& name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable);
@@ -8796,6 +8798,12 @@ public:
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
+  /*!
+   * \brief Get the indicator whether we are solving a one-shot optimization problem.
+   * \return the one-shot problem indicator.
+   */
+  bool GetOneShot(void) const { return OneShot; }
+  
   /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
