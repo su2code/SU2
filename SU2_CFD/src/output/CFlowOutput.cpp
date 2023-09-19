@@ -1251,6 +1251,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
       AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SOLUTION", "desired grid size for Scale Resolving Simulations");
       if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_SIMPLE) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
+      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_COMPLICATED){
+        AddVolumeOutput("VEL_LAPLACIAN_X", "Vel Laplacian x", "SOLUTION", "value of laplacian of velocity for SAS simulation");
+        AddVolumeOutput("VEL_LAPLACIAN_Y", "Vel Laplacian y", "SOLUTION", "value of laplacian of velocity for SAS simulation");
+        if (nDim == 3) AddVolumeOutput("VEL_LAPLACIAN_Z", "Vel Laplacian z", "SOLUTION", "value of laplacian of velocity for SAS simulation");
+      }
       break;
 
     case TURB_FAMILY::NONE:
@@ -1532,6 +1537,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
       if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_SIMPLE) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
+      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_COMPLICATED){
+        SetVolumeOutputValue("VEL_LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl_X(iPoint));
+        SetVolumeOutputValue("VEL_LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl_Y(iPoint));
+        if (nDim == 3) SetVolumeOutputValue("VEL_LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl_Z(iPoint));
+      } 
       if (limiter) {
         SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
