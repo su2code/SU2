@@ -5635,7 +5635,7 @@ public:
    * \param[in] val_iInst - the current instance.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
+  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst, const string& ext) const;
 
   /*!
    * \brief Get the name of the restart file for the flow variables.
