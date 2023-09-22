@@ -46,7 +46,6 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Gas_Constant(val_gas_constant),
-      Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),

@@ -62,5 +62,4 @@ class CIncIdealGas final : public CFluidModel {
 
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
-  su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */
 };

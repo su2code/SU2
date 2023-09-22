@@ -690,14 +690,14 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
     Pressure_i = V_i[nDim+1];
     Density_i = V_i[nDim+2];
     Enthalpy_i = V_i[nDim+3];
+    Gamma_i = V_i[nDim + 9];
     Energy_i = Enthalpy_i - Pressure_i/Density_i;
-    su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
 
     Pressure_j = V_i[nDim+1];
     Density_j = V_i[nDim+2];
     Enthalpy_j = V_i[nDim+3];
+    Gamma_j = V_j[nDim + 9];
     Energy_j = Enthalpy_j - Pressure_j/Density_j;
-    su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
 
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/

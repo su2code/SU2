@@ -1560,11 +1560,6 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
   }
 
-  // /*--- Sizing edge mass flux array ---*/
-  // if (config->GetBounded_Scalar())
-  // auto massflux = GetEdgeMassFluxes();
-  //massflux.resize(geometry->GetnEdge()) = su2double(0.0);
-
   /*--- Non-physical counter. ---*/
   unsigned long counterLocal = 0;
   SU2_OMP_MASTER

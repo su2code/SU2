@@ -112,7 +112,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Define geometry constants in the solver structure
-   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp, Cv).
+   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp, Gamma).
    ---*/
 
   nDim = geometry->GetnDim();
@@ -1740,9 +1740,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      su2double Cp = 0.5*(nodes.GetSpecificHeatCp(iPoint)+ nodes.GetSpecificHeatCp(jPoint));
-      su2double Cv = 0.5*(nodes.GetSpecificHeatCv(iPoint)+ nodes.GetSpecificHeatCv(jPoint));
-      su2double gamma = Cp / Cv;
+      su2double gamma = 0.5*(nodes.GetGamma(iPoint)+ nodes.GetGamma(jPoint));
       return lambda(gamma, laminarVisc, eddyVisc, density);
     }
 
@@ -1750,9 +1748,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      su2double Cp = nodes.GetSpecificHeatCp(iPoint);
-      su2double Cv = nodes.GetSpecificHeatCv(iPoint);
-      su2double gamma = Cp / Cv;
+      su2double gamma = nodes.GetGamma(iPoint);
       return lambda(gamma, laminarVisc, eddyVisc, density);
     }
 
@@ -1774,16 +1770,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config->GetKind_FluidModel() == IDEAL_GAS);// || (config->GetKind_FluidModel() == FLUID_MIXTURE);
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool low_mach_corr = config->Low_Mach_Correction();
   const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- Use vectorization if the scheme supports it. ---*/
   if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
-    //auto residual = numerics->ComputeResidual(config);
-    //auto residual = solver_container[FLOW_SOL]->GetResLinSolver();
-    //if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
     return;
   }
 
@@ -6528,7 +6521,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann, Pressure, Density, Energy,
-      Cp, Cv, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, Area,
+      Cp, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, Area,
       UnitNormal[MAXNDIM], Normal[MAXNDIM];
   su2double *V_inlet, *V_domain, *S_inlet, *S_domain;
 
@@ -6619,10 +6612,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
           Pressure    = V_domain[nDim+1];
           Cp          = V_domain[nDim+8];
-          Cv          = V_domain[nDim+9];
-          Gamma       = Cp / Cv;
+          Gamma       = V_domain[nDim+9];
           Gamma_Minus_One = Gamma -1.0;
-          const su2double Gas_Constant = Cp - Cv;
+          const su2double Gas_Constant = Gamma_Minus_One * Cp / Gamma;
           H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
           SoundSpeed2 = Gamma*Pressure/Density;
 
@@ -6709,7 +6701,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+2] = Density;
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
-          V_inlet[nDim+9] = Cv;
+          V_inlet[nDim+9] = Gamma;
           FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
           nodes->SetSecondaryVar(iVertex, GetFluidModel());
           S_inlet = nodes->GetSecondary(iVertex);
@@ -6741,11 +6733,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
           Pressure    = nodes->GetPressure(iPoint);
           Cp = nodes->GetSpecificHeatCp(iPoint);
-          Cv = nodes->GetSpecificHeatCv(iPoint);
-          Gamma = Cp / Cv;
+          Gamma = nodes->GetGamma(iPoint);
           Gamma_Minus_One = Gamma - 1.0;
           const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
-          const su2double Gas_Constant = Cp - Cv;
+          const su2double Gas_Constant = Gamma_Minus_One * Cp / Gamma;
           SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];  
 
           /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -6788,7 +6779,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+2] = Density;
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
-          V_inlet[nDim+9] = Cv;
+          V_inlet[nDim+9] = Gamma;
           FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
           nodes->SetSecondaryVar(iVertex, GetFluidModel());
           S_inlet = nodes->GetSecondary(iVertex);
@@ -6799,6 +6790,15 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;
       }
+
+      /*--- Set transport properties at the inlet ---*/
+      
+      V_inlet[prim_idx.CpTotal()] = FluidModel->GetCp();
+      V_inlet[prim_idx.Gamma()]= FluidModel->GetGamma();
+      V_inlet[prim_idx.SoundSpeed()]= FluidModel->GetSoundSpeed();
+      V_inlet[prim_idx.LaminarViscosity()] = FluidModel->GetLaminarViscosity();
+      V_inlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+      V_inlet[prim_idx.ThermalConductivity()] = FluidModel->GetThermalConductivity();
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetSecondary(S_domain,S_inlet);
@@ -6938,9 +6938,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Velocity2 += Velocity[iDim]*Velocity[iDim];
         Vn += Velocity[iDim]*UnitNormal[iDim];
       }
-      Gamma = V_domain[nDim +8] / V_domain[nDim+9];
+      Gamma = V_domain[nDim+9];
       Gamma_Minus_One = Gamma - 1.0;
-      Gas_Constant = V_domain[nDim + 8] - V_domain[nDim + 9];
+      Gas_Constant = Gamma_Minus_One * V_domain[nDim+8] / Gamma;
       Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
       Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
@@ -6950,7 +6950,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Supersonic exit flow: there are no incoming characteristics,
            so no boundary condition is necessary. Set outlet state to current
            state so that upwinding handles the direction of propagation. ---*/
-        //cout<<"over mach 1.0"<<endl;
         for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
         S_outlet = S_domain;
 
@@ -6971,7 +6970,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute the new fictious state at the outlet ---*/
         Density    = pow(P_Exit/Entropy,1.0/Gamma);
         Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+        FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Outlet);
+        SoundSpeed = FluidModel->GetSoundSpeed();
+        Gamma_Minus_One = FluidModel->GetGamma() - 1.0;
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -6991,11 +6992,19 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         V_outlet[nDim+1] = Pressure;
         V_outlet[nDim+2] = Density;
         V_outlet[nDim+3] = Energy + Pressure/Density;
-        FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Outlet);
         nodes->SetSecondaryVar(iVertex, GetFluidModel());
         S_outlet = nodes->GetSecondary(iVertex);
 
       }
+
+      /*--- Set transport properties at the inlet ---*/
+      
+      V_outlet[prim_idx.CpTotal()] = FluidModel->GetCp();
+      V_outlet[prim_idx.Gamma()]= FluidModel->GetGamma();
+      V_outlet[prim_idx.SoundSpeed()]= FluidModel->GetSoundSpeed();
+      V_outlet[prim_idx.LaminarViscosity()] = FluidModel->GetLaminarViscosity();
+      V_outlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+      V_outlet[prim_idx.ThermalConductivity()] = FluidModel->GetThermalConductivity();
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -7091,9 +7100,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   }
   FluidModel->SetTDState_Prho(Pressure, Temperature, Scalar_Inlet);
   const su2double Cp = FluidModel->GetCp();
-  const su2double Cv = FluidModel->GetCv();
-  const su2double Gas_Constant = Cp - Cv;
-  const su2double Gamma_Minus_One = Gas_Constant / Cv;
+  const su2double Gamma = FluidModel->GetGamma();
+  const su2double Gamma_Minus_One = Gamma - 1.0;
+  const su2double Gas_Constant = Gamma_Minus_One * Cp / Gamma;
 
   /*--- Density at the inlet from the gas law ---*/
 
@@ -7130,7 +7139,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[prim_idx.Density()] = Density;
     V_inlet[prim_idx.Enthalpy()] = Energy + Pressure / Density;
     V_inlet[prim_idx.CpTotal()] = Cp ;
-    V_inlet[prim_idx.CvTotal()] = Cv ;
+    V_inlet[prim_idx.Gamma()] = Gamma ;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
 

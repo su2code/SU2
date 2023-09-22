@@ -1111,6 +1111,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the ratio of specific heats of a gas
+   */
+  inline virtual su2double GetGamma(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the thermal conductivity (vibrational)
    */
   inline virtual su2double GetThermalConductivity_ve(unsigned long iPoint) const { return 0.0; }
@@ -1564,6 +1571,12 @@ public:
    * \param[in] Cv - Constant volume specific heat.
    */
   inline virtual void SetSpecificHeatCv(unsigned long iPoint, su2double Cv) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] Gamma - Ratio of specific heats of the Gas.
+   */
+  inline virtual void SetGamma(unsigned long iPoint, su2double Gamma) {}
 
   /*!
    * \brief A virtual member.

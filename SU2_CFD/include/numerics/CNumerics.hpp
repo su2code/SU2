@@ -72,7 +72,9 @@ protected:
   Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Cp_i,               /*!< \brief Cp at point i. */
-  Cp_j;               /*!< \brief Cp at point j. */
+  Cp_j,               /*!< \brief Cp at point j. */
+  Gamma_i,            /*!< \brief Cp at point i. */
+  Gamma_j;            /*!< \brief Cp at point i. */  
   su2double
   Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
@@ -1586,7 +1588,10 @@ public:
    * \param[in] val_Gamma_i - Gamma at i.
    * \param[in] val_Gamma_j - Gamma at j.
    */
-  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
+  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j) {
+    Gamma_i = val_Gamma_i;
+    Gamma_j = val_Gamma_j;
+  }
 
   /*!
    * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.

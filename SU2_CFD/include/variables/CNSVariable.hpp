@@ -80,10 +80,10 @@ public:
   }
 
   /*!
-   * \brief Set the specific heat Cv.
+   * \brief Set ratio of specific heats of a gas.
    */
-  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) override {
-    Primitive(iPoint, indices.CvTotal()) = val_Cv;
+  inline void SetGamma(unsigned long iPoint, su2double val_Gamma) override {
+    Primitive(iPoint, indices.Gamma()) = val_Gamma;
   }
 
 
@@ -128,11 +128,11 @@ public:
   }
 
   /*!
-   * \brief Get the specific heat at constant V of the flow.
-   * \return Value of the specific heat at constant V of the flow.
+   * \brief Get the ratio of specific heats of a gas.
+   * \return Value of the ratio of specific heats of a gas.
    */
-  inline su2double GetSpecificHeatCv(unsigned long iPoint) const override {
-    return Primitive(iPoint, indices.CvTotal());
+  inline su2double GetGamma(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.Gamma());
   }
 
   /*!

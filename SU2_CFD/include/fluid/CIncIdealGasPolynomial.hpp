@@ -84,6 +84,5 @@ class CIncIdealGasPolynomial final : public CFluidModel {
 
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Specific Gas Constant. */
-  su2double Gamma{0.0};        /*!< \brief Ratio of specific heats. */
   array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for conductivity as a function of temperature. */
 };

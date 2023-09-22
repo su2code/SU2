@@ -101,6 +101,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i[nDim + 9]); AD::SetPreaccIn(V_j[nDim + 9]);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
@@ -124,7 +125,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
+  Gamma_i = V_i[nDim + 9];
 
   /*--- Primitive variables at point j ---*/
 
@@ -134,7 +135,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9]; 
+  Gamma_j = V_j[nDim + 9];
 
   /*--- Compute variables that are common to the derived schemes ---*/
 
@@ -311,8 +312,8 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     M_i += Velocity_i[iDim]*Velocity_i[iDim];
     M_j += Velocity_j[iDim]*Velocity_j[iDim];
   }
-  M_i = sqrt(M_i / fabs(Pressure_i*Gamma/Density_i));
-  M_j = sqrt(M_j / fabs(Pressure_j*Gamma/Density_j));
+  M_i = sqrt(M_i / fabs(Pressure_i*Gamma_i/Density_i));
+  M_j = sqrt(M_j / fabs(Pressure_j*Gamma_j/Density_j));
 
   su2double zeta = max(0.05,min(max(M_i,M_j),1.0));
 
@@ -384,8 +385,8 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     M_i += Velocity_i[iDim]*Velocity_i[iDim];
     M_j += Velocity_j[iDim]*Velocity_j[iDim];
   }
-  M_i = sqrt(M_i / fabs(Pressure_i*Gamma/Density_i));
-  M_j = sqrt(M_j / fabs(Pressure_j*Gamma/Density_j));
+  M_i = sqrt(M_i / fabs(Pressure_i*Gamma_i/Density_i));
+  M_j = sqrt(M_j / fabs(Pressure_j*Gamma_j/Density_j));
 
   su2double zeta = max(0.05,min(max(M_i,M_j),1.0));
 
@@ -531,9 +532,9 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   Pressure_i = V_i[nDim+1];
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
+  Gamma_i = V_i[nDim + 9];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma_i/Density_i));
 
   /*--- Primitive variables at point j ---*/
 
@@ -542,9 +543,9 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   Pressure_j = V_j[nDim+1];
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
+  Gamma_j = V_j[nDim + 9];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
+  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma_j/Density_j));
 
   /*--- Recompute conservative variables ---*/
 

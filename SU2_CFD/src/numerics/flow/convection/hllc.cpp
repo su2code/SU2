@@ -107,14 +107,14 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Pressure_i = V_i[nDim+1];
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
-  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
+  Gamma_i    = V_i[nDim+9];
 
   /*--- Primitive variables at point j ---*/
 
   Pressure_j = V_j[nDim+1];
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
-  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
+  Gamma_j    = V_j[nDim+9];
 
 
   sq_vel_i = 0.0;

@@ -102,8 +102,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
-  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
+  Gamma_i = V_i[nDim + 9];
+  Gamma_j = V_j[nDim + 9];
 
   /*--- Mean Roe variables iPoint and jPoint ---*/
 
@@ -863,7 +863,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
-  su2double Gamma_i = V_i[nDim + 8] / V_i[nDim + 9];
+  Gamma_i = V_i[nDim + 9];
 
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -876,7 +876,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
-  su2double Gamma_j = V_j[nDim + 8] / V_j[nDim + 9];
+  Gamma_j = V_j[nDim + 9];
 
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
