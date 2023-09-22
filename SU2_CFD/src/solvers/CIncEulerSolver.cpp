@@ -1345,6 +1345,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool topology       = config->GetTopology_Optimization();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   AD::StartNoSharedReading();
 
@@ -1393,6 +1396,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         su2double a_s = config->GetTopology_Solid_Density();
         su2double q = config->GetTopology_QVal();
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 +q)/( eta + q));
+        // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
+        // alpha =  a_s  + (a_f - a_s)*pow(eta,simp_exponent);
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auto Velocity = nodes->GetVelocity(iPoint, iDim);

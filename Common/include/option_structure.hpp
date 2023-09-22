@@ -2501,11 +2501,13 @@ enum class ENUM_PROJECTION_FUNCTION {
   NONE,           /*!< \brief No projection. */
   HEAVISIDE_UP,   /*!< \brief Project values towards 1. */
   HEAVISIDE_DOWN, /*!< \brief Project values towards 0. */
+  WANG,           /*!< \brief Project values towards 0. */
 };
 static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
   MakePair("NO_PROJECTION", ENUM_PROJECTION_FUNCTION::NONE)
   MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
   MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
+  MakePair("WANG", ENUM_PROJECTION_FUNCTION::WANG)
 };
 
 /*!

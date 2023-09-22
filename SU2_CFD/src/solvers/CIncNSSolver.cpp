@@ -65,18 +65,99 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (config->GetTopology_Optimization()) {
 
+    /*--- Apply a filter to the design densities of the elements to generate the
+    physical densities which are the ones used to penalize their stiffness. ---*/
+
+    ENUM_PROJECTION_FUNCTION type;
+    unsigned short search_lim;
+    su2double param, radius, threashold= config->GetTopology_Vol_Fraction();
+    unsigned long nElem = geometry->GetnElem();
+    
+
+    vector<pair<ENUM_FILTER_KERNEL,su2double> > kernels;
+    vector<su2double> filter_radius;
+    for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
+    {
+        ENUM_FILTER_KERNEL type;
+        config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
+        kernels.push_back(make_pair(type,param));
+        filter_radius.push_back(radius);
+    }
+    search_lim = config->GetTopology_Search_Limit();
+    config->GetTopology_Optim_Projection(type,param);
+
+    su2double *physical_rho = new su2double [nElem];
+
     ifstream porosity_file;
     porosity_file.open("porosity.dat", ios::in);
     if (!porosity_file.fail()) {
       if (iMesh == MESH_0) {
         geometry->ReadPorosity(config);
-        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-          nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
+        /*--- "Rectify" the input, initialize the physical density with
+        the design density (the filter function works in-place). ---*/
+        SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+        for (auto iPoint=0ul; iPoint<nPointDomain; ++iPoint) {
+          su2double sum = 0, vol = 0;
+          for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+            su2double rho = geometry->nodes->GetAuxVar(iPoint);
+            // GetAuxVar(iElem);
+            // physical_rho[iElem] = rho;
+            if      (rho > 1.0) physical_rho[iElem] = 1.0;
+            else if (rho < 0.0) physical_rho[iElem] = 0.0;
+            else                physical_rho[iElem] = rho;
+          }
+        }
+        END_SU2_OMP_PARALLEL
+
+        geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, physical_rho);
+
+        SU2_OMP_PARALLEL
+        {
+          /*--- Apply projection. ---*/
+          auto nElement = geometry->GetnElem();
+          switch (type) {
+            case ENUM_PROJECTION_FUNCTION::NONE: break;
+            case ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP:
+              SU2_OMP_FOR_STAT(omp_chunk_size)
+              for (auto iElem=0ul; iElem<nElement; ++iElem)
+                physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
+              END_SU2_OMP_FOR
+              break;
+            case ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN:
+              SU2_OMP_FOR_STAT(omp_chunk_size)
+              for (auto iElem=0ul; iElem<nElement; ++iElem)
+                physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);
+              END_SU2_OMP_FOR
+              break;
+            case ENUM_PROJECTION_FUNCTION::WANG:
+              SU2_OMP_FOR_STAT(omp_chunk_size)
+              for (auto iElem=0ul; iElem<nElement; ++iElem)
+                physical_rho[iElem] = (tanh(param*threashold) + tanh(param*(physical_rho[iElem]-threashold)))/(tanh(param*threashold) + tanh(param*(1-threashold)));
+              END_SU2_OMP_FOR
+              break;
+            default:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
+          }
+        }
+        END_SU2_OMP_PARALLEL
+
+        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+          su2double sum = 0, vol = 0;
+          for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+            su2double w = geometry->nodes->GetVolume(iPoint);
+            sum += w * physical_rho[iElem];
+            vol += w;
+          }
+          // nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
+          nodes->SetPorosity(iPoint, sum/vol);
+        }
       }
       config->SetWrt_PorosityFile(false);
-    } else {
-      config->SetWrt_PorosityFile(true);
-    }
+    } 
+    else 
+    config->SetWrt_PorosityFile(true);
   }
 
 }
@@ -844,6 +925,9 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
 
     su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0;
     su2double VFrac = config->GetTopology_Vol_Fraction();
+    const bool topology_mode = config->GetTopology_Optimization();
+    const su2double simp_exponent = config->GetSIMP_Exponent();
+    const su2double simp_minstiff = config->GetSIMP_MinStiffness();
     
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
@@ -861,6 +945,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         su2double a_s = config->GetTopology_Solid_Density();
         su2double q = config->GetTopology_QVal();
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
+        // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
+        // alpha = a_s  + (a_f - a_s)*pow(eta,simp_exponent);
         porosity_comp = Vel2 * alpha;
 
         // vel_comp = 0.0;

@@ -2985,7 +2985,7 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       objFun += weight * Total_PowerDissipation;
       break;
     case CUSTOM_OBJFUNC:
-      objFun += weight * Total_PowerDissipation;
+      objFun += weight * Total_Custom_ObjFunc;
       break;
     default:
       break;
