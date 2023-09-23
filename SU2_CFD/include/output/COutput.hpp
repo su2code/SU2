@@ -382,6 +382,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
   /*!
    * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
    * \param[in] geometry - Geometrical definition of the problem.
