@@ -326,6 +326,8 @@ class CGeometry {
 
   const ColMajorMatrix<uint8_t>& CoarseGridColor = CoarseGridColor_; /*!< \brief Coarse grid levels, colorized. */
 
+  std::vector<unsigned long> HybridParallelOffsets;
+
   /*!
    * \brief Constructor of the class.
    */

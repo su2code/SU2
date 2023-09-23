@@ -173,22 +173,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   omp_light_size = computeStaticChunkSize(nnz * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
   omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
 
-  omp_num_parts = config->GetLinear_Solver_Prec_Threads();
+  omp_num_parts = num_threads;  // config->GetLinear_Solver_Prec_Threads();
   if (omp_num_parts == 0) omp_num_parts = num_threads;
 
   /*--- This is akin to the row_ptr. ---*/
   omp_partitions = new unsigned long[omp_num_parts + 1];
-  for (unsigned long i = 0; i <= omp_num_parts; ++i) omp_partitions[i] = nPointDomain;
-
-  /*--- Work estimate based on non-zeros to produce balanced partitions. ---*/
-
-  const auto row_ptr_prec = ilu_needed ? row_ptr_ilu : row_ptr;
-  const auto nnz_prec = row_ptr_prec[nPointDomain];
-
-  const auto nnz_per_part = roundUpDiv(nnz_prec, omp_num_parts);
-
-  for (auto iPoint = 0ul, part = 0ul; iPoint < nPointDomain; ++iPoint) {
-    if (row_ptr_prec[iPoint] >= part * nnz_per_part) omp_partitions[part++] = iPoint;
+  for (auto t = 0ul; t <= omp_num_parts; ++t) {
+    omp_partitions[t] = geometry->HybridParallelOffsets[t];
   }
 
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {

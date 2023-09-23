@@ -4461,6 +4461,44 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
+  vector<idx_t> part(nPointDomain, 0);
+  idx_t nparts = omp_get_max_threads();
+
+  if (nparts > 1) {
+    idx_t ncon = 1;
+    real_t ubvec = 1.0 + config->GetParMETIS_Tolerance();
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[METIS_OPTION_NUMBERING] = 0;
+
+    const auto wp = config->GetParMETIS_PointWeight();
+    const auto we = config->GetParMETIS_EdgeWeight();
+
+    xadj.clear();
+    xadj.reserve(nPointDomain + 1);
+    xadj.push_back(0);
+    adjacency.clear();
+    vector<idx_t> vwgt(nPointDomain);
+
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      for (const auto jPoint : nodes->GetPoints(iPoint)) {
+        if (jPoint < nPointDomain) adjacency.push_back(jPoint);
+      }
+      xadj.push_back(adjacency.size());
+
+      vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
+    }
+
+    idx_t edgecut;
+    idx_t nvtxs = nPointDomain;
+
+    if (rank == MASTER_NODE) cout << "Calling METIS...\n";
+    auto err = METIS_PartGraphKway(&nvtxs, &ncon, xadj.data(), adjacency.data(), vwgt.data(), nullptr, nullptr, &nparts,
+                                   nullptr, &ubvec, options, &edgecut, part.data());
+    if (err != METIS_OK) SU2_MPI::Error("ILU partitioning failed.", CURRENT_FUNCTION);
+    cout << "ILU partitioning complete (" << edgecut << " edge cuts)." << endl;
+  }
+
   /*--- The result is the RCM ordering, during the process it is also used as
    * the queue of new points considered by the algorithm. This is possible
    * because points move from the front of the queue to the back of the result,
@@ -4476,51 +4514,63 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     InQueue[iPoint] = true;
   }
 
-  /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
-  while (Result.size() < nPointDomain) {
-    /*--- Select the node with the lowest degree in the grid. ---*/
-    auto AddPoint = nPoint;
-    auto MinDegree = std::numeric_limits<unsigned short>::max();
+  HybridParallelOffsets.clear();
+  HybridParallelOffsets.push_back(0);
+  unsigned long CumulativeSize = 0;
+
+  for (idx_t ipart = 0; ipart < nparts; ++ipart) {
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      auto Degree = nodes->GetnPoint(iPoint);
-      if (!InQueue[iPoint] && Degree < MinDegree) {
-        MinDegree = Degree;
-        AddPoint = iPoint;
-      }
+      InQueue[iPoint] = part[iPoint] != ipart;
+      CumulativeSize += !InQueue[iPoint];
     }
-    if (AddPoint == nPoint) {
-      SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
-    }
+    HybridParallelOffsets.push_back(CumulativeSize);
 
-    /*--- Seed the queue with the minimum degree node. ---*/
-    Result.push_back(AddPoint);
-    InQueue[AddPoint] = true;
-
-    /*--- Loop until reorganizing all nodes connected to AddPoint. This will
-     * also terminate early once the ordering + queue include all points. ---*/
-    while (QueueStart < Result.size() && Result.size() < nPointDomain) {
-      /*--- Move the start of the queue, equivalent to taking from the front of
-       * the queue and inserting at the end of the result. ---*/
-      AddPoint = Result[QueueStart];
-      ++QueueStart;
-
-      /*--- Add all adjacent nodes to the queue in increasing order of their
-       degree, checking if the element is already in the queue. ---*/
-      AuxQueue.clear();
-      for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-        const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
-        if (!InQueue[AdjPoint]) {
-          AuxQueue.push_back(AdjPoint);
-          InQueue[AdjPoint] = true;
+    /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
+    while (Result.size() < CumulativeSize) {
+      /*--- Select the node with the lowest degree in the grid. ---*/
+      auto AddPoint = nPoint;
+      auto MinDegree = std::numeric_limits<unsigned short>::max();
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        auto Degree = nodes->GetnPoint(iPoint);
+        if (!InQueue[iPoint] && Degree < MinDegree) {
+          MinDegree = Degree;
+          AddPoint = iPoint;
         }
       }
-      if (AuxQueue.empty()) continue;
+      if (AddPoint == nPoint) {
+        SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
+      }
 
-      /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
-      stable_sort(AuxQueue.begin(), AuxQueue.end(), [&](unsigned long iPoint, unsigned long jPoint) {
-        return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
-      });
-      Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
+      /*--- Seed the queue with the minimum degree node. ---*/
+      Result.push_back(AddPoint);
+      InQueue[AddPoint] = true;
+
+      /*--- Loop until reorganizing all nodes connected to AddPoint. This will
+       * also terminate early once the ordering + queue include all points. ---*/
+      while (QueueStart < Result.size() && Result.size() < CumulativeSize) {
+        /*--- Move the start of the queue, equivalent to taking from the front of
+         * the queue and inserting at the end of the result. ---*/
+        AddPoint = Result[QueueStart];
+        ++QueueStart;
+
+        /*--- Add all adjacent nodes to the queue in increasing order of their
+         degree, checking if the element is already in the queue. ---*/
+        AuxQueue.clear();
+        for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
+          const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
+          if (!InQueue[AdjPoint]) {
+            AuxQueue.push_back(AdjPoint);
+            InQueue[AdjPoint] = true;
+          }
+        }
+        if (AuxQueue.empty()) continue;
+
+        /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
+        stable_sort(AuxQueue.begin(), AuxQueue.end(), [&](unsigned long iPoint, unsigned long jPoint) {
+          return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
+        });
+        Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
+      }
     }
   }
   reverse(Result.begin(), Result.end());
