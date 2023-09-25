@@ -917,8 +917,6 @@ private:
   bool RampAndRelease;            /*!< \brief option for ramp load and release */
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  //su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
-  //Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
 
   su2double Motion_Origin[3] = {0.0}, /*!< \brief Mesh motion origin. */
