@@ -1224,6 +1224,7 @@ private:
   su2double flame_init[8];       /*!< \brief Flame front initialization parameters. */
   su2double spark_init[6];       /*!< \brief Spark ignition initialization parameters. */
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
   
   /*--- lookup table ---*/

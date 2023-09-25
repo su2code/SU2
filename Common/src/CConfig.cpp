@@ -972,7 +972,7 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
-
+  spark_reaction_rates   = nullptr;
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -1375,9 +1375,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
   addDoubleArrayOption("SPARK_INIT", 6, spark_init);
-  unsigned short dummy;
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
-  addDoubleListOption("SPARK_REACTION_RATES", dummy, spark_reaction_rates);
+  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
