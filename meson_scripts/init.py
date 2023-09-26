@@ -67,7 +67,7 @@ def init_submodules(
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
-    sha_version_coolprop = "0ce42fcf3bb2c373512bc825a4f0c1973a78f307"
+    sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
@@ -218,7 +218,7 @@ def submodule_status(path, sha_commit):
                 cwd=sys.path[0],
             )
             # to update CoolProp external libraries
-        if sha_commit == "0ce42fcf3bb2c373512bc825a4f0c1973a78f307":
+        if "CoolProp" in path:
             # update coolprop
             original_path = os.getcwd()
             print("update CoolProp")
