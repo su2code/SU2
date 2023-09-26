@@ -2349,6 +2349,25 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double Normal[MAXNDIM] = {0.0};
 
+  /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+  CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+  // /*--- Obtain flow velocity vector at inlet boundary node ---*/
+
+  // const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
+  // su2double Density_Inlet;
+  // if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+  //     Density_Inlet = V_inlet[prim_idx.Density()];
+  //     FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+  //       } else {
+  //         const su2double* Scalar_Inlet = nullptr;
+  //         if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  //           Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+  //         }
+  //         FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+  //         Density_Inlet = FluidModel->GetDensity();
+  //       }
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -2401,6 +2420,11 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
 
+    const su2double* Scalar_Inlet = nullptr;
+    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+      Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+    }
+
     /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
     switch (Kind_Inlet) {
@@ -2421,6 +2445,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Dirichlet condition for temperature (if energy is active) ---*/
 
         V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+
+        /*---Set thermodynamic state---*/
+
+        FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
 
         break;
 
@@ -2461,11 +2489,23 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           V_inlet[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
 
+          /*---Set thermodynamic state---*/
+
+          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+
         } else {
+
+          /*--- Dirichlet condition for temperature (if energy is active) ---*/
+
+          V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+
+          /*---Set thermodynamic state---*/
+
+          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
 
           /*--- Update the velocity magnitude using the total pressure. ---*/
 
-          Vel_Mag = sqrt((P_total - P_domain)/(0.5*nodes->GetDensity(iPoint)));
+          Vel_Mag = sqrt((P_total - P_domain)/(0.5*FluidModel->GetDensity()));
 
           /*--- Compute the delta change in velocity in each direction. ---*/
 
@@ -2477,10 +2517,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           for (iDim = 0; iDim < nDim; iDim++)
             V_inlet[iDim+prim_idx.Velocity()] = V_domain[iDim+prim_idx.Velocity()] + Damping*dV[iDim];
-
-          /*--- Dirichlet condition for temperature (if energy is active) ---*/
-
-          V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
         }
 
@@ -2509,7 +2545,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       construction, or will be set fixed implicitly by the temperature
       and equation of state. ---*/
 
-    V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
+    V_inlet[prim_idx.Density()] = FluidModel->GetDensity();
 
     /*--- Beta coefficient from the config file ---*/
 
@@ -2517,7 +2553,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Cp is needed for Temperature equation. ---*/
 
-    V_inlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
+    V_inlet[prim_idx.CpTotal()] = FluidModel->GetCp();
 
     // if (energy) {
     //   const su2double* velocity = &V_inlet[prim_idx.Velocity()];
@@ -2558,9 +2594,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Set transport properties at the inlet ---*/
 
-    V_inlet[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
+    V_inlet[prim_idx.LaminarViscosity()] = FluidModel->GetLaminarViscosity();
     V_inlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
-    V_inlet[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
+    V_inlet[prim_idx.ThermalConductivity()] = FluidModel->GetThermalConductivity();
 
     /*--- Set the normal vector and the coordinates ---*/
 
@@ -2578,9 +2614,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+      const su2double Intensity = Turb_Properties[0];
+      const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, &V_inlet[prim_idx.Velocity()]);
+      visc_numerics->SetTurbKineticEnergy(3.0 / 2.0 * (VelMag2 * pow(Intensity, 2)),
+                                          3.0 / 2.0 * (VelMag2 * pow(Intensity, 2)));
+    }
+
+      // visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+      //                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Compute and update residual ---*/
 
