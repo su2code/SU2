@@ -1542,10 +1542,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE || config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE) {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
     SetVolumeOutputValue("TURB_DELTA_TIME", iPoint, Node_Turb->GetDelta_Time(iPoint));
     SetVolumeOutputValue("TURB_CFL", iPoint, Node_Turb->GetLocalCFL(iPoint));
+  }
+
+  /*--- Or, if we have an eddy viscosity, but not solving the turbulence equations (as in the case of LES) ---*/
+  if (config->GetKind_SGS_Model() != TURB_SGS_MODEL::NONE) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
   if (config->GetSAParsedOptions().bc) {
