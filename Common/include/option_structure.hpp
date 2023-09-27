@@ -2242,7 +2242,7 @@ static const MapType<std::string, ENUM_FFD_CONTINUITY> Continuity_Map = {
   MakePair("2ND_DERIVATIVE", DERIVATIVE_2ND)
   MakePair("USER_INPUT", USER_INPUT)
 };
-BLADE
+
 /*!
  * \brief Types of coordinates systems for the FFD
  */
