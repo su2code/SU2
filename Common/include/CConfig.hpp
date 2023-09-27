@@ -344,8 +344,15 @@ private:
   su2double *ActDiskOutlet_GrossThrust;      /*!< \brief Specified outlet gross thrust for actuator disk. */
   su2double *ActDiskOutlet_Force;            /*!< \brief Specified outlet force for actuator disk. */
   su2double *ActDiskOutlet_Power;            /*!< \brief Specified outlet power for actuator disk. */
+  su2double *ActDiskOutlet_Thrust_BEM;       /*!< \brief Specified outlet power for actuator disk. */
+  su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet power for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
+  su2double **ActDisk_XCG, **ActDisk_YCG,  **ActDisk_ZCG;
+  su2double **ActDisk_RotRate;               /*!< \brief Value of the Rotation Rate */
+  su2double BEM_blade_angle ;                /*!< \brief Propeller blade angle  */
+  string    BEM_prop_filename ;              /*!< \brief Propeller blade angle  */
+  bool      History_File_Append_Flag;        /*!< \brief Flag to append history file  */
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
   su2double *ActDisk_TotalPressRatio;        /*!< \brief Specified tot. pres. ratio for actuator disk. */
@@ -6650,6 +6657,15 @@ public:
   su2double GetActDisk_PressJump(const string& val_marker, unsigned short val_index) const;
 
   /*!
+   * \brief Get the CG of  the actuator disk.
+   */
+  su2double GetActDisk_XCG(string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_YCG(string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_ZCG(string val_marker, unsigned short val_index) const;
+  su2double GetBEM_blade_angle(void) { return BEM_blade_angle; }
+  string    GetBEM_prop_filename(void) { return BEM_prop_filename; }
+
+  /*!
    * \brief Get the thrust corffient of the actuator disk.
    */
   su2double GetActDisk_TempJump(const string& val_marker, unsigned short val_index) const;
@@ -8191,6 +8207,9 @@ public:
    */
   su2double GetActDiskOutlet_Power(const string& val_marker) const;
 
+  su2double GetActDiskOutlet_Thrust_BEM(string val_marker) const;
+  su2double GetActDiskOutlet_Torque_BEM(string val_marker) const;
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -8225,6 +8244,9 @@ public:
    * \return The outlet pressure.
    */
   void SetActDiskOutlet_Power(unsigned short val_marker, su2double val_actdisk_power) { ActDiskOutlet_Power[val_marker] = val_actdisk_power; }
+
+  void SetActDiskOutlet_Thrust_BEM(unsigned short val_marker, su2double val_actdisk_thrust_bem) { ActDiskOutlet_Thrust_BEM[val_marker] = val_actdisk_thrust_bem; }
+  void SetActDiskOutlet_Torque_BEM(unsigned short val_marker, su2double val_actdisk_torque_bem) { ActDiskOutlet_Torque_BEM[val_marker] = val_actdisk_torque_bem; }
 
   /*!
    * \brief Get the displacement value at an displacement boundary.
