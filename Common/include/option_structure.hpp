@@ -652,7 +652,7 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
- * \brief Types of initialization option
+ * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
   TEMPERATURE_FS, /*!< \brief Temperature initialization. */
