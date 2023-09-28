@@ -7,6 +7,7 @@ The experimental thrust and power (Non-Dimensional) at J ~ 0.8 are as follows:
 J=Vinf/nD	CT=Thrust/rho*n2*D4	CP=Power/rho*n3*D5
 0.7963	            0.0953	              0.1025
 
+The dimensional values are Thrust = 16.30 N and Torque = 0.6612 N-m.
 
 Reference:
 -----------
