@@ -920,6 +920,7 @@ void CConfig::SetPointersNull() {
   ActDiskOutlet_TotalPressure = nullptr;   ActDiskOutlet_GrossThrust = nullptr;  ActDiskOutlet_Force            = nullptr;
   ActDiskOutlet_Power         = nullptr;   ActDiskOutlet_Temperature = nullptr;  ActDiskOutlet_TotalTemperature = nullptr;
   ActDiskOutlet_MassFlow      = nullptr;
+
   ActDiskOutlet_Thrust_BEM = nullptr;
   ActDiskOutlet_Torque_BEM = nullptr;
 
@@ -1524,6 +1525,8 @@ void CConfig::SetConfig_Options() {
   addActDiskOption("MARKER_ACTDISK",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+
+  /*!\brief MARKER_ACTDISK_CG\n DESCRIPTION: Actuator disk with CG for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskOption("MARKER_ACTDISK_CG",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_XCG, ActDisk_YCG, ActDisk_ZCG);
@@ -1654,10 +1657,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
 
-  /* DESCRIPTION: History File Append */
+  /* DESCRIPTION: Actuator disk BEM switch for history file appending.*/
   addBoolOption("HISTORY_FILE_APPEND", History_File_Append_Flag, false);
-  /* DESCRIPTION: Propeller_Blade_angle */
+  /* DESCRIPTION: Propeller blade angle for actuator disk BEM.*/
   addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
+  /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
   addStringOption("BEM_PROP_FILENAME", BEM_prop_filename,string("prop_geom_alfclcd_data.txt"));
 
   /* DESCRIPTION: Only half engine is in the computational grid */

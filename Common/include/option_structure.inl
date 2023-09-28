@@ -1772,7 +1772,6 @@ class COptionActDisk : public COptionBase {
   }
 };
 
-// { bem-vlad
 class COptionActDiskCentroid : public COptionBase {
   string name; // identifier for the option
   unsigned short & inlet_size;
@@ -1866,7 +1865,6 @@ public:
     this->actdisk_zcg = NULL;
   }
 };
-// } bem-vlad
 
 class COptionWallFunction : public COptionBase {
   string name;  // identifier for the option

@@ -194,6 +194,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   AllocVectorOfVectors(nVertex, ActDisk_Fy);
   AllocVectorOfVectors(nVertex, ActDisk_Fz);
 
+  /*--- Actuator Disk BEM Fa, Fx, Fy and Fz allocations ---*/
+
   AllocVectorOfVectors(nVertex, ActDisk_Fa_BEM);
   AllocVectorOfVectors(nVertex, ActDisk_Fx_BEM);
   AllocVectorOfVectors(nVertex, ActDisk_Fy_BEM);
@@ -203,10 +205,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   AllocVectorOfVectors(nVertex, ActDisk_DeltaP);
 
+  /*--- Store the value of rotation rate of the Actuator Disk for BEM ---*/
+
   AllocVectorOfVectors(nVertex, ActDisk_RotRate);
+
+  /*--- Store the value of CG of the Actuator Disk for BEM ---*/
+
   AllocVectorOfVectors(nVertex, ActDisk_XCG);
   AllocVectorOfVectors(nVertex, ActDisk_YCG);
   AllocVectorOfVectors(nVertex, ActDisk_ZCG);
+
+  /*--- Store the value of DeltaP_r, Thrust_r and Torque_r at the Actuator Disk for BEM ---*/
 
   AllocVectorOfVectors(nVertex, ActDisk_DeltaP_r);
   AllocVectorOfVectors(nVertex, ActDisk_Thrust_r);
@@ -2836,9 +2845,9 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Outlet_Force_Local[iMarker_Outlet]                  += Outlet_Force[iMarker];
             Outlet_Power_Local[iMarker_Outlet]                  += Outlet_Power[iMarker];
             Outlet_Area_Local[iMarker_Outlet]                   += Outlet_Area[iMarker];
-            Outlet_DeltaP_Local[iMarker_Outlet]                   += Outlet_DeltaP[iMarker];
-            Outlet_Thrust_Local[iMarker_Outlet]                   += Outlet_Thrust[iMarker];
-            Outlet_Torque_Local[iMarker_Outlet]                   += Outlet_Torque[iMarker];
+            Outlet_DeltaP_Local[iMarker_Outlet]                 += Outlet_DeltaP[iMarker];
+            Outlet_Thrust_Local[iMarker_Outlet]                 += Outlet_Thrust[iMarker];
+            Outlet_Torque_Local[iMarker_Outlet]                 += Outlet_Torque[iMarker];
           }
 
         }
@@ -3444,7 +3453,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
 }
 
-// { bem-vlad
+// { actuatordisk-bem
 //.......function 'readsdata_' reads alpha, cl and cd values from the files........................
 //float readsdata_(char *sec_filename,propeller_geom_struct *s_prop, propeller_section_struct *sprop_sec)
 void readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
@@ -3671,7 +3680,7 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
     *Torque = Dtorq[0]*tem1;
   }
   else 
-	  {
+  {
     if (rad_p > r_tip)
     {
       *dp_at_r = 0.0; 
@@ -3705,6 +3714,7 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
   }
 //----------------------------------------------------------------------
 }
+// } actuatordisk-bem
 
 void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
@@ -3771,15 +3781,15 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           }
       }
     }
-	  if(InnerIter == 0)
-	  {
+    if(InnerIter == 0)
+    {
               strcpy(section_prop_filename,config->GetBEM_prop_filename().c_str());
               readsdata_(section_prop_filename,&s_prop,&sprop_sec);
-	  }
-	  /* Update the propeller load according to the modified flow field after every 40 inner iterations */
-	  if(InnerIter % 40 == 0){
-	      GenActDiskData_BEM_VLAD(geometry, solver_container, config, iMesh,s_prop,sprop_sec,Output);
-	  }
+    }
+    /* Update the propeller load according to the modified flow field after every 40 inner iterations */
+    if(InnerIter % 40 == 0){
+        GenActDiskData_BEM_VLAD(geometry, solver_container, config, iMesh,s_prop,sprop_sec,Output);
+    }
   }
 
   /*--- Variable load distribution is in input file. ---*/
@@ -4387,7 +4397,6 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-// { bem-vlad
 void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,CConfig *config, unsigned short iMesh, dpropeller_geom_struct s_prop, dpropeller_section_struct &sprop_sec, bool Output) {
 
     unsigned short iDim, iMarker;
@@ -4419,9 +4428,8 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
         (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-		    
-		 iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
                 //Read Swirl params
                 Omega_RPM  = GetActDisk_RotRate(iMarker, iVertex);
@@ -4452,18 +4460,17 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
 
-            if (geometry->nodes->GetDomain(iPoint)) {
-              Coord = geometry->nodes->GetCoord(iPoint) ; 
-            }
+      if (geometry->nodes->GetDomain(iPoint)) {
+        Coord = geometry->nodes->GetCoord(iPoint) ; 
+      }
 
-            radius = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++){
-              radius += (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
-              radius_[iDim] = (Coord[iDim]-Origin[iDim]);
-	    }
+      radius = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        radius += (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
+        radius_[iDim] = (Coord[iDim]-Origin[iDim]);
+      }
             radius = sqrt(radius);
       /*--- Current solution at this boundary node and jumps values ---*/
             V_domain = nodes->GetPrimitive(iPoint);
@@ -4474,7 +4481,7 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
                for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
 
                RPM = abs(Omega_RPM);
-	       rps = RPM/60.0;
+               rps = RPM/60.0;
                AD_J = Vel_FreeStream[0]/(rps*dia);
                rho = V_domain[nDim+2] ; 
                T   = V_domain[0] ;  
@@ -4491,40 +4498,38 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
                loc_thrust  += dp_at_r*Area; 
                Target_Press_Jump = dp_at_r;
                Target_Temp_Jump  = Target_Press_Jump/(rho*287.0); 
-	     
-	       ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
-	       ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
-	       ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
-	       /* Non-dimensionalize the elemental load */
-	       dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
-	       //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
-	       dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
-	       /* Force radial load to 0 as there is no information of radial load from BEM */ 
-	       dCr_v = 0.0;
-	       rad_v = radius/r_tip;
-	       //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+
+               ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
+               ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
+               ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
+               /* Non-dimensionalize the elemental load */
+               dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
+               //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
+               dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
+               /* Force radial load to 0 as there is no information of radial load from BEM */ 
+               dCr_v = 0.0;
+               rad_v = radius/r_tip;
+               //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                //      (pow(AD_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
-	       Fa = dp_at_r;
+               Fa = dp_at_r;
                Ft = (dCp_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                     ((AD_J*PI_NUMBER*rad_v)*(AD_J*PI_NUMBER*rad_v))) / config->GetPressure_Ref();
                Fr = (dCr_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                     (pow(AD_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
-	       Fx = (Ft+Fr)*(radius_[0]/(radius));
+               Fx = (Ft+Fr)*(radius_[0]/(radius));
                Fy = (Ft+Fr)*(radius_[2]/(radius));
                Fz = -(Ft+Fr)*(radius_[1]/(radius));
-	       ActDisk_Fa_BEM[iMarker][iVertex] = Fa;
+               ActDisk_Fa_BEM[iMarker][iVertex] = Fa;
                ActDisk_Fx_BEM[iMarker][iVertex] = Fx;
                ActDisk_Fy_BEM[iMarker][iVertex] = Fy;
                ActDisk_Fz_BEM[iMarker][iVertex] = Fz;
-	     
             }
-//---------------------------------------------------------------------------------------------------------------------------------------------------------
-	    }
+//---------------------------------------------------------------
+      }
     }
    }
   delete [] Normal;
 }
-// } bem-vlad
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
@@ -8804,7 +8809,6 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   END_SU2_OMP_FOR
 }
 
-// { bem-vlad
 void CEulerSolver::BC_ActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
 
@@ -9041,10 +9045,6 @@ void CEulerSolver::BC_ActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
     }
   }
 }
-
-
-
-// } bem-vlad
 
 void CEulerSolver::PrintVerificationError(const CConfig *config) const {
 
