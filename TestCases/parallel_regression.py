@@ -486,6 +486,15 @@ def main():
     propeller.timeout   = 3200
     test_list.append(propeller)
 
+    # Actuator disk BEM method for propeller
+    propeller           = TestCase('actuatordisk_bem')
+    propeller.cfg_dir   = "rans/actuatordisk_bem"
+    propeller.cfg_file  = "actuatordisk_bem.cfg"
+    propeller.test_iter = 15
+    propeller.test_vals = [4.4835e-01,   -5.226958,   -8.297197,           0,   -0.004325,   -0.565388]
+    propeller.timeout   = 3200
+    test_list.append(propeller)
+
     #######################################
     ### Axisymmetric Compressible RANS  ###
     #######################################
