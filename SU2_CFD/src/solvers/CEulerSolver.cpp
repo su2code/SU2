@@ -3456,46 +3456,46 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 // { actuatordisk-bem
 //.......function 'readsdata_' reads alpha, cl and cd values from the files........................
 //float readsdata_(char *sec_filename,propeller_geom_struct *s_prop, propeller_section_struct *sprop_sec)
-void readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
+char* readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
 {
    int i,j,MAXRK,MAXALFK;
    char dummy[1024];
    FILE *file_ang;
    int sect[BEM_MAXR];
+   char* fgets_r=0;
 //.Read blade section data from file
    file_ang = fopen(sec_filename,"r");
 // To be read from file
-   fgets(dummy,120,file_ang);
+   fgets_r = fgets(dummy,120,file_ang);
 // Skip header
-   fgets(dummy,120,file_ang); sscanf(dummy,"%d", &s_prop->nblades);
-   fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->dia);
-   fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->rhub);
-   fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->ang0_75);
+   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%d", &s_prop->nblades);
+   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->dia);
+   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->rhub);
+   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->ang0_75);
 //.Skip reading next line.................................................
-   fgets(dummy,120,file_ang);
-   fgets(dummy,120,file_ang);
+   fgets_r = fgets(dummy,120,file_ang);
+   fgets_r = fgets(dummy,120,file_ang);
         sscanf(dummy,"%d%d",&MAXRK,&MAXALFK);
    sprop_sec-> nrad = MAXRK;
    sprop_sec-> nalf = MAXALFK;
 //
-   fgets(dummy,120,file_ang);
+   fgets_r = fgets(dummy,120,file_ang);
    for(i=0; i < MAXRK; i++)
    {
-      fgets(dummy,120,file_ang);
+      fgets_r = fgets(dummy,120,file_ang);
       sscanf(dummy,"%d %lf %lf %lf",&sect[i],&sprop_sec->r1[i],&sprop_sec->chord[i],&sprop_sec->setangle[i]);
    }
 //.Read computed alpha v/s cl and cd from the file
-//
    for(i=0; i < MAXRK; i++)
    {
-        fgets(dummy,128,file_ang);
+        fgets_r = fgets(dummy,128,file_ang);
         for(j=0; j < MAXALFK; j++)
         {
-        fgets(dummy,128,file_ang);
+        fgets_r = fgets(dummy,128,file_ang);
         sscanf(dummy,"%lf %lf %lf",&sprop_sec->alf[j][i],&sprop_sec->cl_arr[j][i],&sprop_sec->cd_arr[j][i]);
         }
-}
-//
+   }
+   return fgets_r;
 }
 
 
@@ -3538,16 +3538,15 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
 {
   int   j,isec,converged,n_iter;
   int   NR=sprop_sec->nrad;
-  su2double r_75,dia,r_hub,r_tip,alpha_corr,cl_corr_fac;
+  su2double dia,r_hub,r_tip,alpha_corr,cl_corr_fac;
   su2double base_mach,s_mach,b_num,thrust,torque;
   su2double r_dash,t_loss,c_phi,rad,phi,alpha,radtodeg;
-  su2double anew,bnew,V0,V2,cl,cd,Vlocal,DqDr,tem1,tem2,q;
-  su2double delta_r[BEM_MAXR],a[BEM_MAXR],b[BEM_MAXR];
+  su2double bnew,V0,V2,cl,cd,Vlocal,DqDr,tem1,tem2,q;
+  su2double delta_r[BEM_MAXR],b[BEM_MAXR];
   static su2double Dtorq[BEM_MAXR];
 
   su2double n,omega,a0,den;
   su2double ang_offset=0.0;
-  char  line[1024];
 
 //...........................................
   radtodeg = 180.0/M_PI;
@@ -4402,23 +4401,21 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
     unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   string Marker_Tag;
-  int iRow, nRow, iEl;
     su2double Omega_sw=0.0,Omega_RPM=0.0,Origin[3]={0.0},radius_[3]={0.0};
     static su2double omega_ref=0.0, Lref=0.0;
-    unsigned long InnerIter                 = config->GetInnerIter();
-  static su2double RPM=0.0,blade_angle=0.0,dia=0.0,r_hub=0.0,r_tip=0.0,rps=0.0,radius=0.0;
+  static su2double RPM=0.0,blade_angle=0.0,dia=0.0,/*r_hub=0.0,*/r_tip=0.0,rps=0.0,radius=0.0;
   static su2double V=0.0,rho=0.0,T=0.0;
-  static su2double Thrust=0.0,Torque=0.0,dp_av=0.0,dp_av1=0.0,dp_at_r=0.0,dp_at_r_Vn=0.0;
+  static su2double Thrust=0.0,Torque=0.0,dp_av=0.0,/*dp_av1=0.0,*/dp_at_r=0.0;
   static su2double deltap_r[BEM_MAXR]={0.0};
   static su2double AD_Axis[MAXNDIM] = {0.0}, AD_J=0.0;
-  static su2double Target_Press_Jump=0.0, Target_Temp_Jump=0.0,Area=0.0,UnitNormal[3]={0.0},Vn=0.0;
-  static su2double Fa=0.0,Ft=0.0,Fr=0.0,Fx=0.0,Fy=0.0,Fz=0.0,dCt_v=0.0,dCp_v=0.0,dCr_v=0.0,rad_v=0.0;
-  su2double *V_domain,*Coord;
-  static su2double loc_Torque = 0.0,tot_Torque = 0.0;
-  static su2double loc_thrust = 0.0,tot_thrust=0.0;
+  static su2double Target_Press_Jump=0.0, /*Target_Temp_Jump=0.0,*/Area=0.0,UnitNormal[3]={0.0},Vn=0.0;
+  static su2double Fa=0.0,Ft=0.0,Fr=0.0,Fx=0.0,Fy=0.0,Fz=0.0,/*dCt_v=0.0,*/dCp_v=0.0,dCr_v=0.0,rad_v=0.0;
+  su2double *V_domain=0, *Coord=0;
+  static su2double loc_Torque = 0.0;
+  static su2double loc_thrust = 0.0;
   static su2double tot_area = 0.0,tot_tq = 0.0;
   dia   = s_prop.dia;
-  r_hub = s_prop.rhub;
+  // r_hub = s_prop.rhub;
   r_tip   = 0.5*dia ;
 
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
@@ -4497,13 +4494,13 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
                tot_tq  += dp_av;
                loc_thrust  += dp_at_r*Area;
                Target_Press_Jump = dp_at_r;
-               Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
+               // Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
 
                ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
                ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
                ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
                /* Non-dimensionalize the elemental load */
-               dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
+               //dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
                //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
                dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
                /* Force radial load to 0 as there is no information of radial load from BEM */
