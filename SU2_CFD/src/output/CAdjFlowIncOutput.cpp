@@ -43,6 +43,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
 
   if (nRequestedHistoryFields == 0) {
     requestedHistoryFields.emplace_back("ITER");
+    if (config->GetTime_Domain()) requestedHistoryFields.emplace_back("CUR_TIME");
     requestedHistoryFields.emplace_back("RMS_RES");
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
