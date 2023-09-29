@@ -1,5 +1,5 @@
 # Geometric parameters of propeller
-4           : number of blades 
+4           : number of blades
 0.237       : diameter (m)
 0.01754     : radius of hub  (m)
 23.9        : angle at 75% radius, has to be consistent with section data

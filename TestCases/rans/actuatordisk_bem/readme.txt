@@ -11,6 +11,6 @@ The dimensional values are Thrust = 16.30 N and Torque = 0.6612 N-m.
 
 Reference:
 -----------
-Sinnige, T., van Arnhem, N., Stokkermans, T. C. A., Eitelberg, G., Veldhuis, L. L. M., ``Wingtip-Mounted 
+Sinnige, T., van Arnhem, N., Stokkermans, T. C. A., Eitelberg, G., Veldhuis, L. L. M., ``Wingtip-Mounted
 	    Propellers: Aerodynamic Analysis of Interaction Effects and Comparison with Conventional Layout,''
 	    Journal of Aircraft, 2018.

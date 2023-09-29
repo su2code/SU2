@@ -876,7 +876,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
-    
+
     case DATADRIVEN_FLUID:
 
       auxFluidModel = new CDataDrivenFluid(config);
@@ -3545,21 +3545,21 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
   su2double delta_r[BEM_MAXR],a[BEM_MAXR],b[BEM_MAXR];
   static su2double Dtorq[BEM_MAXR];
 
-  su2double n,omega,a0,den; 
+  su2double n,omega,a0,den;
   su2double ang_offset=0.0;
   char  line[1024];
 
 //...........................................
-  radtodeg = 180.0/M_PI; 
-  dia   = s_prop.dia; 
-  r_hub = s_prop.rhub; 
+  radtodeg = 180.0/M_PI;
+  dia   = s_prop.dia;
+  r_hub = s_prop.rhub;
   r_tip   = 0.5*dia ;
-  ang_offset = blade_angle - s_prop.ang0_75; 
+  ang_offset = blade_angle - s_prop.ang0_75;
 //...........................................
     alpha_corr  = 0.0;
   base_mach   = 0.22 ;
   b_num = sqrt(1.0-base_mach*base_mach);
-  a0 = sqrt(1.4*287*T); 
+  a0 = sqrt(1.4*287*T);
 //...........................................
 //
 //Change pitch by ang_offset
@@ -3568,20 +3568,20 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
   n = RPM/60.0;
   omega =n*2.0*M_PI;
 //
-  for (j=0; j < NR; j++) 
+  for (j=0; j < NR; j++)
   {
 
-    if (j < 1) 
+    if (j < 1)
     {  delta_r[j]  = sprop_sec->r1[j+1] - r_hub;  }
-    else 
+    else
     {
-      if (j < NR-1)  
+      if (j < NR-1)
       { delta_r[j]  = sprop_sec->r1[j+1] - sprop_sec->r1[j-1]; }
       else
       { delta_r[j]  = r_tip - sprop_sec->r1[j-1]; }
     }
 
-    delta_r[j] *= 0.5; 
+    delta_r[j] *= 0.5;
   }
 //--------------------------------------------------------
 
@@ -3589,7 +3589,7 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
   torque=0.0;
 
 //Main Loop -------------------------------------------------------------
-  for (j=0; j < NR; j++) 
+  for (j=0; j < NR; j++)
   {
       b[j]=0.01;
     converged=0;
@@ -3598,32 +3598,32 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
     {
       V2=omega*sprop_sec->r1[j]*(1-b[j]);
       V0=V;
-//    
+//
       phi=atan2(V0,V2);
-//   
+//
       alpha=sprop_sec->setangle[j] + ang_offset-radtodeg*phi+alpha_corr;
-      rad = sprop_sec->r1[j] ; 
-//    get cl, cd from lookup table 
-      isec = j+1 ; 
+      rad = sprop_sec->r1[j];
+//    get cl, cd from lookup table
+      isec = j+1;
       get_clcd_(&isec,sprop_sec, &alpha, &cl, &cd) ;
 //   ......................................
       Vlocal=sqrt(V0*V0+V2*V2);
-      q = 0.5*rho*Vlocal*Vlocal ; 
-      s_mach = Vlocal/a0; 
-      cl_corr_fac = 1.0; 
-      if (s_mach > base_mach) 
+      q = 0.5*rho*Vlocal*Vlocal;
+      s_mach = Vlocal/a0;
+      cl_corr_fac = 1.0;
+      if (s_mach > base_mach)
       {
-        den = 1.0-s_mach*s_mach ; 
-        if (den > 0.0) cl_corr_fac = b_num / sqrt(den); 
+        den = 1.0-s_mach*s_mach;
+        if (den > 0.0) cl_corr_fac = b_num / sqrt(den);
       }
-//    ****************************** 
+//    ******************************
       cl *= cl_corr_fac ;
-//    ****************************** 
-//    tip loss factor 
+//    ******************************
+//    tip loss factor
       r_dash = rad / r_tip+1.0e-5;
       c_phi = cos(phi) ;
       t_loss = 1.0;
-      if (r_dash > 0.90) 
+      if (r_dash > 0.90)
       {
         t_loss = (2.0/M_PI)*acos(exp(-(1.0*s_prop.nblades*(1-r_dash)/(r_dash*c_phi))))  ;
       }
@@ -3631,8 +3631,8 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
       DtDr[j]=q*s_prop.nblades*sprop_sec->chord[j]*(cl*cos(phi)-cd*sin(phi));
       DqDr=q*s_prop.nblades*sprop_sec->chord[j]*rad*(cd*cos(phi)+cl*sin(phi));
 
-      DtDr[j] *= t_loss; 
-      DqDr *= t_loss; 
+      DtDr[j] *= t_loss;
+      DqDr *= t_loss;
 
       tem2=DqDr/(4.0*M_PI*rad*rad*rad*rho*V*omega);
       bnew=0.6*b[j]+0.4*tem2;
@@ -3645,7 +3645,7 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
         }
        if (bnew<0.1)
           b[j]=bnew;
-      n_iter++ ; 
+      n_iter++ ;
       if (n_iter>BEM_MAX_ITER)
       {
         converged=1;
@@ -3658,53 +3658,53 @@ void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *spro
 //End of Main Loop -------------------------------------------------------------
 
   tem1 = rho*n*n*dia*dia*dia*dia;
-  tem2 = tem1*dia; 
+  tem2 = tem1*dia;
 
 
-  *Thrust=thrust; 
+  *Thrust=thrust;
   *Torque=2.0*M_PI* torque;
   *dp_av=2.0*M_PI* torque;
 
-  for (j=0; j < NR; j++) 
+  for (j=0; j < NR; j++)
   {
-    DtDr[j] /= (2.0*M_PI*sprop_sec->r1[j]) ; 
+    DtDr[j] /= (2.0*M_PI*sprop_sec->r1[j]) ;
     Dtorq[j] = Dtorq[j];
   }
 
   if (rad_p < sprop_sec->r1[0])
   {
-    tem2 = sprop_sec->r1[0]  - r_hub ;
-    tem1 = (rad_p - r_hub)/tem2 ;
-    tem2 = 1.0 - tem1 ; 
-    *dp_at_r = DtDr[0]*tem1; 
+    tem2 = sprop_sec->r1[0]  - r_hub;
+    tem1 = (rad_p - r_hub)/tem2;
+    tem2 = 1.0 - tem1;
+    *dp_at_r = DtDr[0]*tem1;
     *Torque = Dtorq[0]*tem1;
   }
-  else 
+  else
   {
     if (rad_p > r_tip)
     {
-      *dp_at_r = 0.0; 
+      *dp_at_r = 0.0;
       *Torque = 0.0;
     }
-    else 
+    else
     {
     if (rad_p > sprop_sec->r1[NR-1])
     {
       tem2 = r_tip - sprop_sec->r1[NR-1];
       tem1 = (rad_p - sprop_sec->r1[NR-1])/tem2 ;
-      tem2 = 1.0 - tem1 ; 
-      *dp_at_r = DtDr[NR-1]*tem2; 
+      tem2 = 1.0 - tem1;
+      *dp_at_r = DtDr[NR-1]*tem2;
       *Torque = Dtorq[NR-1]*tem2;
     }
-    else 
+    else
     {
-      for (j=0; j < NR-1; j++) 
+      for (j=0; j < NR-1; j++)
       {
-         if ((sprop_sec->r1[j] < rad_p) && (sprop_sec->r1[j+1] >= rad_p)) 
+         if ((sprop_sec->r1[j] < rad_p) && (sprop_sec->r1[j+1] >= rad_p))
          {
             tem2 = sprop_sec->r1[j+1]  -  sprop_sec->r1[j];
             tem1 = (rad_p - sprop_sec->r1[j])/tem2 ;
-            tem2 = 1.0 - tem1 ; 
+            tem2 = 1.0 - tem1;
            *dp_at_r = DtDr[j]*tem2+DtDr[j+1]*tem1;
            *Torque = Dtorq[j]*tem2+Dtorq[j+1]*tem1;
          }
@@ -4417,8 +4417,8 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
   static su2double loc_Torque = 0.0,tot_Torque = 0.0;
   static su2double loc_thrust = 0.0,tot_thrust=0.0;
   static su2double tot_area = 0.0,tot_tq = 0.0;
-  dia   = s_prop.dia; 
-  r_hub = s_prop.rhub; 
+  dia   = s_prop.dia;
+  r_hub = s_prop.rhub;
   r_tip   = 0.5*dia ;
 
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
@@ -4463,7 +4463,7 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
 
       if (geometry->nodes->GetDomain(iPoint)) {
-        Coord = geometry->nodes->GetCoord(iPoint) ; 
+        Coord = geometry->nodes->GetCoord(iPoint);
       }
 
       radius = 0.0;
@@ -4475,29 +4475,29 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
       /*--- Current solution at this boundary node and jumps values ---*/
             V_domain = nodes->GetPrimitive(iPoint);
 //---------------------------------------------------------------
-            if (abs(Omega_sw) > 1.0e-1) 
+            if (abs(Omega_sw) > 1.0e-1)
             {
-               Vn = 0.0; 
+               Vn = 0.0;
                for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
 
                RPM = abs(Omega_RPM);
                rps = RPM/60.0;
                AD_J = Vel_FreeStream[0]/(rps*dia);
-               rho = V_domain[nDim+2] ; 
-               T   = V_domain[0] ;  
-               blade_angle = config->GetBEM_blade_angle(); 
+               rho = V_domain[nDim+2];
+               T   = V_domain[0];
+               blade_angle = config->GetBEM_blade_angle();
                V = config->GetModVel_FreeStream();
-               V = fabs(Vn); 
+               V = fabs(Vn);
                bem_model_noa(s_prop,&sprop_sec,                         // Propeller properties
                              radius,V,RPM,rho,T,blade_angle,            // Input
                              deltap_r,&Thrust,&Torque,&dp_av,&dp_at_r); // Output
 
-               tot_area  += Area; 
-               loc_Torque  += Torque*Area; 
-               tot_tq  += dp_av;  
-               loc_thrust  += dp_at_r*Area; 
+               tot_area  += Area;
+               loc_Torque  += Torque*Area;
+               tot_tq  += dp_av;
+               loc_thrust  += dp_at_r*Area;
                Target_Press_Jump = dp_at_r;
-               Target_Temp_Jump  = Target_Press_Jump/(rho*287.0); 
+               Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
 
                ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
                ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
@@ -4506,7 +4506,7 @@ void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver
                dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
                //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
                dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
-               /* Force radial load to 0 as there is no information of radial load from BEM */ 
+               /* Force radial load to 0 as there is no information of radial load from BEM */
                dCr_v = 0.0;
                rad_v = radius/r_tip;
                //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
@@ -6113,7 +6113,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 {
                   Velocity_i[iDim] = nodes->GetVelocity(iPoint,iDim);
                 }
-                
+
                 ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
                 if(nDim ==2){
@@ -8814,22 +8814,22 @@ void CEulerSolver::BC_ActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
   /*!
    * \function BC_ActDisk_BEM_VLAD
-   * \brief Actuator disk model with Blade Element Method (BEM) 
+   * \brief Actuator disk model with Blade Element Method (BEM)
    * \author: Chandukrishna Y., T. N. Venkatesh and Josy Pullockara
-   * Institution: Computational and Theoretical Fluid Dynamics (CTFD),           
-   *            CSIR - National Aerospace Laboratories, Bangalore              
-   *            Academy of Scientific and Innovative Research, Ghaziabad        
-   * \version 8.0.0 "Harrier"    
+   * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
+   *            CSIR - National Aerospace Laboratories, Bangalore
+   *            Academy of Scientific and Innovative Research, Ghaziabad
+   * \version 8.0.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
-   * Section properties of the propeller given in an input file. 
+   * Section properties of the propeller given in an input file.
    * Cl, Cd of propeller sections need to be generated earlier and saved in this file
    * Actuator disk data initialized in function SetActDisk_BCThrust.
    * Propeller load calculated with Blade Element Method
-   * Interpolated load at each point on the actuator disk is set in GenActDiskData_BEM_VLAD function 
+   * Interpolated load at each point on the actuator disk is set in GenActDiskData_BEM_VLAD function
    * Rest calculations follows the Variable Load (BC_ActDisk_VariableLoad) approach
-   * 
+   *
    */
 
   unsigned short iDim;
