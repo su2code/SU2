@@ -69,7 +69,7 @@ def init_submodules(
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
     sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
-    sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
+    sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_mlpcpp = "665c45b7d3533c977eb1f637918d5b8b75c07d3b"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
