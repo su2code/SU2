@@ -36,9 +36,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    if (config->GetTime_Domain()) requestedHistoryFields.emplace_back("CUR_TIME");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }

@@ -35,9 +35,7 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(conf
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    if (config->GetTime_Domain()) requestedHistoryFields.emplace_back("CUR_TIME");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){

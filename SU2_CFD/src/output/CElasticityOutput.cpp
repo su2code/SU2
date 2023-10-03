@@ -43,9 +43,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    if (dynamic) requestedHistoryFields.emplace_back("CUR_TIME");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(dynamic);
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
