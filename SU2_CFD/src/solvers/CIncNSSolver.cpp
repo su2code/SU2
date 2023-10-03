@@ -109,7 +109,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
         }
         END_SU2_OMP_PARALLEL
 
-        geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, physical_rho);
+        if ( kernels[0].first != ENUM_FILTER_KERNEL::NO_FILTER)
+            geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, physical_rho);
 
         SU2_OMP_PARALLEL
         {

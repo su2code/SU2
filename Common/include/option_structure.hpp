@@ -2485,6 +2485,7 @@ enum class ENUM_FILTER_KERNEL {
   GAUSSIAN_WEIGHT,  /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
   DILATE_MORPH,     /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
   ERODE_MORPH,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
+  NO_FILTER,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
 };
 static const MapType<std::string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
   MakePair("CONSTANT", ENUM_FILTER_KERNEL::CONSTANT_WEIGHT)
@@ -2492,6 +2493,7 @@ static const MapType<std::string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
   MakePair("GAUSSIAN", ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT)
   MakePair("DILATE", ENUM_FILTER_KERNEL::DILATE_MORPH)
   MakePair("ERODE", ENUM_FILTER_KERNEL::ERODE_MORPH)
+  MakePair("NO_FILTER", ENUM_FILTER_KERNEL::NO_FILTER)
 };
 
 /*!
