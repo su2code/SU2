@@ -834,6 +834,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES)
+        dk = Density_i * sqrt(ScalarVar_i[0]*ScalarVar_i[0]*ScalarVar_i[0]) / lengthScale_i;
+        
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
