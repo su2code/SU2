@@ -1081,11 +1081,11 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
-
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+
     const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
     const su2double VortMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
 
@@ -1138,7 +1138,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_l = tanh(pow(C_l*C_l*r_dl, 10.0));
         const su2double f_t = tanh(pow(C_t*C_t*r_dt, 3.0));
         const su2double f_e2 = 1.0 - max(f_t, f_l);
-        const su2double f_e1 = alpha >= 0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
+        const su2double f_e1 = alpha >= 0.0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
         const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
           
 
