@@ -2107,12 +2107,13 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   bool variable_density = (config->GetVariable_Density_Model());
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
+  bool fluid_mixture = (config->GetKind_FluidModel()==FLUID_MIXTURE);
 
   /*--- Access the primitive variables at this node. ---*/
 
   Density     = nodes->GetDensity(iPoint);
   BetaInc2    = nodes->GetBetaInc2(iPoint);
-  Cp          = nodes->GetSpecificHeatCp(iPoint);
+  Cp          = fluid_mixture? 1.0: nodes->GetSpecificHeatCp(iPoint);
   oneOverCp   = 1.0/Cp;
   Temperature = nodes->GetTemperature(iPoint);
 
@@ -2883,6 +2884,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
+  const bool fluid_mixture = config->GetKind_FluidModel()==FLUID_MIXTURE;
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2918,7 +2920,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Access the density and Cp at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
+      Cp = fluid_mixture? 1.0: nodes->GetSpecificHeatCp(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
@@ -2976,7 +2978,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
+      Cp = fluid_mixture? 1.0: nodes->GetSpecificHeatCp(iPoint);
       V2U(Density, Cp, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
@@ -3032,7 +3034,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
           V_time_n = nodes->GetSolution_time_n(iPoint);
           Density = nodes->GetDensity(iPoint);
-          Cp = nodes->GetSpecificHeatCp(iPoint);
+          Cp = fluid_mixture? 1.0: nodes->GetSpecificHeatCp(iPoint);
           V2U(Density, Cp, V_time_n, U_time_n);
 
           for (iVar = 0; iVar < nVar-!energy; iVar++)
@@ -3062,7 +3064,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Access the density and Cp at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
+      Cp = fluid_mixture? 1.0: nodes->GetSpecificHeatCp(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 

@@ -118,7 +118,10 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
   Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  //if (fluid_mixture) Cp_j = Cp_i;
+  if (fluid_mixture) {
+    Cp_i = 1.0;
+    Cp_j = 1.0;
+  }
   Enthalpy_i    = Cp_i*Temperature_i; Enthalpy_j    = Cp_j*Temperature_j;
 
   ProjVelocity = 0.0;

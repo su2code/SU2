@@ -380,6 +380,7 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
   const su2double Temp_i = V_i[nDim + 1];
   DensityInc_i = V_i[nDim + 2];
   Cp_i = V_i[nDim + 7];
+  Thermal_Conductivity_i = V_i[nDim + 6];
 
   Diverg = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -422,18 +423,20 @@ CNumerics::ResidualType<> CSourceIncEnergy_Flow::ComputeResidual(const CConfig* 
     su2double term_2= tau[0][0]*PrimVar_Grad_i[1][0]+tau[0][1]*PrimVar_Grad_i[1][1]+tau[1][0]*PrimVar_Grad_i[2][0]+tau[1][1]*PrimVar_Grad_i[2][1];
     su2double term_3= DensityInc_i *Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1]);
     su2double term_4 = Velocity_i[0]* PrimVar_Grad_i[0][0]+Velocity_i[1]* PrimVar_Grad_i[0][1];
+    su2double term_5 = (Thermal_Conductivity_i / (Cp_i*Cp_i)) * (GradCp_i[0]*GradTemperature_i[0] + GradCp_i[1]*GradTemperature_i[1]);
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
-    residual[3] = -(term_1 + term_2 + term_3 + term_4) * Volume;
+    residual[3] = -term_5 * Volume;
   } else {
     su2double term_1 = Heat_diffusivity[0]*GradTemperature_i[0] + Heat_diffusivity[1]*GradTemperature_i[1] + Heat_diffusivity[2]*GradTemperature_i[2];
-    su2double term_3 = Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1]+Velocity_i[2]*GradCp_i[2]); 
+    su2double term_3 = Temp_i * (Velocity_i[0]*GradCp_i[0]+Velocity_i[1]*GradCp_i[1]+Velocity_i[2]*GradCp_i[2]);
+    su2double term_5 = (Thermal_Conductivity_i / (Cp_i*Cp_i)) * (GradCp_i[0]*GradTemperature_i[0] + GradCp_i[1]*GradTemperature_i[1] + GradCp_i[2]*GradTemperature_i[2]);
     residual[0] = 0.0;
     residual[1] = 0.0;
     residual[2] = 0.0;
     residual[3] = 0.0;
-    residual[4] = -DensityInc_i * (term_1+term_3) * Volume;
+    residual[4] = -term_5 * Volume;
   }
 
   if (implicit) {

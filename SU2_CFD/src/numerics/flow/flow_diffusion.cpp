@@ -583,6 +583,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
   Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
   Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
+  Cp_i                   = V_i[nDim+7];  Cp_j                   = V_j[nDim+7];
 
   /*--- Mean transport properties ---*/
 
@@ -590,6 +591,8 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  Mean_Cp                   = 1.0;
+  if (fluid_mixture) Mean_Cp = 0.5*(Cp_i + Cp_j);
 
   /*--- Mean gradient approximation ---*/
 
@@ -623,7 +626,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
+  GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity, Mean_Cp);
 
   /*--- Implicit part ---*/
 
@@ -649,8 +652,8 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-      Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
+      Jacobian_i[nDim+1][nDim+1] = -(Mean_Thermal_Conductivity / Mean_Cp)*proj_vector_ij;
+      Jacobian_j[nDim+1][nDim+1] =  (Mean_Thermal_Conductivity / Mean_Cp)*proj_vector_ij;
     }
 
   }
@@ -677,7 +680,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
 void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
                                              const su2double *val_normal,
-                                             su2double val_thermal_conductivity) {
+                                             su2double val_thermal_conductivity, su2double val_cp) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
@@ -687,12 +690,12 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = val_thermal_conductivity*val_gradprimvar[nDim+1][0];
+    Flux_Tensor[3][0] = (val_thermal_conductivity / val_cp)*val_gradprimvar[nDim+1][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = val_thermal_conductivity*val_gradprimvar[nDim+1][1];
+    Flux_Tensor[3][1] = (val_thermal_conductivity / val_cp)*val_gradprimvar[nDim+1][1];
 
   } else {
 
@@ -700,19 +703,19 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
     Flux_Tensor[3][0] = tau[0][2];
-    Flux_Tensor[4][0] = val_thermal_conductivity*val_gradprimvar[nDim+1][0];
+    Flux_Tensor[4][0] = (val_thermal_conductivity / val_cp)*val_gradprimvar[nDim+1][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = tau[1][2];
-    Flux_Tensor[4][1] = val_thermal_conductivity*val_gradprimvar[nDim+1][1];
+    Flux_Tensor[4][1] = (val_thermal_conductivity / val_cp)*val_gradprimvar[nDim+1][1];
 
     Flux_Tensor[0][2] = 0.0;
     Flux_Tensor[1][2] = tau[2][0];
     Flux_Tensor[2][2] = tau[2][1];
     Flux_Tensor[3][2] = tau[2][2];
-    Flux_Tensor[4][2] = val_thermal_conductivity*val_gradprimvar[nDim+1][2];
+    Flux_Tensor[4][2] = (val_thermal_conductivity / val_cp)*val_gradprimvar[nDim+1][2];
 
   }
 

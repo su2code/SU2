@@ -288,6 +288,7 @@ class CAvgGradInc_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
   bool energy;                         /*!< \brief computation with the energy equation. */
+  su2double Mean_Cp;                   /*!< \brief Mean value of the specific heat capacity. */
 
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction
@@ -298,10 +299,12 @@ private:
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
+   * \param[in] val_cp - Heat capacity at constant pressure
    */
   void GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
                              const su2double *val_normal,
-                             su2double val_thermal_conductivity);
+                             su2double val_thermal_conductivity,
+                             su2double val_cp);
 
   /*!
    * \brief Compute the projection of the viscous Jacobian matrices.
