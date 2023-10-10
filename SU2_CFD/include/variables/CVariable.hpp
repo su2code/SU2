@@ -385,6 +385,25 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
+  inline virtual void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_d) {}
+  
+  inline virtual su2double Get_L_RANS(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_L_LES(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_ftilda_d(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_dt(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_dl(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_d(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_dl, su2double val_r_dt) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
   virtual void SetSolution_New() {}
 
   /*!

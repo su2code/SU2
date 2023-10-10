@@ -1117,6 +1117,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
 
+        nodes->SetDebug_Quantities(config, iPoint, f_d, l_RANS, l_LES, r_d);
+
         break;
       }
       case SST_IDDES: {
@@ -1145,6 +1147,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
         const su2double l_LES = C_DES * Delta;
 
+        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dl, r_dt);
+
         DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
 
         break;
@@ -1166,6 +1170,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
         const su2double l_LES = C_DES * Delta;
+
+        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dt);
 
         DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
 

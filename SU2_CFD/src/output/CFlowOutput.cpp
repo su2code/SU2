@@ -1464,6 +1464,23 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    if ( config->GetKind_HybridRANSLES() == SST_DDES){
+      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
+      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
+      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
+      AddVolumeOutput("R_D", "r_d", "DDES", "DES length scale value");
+    } else if ( config->GetKind_HybridRANSLES() == SST_IDDES){
+      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
+      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
+      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
+      AddVolumeOutput("R_DT", "r_dt", "DDES", "DES length scale value");
+      AddVolumeOutput("R_DL", "r_dl", "DDES", "DES length scale value");
+    } else if ( config->GetKind_HybridRANSLES() == SST_SIDDES){
+      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
+      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
+      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
+      AddVolumeOutput("R_DT", "r_dt", "DDES", "DES length scale value");
+    }
   }
 
   if (config->GetViscous()) {
@@ -1563,6 +1580,23 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    if ( config->GetKind_HybridRANSLES() == SST_DDES){
+      SetVolumeOutputValue("F_D", iPoint, Node_Turb->Get_ftilda_d(iPoint));
+      SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
+      SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
+      SetVolumeOutputValue("R_D", iPoint, Node_Turb->Get_r_d(iPoint));
+    } else if ( config->GetKind_HybridRANSLES() == SST_IDDES){
+      SetVolumeOutputValue("F_D", iPoint, Node_Turb->Get_ftilda_d(iPoint));
+      SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
+      SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
+      SetVolumeOutputValue("R_DT", iPoint, Node_Turb->Get_r_dt(iPoint));
+      SetVolumeOutputValue("R_DL", iPoint, Node_Turb->Get_r_dl(iPoint));
+    } else if ( config->GetKind_HybridRANSLES() == SST_SIDDES){
+      SetVolumeOutputValue("F_D", iPoint, Node_Turb->Get_ftilda_d(iPoint));
+      SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
+      SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
+      SetVolumeOutputValue("R_DT", iPoint, Node_Turb->Get_r_dt(iPoint));
+    }
   }
 
   switch (config->GetKind_Species_Model()) {
