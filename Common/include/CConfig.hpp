@@ -1065,6 +1065,7 @@ private:
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
+  string top_optim_porosity_input_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
   su2double simp_minimum_stiffness;     /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
   ENUM_FILTER_KERNEL* top_optim_kernels;   /*!< \brief The kernels to use. */
@@ -9211,6 +9212,11 @@ public:
    * \brief Get name of output file for topology optimization derivatives.
    */
   string GetTopology_Optim_FileName(void) const { return top_optim_output_file; }
+
+    /*!
+   * \brief Get name of output file for topology optimization derivatives.
+   */
+  string GetTopology_Optim_Porosity_FileName(void) const { return top_optim_porosity_input_file; }
 
   /*!
    * \brief Get exponent for density-based stiffness penalization.

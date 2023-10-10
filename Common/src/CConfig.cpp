@@ -2474,6 +2474,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Topology optimization options */
   addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
+  addStringOption("TOPOL_OPTIM_POROSITY_INFILE", top_optim_porosity_input_file, string("porosity.dat"));
   addDoubleOption("TOPOL_OPTIM_SIMP_EXPONENT", simp_exponent, 1.0);
   addDoubleOption("TOPOL_OPTIM_SIMP_MINSTIFF", simp_minimum_stiffness, 0.001);
   addEnumListOption("TOPOL_OPTIM_FILTER_KERNEL", top_optim_nKernel, top_optim_kernels, Filter_Kernel_Map);

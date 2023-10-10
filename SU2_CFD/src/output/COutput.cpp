@@ -2486,8 +2486,8 @@ void COutput::Write_PorosityFile(CConfig *config, CGeometry *geometry, CSolver *
 
   /*--- Write the porosity template file. Note that we have previously merged
    all of the coordinates in the MergeCoordinates() routine. ---*/
-
-  ofstream node_file("porosity.dat");
+  auto porosity_filename = config->GetTopology_Optim_Porosity_FileName();
+  ofstream node_file(porosity_filename);
   node_file << setprecision(15);
   node_file << std::scientific;
 

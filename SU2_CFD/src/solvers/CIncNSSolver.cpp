@@ -89,7 +89,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     su2double *physical_rho = new su2double [nElem];
 
     ifstream porosity_file;
-    porosity_file.open("porosity.dat", ios::in);
+    auto porosity_file_name = config->GetTopology_Optim_Porosity_FileName();
+    porosity_file.open(porosity_file_name, ios::in);
     if (!porosity_file.fail()) {
       if (iMesh == MESH_0) {
         geometry->ReadPorosity(config);
@@ -1028,7 +1029,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
 
   /*--- The master writes the file ---*/
   if (rank == MASTER_NODE) {
-    string filename = "of_grad_power.dat";
+    string filename = config->GetTopology_Optim_FileName();
     ofstream file;
     file.open(filename.c_str());
     file << setprecision(15);

@@ -10919,7 +10919,7 @@ void CPhysicalGeometry::ReadPorosity(const CConfig *config) {
 
   /*--- Get the filename for the porosity file input. ---*/
 
-  filename = "porosity.dat";
+  filename = config->GetTopology_Optim_Porosity_FileName();
   external_file.open(filename.data(), ios::in);
   if (external_file.fail()) {
     SU2_MPI::Error(string("There is no porosity file ") +
