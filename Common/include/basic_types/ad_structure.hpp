@@ -390,7 +390,7 @@ FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
 
 FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
 
-FORCEINLINE void EndUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
+FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
